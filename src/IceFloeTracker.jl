@@ -16,6 +16,7 @@ function fetchdata(;output::AbstractString)
   touch("$output/reflectance/a.tiff")
   touch("$output/reflectance/b.tiff")
   touch("$output/reflectance/c.tiff")
+  return nothing
 end
 
 function landmask(;metadata::AbstractString, input::AbstractString, output::AbstractString)
@@ -23,6 +24,7 @@ function landmask(;metadata::AbstractString, input::AbstractString, output::Abst
   touch("$output/a.tiff")
   touch("$output/b.tiff")
   touch("$output/c.tiff")
+  return nothing
 end
 
 function cloudmask(;metadata::AbstractString, input::AbstractString, output::AbstractString)
@@ -30,6 +32,7 @@ function cloudmask(;metadata::AbstractString, input::AbstractString, output::Abs
   touch("$output/a.tiff")
   touch("$output/b.tiff")
   touch("$output/c.tiff")
+  return nothing
 end
 
 end

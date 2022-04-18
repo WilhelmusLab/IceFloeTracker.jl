@@ -41,6 +41,7 @@ function main(args)
   command_func = getfield(IceFloeTracker, Symbol(parsed_args[:_COMMAND_]))
 
   command_func(;command_args...)
+  return nothing
 end
 
 main(ARGS)
