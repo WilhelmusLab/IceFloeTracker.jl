@@ -35,4 +35,6 @@ function cloudmask(;metadata::AbstractString, input::AbstractString, output::Abs
   return nothing
 end
 
+include("landmask.jl")
+
 end
