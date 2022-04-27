@@ -25,7 +25,7 @@ Each notebook must activate the project as well. Add the following code to your 
 
 ```julia
 import Pkg
-Pkg.activate(".")
+Pkg.activate(joinpath(@__DIR__, ".."))
 
 import IceFloeTracker
 ```
@@ -54,4 +54,12 @@ Snakemake is used to encode the entire pipeline from start to finish. Snakemake 
 
 ```
 snakemake -c<NUM CORES>
+```
+
+## Development
+
+Git hooks are used to run common developer tasks on commits (e.g. code formatting, tests, etc.). If you are running git version 2.9 or later run the following from the root of the project to enable git hooks.
+
+```
+git config core.hooksPath ./hooks
 ```
