@@ -25,7 +25,7 @@ Each notebook must activate the project as well. Add the following code to your 
 
 ```julia
 import Pkg
-Pkg.activate(joinpath(@__DIR__, ".."))
+Pkg.activate(".")
 
 import IceFloeTracker
 ```

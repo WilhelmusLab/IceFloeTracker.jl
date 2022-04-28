@@ -4,20 +4,20 @@
 using Markdown
 using InteractiveUtils
 
-# ╔═╡ 50509764-ac74-43e5-871d-52cd513321bc
-import Pkg
+# ╔═╡ 5339db3d-ce14-4cda-b7e4-5ff76cf717b3
+using Pkg: Pkg
 
-# ╔═╡ 3a435419-5e38-4615-8bc2-f3b60c826c1a
-Pkg.activate(joinpath(@__DIR__, ".."))
+# ╔═╡ 0b396bdc-0eb1-4da5-9320-e9ce8194bc18
+Pkg.activate(".")
 
 # ╔═╡ e9377074-ad32-454c-bba4-620ed9dca50f
-import IceFloeTracker
+using IceFloeTracker: IceFloeTracker
 
 # ╔═╡ 6eabbe9e-7610-4a74-8ca0-b3d3eebc6db4
-IceFloeTracker.fetchdata(; output = "data")
+IceFloeTracker.fetchdata(; output="data")
 
 # ╔═╡ Cell order:
-# ╠═50509764-ac74-43e5-871d-52cd513321bc
-# ╠═3a435419-5e38-4615-8bc2-f3b60c826c1a
+# ╠═5339db3d-ce14-4cda-b7e4-5ff76cf717b3
+# ╠═0b396bdc-0eb1-4da5-9320-e9ce8194bc18
 # ╠═e9377074-ad32-454c-bba4-620ed9dca50f
 # ╠═6eabbe9e-7610-4a74-8ca0-b3d3eebc6db4

@@ -37,8 +37,7 @@ function main(args)
     add_arg_table!(settings["landmask"], command_common_args...)
     add_arg_table!(settings["cloudmask"], command_common_args...)
 
-
-    parsed_args = parse_args(args, settings; as_symbols = true)
+    parsed_args = parse_args(args, settings; as_symbols=true)
 
     command = parsed_args[:_COMMAND_]
     command_args = parsed_args[command]

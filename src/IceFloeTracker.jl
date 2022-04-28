@@ -28,9 +28,7 @@ function landmask(; metadata::AbstractString, input::AbstractString, output::Abs
 end
 
 function cloudmask(;
-    metadata::AbstractString,
-    input::AbstractString,
-    output::AbstractString,
+    metadata::AbstractString, input::AbstractString, output::AbstractString
 )
     mkpath("$output")
     touch("$output/a.tiff")
