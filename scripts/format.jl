@@ -1,4 +1,7 @@
-#!/usr/bin/env julia --project=@.
+#!/usr/bin/env julia
+using Pkg
+Pkg.activate(@__DIR__)
+
 using ArgParse
 using JuliaFormatter
 
