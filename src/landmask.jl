@@ -1,10 +1,16 @@
-function coast_dilation(landmask_img, num_pixels)
-    println("hello coast dilation")
-# Dilate coastline on land.tiff
+using TiffImages
+using LocalFilters
+using Images
+
+function create_landmask(landmask_image, num_pixels_dilate::Int, num_pixels_closing::Int)
+    landmask_image = dropdims(landmask_image, dims = 3)
+    landmask_binary = Gray.(landmask_image) .== 0
+    landmask_binary = LocalFilters.dilate(.!landmask_binary, num_pixels_dilate)
+    landmask_binary = LocalFilters.closing(landmask_binary, num_pixels_closing)
+    return landmask_binary
 end
 
-function landmask(img_dir, landmask_img_dir, num_pixels)
-    # 1. load landmask_img
-    # 2. call coastline_dilation
-    # 3. iterate through img_dir, apply_mask
+function apply_landmask(input_image, landmask_binary::BitArray)
+    image_masked = .!landmask_binary .* input_image
+    return image_masked
 end

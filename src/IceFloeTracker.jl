@@ -1,4 +1,5 @@
 module IceFloeTracker
+include(joinpath(@__DIR__, "Landmask.jl"))
 
 function fetchdata(;output::AbstractString)
   mkpath("$output")
@@ -20,10 +21,16 @@ function fetchdata(;output::AbstractString)
 end
 
 function landmask(;metadata::AbstractString, input::AbstractString, output::AbstractString)
+  landmask_image = TiffImages.load(joinpath(input,"landmask.tiff"), mmap=true)
+  landmask_binary = create_landmask(landmask_image, 50, 15)
+  imagepaths = filter(endswith(r"(tiff)"), readdir(joinpath(input, "truecolor");join=true))
+  images = map(x->TiffImages.load(x), imagepaths)
+  masked_images = map(y->apply_landmask(y, landmask_binary), images)
   mkpath("$output")
-  touch("$output/a.tiff")
-  touch("$output/b.tiff")
-  touch("$output/c.tiff")
+  for (filepath, img) in collect(zip(imagepaths, masked_images))
+    filename = basename(filepath)
+    TiffImages.save("$output/masked_$filename", img)
+  end
   return nothing
 end
 
@@ -34,7 +41,5 @@ function cloudmask(;metadata::AbstractString, input::AbstractString, output::Abs
   touch("$output/c.tiff")
   return nothing
 end
-
-include("landmask.jl")
 
 end
