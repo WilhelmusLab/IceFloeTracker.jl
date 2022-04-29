@@ -3,3 +3,4 @@
 *.jl.mem
 .snakemake
 data/
+explorations/
