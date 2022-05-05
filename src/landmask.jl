@@ -14,11 +14,13 @@ Convert a 3-channel RGB land mask TIFF to a 1-channel binary TIFF, including a b
 
 """
 function create_landmask(landmask_image, num_pixels_dilate::Int, num_pixels_closing::Int)
+    # Drop third dimension if it exists (test image had 3 dims: height x width x 1)
     landmask_image = dropdims(landmask_image, dims = 3)
     landmask_binary = Gray.(landmask_image) .== 0
     landmask_binary = LocalFilters.dilate(.!landmask_binary, num_pixels_dilate)
     landmask_binary = LocalFilters.closing(landmask_binary, num_pixels_closing)
     return landmask_binary
+    # update to process inline
 end
 
 """
@@ -35,4 +37,5 @@ Zero out pixels in land and soft ice regions on truecolor image, return RGB imag
 function apply_landmask(input_image, landmask_binary::BitArray)
     image_masked = .!landmask_binary .* input_image
     return image_masked
+    # update to process inline
 end
