@@ -1,6 +1,9 @@
+*.tiff
 *.jl.*.cov
 *.jl.cov
 *.jl.mem
 .snakemake
 data/
 explorations/
+foo/
+.DS_Store

@@ -1,5 +1,5 @@
 module IceFloeTracker
-include(joinpath(@__DIR__, "Landmask.jl"))
+include(joinpath(@__DIR__, "landmask.jl"))
 
 function fetchdata(; output::AbstractString)
     mkpath("$output")
@@ -20,16 +20,28 @@ function fetchdata(; output::AbstractString)
     return nothing
 end
 
+"""
+    landmask(metadata, input, output)
+
+Call the `create_landmask` and `apply_landmask` functions to zero out pixels over land in truecolor images, including the soft ice region adjacent to land, and return land-masked images.
+
+# Arguments
+- `metadata`: JSON file with metadata
+- `input`: path to image dir containing truecolor and landmask images
+- `output`: path to function output dir
+
+"""
 function landmask(;metadata::AbstractString, input::AbstractString, output::AbstractString)
   landmask_image = TiffImages.load(joinpath(input,"landmask.tiff"), mmap=true)
   landmask_binary = create_landmask(landmask_image, 50, 15)
-  imagepaths = filter(endswith(r"(tiff)"), readdir(joinpath(input, "truecolor");join=true))
-  images = map(x->TiffImages.load(x), imagepaths)
-  masked_images = map(y->apply_landmask(y, landmask_binary), images)
+  imagepaths = filter(endswith("tiff"), readdir(joinpath(input, "truecolor");join=true))
   mkpath("$output")
-  for (filepath, img) in collect(zip(imagepaths, masked_images))
-    filename = basename(filepath)
-    TiffImages.save("$output/masked_$filename", img)
+
+  for imagepath in imagepaths
+    image = TiffImages.load(imagepath)
+    image = apply_landmask(image, landmask_binary)
+    filename = basename(imagepath)
+    TiffImages.save("$output/masked_$filename", image)
   end
   return nothing
 end
