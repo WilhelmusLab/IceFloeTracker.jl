@@ -4,7 +4,7 @@ rule all:
 rule fetchdata:
   output: 
     directory("data/input"),
-    directory("data/input/landmask"), 
+    "data/input/landmask.tiff", 
     directory("data/input/truecolor"),
     directory("data/input/reflectance"),
     "data/input/metadata.json"
@@ -13,7 +13,7 @@ rule fetchdata:
 rule landmask:
   input: 
     metadata="data/input/metadata.json",
-    images="data/input/landmask"
+    images="data/input"
   output: directory("data/output/landmask")
   shell: "./scripts/ice-floe-tracker.jl landmask {input.metadata} {input.images} {output}"
 
