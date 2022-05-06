@@ -1,7 +1,3 @@
-using TiffImages
-using LocalFilters
-using Images
-
 """
     create_landmask(landmask_image, num_pixels_dilate, num_pixels_closing)
 
@@ -13,7 +9,7 @@ Convert a 3-channel RGB land mask TIFF to a 1-channel binary TIFF, including a b
 - `num_pixels_closing`: number of pixels used to fill holes in land mask; default = 15
 
 """
-function create_landmask(landmask_image, num_pixels_dilate::Int, num_pixels_closing::Int)
+function create_landmask(landmask_image::TiffImages.DenseTaggedImage; num_pixels_dilate::Int=50, num_pixels_closing::Int=15)
     # Drop third dimension if it exists (test image had 3 dims: height x width x 1)
     landmask_image = dropdims(landmask_image, dims = 3)
     landmask_binary = Gray.(landmask_image) .== 0
@@ -30,11 +26,11 @@ Zero out pixels in land and soft ice regions on truecolor image, return RGB imag
 
 
 # Arguments
-- `input_image`: truecolor RGB TIFF file
+- `input_image`: truecolor RGB TIFF file stored in `input/truecolor`
 - `landmask_binary`: binary landmask TIFF from `create_landmask`  
 
 """
-function apply_landmask(input_image, landmask_binary::BitArray)
+function apply_landmask(input_image::TiffImages.DenseTaggedImage, landmask_binary::BitArray)
     image_masked = .!landmask_binary .* input_image
     return image_masked
     # update to process inline
