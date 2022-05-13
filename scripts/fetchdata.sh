@@ -111,10 +111,9 @@ download_landmask() {
   local layer='OSM_Land_Mask'
   local ext='png'
 
-  mkdir -p "${output}"
-
   xml="$(echo "${GDAL_WMS_TEMPLATE}" | sed -e "s/%%LAYER%%/${layer}/" -e "s/%%EXT%%/${ext}/" -e "s/%%DATE%%/${date}/" )" 
 
+  echo 'downloading landmask'
   gdalwarp -t_srs "${GDAL_SRS}" -te ${bounding_box} "${xml}" "${output}/landmask.tiff" &> /dev/null
 }
 
@@ -127,19 +126,22 @@ download_truecolor() {
   local layer filename xml
   local ext="jpeg"
 
-  mkdir -p "${output}/truecolor"
 
+  echo "downloading true color images"
   while [ "${date}" != "${enddate}" ]; do
     for sat in Aqua Terra; do
       layer="MODIS_${sat}_CorrectedReflectance_TrueColor"
-      filename="$(echo "${date}" | sed -e 's/-//g').$(echo "${sat}" | tr '[:upper:]' '[:lower:]').250m.tiff"
+      filename="$(echo "${date}" | sed -e 's/-//g').$(echo "${sat}" | tr '[:upper:]' '[:lower:]').truecolor.250m.tiff"
       xml="$(echo "${GDAL_WMS_TEMPLATE}" | sed -e "s/%%LAYER%%/${layer}/" -e "s/%%EXT%%/${ext}/" -e "s/%%DATE%%/${date}/" )" 
 
-      gdalwarp -t_srs "${GDAL_SRS}" -te ${bounding_box} "${xml}" "${output}/truecolor/${filename}" &> /dev/null
+      gdalwarp -t_srs "${GDAL_SRS}" -te ${bounding_box} "${xml}" "${output}/${filename}" &> /dev/null
     done
 
     date="$(add_day "${date}")"
+    printf '.'
   done
+
+  printf '\n'
 }
 
 download_reflectance() {
@@ -151,19 +153,22 @@ download_reflectance() {
   local layer filename xml
   local ext="jpeg"
 
-  mkdir -p "${output}/reflectance"
 
+  echo "downloading true color images"
   while [ "${date}" != "${enddate}" ]; do
     for sat in Aqua Terra; do
       layer="MODIS_${sat}_CorrectedReflectance_Bands721"
-      filename="$(echo "${date}" | sed -e 's/-//g').$(echo "${sat}" | tr '[:upper:]' '[:lower:]').250m.tiff"
+      filename="$(echo "${date}" | sed -e 's/-//g').$(echo "${sat}" | tr '[:upper:]' '[:lower:]').reflectance.250m.tiff"
 
       xml="$(echo "${GDAL_WMS_TEMPLATE}" | sed -e "s/%%LAYER%%/${layer}/" -e "s/%%EXT%%/${ext}/" -e "s/%%DATE%%/${date}/" )" 
-      gdalwarp -t_srs "${GDAL_SRS}" -te ${bounding_box} "${xml}" "${output}/reflectance/${filename}" &> /dev/null
+      gdalwarp -t_srs "${GDAL_SRS}" -te ${bounding_box} "${xml}" "${output}/${filename}" &> /dev/null
     done
 
     date="$(add_day "${date}")"
+    printf '.'
   done
+
+  printf '\n'
 }
 
 main() {
@@ -224,6 +229,8 @@ main() {
 
   local bounding_box
   bounding_box="$(sort_xy $x1 $y1 $x2 $y2)"
+
+  mkdir -p "${output}"
 
   download_landmask "${bounding_box}" "${startdate}" "${output}"
   download_truecolor "${bounding_box}" "${startdate}" "${enddate}" "${output}"
