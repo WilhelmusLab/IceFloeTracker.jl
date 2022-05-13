@@ -62,8 +62,8 @@ ${BOLD}OPTIONS${NORMAL}
   -s${TAB}${TAB}start date in YYYY-MM-DD format
 
 ${BOLD}EXAMPLES${NORMAL}
-  Start the deployment wizard for the example service
-    $ ./${PROGRAM_NAME} example
+  Download data from 2022-05-01 through today using lat/lon
+    $ ./${PROGRAM_NAME} -o data -s 2022-05-01 81 -22 79 -12
 EOF
 }
 
