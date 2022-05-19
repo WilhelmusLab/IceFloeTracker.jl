@@ -1,4 +1,5 @@
 *.tiff
+*.png
 *.jl.*.cov
 *.jl.cov
 *.jl.mem
