@@ -5,15 +5,10 @@ version = "0.1.0"
 
 [deps]
 DelimitedFiles = "8bb1440f-4735-579b-a4ab-409b98df4dab"
-ImageFiltering = "6a3955dd-da59-5b1f-98d4-e7296123deb5"
 ImageIO = "82e4d734-157c-48bb-816b-45c225c6df19"
-ImageMagick_jll = "c73af94c-d91f-53ed-93a7-00f77d67a9d7"
 ImageProjectiveGeometry = "b9d14576-938f-5430-9d4c-b7d7de1409d6"
-ImageView = "86fae568-95e7-573e-a6b2-d8a6b900c9ef"
 Images = "916415d5-f1e6-5110-898d-aaa5f9f070e0"
-JpegTurbo = "b835a17e-a41a-41e7-81f0-2f016b05efe0"
 LocalFilters = "085fde7c-5f94-55e4-8448-8bbb5db6dde9"
-TiffImages = "731e570b-9d59-4bfa-96dc-6df516fadf69"
 
 [compat]
 julia = "1.7"

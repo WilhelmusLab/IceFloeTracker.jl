@@ -1,5 +1,4 @@
 module IceFloeTracker
-using TiffImages
 using LocalFilters
 using Images
 using ImageProjectiveGeometry
