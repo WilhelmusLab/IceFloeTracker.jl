@@ -7,3 +7,4 @@ input/
 explorations/
 foo/
 .DS_Store
+!landmask.tiff
