@@ -5,7 +5,7 @@ Convert a 3-channel RGB land mask image to a 1-channel binary matrix, including 
 
 # Arguments
 - `landmask_image`: land mask image
-- `struct_elem`: activate structuring element for dilation
+- `struct_elem`: structuring element for dilation
 - `num_pixels_closing`: number of pixels used to fill holes in land mask
 
 """
