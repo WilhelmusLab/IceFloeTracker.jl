@@ -10,14 +10,10 @@ Convert a 3-channel RGB land mask image to a 1-channel binary matrix, including 
 
 """
 function create_landmask(landmask_image::Matrix{RGB{N0f8}}, struct_elem; num_pixels_closing::Int=50)
-    # Drop third dimension if it exists (test image had 3 dims: height x width x 1)
-    # landmask_image = dropdims(landmask_image, dims = 3)
-    landmask_binary = Gray.(landmask_image) .== 0
-    landmask_binary = LocalFilters.dilate(.!landmask_binary, 50)
-    # landmask_binary = ImageProjectiveGeometry.imdilate(.!landmask_binary, struct_elem)
-    landmask_binary = LocalFilters.closing(landmask_binary, num_pixels_closing)
-    return landmask_binary
-    # update to process inline
+    lm_binary = Gray.(landmask_image) .== 0
+    @time lm_binary_dilated = ImageProjectiveGeometry.imdilate(.!lm_binary, struct_elem)
+    @time lm_binary_filled = LocalFilters.closing(lm_binary_dilated, num_pixels_closing)
+    return lm_binary_filled
 end
 
 """
