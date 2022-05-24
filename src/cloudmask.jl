@@ -1,38 +1,43 @@
-using Images
-using ImageCore
+"""
+    create_cloudmask(reflectance_image)
 
-test_image = load("test/data/NE_Greenland.2020162.aqua.250m.tiff")
-sz = size(test_image)
-top_test_image = test_image[ 1:2707, 1:4458]
+Convert a 3-channel false color reflectance image to a 1-channel binary matrix; clouds = 0, else = 1.
 
-cv = channelview(top_test_image)
-# cv_int = trunc.(Int,cv.*255)
-t = StackedView(zeroarray, cv[2,:,:], cv[3,:,:]) # ref_im3
-colorview(RGB, t)
+# Arguments
+- `reflectance_image`: corrected reflectance false color image - bands [7,2,1]
 
-mask_aa = (cv[1,:,:] .< 0.784) # 200 on Int scale
+"""
+function create_cloudmask(reflectance_image::Array{RGB{N0f8}})
+  println("Setting thresholds")
+  working_view = channelview(reflectance_image)
+  orig_view = channelview(reflectance_image)
+  orig_view_clouds = orig_view[1,:,:] .> 0.431
+  mask_r = working_view[1,:,:] .< 0.784 # intensity value 200
+  mask_g = working_view[2,:,:] .> 0.745 # intensity value 190
+  println("Masking clouds and discriminatinhg cloud-ice")
+  mask_rg = mask_r .&& mask_g
+  working_view[1,:,:] = mask_rg .* working_view[1,:,:]
+  working_view[2,:,:] = mask_rg .* working_view[2,:,:]
+  cloud_ice = Float64.(working_view[1,:,:])./Float64.(working_view[2,:,:])
+  mask_cloud_ice = cloud_ice .>= 0 .&& cloud_ice .< 0.75
+  println("Creating final cloudmask")
+  cloudmask = .!mask_cloud_ice .* orig_view_clouds
+  return cloudmask
+end
 
-mask_bb = (cv[2,:,:] .> 0.745) # 190 on Int scale
+"""
+    apply_cloudmask(reflectance_image, cloudmask)
 
-mask_cc = (mask_aa .&& mask_bb)
+Zero out pixels containing clouds where clouds and ice are not discernable.
 
-cv[1,:,:] = .!mask_cc .* cv[1,:,:]
-cv[2,:,:] = .!mask_cc .* cv[2,:,:]
+# Arguments
+- `reflectance_image`: corrected reflectance false color image - bands [7,2,1]
+- `cloudmask`: binary cloudmask with clouds = 0, else = 1
 
-r = StackedView(cv[1,:,:], zeroarray, zeroarray)
-
-mask_cloud_ice = Float64.(cv[1,:,:])./Float64.(cv[2,:,:])
-
-mask_cloud_ice = (mask_cloud_ice .>= 0 .&& mask_cloud_ice .< 0.75)
-
-ref_imclouds = (cv[1,:,:] .> 0.431)
-
-ref_imclouds = .!mask_cloud_ice .* ref_imclouds
-
-cv[1,:,:] = .!ref_imclouds .* cv[1,:,:]
-cv[2,:,:] = .!ref_imclouds .* cv[2,:,:]
-cv[3,:,:] = .!ref_imclouds .* cv[3,:,:]
-
-ref_im7 = StackedView(zeroarray, cv[2,:,:], cv[3,:,:])
-
-save("cloudmask_test.png", colorview(RGB, ref_im7))
+"""
+function apply_cloudmask(reflectance_image::Array{RGB{N0f8}}, cloudmask::BitArray)
+    masked_image = .!cloudmask .* reflectance_image
+    image_view = channelview(masked_image)
+    cloudmasked_image = StackedView(zeroarray, image_view[2,:,:], image_view[3,:,:])
+    return cloudmasked_image
+end
