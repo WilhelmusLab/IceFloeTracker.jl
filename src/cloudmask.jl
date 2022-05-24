@@ -11,7 +11,7 @@ function create_cloudmask(reflectance_image::Array{RGB{N0f8}})
   println("Setting thresholds")
   working_view = channelview(reflectance_image)
   orig_view = channelview(reflectance_image)
-  orig_view_clouds = orig_view[1,:,:] .> 0.431
+  orig_view_clouds = orig_view[1,:,:] .> 0.431 # intensity value 110
   mask_r = working_view[1,:,:] .< 0.784 # intensity value 200
   mask_g = working_view[2,:,:] .> 0.745 # intensity value 190
   println("Masking clouds and discriminatinhg cloud-ice")
