@@ -4,7 +4,8 @@
 *.jl.cov
 *.jl.mem
 .snakemake
-data/
+input/
 explorations/
 foo/
 .DS_Store
+!landmask.tiff
