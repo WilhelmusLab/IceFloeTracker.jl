@@ -1,22 +1,21 @@
 """
     create_landmask(landmask_image, num_pixels_dilate, num_pixels_closing)
 
-Convert a 3-channel RGB land mask TIFF to a 1-channel binary TIFF, including a buffer to extend the land over any soft ice regions; land = 0, water/ice = 1.
+Convert a 3-channel RGB land mask image to a 1-channel binary matrix, including a buffer to extend the land over any soft ice regions; land = 0, water/ice = 1.
 
 # Arguments
-- `landmask_image`: loaded land mask TIFF from input
-- `num_pixels_dilate`: number of pixels used to extend coast line; default = 50
-- `num_pixels_closing`: number of pixels used to fill holes in land mask; default = 15
+- `landmask_image`: land mask image
+- `struct_elem`: structuring element for dilation
+- `num_pixels_closing`: number of pixels used to fill holes in land mask
 
 """
-function create_landmask(landmask_image::TiffImages.AbstractTIFF; num_pixels_dilate::Int=50, num_pixels_closing::Int=15)
-    # Drop third dimension if it exists (test image had 3 dims: height x width x 1)
-    landmask_image = dropdims(landmask_image, dims = 3)
-    landmask_binary = Gray.(landmask_image) .== 0
-    landmask_binary = LocalFilters.dilate(.!landmask_binary, num_pixels_dilate)
-    landmask_binary = LocalFilters.closing(landmask_binary, num_pixels_closing)
-    return landmask_binary
-    # update to process inline
+function create_landmask(landmask_image::Matrix{RGB{N0f8}}, struct_elem::Matrix{Bool}; num_pixels_closing::Int=50)
+    lm_binary = Gray.(landmask_image) .== 0
+    println("Dilation with strel")
+    @time lm_binary_dilated = ImageProjectiveGeometry.imdilate(.!lm_binary, struct_elem)
+    println("Closing any holes in mask")
+    @time lm_binary_filled = LocalFilters.closing(lm_binary_dilated, num_pixels_closing)
+    return lm_binary_filled
 end
 
 """
@@ -26,12 +25,11 @@ Zero out pixels in land and soft ice regions on truecolor image, return RGB imag
 
 
 # Arguments
-- `input_image`: truecolor RGB TIFF file stored in `input/truecolor`
-- `landmask_binary`: binary landmask TIFF from `create_landmask`  
+- `input_image`: truecolor RGB image
+- `landmask_binary`: binary landmask with 1=land, 0=water/ice 
 
 """
-function apply_landmask(input_image::TiffImages.AbstractTIFF, landmask_binary::BitArray)
+function apply_landmask(input_image::Matrix{RGB{N0f8}}, landmask_binary::BitArray)
     image_masked = .!landmask_binary .* input_image
     return image_masked
-    # update to process inline
 end
