@@ -30,7 +30,7 @@ end
 """
     apply_cloudmask(reflectance_image, cloudmask)
 
-Zero out pixels containing clouds where clouds and ice are not discernable.
+Zero out pixels containing clouds where clouds and ice are not discernable. Arguments should be of the same size.
 
 # Arguments
 - `reflectance_image`: corrected reflectance false color image - bands [7,2,1]
