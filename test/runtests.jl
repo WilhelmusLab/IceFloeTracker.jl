@@ -34,18 +34,19 @@ using DelimitedFiles
         println("------------ Create Cloudmask Test --------------")
     
         # define constants, maybe move to test config file
-        test_data_dir = "./data"
+        test_data_dir = "../test/data"
         ref_image_file = """$(test_data_dir)/cloudmask_test_image.tiff"""
         matlab_cloudmask_file = """$(test_data_dir)/matlab_cloudmask.tiff"""
         
         println("--------- Create and apply cloudmask --------")
         ref_image = load(ref_image_file)
+        ref_image_2 = load(ref_image_file)
         matlab_cloudmask = load(matlab_cloudmask_file)
         @time cloudmask = IceFloeTracker.create_cloudmask(ref_image)
-        @time masked_image = IceFloeTracker.apply_cloudmask(ref_image, cloudmask)
+        @time masked_image = IceFloeTracker.apply_cloudmask(ref_image_2, cloudmask)
+
 
         # test for percent difference in landmask images
-        @test (@test_approx_eq_sigma_eps masked_image matlab_cloudmask [0,0] 0.07) == nothing
-
+        @test (@test_approx_eq_sigma_eps masked_image matlab_cloudmask [0,0] 0.005) == nothing
     end
 end

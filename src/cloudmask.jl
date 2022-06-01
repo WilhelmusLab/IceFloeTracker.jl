@@ -7,24 +7,24 @@ Convert a 3-channel false color reflectance image to a 1-channel binary matrix; 
 - `ref_image`: corrected reflectance false color image - bands [7,2,1]
 
 """
-function create_cloudmask(ref_image::Matrix{RGB{N0f8}}; prelim_threshold::Float64=0.431, band_7_threshold::Float64=0.784, band_2_threshold::Float64=0.745, ratio_lower::Float64=0.0, ratio_upper::Float64=0.75)::BitMatrix
+function create_cloudmask(ref_image::Matrix{RGB{N0f8}}; prelim_threshold::N0f8=N0f8(110/255), band_7_threshold::N0f8=N0f8(200/255), band_2_threshold::N0f8=N0f8(190/255), ratio_lower::Float64=0.0, ratio_upper::Float64=0.75)::BitMatrix
   println("Setting thresholds")
-  ref_working_view = channelview(ref_image)
-  ref_orig_view = channelview(ref_image)
-  orig_view_clouds = ref_orig_view[1,:,:] .> prelim_threshold # intensity value 110
-  mask_b7 = ref_working_view[1,:,:] .< band_7_threshold # intensity value 200
-  mask_b2 = ref_working_view[2,:,:] .> band_2_threshold # intensity value 190
+  ref_view = channelview(ref_image)
+  ref_view_2 = channelview(ref_image)
+  clouds_view = ref_view_2[1,:,:] .> prelim_threshold # intensity value 110
+  mask_b7 = ref_view[1,:,:] .< band_7_threshold # intensity value 200
+  mask_b2 = ref_view[2,:,:] .> band_2_threshold # intensity value 190
   # First find all the pixels that meet threshold logic in red and green channels
   println("Masking clouds and discriminating cloud-ice")
   # Next find pixels that meet both thresholds and mask them from red and green channels
   mask_b7b2 = mask_b7 .&& mask_b2
-  ref_working_view[1,:,:] = mask_b7b2 .* ref_working_view[1,:,:]
-  ref_working_view[2,:,:] = mask_b7b2 .* ref_working_view[2,:,:]
-  cloud_ice = Float64.(ref_working_view[1,:,:])./Float64.(ref_working_view[2,:,:])
+  ref_view[1,:,:] = mask_b7b2 .* ref_view[1,:,:]
+  ref_view[2,:,:] = mask_b7b2 .* ref_view[2,:,:]
+  cloud_ice = Float64.(ref_view[1,:,:])./Float64.(ref_view[2,:,:])
   mask_cloud_ice = @. cloud_ice >= ratio_lower .&& cloud_ice < ratio_upper
   println("Creating final cloudmask")
-  prelim_mask = @. !mask_cloud_ice * orig_view_clouds
-  cloudmask = .!prelim_mask
+  prelim_mask = .!mask_cloud_ice .&& clouds_view
+  cloudmask = .!(prelim_mask)
   return cloudmask
 end
 
@@ -38,7 +38,7 @@ Zero out pixels containing clouds where clouds and ice are not discernable. Argu
 - `cloudmask`: binary cloudmask with clouds = 0, else = 1
 
 """
-function apply_cloudmask(ref_image::Matrix{RGB{N0f8}}, cloudmask::BitMatrix)::Matrix{RGB{N0f8}}
+function apply_cloudmask(ref_image::Matrix{RGB{N0f8}}, cloudmask::BitMatrix) #::Matrix{RGB{N0f8}}
     masked_image = cloudmask .* ref_image
     image_view = channelview(masked_image)
     cloudmasked_view = StackedView(zeroarray, image_view[2,:,:], image_view[3,:,:])
