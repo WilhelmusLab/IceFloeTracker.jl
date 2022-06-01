@@ -24,7 +24,7 @@ function create_cloudmask(ref_image::Matrix{RGB{N0f8}}; prelim_threshold::N0f8=N
   mask_cloud_ice = @. cloud_ice >= ratio_lower .&& cloud_ice < ratio_upper
   println("Creating final cloudmask")
   prelim_mask = .!mask_cloud_ice .&& clouds_view
-  cloudmask = .!(prelim_mask)
+  cloudmask = .!prelim_mask
   return cloudmask
 end
 

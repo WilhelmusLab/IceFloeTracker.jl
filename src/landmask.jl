@@ -15,7 +15,8 @@ function create_landmask(landmask_image::Matrix{RGB{N0f8}}, struct_elem::Matrix{
     @time lm_binary_dilated = ImageProjectiveGeometry.imdilate(.!lm_binary, struct_elem)
     println("Closing any holes in mask")
     @time lm_binary_filled = LocalFilters.closing(lm_binary_dilated, num_pixels_closing)
-    return lm_binary_filled
+    landmask = .!lm_binary_filled
+    return landmask
 end
 
 """
