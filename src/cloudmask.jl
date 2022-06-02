@@ -15,7 +15,6 @@ Convert a 3-channel false color reflectance image to a 1-channel binary matrix; 
 function create_cloudmask(ref_image::Matrix{RGB{N0f8}}; prelim_threshold::N0f8=N0f8(110/255), band_7_threshold::N0f8=N0f8(200/255), band_2_threshold::N0f8=N0f8(190/255), ratio_lower::Float64=0.0, ratio_upper::Float64=0.75)::BitMatrix
   println("Setting thresholds") 
   ref_view = channelview(ref_image)
-  #ref_view_2 = channelview(ref_image)
   clouds_view = ref_view[1,:,:] .> prelim_threshold # intensity value 110
   mask_b7 = ref_view[1,:,:] .< band_7_threshold # intensity value 200
   mask_b2 = ref_view[2,:,:] .> band_2_threshold # intensity value 190
