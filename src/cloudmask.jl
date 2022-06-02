@@ -5,22 +5,28 @@ Convert a 3-channel false color reflectance image to a 1-channel binary matrix; 
 
 # Arguments
 - `ref_image`: corrected reflectance false color image - bands [7,2,1]
+- `prelim_threshold`: threshold value used to identify clouds in band 7, N0f8
+- `band_7_threshold`: threshold value used to identify cloud-ice in band 7, N0f8
+- `band_2_threshold`: threshold value used to identify cloud-ice in band 2, N0f8
+- `ratio_lower`: threshold value used to set lower ratio of cloud-ice in bands 7 and 2
+- `ratio_upper`: threshold value used to set upper ratio of cloud-ice in bands 7 and 2
 
 """
 function create_cloudmask(ref_image::Matrix{RGB{N0f8}}; prelim_threshold::N0f8=N0f8(110/255), band_7_threshold::N0f8=N0f8(200/255), band_2_threshold::N0f8=N0f8(190/255), ratio_lower::Float64=0.0, ratio_upper::Float64=0.75)::BitMatrix
-  println("Setting thresholds")
+  println("Setting thresholds") 
   ref_view = channelview(ref_image)
-  ref_view_2 = channelview(ref_image)
-  clouds_view = ref_view_2[1,:,:] .> prelim_threshold # intensity value 110
+  #ref_view_2 = channelview(ref_image)
+  clouds_view = ref_view[1,:,:] .> prelim_threshold # intensity value 110
   mask_b7 = ref_view[1,:,:] .< band_7_threshold # intensity value 200
   mask_b2 = ref_view[2,:,:] .> band_2_threshold # intensity value 190
   # First find all the pixels that meet threshold logic in red and green channels
   println("Masking clouds and discriminating cloud-ice")
   # Next find pixels that meet both thresholds and mask them from red and green channels
   mask_b7b2 = mask_b7 .&& mask_b2
-  ref_view[1,:,:] = mask_b7b2 .* ref_view[1,:,:]
-  ref_view[2,:,:] = mask_b7b2 .* ref_view[2,:,:]
-  cloud_ice = Float64.(ref_view[1,:,:])./Float64.(ref_view[2,:,:])
+  
+  b7b2_7 = mask_b7b2 .* ref_view[1,:,:]
+  b7b2_2 = mask_b7b2 .* ref_view[2,:,:]
+  cloud_ice = Float64.(b7b2_7)./Float64.(b7b2_2)
   mask_cloud_ice = @. cloud_ice >= ratio_lower .&& cloud_ice < ratio_upper
   println("Creating final cloudmask")
   prelim_mask = .!mask_cloud_ice .&& clouds_view
@@ -38,7 +44,7 @@ Zero out pixels containing clouds where clouds and ice are not discernable. Argu
 - `cloudmask`: binary cloudmask with clouds = 0, else = 1
 
 """
-function apply_cloudmask(ref_image::Matrix{RGB{N0f8}}, cloudmask::BitMatrix) #::Matrix{RGB{N0f8}}
+function apply_cloudmask(ref_image::Matrix{RGB{N0f8}}, cloudmask::BitMatrix)::Matrix{RGB{N0f8}}
     masked_image = cloudmask .* ref_image
     image_view = channelview(masked_image)
     cloudmasked_view = StackedView(zeroarray, image_view[2,:,:], image_view[3,:,:])
