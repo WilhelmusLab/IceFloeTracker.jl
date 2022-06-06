@@ -9,13 +9,14 @@ Convert a 3-channel RGB land mask image to a 1-channel binary matrix, including 
 - `num_pixels_closing`: number of pixels used to fill holes in land mask
 
 """
-function create_landmask(landmask_image::Matrix{RGB{N0f8}}, struct_elem::Matrix{Bool}; num_pixels_closing::Int=50)
+function create_landmask(landmask_image::Matrix{RGB{N0f8}}, struct_elem::Matrix{Bool}; num_pixels_closing::Int=50)::BitMatrix
     lm_binary = Gray.(landmask_image) .== 0
     println("Dilation with strel")
     @time lm_binary_dilated = ImageProjectiveGeometry.imdilate(.!lm_binary, struct_elem)
     println("Closing any holes in mask")
-    @time lm_binary_filled = LocalFilters.closing(lm_binary_dilated, num_pixels_closing)
-    return lm_binary_filled
+    @time lm_binary_filled = LocalFilters.closing(lm_binary_dilated, num_pixels_closing) 
+    landmask_bool = (lm_binary_filled .< 0.5)
+    return landmask_bool
 end
 
 """
@@ -29,7 +30,7 @@ Zero out pixels in land and soft ice regions on truecolor image, return RGB imag
 - `landmask_binary`: binary landmask with 1=land, 0=water/ice 
 
 """
-function apply_landmask(input_image::Matrix{RGB{N0f8}}, landmask_binary::BitArray)
-    image_masked = .!landmask_binary .* input_image
+function apply_landmask(input_image::Matrix{RGB{N0f8}}, landmask_binary::BitMatrix)::Matrix{RGB{N0f8}}
+    image_masked = landmask_binary .* input_image
     return image_masked
 end

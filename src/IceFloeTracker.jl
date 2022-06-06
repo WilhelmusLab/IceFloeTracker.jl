@@ -3,7 +3,8 @@ using LocalFilters
 using Images
 using ImageProjectiveGeometry
 
-include(joinpath("landmask.jl"))
+include("landmask.jl")
+include("cloudmask.jl")
 
 function fetchdata(; output::AbstractString)
     mkpath("$output")

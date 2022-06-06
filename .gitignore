@@ -1,4 +1,5 @@
 *.tiff
+*.png
 *.jl.*.cov
 *.jl.cov
 *.jl.mem
@@ -8,3 +9,6 @@ explorations/
 foo/
 .DS_Store
 !landmask.tiff
+!matlab_cloudmask.tiff
+!cloudmask_test_image.tiff
+!NE_Greenland.2020162.aqua.250m.tiff
