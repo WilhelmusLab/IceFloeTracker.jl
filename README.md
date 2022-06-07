@@ -36,6 +36,12 @@ You now have access to `IceFloeTracker` from inside your Pluto notebook!
 
 The [`fetchdata.sh`](/scripts/fetchdata.sh) script requires the utilities [`gdal`](https://gdal.org/) and [`proj`](https://proj.org/). This repository includes a brewfile for ease of installation on MacOS. To install `gdal` and `proj` via homebrew, first [install homebrew](https://brew.sh/), then run `brew bundle install`
 
+### Example
+
+```
+$ ./scripts/fetchdata.sh -o data -s 2022-05-01 81 -22 79 -12
+```
+
 ## Commandline
 
 To call each step of Ice Floe Tracker pipeline from the command line you can run:
