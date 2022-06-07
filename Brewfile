@@ -1,0 +1,2 @@
+brew "gdal"
+brew "proj"
