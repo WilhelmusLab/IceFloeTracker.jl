@@ -6,7 +6,7 @@ using DelimitedFiles
 
 @testset "IceFloeTracker.jl" begin
 
-    test_data_dir = "./data"
+    test_data_dir = "./test/data"
 
     @testset "Create Landmask" begin
         println("------------------------------------------------")
@@ -15,7 +15,7 @@ using DelimitedFiles
         # define constants, maybe move to test config file
         landmask_file = """$(test_data_dir)/landmask.tiff"""
         matlab_landmask_file = """$(test_data_dir)/matlab_landmask.png"""
-        test_image_file = """$(test_data_dir)/NE_Greenland.2020162.aqua.250m.tiff"""
+        test_image_file = """$(test_data_dir)/NE_Greenland_truecolor.2020162.aqua.250m.tiff"""
         strel_file = """$(test_data_dir)/se.csv"""
         test_region = (3000:3750, 1000:1550)
         num_pixels_closing = 50
