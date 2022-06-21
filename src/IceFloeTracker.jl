@@ -5,6 +5,7 @@ using ImageProjectiveGeometry
 
 include("landmask.jl")
 include("cloudmask.jl")
+include("normalization.jl")
 
 function fetchdata(; output::AbstractString)
     mkpath("$output")

@@ -6,7 +6,7 @@ using DelimitedFiles
 
 @testset "IceFloeTracker.jl" begin
 
-    test_data_dir = "./test/data"
+    test_data_dir = "../test/data"
 
     @testset "Create Landmask" begin
         println("------------------------------------------------")
@@ -37,7 +37,7 @@ using DelimitedFiles
     end
 
     @testset "Create Cloudmask" begin
-        println("------------------------------------------------")
+        println("-------------------------------------------------")
         println("------------ Create Cloudmask Test --------------")
     
         # define constants, maybe move to test config file
@@ -51,5 +51,21 @@ using DelimitedFiles
 
         # test for percent difference in landmask images
         @test (@test_approx_eq_sigma_eps masked_image matlab_cloudmask [0,0] 0.005) == nothing
+    end
+
+    @testset "Normalize Image" begin
+        println("-------------------------------------------------")
+        println("---------- Create Normalization Test ------------")
+
+        input_image_file = """$(test_data_dir)/NE_Greenland_truecolor.2020162.aqua.250m.tiff"""
+        matlab_normalized_img_file = """$(test_data_dir)/matlab_normalized.tiff"""
+        landmasked_image = load(input_image_file)
+        matlab_norm_img = load(matlab_normalized_img_file)
+        println("-------------- Process Image ----------------")
+        @time normalized_image = IceFloeTracker.normalize_image(landmasked_image)
+
+        # test for percent difference in normalized images
+        @test (@test_approx_eq_sigma_eps normalized_image[strel_h:end-strel_h, strel_w:end-strel_w] matlab_norm_img[strel_h:end-strel_h, strel_w:end-strel_w] [0,0] 0.005) == nothing
+
     end
 end
