@@ -1,5 +1,5 @@
 """
-    normalize_image(landmasked_image, lambda, kappa, niters, nbins, rblocks, cblocks, clip, smoothing_param, intensity)
+    normalize_image(landmasked_image; lambda, kappa, niters, nbins, rblocks, cblocks, clip, smoothing_param, intensity)
 
 Adjusts truecolor land-masked image to highlight ice floe features. This function performs diffusion, adaptive histogram equalization, and sharpening, and returns a greyscale normalized image.
 
@@ -16,29 +16,45 @@ Adjusts truecolor land-masked image to highlight ice floe features. This functio
 - `intensity`: amount of sharpening to perform
 
 """
-function normalize_image(landmasked_image::Matrix{RGB{N0f8}}; lambda::Real=0.25, kappa::Real=50, niters::Int64=3, nbins::Int64=255, rblocks::Int64=9, cblocks::Int64=6, clip::Float64=0.75, smoothing_param::Int64=10, intensity::Float64=2.0)::Matrix{Gray{N0f8}}
+function normalize_image(landmasked_image::Matrix; lambda::Real=0.25, kappa::Real=50, niters::Int64=3, nbins::Int64=255, rblocks::Int64=8, cblocks::Int64=8, clip::Float64=0.75, smoothing_param::Int64=10, intensity::Float64=2.0)::Matrix
+  # println("Applying Nonlinear diffusion filtering") 
+  test_data_dir = "../test/data"
+  test_region = (1:2707, 1:4458)
+  landmask_file = "$(test_data_dir)/landmask.tiff"
+  lm_image = load(landmask_file)[test_region...]
+  strel_file = "$(test_data_dir)/se.csv"
+  num_pixels_closing = 50
+  struct_elem = readdlm(strel_file, ',', Bool)
+  landmask = IceFloeTracker.create_landmask(lm_image, struct_elem; num_pixels_closing=num_pixels_closing)
 
-  println("Applying Nonlinear diffusion filtering") 
-  masked_view = Float64.(channelview(landmasked_image))
-  include("../src/diffusion.jl");
-  ch1 = diffusion((masked_view[1,:,:]), lambda, kappa, niters);
-  ch2 = diffusion((masked_view[2,:,:]), lambda, kappa, niters);
-  ch3 = diffusion((masked_view[3,:,:]), lambda, kappa, niters);
-  diffused_image = colorview(RGB, ch1, ch2, ch3)
-
-  println("Applying CLAHE - Contrast Limited Adaptive Histogram Equalization")
- 
-  img_eq = Gray.(adjust_histogram(diffused_image, AdaptiveEqualization(nbins=nbins, rblocks=rblocks, cblocks=cblocks, clip=clip)))
- 
-  println("Sharpening Image")
+  masked_v = Float64.(channelview(landmasked_image))
   
-  img_b = imfilter(img_eq, Kernel.gaussian(smoothing_param))
-  img_eq_array = chanelview(img_eq)
-  img_b_array = chanelview(img_b)
-  img_sharp = @. img_eq_array * (1 + intensity) + img_b_array * (-intensity)
-  img_sharp = max.(img_sharp, 0.0)
-  img_sharp = min.(img_sharp, 0.1)
-  img_sharp = colorview(Gray, img_sharp)
-  return img_sharp
+  imgeq_1 = adjust_histogram(masked_v[1,:,:], AdaptiveEqualization(nbins = 255, rblocks=8, cblocks=8, minval=minimum(masked_v[1,:,:]), maxval=maximum(masked_v[1,:,:]), clip=0.75))
+
+  imgeq_2 = adjust_histogram(masked_v[2,:,:], AdaptiveEqualization(nbins = 255, rblocks=8, cblocks=8, minval=minimum(masked_v[2,:,:]), maxval=maximum(masked_v[2,:,:]), clip=0.75))
+
+  imgeq_3 = adjust_histogram(masked_v[3,:,:], AdaptiveEqualization(nbins = 255, rblocks=8, cblocks=8, minval=minimum(masked_v[3,:,:]), maxval=maximum(masked_v[3,:,:]), clip=0.75))
+
+  imgequalized = colorview(RGB, imgeq_1, imgeq_2, imgeq_3)
+
+  # println("Applying CLAHE - Contrast Limited Adaptive Histogram Equalization")
+ 
+  # println("Sharpening Image")
+  img_equalized_gray = Gray.(imgequalized)
+  img_smoothed = imfilter(img_equalized_gray, Kernel.gaussian(smoothing_param))
+  img_equalized_array = channelview(img_equalized_gray)
+  img_smoothed_array = channelview(img_smoothed)
+  img_sharpened = @. img_equalized_array * (1 + intensity) + img_smoothed_array * (-intensity)
+  img_sharpened = max.(img_sharpened, 0.0)
+  img_sharpened = min.(img_sharpened, 0.1)
+  img_sharpened = colorview(Gray, img_sharpened)
+  
+  strel_file2 = """$(test_data_dir)/se2.csv"""
+  struct_elem2 = readdlm(strel_file2, ',', Bool)
+  
+  Iobrd = Images.dilate(img_sharpened, struct_elem2)
+  Iobrcbr = Images.opening(complement.(Iobrd), complement.(img_sharpened))
+  Iobrcbr_masked = IceFloeTracker.apply_landmask(Iobrcbr, landmask)
+  return Iobrcbr_masked
 end
 

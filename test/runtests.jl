@@ -56,11 +56,13 @@ using DelimitedFiles
     @testset "Normalize Image" begin
         println("-------------------------------------------------")
         println("---------- Create Normalization Test ------------")
-
+        #add strel
+        strel_h, strel_w = ceil.(Int, size(struct_elem)./2)
         input_image_file = """$(test_data_dir)/NE_Greenland_truecolor.2020162.aqua.250m.tiff"""
+        test_region = (1:2707, 1:4458)
         matlab_normalized_img_file = """$(test_data_dir)/matlab_normalized.tiff"""
-        landmasked_image = load(input_image_file)
-        matlab_norm_img = load(matlab_normalized_img_file)
+        landmasked_image = load(input_image_file)[test_region...]
+        matlab_norm_img = load(matlab_normalized_img_file)[test_region...]
         println("-------------- Process Image ----------------")
         @time normalized_image = IceFloeTracker.normalize_image(landmasked_image)
 
