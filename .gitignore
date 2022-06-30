@@ -10,6 +10,7 @@ foo/
 .DS_Store
 !landmask.tiff
 !matlab_cloudmask.tiff
+!matlab_normalized.tiff
 !cloudmask_test_image.tiff
 !NE_Greenland.2020162.aqua.250m.tiff
 !NE_Greenland_truecolor.2020162.aqua.250m.tiff
