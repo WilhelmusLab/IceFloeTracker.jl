@@ -1,10 +1,10 @@
 """
-    normalize_image(landmasked_image; lambda, kappa, niters, nbins, rblocks, cblocks, clip, smoothing_param, intensity)
+    normalize_image(truecolor_image; lambda, kappa, niters, nbins, rblocks, cblocks, clip, smoothing_param, intensity)
 
 Adjusts truecolor land-masked image to highlight ice floe features. This function performs diffusion, adaptive histogram equalization, and sharpening, and returns a greyscale normalized image.
 
 # Arguments
-- `truecolor_image`: land-masked image in truecolor
+- `truecolor_image`: input image in truecolor
 - `lambda`: speed of diffusion (0–0.25)
 - `kappa`: conduction coefficient for diffusion (25–100)
 - `niters`: number of iterations of diffusion
@@ -17,7 +17,7 @@ Adjusts truecolor land-masked image to highlight ice floe features. This functio
 
 """
 function normalize_image(truecolor_image::Matrix; lambda::Real=0.25, kappa::Real=50, niters::Int64=3, nbins::Int64=255, rblocks::Int64=8, cblocks::Int64=8, clip::Float64=0.75, smoothing_param::Int64=10, intensity::Float64=2.0)::Matrix
-  # println("Applying Nonlinear diffusion filtering") 
+   
   test_data_dir = "../test/data"
   test_region = (1:2707, 1:4458)
   landmask_file = "$(test_data_dir)/landmask.tiff"
@@ -41,9 +41,6 @@ function normalize_image(truecolor_image::Matrix; lambda::Real=0.25, kappa::Real
 
   imgequalized = colorview(RGB, imgeq_1, imgeq_2, imgeq_3)
 
-  # println("Applying CLAHE - Contrast Limited Adaptive Histogram Equalization")
- 
-  # println("Sharpening Image")
   img_equalized_gray = Gray.(imgequalized)
   img_smoothed = imfilter(img_equalized_gray, Kernel.gaussian(smoothing_param))
   img_equalized_array = channelview(img_equalized_gray)
