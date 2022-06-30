@@ -7,6 +7,7 @@ using DelimitedFiles
 @testset "IceFloeTracker.jl" begin
 
     test_data_dir = "../test/data"
+    
 
     @testset "Create Landmask" begin
         println("------------------------------------------------")
@@ -19,12 +20,13 @@ using DelimitedFiles
         strel_file = """$(test_data_dir)/se.csv"""
         test_region = (3000:3750, 1000:1550)
         num_pixels_closing = 50
-
+        struct_elem = readdlm(strel_file, ',', Bool)
+        strel_h, strel_w = ceil.(Int, size(struct_elem)./2)
         lm_image = load(landmask_file)[test_region...]
         matlab_landmask = load(matlab_landmask_file)[test_region...]
         test_image = load(test_image_file)[test_region...]
-        struct_elem = readdlm(strel_file, ',', Bool)
-        strel_h, strel_w = ceil.(Int, size(struct_elem)./2)
+        
+        
         @time landmask = IceFloeTracker.create_landmask(lm_image, struct_elem; num_pixels_closing=num_pixels_closing)
         println("--------- Run second time for JIT warmup --------")
         @time landmask = IceFloeTracker.create_landmask(lm_image, struct_elem; num_pixels_closing=num_pixels_closing)
@@ -56,8 +58,9 @@ using DelimitedFiles
     @testset "Normalize Image" begin
         println("-------------------------------------------------")
         println("---------- Create Normalization Test ------------")
-        #add strel
-        strel_h, strel_w = ceil.(Int, size(struct_elem)./2)
+        strel_file2 = """$(test_data_dir)/se2.csv"""
+        struct_elem2 = readdlm(strel_file2, ',', Bool)
+        strel_h, strel_w = ceil.(Int, size(struct_elem2)./2)
         input_image_file = """$(test_data_dir)/NE_Greenland_truecolor.2020162.aqua.250m.tiff"""
         test_region = (1:2707, 1:4458)
         matlab_normalized_img_file = """$(test_data_dir)/matlab_normalized.tiff"""
@@ -67,7 +70,7 @@ using DelimitedFiles
         @time normalized_image = IceFloeTracker.normalize_image(landmasked_image)
 
         # test for percent difference in normalized images
-        @test (@test_approx_eq_sigma_eps normalized_image[strel_h:end-strel_h, strel_w:end-strel_w] matlab_norm_img[strel_h:end-strel_h, strel_w:end-strel_w] [0,0] 0.005) == nothing
+        @test (@test_approx_eq_sigma_eps normalized_image[strel_h:end-strel_h, strel_w:end-strel_w] matlab_norm_img[strel_h:end-strel_h, strel_w:end-strel_w] [0,0] 0.085) == nothing
 
     end
 end

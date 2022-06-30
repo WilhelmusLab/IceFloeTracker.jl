@@ -4,7 +4,7 @@
 Adjusts truecolor land-masked image to highlight ice floe features. This function performs diffusion, adaptive histogram equalization, and sharpening, and returns a greyscale normalized image.
 
 # Arguments
-- `landmasked_image`: land-masked image in truecolor
+- `truecolor_image`: land-masked image in truecolor
 - `lambda`: speed of diffusion (0–0.25)
 - `kappa`: conduction coefficient for diffusion (25–100)
 - `niters`: number of iterations of diffusion
@@ -16,7 +16,7 @@ Adjusts truecolor land-masked image to highlight ice floe features. This functio
 - `intensity`: amount of sharpening to perform
 
 """
-function normalize_image(landmasked_image::Matrix; lambda::Real=0.25, kappa::Real=50, niters::Int64=3, nbins::Int64=255, rblocks::Int64=8, cblocks::Int64=8, clip::Float64=0.75, smoothing_param::Int64=10, intensity::Float64=2.0)::Matrix
+function normalize_image(truecolor_image::Matrix; lambda::Real=0.25, kappa::Real=50, niters::Int64=3, nbins::Int64=255, rblocks::Int64=8, cblocks::Int64=8, clip::Float64=0.75, smoothing_param::Int64=10, intensity::Float64=2.0)::Matrix
   # println("Applying Nonlinear diffusion filtering") 
   test_data_dir = "../test/data"
   test_region = (1:2707, 1:4458)
@@ -25,15 +25,19 @@ function normalize_image(landmasked_image::Matrix; lambda::Real=0.25, kappa::Rea
   strel_file = "$(test_data_dir)/se.csv"
   num_pixels_closing = 50
   struct_elem = readdlm(strel_file, ',', Bool)
-  landmask = IceFloeTracker.create_landmask(lm_image, struct_elem; num_pixels_closing=num_pixels_closing)
-
-  masked_v = Float64.(channelview(landmasked_image))
   
-  imgeq_1 = adjust_histogram(masked_v[1,:,:], AdaptiveEqualization(nbins = 255, rblocks=8, cblocks=8, minval=minimum(masked_v[1,:,:]), maxval=maximum(masked_v[1,:,:]), clip=0.75))
+  landmask = IceFloeTracker.create_landmask(lm_image, struct_elem; num_pixels_closing=num_pixels_closing)
+  landmasked_image = IceFloeTracker.apply_landmask(truecolor_image, landmask)
+  masked_image_grey = Float64.(Gray.(landmasked_image))
+  imgdiffused = diffusion(masked_image_grey, 0.25, 50, 3)
+  imgdiffusedRGB = RGB.(imgdiffused)
+  masked_v = Float64.(channelview(imgdiffusedRGB))
+  
+  imgeq_1 = adjust_histogram(masked_v[1,:,:], AdaptiveEqualization(nbins = 255, rblocks=8, cblocks=8, minval=minimum(masked_v[1,:,:]), maxval=maximum(masked_v[1,:,:]), clip=0.70))
 
-  imgeq_2 = adjust_histogram(masked_v[2,:,:], AdaptiveEqualization(nbins = 255, rblocks=8, cblocks=8, minval=minimum(masked_v[2,:,:]), maxval=maximum(masked_v[2,:,:]), clip=0.75))
+  imgeq_2 = adjust_histogram(masked_v[2,:,:], AdaptiveEqualization(nbins = 255, rblocks=8, cblocks=8, minval=minimum(masked_v[2,:,:]), maxval=maximum(masked_v[2,:,:]), clip=0.70))
 
-  imgeq_3 = adjust_histogram(masked_v[3,:,:], AdaptiveEqualization(nbins = 255, rblocks=8, cblocks=8, minval=minimum(masked_v[3,:,:]), maxval=maximum(masked_v[3,:,:]), clip=0.75))
+  imgeq_3 = adjust_histogram(masked_v[3,:,:], AdaptiveEqualization(nbins = 255, rblocks=8, cblocks=8, minval=minimum(masked_v[3,:,:]), maxval=maximum(masked_v[3,:,:]), clip=0.70))
 
   imgequalized = colorview(RGB, imgeq_1, imgeq_2, imgeq_3)
 
@@ -44,9 +48,9 @@ function normalize_image(landmasked_image::Matrix; lambda::Real=0.25, kappa::Rea
   img_smoothed = imfilter(img_equalized_gray, Kernel.gaussian(smoothing_param))
   img_equalized_array = channelview(img_equalized_gray)
   img_smoothed_array = channelview(img_smoothed)
-  img_sharpened = @. img_equalized_array * (1 + intensity) + img_smoothed_array * (-intensity)
+  img_sharpened = img_equalized_array .* (1 + intensity) .+ img_smoothed_array .* (-intensity)
   img_sharpened = max.(img_sharpened, 0.0)
-  img_sharpened = min.(img_sharpened, 0.1)
+  img_sharpened = min.(img_sharpened, 1.0)
   img_sharpened = colorview(Gray, img_sharpened)
   
   strel_file2 = """$(test_data_dir)/se2.csv"""
@@ -55,6 +59,7 @@ function normalize_image(landmasked_image::Matrix; lambda::Real=0.25, kappa::Rea
   Iobrd = Images.dilate(img_sharpened, struct_elem2)
   Iobrcbr = Images.opening(complement.(Iobrd), complement.(img_sharpened))
   Iobrcbr_masked = IceFloeTracker.apply_landmask(Iobrcbr, landmask)
+  save("test_output.png", Iobrcbr_masked)
   return Iobrcbr_masked
 end
 
