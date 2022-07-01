@@ -2,9 +2,13 @@ module IceFloeTracker
 using LocalFilters
 using Images
 using ImageProjectiveGeometry
+using Dates
+# using ImageView # for displaying images in a GUI
 
 include("landmask.jl")
 include("cloudmask.jl")
+# include("display_persist_mask.jl")
+include("persist.jl")
 
 function fetchdata(; output::AbstractString)
     mkpath("$output")

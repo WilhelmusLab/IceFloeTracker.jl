@@ -2,12 +2,17 @@ using IceFloeTracker
 using Images
 using Test
 using DelimitedFiles
+# using TestImages
+using Dates
+
+# println("Running from\n",pwd())
+
 
 
 @testset "IceFloeTracker.jl" begin
 
     test_data_dir = "./data"
-
+        
     @testset "Create Landmask" begin
         println("------------------------------------------------")
         println("------------ Create Landmask Test --------------")
@@ -52,4 +57,32 @@ using DelimitedFiles
         # test for percent difference in landmask images
         @test (@test_approx_eq_sigma_eps masked_image matlab_cloudmask [0,0] 0.005) == nothing
     end
+
+    @testset "persist.jl" begin
+        img_path = "/landmask.tiff"
+        outimage_path = "outimage1.tiff"
+        img = test_data_dir * img_path |> Images.load
+
+        # Test filename in variable
+        IceFloeTracker.@persist img outimage_path #
+        @test isfile(outimage_path)
+
+        # Test filename as string literal
+        IceFloeTracker.@persist img "outimage2.tiff" # good!
+        @test isfile("outimage2.tiff")
+
+        # Test no-filename call. Default filename startswith 'persisted_mask-' 
+        # First clear all files  that start with this prefix, if any
+        [rm(f) for f in readdir() if startswith(f,"persisted_mask-")]
+        @test length([f for f in readdir() if startswith(f,"persisted_mask-")]) == 0
+        IceFloeTracker.@persist img
+        @test length([f for f in readdir() if startswith(f,"persisted_mask-")]) == 1
+        
+        # clean up!
+        rm(outimage_path); rm("outimage2.tiff")
+        [rm(f) for f in readdir() if startswith(f,"persisted_mask-")];
+
+    end
 end
+
+    
