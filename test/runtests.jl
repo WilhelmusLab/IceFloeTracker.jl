@@ -14,10 +14,10 @@ using DelimitedFiles
         println("------------ Create Landmask Test --------------")
 
         # define constants, maybe move to test config file
-        landmask_file = """$(test_data_dir)/landmask.tiff"""
-        matlab_landmask_file = """$(test_data_dir)/matlab_landmask.png"""
-        test_image_file = """$(test_data_dir)/NE_Greenland_truecolor.2020162.aqua.250m.tiff"""
-        strel_file = """$(test_data_dir)/se.csv"""
+        landmask_file = "$(test_data_dir)/landmask.tiff"
+        matlab_landmask_file = "$(test_data_dir)/matlab_landmask.png"
+        test_image_file = "$(test_data_dir)/NE_Greenland_truecolor.2020162.aqua.250m.tiff"
+        strel_file = "$(test_data_dir)/se.csv"
         test_region = (3000:3750, 1000:1550)
         num_pixels_closing = 50
         struct_elem = readdlm(strel_file, ',', Bool)
@@ -30,6 +30,7 @@ using DelimitedFiles
         @time landmask = IceFloeTracker.create_landmask(lm_image, struct_elem; num_pixels_closing=num_pixels_closing)
         println("--------- Run second time for JIT warmup --------")
         @time landmask = IceFloeTracker.create_landmask(lm_image, struct_elem; num_pixels_closing=num_pixels_closing)
+       
         @time masked_image = IceFloeTracker.apply_landmask(test_image, landmask)
 
         # test for percent difference in landmask images, ignore edges because we are not padding in Julia before applying strel_file
@@ -43,8 +44,8 @@ using DelimitedFiles
         println("------------ Create Cloudmask Test --------------")
     
         # define constants, maybe move to test config file
-        ref_image_file = """$(test_data_dir)/cloudmask_test_image.tiff"""
-        matlab_cloudmask_file = """$(test_data_dir)/matlab_cloudmask.tiff"""
+        ref_image_file = "$(test_data_dir)/cloudmask_test_image.tiff"
+        matlab_cloudmask_file = "$(test_data_dir)/matlab_cloudmask.tiff"
         println("--------- Create and apply cloudmask --------")
         ref_image = load(ref_image_file)
         matlab_cloudmask = load(matlab_cloudmask_file)
@@ -58,19 +59,19 @@ using DelimitedFiles
     @testset "Normalize Image" begin
         println("-------------------------------------------------")
         println("---------- Create Normalization Test ------------")
-        strel_file2 = """$(test_data_dir)/se2.csv"""
-        struct_elem2 = readdlm(strel_file2, ',', Bool)
-        strel_h, strel_w = ceil.(Int, size(struct_elem2)./2)
-        input_image_file = """$(test_data_dir)/NE_Greenland_truecolor.2020162.aqua.250m.tiff"""
+        strel_file = "$(test_data_dir)/se.csv"
+        struct_elem = readdlm(strel_file, ',', Bool)
+        strel_h, strel_w = ceil.(Int, size(struct_elem))
+        input_image_file = "$(test_data_dir)/NE_Greenland_truecolor.2020162.aqua.250m.tiff"
         test_region = (1:2707, 1:4458)
-        matlab_normalized_img_file = """$(test_data_dir)/matlab_normalized.tiff"""
+        matlab_normalized_img_file = "$(test_data_dir)/matlab_normalized.tiff"
         landmasked_image = load(input_image_file)[test_region...]
         matlab_norm_img = load(matlab_normalized_img_file)[test_region...]
         println("-------------- Process Image ----------------")
-        @time normalized_image = IceFloeTracker.normalize_image(landmasked_image)
+        @time normalized_image = IceFloeTracker.normalize_image(landmasked_image, kappa=90, clip=0.95)
 
         # test for percent difference in normalized images
-        @test (@test_approx_eq_sigma_eps normalized_image[strel_h:end-strel_h, strel_w:end-strel_w] matlab_norm_img[strel_h:end-strel_h, strel_w:end-strel_w] [0,0] 0.085) == nothing
+        @test (@test_approx_eq_sigma_eps normalized_image[strel_h:end-strel_h, strel_w:end-strel_w] matlab_norm_img[strel_h:end-strel_h, strel_w:end-strel_w] [0,0] 0.058) == nothing
 
     end
 end
