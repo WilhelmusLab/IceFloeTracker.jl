@@ -18,7 +18,7 @@ Adjusts truecolor land-masked image to highlight ice floe features. This functio
 """
 function normalize_image(truecolor_image::Matrix; lambda::Real=0.25, kappa::Real=90, niters::Int64=3, nbins::Int64=255, rblocks::Int64=8, cblocks::Int64=8, clip::Float64=0.95, smoothing_param::Int64=10, intensity::Float64=2.0)::Matrix
    
-  test_data_dir = "./test/data"
+  test_data_dir = "../test/data"
 
   landmask = load("$(test_data_dir)/current_landmask.png")
   landmask_bm = convert(BitMatrix, landmask)
