@@ -1,6 +1,3 @@
-
-# using TestImages
-
 include("display_persist_helper_funcs.jl")
 
 # Persist macros
@@ -37,27 +34,6 @@ macro persist(img::Symbol,
     
     end
 end
-
-# macro persist(img::Symbol, fname::String=nothing)
-#     return quote
-#         # check img is an image object (Matrix)
-#         check_matrix($img)
-
-#         fname = make_filename()
-#         # println(filename)
-#         msg = "Persisting image to file $filename in directory $(pwd())"
-#         println(msg)
-#         # @info msg
-#         # @info $msg
-#     #     # println("To load the persisted object use `JLD2.load_object(object)`")
-#         println("To load the persisted object use `load(img_path)`")
-#     #     # JLD2.save_object(filename, output)
-#         Images.save(filename, $img)
-        
-#     #     println("Object persisted successfully to\n",filename)
-    
-#     end
-# end
 
 # # Local test during development -- All good!
 # using Dates

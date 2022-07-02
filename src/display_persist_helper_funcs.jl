@@ -35,41 +35,43 @@
     # Arguments
     - `fname`: String object or Symbol to a reference to a String representing a path.
     """
-    function check_fname(fname::Union{String, Symbol, Nothing})
+    function check_fname(fname::Union{String, Symbol, Nothing}=nothing)
 
-        if fname isa String
-            # println(:(fname)," is a type of ", typeof(fname), " and refers to the object ", fname)
+        if fname isa String # then use as filename
             check_name = fname 
         elseif fname isa Symbol
-            # println(:fname, " is a type of ", typeof(fname), " and refers to the object ", fname)
-            check_name = eval(fname)
-        elseif isnothing(fname)
+            check_name = eval(fname) # get the object represented by the symbol
+        elseif isnothing(fname) # nothing provided so make a filename
             check_name = make_filename()
         end
 
-        # println(fname, " is a ", typeof(fname))
-        # println(:fname, " will turn into ", check_name)
-        #     name_to_check = :($fname)
-        # elseif typeof(fname) == Symbol
-        #     println(fname, " is a ", typeof(fname))
-        #     name_to_check = fname
-        # end
-        # return name_to_check
+        # check name does not exist in wd
         @assert !isfile(check_name) "$check_name already exists in $(pwd())"
         return check_name
     end
 
-
-
-    # # local tests
+    # ## local tests
+    # # set things up
     # using Dates
-    # bad_filename = "cameraman.png" # 
+    # bad_filename = "cameraman.png"
     # good_filename = "persisted_img-"*Dates.format(Dates.now(),"yyyy-mm-dd-HH:MM:SS:ss")*".png"
     # this_is_a_symbol = "pathto.file"
     # sym = :this_is_a_symbol
     # str = :"this is a string"
+    
+    # # now let us test
     # check_fname(sym)
     # check_fname(str)
-    # check_fname(bad_filename)
+    # try 
+    #     # make a file with bad_filename as filename to make it 'bad'
+    #     open(bad_filename, "w") do f
+    #         write(f, bad_filename)
+    #     end
+    #     check_fname(bad_filename)
+    # catch ex
+    #     println(bad_filename,": That's a bad filename!")
+    # finally # clean up!
+    #     rm(bad_filename)
+    # end
     # check_fname(good_filename)
-    # check_fname(nothing)
+    # check_fname()

@@ -7,7 +7,6 @@ using Dates
 
 include("landmask.jl")
 include("cloudmask.jl")
-# include("display_persist_mask.jl")
 include("persist.jl")
 
 function fetchdata(; output::AbstractString)

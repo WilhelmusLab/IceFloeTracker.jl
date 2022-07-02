@@ -2,12 +2,7 @@ using IceFloeTracker
 using Images
 using Test
 using DelimitedFiles
-# using TestImages
 using Dates
-
-# println("Running from\n",pwd())
-
-
 
 @testset "IceFloeTracker.jl" begin
 
@@ -72,9 +67,9 @@ using Dates
         @test isfile("outimage2.tiff")
 
         # Test no-filename call. Default filename startswith 'persisted_mask-' 
-        # First clear all files  that start with this prefix, if any
+        # First clear all files that start with this prefix, if any
         [rm(f) for f in readdir() if startswith(f,"persisted_mask-")]
-        @test length([f for f in readdir() if startswith(f,"persisted_mask-")]) == 0
+        @assert length([f for f in readdir() if startswith(f,"persisted_mask-")]) == 0
         IceFloeTracker.@persist img
         @test length([f for f in readdir() if startswith(f,"persisted_mask-")]) == 1
         

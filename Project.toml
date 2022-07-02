@@ -7,9 +7,7 @@ version = "0.1.0"
 Dates = "ade2ca70-3891-5945-98fb-dc099432e06a"
 ImageIO = "82e4d734-157c-48bb-816b-45c225c6df19"
 ImageProjectiveGeometry = "b9d14576-938f-5430-9d4c-b7d7de1409d6"
-ImageView = "86fae568-95e7-573e-a6b2-d8a6b900c9ef"
 Images = "916415d5-f1e6-5110-898d-aaa5f9f070e0"
-JLD2 = "033835bb-8acc-5ee8-8aae-3f567f8a3819"
 LocalFilters = "085fde7c-5f94-55e4-8448-8bbb5db6dde9"
 
 [compat]
