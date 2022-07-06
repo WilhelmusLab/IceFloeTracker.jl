@@ -7,7 +7,7 @@ using DelimitedFiles
 include("landmask.jl")
 include("cloudmask.jl")
 include("normalization.jl")
-include("diffusion.jl")
+include("anisotropic_image_diffusion.jl")
 
 function fetchdata(; output::AbstractString)
     mkpath("$output")

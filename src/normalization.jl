@@ -1,10 +1,12 @@
 """
-    normalize_image(truecolor_image; lambda, kappa, niters, nbins, rblocks, cblocks, clip, smoothing_param, intensity)
+    normalize_image(truecolor_image, landmask, struct_elem; lambda, kappa, niters, nbins, rblocks, cblocks, clip, smoothing_param, intensity)
 
 Adjusts truecolor land-masked image to highlight ice floe features. This function performs diffusion, adaptive histogram equalization, and sharpening, and returns a greyscale normalized image.
 
 # Arguments
 - `truecolor_image`: input image in truecolor
+- `landmask`: bitmatrix landmask for region of interest
+- `struct_elem`: structuring element for dilation
 - `lambda`: speed of diffusion (0–0.25)
 - `kappa`: conduction coefficient for diffusion (25–100)
 - `niters`: number of iterations of diffusion
@@ -16,45 +18,31 @@ Adjusts truecolor land-masked image to highlight ice floe features. This functio
 - `intensity`: amount of sharpening to perform
 
 """
-function normalize_image(truecolor_image::Matrix; lambda::Real=0.25, kappa::Real=90, niters::Int64=3, nbins::Int64=255, rblocks::Int64=8, cblocks::Int64=8, clip::Float64=0.95, smoothing_param::Int64=10, intensity::Float64=2.0)::Matrix
-   
-  test_data_dir = "../test/data"
-
-  landmask = load("$(test_data_dir)/current_landmask.png")
-  landmask_bm = convert(BitMatrix, landmask)
+function normalize_image(truecolor_image::Matrix, landmask::BitMatrix, struct_elem::Matrix{Bool}; lambda::Real=0.25, kappa::Real=90, niters::Int64=3, nbins::Int64=255, rblocks::Int64=8, cblocks::Int64=8, clip::Float64=0.95, smoothing_param::Int64=10, intensity::Float64=2.0)::Matrix
 
   gray_image = Float64.(Gray.(truecolor_image)) 
-
-  imgdiffused = diffusion(gray_image, 0.25, 75, 3)
-
-  imgdiffusedRGB = RGB.(imgdiffused)
+  image_diffused = diffusion(gray_image, 0.25, 75, 3)
+  image_diffused_RGB = RGB.(image_diffused)
+  masked_view = Float64.(channelview(image_diffused_RGB))
   
-  masked_v = Float64.(channelview(imgdiffusedRGB))
+  image_equalized_1 = adjust_histogram(masked_view[1,:,:], AdaptiveEqualization(nbins = 255, rblocks=8, cblocks=8, minval=minimum(masked_view[1,:,:]), maxval=maximum(masked_view[1,:,:]), clip=0.8))
+  image_equalized_2 = adjust_histogram(masked_view[2,:,:], AdaptiveEqualization(nbins = 255, rblocks=8, cblocks=8, minval=minimum(masked_view[2,:,:]), maxval=maximum(masked_view[2,:,:]), clip=0.8))
+  image_equalized_3 = adjust_histogram(masked_view[3,:,:], AdaptiveEqualization(nbins = 255, rblocks=8, cblocks=8, minval=minimum(masked_view[3,:,:]), maxval=maximum(masked_view[3,:,:]), clip=0.8))
+  image_equalized = colorview(RGB, image_equalized_1, image_equalized_2, image_equalized_3)
+  image_equalized_gray = Gray.(image_equalized)
+
+  image_smoothed = imfilter(image_equalized_gray, Kernel.gaussian(smoothing_param))
+  image_equalized_array = channelview(image_equalized_gray)
+  image_smoothed_array = channelview(image_smoothed)
+  image_sharpened = image_equalized_array .* (1 + intensity) .+ image_smoothed_array .* (-intensity)
+  image_sharpened = max.(image_sharpened, 0.0)
+  image_sharpened = min.(image_sharpened, 1.0)
+  image_sharpened = colorview(Gray, image_sharpened)
   
-  imgeq_1 = adjust_histogram(masked_v[1,:,:], AdaptiveEqualization(nbins = 255, rblocks=8, cblocks=8, minval=minimum(masked_v[1,:,:]), maxval=maximum(masked_v[1,:,:]), clip=0.8))
-
-  imgeq_2 = adjust_histogram(masked_v[2,:,:], AdaptiveEqualization(nbins = 255, rblocks=8, cblocks=8, minval=minimum(masked_v[2,:,:]), maxval=maximum(masked_v[2,:,:]), clip=0.8))
-
-  imgeq_3 = adjust_histogram(masked_v[3,:,:], AdaptiveEqualization(nbins = 255, rblocks=8, cblocks=8, minval=minimum(masked_v[3,:,:]), maxval=maximum(masked_v[3,:,:]), clip=0.8))
-
-  imgequalized = colorview(RGB, imgeq_1, imgeq_2, imgeq_3)
-
-  img_equalized_gray = Gray.(imgequalized)
-  img_smoothed = imfilter(img_equalized_gray, Kernel.gaussian(smoothing_param))
-  img_equalized_array = channelview(img_equalized_gray)
-  img_smoothed_array = channelview(img_smoothed)
-  img_sharpened = img_equalized_array .* (1 + intensity) .+ img_smoothed_array .* (-intensity)
-  img_sharpened = max.(img_sharpened, 0.0)
-  img_sharpened = min.(img_sharpened, 1.0)
-  img_sharpened = colorview(Gray, img_sharpened)
+  image_dilated = Images.dilate(image_sharpened, struct_elem)
+  image_opened = Images.opening(complement.(image_dilated), complement.(image_sharpened))
+  image_normalized_masked = IceFloeTracker.apply_landmask(image_opened, landmask)
   
-  strel_file2 = "$(test_data_dir)/se2.csv"
-  struct_elem2 = readdlm(strel_file2, ',', Bool)
-  
-  img_dilated = Images.dilate(img_sharpened, struct_elem2)
-  img_opened = Images.opening(complement.(img_dilated), complement.(img_sharpened))
-  img_normalized_masked = IceFloeTracker.apply_landmask(img_opened, landmask_bm)
-  save("test_output.png", img_normalized_masked)
-  return img_normalized_masked
+  return image_normalized_masked
 end
 
