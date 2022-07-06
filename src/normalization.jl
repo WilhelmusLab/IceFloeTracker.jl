@@ -30,10 +30,11 @@ function normalize_image(truecolor_image::Matrix, landmask::BitMatrix, struct_el
   image_equalized_3 = adjust_histogram(masked_view[3,:,:], AdaptiveEqualization(nbins = 255, rblocks=8, cblocks=8, minval=minimum(masked_view[3,:,:]), maxval=maximum(masked_view[3,:,:]), clip=0.8))
   image_equalized = colorview(RGB, image_equalized_1, image_equalized_2, image_equalized_3)
   image_equalized_gray = Gray.(image_equalized)
+  image_equalized_array = channelview(image_equalized_gray)
 
   image_smoothed = imfilter(image_equalized_gray, Kernel.gaussian(smoothing_param))
-  image_equalized_array = channelview(image_equalized_gray)
   image_smoothed_array = channelview(image_smoothed)
+  
   image_sharpened = image_equalized_array .* (1 + intensity) .+ image_smoothed_array .* (-intensity)
   image_sharpened = max.(image_sharpened, 0.0)
   image_sharpened = min.(image_sharpened, 1.0)

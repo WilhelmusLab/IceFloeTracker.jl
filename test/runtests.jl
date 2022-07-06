@@ -7,7 +7,7 @@ using DelimitedFiles
 @testset "IceFloeTracker.jl" begin
 
     test_data_dir = "../test/data"
-    
+    test_image_file = "$(test_data_dir)/NE_Greenland_truecolor.2020162.aqua.250m.tiff"
 
     @testset "Create Landmask" begin
         println("------------------------------------------------")
@@ -16,7 +16,6 @@ using DelimitedFiles
         # define constants, maybe move to test config file
         landmask_file = "$(test_data_dir)/landmask.tiff"
         matlab_landmask_file = "$(test_data_dir)/matlab_landmask.png"
-        test_image_file = "$(test_data_dir)/NE_Greenland_truecolor.2020162.aqua.250m.tiff"
         strel_file = "$(test_data_dir)/se.csv"
         test_region = (3000:3750, 1000:1550)
         num_pixels_closing = 50
@@ -25,7 +24,6 @@ using DelimitedFiles
         lm_image = load(landmask_file)[test_region...]
         matlab_landmask = load(matlab_landmask_file)[test_region...]
         test_image = load(test_image_file)[test_region...]
-        
         
         @time landmask = IceFloeTracker.create_landmask(lm_image, struct_elem; num_pixels_closing=num_pixels_closing)
         println("--------- Run second time for JIT warmup --------")
@@ -64,12 +62,11 @@ using DelimitedFiles
         strel_h, strel_w = ceil.(Int, size(struct_elem))
         strel_file2 = "$(test_data_dir)/se2.csv"
         struct_elem2 = readdlm(strel_file2, ',', Bool)
-        input_image_file = "$(test_data_dir)/NE_Greenland_truecolor.2020162.aqua.250m.tiff"
         test_region = (1:2707, 1:4458)
         matlab_normalized_img_file = "$(test_data_dir)/matlab_normalized.tiff"
         landmask = load("$(test_data_dir)/current_landmask.png")
         landmask_bitmatrix = convert(BitMatrix, landmask)
-        input_image = load(input_image_file)[test_region...]
+        input_image = load(test_image_file)[test_region...]
         matlab_norm_img = load(matlab_normalized_img_file)[test_region...]
         println("-------------- Process Image ----------------")
         @time normalized_image = IceFloeTracker.normalize_image(input_image, landmask_bitmatrix, struct_elem2; kappa=90, clip=0.95)
