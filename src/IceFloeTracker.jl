@@ -2,9 +2,12 @@ module IceFloeTracker
 using LocalFilters
 using Images
 using ImageProjectiveGeometry
+using DelimitedFiles
 
 include("landmask.jl")
 include("cloudmask.jl")
+include("normalization.jl")
+include("anisotropic_image_diffusion.jl")
 
 function fetchdata(; output::AbstractString)
     mkpath("$output")
@@ -36,19 +39,19 @@ Given an input directory with a landmask file and truecolor images, create a lan
 - `output`: path to output dir where land-masked truecolor images are saved
 
 """
-function landmask(;metadata::AbstractString, input::AbstractString, output::AbstractString)
-  landmask_image = TiffImages.load(joinpath(input,"landmask.tiff"), mmap=true)
-  landmask_binary = create_landmask(landmask_image)
-  imagepaths = filter(endswith("tiff"), readdir(joinpath(input, "truecolor");join=true))
-  mkpath("$output")
+function landmask(; metadata::AbstractString, input::AbstractString, output::AbstractString)
+    landmask_image = TiffImages.load(joinpath(input, "landmask.tiff"); mmap=true)
+    landmask_binary = create_landmask(landmask_image)
+    imagepaths = filter(endswith("tiff"), readdir(joinpath(input, "truecolor"); join=true))
+    mkpath("$output")
 
-  for imagepath in imagepaths
-    image = TiffImages.load(imagepath)
-    image = apply_landmask(image, landmask_binary)
-    filename = basename(imagepath)
-    TiffImages.save("$output/masked_$filename", image)
-  end
-  return nothing
+    for imagepath in imagepaths
+        image = TiffImages.load(imagepath)
+        image = apply_landmask(image, landmask_binary)
+        filename = basename(imagepath)
+        TiffImages.save("$output/masked_$filename", image)
+    end
+    return nothing
 end
 
 function cloudmask(;
