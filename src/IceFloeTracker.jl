@@ -3,12 +3,11 @@ using LocalFilters
 using Images
 using ImageProjectiveGeometry
 using Dates
-using ImageView # for displaying images in a GUI
 
+include("utils.jl")
 include("landmask.jl")
 include("cloudmask.jl")
 include("persist.jl")
-include("display.jl")
 
 function fetchdata(; output::AbstractString)
     mkpath("$output")

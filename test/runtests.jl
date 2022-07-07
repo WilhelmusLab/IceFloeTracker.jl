@@ -1,5 +1,4 @@
 using IceFloeTracker
-# import Pkg; Pkg.add("ImageView")
 using Images
 using Test
 using DelimitedFiles
@@ -61,11 +60,11 @@ using Dates
         img = test_data_dir * img_path |> Images.load
 
         # Test filename in variable
-        IceFloeTracker.@persist img outimage_path #
+        IceFloeTracker.@persist img outimage_path
         @test isfile(outimage_path)
 
         # Test filename as string literal
-        IceFloeTracker.@persist img "outimage2.tiff" # good!
+        IceFloeTracker.@persist img "outimage2.tiff"
         @test isfile("outimage2.tiff")
 
         # Test no-filename call. Default filename startswith 'persisted_mask-' 
@@ -80,7 +79,7 @@ using Dates
         rm(outimage_path); rm("outimage2.tiff")
 
         # Part 2
-        IceFloeTracker.@persist identity(img) outimage_path #
+        IceFloeTracker.@persist identity(img) outimage_path
         IceFloeTracker.@persist identity(img) "outimage2.tiff" # good!
         IceFloeTracker.@persist identity(img) # no file name given
         @test isfile(outimage_path)
@@ -90,20 +89,6 @@ using Dates
         # Clean up
         rm(outimage_path); rm("outimage2.tiff")
         [rm(f) for f in readdir() if startswith(f,"persisted_mask-")];
-
-    end
-
-    @testset "display.jl" begin
-        img_path = "/landmask.tiff"
-        outimage_path = "outimage1.tiff"
-        img = test_data_dir * img_path |> Images.load
-
-        # Test side effect -- assume true if runs
-        IceFloeTracker.@display img
-        @test true
-        IceFloeTracker.@display identity(img)
-        @test true
-
     end
 end
 
