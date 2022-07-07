@@ -74,7 +74,7 @@ function normalize_image(
         RGB, image_equalized_1, image_equalized_2, image_equalized_3
     )
     image_equalized_gray = Gray.(image_equalized)
-    image_equalized_array = channelview(image_equalized_gray)
+    image_equalized_view = channelview(image_equalized_gray)
 
     image_smoothed = imfilter(image_equalized_gray, Kernel.gaussian(smoothing_param))
     image_smoothed_view = channelview(image_smoothed)
