@@ -49,9 +49,11 @@ using DelimitedFiles
         matlab_cloudmask = load(matlab_cloudmask_file)
         @time cloudmask = IceFloeTracker.create_cloudmask(ref_image)
         @time masked_image = IceFloeTracker.apply_cloudmask(ref_image, cloudmask)
+        @time image_view_b7 = IceFloeTracker.return_cloudmasked_view(ref_image, cloudmask)
 
         # test for percent difference in landmask images
         @test (@test_approx_eq_sigma_eps masked_image matlab_cloudmask [0,0] 0.005) == nothing
+        @test (@test_approx_eq_sigma_eps image_view_b7 matlab_image_view_b7 [0,0] 0.005) == nothing
     end
 
     @testset "Normalize Image" begin

@@ -29,7 +29,7 @@ function create_cloudmask(ref_image::Matrix{RGB{N0f8}}; prelim_threshold::N0f8=N
   mask_cloud_ice = @. cloud_ice >= ratio_lower .&& cloud_ice < ratio_upper
   println("Creating final cloudmask")
   cloudmask = mask_cloud_ice .|| .!clouds_view
-  return cloudmask
+  return (cloudmask)
 end
 
 """
@@ -48,4 +48,11 @@ function apply_cloudmask(ref_image::Matrix{RGB{N0f8}}, cloudmask::BitMatrix)::Ma
     cloudmasked_view = StackedView(zeroarray, image_view[2,:,:], image_view[3,:,:])
     cloudmasked_image = colorview(RGB, cloudmasked_view)
     return cloudmasked_image
+end
+
+function return_cloudmasked_view(ref_image::Matrix{RGB{N0f8}}, cloudmask::BitMatrix)::Matrix{RGB{N0f8}}
+    masked_image = cloudmask .* ref_image
+    image_view = channelview(masked_image)
+    image_view_b7 = image_view[1,:,:]
+    return image_view_b7
 end

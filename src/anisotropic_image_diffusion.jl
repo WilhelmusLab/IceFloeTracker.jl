@@ -1,5 +1,6 @@
-## Anisotropic Image Diffusion ##
-## This script is borrowed from https://github.com/Red-Portal/UltrasoundDesignGallery.jl ##
+## Anisotropic Image Diffusion
+## This script is borrowed from https://github.com/Red-Portal/UltrasoundDesignGallery.jl
+### MIT license
 
 macro swap!(a::Symbol,b::Symbol)
     blk = quote
@@ -42,7 +43,7 @@ function diffusion(image, λ, K, niters::Int)
     Perona, Pietro, and Jitendra Malik. 
     "Scale-space and edge detection using anisotropic diffusion." 
     IEEE Transactions on Pattern Analysis and Machine Intelligence (PAMI), 1990.
-=##
+=#
     @assert 0 <= λ && λ <= 0.25
 
     @inline function g(norm∇I)
