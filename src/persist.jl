@@ -11,12 +11,11 @@ Given a reference to an image object `img`, the macro persists (saves to a file)
 - `img`: Symbol expression representing an image object loaded in memory.
 - `fname`: Optional filename for the persisted image.
 """
-macro persist(_img,
-              fname::Union{String,Symbol,Nothing}=nothing)
+macro persist(_img, fname::Union{String,Symbol,Nothing}=nothing)
     return quote
         img = $(esc(_img))
         fname = check_fname($(esc(fname)))
-        @info "Persisting image to file $(fname) in directory $(pwd()).\nTo load the persisted object use `Images.load(img_path)`"        
+        @info "Persisting image to file $(fname) in directory $(pwd()).\nTo load the persisted object use `Images.load(img_path)`"
         Images.save(fname, img)
         img
     end
