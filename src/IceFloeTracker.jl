@@ -2,9 +2,12 @@ module IceFloeTracker
 using LocalFilters
 using Images
 using ImageProjectiveGeometry
+using DelimitedFiles
 
 include("landmask.jl")
 include("cloudmask.jl")
+include("normalization.jl")
+include("anisotropic_image_diffusion.jl")
 
 function fetchdata(; output::AbstractString)
     mkpath("$output")
