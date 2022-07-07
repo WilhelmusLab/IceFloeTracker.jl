@@ -9,12 +9,14 @@ Convert a 3-channel RGB land mask image to a 1-channel binary matrix, including 
 - `num_pixels_closing`: number of pixels used to fill holes in land mask
 
 """
-function create_landmask(landmask_image::Matrix{RGB{N0f8}}, struct_elem::Matrix{Bool}; num_pixels_closing::Int=50)::BitMatrix
+function create_landmask(
+    landmask_image::Matrix{RGB{N0f8}}, struct_elem::Matrix{Bool}; num_pixels_closing::Int=50
+)::BitMatrix
     lm_binary = Gray.(landmask_image) .== 0
     println("Dilation with strel")
     @time lm_binary_dilated = ImageProjectiveGeometry.imdilate(.!lm_binary, struct_elem)
     println("Closing any holes in mask")
-    @time lm_binary_filled = LocalFilters.closing(lm_binary_dilated, num_pixels_closing) 
+    @time lm_binary_filled = LocalFilters.closing(lm_binary_dilated, num_pixels_closing)
     landmask_bool = (lm_binary_filled .< 0.5)
     return landmask_bool
 end
