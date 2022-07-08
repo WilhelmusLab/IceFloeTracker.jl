@@ -51,19 +51,12 @@ Zero out pixels containing clouds where clouds and ice are not discernable. Argu
 """
 function apply_cloudmask(
     ref_image::Matrix{RGB{N0f8}}, cloudmask::BitMatrix
-)::Matrix{RGB{N0f8}}
+)::Tuple{Matrix{RGB},Matrix{Gray}}
     masked_image = cloudmask .* ref_image
     image_view = channelview(masked_image)
+    clouds_channel = image_view[1, :, :]
+    clouds_channel = Gray.(clouds_channel)
     cloudmasked_view = StackedView(zeroarray, image_view[2, :, :], image_view[3, :, :])
     cloudmasked_image = colorview(RGB, cloudmasked_view)
-    return cloudmasked_image
-end
-
-function return_cloudmasked_view(
-    ref_image::Matrix{RGB{N0f8}}, cloudmask::BitMatrix
-)::Matrix{RGB{N0f8}}
-    masked_image = cloudmask .* ref_image
-    image_view = channelview(masked_image)
-    image_view_b7 = image_view[1, :, :]
-    return image_view_b7
+    return cloudmasked_image, clouds_channel
 end
