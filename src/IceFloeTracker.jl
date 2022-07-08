@@ -3,11 +3,14 @@ using LocalFilters
 using Images
 using ImageProjectiveGeometry
 using DelimitedFiles
+using Dates
 
 include("landmask.jl")
 include("cloudmask.jl")
 include("normalization.jl")
 include("anisotropic_image_diffusion.jl")
+include("utils.jl")
+include("persist.jl")
 
 function fetchdata(; output::AbstractString)
     mkpath("$output")
