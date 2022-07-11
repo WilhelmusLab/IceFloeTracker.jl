@@ -74,6 +74,7 @@ function normalize_image(
         RGB, image_equalized_1, image_equalized_2, image_equalized_3
     )
     image_equalized_gray = Gray.(image_equalized)
+<<<<<<< HEAD
     image_equalized_array = channelview(image_equalized_gray)
 
     image_smoothed = imfilter(image_equalized_gray, Kernel.gaussian(smoothing_param))
@@ -81,6 +82,15 @@ function normalize_image(
 
     image_sharpened =
         image_equalized_array .* (1 + intensity) .+ image_smoothed_array .* (-intensity)
+=======
+    image_equalized_view = channelview(image_equalized_gray)
+
+    image_smoothed = imfilter(image_equalized_gray, Kernel.gaussian(smoothing_param))
+    image_smoothed_view = channelview(image_smoothed)
+
+    image_sharpened =
+        image_equalized_view .* (1 + intensity) .+ image_smoothed_view .* (-intensity)
+>>>>>>> origin/main
     image_sharpened = max.(image_sharpened, 0.0)
     image_sharpened = min.(image_sharpened, 1.0)
     image_sharpened = colorview(Gray, image_sharpened)

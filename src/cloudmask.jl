@@ -36,7 +36,11 @@ function create_cloudmask(
     mask_cloud_ice = @. cloud_ice >= ratio_lower .&& cloud_ice < ratio_upper
     println("Creating final cloudmask")
     cloudmask = mask_cloud_ice .|| .!clouds_view
+<<<<<<< HEAD
     return (cloudmask)
+=======
+    return cloudmask
+>>>>>>> origin/main
 end
 
 """
@@ -51,6 +55,7 @@ Zero out pixels containing clouds where clouds and ice are not discernable. Argu
 """
 function apply_cloudmask(
     ref_image::Matrix{RGB{N0f8}}, cloudmask::BitMatrix
+<<<<<<< HEAD
 )::Tuple{Matrix{RGB},Matrix{Gray}}
     masked_image = cloudmask .* ref_image
     image_view = channelview(masked_image)
@@ -59,4 +64,12 @@ function apply_cloudmask(
     cloudmasked_view = StackedView(zeroarray, image_view[2, :, :], image_view[3, :, :])
     cloudmasked_image = colorview(RGB, cloudmasked_view)
     return cloudmasked_image, clouds_channel
+=======
+)::Matrix{RGB{N0f8}}
+    masked_image = cloudmask .* ref_image
+    image_view = channelview(masked_image)
+    cloudmasked_view = StackedView(zeroarray, image_view[2, :, :], image_view[3, :, :])
+    cloudmasked_image = colorview(RGB, cloudmasked_view)
+    return cloudmasked_image
+>>>>>>> origin/main
 end
