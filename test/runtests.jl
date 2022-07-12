@@ -127,4 +127,18 @@ using Dates
         rm("outimage2.tiff")
         [rm(f) for f in readdir() if startswith(f, "persisted_mask-")]
     end
+
+    @testset "utils.jl pad utilities" begin
+        println("-------------------------------------------------")
+        println("--------------- Pad Image Tests -----------------")
+        img_path = "/landmask.tiff"
+        img = Images.load.(test_data_dir * img_path)
+        val = 0
+        rad = 10
+        h,w = size(img)
+        paddedimg = IceFloeTracker.add_padding(img, val, rad)
+        @test size(paddedimg) == (h+2*rad,w+2*rad)
+        @test IceFloeTracker.remove_padding(paddedimg, rad) == img
+
+    end
 end
