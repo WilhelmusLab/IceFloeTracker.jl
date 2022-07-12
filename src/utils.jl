@@ -30,3 +30,30 @@ function check_fname(fname::Union{String,Symbol,Nothing}=nothing)
     @assert !isfile(check_name) "$check_name already exists in $(pwd())"
     return check_name
 end
+
+"""
+    `add_padding(img, val, rad)`
+
+Extrapolate the image `img` with `val` `rad` units beyond its boundary. Returns the extrapolated image.
+
+# Arguments
+- `img`: Image to be padded.
+- `val`: Value to be used for the extrapolation.
+- `rad`: Number of rows/columns to extrapolate beyond the image boundary. 
+"""
+function add_padding(img, val::Int, rad::Int)::Matrix
+    return collect(Images.padarray(img, Fill(val, (rad,rad),(rad,rad))))
+end
+
+"""
+    `remove_padding(img, rad)`
+
+Removes `rad` units of padding uniformly along all sides of the image `img`. Returns the cropped image.
+
+# Arguments
+- `img`: Image to be padded.
+- `rad`: Number of rows/columns to extrapolate beyond the image boundary. 
+"""
+function remove_padding(img, rad::Int)::Matrix
+    return img[rad+1:end-rad,rad+1:end-rad]
+end
