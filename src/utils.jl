@@ -32,17 +32,22 @@ function check_fname(fname::Union{String,Symbol,Nothing}=nothing)
 end
 
 """
-    `add_padding(img, val, rad)`
+    `add_padding(img, rad, type, val)`
 
 Extrapolate the image `img` with `val` `rad` units beyond its boundary. Returns the extrapolated image.
 
 # Arguments
 - `img`: Image to be padded.
-- `val`: Value to be used for the extrapolation.
-- `rad`: Number of rows/columns to extrapolate beyond the image boundary. 
+- `rad`: Uniform number of rows/columns to extrapolate beyond the image boundary.
+- `type`: Symbol representing the type of extrapolation; defaults to `:replicate`. The other supported type is `type=:replicate`.
+- `val`: Value to be used for the extrapolation (when `type=:fill`).
 """
-function add_padding(img, val::Int, rad::Int)::Matrix
-    return collect(Images.padarray(img, Fill(val, (rad,rad),(rad,rad))))
+function add_padding(img, rad::Int=0, type::Symbol=:replicate, val::Int=0)::Matrix
+    if type == :replicate
+        return collect(Images.padarray(img, Pad(type,rad,rad)))
+    elseif type == :fill
+        return collect(Images.padarray(img, Fill(val, (rad,rad),(rad,rad)))) 
+    end
 end
 
 """
