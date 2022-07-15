@@ -1,12 +1,6 @@
-<<<<<<< HEAD
-## Anisotropic Image Diffusion
-## This script is borrowed from https://github.com/Red-Portal/UltrasoundDesignGallery.jl
-### MIT license
-=======
 # Anisotropic Image Diffusion ##
 # This script is borrowed from https://github.com/Red-Portal/UltrasoundDesignGallery.jl ##
 ## MIT license with permission to use 
->>>>>>> origin/main
 
 macro swap!(a::Symbol, b::Symbol)
     blk = quote

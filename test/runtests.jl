@@ -2,16 +2,10 @@ using IceFloeTracker
 using Images
 using Test
 using DelimitedFiles
-<<<<<<< HEAD
-
-@testset "IceFloeTracker.jl" begin
-    test_data_dir = "../test/data"
-=======
 using Dates
 
 @testset "IceFloeTracker.jl" begin
-    test_data_dir = "./data"
->>>>>>> origin/main
+    test_data_dir = "./test/data"
     test_image_file = "$(test_data_dir)/NE_Greenland_truecolor.2020162.aqua.250m.tiff"
 
     @testset "Create Landmask" begin
@@ -61,9 +55,6 @@ using Dates
         ref_image = load(ref_image_file)
         matlab_cloudmask = load(matlab_cloudmask_file)
         @time cloudmask = IceFloeTracker.create_cloudmask(ref_image)
-
-<<<<<<< HEAD
-        #@time view_cloudmask = IceFloeTracker.create_cloudmask(ref_view)
         @time masked_image, clouds_channel = IceFloeTracker.apply_cloudmask(
             ref_image, cloudmask
         )
@@ -75,11 +66,6 @@ using Dates
         matlab_image_view = load(matlab_image_view_file)
         @test (@test_approx_eq_sigma_eps clouds_channel matlab_image_view [0, 0] 0.005) ==
             nothing
-=======
-        # test for percent difference in landmask images
-        @test (@test_approx_eq_sigma_eps masked_image matlab_cloudmask [0, 0] 0.005) ==
-            nothing
->>>>>>> origin/main
     end
 
     @testset "Normalize Image" begin
@@ -107,8 +93,6 @@ using Dates
         ] matlab_norm_img[strel_h:(end - strel_h), strel_w:(end - strel_w)] [0, 0] 0.058) ==
             nothing
     end
-<<<<<<< HEAD
-=======
 
     @testset "persist.jl" begin
         println("-------------------------------------------------")
@@ -150,5 +134,4 @@ using Dates
         rm("outimage2.tiff")
         [rm(f) for f in readdir() if startswith(f, "persisted_mask-")]
     end
->>>>>>> origin/main
 end
