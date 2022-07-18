@@ -13,7 +13,6 @@ test_image_file = "$(test_data_dir)/NE_Greenland_truecolor.2020162.aqua.250m.tif
 ## Get all test files filenames "test-*" in test folder and their corresponding names/label
 alltests = [f for f in readdir() if startswith(f,"test-")]
 testnames = [n[6:end-3] for n in alltests]
-tests = Dict(testfile=>name for (testfile,name) in zip(alltests,testnames))
 
 ## Put the filenames to test below
 to_test = 
@@ -32,4 +31,3 @@ to_test =
         include(test)
     end
 end
-
