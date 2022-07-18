@@ -32,33 +32,29 @@ function check_fname(fname::Union{String,Symbol,Nothing}=nothing)
 end
 
 """
-    `add_padding(img, rad, type, val)`
+    `add_padding(img, style)`
 
-Extrapolate the image `img` with `val` `rad` units beyond its boundary. Returns the extrapolated image.
+Extrapolate the image `img` according to the `style` specifications type. Returns the extrapolated image.
 
 # Arguments
 - `img`: Image to be padded.
-- `rad`: Uniform number of rows/columns to extrapolate beyond the image boundary.
-- `type`: Symbol representing the type of extrapolation; defaults to `:replicate`. The other supported type is `type=:replicate`.
-- `val`: Value to be used for the extrapolation (when `type=:fill`).
+- `style`: A supported type (such as `Pad` or `Fill`) representing the extrapolation style. See the relevant [documentation](https://juliaimages.org/latest/function_reference/#ImageFiltering) for details.
 """
-function add_padding(img, rad::Int=0, type::Symbol=:replicate, val::Int=0)::Matrix
-    if type == :replicate
-        return collect(Images.padarray(img, Pad(type,rad,rad)))
-    elseif type == :fill
-        return collect(Images.padarray(img, Fill(val, (rad,rad),(rad,rad)))) 
-    end
+function add_padding(img, style::Union{Pad,Fill})::Matrix
+    return collect(Images.padarray(img, style))
 end
 
 """
-    `remove_padding(img, rad)`
+    `remove_padding(paddedimg, border_spec)`
 
-Removes `rad` units of padding uniformly along all sides of the image `img`. Returns the cropped image.
+Removes padding from the boundary of padded image `paddedimg` according to the border specification `border_spec` type. Returns the cropped image.
 
 # Arguments
-- `img`: Image to be padded.
-- `rad`: Number of rows/columns to extrapolate beyond the image boundary. 
+- `paddedimg`: Pre-padded image.
+- `border_spec`: Type representing the style of padding (such as `Pad` or `Fill`) with which `paddedimg` is assumend to be pre-padded. Example: `Pad((1,2), (3,4))` specifies 1 row on the top, 2 columns on the left, 3 rows on the bottom, and 4 columns on the right boundary. 
 """
-function remove_padding(img, rad::Int)::Matrix
-    return img[rad+1:end-rad,rad+1:end-rad]
+function remove_padding(paddedimg, border_spec::Union{Pad,Fill})::Matrix
+    top, left = border_spec.lo
+    bottom, right = border_spec.hi
+    return paddedimg[(top + 1):(end - bottom), (left + 1):(end - right)]
 end
