@@ -1,9 +1,9 @@
 # Persist macros
 """
-    `@persist img fname` or
-    `@persist(img,fname)` or
-    `@persist img` or
-    `@persist(img)`
+    @persist img fname or
+    @persist(img,fname) or
+    @persist img or
+    @persist(img)
 
 Given a reference to an image object `img`, the macro persists (saves to a file) `img` to the current working directory using `fname` as filename. Returns `img`.
 
