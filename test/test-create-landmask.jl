@@ -26,8 +26,23 @@
     )
 
     @time masked_image = IceFloeTracker.apply_landmask(test_image, landmask)
-    landmask = IceFloeTracker.remove_padding(landmask, Pad((50, 50), (50, 50)))
-    masked_image = IceFloeTracker.remove_padding(masked_image, Pad((50, 50), (50, 50)))
+
+    landmask_filename =
+        "$(test_output_dir)/landmask_test_" *
+        Dates.format(Dates.now(), "yyyy-mm-dd-HHMMSS") *
+        ".png"
+    landmask = IceFloeTracker.@persist IceFloeTracker.remove_padding(
+        landmask, Pad((50, 50), (50, 50))
+    ) landmask_filename
+
+    masked_image_filename =
+        "$(test_output_dir)/landmasked_truecolor_test_image_" *
+        Dates.format(Dates.now(), "yyyy-mm-dd-HHMMSS") *
+        ".png"
+    masked_image = IceFloeTracker.@persist IceFloeTracker.remove_padding(
+        masked_image, Pad((50, 50), (50, 50))
+    ) masked_image_filename
+
     # test for percent difference in landmask images, ignore edges because we are not padding in Julia before applying strel_file
     @test (@test_approx_eq_sigma_eps landmask matlab_landmask [0, 0] 0.005) == nothing
 

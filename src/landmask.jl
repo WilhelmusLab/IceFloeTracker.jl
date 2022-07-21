@@ -18,6 +18,8 @@ function create_landmask(
     println("Closing any holes in mask")
     @time lm_binary_filled = LocalFilters.closing(lm_binary_dilated, num_pixels_closing)
     landmask_bool = (lm_binary_filled .< 0.5)
+    # landmask_bool_filename = "./data/output/landmask.png"
+    # IceFloeTracker.@persist landmask_bool landmask_bool_filename
     return landmask_bool
 end
 
@@ -34,5 +36,6 @@ Zero out pixels in land and soft ice regions on truecolor image, return RGB imag
 """
 function apply_landmask(input_image::Matrix, landmask_binary::BitMatrix)::Matrix
     image_masked = landmask_binary .* input_image
+
     return image_masked
 end

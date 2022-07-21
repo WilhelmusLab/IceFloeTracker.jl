@@ -13,7 +13,13 @@
     @time masked_image, clouds_channel = IceFloeTracker.apply_cloudmask(
         ref_image, cloudmask
     )
-    masked_image = IceFloeTracker.remove_padding(masked_image, Pad((50, 50), (50, 50)))
+    masked_image_filename =
+        "$(test_output_dir)/cloudmasked_reflectance_test_image_" *
+        Dates.format(Dates.now(), "yyyy-mm-dd-HHMMSS") *
+        ".png"
+    masked_image = IceFloeTracker.@persist IceFloeTracker.remove_padding(
+        masked_image, Pad((50, 50), (50, 50))
+    ) masked_image_filename
 
     # test for percent difference in landmask images
     @test (@test_approx_eq_sigma_eps masked_image matlab_cloudmask [0, 0] 0.005) == nothing

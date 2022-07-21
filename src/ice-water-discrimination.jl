@@ -12,7 +12,7 @@ Some text here
 """
 function discriminate_ice_water(
     #truecolor_image::Matrix,
-    #reflectance_image::Matrix,
+    reflectance_image::Matrix,
     normalized_image::Matrix;
     #landmask::BitMatrix,
     #cloudmask::BitMatrix;
