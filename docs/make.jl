@@ -11,5 +11,6 @@ makedocs(
 
 deploydocs(
     repo = "github.com/WilhelmusLab/IceFloeTracker.jl.git",
+    push_preview = true,
     versions = nothing,
 )
