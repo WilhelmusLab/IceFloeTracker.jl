@@ -1,8 +1,5 @@
 push!(LOAD_PATH,"../src/")
 
-# using Pkg
-# pkg"activate .."
-
 using Documenter
 using IceFloeTracker
 
