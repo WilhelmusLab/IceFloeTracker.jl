@@ -1,4 +1,8 @@
 push!(LOAD_PATH,"../src/")
+
+# using Pkg
+# pkg"activate .."
+
 using Documenter
 using IceFloeTracker
 
@@ -10,4 +14,5 @@ makedocs(
 
 deploydocs(
     repo = "github.com/WilhelmusLab/IceFloeTracker.jl.git",
+    versions = nothing,
 )
