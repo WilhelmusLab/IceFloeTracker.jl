@@ -12,11 +12,10 @@ Some text here
 """
 function discriminate_ice_water(
     reflectance_image::Matrix,
-    normalized_image::Matrix{Gray{Float64}},
-    landmask::BitMatrix,
+    reflectance_image_band7::Matrix,
+    normalized_image::Matrix,
+    landmask_bitmatrix::BitMatrix,
     clouds_channel::Matrix;
-    #cloudmask::BitMatrix;
-    pad_size::Real=50,
     floes_threshold::N0f8=N0f8(100 / 255),
     mask_clouds_lower::N0f8=N0f8(17 / 255),
     mask_clouds_upper::N0f8=N0f8(30 / 255),
@@ -29,32 +28,14 @@ function discriminate_ice_water(
     differ_threshold::Float64=0.6,
     nbins::Real=155,
 )::Matrix
-    ref_image = IceFloeTracker.add_padding(
-        load(reflectance_test_image_file)[test_region...],
-        Pad(:replicate, (pad_size, pad_size)),
-    )
-    clouds_channel_masked = IceFloeTracker.apply_landmask(
-        clouds_channel, landmask_bitmatrix
-    )
-    ref_image_masked = IceFloeTracker.apply_landmask(ref_image, landmask_bitmatrix)
-    ref_image_1_masked = IceFloeTracker.apply_landmask(
-        Gray.(ref_image_view[1, :, :]), landmask_bitmatrix
-    )
-
     # first define all of the image variations
 
-    image_cropped = IceFloeTracker.remove_padding(
-        normalized_image, Pad((pad_size, pad_size), (pad_size, pad_size))
-    ) # output during image normalization, landmasked
-    image_clouds = IceFloeTracker.remove_padding(
-        clouds_channel_masked, Pad((pad_size, pad_size), (pad_size, pad_size))
-    ) # output during cloudmask apply, landmasked 
-    image_cloudless = IceFloeTracker.remove_padding(
-        ref_image_1_masked, Pad((pad_size, pad_size), (pad_size, pad_size))
-    ) # channel 1 from source reflectance image, landmasked
-    image_floes = IceFloeTracker.remove_padding(
-        ref_image_masked, Pad((pad_size, pad_size), (pad_size, pad_size))
-    ) # source reflectance, landmasked
+    image_cropped = normalized_image # output during image normalization, landmasked
+    image_clouds = IceFloeTracker.apply_landmask(clouds_channel, landmask_bitmatrix) # output during cloudmask apply, landmasked 
+    image_cloudless = IceFloeTracker.apply_landmask(
+        reflectance_image_band7, landmask_bitmatrix
+    ) # channel 1 (band 7) from source reflectance image, landmasked
+    image_floes = IceFloeTracker.apply_landmask(reflectance_image, landmask_bitmatrix) # source reflectance, landmasked
 
     image_floes_view = channelview(image_floes)
 
@@ -82,7 +63,7 @@ function discriminate_ice_water(
 
     standard_dev = std(Float64.(image_cropped))
 
-    _, yyvals = imhist(image_clouds)
+    _, yyvals = build_histogram(image_clouds)
     clouds1 = sum(yyvals[51:end])
     total1 = sum(yyvals)
     clouds2 = clouds1 / total1
