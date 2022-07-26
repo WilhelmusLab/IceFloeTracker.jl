@@ -2,8 +2,7 @@
     println("------------------------------------------------")
     println("------------ Create Discrimination Test --------------")
 
-    matlab_Z = "$(test_data_dir)/matlab_Z.png"
-    matlab_Z2 = "$(test_data_dir)/matlab_Z2.png"
+    matlab_Z2 = "$(test_data_dir)/matlab_Z3.png"
     strel_file2 = "$(test_data_dir)/se2.csv"
     struct_elem2 = readdlm(strel_file2, ',', Bool)
 
@@ -22,9 +21,9 @@
         normalized_image, Pad((50, 50), (50, 50))
     )
 
-    Z, Z2 = IceFloeTracker.discriminate_ice_water(normalized_image, ref)
+    Z3 = IceFloeTracker.discriminate_ice_water(
+        reflectance_test_image_file, normalized_image
+    )
 
-    @test (@test_approx_eq_sigma_eps Z matlab_Z [0, 0] 0.005) == nothing
-
-    @test (@test_approx_eq_sigma_eps Z2 matlab_Z2 [0, 0] 0.005) == nothing
+    @test (@test_approx_eq_sigma_eps Z3 matlab_Z3 [0, 0] 0.005) == nothing
 end

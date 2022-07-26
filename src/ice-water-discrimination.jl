@@ -11,10 +11,10 @@ Some text here
 
 """
 function discriminate_ice_water(
-    #truecolor_image::Matrix,
     reflectance_image::Matrix,
-    normalized_image::Matrix;
-    #landmask::BitMatrix,
+    normalized_image::Matrix{Gray{Float64}},
+    landmask::BitMatrix,
+    clouds_channel::Matrix;
     #cloudmask::BitMatrix;
     pad_size::Real=50,
     floes_threshold::N0f8=N0f8(100 / 255),
@@ -123,5 +123,5 @@ function discriminate_ice_water(
     D2 = D2 .* .!mask_image_clouds
     Z2 = Z - (D2 * 3)
 
-    return Z, Z2
+    return Z2
 end

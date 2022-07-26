@@ -19,9 +19,10 @@ function create_cloudmask(
     band_2_threshold::N0f8=N0f8(190 / 255),
     ratio_lower::Float64=0.0,
     ratio_upper::Float64=0.75,
-)::BitMatrix
+)::Tuple{BitMatrix,Matrix{Gray}}
     println("Setting thresholds")
     ref_view = channelview(ref_image)
+    ref_image_b7 = ref_view[1, :, :]
     clouds_view = ref_view[1, :, :] .> prelim_threshold
     mask_b7 = ref_view[1, :, :] .< band_7_threshold
     mask_b2 = ref_view[2, :, :] .> band_2_threshold
@@ -36,7 +37,7 @@ function create_cloudmask(
     mask_cloud_ice = @. cloud_ice >= ratio_lower .&& cloud_ice < ratio_upper
     println("Creating final cloudmask")
     cloudmask = mask_cloud_ice .|| .!clouds_view
-    return cloudmask
+    return cloudmask, ref_image_b7
 end
 
 """
