@@ -23,5 +23,5 @@
         ".png"
     IceFloeTracker.@persist Z3 Z3_filename
 
-    @test (@test_approx_eq_sigma_eps Z3 matlab_Z3 [0, 0] 0.18) == nothing
+    @test (@test_approx_eq_sigma_eps Z3 matlab_Z3 [0, 0] 0.061) == nothing
 end

@@ -74,9 +74,9 @@ function discriminate_ice_water(
     skew_band_2 = skewness(floes_band_2_keep)
     kurt_band_1 = kurtosis(floes_band_1_keep)
 
-    standard_dev = std(Float64.(image_cropped))
+    standard_dev = std(image_cropped)
 
-    _, yyvals = build_histogram(image_clouds)
+    _, yyvals = build_histogram(image_clouds .> 0)
     clouds1 = sum(yyvals[51:end])
     total1 = sum(yyvals)
     clouds2 = clouds1 / total1
@@ -115,7 +115,7 @@ function discriminate_ice_water(
         image_clouds .< mask_clouds_lower .|| image_clouds .> mask_clouds_upper
     )
     D2 = D2 .* .!mask_image_clouds
-    Z2 = Z - (D2 * 3)
+    Z2 = map(clamp01nan, (Z - (D2 * 3)))
 
     return Z2
 end
