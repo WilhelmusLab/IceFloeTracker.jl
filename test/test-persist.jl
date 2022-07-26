@@ -33,8 +33,17 @@
     @test isfile("outimage2.tiff")
     @test length([f for f in readdir() if startswith(f, "persisted_mask-")]) == 2
 
+    # Part 3
+    # Test filename as Expr, such as "$(dir)$(fname).$(ext)"
+    dir = "./"
+    fname = "persistedimg"
+    ext = "png"
+    IceFloeTracker.@persist img "$(dir)$(fname).$(ext)"
+    @test isfile("$(dir)$(fname).$(ext)")
+
     # Clean up
     rm(outimage_path)
     rm("outimage2.tiff")
+    rm("$(dir)$(fname).$(ext)")
     [rm(f) for f in readdir() if startswith(f, "persisted_mask-")]
 end
