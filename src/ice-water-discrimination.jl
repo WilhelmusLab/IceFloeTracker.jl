@@ -1,11 +1,24 @@
 """
-    discriminate_ice_water(truecolor_image, landmask, struct_elem; lambda, kappa, niters, nbins, rblocks, cblocks, clip, smoothing_param, intensity)
+    discriminate_ice_water(reflectance_image, reflectance_image_band7, normalized_image, landmask_bitmatrix, clouds_channel; floes_threshold, mask_clouds_lower, mask_clouds_upper, kurt_thresh_lower, kurt_thresh_upper, skew_thresh, st_dev_thresh_lower, st_dev_thresh_upper, clouds2_threshold, differ_threshold, nbins)
 
-Some text here
+Generates an image with ice floes apparent after filtering and combining previously processed versions of reflectance and truecolor images from the same region of interest. Returns an image ready for segmentation to isolate floes.
 
 # Arguments
-- `truecolor_image`: input image in truecolor
-- `landmask`: bitmatrix landmask for region of interest
+- `reflectance_image`: input image in false color reflectance
+- `reflectance_image_band7`: first channel (band 7) of reflectance image, output from `cloudmask.jl`
+- `normalized_image`: a normalized, landmasked truecolor image, output from `normalization.jl`
+- `landmask_bitmatrix`: bitmatrix landmask for region of interest
+- `clouds_channel`: first channel of cloudmasked reflectance image, output from `cloudmask.jl`
+- `floes_threshold`: heuristic applied to original reflectance image
+- `mask_clouds_lower`: lower heuristic applied to mask out clouds
+- `mask_clouds_upper`: upper heuristic applied to mask out clouds
+- kurt_thresh_lower`: lower heuristic used to set pixel value threshold based on kurtosis in histogram
+- `kurt_thresh_upper`: upper heuristic used to set pixel value threshold based on kurtosis in histogram
+- `skew_thresh`: heuristic used to set pixel value threshold based on skewness in histogram
+- `st_dev_thresh_lower`: lower heuristic used to set pixel value threshold based on standard deviation in histogram
+- `st_dev_thresh_upper`: upper heuristic used to set pixel value threshold based on standard deviation in histogram
+- `clouds2_threshold`: heuristic used to set pixel value threshold based on ratio of clouds
+- `differ_threshold`: heuristic used to calculate proportional intensity in histogram
 - `nbins`: number of bins during histogram build
 # verify then add all the defaulted params
 
