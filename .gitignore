@@ -9,6 +9,7 @@ explorations/
 foo/
 .DS_Store
 !landmask.tiff
+!matlab_landmask.png
 !matlab_cloudmask.tiff
 !matlab_normalized.tiff
 !matlab_image_view.png
