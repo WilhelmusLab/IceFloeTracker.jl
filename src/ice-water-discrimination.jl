@@ -12,7 +12,7 @@ Generates an image with ice floes apparent after filtering and combining previou
 - `floes_threshold`: heuristic applied to original reflectance image
 - `mask_clouds_lower`: lower heuristic applied to mask out clouds
 - `mask_clouds_upper`: upper heuristic applied to mask out clouds
-- kurt_thresh_lower`: lower heuristic used to set pixel value threshold based on kurtosis in histogram
+- `kurt_thresh_lower`: lower heuristic used to set pixel value threshold based on kurtosis in histogram
 - `kurt_thresh_upper`: upper heuristic used to set pixel value threshold based on kurtosis in histogram
 - `skew_thresh`: heuristic used to set pixel value threshold based on skewness in histogram
 - `st_dev_thresh_lower`: lower heuristic used to set pixel value threshold based on standard deviation in histogram
