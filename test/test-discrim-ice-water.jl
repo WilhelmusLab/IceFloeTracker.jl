@@ -8,20 +8,21 @@
     landmask_bitmatrix = convert(BitMatrix, landmask)
     normalized_image = load(normalized_test_file)
     clouds_channel = load(clouds_channel_test_file)
-    matlab_Z3 = load("$(test_data_dir)/matlab_Z3.png")
+    matlab_ice_water_discrim = load("$(test_data_dir)/matlab_ice_water_discrim.png")
 
-    Z3 = IceFloeTracker.discriminate_ice_water(
+    ice_water_discrim = IceFloeTracker.discriminate_ice_water(
         reflectance_image,
         reflectance_image_band7,
         normalized_image,
         landmask_bitmatrix,
         clouds_channel,
     )
-    Z3_filename =
-        "$(test_output_dir)/Z3_test_image_" *
+    ice_water_discrim_filename =
+        "$(test_output_dir)/ice_water_discrim_test_image_" *
         Dates.format(Dates.now(), "yyyy-mm-dd-HHMMSS") *
         ".png"
-    IceFloeTracker.@persist Z3 Z3_filename
+    IceFloeTracker.@persist ice_water_discrim ice_water_discrim_filename
 
-    @test (@test_approx_eq_sigma_eps Z3 matlab_Z3 [0, 0] 0.061) == nothing
+    @test (@test_approx_eq_sigma_eps ice_water_discrim matlab_ice_water_discrim [0, 0] 0.061) ==
+        nothing
 end

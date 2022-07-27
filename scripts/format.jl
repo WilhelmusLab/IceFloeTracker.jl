@@ -8,7 +8,7 @@ using JuliaFormatter
 function main(args)
     settings = ArgParseSettings()
 
-    @add_arg_table settings begin
+    @add_arg_table! settings begin
         "--check", "-c"
         help = "Check to see if formatting is OK"
         action = "store_true"

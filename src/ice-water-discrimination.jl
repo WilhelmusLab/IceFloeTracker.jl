@@ -37,13 +37,12 @@ function discriminate_ice_water(
     skew_thresh::Real=4,
     st_dev_thresh_lower::N0f8=N0f8(84 / 255),
     st_dev_thresh_upper::N0f8=N0f8(98.9 / 255),
-    clouds2_threshold::Float64=0.02,
+    clouds_ratio_threshold::Float64=0.02,
     differ_threshold::Float64=0.6,
     nbins::Real=155,
 )::Matrix
     # first define all of the image variations
 
-    image_cropped = normalized_image # output during image normalization, landmasked
     image_clouds = IceFloeTracker.apply_landmask(clouds_channel, landmask_bitmatrix) # output during cloudmask apply, landmasked 
     image_cloudless = IceFloeTracker.apply_landmask(
         reflectance_image_band7, landmask_bitmatrix
@@ -59,27 +58,23 @@ function discriminate_ice_water(
 
     floes_band_1_keep = floes_band_1[floes_band_1 .> floes_threshold]
 
-    _, yyy = ImageContrastAdjustment.build_histogram(floes_band_2_keep, nbins)
+    _, floes_bin_counts = ImageContrastAdjustment.build_histogram(floes_band_2_keep, nbins)
 
-    _, vals = Peaks.findmaxima(yyy)
+    _, vals = Peaks.findmaxima(floes_bin_counts)
 
-    if isempty(vals)
-        Z2 = zeroarray(size(image_floes))
-    else
-        differ = vals / (maximum(vals))
-        proportional_intensity = sum(differ .> differ_threshold) / length(differ)
-    end
+    differ = vals / (maximum(vals))
+    proportional_intensity = sum(differ .> differ_threshold) / length(differ)
 
     kurt_band_2 = kurtosis(floes_band_2_keep)
     skew_band_2 = skewness(floes_band_2_keep)
     kurt_band_1 = kurtosis(floes_band_1_keep)
 
-    standard_dev = std(image_cropped)
+    standard_dev = std(normalized_image)
 
-    _, yyvals = build_histogram(image_clouds .> 0)
-    clouds1 = sum(yyvals[51:end])
-    total1 = sum(yyvals)
-    clouds2 = clouds1 / total1
+    _, clouds_bin_counts = build_histogram(image_clouds .> 0)
+    total_clouds = sum(clouds_bin_counts[51:end])
+    total_all = sum(clouds_bin_counts)
+    clouds_ratio = total_clouds / total_all
 
     threshold_50_check = (
         (
@@ -95,7 +90,7 @@ function discriminate_ice_water(
         proportional_intensity < 0.01
     )
     threshold_130_check =
-        (clouds2 .< clouds2_threshold && standard_dev > st_dev_thresh_lower) ||
+        (clouds_ratio .< clouds_ratio_threshold && standard_dev > st_dev_thresh_lower) ||
         (standard_dev > st_dev_thresh_upper)
 
     if threshold_50_check
@@ -106,16 +101,15 @@ function discriminate_ice_water(
         THRESH = 80 / 255
     end
 
-    D1 = copy(image_cropped)
-    D1[D1 .> THRESH] .= 0
-    Z = image_cropped - (D1 * 3)
+    normalized_image_copy = copy(normalized_image)
+    normalized_image_copy[normalized_image_copy .> THRESH] .= 0
+    normalized_filtered = normalized_image - (normalized_image_copy * 3)
 
-    D2 = copy(image_cloudless)
     mask_image_clouds = (
         image_clouds .< mask_clouds_lower .|| image_clouds .> mask_clouds_upper
     )
-    D2 = D2 .* .!mask_image_clouds
-    Z2 = map(clamp01nan, (Z - (D2 * 3)))
+    band7_masked = image_cloudless .* .!mask_image_clouds
+    ice_water_discriminated_image = clamp01nan.(normalized_filtered - (band7_masked * 3))
 
-    return Z2
+    return ice_water_discriminated_image
 end
