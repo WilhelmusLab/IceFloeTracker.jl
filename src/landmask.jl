@@ -14,17 +14,15 @@ function create_landmask(
 )::BitMatrix
     lm_binary = Gray.(landmask_image) .== 0
     radius = Int.(ceil.(size(struct_elem) ./ 2)[1]) #assumes symmetry
-    pad_size = Pad(:replicate, (radius, radius))
+    pad_size = Fill(1, (radius, radius))
     lm_binary = IceFloeTracker.add_padding((lm_binary), pad_size)
     println("Dilation with strel")
     @time lm_binary_dilated = ImageProjectiveGeometry.imdilate(.!lm_binary, struct_elem)
-    lm_binary_dilated = IceFloeTracker.remove_padding(
-        lm_binary_dilated, Pad((radius, radius), (radius, radius))
-    )
+    lm_binary_dilated = IceFloeTracker.remove_padding(lm_binary_dilated, pad_size)
     println("Closing any holes in mask")
-    @time lm_binary_filled = LocalFilters.closing(lm_binary_dilated, num_pixels_closing)
-    landmask_bool = (lm_binary_filled .< 0.5)
-    return landmask_bool
+    landmask_bool = (lm_binary_dilated .< 0.5)
+    @time landmask_bool_filled = ImageMorphology.imfill(landmask_bool, (0, 2000))
+    return landmask_bool_filled
 end
 
 """
