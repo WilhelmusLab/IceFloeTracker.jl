@@ -1,9 +1,9 @@
 # Persist macros
 """
-    `@persist img fname` or
-    `@persist(img,fname)` or
-    `@persist img` or
-    `@persist(img)`
+    @persist img fname or
+    @persist(img,fname) or
+    @persist img or
+    @persist(img)
 
 Given a reference to an image object `img`, the macro persists (saves to a file) `img` to the current working directory using `fname` as filename. Returns `img`.
 
@@ -11,7 +11,7 @@ Given a reference to an image object `img`, the macro persists (saves to a file)
 - `img`: Symbol expression representing an image object loaded in memory.
 - `fname`: Optional filename for the persisted image.
 """
-macro persist(_img, fname::Union{String,Symbol,Nothing}=nothing)
+macro persist(_img, fname::Union{String,Symbol,Expr,Nothing}=nothing)
     return quote
         img = $(esc(_img))
         fname = check_fname($(esc(fname)))
