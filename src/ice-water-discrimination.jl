@@ -42,41 +42,39 @@ function discriminate_ice_water(
     nbins::Real=155,
 )::Matrix
     # first define all of the image variations
-
     image_clouds = IceFloeTracker.apply_landmask(clouds_channel, landmask_bitmatrix) # output during cloudmask apply, landmasked 
     image_cloudless = IceFloeTracker.apply_landmask(
         reflectance_image_band7, landmask_bitmatrix
     ) # channel 1 (band 7) from source reflectance image, landmasked
     image_floes = IceFloeTracker.apply_landmask(reflectance_image, landmask_bitmatrix) # source reflectance, landmasked
-
     image_floes_view = channelview(image_floes)
 
     floes_band_2 = image_floes_view[2, :, :]
     floes_band_1 = image_floes_view[3, :, :]
 
+    # keep pixels greater than intensity 100 in bands 2 and 1
     floes_band_2_keep = floes_band_2[floes_band_2 .> floes_threshold]
-
     floes_band_1_keep = floes_band_1[floes_band_1 .> floes_threshold]
 
     _, floes_bin_counts = ImageContrastAdjustment.build_histogram(floes_band_2_keep, nbins)
-
     _, vals = Peaks.findmaxima(floes_bin_counts)
 
     differ = vals / (maximum(vals))
-    proportional_intensity = sum(differ .> differ_threshold) / length(differ)
+    proportional_intensity = sum(differ .> differ_threshold) / length(differ) # finds the proportional intensity of the peaks in the histogram
 
+    # compute kurtosis, skewness, and standard deviation to use in threshold filtering
     kurt_band_2 = kurtosis(floes_band_2_keep)
     skew_band_2 = skewness(floes_band_2_keep)
     kurt_band_1 = kurtosis(floes_band_1_keep)
-
     standard_dev = std(normalized_image)
 
+    # find the ratio of clouds in the image to use in threshold filtering
     _, clouds_bin_counts = build_histogram(image_clouds .> 0)
     total_clouds = sum(clouds_bin_counts[51:end])
     total_all = sum(clouds_bin_counts)
     clouds_ratio = total_clouds / total_all
 
-    threshold_50_check = (
+    threshold_50_check = ( # intensity value of 50
         (
             (abs(kurt_band_2 > kurt_thresh_upper)) ||
             (abs(kurt_band_2 < kurt_thresh_lower)) &&
@@ -89,7 +87,7 @@ function discriminate_ice_water(
         ) ||
         proportional_intensity < 0.01
     )
-    threshold_130_check =
+    threshold_130_check = #intensity value of 130
         (clouds_ratio .< clouds_ratio_threshold && standard_dev > st_dev_thresh_lower) ||
         (standard_dev > st_dev_thresh_upper)
 
@@ -98,7 +96,7 @@ function discriminate_ice_water(
     elseif threshold_130_check
         THRESH = 130 / 255
     else
-        THRESH = 80 / 255
+        THRESH = 80 / 255 #intensity value of 80
     end
 
     normalized_image_copy = copy(normalized_image)

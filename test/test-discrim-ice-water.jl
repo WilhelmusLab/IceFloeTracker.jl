@@ -1,6 +1,6 @@
 @testset "Discriminate Ice-Water" begin
     println("------------------------------------------------")
-    println("------------ Create Discrimination Test --------------")
+    println("------------ Create Ice-Water Discrimination Test --------------")
 
     reflectance_image = load(reflectance_test_image_file)[test_region...]
     reflectance_image_band7 = load(reflectance_b7_test_file)

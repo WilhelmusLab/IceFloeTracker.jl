@@ -10,7 +10,11 @@ Convert a 3-channel RGB land mask image to a 1-channel binary matrix, including 
 
 """
 function create_landmask(
-    landmask_image::Matrix{RGB{N0f8}}, struct_elem::Matrix{Bool}; fill_value::Int=2000
+    landmask_image::Matrix{RGB{N0f8}},
+    struct_elem::Matrix{Bool};
+    fill_value_lower::Int=0,
+    fill_value_upper::Int=2000,
+    bool_conversion::Float64=0.5,
 )::BitMatrix
     lm_binary = Gray.(landmask_image) .== 0
     radius = Int.(ceil.(size(struct_elem) ./ 2)[1]) #assumes symmetry
@@ -20,8 +24,10 @@ function create_landmask(
     @time lm_binary_dilated = ImageProjectiveGeometry.imdilate(.!lm_binary, struct_elem)
     lm_binary_dilated = IceFloeTracker.remove_padding(lm_binary_dilated, pad_size)
     println("Closing any holes in mask")
-    landmask_bool = (lm_binary_dilated .< 0.5)
-    @time landmask_bool_filled = ImageMorphology.imfill(landmask_bool, (0, fill_value))
+    landmask_bool = (lm_binary_dilated .< bool_conversion)
+    @time landmask_bool_filled = ImageMorphology.imfill(
+        landmask_bool, (fill_value_lower, fill_value_upper)
+    )
     return landmask_bool_filled
 end
 
