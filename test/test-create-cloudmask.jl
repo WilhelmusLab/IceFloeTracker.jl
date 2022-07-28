@@ -3,15 +3,30 @@
     println("------------ Create Cloudmask Test --------------")
 
     # define constants, maybe move to test config file
-    ref_image_file = "$(test_data_dir)/cloudmask_test_image.tiff"
     matlab_cloudmask_file = "$(test_data_dir)/matlab_cloudmask.tiff"
     println("--------- Create and apply cloudmask --------")
-    ref_image = load(ref_image_file)
-    matlab_cloudmask = load(matlab_cloudmask_file)
-    @time cloudmask = IceFloeTracker.create_cloudmask(ref_image)
-    @time masked_image = IceFloeTracker.apply_cloudmask(ref_image, cloudmask)
+    ref_image = load(reflectance_test_image_file)[test_region...]
 
+    matlab_cloudmask = load(matlab_cloudmask_file)
+    @time cloudmask, ref_image_b7 = IceFloeTracker.create_cloudmask(ref_image)
+    @time masked_image, clouds_channel = IceFloeTracker.apply_cloudmask(
+        ref_image, cloudmask
+    )
+    masked_image_filename =
+        "$(test_output_dir)/cloudmasked_reflectance_test_image_" *
+        Dates.format(Dates.now(), "yyyy-mm-dd-HHMMSS") *
+        ".png"
+    IceFloeTracker.@persist masked_image masked_image_filename
+    clouds_channel_filename =
+        "$(test_output_dir)/clouds_channel_" *
+        Dates.format(Dates.now(), "yyyy-mm-dd-HHMMSS") *
+        ".png"
+    IceFloeTracker.@persist clouds_channel clouds_channel_filename
+    ref_image_b7_filename =
+        "$(test_output_dir)/ref_image_b7_" *
+        Dates.format(Dates.now(), "yyyy-mm-dd-HHMMSS") *
+        ".png"
+    IceFloeTracker.@persist ref_image_b7 ref_image_b7_filename
     # test for percent difference in landmask images
-    @test (@test_approx_eq_sigma_eps masked_image matlab_cloudmask [0, 0] 0.005) ==
-        nothing
+    @test (@test_approx_eq_sigma_eps masked_image matlab_cloudmask [0, 0] 0.005) == nothing
 end

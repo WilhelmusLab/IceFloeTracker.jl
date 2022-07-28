@@ -32,6 +32,8 @@ function normalize_image(
     smoothing_param::Int64=10,
     intensity::Float64=2.0,
 )::Matrix
+    radius = Int.(ceil.(size(struct_elem) ./ 3)[1])
+    pad_size = Fill(1, (radius, radius))
     gray_image = Float64.(Gray.(truecolor_image))
     image_diffused = diffusion(gray_image, 0.25, 75, 3)
     image_diffused_RGB = RGB.(image_diffused)
@@ -84,8 +86,11 @@ function normalize_image(
     image_sharpened = max.(image_sharpened, 0.0)
     image_sharpened = min.(image_sharpened, 1.0)
     image_sharpened = colorview(Gray, image_sharpened)
+    image_sharpened = IceFloeTracker.add_padding(image_sharpened, pad_size)
 
     image_dilated = Images.dilate(image_sharpened, struct_elem)
+    image_dilated = IceFloeTracker.remove_padding(image_dilated, pad_size)
+
     image_opened = Images.opening(complement.(image_dilated), complement.(image_sharpened))
     image_normalized_masked = IceFloeTracker.apply_landmask(image_opened, landmask)
 

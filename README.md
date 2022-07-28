@@ -73,3 +73,12 @@ Git hooks are used to run common developer tasks on commits (e.g. code formattin
 ```
 git config core.hooksPath ./hooks
 ```
+
+To help with passing git hooks, run the formatting script before staging files:
+
+```
+./scripts/format.jl
+git add .
+git commit -m "some informative message"
+git push
+```
