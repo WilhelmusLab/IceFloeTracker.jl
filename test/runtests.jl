@@ -7,7 +7,7 @@ using Dates
 # Setting things up
 
 ## locate some files for the tests
-test_data_dir = "./test_inputs"
+test_data_dir = "./test/test_inputs"
 test_output_dir = "./test_outputs"
 truecolor_test_image_file = "$(test_data_dir)/NE_Greenland_truecolor.2020162.aqua.250m.tiff"
 reflectance_test_image_file = "$(test_data_dir)/NE_Greenland.2020162.aqua.250m.tiff"
@@ -16,6 +16,7 @@ landmask_file = "$(test_data_dir)/landmask.tiff"
 current_landmask_file = "$(test_data_dir)/current_landmask.png"
 normalized_test_file = "$(test_data_dir)/normalized_image.png"
 clouds_channel_test_file = "$(test_data_dir)/clouds_channel.png"
+ice_water_discrim_test_file = "$(test_data_dir)/ice_water_discrim_image.png"
 
 test_region = (1:2707, 1:4458)
 lm_test_region = (1:800, 1:1500)
@@ -30,8 +31,8 @@ to_test = alltests # uncomment this line to run all tests or add individual file
 #"test-create-landmask.jl",
 #"test-create-cloudmask.jl",
 #"test-normalize-image.jl",
-#    "test-persist.jl",
-#    "test-utils-padding.jl",
+#"test-persist.jl",
+#"test-utils-padding.jl",
 #"test-discrim-ice-water.jl",
 ]
 

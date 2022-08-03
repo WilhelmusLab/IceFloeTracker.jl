@@ -17,8 +17,8 @@ function create_landmask(
     bool_conversion::Float64=0.5,
 )::BitMatrix
     lm_binary = Gray.(landmask_image) .== 0
-    radius = Int.(ceil.(size(struct_elem) ./ 2)[1]) #assumes symmetry
-    pad_size = Fill(1, (radius, radius))
+    radius = Int.(ceil.(size(struct_elem) ./ 2)[1]) # assumes symmetry
+    pad_size = Fill(1, (radius, radius)) # or Pad with replicate
     lm_binary = IceFloeTracker.add_padding(lm_binary, pad_size)
     println("Dilation with strel")
     @time lm_binary_dilated = ImageProjectiveGeometry.imdilate(.!lm_binary, struct_elem)
