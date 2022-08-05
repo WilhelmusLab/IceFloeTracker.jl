@@ -6,6 +6,8 @@ using Dates
 using ImageContrastAdjustment
 using Peaks
 using StatsBase
+using DataFrames
+using PyCall
 
 include("utils.jl")
 include("persist.jl")
@@ -14,6 +16,7 @@ include("cloudmask.jl")
 include("normalization.jl")
 include("ice-water-discrimination.jl")
 include("anisotropic_image_diffusion.jl")
+include("regionprops.jl")
 
 function fetchdata(; output::AbstractString)
     mkpath("$output")
