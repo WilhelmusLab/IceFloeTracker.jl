@@ -16,7 +16,17 @@ include("cloudmask.jl")
 include("normalization.jl")
 include("ice-water-discrimination.jl")
 include("anisotropic_image_diffusion.jl")
+
+
+const sk_measure = PyNULL()
+
+function __init__()
+    copy!(sk_measure, pyimport_conda("skimage.measure", "scikit-image"))
+end
+
 include("regionprops.jl")
+
+
 
 function fetchdata(; output::AbstractString)
     mkpath("$output")

@@ -1,8 +1,4 @@
 
-# PyCall imports and setup
-sk_measure = PyCall.pyimport("skimage.measure")
-sk_regionprops_table = sk_measure.regionprops_table
-sk_regionprops = sk_measure.regionprops
 
 """
     regionprops_table(label_img, intensity_img; properties, connectivity, extra_properties, dataframe)
@@ -69,7 +65,7 @@ function regionprops_table(label_img::Any, intensity_img::Any=nothing;
         extra_properties = nothing
     end      
 
-    props = sk_regionprops_table(label_img, intensity_img, properties, extra_properties=extra_properties)
+    props = sk_measure.regionprops_table(label_img, intensity_img, properties, extra_properties=extra_properties)
 
     return dataframe ? DataFrame(props) : props
 
@@ -129,8 +125,8 @@ function regionprops(label_img::Any, intensity_img::Any=nothing;
     if !isnothing(extra_properties)
         @error "<extra_properties> not yet implemented in this wrapper; setting it to <nothing>"
         extra_properties = nothing
-    end      
+    end  
     
-    return sk_regionprops(label_img, intensity_img, extra_properties=extra_properties)
+    return sk_measure.regionprops(label_img, intensity_img, extra_properties=extra_properties)
 
 end
