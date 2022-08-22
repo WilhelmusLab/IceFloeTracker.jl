@@ -1,16 +1,19 @@
 module IceFloeTracker
-using LocalFilters
 using Images
 using ImageProjectiveGeometry
 using DelimitedFiles
 using Dates
+using ImageContrastAdjustment
+using Peaks
+using StatsBase
 
+include("utils.jl")
+include("persist.jl")
 include("landmask.jl")
 include("cloudmask.jl")
 include("normalization.jl")
+include("ice-water-discrimination.jl")
 include("anisotropic_image_diffusion.jl")
-include("utils.jl")
-include("persist.jl")
 
 function fetchdata(; output::AbstractString)
     mkpath("$output")
