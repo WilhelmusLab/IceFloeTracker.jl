@@ -5,6 +5,37 @@
 
 Track Ice Floes using Moderate Resolution Imaging Spectroradiometer (MODIS) data
 
+## Clone repo and run tests
+
+Prerequisites: julia is installed and available on the PATH.
+
+Clone the repository.
+```zsh
+$ git clone https://github.com/WilhelmusLab/IceFloeTracker.jl
+```
+
+Now start a Julia session.
+```zsh
+$ julia
+```
+
+```
+julia> ]
+```
+... to enter package mode.
+
+```
+(@v1.7) pkg> activate IceFloeTracker.jl/
+Activating project at `~/IceFloeTracker.jl`
+```
+
+Instantiate the environment and run the tests:
+```
+(IceFloeTracker) pkg> instantiate
+(IceFloeTracker) pkg> test
+```
+
+
 ## Notebooks
 
 To use notebooks with `IceFloeTracker.jl` you must activate the notebooks project and start Pluto
