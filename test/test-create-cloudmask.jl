@@ -12,6 +12,11 @@
     @time masked_image, clouds_channel = IceFloeTracker.apply_cloudmask(
         ref_image, cloudmask
     )
+    cloudmask_filename =
+        "$(test_output_dir)/cloudmask_" *
+        Dates.format(Dates.now(), "yyyy-mm-dd-HHMMSS") *
+        ".png"
+    IceFloeTracker.@persist cloudmask cloudmask_filename
     masked_image_filename =
         "$(test_output_dir)/cloudmasked_reflectance_test_image_" *
         Dates.format(Dates.now(), "yyyy-mm-dd-HHMMSS") *
