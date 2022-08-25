@@ -43,7 +43,7 @@ Extrapolate the image `img` according to the `style` specifications type. Return
 See also [`remove_padding`](@ref)
 """
 function add_padding(img, style::Union{Pad,Fill})::Matrix
-    return collect(Images.padarray(img, style))
+    return collect(padarray(img, style))
 end
 
 """

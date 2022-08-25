@@ -1,6 +1,7 @@
 module IceFloeTracker
-using Images
-using ImageProjectiveGeometry
+using FileIO, ImageMagick, ImageIO
+# using ImageProjectiveGeometry
+using ImageFiltering
 using DelimitedFiles
 using Dates
 using ImageContrastAdjustment
@@ -9,10 +10,10 @@ using StatsBase
 
 include("utils.jl")
 include("persist.jl")
-include("landmask.jl")
-include("cloudmask.jl")
-include("normalization.jl")
-include("ice-water-discrimination.jl")
+# include("landmask.jl")
+# include("cloudmask.jl")
+# include("normalization.jl")
+# include("ice-water-discrimination.jl")
 include("anisotropic_image_diffusion.jl")
 
 function fetchdata(; output::AbstractString)
