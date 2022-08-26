@@ -16,6 +16,7 @@ landmask_file = "$(test_data_dir)/landmask.tiff"
 current_landmask_file = "$(test_data_dir)/current_landmask.png"
 normalized_test_file = "$(test_data_dir)/normalized_image.png"
 clouds_channel_test_file = "$(test_data_dir)/clouds_channel.png"
+cloudmask_test_file = "$(test_data_dir)/cloudmask.png"
 ice_water_discrim_test_file = "$(test_data_dir)/ice_water_discrim_image.png"
 
 test_region = (1:2707, 1:4458)
@@ -29,11 +30,12 @@ testnames = [n[6:(end - 3)] for n in alltests]
 to_test = #alltests # uncomment this line to run all tests or add individual files below 
 [
     #"test-create-landmask.jl",
-    "test-create-cloudmask.jl",
+    #"test-create-cloudmask.jl",
     #"test-normalize-image.jl",
     #"test-persist.jl",
     #"test-utils-padding.jl",
     #"test-discrim-ice-water.jl",
+    "test-segmentation-a.jl",
 ]
 
 # Run the tests

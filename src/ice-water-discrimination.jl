@@ -20,7 +20,6 @@ Generates an image with ice floes apparent after filtering and combining previou
 - `clouds2_threshold`: heuristic used to set pixel value threshold based on ratio of clouds
 - `differ_threshold`: heuristic used to calculate proportional intensity in histogram
 - `nbins`: number of bins during histogram build
-# verify then add all the defaulted params
 
 """
 function discriminate_ice_water(
