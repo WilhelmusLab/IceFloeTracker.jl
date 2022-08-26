@@ -1,5 +1,5 @@
 """
-    segmentation_A(reflectance_image, ice_water_discriminated_image, landmask, cloudmask,band_7_threshold, band_2_threshold, band_1_threshold, band_7_relaxed_threshold, band_1_relaxed_threshold, possible_ice_threshold)
+    segmentation_A(reflectance_image, ice_water_discriminated_image, landmask, cloudmask;band_7_threshold, band_2_threshold, band_1_threshold, band_7_relaxed_threshold, band_1_relaxed_threshold, possible_ice_threshold, min_opening_area, fill_range)
 
 Convert a 3-channel false color reflectance image to a 1-channel binary matrix with ice floes contrasted from background. Returns an image segmented and processed. Default thresholds are defined in the published Ice Floe Tracker article: Remote Sensing of the Environment 234 (2019) 111406.
 

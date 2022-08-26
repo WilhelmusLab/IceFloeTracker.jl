@@ -1,19 +1,13 @@
 """
-    segmentation_A(reflectance_image, ice_water_discriminated_image, landmask, cloudmask,band_7_threshold, band_2_threshold, band_1_threshold, band_7_relaxed_threshold, band_1_relaxed_threshold, possible_ice_threshold)
+    segmentation_A(ice_water_discriminated_image, cloudmask; num_clusters, fuzziness, min_opening_area, fill_range)
 
 Convert a 3-channel false color reflectance image to a 1-channel binary matrix with ice floes contrasted from background. Returns an image segmented and processed. Default thresholds are defined in the published Ice Floe Tracker article: Remote Sensing of the Environment 234 (2019) 111406.
 
 # Arguments
-- `reflectance_image`: corrected reflectance false color image - bands [7,2,1]
 - `ice_water_discrimination_image`: output image from `ice-water-discrimination.jl`
-- `landmask`: bitmatrix landmask for region of interest
 - `cloudmask`: bitmatrix cloudmask for region of interest
-- `band_7_threshold`: threshold value used to identify ice in band 7, N0f8(RGB intensity/255)
-- `band_2_threshold`: threshold value used to identify ice in band 2, N0f8(RGB intensity/255)
-- `band_1_threshold`: threshold value used to identify ice in band 2, N0f8(RGB intensity/255)
-- `band_7_relaxed_threshold`: threshold value used to identify ice in band 7 if not found on first pass, N0f8(RGB intensity/255)
-- `band_1_relaxed_threshold`: threshold value used to identify ice in band 1 if not found on first pass, N0f8(RGB intensity/255)
-- `possible_ice_threshold`: threshold value used to identify ice if not found on first or second pass
+- `num_clusters`: the number of desired clusters/segmentation groups
+- `fuzziness`: threshold to determine how much fuzziness to use during clustering
 - `min_opening_area`: minimum size of pixels to use during morphoilogical opening
 - `fill_range`: range of values dictating the size of holes to fill
 
