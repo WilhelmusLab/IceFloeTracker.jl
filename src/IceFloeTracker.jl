@@ -1,5 +1,6 @@
 module IceFloeTracker
-using FileIO, ImageIO, ImageCore
+using FileIO
+using ImageCore
 using ImageMorphology
 using ImageFiltering
 using ImageContrastAdjustment
