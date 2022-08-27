@@ -16,7 +16,7 @@ macro persist(_img, fname::Union{String,Symbol,Expr,Nothing}=nothing)
         img = $(esc(_img))
         fname = check_fname($(esc(fname)))
         @info "Persisting image to file $(fname) in directory $(pwd()).\nTo load the persisted object use `load(img_path)`"
-        save(fname, img)
+        ImageIO.save(fname, img)
         img
     end
 end
