@@ -18,20 +18,20 @@ function create_landmask(
 
     # binarize image if not binarized
     if !(typeof(landmask_image) <: BitMatrix)
-        lm_binary = Gray.(landmask_image) .== 1 # land pixels represented as ones
+        lm_binary = BitArray(complement.(Gray.(landmask_image) .== 0)) # land pixels represented as ones. Faster than .! for inversion
     end
-
+    
     println("Dilation with strel")
     # Dilate the land
-    @time lm_binary_dilated = ImageMorphology.dilate(lm_binary, struct_elem)
-
+    @time lm_binary_dilated = ImageMorphology.dilate(lm_binary, struct_elem);
+    
     println("Closing any holes in mask")
     # ImageMorphology.imfill fills ones to zeros; input inversion required 
     @time landmask_bool_filled = ImageMorphology.imfill(
-        .!lm_binary_dilated, (fill_value_lower, fill_value_upper))
-
+        .!(BitArray(lm_binary_dilated)), (fill_value_lower, fill_value_upper)) # faster than BitArray(complement.(lm_binary_dilated))
+    
     # invert once more to get land pixels as ones for subsequent performant application
-    return .!landmask_bool_filled
+    return .!landmask_bool_filled; # faster than BitMatrix(complement.(img))
 end
 
 """
@@ -45,6 +45,6 @@ Zero out pixels in land and soft ice regions on truecolor image, return RGB imag
 - `landmask_binary`: binary landmask with 1=land, 0=water/ice 
 
 """
-function apply_landmask(input_image::Matrix, landmask_binary::BitMatrix)
+function apply_landmask!(input_image::Matrix, landmask_binary::BitMatrix)
     return input_image[landmask_binary] .= 0
 end

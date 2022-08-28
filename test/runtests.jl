@@ -3,12 +3,15 @@ using Images
 using Test
 using DelimitedFiles
 using Dates
+using Random
 
 # Setting things up
 
 ## locate some files for the tests
-test_data_dir = "./test_inputs"
-test_output_dir = "./test_outputs"
+test_data_dir = "test_inputs"
+# test_data_dir = "test" * test_data_dir
+test_output_dir = "test_outputs"
+# test_output_dir = "test" * test_output_dir
 truecolor_test_image_file = "$(test_data_dir)/NE_Greenland_truecolor.2020162.aqua.250m.tiff"
 reflectance_test_image_file = "$(test_data_dir)/NE_Greenland.2020162.aqua.250m.tiff"
 reflectance_b7_test_file = "$(test_data_dir)/ref_image_b7.png"

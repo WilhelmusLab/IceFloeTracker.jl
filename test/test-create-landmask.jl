@@ -9,28 +9,22 @@
     matlab_landmask_file = "$(test_data_dir)/matlab_landmask.png"
     strel_file = "$(test_data_dir)/se.csv"
     struct_elem = readdlm(strel_file, ',', Bool)
+    
     matlab_landmask = load(matlab_landmask_file)[lm_test_region...]
     lm_image = load(landmask_file)[lm_test_region...]
     test_image = load(truecolor_test_image_file)[lm_test_region...]
 
     @time landmask = IceFloeTracker.create_landmask(lm_image, struct_elem)
-    @time masked_image = IceFloeTracker.apply_landmask(test_image, landmask)
-
-    #save output for inspection. delete later
-#     landmask_filename =
-#     "$(test_output_dir)/landmask_test_" *
-#     Dates.format(Dates.now(), "yyyy-mm-dd-HHMMSS") *
-#     ".png"
-# IceFloeTracker.@persist landmask landmask_filename
-
-# masked_image_filename =
-#     "$(test_output_dir)/landmasked_truecolor_test_image_" *
-#     Dates.format(Dates.now(), "yyyy-mm-dd-HHMMSS") *
-#     ".png"
-# IceFloeTracker.@persist masked_image masked_image_filename
+    
+    # Apply landmask to test_image inplace
+    @time IceFloeTracker.apply_landmask!(test_image, landmask)
 
     # test for percent difference in landmask images
-    @test (@test_approx_eq_sigma_eps landmask matlab_landmask [0, 0] 0.005) == nothing
-    # @test true
-    #@test (@test_approx_eq_sigma_eps masked_image masked_matlab_image) #TODO #Matlab output is not dilated
+    @test (@test_approx_eq_sigma_eps landmask matlab_landmask [0, 0] .1) === nothing
+
+    # test for apply_landmask
+    bw = ones(Int,3,3) # 3x3 box of ones
+    mask = BitArray(rand([true, false],3,3)) # random 3x3 mask
+    IceFloeTracker.apply_landmask!(bw,mask); # apply mask to bw in place
+    @test .!mask == bw # check masked bw is the complement of mask
 end
