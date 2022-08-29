@@ -112,5 +112,5 @@ function segmentation_A(
 
     segmented_A = segmented_ice_cloudmasked .|| diff_matrix
 
-    return segmented_A
+    return deepcopy(segmented_A)
 end

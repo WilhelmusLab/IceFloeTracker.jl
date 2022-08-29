@@ -17,7 +17,9 @@
     )
 
     println("------------ Segment Image - Fuzzy-C --------------")
-    # segmented_A_fuzzy_C = IceFloeTracker.segmentation_A(ice_water_discriminated_image, cloudmask)
+    segmented_A_fuzzy_C = IceFloeTracker.segmentation_A(
+        ice_water_discriminated_image, cloudmask
+    )
 
     segmented_a_filename =
         "$(test_output_dir)/segmented_a_" *
@@ -25,22 +27,24 @@
         ".png"
     IceFloeTracker.@persist segmented_A segmented_a_filename
 
-    # segmented_a_fuzzy_c_filename =
-    #     "$(test_output_dir)/segmented_a_" *
-    #     Dates.format(Dates.now(), "yyyy-mm-dd-HHMMSS") *
-    #     ".png"
-    # IceFloeTracker.@persist segmented_A_fuzzy_C segmented_a_fuzzy_c_filename
+    segmented_a_fuzzy_c_filename =
+        "$(test_output_dir)/segmented_a_" *
+        Dates.format(Dates.now(), "yyyy-mm-dd-HHMMSS") *
+        ".png"
+    IceFloeTracker.@persist segmented_A_fuzzy_C segmented_a_fuzzy_c_filename
 
-    @test (@test_approx_eq_sigma_eps fuzzy_c matlab_segmented_A [0, 0] 0.099) == nothing
+    @test (@test_approx_eq_sigma_eps fuzzy_c[ice_floe_test_region...] matlab_segmented_A[ice_floe_test_region...] [
+        0, 0
+    ] 0.083) == nothing
 
     @test (@test_approx_eq_sigma_eps fuzzy_c_masked matlab_segmented_A [0, 0] 0.0845) ==
         nothing
 
-    @test (@test_approx_eq_sigma_eps matlab_segmented_A segmented_A [0, 0] 0.000000000000000001) ==
+    @test (@test_approx_eq_sigma_eps matlab_segmented_A Gray.(segmented_A) [0, 0] 0.082) ==
         nothing #for some reason always passes regardless of eps value
 
-    # @test (@test_approx_eq_sigma_eps matlab_segmented_A segmented_A_fuzzy_C [0, 0] 0.0845) ==
-    # nothing
+    @test (@test_approx_eq_sigma_eps matlab_segmented_A segmented_A_fuzzy_C [0, 0] 0.0845) ==
+        nothing
 
     @test (@test_approx_eq_sigma_eps matlab_segmented_A segmented_A2 [0, 0] 0.0845) ==
         nothing
