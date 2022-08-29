@@ -44,4 +44,8 @@
 
     @test (@test_approx_eq_sigma_eps matlab_segmented_A segmented_A2 [0, 0] 0.0845) ==
         nothing
+
+    @test (@test_approx_eq_sigma_eps matlab_segmented_A[ice_floe_test_region...] segmented_A2[ice_floe_test_region...] [
+        0, 0
+    ] 0.109) == nothing
 end

@@ -21,21 +21,22 @@ ice_water_discrim_test_file = "$(test_data_dir)/ice_water_discrim_image.png"
 
 test_region = (1:2707, 1:4458)
 lm_test_region = (1:800, 1:1500)
+ice_floe_test_region = (1640:2060, 1840:2315)
 
 ## Get all test files filenames "test-*" in test folder and their corresponding names/label
 alltests = [f for f in readdir() if startswith(f, "test-")]
 testnames = [n[6:(end - 3)] for n in alltests]
 
 ## Put the filenames to test below
-to_test = alltests # uncomment this line to run all tests or add individual files below 
+to_test = #alltests # uncomment this line to run all tests or add individual files below 
 [
-#"test-create-landmask.jl",
-#"test-create-cloudmask.jl",
-#"test-normalize-image.jl",
-#"test-persist.jl",
-#"test-utils-padding.jl",
-#"test-discrim-ice-water.jl",
-#"test-segmentation-a.jl",
+    #"test-create-landmask.jl",
+    #"test-create-cloudmask.jl",
+    #"test-normalize-image.jl",
+    #"test-persist.jl",
+    #"test-utils-padding.jl",
+    #"test-discrim-ice-water.jl",
+    "test-segmentation-a.jl",
 ]
 
 # Run the tests
