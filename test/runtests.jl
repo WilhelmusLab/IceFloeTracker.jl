@@ -1,9 +1,8 @@
-using IceFloeTracker
-using Images
-using Test
 using DelimitedFiles
-using Dates
+using IceFloeTracker
+using FileIO, ImageIO, ImageMagick
 using Random
+using Test
 
 # Setting things up
 
