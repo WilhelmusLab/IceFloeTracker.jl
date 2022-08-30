@@ -1,6 +1,6 @@
 @testset "morphological ops - bwperim" begin
     println("-------------------------------------------------")
-    println("--------------- Pad Image Tests -----------------")
+    println("--------------- bwperim Tests -----------------")
     
     # Create image with 3 connected components. The test consists of digging the biggests holes for each blob in the foreground using bwperim, thereby creating 3 additional connected components, 6 in total.
     A = zeros(Int, 13, 16); A[2:6, 2:6] .= 1; A[4:8, 7:10] .= 1; A[10:12,13:15] .= 1; A[10:12,3:6] .= 1;
