@@ -19,13 +19,10 @@ jobs:
       matrix:
         version:
           - '1.7'
-          - 'nightly'
         os:
           - ubuntu-latest
         arch:
           - x64
-    env:
-       PYTHON: ""
     steps:
       - uses: actions/checkout@v3
       - uses: actions/setup-python@v4
