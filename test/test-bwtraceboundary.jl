@@ -19,7 +19,7 @@
     # 0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0
 
     # get boundaries closed by default, no point provided
-    boundary = bwtraceboundary(A);
+    boundary = IceFloeTracker.bwtraceboundary(A);
 
     # Test 1: Check correct number of boundary pixels where obtained
     @test all([length(boundary[1]) == 27, length(boundary[2]) == 11, length(boundary[3]) == 9])
@@ -28,17 +28,17 @@
     p1 = (2,2); p2=(12, 3); p3 = (10, 15); pbad = (0,0);
 
     # get a closed boundary starting at p1
-    out = bwtraceboundary(A, p1);
-    @test all([length(boundary[1]) == length(out), out1[1] == out[end]])
+    out = IceFloeTracker.bwtraceboundary(A, p1);
+    @test all([length(boundary[1]) == length(out), out[1] == out[end]])
     
     # get a closed boundary starting at p2
-    out = bwtraceboundary(A, p2);
+    out = IceFloeTracker.bwtraceboundary(A, p2);
     @test all([length(boundary[2]) == length(out), out[1] == out[end]])
 
     # get a closed boundary starting at p3
-    out = bwtraceboundary(A, p3);
+    out = IceFloeTracker.bwtraceboundary(A, p3);
     @test all([length(boundary[3]) == length(out), out[1] == out[end]])
 
-    out = bwtraceboundary(A, pbad);
+    out = IceFloeTracker.bwtraceboundary(A, pbad);
     @test boundary == out
 end;
