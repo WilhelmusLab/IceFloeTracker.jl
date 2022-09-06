@@ -6,6 +6,7 @@ using Dates
 using ImageContrastAdjustment
 using Peaks
 using StatsBase
+using Interpolations
 
 include("utils.jl")
 include("persist.jl")
@@ -14,6 +15,7 @@ include("cloudmask.jl")
 include("normalization.jl")
 include("ice-water-discrimination.jl")
 include("anisotropic_image_diffusion.jl")
+include("resample_boundary.jl")
 
 function fetchdata(; output::AbstractString)
     mkpath("$output")
