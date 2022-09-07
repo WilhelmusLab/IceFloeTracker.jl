@@ -13,8 +13,47 @@
 
 Trace the boundary of objects in `image` 
 
-Background pixels are represented as zeros. The algorithm traces the boundary counterclockwise and an initial point `P0` can be specified. If more than one boundary is detected and an initial point is provided, the boundary that contains this point is returned.
+Background pixels are represented as zero. The algorithm traces the boundary counterclockwise and an initial point `P0` can be specified. If more than one boundary is detected and an initial point is provided, the boundary that contains this point is returned as a vector of CartesianIndex types. Otherwise an array of vectors is returned with all the detected boundaries in `image`. 
 
+# Arguments
+- `image`: image, preferably binary with one single object, whose objects' boundaries are to be traced.
+- `P0`: initial point of a target boundary.
+- `closed`: if `true` (default) makes the inital point of a boundary equal to the last point.
+
+# Example
+
+```jldoctest; setup = :(using IceFloeTracker)
+julia> A = zeros(Int, 13, 16); A[2:6, 2:6] .= 1; A[4:8, 7:10] .= 1; A[10:12,13:15] .= 1; A[10:12,3:6] .= 1;
+
+julia> A
+13×16 Matrix{Int64}:
+ 0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0
+ 0  1  1  1  1  1  0  0  0  0  0  0  0  0  0  0
+ 0  1  1  1  1  1  0  0  0  0  0  0  0  0  0  0
+ 0  1  1  1  1  1  1  1  1  1  0  0  0  0  0  0
+ 0  1  1  1  1  1  1  1  1  1  0  0  0  0  0  0
+ 0  1  1  1  1  1  1  1  1  1  0  0  0  0  0  0
+ 0  0  0  0  0  0  1  1  1  1  0  0  0  0  0  0
+ 0  0  0  0  0  0  1  1  1  1  0  0  0  0  0  0
+ 0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0
+ 0  0  1  1  1  1  0  0  0  0  0  0  1  1  1  0
+ 0  0  1  1  1  1  0  0  0  0  0  0  1  1  1  0
+ 0  0  1  1  1  1  0  0  0  0  0  0  1  1  1  0
+ 0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0
+
+julia> boundary = bwtraceboundary(A);
+
+julia> boundary[3]
+9-element Vector{CartesianIndex}:
+ CartesianIndex(10, 13)
+ CartesianIndex(11, 13)
+ CartesianIndex(12, 13)
+ CartesianIndex(12, 14)
+ CartesianIndex(12, 15)
+ CartesianIndex(11, 15)
+ CartesianIndex(10, 15)
+ CartesianIndex(10, 14)
+ CartesianIndex(10, 13)
 """
 function bwtraceboundary(image,
                          P0::Union{Tuple{Int,Int},CartesianIndex{2},Any}=nothing,
