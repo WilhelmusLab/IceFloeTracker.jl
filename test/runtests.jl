@@ -3,6 +3,7 @@ using Images
 using Test
 using DelimitedFiles
 using Dates
+include("test_error_rate.jl")
 
 # Setting things up
 
