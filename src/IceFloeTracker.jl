@@ -15,7 +15,8 @@ include("cloudmask.jl")
 include("normalization.jl")
 include("ice-water-discrimination.jl")
 include("anisotropic_image_diffusion.jl")
-include("resample_boundary.jl")
+include("resample-boundary.jl")
+
 
 function fetchdata(; output::AbstractString)
     mkpath("$output")
