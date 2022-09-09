@@ -62,7 +62,7 @@ function bwtraceboundary(image,
     lnbd = 1
     image = Float64.(image)
     contour_list =  Vector{typeof(CartesianIndex[])}()
-    done = [false, false, false, false, false, false, false, false]
+    done = falses(8)
 
     # Clockwise Moore neighborhood.
     dir_delta = [CartesianIndex(-1, 0) , CartesianIndex(-1, 1), CartesianIndex(0, 1), CartesianIndex(1, 1), CartesianIndex(1, 0), CartesianIndex(1, -1), CartesianIndex(0, -1), CartesianIndex(-1,-1)]
