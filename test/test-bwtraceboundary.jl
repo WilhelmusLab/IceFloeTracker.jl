@@ -21,24 +21,35 @@
     # get boundaries closed by default, no point provided
     boundary = IceFloeTracker.bwtraceboundary(A);
 
-    # Test 1: Check correct number of boundary pixels where obtained
+    # Test 1: Check correct number of boundary pixels are obtained
     @test all([length(boundary[1]) == 27, length(boundary[2]) == 11, length(boundary[3]) == 9])
 
     # Test 2: Initial points for contours
-    p1 = (2,2); p2=(12, 3); p3 = (10, 15); pbad = (0,0);
+    p1 = (2,2); p2 = (12, 3); p3 = (10, 15); pbad = (0,0); pint = (4,4);
 
     # get a closed boundary starting at p1
-    out = IceFloeTracker.bwtraceboundary(A, p1);
+    out = IceFloeTracker.bwtraceboundary(A, P0=p1);
     @test all([length(boundary[1]) == length(out), out[1] == out[end]])
     
     # get a closed boundary starting at p2
-    out = IceFloeTracker.bwtraceboundary(A, p2);
+    out = IceFloeTracker.bwtraceboundary(A, P0=p2);
     @test all([length(boundary[2]) == length(out), out[1] == out[end]])
 
     # get a closed boundary starting at p3
-    out = IceFloeTracker.bwtraceboundary(A, p3);
+    out = IceFloeTracker.bwtraceboundary(A, P0=p3);
     @test all([length(boundary[3]) == length(out), out[1] == out[end]])
 
-    out = IceFloeTracker.bwtraceboundary(A, pbad);
+    # test exterior point
+    out = IceFloeTracker.bwtraceboundary(A, P0=pbad);
     @test boundary == out
+    
+    # test interior point
+    out = IceFloeTracker.bwtraceboundary(A, P0=pint);
+    @test boundary == out
+
+    # test input is a BitMatrix
+    @test IceFloeTracker.bwtraceboundary(A) == IceFloeTracker.bwtraceboundary(BitArray(A));;
+
+    # test not closed
+    @test length(IceFloeTracker.bwtraceboundary(A, P0=p1, closed=false)) ==  length(IceFloeTracker.bwtraceboundary(A, P0=p1))-1
 end;
