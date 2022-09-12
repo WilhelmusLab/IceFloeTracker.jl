@@ -18,6 +18,6 @@ sharpened_int = trunc.(UInt8, sharpened .* 255)
 
 imgadj = adjust_gamma(sharpened, 10)
 
-sharpened_cloudmasked = IceFloeTracker.apply_cloudmask(imgadj, cloudmask)
+sharpened_cloudmasked = IceFloeTracker.apply_cloudmask(imgadj, cloudmask)::GenericGrayImage
 
 ## skip .* 0.3, makes image too dark!
