@@ -31,7 +31,7 @@ function normalize_image(
     clip::Float64=0.95,
     smoothing_param::Int64=10,
     intensity::Float64=2.0,
-)::Matrix
+)::Tuple{Matrix{Gray},Matrix{Gray}}
     radius = Int.(ceil.(size(struct_elem) ./ 3)[1])
     pad_size = Fill(1, (radius, radius))
     gray_image = Float64.(Gray.(truecolor_image))
@@ -85,8 +85,9 @@ function normalize_image(
         image_equalized_view .* (1 + intensity) .+ image_smoothed_view .* (-intensity)
     image_sharpened = max.(image_sharpened, 0.0)
     image_sharpened = min.(image_sharpened, 1.0)
-    image_sharpened = colorview(Gray, image_sharpened)
-    image_sharpened = IceFloeTracker.add_padding(image_sharpened, pad_size)
+    image_sharpened_landmasked = IceFloeTracker.apply_landmask(image_sharpened, landmask)
+    image_sharpened_gray = colorview(Gray, image_sharpened_landmasked)
+    image_sharpened = IceFloeTracker.add_padding(image_sharpened_gray, pad_size)
 
     image_dilated = Images.dilate(image_sharpened, struct_elem)
     image_dilated = IceFloeTracker.remove_padding(image_dilated, pad_size)
@@ -94,5 +95,5 @@ function normalize_image(
     image_opened = Images.opening(complement.(image_dilated), complement.(image_sharpened))
     image_normalized_masked = IceFloeTracker.apply_landmask(image_opened, landmask)
 
-    return image_normalized_masked
+    return image_sharpened_gray, image_normalized_masked
 end
