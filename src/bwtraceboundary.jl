@@ -198,6 +198,7 @@ function detect_move!(image::Matrix{Float64}, p0::CartesianIndex{2}, p2::Cartesi
     dir = from_to(p0, p2, dir_delta)
     moved = clockwise(dir)
     p1 = CartesianIndex(0, 0)
+    
     while moved != dir ## 3.1
         newp = move(p0, image, moved, dir_delta)
         if newp[1]!=0
@@ -214,20 +215,21 @@ function detect_move!(image::Matrix{Float64}, p0::CartesianIndex{2}, p2::Cartesi
     p2 = p1 ## 3.2
     p3 = p0 ## 3.2
     done .= false
+    
     while true
         dir = from_to(p3, p2, dir_delta)
         moved = counterclockwise(dir)
-        p4 = CartesianIndex(-1, 0) # initialize p4
+        p4 = CartesianIndex(0, 0) # initialize p4
         done .= false
-        while true ## 3.3: "Examine N(p3) for a nonzero pixel, name first nonzero pixel as p4"
+        
+        while p4[1] == 0 ## 3.3: "Examine N(p3) for a nonzero pixel, name first nonzero pixel as p4"
             p4 = move(p3, image, moved, dir_delta)
-            if p4[1] != 0
-                break
-            end
             done[moved] = true
             moved = counterclockwise(moved)
         end
+        
         push!(border, p3) ## 3.4
+        
         if p3[1] == size(image, 1) || done[3]
             image[p3] = -nbd
         elseif image[p3] == 1
