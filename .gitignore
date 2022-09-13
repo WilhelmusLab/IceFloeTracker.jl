@@ -8,22 +8,23 @@ input/
 explorations/
 foo/
 .DS_Store
-!cloudmask.png
-!landmask.tiff
-!matlab_landmask.png
-!matlab_cloudmask.tiff
-!matlab_normalized.tiff
-!matlab_image_view.png
-!matlab_segmented_A.png
-!fuzzy_C.png
-!fuzzy_c_masked.png
-!current_landmask.png
-!cloudmask_test_image.tiff
-!clouds_channel.png
-!ref_image_b7.png
-!matlab_ice_water_discrim.png
-!normalized_image.png
-!ice_water_discrim_image.png
-!segmented_A2.png
-!NE_Greenland.2020162.aqua.250m.tiff
-!NE_Greenland_truecolor.2020162.aqua.250m.tiff
+!test_inputs/
+# !cloudmask.png
+# !landmask.tiff
+# !matlab_landmask.png
+# !matlab_cloudmask.tiff
+# !matlab_normalized.tiff
+# !matlab_image_view.png
+# !matlab_segmented_A.png
+# !fuzzy_C.png
+# !fuzzy_c_masked.png
+# !current_landmask.png
+# !cloudmask_test_image.tiff
+# !clouds_channel.png
+# !ref_image_b7.png
+# !matlab_ice_water_discrim.png
+# !normalized_image.png
+# !ice_water_discrim_image.png
+# !segmented_A2.png
+# !NE_Greenland.2020162.aqua.250m.tiff
+# !NE_Greenland_truecolor.2020162.aqua.250m.tiff

@@ -21,5 +21,5 @@
     IceFloeTracker.@persist segmented_A segmented_a_filename
 
     @test typeof(segmented_A) == typeof(matlab_segmented_A_bitmatrix)
-    @test @test_similarity(matlab_segmented_A_bitmatrix, segmented_A, 0.0845)
+    @test test_similarity(matlab_segmented_A_bitmatrix, segmented_A, 0.0845)
 end

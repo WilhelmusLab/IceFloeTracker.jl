@@ -1,4 +1,25 @@
 """
+    remove_landmask(landmask, ice_mask)
+
+Find the pixel indexes that are floating ice rather than soft or land ice. Returns an array of pixel indexes. 
+
+# Arguments
+- `landmask`: bitmatrix landmask for region of interest
+- `ice_mask`: bitmatrix with ones equal to ice, zeros otherwise
+
+"""
+function remove_landmask(landmask::BitMatrix, ice_mask::BitMatrix)::Array{Int64}
+    indexes_no_landmask = []
+    land = IceFloeTracker.apply_landmask(ice_mask, landmask)
+    for (idx, val) in enumerate(land)
+        if val != 0
+            push!(indexes_no_landmask, idx)
+        end
+    end
+    return indexes_no_landmask
+end
+
+"""
     segmentation_A(reflectance_image, ice_water_discriminated_image, landmask, cloudmask;band_7_threshold, band_2_threshold, band_1_threshold, band_7_relaxed_threshold, band_1_relaxed_threshold, possible_ice_threshold, min_opening_area, fill_range)
 
 Convert a 3-channel false color reflectance image to a 1-channel binary matrix with ice floes contrasted from background. Returns an image segmented and processed. Default thresholds are defined in the published Ice Floe Tracker article: Remote Sensing of the Environment 234 (2019) 111406.
@@ -18,19 +39,9 @@ Convert a 3-channel false color reflectance image to a 1-channel binary matrix w
 - `fill_range`: range of values dictating the size of holes to fill
 
 """
-function remove_landmask(landmask::BitMatrix, ice_mask::BitMatrix)::Array
-    data_no_landmask = []
-    data = IceFloeTracker.apply_landmask(convert(Matrix, ice_mask), landmask)
-    for (idx, val) in enumerate(data)
-        if val != 0
-            push!(data_no_landmask, idx)
-        end
-    end
-    return data_no_landmask
-end
 function segmentation_A(
-    reflectance_image::Matrix,
-    ice_water_discriminated_image::Matrix,
+    reflectance_image::Matrix{RGB{N0f8}},
+    ice_water_discriminated_image::Matrix{Gray{N0f8}},
     landmask::BitMatrix,
     cloudmask::BitMatrix;
     band_7_threshold::N0f8=N0f8(5 / 255),
@@ -42,12 +53,29 @@ function segmentation_A(
     min_opening_area::Real=50,
     fill_range::Tuple=(0, 50),
 )::BitMatrix
-    ice_water_discriminated_image = Array{Float32,2}(ice_water_discriminated_image)
-    height, width = size(ice_water_discriminated_image)
-    data = reshape(ice_water_discriminated_image, 1, height * width)
-    classes = Clustering.kmeans(data, 4; maxiter=50, display=:iter, init=:kmpp)
-    class_assignments = assignments(classes)
-    segmented = Gray.(((reshape(class_assignments, height, width)) .- 1) ./ 3) ## pixel_labels in matlab
+    ice_water_discriminated_image = Matrix{Float32}(ice_water_discriminated_image)
+    ice_water_discrimination_height, ice_water_discrimination_width = size(
+        ice_water_discriminated_image
+    )
+    ice_water_discriminateed_1d = reshape(
+        ice_water_discriminated_image,
+        1,
+        ice_water_discrimination_height * ice_water_discrimination_width,
+    )
+    feature_classes = Clustering.kmeans(
+        ice_water_discriminateed_1d, 4; maxiter=50, display=:iter, init=:kmpp
+    )
+    class_assignments = assignments(feature_classes)
+    segmented =
+        Gray.((
+            (
+                reshape(
+                    class_assignments,
+                    ice_water_discrimination_height,
+                    ice_water_discrimination_width,
+                ) .- 1
+            ) ./ 3
+        )) ## pixel_labels in matlab
 
     ## Make ice masks
     cv = channelview(reflectance_image)
@@ -62,7 +90,7 @@ function segmentation_A(
         mask_ice_band_7 = cv[1, :, :] .< band_7_threshold_relaxed #10 / 255
         mask_ice_band_1 = cv[3, :, :] .> band_1_threshold_relaxed #190 / 255
         ice = mask_ice_band_7 .&& mask_ice_band_2 .&& mask_ice_band_1
-        ice_labels = remove_landmask(landmask_bitmatrix, ice)
+        ice_labels = remove_landmask(landmask, ice)
         if isempty(ice_labels)
             ref_image_band_2 = cv[2, :, :]
             ref_image_band_1 = cv[3, :, :]
@@ -83,7 +111,7 @@ function segmentation_A(
             mask_ice_band_2 = cv[2, :, :] .> peak1 / 255
             mask_ice_band_1 = cv[3, :, :] .> peak2 / 255
             ice = mask_ice_band_7 .&& mask_ice_band_2 .&& mask_ice_band_1
-            ice_labels = remove_landmask(landmask_bitmatrix, ice)
+            ice_labels = remove_landmask(landmask, ice)
             nlabel = StatsBase.mode(segmented[ice_labels])
         else
             nlabel = StatsBase.mode(segmented[ice_labels])
@@ -112,5 +140,5 @@ function segmentation_A(
 
     segmented_A = segmented_ice_cloudmasked .|| diff_matrix
 
-    return deepcopy(segmented_A)
+    return segmented_A
 end

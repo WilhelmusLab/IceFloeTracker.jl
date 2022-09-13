@@ -8,8 +8,3 @@ function test_similarity(imgA, imgB, error_rate=0.005)
     end
     return res
 end
-macro test_similarity(imgA, imgB, error_rate=0.005)
-    return quote
-        test_similarity($(esc(imgA)), $(esc(imgB)), $(esc(error_rate)))
-    end
-end

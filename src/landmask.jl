@@ -42,7 +42,7 @@ Zero out pixels in land and soft ice regions on truecolor image, return RGB imag
 - `landmask_binary`: binary landmask with 1=land, 0=water/ice 
 
 """
-function apply_landmask(input_image::Matrix, landmask_binary::BitMatrix)::Matrix
+function apply_landmask(input_image::AbstractMatrix, landmask_binary::BitMatrix)::BitMatrix
     image_masked = landmask_binary .* input_image
     return image_masked
 end
