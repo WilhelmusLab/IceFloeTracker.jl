@@ -12,8 +12,6 @@ jobs:
     permissions:
       contents: write
     runs-on: ubuntu-latest
-    env:
-        PYTHON: ""
     steps:
       - uses: actions/checkout@v3
       - uses: actions/setup-python@v4
@@ -32,5 +30,6 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} # If authenticating with GitHub Actions token
           DOCUMENTER_KEY: ${{ secrets.DOCUMENTER_KEY }} # If authenticating with SSH deploy key
+          PYTHON: python
         run: julia --project=docs/ docs/make.jl
         
