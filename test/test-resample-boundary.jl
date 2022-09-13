@@ -15,7 +15,7 @@
     # 0  0  0  0  0  0  0  0  0  0  0
 
     # get boundary of biggest blob in image
-    boundary = IceFloeTracker.bwtraceboundary(A,(2,2));
+    boundary = IceFloeTracker.bwtraceboundary(A,P0=(2,2));
 
     # get resampled set of boundary points
     resampled_boundary = IceFloeTracker.resample_boundary(boundary)
