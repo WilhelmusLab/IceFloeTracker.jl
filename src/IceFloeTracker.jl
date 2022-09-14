@@ -6,6 +6,8 @@ using Dates
 using ImageContrastAdjustment
 using Peaks
 using StatsBase
+using DataFrames
+using PyCall
 
 include("utils.jl")
 include("persist.jl")
@@ -15,6 +17,17 @@ include("normalization.jl")
 include("ice-water-discrimination.jl")
 include("anisotropic_image_diffusion.jl")
 include("bwtraceboundary.jl")
+
+
+const sk_measure = PyNULL()
+
+function __init__()
+    copy!(sk_measure, pyimport_conda("skimage.measure", "scikit-image"))
+end
+
+include("regionprops.jl")
+
+
 
 function fetchdata(; output::AbstractString)
     mkpath("$output")

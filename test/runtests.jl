@@ -3,6 +3,9 @@ using Images
 using Test
 using DelimitedFiles
 using Dates
+using DataFrames
+using Random
+using DataFrames
 
 # Setting things up
 
@@ -30,10 +33,11 @@ to_test = alltests # uncomment this line to run all tests or add individual file
 # #"test-create-landmask.jl",
 # #"test-create-cloudmask.jl",
 # #"test-normalize-image.jl",
-# #    "test-persist.jl",
-# #    "test-utils-padding.jl",
+# #"test-persist.jl",
+# #"test-utils-padding.jl",
 # #"test-discrim-ice-water.jl",
 # "test-bwtraceboundary.jl",
+# "test-regionprops.jl"
 # ]
 
 # Run the tests
