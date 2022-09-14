@@ -6,6 +6,7 @@ using Dates
 using ImageContrastAdjustment
 using Peaks
 using StatsBase
+using Interpolations
 using DataFrames
 using PyCall
 
@@ -17,6 +18,8 @@ include("normalization.jl")
 include("ice-water-discrimination.jl")
 include("anisotropic_image_diffusion.jl")
 include("bwtraceboundary.jl")
+include("resample-boundary.jl")
+
 
 
 const sk_measure = PyNULL()

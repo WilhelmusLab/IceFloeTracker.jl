@@ -37,8 +37,10 @@ to_test = alltests # uncomment this line to run all tests or add individual file
 # #"test-utils-padding.jl",
 # #"test-discrim-ice-water.jl",
 # "test-bwtraceboundary.jl",
-# "test-regionprops.jl"
+# #"test-resample_boundary.jl",
+# "test-regionprops.jl",
 # ]
+
 
 # Run the tests
 @testset "IceFloeTracker.jl" begin
