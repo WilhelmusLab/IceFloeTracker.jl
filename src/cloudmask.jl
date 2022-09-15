@@ -52,7 +52,7 @@ Zero out pixels containing clouds where clouds and ice are not discernable. Argu
 """
 function apply_cloudmask(
     ref_image::Matrix{RGB{Float64}}, cloudmask::BitMatrix
-)::Tuple{Matrix{RGB{Float64}}, Matrix{Gray{Float64}}}
+)::Tuple{Matrix{RGB{Float64}},Matrix{Gray{Float64}}}
     masked_image = cloudmask .* ref_image
     image_view = channelview(masked_image)
     clouds_channel = image_view[1, :, :]

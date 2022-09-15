@@ -3,7 +3,6 @@ using Images
 using Test
 using DelimitedFiles
 using Dates
-using ReferenceTests
 include("test_error_rate.jl")
 
 # Setting things up
