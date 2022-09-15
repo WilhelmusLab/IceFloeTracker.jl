@@ -9,6 +9,7 @@ using StatsBase
 using Interpolations
 using DataFrames
 using PyCall
+using DSP
 
 include("utils.jl")
 include("persist.jl")
