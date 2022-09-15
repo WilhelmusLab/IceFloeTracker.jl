@@ -10,7 +10,7 @@ Convert a 3-channel RGB land mask image to a 1-channel binary matrix, including 
 
 """
 function create_landmask(
-    landmask_image::Matrix{RGB{N0f8}},
+    landmask_image::Matrix{RGB{Float64}},
     struct_elem::Matrix{Bool};
     fill_value_lower::Int=0,
     fill_value_upper::Int=2000,

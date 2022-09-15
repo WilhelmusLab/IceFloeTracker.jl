@@ -23,23 +23,22 @@ Generates an image with ice floes apparent after filtering and combining previou
 
 """
 function discriminate_ice_water(
-    reflectance_image::Matrix,
-    reflectance_image_band7::Matrix,
-    normalized_image::Matrix,
+    reflectance_image::Matrix{RGB{Float64}},
+    reflectance_image_band7::Matrix{Gray{Float64}},
+    normalized_image::Matrix{RGB{Float64}},
     landmask_bitmatrix::BitMatrix,
-    clouds_channel::Matrix;
-    floes_threshold::N0f8=N0f8(100 / 255),
-    mask_clouds_lower::N0f8=N0f8(17 / 255),
-    mask_clouds_upper::N0f8=N0f8(30 / 255),
+    clouds_channel::Matrix{Gray{Float64}};
+    floes_threshold::Float64=Float64(17 / 255),
+    mask_clouds_upper::Float64=Float64(30 / 255),
     kurt_thresh_lower::Real=2,
     kurt_thresh_upper::Real=8,
     skew_thresh::Real=4,
-    st_dev_thresh_lower::N0f8=N0f8(84 / 255),
-    st_dev_thresh_upper::N0f8=N0f8(98.9 / 255),
+    st_dev_thresh_lower::Float64=Float64(84 / 255),
+    st_dev_thresh_upper::Float64=Float64(98.9 / 255),
     clouds_ratio_threshold::Float64=0.02,
     differ_threshold::Float64=0.6,
     nbins::Real=155,
-)::Matrix
+)::Matrix{Gray{Float64}}
     # first define all of the image variations
     image_clouds = IceFloeTracker.apply_landmask(clouds_channel, landmask_bitmatrix) # output during cloudmask apply, landmasked 
     image_cloudless = IceFloeTracker.apply_landmask(
