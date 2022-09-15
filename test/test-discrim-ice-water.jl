@@ -2,13 +2,13 @@
     println("------------------------------------------------")
     println("------------ Create Ice-Water Discrimination Test --------------")
 
-    reflectance_image = load(reflectance_test_image_file)[test_region...]
-    reflectance_image_band7 = load(reflectance_b7_test_file)
+    reflectance_image = float32.(load(reflectance_test_image_file)[test_region...])
+    reflectance_image_band7 = float32.(load(reflectance_b7_test_file))
     landmask = load(current_landmask_file)
     landmask_bitmatrix = convert(BitMatrix, landmask)
-    normalized_image = load(normalized_test_file)
-    clouds_channel = load(clouds_channel_test_file)
-    matlab_ice_water_discrim = load("$(test_data_dir)/matlab_ice_water_discrim.png")
+    normalized_image = float32.(load(normalized_test_file))
+    clouds_channel = float32.(load(clouds_channel_test_file))
+    matlab_ice_water_discrim = float32.(load("$(test_data_dir)/matlab_ice_water_discrim.png"))
 
     ice_water_discrim = IceFloeTracker.discriminate_ice_water(
         reflectance_image,

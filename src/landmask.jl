@@ -10,7 +10,7 @@ Convert a 3-channel RGB land mask image to a 1-channel binary matrix, including 
 
 """
 function create_landmask(
-    landmask_image::Matrix{RGB{Float64}},
+    landmask_image::AbstractMatrix,
     struct_elem::Matrix{Bool};
     fill_value_lower::Int=0,
     fill_value_upper::Int=2000,
@@ -42,7 +42,7 @@ Zero out pixels in land and soft ice regions on truecolor image, return RGB imag
 - `landmask_binary`: binary landmask with 1=land, 0=water/ice 
 
 """
-function apply_landmask(input_image::AbstractMatrix, landmask_binary::BitMatrix)::BitMatrix
+function apply_landmask(input_image::AbstractMatrix, landmask_binary::BitMatrix)
     image_masked = landmask_binary .* input_image
     return image_masked
 end

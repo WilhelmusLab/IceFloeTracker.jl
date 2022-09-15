@@ -3,11 +3,11 @@
     println("------------------------------------------------")
     println("------------ Create Segmentation-A Test --------------")
 
-    reflectance_image = load(reflectance_test_image_file)[test_region...]
+    reflectance_image = float32.(load(reflectance_test_image_file)[test_region...])
     landmask = convert(BitMatrix, load(current_landmask_file))
     cloudmask = convert(BitMatrix, load(cloudmask_test_file))
-    ice_water_discriminated_image = load(ice_water_discrim_test_file)
-    matlab_segmented_A = load("$(test_data_dir)/matlab_segmented_A.png")
+    ice_water_discriminated_image = float32.(load(ice_water_discrim_test_file))
+    matlab_segmented_A = float32.(load("$(test_data_dir)/matlab_segmented_A.png"))
     matlab_segmented_A_bitmatrix = convert(BitMatrix, matlab_segmented_A)
 
     println("---------- Segment Image - Direct Method ------------")

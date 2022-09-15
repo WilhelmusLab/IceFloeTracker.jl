@@ -40,16 +40,16 @@ Convert a 3-channel false color reflectance image to a 1-channel binary matrix w
 
 """
 function segmentation_A(
-    reflectance_image::Matrix{RGB{Float64}},
-    ice_water_discriminated_image::Matrix{Gray{Float64}},
+    reflectance_image::Matrix{RGB{Float32}},
+    ice_water_discriminated_image::Matrix{Gray{Float32}},
     landmask::BitMatrix,
     cloudmask::BitMatrix;
-    band_7_threshold::Float64=Float64(5 / 255),
-    band_2_threshold::Float64=Float64(230 / 255),
-    band_1_threshold::Float64=Float64(240 / 255),
-    band_7_threshold_relaxed::Float64=Float64(10 / 255),
-    band_1_threshold_relaxed::Float64=Float64(190 / 255),
-    possible_ice_threshold::Float64=Float64(75 / 255),
+    band_7_threshold::Float32=Float32(5 / 255),
+    band_2_threshold::Float32=Float32(230 / 255),
+    band_1_threshold::Float32=Float32(240 / 255),
+    band_7_threshold_relaxed::Float32=Float32(10 / 255),
+    band_1_threshold_relaxed::Float32=Float32(190 / 255),
+    possible_ice_threshold::Float32=Float32(75 / 255),
     min_opening_area::Real=50,
     fill_range::Tuple=(0, 50),
 )::BitMatrix

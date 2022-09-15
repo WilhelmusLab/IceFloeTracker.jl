@@ -23,12 +23,13 @@ Generates an image with ice floes apparent after filtering and combining previou
 
 """
 function discriminate_ice_water(
-    reflectance_image::Matrix{RGB{Float64}},
-    reflectance_image_band7::Matrix{Gray{Float64}},
-    normalized_image::Matrix{RGB{Float64}},
+    reflectance_image::Matrix{RGB{Float32}},
+    reflectance_image_band7::Matrix{Gray{Float32}},
+    normalized_image::Matrix{Gray{Float32}},
     landmask_bitmatrix::BitMatrix,
-    clouds_channel::Matrix{Gray{Float64}};
-    floes_threshold::Float64=Float64(17 / 255),
+    clouds_channel::Matrix{Gray{Float32}};
+    floes_threshold::Float64=Float64(100 / 255),
+    mask_clouds_lower::Float64=Float64(17 / 255),
     mask_clouds_upper::Float64=Float64(30 / 255),
     kurt_thresh_lower::Real=2,
     kurt_thresh_upper::Real=8,
@@ -38,7 +39,7 @@ function discriminate_ice_water(
     clouds_ratio_threshold::Float64=0.02,
     differ_threshold::Float64=0.6,
     nbins::Real=155,
-)::Matrix{Gray{Float64}}
+)::AbstractMatrix
     # first define all of the image variations
     image_clouds = IceFloeTracker.apply_landmask(clouds_channel, landmask_bitmatrix) # output during cloudmask apply, landmasked 
     image_cloudless = IceFloeTracker.apply_landmask(

@@ -13,13 +13,13 @@ Convert a 3-channel false color reflectance image to a 1-channel binary matrix; 
 
 """
 function create_cloudmask(
-    ref_image::Matrix{RGB{Float64}};
+    ref_image::AbstractMatrix;
     prelim_threshold::Float64=Float64(110 / 255),
     band_7_threshold::Float64=Float64(200 / 255),
     band_2_threshold::Float64=Float64(190 / 255),
     ratio_lower::Float64=0.0,
     ratio_upper::Float64=0.75,
-)::Tuple{BitMatrix,Matrix{Gray{Float64}}}
+)::Tuple{BitMatrix, Matrix{Gray{Float32}}}
     println("Setting thresholds")
     ref_view = channelview(ref_image)
     ref_image_b7 = ref_view[1, :, :]
@@ -51,8 +51,8 @@ Zero out pixels containing clouds where clouds and ice are not discernable. Argu
 
 """
 function apply_cloudmask(
-    ref_image::Matrix{RGB{Float64}}, cloudmask::BitMatrix
-)::Tuple{Matrix{RGB{Float64}},Matrix{Gray{Float64}}}
+    ref_image::AbstractMatrix, cloudmask::BitMatrix
+)::Tuple{Matrix{RGB{Float32}},Matrix{Gray{Float32}}}
     masked_image = cloudmask .* ref_image
     image_view = channelview(masked_image)
     clouds_channel = image_view[1, :, :]
