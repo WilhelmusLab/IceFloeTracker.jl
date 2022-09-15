@@ -9,6 +9,7 @@ explorations/
 foo/
 docs/build/
 .DS_Store
+.vscode
 !landmask.tiff
 !matlab_landmask.png
 !matlab_cloudmask.tiff
