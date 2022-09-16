@@ -23,11 +23,11 @@ Generates an image with ice floes apparent after filtering and combining previou
 
 """
 function discriminate_ice_water(
-    reflectance_image::Matrix{RGB{Float32}},
-    reflectance_image_band7::Matrix{Gray{Float32}},
-    normalized_image::Matrix{Gray{Float32}},
+    reflectance_image::Matrix{RGB{Float64}},
+    reflectance_image_band7::Matrix{Gray{Float64}},
+    normalized_image::Matrix{Gray{Float64}},
     landmask_bitmatrix::BitMatrix,
-    clouds_channel::Matrix{Gray{Float32}};
+    clouds_channel::Matrix{Gray{Float64}};
     floes_threshold::Float64=Float64(100 / 255),
     mask_clouds_lower::Float64=Float64(17 / 255),
     mask_clouds_upper::Float64=Float64(30 / 255),

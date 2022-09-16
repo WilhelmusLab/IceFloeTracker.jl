@@ -7,7 +7,7 @@
     println("--------- Create and apply cloudmask --------")
     ref_image = float32.(load(reflectance_test_image_file)[test_region...])
 
-    matlab_cloudmask = float32.(load(matlab_cloudmask_file))
+    matlab_cloudmask = float64.(load(matlab_cloudmask_file))
     @time cloudmask, ref_image_b7 = IceFloeTracker.create_cloudmask(ref_image)
     @time masked_image, clouds_channel = IceFloeTracker.apply_cloudmask(
         ref_image, cloudmask

@@ -19,7 +19,7 @@ function create_cloudmask(
     band_2_threshold::Float64=Float64(190 / 255),
     ratio_lower::Float64=0.0,
     ratio_upper::Float64=0.75,
-)::Tuple{BitMatrix, Matrix{Gray{Float32}}}
+)::Tuple{BitMatrix,Matrix{Gray{Float64}}}
     println("Setting thresholds")
     ref_view = channelview(ref_image)
     ref_image_b7 = ref_view[1, :, :]
@@ -52,7 +52,7 @@ Zero out pixels containing clouds where clouds and ice are not discernable. Argu
 """
 function apply_cloudmask(
     ref_image::AbstractMatrix, cloudmask::BitMatrix
-)::Tuple{Matrix{RGB{Float32}},Matrix{Gray{Float32}}}
+)::Tuple{Matrix{RGB{Float64}},Matrix{Gray{Float64}}}
     masked_image = cloudmask .* ref_image
     image_view = channelview(masked_image)
     clouds_channel = image_view[1, :, :]

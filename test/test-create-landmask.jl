@@ -6,9 +6,9 @@
     matlab_landmask_file = "$(test_data_dir)/matlab_landmask.png"
     strel_file = "$(test_data_dir)/se.csv"
     struct_elem = readdlm(strel_file, ',', Bool)
-    matlab_landmask = float32.(load(matlab_landmask_file)[lm_test_region...])
-    lm_image = float32.(load(landmask_file)[lm_test_region...])
-    test_image = float32.(load(truecolor_test_image_file)[lm_test_region...])
+    matlab_landmask = float64.(load(matlab_landmask_file)[lm_test_region...])
+    lm_image = float64.(load(landmask_file)[lm_test_region...])
+    test_image = float64.(load(truecolor_test_image_file)[lm_test_region...])
     @time landmask = IceFloeTracker.create_landmask(lm_image, struct_elem)
 
     @time masked_image = IceFloeTracker.apply_landmask(test_image, landmask)
