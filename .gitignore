@@ -7,5 +7,6 @@
 input/
 explorations/
 foo/
+docs/build/
 .DS_Store
 !test_inputs/
