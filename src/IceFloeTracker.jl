@@ -20,6 +20,7 @@ include("ice-water-discrimination.jl")
 include("anisotropic_image_diffusion.jl")
 include("bwtraceboundary.jl")
 include("resample-boundary.jl")
+include("psi-s.jl")
 
 
 
