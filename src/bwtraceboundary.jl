@@ -52,29 +52,38 @@ julia> boundary[3]
  CartesianIndex(10, 14)
  CartesianIndex(10, 13)
 """
-function bwtraceboundary(image::Union{Matrix{Int64},Matrix{Float64},BitMatrix};
-                         P0::Union{Tuple{Int,Int},CartesianIndex{2},Nothing}=nothing,
-                         closed::Bool=true)
-    
+function bwtraceboundary(
+    image::Union{Matrix{Int64},Matrix{Float64},BitMatrix};
+    P0::Union{Tuple{Int,Int},CartesianIndex{2},Nothing}=nothing,
+    closed::Bool=true,
+)
     if typeof(image[1]) != Float64
         image = Float64.(image)
     end
 
     nbd = 1
-        
-    contour_list =  Vector{typeof(CartesianIndex[])}()
+
+    contour_list = Vector{typeof(CartesianIndex[])}()
     done = falses(8)
 
     # Clockwise Moore neighborhood.
-    dir_delta = [CartesianIndex(-1, 0), CartesianIndex(-1, 1), CartesianIndex(0, 1), CartesianIndex(1, 1), CartesianIndex(1, 0), CartesianIndex(1, -1), CartesianIndex(0, -1), CartesianIndex(-1,-1)]
+    dir_delta = [
+        CartesianIndex(-1, 0),
+        CartesianIndex(-1, 1),
+        CartesianIndex(0, 1),
+        CartesianIndex(1, 1),
+        CartesianIndex(1, 0),
+        CartesianIndex(1, -1),
+        CartesianIndex(0, -1),
+        CartesianIndex(-1, -1),
+    ]
 
     height, width = size(image)
 
-    for i=1:height
-        for j=1:width
-            
-            is_outer = (image[i, j] == 1 && (j == 1 || image[i, j-1] == 0)) ## 1 (a)
-            is_hole = (image[i, j] >= 1 && (j == width || image[i, j+1] == 0))
+    for i in 1:height
+        for j in 1:width
+            is_outer = (image[i, j] == 1 && (j == 1 || image[i, j - 1] == 0)) ## 1 (a)
+            is_hole = (image[i, j] >= 1 && (j == width || image[i, j + 1] == 0))
 
             if is_outer || is_hole
                 # 2
@@ -90,35 +99,32 @@ function bwtraceboundary(image::Union{Matrix{Int64},Matrix{Float64},BitMatrix};
                     from += CartesianIndex(0, 1)
                 end
 
-                p0 = CartesianIndex(i,j)
+                p0 = CartesianIndex(i, j)
                 detect_move!(image, p0, from, nbd, border, done, dir_delta) ## 3
-                
+
                 if isempty(border)
                     push!(border, p0)
                     image[p0] = -nbd
                 end
                 push!(contour_list, border)
             end
-            
         end
     end
 
     # make contour start at provided P0
-    
-    if .!isnothing(P0)
 
+    if .!isnothing(P0)
         P0 = CartesianIndex(P0)
 
         # check P0 is in a contour
-        test_p0, idx = isincountourlist(P0,contour_list)
-
+        test_p0, idx = isincountourlist(P0, contour_list)
 
         # if so, make the contour start at P0
         if test_p0
             target_contour = contour_list[idx]
             target_contour = makecontourstartatP(P0, target_contour)
             if closed
-                return push!(target_contour,target_contour[1])
+                return push!(target_contour, target_contour[1])
             else
                 return target_contour
             end
@@ -133,16 +139,15 @@ function bwtraceboundary(image::Union{Matrix{Int64},Matrix{Float64},BitMatrix};
             push!(seq, seq[1])
         end
     end
-    
+
     # unpack contour_list in case only one contour is found
-    length(contour_list) == 1 ? contour_list[1] : contour_list
+    return length(contour_list) == 1 ? contour_list[1] : contour_list
 end
 
 """
 Make contour start at point P by permuting the elements in contour.
 """
 function makecontourstartatP(P::CartesianIndex{2}, contour::Vector{CartesianIndex})
-
     iout = 1 # initialize variable for use in for loop
 
     # find index of P in contour
@@ -157,14 +162,17 @@ function makecontourstartatP(P::CartesianIndex{2}, contour::Vector{CartesianInde
         return contour
     else
         # return correct permutation of contour
-        return [contour[iout:end];contour[1:iout-1]]
+        return [contour[iout:end]; contour[1:(iout - 1)]]
     end
 end
-    
+
 """
 Check `P` is in countour list if so return the index of the contour that contains `P`, otherwise return false.
 """
-function isincountourlist(P::Union{CartesianIndex{2},Tuple{Int64, Int64}}, contour_list::Vector{Vector{CartesianIndex}})
+function isincountourlist(
+    P::Union{CartesianIndex{2},Tuple{Int64,Int64}},
+    contour_list::Vector{Vector{CartesianIndex}},
+)
     if typeof(P) <: Tuple
         P = CartesianIndex(P)
     end
@@ -174,9 +182,8 @@ function isincountourlist(P::Union{CartesianIndex{2},Tuple{Int64, Int64}}, conto
             return (true, i)
         end
     end
-    
+
     return (false, 0)
-    
 end
 
 """
@@ -186,22 +193,32 @@ Get index in Moore neigborhood representing the direction from the `from` pixel 
 dir_delta = [CartesianIndex(-1, 0), CartesianIndex(-1, 1), CartesianIndex(0, 1), CartesianIndex(1, 1), CartesianIndex(1, 0), CartesianIndex(1, -1), CartesianIndex(0, -1), CartesianIndex(-1,-1)]
 
 """
-function from_to(from::CartesianIndex, to::CartesianIndex, dir_delta::Vector{CartesianIndex{2}})
-    delta = to-from
-    findfirst(x->x == delta, dir_delta)
+function from_to(
+    from::CartesianIndex, to::CartesianIndex, dir_delta::Vector{CartesianIndex{2}}
+)
+    delta = to - from
+    return findfirst(x -> x == delta, dir_delta)
 end
 
 """
 Workhorse function: Get all pixel coords for detected border.
 """
-function detect_move!(image::Matrix{Float64}, p0::CartesianIndex{2}, p2::CartesianIndex{2}, nbd::Int, border::Vector{CartesianIndex}, done::BitVector, dir_delta::Vector{CartesianIndex{2}})
+function detect_move!(
+    image::Matrix{Float64},
+    p0::CartesianIndex{2},
+    p2::CartesianIndex{2},
+    nbd::Int,
+    border::Vector{CartesianIndex},
+    done::BitVector,
+    dir_delta::Vector{CartesianIndex{2}},
+)
     dir = from_to(p0, p2, dir_delta)
     moved = clockwise(dir)
     p1 = CartesianIndex(0, 0)
-    
+
     while moved != dir ## 3.1
         newp = move(p0, image, moved, dir_delta)
-        if newp[1]!=0
+        if newp[1] != 0
             p1 = newp
             break
         end
@@ -209,27 +226,27 @@ function detect_move!(image::Matrix{Float64}, p0::CartesianIndex{2}, p2::Cartesi
     end
 
     if p1 == CartesianIndex(0, 0)
-        return
+        return nothing
     end
 
     p2 = p1 ## 3.2
     p3 = p0 ## 3.2
     done .= false
-    
+
     while true
         dir = from_to(p3, p2, dir_delta)
         moved = counterclockwise(dir)
         p4 = CartesianIndex(0, 0) # initialize p4
         done .= false
-        
+
         while p4[1] == 0 ## 3.3: "Examine N(p3) for a nonzero pixel, name first nonzero pixel as p4"
             p4 = move(p3, image, moved, dir_delta)
             done[moved] = true
             moved = counterclockwise(moved)
         end
-        
+
         push!(border, p3) ## 3.4
-        
+
         if p3[1] == size(image, 1) || done[3]
             image[p3] = -nbd
         elseif image[p3] == 1
@@ -248,24 +265,29 @@ end
 Make a clockwise turn from the `dir` direction
 """
 function clockwise(dir::Int)
-    return (dir)%8 + 1
+    return (dir) % 8 + 1
 end
 
 """
 Make a counterclockwise turn from the `dir` direction
 """
 function counterclockwise(dir::Int)
-    return (dir+6)%8 + 1
+    return (dir + 6) % 8 + 1
 end
 
 """
 move from current pixel to the next in given direction
 """
-function move(pixel::CartesianIndex{2}, image::Matrix{Float64}, dir::Int, dir_delta::Vector{CartesianIndex{2}})
+function move(
+    pixel::CartesianIndex{2},
+    image::Matrix{Float64},
+    dir::Int,
+    dir_delta::Vector{CartesianIndex{2}},
+)
     newp = pixel + dir_delta[dir]
     height, width = size(image)
-    if (0 < newp[1] <= height) &&  (0 < newp[2] <= width) # check move is within image domain
-        if image[newp]!=0 # and that it is not a background point
+    if (0 < newp[1] <= height) && (0 < newp[2] <= width) # check move is within image domain
+        if image[newp] != 0 # and that it is not a background point
             return newp
         end
     end
