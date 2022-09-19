@@ -5,10 +5,10 @@
     struct_elem2 = readdlm(strel_file2, ',', Bool)
     matlab_normalized_img_file = "$(test_data_dir)/matlab_normalized.tiff"
     matlab_sharpened_file = "$(test_data_dir)/matlab_sharpened.png"
-    landmask = load(current_landmask_file)
+    landmask = float64.(load(current_landmask_file))
     landmask_bitmatrix = convert(BitMatrix, landmask)
-    input_image = load(truecolor_test_image_file)[test_region...]
-    matlab_norm_image = load(matlab_normalized_img_file)[test_region...]
+    input_image = float64.(load(truecolor_test_image_file)[test_region...])
+    matlab_norm_image = float64.(load(matlab_normalized_img_file)[test_region...])
     matlab_sharpened = load(matlab_sharpened_file)[ice_floe_test_region...]
 
     println("-------------- Process Image ----------------")

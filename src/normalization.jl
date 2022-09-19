@@ -19,7 +19,7 @@ Adjusts truecolor land-masked image to highlight ice floe features. This functio
 
 """
 function normalize_image(
-    truecolor_image::Matrix,
+    truecolor_image::Matrix{RGB{Float64}},
     landmask::BitMatrix,
     struct_elem::Matrix{Bool};
     lambda::Real=0.25,
@@ -31,7 +31,7 @@ function normalize_image(
     clip::Float64=0.95,
     smoothing_param::Int64=10,
     intensity::Float64=2.0,
-)::Tuple{Matrix{Gray},Matrix{Gray}}
+)::Tuple{Matrix{Gray{Float64}},Matrix{Gray{Float64}}}
     radius = Int.(ceil.(size(struct_elem) ./ 3)[1])
     pad_size = Fill(1, (radius, radius))
     gray_image = Float64.(Gray.(truecolor_image))

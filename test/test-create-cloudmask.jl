@@ -5,9 +5,9 @@
     # define constants, maybe move to test config file
     matlab_cloudmask_file = "$(test_data_dir)/matlab_cloudmask.tiff"
     println("--------- Create and apply cloudmask --------")
-    ref_image = load(reflectance_test_image_file)[test_region...]
+    ref_image = float64.(load(reflectance_test_image_file)[test_region...])
 
-    matlab_cloudmask = load(matlab_cloudmask_file)
+    matlab_cloudmask = float64.(load(matlab_cloudmask_file))
     @time cloudmask, ref_image_b7 = IceFloeTracker.create_cloudmask(ref_image)
     @time masked_image, clouds_channel = IceFloeTracker.apply_cloudmask(
         ref_image, cloudmask
