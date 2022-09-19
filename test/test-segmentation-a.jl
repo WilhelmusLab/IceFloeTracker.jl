@@ -23,5 +23,5 @@
 
     @test typeof(segmented_A) == typeof(matlab_segmented_A_bitmatrix)
     @test test_similarity(matlab_segmented_A_bitmatrix, segmented_A, 0.0845)
-    #ToDo - @test_reference "matlab_segmented_A" "segmented_A" by=psnr_equality(20)
+    # TODO(tjd) @test_reference "matlab_segmented_A" "segmented_A" by=psnr_equality(20)
 end

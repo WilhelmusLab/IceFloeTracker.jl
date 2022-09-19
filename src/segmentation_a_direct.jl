@@ -66,16 +66,11 @@ function segmentation_A(
         ice_water_discriminateed_1d, 4; maxiter=50, display=:iter, init=:kmpp
     )
     class_assignments = assignments(feature_classes)
-    segmented =
-        Gray.((
-            (
-                reshape(
-                    class_assignments,
-                    ice_water_discrimination_height,
-                    ice_water_discrimination_width,
-                ) .- 1
-            ) ./ 3
-        )) ## pixel_labels in matlab
+
+    ## NOTE(tjd): this reshapes column major vector of kmeans classes back into original image shape
+    segmented = reshape(
+        class_assignments, ice_water_discrimination_height, ice_water_discrimination_width
+    )
 
     ## Make ice masks
     cv = channelview(reflectance_image)
