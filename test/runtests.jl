@@ -6,6 +6,7 @@ using Dates
 using DataFrames
 using Random
 using DataFrames
+include("test_error_rate.jl")
 
 # Setting things up
 
@@ -19,9 +20,12 @@ landmask_file = "$(test_data_dir)/landmask.tiff"
 current_landmask_file = "$(test_data_dir)/current_landmask.png"
 normalized_test_file = "$(test_data_dir)/normalized_image.png"
 clouds_channel_test_file = "$(test_data_dir)/clouds_channel.png"
+cloudmask_test_file = "$(test_data_dir)/cloudmask.png"
+ice_water_discrim_test_file = "$(test_data_dir)/ice_water_discrim_image.png"
 
 test_region = (1:2707, 1:4458)
 lm_test_region = (1:800, 1:1500)
+ice_floe_test_region = (1640:2060, 1840:2315)
 
 ## Get all test files filenames "test-*" in test folder and their corresponding names/label
 alltests = [f for f in readdir() if startswith(f, "test-")]
@@ -37,12 +41,12 @@ to_test =
 # #"test-persist.jl",
 # #"test-utils-padding.jl",
 # #"test-discrim-ice-water.jl",
+# #"test-segmentation-a.jl",
 # "test-bwtraceboundary.jl",
 # #"test-resample_boundary.jl",
 # "test-regionprops.jl",
 "test-psi-s.jl",
 ]
-
 
 # Run the tests
 @testset "IceFloeTracker.jl" begin

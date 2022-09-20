@@ -1,5 +1,4 @@
 
-
 """
     regionprops_table(label_img, intensity_img; properties, connectivity, extra_properties, dataframe)
 
@@ -53,22 +52,23 @@ julia> properties = ["area", "perimeter"]
     4 │     7    4.62132
 ```
 """
-function regionprops_table(label_img::Any, intensity_img::Any=nothing;
-                           properties::Union{Vector{String},
-                                       Tuple{String,Vararg{String}}
-                                       },
-                           dataframe::Bool=false,
-                           extra_properties::Union{Tuple{Function,Vararg{Function}},Nothing}=nothing)
-    
+function regionprops_table(
+    label_img::Any,
+    intensity_img::Any=nothing;
+    properties::Union{Vector{String},Tuple{String,Vararg{String}}},
+    dataframe::Bool=false,
+    extra_properties::Union{Tuple{Function,Vararg{Function}},Nothing}=nothing,
+)
     if !isnothing(extra_properties)
         @error "extra_properties not yet implemented in this wrapper; setting it to `nothing`"
         extra_properties = nothing
-    end      
+    end
 
-    props = sk_measure.regionprops_table(label_img, intensity_img, properties, extra_properties=extra_properties)
+    props = sk_measure.regionprops_table(
+        label_img, intensity_img, properties; extra_properties=extra_properties
+    )
 
     return dataframe ? DataFrame(props) : props
-
 end
 
 # Also adding regionprops as it might be more computationally efficient to get a property for each object on demand than generating the full regionprops_table at once
@@ -119,14 +119,17 @@ julia> bw_img = rand([0, 1], 5, 10)
 7       4.621320343559642
 ```
 """
-function regionprops(label_img::Any, intensity_img::Any=nothing;
-                     extra_properties::Union{Tuple{Function,Vararg{Function}},Nothing}=nothing)
-    
+function regionprops(
+    label_img::Any,
+    intensity_img::Any=nothing;
+    extra_properties::Union{Tuple{Function,Vararg{Function}},Nothing}=nothing,
+)
     if !isnothing(extra_properties)
         @error "<extra_properties> not yet implemented in this wrapper; setting it to <nothing>"
         extra_properties = nothing
-    end  
-    
-    return sk_measure.regionprops(label_img, intensity_img, extra_properties=extra_properties)
+    end
 
+    return sk_measure.regionprops(
+        label_img, intensity_img; extra_properties=extra_properties
+    )
 end

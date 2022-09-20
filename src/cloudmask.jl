@@ -13,13 +13,13 @@ Convert a 3-channel false color reflectance image to a 1-channel binary matrix; 
 
 """
 function create_cloudmask(
-    ref_image::Matrix{RGB{N0f8}};
-    prelim_threshold::N0f8=N0f8(110 / 255),
-    band_7_threshold::N0f8=N0f8(200 / 255),
-    band_2_threshold::N0f8=N0f8(190 / 255),
+    ref_image::Matrix{RGB{Float64}};
+    prelim_threshold::Float64=Float64(110 / 255),
+    band_7_threshold::Float64=Float64(200 / 255),
+    band_2_threshold::Float64=Float64(190 / 255),
     ratio_lower::Float64=0.0,
     ratio_upper::Float64=0.75,
-)::Tuple{BitMatrix,Matrix{Gray}}
+)::Tuple{BitMatrix,Matrix{Gray{Float64}}}
     println("Setting thresholds")
     ref_view = channelview(ref_image)
     ref_image_b7 = ref_view[1, :, :]
@@ -46,18 +46,28 @@ end
 Zero out pixels containing clouds where clouds and ice are not discernable. Arguments should be of the same size.
 
 # Arguments
-- `reflectance_image`: corrected reflectance false color image - bands [7,2,1]
+- `reference_image`: corrected reflectance false color image - bands [7,2,1] or grayscale
 - `cloudmask`: binary cloudmask with clouds = 0, else = 1
 
 """
 function apply_cloudmask(
-    ref_image::Matrix{RGB{N0f8}}, cloudmask::BitMatrix
-)::Tuple{Matrix{RGB},Matrix{Gray}}
+    ref_image::Matrix{RGB{Float64}}, cloudmask::BitMatrix
+)::Tuple{Matrix{RGB{Float64}},Matrix{Gray{Float64}}}
     masked_image = cloudmask .* ref_image
     image_view = channelview(masked_image)
     clouds_channel = image_view[1, :, :]
     clouds_channel = Gray.(clouds_channel)
     cloudmasked_view = StackedView(zeroarray, image_view[2, :, :], image_view[3, :, :])
-    cloudmasked_image = colorview(RGB, cloudmasked_view)
-    return cloudmasked_image, clouds_channel
+    cloudmasked_image_rgb = colorview(RGB, cloudmasked_view)
+    return cloudmasked_image_rgb, clouds_channel
+end
+
+function apply_cloudmask(
+    ref_image::Matrix{Gray{Float64}}, cloudmask::BitMatrix
+)::Tuple{Matrix{Gray{Float64}},Matrix{Gray{Float64}}}
+    masked_image = cloudmask .* ref_image
+    clouds_channel = image_view[1, :, :]
+    clouds_channel = Gray.(clouds_channel)
+    cloudmasked_image_gray = Gray.(masked_image)
+    return cloudmasked_image_gray, clouds_channel
 end

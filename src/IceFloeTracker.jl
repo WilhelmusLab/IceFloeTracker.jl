@@ -9,6 +9,7 @@ using StatsBase
 using Interpolations
 using DataFrames
 using PyCall
+using Clustering
 using DSP
 
 include("utils.jl")
@@ -22,17 +23,15 @@ include("bwtraceboundary.jl")
 include("resample-boundary.jl")
 include("psi-s.jl")
 
-
-
 const sk_measure = PyNULL()
 
 function __init__()
-    copy!(sk_measure, pyimport_conda("skimage.measure", "scikit-image"))
+    return copy!(sk_measure, pyimport_conda("skimage.measure", "scikit-image"))
 end
 
 include("regionprops.jl")
 
-
+include("segmentation_a_direct.jl")
 
 function fetchdata(; output::AbstractString)
     mkpath("$output")
