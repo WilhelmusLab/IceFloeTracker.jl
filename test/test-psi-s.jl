@@ -37,4 +37,4 @@
 
         # test arclength   
             @test sum([IceFloeTracker.norm(collect(v_i)) for v_i in eachrow(IceFloeTracker.grad(A))]) == IceFloeTracker.arclength(A)[end]     
-end;
+end
