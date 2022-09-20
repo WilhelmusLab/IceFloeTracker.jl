@@ -17,6 +17,24 @@
         θ_s = IceFloeTracker.make_psi_s(x,y,rangeout=0,unwrap=false)
         @test sum((abs.(θ_s[2:end] - θ_s[1:end-1])) .> .05) == 1
     
-    # Todo
-    # Test 3: Catch bad rangeout values
+    # Test 3: Catch bad rangeout values (good values for rangeout are 0,1)
+        try
+            IceFloeTracker.make_psi_s(x,y; rangeout=5)
+        catch err
+            @test isa(err, AssertionError)
+        end
+
+    # Test 4: Auxiliary functions
+        A = [x y];
+        # norm of a Vector
+            @test all([IceFloeTracker.norm(x) == sum(x.^2)^.5, IceFloeTracker.norm(y) == sum(y.^2)^.5])
+
+        # norm of a row/col
+            @test all([IceFloeTracker.norm(A[1,:]) == sum(A[1,:].^2)^.5, IceFloeTracker.norm(A[:,1]) == sum(A[:,1].^2)^.5])    
+
+        # test grad methods for vectors and matrices
+            @test IceFloeTracker.grad(x,y) == IceFloeTracker.grad(A)
+
+        # test arclength   
+            @test sum([IceFloeTracker.norm(collect(v_i)) for v_i in eachrow(IceFloeTracker.grad(A))]) == IceFloeTracker.arclength(A)[end]     
 end;
