@@ -126,3 +126,14 @@ function make_psi_s(x::Vector{<:Number},
     return phase, s
 
 end
+
+"""
+    make_psi_s(XY::Matrix{<:Number};rangeout::Bool=true,
+    unwrap::Bool=true)
+
+Alternate method of `make_psi_s` accepting input vectors `x` and `y` as a 2-column matrix `[x y]` in order to facillitate workflow (output from `resample_boundary`).
+"""
+function make_psi_s(XY::Matrix{<:Number};rangeout::Bool=true, unwrap::Bool=true)
+    x = XY[:,1]; y=XY[:,2]
+    return make_psi_s(x,y,rangeout=rangeout,unwrap=unwrap)
+end
