@@ -2,7 +2,7 @@
 
 
 """
-    resample_boundary(bd_points::Vector{CartesianIndex}, reduc_factor::Int64=2, bd::String="natural")
+    resample_boundary(bd_points::Vector{<:CartesianIndex}, reduc_factor::Int64=2, bd::String="natural")
 
 Get a uniform set of resampled boundary points from `bd_points` using cubic splines with specified boundary conditions
 
