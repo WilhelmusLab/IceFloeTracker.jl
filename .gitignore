@@ -9,4 +9,5 @@ explorations/
 foo/
 docs/build/
 .DS_Store
-!test_inputs/
+.vscode
+test_inputs/
