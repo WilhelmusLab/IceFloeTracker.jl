@@ -10,4 +10,4 @@ foo/
 docs/build/
 .DS_Store
 .vscode
-!test_inputs/
+test_inputs/
