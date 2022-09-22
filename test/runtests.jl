@@ -5,7 +5,6 @@ using DelimitedFiles
 using Dates
 using DataFrames
 using Random
-using DataFrames
 include("test_error_rate.jl")
 
 # Setting things up
@@ -42,7 +41,7 @@ to_test = alltests # uncomment this line to run all tests or add individual file
 # #"test-discrim-ice-water.jl",
 # #"test-segmentation-a.jl",
 # "test-bwtraceboundary.jl",
-# #"test-resample_boundary.jl",
+# "test-resample-boundary.jl",
 # "test-regionprops.jl",
 # ]
 
