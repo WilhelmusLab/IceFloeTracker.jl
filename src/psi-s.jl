@@ -22,16 +22,6 @@ function grad(A::Matrix{<:Number})
 end
 
 """
-    arclength(x::Vector{<:Number}, y::Vector{<:Number})
-
-Return the traversed arclength along the curve represented by the points with coordinates `x` and `y`.
-"""
-function arclength(x::Vector{<:Number}, y::Vector{<:Number})::Vector{<:Number}
-    dx,dy = grad(x,y)
-    return cumsum([norm(collect(v_i)) for v_i in eachrow([dx dy])])
-end
-
-"""
     norm(v)
 
 Get the euclidean norm of the vector `v`.

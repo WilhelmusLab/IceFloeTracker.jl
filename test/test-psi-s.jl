@@ -35,9 +35,6 @@
         # test grad methods for vectors and matrices
         @test IceFloeTracker.grad(x,y) == IceFloeTracker.grad(A)
 
-        # test arclength   
-        @test IceFloeTracker.arclength(x,y) == s
-
     # Test 6: Alternate method of make_psi_s with 2-column matrix as input
         @test IceFloeTracker.make_psi_s(x,y) == IceFloeTracker.make_psi_s([x y])
 
