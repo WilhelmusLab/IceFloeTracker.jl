@@ -7,6 +7,9 @@ using ImageContrastAdjustment
 using Peaks
 using StatsBase
 using Interpolations
+using DataFrames
+using PyCall
+using Clustering
 
 include("utils.jl")
 include("persist.jl")
@@ -18,6 +21,15 @@ include("anisotropic_image_diffusion.jl")
 include("bwtraceboundary.jl")
 include("resample-boundary.jl")
 
+const sk_measure = PyNULL()
+
+function __init__()
+    return copy!(sk_measure, pyimport_conda("skimage.measure", "scikit-image"))
+end
+
+include("regionprops.jl")
+
+include("segmentation_a_direct.jl")
 
 function fetchdata(; output::AbstractString)
     mkpath("$output")

@@ -1,6 +1,5 @@
 # resample pixels on floe boundary for psi-s curve
 
-
 """
     resample_boundary(bd_points::Vector{<:CartesianIndex}, reduc_factor::Int64=2, bd::String="natural")
 
@@ -56,28 +55,32 @@ julia> boundary[3]
  10.5859  15.0357
  10.0     13.0
 """
-function resample_boundary(bd_points::Vector{<:CartesianIndex}, reduc_factor::Int64=2, bd::String="natural")
+
+function resample_boundary(
+    bd_points::Vector{<:CartesianIndex}, reduc_factor::Int64=2, bd::String="natural"
+)
+
     # check boundary conditions
     if bd == "natural"
         BD = Natural(OnGrid())
     elseif bd == "periodic"
         BD = Periodic(OnGrid())
     end
-    
+
     # reparemetrize using arclength
-    s_in = range(0,1,length(bd_points))
+    s_in = range(0, 1, length(bd_points))
 
     # arclengths to resample
-    s_out = range(0,1,length(bd_points) ÷ reduc_factor)
+    s_out = range(0, 1, length(bd_points) ÷ reduc_factor)
 
     # collect data in bd_points for interpolant
     A = getindex.(bd_points, [1 2])
-    
+
     # build interpolant generator
     itp = scale(interpolate(A, (BSpline(Cubic(BD)), NoInterp())), s_in, 1:2)
 
     # get resampled data
-    xs, ys = [itp(s,1) for s in s_out], [itp(s,2) for s in s_out]
-    
+    xs, ys = [itp(s, 1) for s in s_out], [itp(s, 2) for s in s_out]
+
     return [xs ys]
 end
