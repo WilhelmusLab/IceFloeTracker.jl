@@ -18,7 +18,7 @@
 
     # Test 3: Option rangeout=false, unwrap=false. There will be negative phase values.
         p_wrapped,_ = IceFloeTracker.make_psi_s(x,y,rangeout=false,unwrap=false)
-        @test !all(p_wrapped.>=0)
+        @test !all(p_wrapped.>= 0)
 
     # Test 4: Return arclength; compare against theoretical total arclength = 8
         _,s = IceFloeTracker.make_psi_s(x,y; rangeout=true)
