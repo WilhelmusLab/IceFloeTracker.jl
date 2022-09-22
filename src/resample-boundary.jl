@@ -1,7 +1,7 @@
 # resample pixels on floe boundary for psi-s curve
 
 """
-    resample_boundary(bd_points::Vector{CartesianIndex}, reduc_factor::Int64=2, bd::String="natural")
+    resample_boundary(bd_points::Vector{<:CartesianIndex}, reduc_factor::Int64=2, bd::String="natural")
 
 Get a uniform set of resampled boundary points from `bd_points` using cubic splines with specified boundary conditions
 
@@ -55,9 +55,11 @@ julia> boundary[3]
  10.5859  15.0357
  10.0     13.0
 """
+
 function resample_boundary(
-    bd_points::Vector{CartesianIndex}, reduc_factor::Int64=2, bd::String="natural"
+    bd_points::Vector{<:CartesianIndex}, reduc_factor::Int64=2, bd::String="natural"
 )
+
     # check boundary conditions
     if bd == "natural"
         BD = Natural(OnGrid())
