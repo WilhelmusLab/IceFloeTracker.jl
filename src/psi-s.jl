@@ -44,20 +44,24 @@ function atan2(y::Number,x::Number)
 end
 
 """
-    make_psi_s(xs::Vector{Float64}, ys::Vector{Float64}; rangeout::Int64=0,unwrap::Bool=true, s::Bool=false)
+    make_psi_s(x::Vector{<:Number},
+               y::Vector{<:Number};
+               rangeout::Bool=true,
+               unwrap::Bool=true)::Tuple{Vector{Float64}, Vector{Float64}}
 
-Builds the ψ-s curve defined by vectors `xs` and `ys`.
+Builds the ψ-s curve defined by vectors `x` and `y`.
 
-Following the convention in [1], the ψ-s curve has values in [0, 2π) by default; use `range` to control this behavior.
+Returns a tuple of vectors with the phases `ψ` in the first component and the traversed arclength in the second component. 
+
+Following the convention in [1], the wrapped ψ-s curve has values in [0, 2π) by default; use `rangeout` to control this behavior.
 
 See also [`bwtraceboundary`](@ref), [`resample_boundary`](@ref)
 
 # Arguments
-- `xs`: Vector of x-coordinates
-- `ys`: corresponding vector of y-coordinates
-- `rangeout`: 0 (default) for phase values in [0, 2π); 1 for phase values in (-π, π].
-- `unwrap`: set to `true` to get "unwrapped" phases (default).
-- `s`: set to `true` to additionally return the cummulative arclength traversed at each point (set `false` by default). 
+- `x`: Vector of x-coordinates
+- `y`: corresponding vector of y-coordinates
+- `rangeout`: `true` (default) for phase values in [0, 2π); `false` for phase values in (-π, π].
+- `unwrap`: set to `true` to get "unwrapped" phases (default). 
 
 # Reference
 [1] McConnell, Ross, et al. "psi-s correlation and dynamic time warping: two methods for tracking ice floes in SAR images." IEEE Transactions on Geoscience and Remote sensing 29.6 (1991): 1004-1012.
@@ -73,29 +77,40 @@ julia> x = @. cos(t)*(1-cos(t));
 
 julia> y = @. sin(t)*(1-cos(t));
 
-julia> plot(x,y) # visualize the cardiod
+julia> plot(x,y) # visualize the cardioid
 
-julia> psi = make_psi_s(x,y)
-200-element Vector{Float64}:
- 0.031415926535897934
- 0.07330344575873542
- 0.11937977657362882
- 0.16605452665067502
- 0.21292875044763676
- 0.2598936441351966
+julia> psi, s = make_psi_s(x,y);
+
+julia> [s psi] # inspect psi-s data
+200×2 Matrix{Float64}:
+ 0.00049344  0.0314159
+ 0.0019736   0.0733034
+ 0.00444011  0.11938
+ 0.00789238  0.166055
+ 0.0123296   0.212929
+ 0.0177505   0.259894
+ 0.024154    0.306907
+ 0.0315383   0.35395
+ 0.0399017   0.401012
+ 0.0492421   0.448087
  ⋮
- 9.211849210321741
- 9.258723434118705
- 9.305398184195749
- 9.351474515010644
- 9.393362034233482
+ 7.96772     9.02377
+ 7.97511     9.07083
+ 7.98151     9.11787
+ 7.98693     9.16488
+ 7.99137     9.21185
+ 7.99482     9.25872
+ 7.99729     9.3054
+ 7.99877     9.35147
+ 7.99926     9.39336
 
- julia> plot(t[1:end-1], psi) # inspect psi-s curve -- should be a straigth line from (0, 0) to (2π, 3π)
+ julia> plot(s, psi) # inspect psi-s curve -- should be a straigth line from (0, 0) to (2π, 3π)
 ```
 """
 function make_psi_s(x::Vector{<:Number},
-                    y::Vector{<:Number};rangeout::Bool=true,
-                    unwrap::Bool=true)
+                    y::Vector{<:Number};
+                    rangeout::Bool=true,
+                    unwrap::Bool=true)::Tuple{Vector{Float64}, Vector{Float64}}
     # gradient
         dx, dy = grad(x, y)
         
