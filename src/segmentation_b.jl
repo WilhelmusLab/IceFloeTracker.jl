@@ -1,23 +1,63 @@
-using Pkg;
-Pkg.activate("explorations"); # delete later
-using Revise
+"""
+    segmentation_B(sharpened_image, cloudmask, segmented_a_ice_mask, struct_elem; fill_range, isolation_threshold, alpha_level, adjusted_ice_threshold)
 
-using IceFloeTracker
-using Images
-test_data_dir = "./test/test_inputs"
-sharpened_test_file = "$(test_data_dir)/sharpened_test_image.png"
-sharpened_image = load(sharpened_test_file)
+Performs image processing and morphological filtering with intermediate files from normalization.jl and segmentation_A to further isolate ice floes, returning a mask of potential ice.
 
-count(x -> ((0.0001) <= x <= (0.4)), sharpened_image)
+# Arguments
+- `sharpened_image`: non-cloudmasked but sharpened image, output from `normalization.jl`
+- `cloudmask`:  bitmatrix cloudmask for region of interest
+- `segmented_a_ice_mask`: binary cloudmasked ice mask from `segmentation_a_direct.jl`
+- `struct_elem`: structuring element for dilation
+- `fill_range`: range of values dictating the size of holes to fill
+- `isolation_threshold`: threshold used to isolated pixels from `sharpened_image`; between 0-1
+- `alpha_level`: alpha threshold used to adjust contrast
+- `gamma_factor`: amount of gamma adjustment 
+- `adjusted_ice_threshold`: threshold used to set ice equal to one after gamma adjustment
 
-smallvals = .!(sharpened_image .< 0.4)
+"""
+function segmentation_B(
+    sharpened_image::Matrix{Gray{Float64}},
+    cloudmask::BitMatrix,
+    segmented_a_ice_mask::BitMatrix,
+    struct_elem::Matrix{Bool};
+    fill_range::Tuple=(0, 40),
+    isolation_threshold::Float64=0.4,
+    alphal_level::Float64=0.5,
+    gamma_factor::Float64=2.5,
+    adjusted_ice_threshold::Float64=0.18,
+)::BitMatrix
+    ## Process sharpened image
+    not_ice_mask = .!(sharpened_image .< isolation_threshold)
+    adjusted_sharpened =
+        (1 - alphal_level) .* sharpened_image .+ alphal_level .* not_ice_mask
 
-sharpened = (sharpened_image .* smallvals)
+    gamma_adjusted_sharpened = ImageContrastAdjustment.adjust_histogram(
+        adjusted_sharpened, GammaCorrection(; gamma=gamma_factor)
+    )
+    gamma_adjusted_sharpened_cloudmasked, _ = IceFloeTracker.apply_cloudmask(
+        gamma_adjusted_sharpened, cloudmask
+    )
+    gamma_adjusted_sharpened_cloudmasked[gamma_adjusted_sharpened_cloudmasked .<= adjusted_ice_threshold] .=
+        0
+    gamma_adjusted_sharpened_cloudmasked[gamma_adjusted_sharpened_cloudmasked .> adjusted_ice_threshold] .=
+        1
+    gamma_adjusted_sharpened_cloudmasked_flipped =
+        complement.(gamma_adjusted_sharpened_cloudmasked)
+    adjusted_bitmatrix = convert(BitMatrix, gamma_adjusted_sharpened_cloudmasked_flipped)
 
-sharpened_int = trunc.(UInt8, sharpened .* 255)
+    segb_filled = ImageMorphology.imfill(adjusted_bitmatrix, fill_range)
+    segb_filled = complement.(segb_filled)
 
-imgadj = adjust_gamma(sharpened, 10)
+    ## Process ice mask
+    segmented_a_ice_mask_holes = ImageMorphology.imfill(.!segmented_a_ice_mask, fill_range)
+    segmented_a_ice_masked_filled = .!segmented_a_ice_mask_holes
+    segb_dilate = ImageMorphology.dilate(segmented_a_ice_masked_filled, struct_elem)
+    segb_closed = ImageMorphology.erode(segb_dilate, struct_elem)
 
-sharpened_cloudmasked = IceFloeTracker.apply_cloudmask(imgadj, cloudmask)::GenericGrayImage
+    ## Create mask from intersect of processed images
+    segb_filled_ice = (segb_filled .> 0)
+    segb_closed_ice = (segb_closed .> 0)
+    segmented_b_ice_intersect = (segb_filled_ice .* segb_closed_ice)
 
-## skip .* 0.3, makes image too dark!
+    return segmented_b_ice_intersect
+end

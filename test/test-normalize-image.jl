@@ -1,7 +1,6 @@
 @testset "Normalize Image" begin
     println("-------------------------------------------------")
     println("---------- Create Normalization Test ------------")
-    strel_file2 = "$(test_data_dir)/se2.csv"
     struct_elem2 = readdlm(strel_file2, ',', Bool)
     matlab_normalized_img_file = "$(test_data_dir)/matlab_normalized.tiff"
     matlab_sharpened_file = "$(test_data_dir)/matlab_sharpened.png"

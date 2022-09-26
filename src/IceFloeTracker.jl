@@ -30,7 +30,7 @@ end
 include("regionprops.jl")
 
 include("segmentation_a_direct.jl")
-#include("segmentation_b.jl")
+include("segmentation_b.jl")
 
 function fetchdata(; output::AbstractString)
     mkpath("$output")
