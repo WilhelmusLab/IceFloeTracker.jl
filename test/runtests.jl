@@ -44,6 +44,7 @@ to_test = alltests # uncomment this line to run all tests or add individual file
 # "test-resample-boundary.jl",
 # "test-regionprops.jl",
 # "test-psi-s.jl",
+# "test-crosscorr.jl",
 # ]
 
 # Run the tests
