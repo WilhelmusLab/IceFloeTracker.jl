@@ -24,7 +24,7 @@ function segmentation_B(
     isolation_threshold::Float64=0.4,
     alphal_level::Float64=0.5,
     gamma_factor::Float64=2.5,
-    adjusted_ice_threshold::Float64=0.18,
+    adjusted_ice_threshold::Float64=0.2,
 )::BitMatrix
     ## Process sharpened image
     not_ice_mask = .!(sharpened_image .< isolation_threshold)
