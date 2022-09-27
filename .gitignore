@@ -10,6 +10,7 @@ explorations/
 foo/
 docs/build/
 .DS_Store
+.vscode
 
 ## Allow
 !test/test_inputs/
