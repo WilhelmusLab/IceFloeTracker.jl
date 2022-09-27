@@ -22,14 +22,13 @@ function segmentation_B(
     struct_elem::Matrix{Bool};
     fill_range::Tuple=(0, 40),
     isolation_threshold::Float64=0.4,
-    alphal_level::Float64=0.5,
+    alpha_level::Float64=0.5,
     gamma_factor::Float64=2.5,
     adjusted_ice_threshold::Float64=0.2,
 )::BitMatrix
     ## Process sharpened image
     not_ice_mask = .!(sharpened_image .< isolation_threshold)
-    adjusted_sharpened =
-        (1 - alphal_level) .* sharpened_image .+ alphal_level .* not_ice_mask
+    adjusted_sharpened = (1 - alpha_level) .* sharpened_image .+ alpha_level .* not_ice_mask
 
     gamma_adjusted_sharpened = ImageContrastAdjustment.adjust_histogram(
         adjusted_sharpened, GammaCorrection(; gamma=gamma_factor)
@@ -41,18 +40,19 @@ function segmentation_B(
         0
     gamma_adjusted_sharpened_cloudmasked[gamma_adjusted_sharpened_cloudmasked .> adjusted_ice_threshold] .=
         1
-    gamma_adjusted_sharpened_cloudmasked_flipped =
-        complement.(gamma_adjusted_sharpened_cloudmasked)
-    adjusted_bitmatrix = convert(BitMatrix, gamma_adjusted_sharpened_cloudmasked_flipped)
+    gamma_adjusted_sharpened_cloudmasked_bit = convert(
+        BitMatrix, gamma_adjusted_sharpened_cloudmasked
+    )
+
+    adjusted_bitmatrix = .!(gamma_adjusted_sharpened_cloudmasked_bit)
 
     segb_filled = ImageMorphology.imfill(adjusted_bitmatrix, fill_range)
-    segb_filled = complement.(segb_filled)
+    segb_filled = .!(segb_filled)
 
     ## Process ice mask
     segmented_a_ice_mask_holes = ImageMorphology.imfill(.!segmented_a_ice_mask, fill_range)
     segmented_a_ice_masked_filled = .!segmented_a_ice_mask_holes
-    segb_dilate = ImageMorphology.dilate(segmented_a_ice_masked_filled, struct_elem)
-    segb_closed = ImageMorphology.erode(segb_dilate, struct_elem)
+    segb_closed = ImageMorphology.closing(segmented_a_ice_masked_filled, struct_elem)
 
     ## Create mask from intersect of processed images
     segb_filled_ice = (segb_filled .> 0)
