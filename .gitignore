@@ -1,3 +1,4 @@
+## Ignore
 *.tiff
 *.png
 *.jl.*.cov
@@ -9,4 +10,6 @@ explorations/
 foo/
 docs/build/
 .DS_Store
-!test_inputs/
+
+## Allow
+!test/test_inputs/

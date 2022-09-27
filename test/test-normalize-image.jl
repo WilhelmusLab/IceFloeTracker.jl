@@ -1,7 +1,7 @@
 @testset "Normalize Image" begin
     println("-------------------------------------------------")
     println("---------- Create Normalization Test ------------")
-    struct_elem2 = readdlm(strel_file2, ',', Bool)
+    struct_elem2 = readdlm(strel_file_2, ',', Bool)
     matlab_normalized_img_file = "$(test_data_dir)/matlab_normalized.tiff"
     matlab_sharpened_file = "$(test_data_dir)/matlab_sharpened.png"
     landmask = float64.(load(current_landmask_file))
