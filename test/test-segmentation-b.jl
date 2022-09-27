@@ -6,7 +6,7 @@
     segmented_a_ice_mask = convert(BitMatrix, load(segmented_a_ice_mask_file))
     cloudmask = convert(BitMatrix, load(cloudmask_test_file))
     struct_elem2 = readdlm(strel_file_2, ',', Bool)
-    matlab_segmented_B = convert(BitMatrix, load("$(test_data_dir)/matlab_segmented_B.png"))
+    matlab_segmented_B = convert(BitMatrix, load("$(test_data_dir)/matlab_segmented_b.png"))
 
     @time segmented_B = IceFloeTracker.segmentation_B(
         sharpened_image, cloudmask, segmented_a_ice_mask, struct_elem2
