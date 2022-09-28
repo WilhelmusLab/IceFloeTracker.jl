@@ -1,10 +1,10 @@
 """
-    create_cloudmask(reflectance_image)
+    create_cloudmask(reflectance_image; prelim_threshold, band_7_threshold, band_2_threshold, ratio_lower, ratio_upper)
 
 Convert a 3-channel false color reflectance image to a 1-channel binary matrix; clouds = 0, else = 1. Default thresholds are defined in the published Ice Floe Tracker article: Remote Sensing of the Environment 234 (2019) 111406.
 
 # Arguments
-- `ref_image`: corrected reflectance false color image - bands [7,2,1]
+- `reflectance_image`: corrected reflectance false color image - bands [7,2,1]
 - `prelim_threshold`: threshold value used to identify clouds in band 7, N0f8(RGB intensity/255)
 - `band_7_threshold`: threshold value used to identify cloud-ice in band 7, N0f8(RGB intensity/255)
 - `band_2_threshold`: threshold value used to identify cloud-ice in band 2, N0f8(RGB intensity/255)
@@ -66,6 +66,7 @@ function apply_cloudmask(
     ref_image::Matrix{Gray{Float64}}, cloudmask::BitMatrix
 )::Tuple{Matrix{Gray{Float64}},Matrix{Gray{Float64}}}
     masked_image = cloudmask .* ref_image
+    image_view = channelview(masked_image)
     clouds_channel = image_view[1, :, :]
     clouds_channel = Gray.(clouds_channel)
     cloudmasked_image_gray = Gray.(masked_image)
