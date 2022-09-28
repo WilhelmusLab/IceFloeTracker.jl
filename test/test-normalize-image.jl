@@ -12,7 +12,7 @@
 
     println("-------------- Process Image ----------------")
     @time sharpened_image, normalized_image = IceFloeTracker.normalize_image(
-        input_image, landmask_bitmatrix, struct_elem2; kappa=90, clip=0.95
+        input_image, landmask_bitmatrix, struct_elem2
     )
     normalized_image_filename =
         "$(test_output_dir)/normalized_test_image_" *

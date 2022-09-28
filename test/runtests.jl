@@ -23,7 +23,7 @@ cloudmask_test_file = "$(test_data_dir)/cloudmask.png"
 ice_water_discrim_test_file = "$(test_data_dir)/ice_water_discrim_image.png"
 sharpened_test_image_file = "$(test_data_dir)/sharpened_test_image.png"
 segmented_a_ice_mask_file = "$(test_data_dir)/segmented_ice_cloudmasked.png"
-strel_file_2 = "$(test_data_dir)/se2.csv"
+strel_file_2 = "$(test_data_dir)/se2.csv" # original matlab structuring element -  a disk-shaped kernel with radius of 2 px
 
 test_region = (1:2707, 1:4458)
 lm_test_region = (1:800, 1:1500)
