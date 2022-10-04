@@ -11,6 +11,8 @@ using DataFrames
 using PyCall
 using Clustering
 using DSP
+using RegisterMismatch
+using RegisterQD
 
 include("utils.jl")
 include("persist.jl")
