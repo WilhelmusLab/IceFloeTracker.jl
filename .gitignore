@@ -1,3 +1,4 @@
+## Ignore
 *.tiff
 *.png
 *.jl.*.cov
@@ -11,3 +12,7 @@ docs/build/
 .DS_Store
 .vscode
 
+
+## Allow
+!test/test_inputs/*.tiff
+!test/test_inputs/*.png

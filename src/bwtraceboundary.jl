@@ -51,6 +51,7 @@ julia> boundary[3]
  CartesianIndex(10, 15)
  CartesianIndex(10, 14)
  CartesianIndex(10, 13)
+```
 """
 function bwtraceboundary(
     image::Union{Matrix{Int64},Matrix{Float64},BitMatrix};

@@ -23,7 +23,7 @@ function normalize_image(
     landmask::BitMatrix,
     struct_elem::Matrix{Bool};
     lambda::Real=0.25,
-    kappa::Real=90,
+    kappa::Real=75,
     niters::Int64=3,
     nbins::Int64=255,
     rblocks::Int64=8,
@@ -31,11 +31,11 @@ function normalize_image(
     clip::Float64=0.95,
     smoothing_param::Int64=10,
     intensity::Float64=2.0,
-)::Matrix{Gray{Float64}}
+)::Tuple{Matrix{Gray{Float64}},Matrix{Gray{Float64}}}
     radius = Int.(ceil.(size(struct_elem) ./ 3)[1])
     pad_size = Fill(1, (radius, radius))
     gray_image = Float64.(Gray.(truecolor_image))
-    image_diffused = diffusion(gray_image, 0.25, 75, 3)
+    image_diffused = diffusion(gray_image, lambda, kappa, niters)
     image_diffused_RGB = RGB.(image_diffused)
     masked_view = Float64.(channelview(image_diffused_RGB))
 
@@ -85,14 +85,15 @@ function normalize_image(
         image_equalized_view .* (1 + intensity) .+ image_smoothed_view .* (-intensity)
     image_sharpened = max.(image_sharpened, 0.0)
     image_sharpened = min.(image_sharpened, 1.0)
-    image_sharpened = colorview(Gray, image_sharpened)
-    image_sharpened = IceFloeTracker.add_padding(image_sharpened, pad_size)
+    image_sharpened_landmasked = IceFloeTracker.apply_landmask(image_sharpened, landmask)
+    image_sharpened_gray = colorview(Gray, image_sharpened_landmasked)
 
-    image_dilated = Images.dilate(image_sharpened, struct_elem)
-    image_dilated = IceFloeTracker.remove_padding(image_dilated, pad_size)
+    image_dilated = ImageMorphology.dilate(image_sharpened_gray, struct_elem)
 
-    image_opened = Images.opening(complement.(image_dilated), complement.(image_sharpened))
+    image_opened = ImageMorphology.opening(
+        complement.(image_dilated), complement.(image_sharpened)
+    )
     image_normalized_masked = IceFloeTracker.apply_landmask(image_opened, landmask)
 
-    return image_normalized_masked
+    return image_sharpened_gray, image_normalized_masked
 end
