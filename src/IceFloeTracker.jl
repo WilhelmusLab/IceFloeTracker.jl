@@ -13,6 +13,7 @@ using Clustering
 using DSP
 using RegisterMismatch
 using RegisterQD
+using ImageFiltering
 
 include("utils.jl")
 include("persist.jl")
@@ -24,6 +25,7 @@ include("anisotropic_image_diffusion.jl")
 include("bwtraceboundary.jl")
 include("resample-boundary.jl")
 include("psi-s.jl")
+include("register-affine.jl")
 
 const sk_measure = PyNULL()
 

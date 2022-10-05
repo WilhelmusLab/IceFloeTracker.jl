@@ -1,10 +1,11 @@
-using IceFloeTracker
-using Images
-using Test
-using DelimitedFiles
-using Dates
 using DataFrames
+using Dates
+using DelimitedFiles
+using IceFloeTracker
+using ImageTransformations: imrotate
+using Images
 using Random
+using Test
 include("test_error_rate.jl")
 
 # Setting things up
@@ -44,6 +45,7 @@ to_test = alltests # uncomment this line to run all tests or add individual file
 # "test-resample-boundary.jl",
 # "test-regionprops.jl",
 # "test-psi-s.jl",
+# "test-register-affine.jl",
 # ]
 
 # Run the tests
