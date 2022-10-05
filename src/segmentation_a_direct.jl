@@ -20,7 +20,7 @@ function remove_landmask(landmask::BitMatrix, ice_mask::BitMatrix)::Array{Int64}
 end
 
 """
-    segmentation_A(reflectance_image, ice_water_discriminated_image, landmask, cloudmask;band_7_threshold, band_2_threshold, band_1_threshold, band_7_relaxed_threshold, band_1_relaxed_threshold, possible_ice_threshold, min_opening_area, fill_range)
+    segmentation_A(reflectance_image, ice_water_discriminated_image, landmask, cloudmask; band_7_threshold, band_2_threshold, band_1_threshold, band_7_relaxed_threshold, band_1_relaxed_threshold, possible_ice_threshold, min_opening_area, fill_range)
 
 Convert a 3-channel false color reflectance image to a 1-channel binary matrix with ice floes contrasted from background. Returns an image segmented and processed. Default thresholds are defined in the published Ice Floe Tracker article: Remote Sensing of the Environment 234 (2019) 111406.
 
@@ -52,7 +52,7 @@ function segmentation_A(
     possible_ice_threshold::Float64=Float64(75 / 255),
     min_opening_area::Real=50,
     fill_range::Tuple=(0, 50),
-)::BitMatrix
+)::Tuple{BitMatrix,BitMatrix}
     ice_water_discriminated_image = Matrix{Float64}(ice_water_discriminated_image)
     ice_water_discrimination_height, ice_water_discrimination_width = size(
         ice_water_discriminated_image
@@ -135,5 +135,5 @@ function segmentation_A(
 
     segmented_A = segmented_ice_cloudmasked .|| diff_matrix
 
-    return segmented_A
+    return segmented_ice_cloudmasked, segmented_A
 end
