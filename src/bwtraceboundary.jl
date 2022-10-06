@@ -38,7 +38,7 @@ julia> A
  0  0  1  1  1  1  0  0  0  0  0  0  1  1  1  0
  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0
 
-julia> boundary = bwtraceboundary(A);
+julia> boundary = IceFloeTracker.bwtraceboundary(A);
 
 julia> boundary[3]
 9-element Vector{CartesianIndex}:
