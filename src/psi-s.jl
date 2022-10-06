@@ -5,8 +5,8 @@
 Make gradient vector field for the set of points with coordinates in vectors `x` and `y`. Return a tuple with `dx` and `dy` in that order. 
 """
 function grad(x::Vector{<:Number}, y::Vector{<:Number})
-    dx = x[2:end] - x[1:end-1]
-    dy = y[2:end] - y[1:end-1]
+    dx = x[2:end] - x[1:(end - 1)]
+    dy = y[2:end] - y[1:(end - 1)]
     return dx, dy
 end
 
@@ -17,8 +17,8 @@ Make gradient vector field for the set of points with coordinates in the rows of
 """
 function grad(A::Matrix{<:Number})
     # Grab each col of A
-    x,y = A[:,1], A[:,2]
-    return grad(x,y)    
+    x, y = A[:, 1], A[:, 2]
+    return grad(x, y)
 end
 
 """
@@ -27,7 +27,7 @@ end
 Get the euclidean norm of the vector `v`.
 """
 function norm(v::Vector{<:Number})
-    return sum(v.^2)^.5
+    return sum(v .^ 2)^0.5
 end
 
 """
@@ -35,10 +35,10 @@ end
 
 Wrapper of `Base.atan` that returns the angle of vector (x,y) in the range [0, 2π).
 """
-function atan2(y::Number,x::Number)
-    ang = atan(y,x)
-    if y<0
-        ang += 2*pi
+function atan2(y::Number, x::Number)
+    ang = atan(y, x)
+    if y < 0
+        ang += 2 * pi
     end
     return ang
 end
@@ -104,32 +104,30 @@ julia> [s psi] # inspect psi-s data
  7.99877     9.35147
  7.99926     9.39336
 
- julia> plot(s, psi) # inspect psi-s curve -- should be a straigth line from (0, 0) to (2π, 3π)
+ julia> plot(s, psi) # inspect psi-s curve -- should be a straight line from (0, 0) to (2π, 3π)
 ```
 """
-function make_psi_s(x::Vector{<:Number},
-                    y::Vector{<:Number};
-                    rangeout::Bool=true,
-                    unwrap::Bool=true)::Tuple{Vector{Float64}, Vector{Float64}}
+function make_psi_s(
+    x::Vector{<:Number}, y::Vector{<:Number}; rangeout::Bool=true, unwrap::Bool=true
+)::Tuple{Vector{Float64},Vector{Float64}}
     # gradient
-        dx, dy = grad(x, y)
-        
+    dx, dy = grad(x, y)
+
     # get phase curve
-        if rangeout
-            phase = atan2.(dy, dx)
-        else
-            phase = atan.(dy, dx)
-        end
+    if rangeout
+        phase = atan2.(dy, dx)
+    else
+        phase = atan.(dy, dx)
+    end
 
-        if unwrap
-            phase = DSP.unwrap(phase)
-        end
-    
+    if unwrap
+        phase = DSP.unwrap(phase)
+    end
+
     # compute arclength
-        s = cumsum([norm(collect(v_i)) for v_i in eachrow([dx dy])])
-    
-    return phase, s
+    s = cumsum([norm(collect(v_i)) for v_i in eachrow([dx dy])])
 
+    return phase, s
 end
 
 """
@@ -138,7 +136,8 @@ end
 
 Alternate method of `make_psi_s` accepting input vectors `x` and `y` as a 2-column matrix `[x y]` in order to facillitate workflow (output from `resample_boundary`).
 """
-function make_psi_s(XY::Matrix{<:Number};rangeout::Bool=true, unwrap::Bool=true)
-    x = XY[:,1]; y=XY[:,2]
-    return make_psi_s(x,y,rangeout=rangeout,unwrap=unwrap)
+function make_psi_s(XY::Matrix{<:Number}; rangeout::Bool=true, unwrap::Bool=true)
+    x = XY[:, 1]
+    y = XY[:, 2]
+    return make_psi_s(x, y; rangeout=rangeout, unwrap=unwrap)
 end
