@@ -11,6 +11,8 @@ using DataFrames
 using PyCall
 using Clustering
 using DSP
+using RegisterMismatch
+using RegisterQD
 
 include("utils.jl")
 include("persist.jl")
@@ -23,6 +25,7 @@ include("bwtraceboundary.jl")
 include("resample-boundary.jl")
 include("psi-s.jl")
 include("crosscorr.jl")
+include("register-mismatch.jl")
 
 const sk_measure = PyNULL()
 

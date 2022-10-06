@@ -10,7 +10,8 @@ explorations/
 foo/
 docs/build/
 .DS_Store
-.vscode
+.vs*
+Manifest.toml
 
 ## Allow
 !test/test_inputs/*.tiff
