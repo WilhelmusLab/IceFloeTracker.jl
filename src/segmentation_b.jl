@@ -25,7 +25,7 @@ function segmentation_B(
     alpha_level::Float64=0.5,
     gamma_factor::Float64=2.5,
     adjusted_ice_threshold::Float64=0.2,
-)::Tuple{BitMatrix,BitMatrix}
+)::Tuple{BitMatrix,BitMatrix,BitMatrix}
     ## Process sharpened image
     not_ice_mask = .!(sharpened_image .< isolation_threshold)
     adjusted_sharpened = (1 - alpha_level) .* sharpened_image .+ alpha_level .* not_ice_mask
@@ -59,5 +59,5 @@ function segmentation_B(
     segb_closed_ice = (segb_closed .> 0)
     segmented_b_ice_intersect = (segb_filled_ice .* segb_closed_ice)
 
-    return segb_filled, segmented_b_ice_intersect
+    return not_ice_mask, segb_filled, segmented_b_ice_intersect
 end

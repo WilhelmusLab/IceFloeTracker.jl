@@ -25,6 +25,8 @@ sharpened_test_image_file = "$(test_data_dir)/sharpened_test_image.png"
 segmented_a_ice_mask_file = "$(test_data_dir)/segmented_ice_cloudmasked.png"
 segmented_b_ice_test_file = "$(test_data_dir)/segmented_B_ice.png"
 segmented_b_filled_test_file = "$(test_data_dir)/segmented_B_filled.png"
+segmented_c_test_file = "$(test_data_dir)/segmented_C.png"
+not_ice_mask_test_file = "$(test_data_dir)/not_ice_mask.png"
 strel_file_2 = "$(test_data_dir)/se2.csv" # original matlab structuring element -  a disk-shaped kernel with radius of 2 px
 
 test_region = (1:2707, 1:4458)
@@ -36,21 +38,22 @@ alltests = [f for f in readdir() if startswith(f, "test-")]
 testnames = [n[6:(end - 3)] for n in alltests]
 
 ## Put the filenames to test below
-to_test = alltests # uncomment this line to run all tests or add individual files below 
+to_test = #alltests # uncomment this line to run all tests or add individual files below 
 [
-# "test-create-landmask.jl",
-# "test-create-cloudmask.jl",
-# "test-normalize-image.jl",
-# "test-persist.jl",
-# "test-utils-padding.jl",
-# "test-discrim-ice-water.jl",
-# "test-segmentation-a.jl",
-# "test-segmentation-b.jl",
-# "test-segmentation-c.jl",
-# "test-bwtraceboundary.jl",
-# "test-resample-boundary.jl",
-# "test-regionprops.jl",
-# "test-psi-s.jl",
+    # "test-create-landmask.jl",
+    # "test-create-cloudmask.jl",
+    # "test-normalize-image.jl",
+    # "test-persist.jl",
+    # "test-utils-padding.jl",
+    # "test-discrim-ice-water.jl",
+    # "test-segmentation-a.jl",
+    # "test-segmentation-b.jl",
+    # "test-segmentation-c.jl",
+    "test-segmentation-d-e.jl",
+    # "test-bwtraceboundary.jl",
+    # "test-resample-boundary.jl",
+    # "test-regionprops.jl",
+    # "test-psi-s.jl",
 ]
 
 # Run the tests

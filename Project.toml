@@ -4,9 +4,9 @@ authors = ["bradford roarr <bradford_roarr@brown.edu> and contributors"]
 version = "0.1.0"
 
 [deps]
+Clustering = "aaaa29a8-35af-508c-8bc3-b662a17a0fe5"
 DSP = "717857b8-e6f2-59f4-9121-6e50c889abd2"
 DataFrames = "a93c6f00-e57d-5684-b7b6-d8193f3e46c0"
-Clustering = "aaaa29a8-35af-508c-8bc3-b662a17a0fe5"
 Dates = "ade2ca70-3891-5945-98fb-dc099432e06a"
 DelimitedFiles = "8bb1440f-4735-579b-a4ab-409b98df4dab"
 FileIO = "5789e2e9-d7fb-5bc7-8068-2c6fae9b9549"
@@ -14,6 +14,7 @@ ImageContrastAdjustment = "f332f351-ec65-5f6a-b3d1-319c6670881a"
 ImageIO = "82e4d734-157c-48bb-816b-45c225c6df19"
 ImageMorphology = "787d08f9-d448-5407-9aad-5290dd7ab264"
 ImageProjectiveGeometry = "b9d14576-938f-5430-9d4c-b7d7de1409d6"
+ImageSegmentation = "80713f31-8817-5129-9cf8-209ff8fb23e1"
 Images = "916415d5-f1e6-5110-898d-aaa5f9f070e0"
 Interpolations = "a98d9a8b-a2ab-59e6-89dd-64a1c18fca59"
 Peaks = "18e31ff7-3703-566c-8e60-38913d67486b"

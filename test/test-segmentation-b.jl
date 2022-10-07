@@ -13,9 +13,15 @@
         BitMatrix, load("$(test_data_dir)/matlab_segmented_b_ice.png")
     )
 
-    @time segmented_B_filled, segmented_B_ice = IceFloeTracker.segmentation_B(
+    @time not_ice_mask, segmented_B_filled, segmented_B_ice = IceFloeTracker.segmentation_B(
         sharpened_image, cloudmask, segmented_a_ice_mask, struct_elem2
     )
+
+    not_ice_mask_filename =
+        "$(test_output_dir)/not_ice_mask" *
+        Dates.format(Dates.now(), "yyyy-mm-dd-HHMMSS") *
+        ".png"
+    IceFloeTracker.@persist not_ice_mask not_ice_mask_filename
 
     segmented_b_filled_filename =
         "$(test_output_dir)/segmented_b_filled" *
