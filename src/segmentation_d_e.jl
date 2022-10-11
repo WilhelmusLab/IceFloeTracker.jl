@@ -1,11 +1,11 @@
 """
-    segmentation_D()
+    segmentation_D(segmentation_b_not_ice_mask, segmented_c;)
 
 Performs image processing and watershed segmentation with intermediate files from segmentation_b.jl and segmentation_c.jl to further isolate ice floes, returning two binary segmentation masks.
 
 # Arguments
-- `segmentation_b_not_ice_mask`:
-- `segmented_c`:
+- `segmentation_b_not_ice_mask`: binary cloudmasked and landmasked intermediate file `not_ice_mask` from `segmentation_b.jl`
+- `segmented_c`: binary cloudmasked and landmasked output file from `segmentation_c.jl`
 
 
 """
