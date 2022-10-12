@@ -11,7 +11,7 @@ Performs image processing and watershed segmentation with intermediate files fro
 """
 function segmentation_D_E(
     segmentation_b_not_ice_mask::BitMatrix, segmented_c::BitMatrix;
-)::Tuple{BitMatrix,BitMatrix}
+)::Tuple{BitMatrix,BitMatrix,BitMatrix}
 
     ## Watershed on segmentation_B intermediate
     features_B = feature_transform(.!segmentation_b_not_ice_mask)
@@ -37,5 +37,8 @@ function segmentation_D_E(
     labels_C = labels_map(segment_C)
     watershed_C = ifelse.(labels_C .== 0, 0, 1)
 
-    return watershed_B, watershed_C
+    ## Intersect the two watershed files
+    watershed_intersect = watershed_B .* watershed_C
+
+    return watershed_B, watershed_C, watershed_intersect
 end
