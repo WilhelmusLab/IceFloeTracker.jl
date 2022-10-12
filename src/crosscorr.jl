@@ -88,10 +88,11 @@ julia> [r lags]
 0.0411191  7.0
 ```
 """
-function crosscorr(
-    u::Vector{T}, v::Vector{T}; normalize::Bool=false, padmode::Symbol=:longest
-)::Tuple{Vector{T},Vector{T}} where {T<:Real}
-    c = DSP.xcorr(u, v; padmode=padmode)
+function crosscorr(u::Vector{T}, v::Vector{T};
+                   normalize::Bool=false,
+                   padmode::Symbol=:longest)::Tuple{Vector{T},Vector{T}} where T<:Real
+    
+    c = DSP.xcorr(u,v, padmode = padmode)
     radius = 0
 
     if normalize
@@ -100,9 +101,10 @@ function crosscorr(
 
     if padmode == :longest # as in matlab 
         radius = max(length(u), length(v)) - 1
-        return c, Vector((-radius):radius)
+        return c, Vector(-radius:radius)
     else
         radius = length(u) + length(v) - 1
         return c, Vector(1:radius)
     end
+
 end
