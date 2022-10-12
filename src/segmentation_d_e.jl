@@ -1,7 +1,7 @@
 """
     segmentation_D(segmentation_b_not_ice_mask, segmented_c;)
 
-Performs image processing and watershed segmentation with intermediate files from segmentation_b.jl and segmentation_c.jl to further isolate ice floes, returning two binary segmentation masks.
+Performs image processing and watershed segmentation with intermediate files from segmentation_b.jl and segmentation_c.jl to further isolate ice floes, returning three binary segmentation masks, one on each intermediate and the intersect of the two. Each mask indicates potential sparse boundaries of ice floes.
 
 # Arguments
 - `segmentation_b_not_ice_mask`: binary cloudmasked and landmasked intermediate file `not_ice_mask` from `segmentation_b.jl`
@@ -15,7 +15,7 @@ function segmentation_D_E(
 
     ## Watershed on segmentation_B intermediate
     features_B = feature_transform(.!segmentation_b_not_ice_mask)
-    distances_B = 1 .- (distance_transform(features_B))
+    distances_B = 1 .- distance_transform(features_B)
     seg_B_mask = ImageSegmentation.hmin_transform(distances_B, 2)
     seg_B_mask_minima = local_minima(seg_B_mask)
     seg_B_mask_minima[seg_B_mask_minima .> 0] .= 1

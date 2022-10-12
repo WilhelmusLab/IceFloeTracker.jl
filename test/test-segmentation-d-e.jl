@@ -38,4 +38,9 @@
     @test test_similarity(matlab_watershed_B, watershed_B, 0.097)
     @test test_similarity(matlab_watershed_C, watershed_C, 0.13)
     @test test_similarity(matlab_watershed_intersect, watershed_intersect, 0.03)
+    @test test_similarity(
+        matlab_watershed_intersect[ice_floe_test_region...],
+        watershed_intersect[ice_floe_test_region...],
+        0.08,
+    )
 end
