@@ -44,7 +44,7 @@ julia> A
  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0
 ```
 """
-function bwperim(bwimg, conn::Int64=8)
+function bwperim(bwimg)
     # work with BitArrays
     if typeof(bwimg) <: Matrix
         bwimg = BitArray(bwimg)
