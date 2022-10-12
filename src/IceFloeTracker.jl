@@ -23,6 +23,7 @@ include("anisotropic_image_diffusion.jl")
 include("bwtraceboundary.jl")
 include("resample-boundary.jl")
 include("psi-s.jl")
+include("crosscorr.jl")
 
 const sk_measure = PyNULL()
 
