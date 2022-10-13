@@ -10,9 +10,9 @@
     segmented_c = convert(BitMatrix, load(segmented_c_test_file))
     not_ice_mask = convert(BitMatrix, load(not_ice_mask_test_file))
 
-    @time watershed_B, watershed_C, watershed_intersect = IceFloeTracker.segmentation_D_E(
-        not_ice_mask, segmented_c
-    )
+    @time watershed_B = IceFloeTracker.segmentation_D(not_ice_mask)
+    @time watershed_C = IceFloeTracker.segmentation_E(segmented_c)
+    @time watershed_intersect = IceFloeTracker.segmentation_D_E(watershed_B, watershed_C)
 
     watershed_B_filename =
         "$(test_output_dir)/watershed_b_" *

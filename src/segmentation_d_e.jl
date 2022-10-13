@@ -1,44 +1,46 @@
 """
-    segmentation_D(segmentation_b_not_ice_mask, segmented_c;)
+    watershed_ice_floes(intermediate_segmentation_image;)
 
-Performs image processing and watershed segmentation with intermediate files from segmentation_b.jl and segmentation_c.jl to further isolate ice floes, returning three binary segmentation masks, one on each intermediate and the intersect of the two. Each mask indicates potential sparse boundaries of ice floes.
+Performs image processing and watershed segmentation with intermediate files from segmentation_b.jl or segmentation_c.jl to further isolate ice floes, returning a binary segmentation mask indicating potential sparse boundaries of ice floes.
 
 # Arguments
-- `segmentation_b_not_ice_mask`: binary cloudmasked and landmasked intermediate file `not_ice_mask` from `segmentation_b.jl`
-- `segmented_c`: binary cloudmasked and landmasked output file from `segmentation_c.jl`
-
+-`intermediate_segmentation_image`: binary cloudmasked and landmasked intermediate file from segmentation B or C, typically either `segmentation_b_not_ice_mask` or `segmented_c`
 
 """
-function segmentation_D_E(
-    segmentation_b_not_ice_mask::BitMatrix, segmented_c::BitMatrix;
-)::Tuple{BitMatrix,BitMatrix,BitMatrix}
+function watershed_ice_floes(intermediate_segmentation_image::BitMatrix)::BitMatrix
+    features = feature_transform(.!intermediate_segmentation_image)
+    distances = 1 .- (distance_transform(features))
+    seg_mask = ImageSegmentation.hmin_transform(distances, 2)
+    seg_mask_minima = local_minima(seg_mask)
+    seg_mask_minima[seg_mask_minima .> 0] .= 1
+    seg_mask_bool = Bool.(seg_mask_minima)
+    markers = label_components(seg_mask_minima)
+    segment = watershed(distances, markers; mask=seg_mask_bool)
+    labels = labels_map(segment)
+    watershed_bitmatrix = labels .!= 0
 
-    ## Watershed on segmentation_B intermediate
-    features_B = feature_transform(.!segmentation_b_not_ice_mask)
-    distances_B = 1 .- distance_transform(features_B)
-    seg_B_mask = ImageSegmentation.hmin_transform(distances_B, 2)
-    seg_B_mask_minima = local_minima(seg_B_mask)
-    seg_B_mask_minima[seg_B_mask_minima .> 0] .= 1
-    seg_B_mask_bool = Bool.(seg_B_mask_minima)
-    markers_B = label_components(seg_B_mask_minima)
-    segment_B = watershed(distances_B, markers_B; mask=seg_B_mask_bool)
-    labels_B = labels_map(segment_B)
-    watershed_B = ifelse.(labels_B .== 0, 0, 1)
+    return watershed_bitmatrix
+end
 
-    ## Watershed on segmentation_C
-    features_C = feature_transform(.!segmented_c)
-    distances_C = 1 .- (distance_transform(features_C))
-    seg_C_mask = ImageSegmentation.hmin_transform(distances_C, 2)
-    seg_C_mask_minima = local_minima(seg_C_mask)
-    seg_C_mask_minima[seg_C_mask_minima .> 0] .= 1
-    seg_C_mask_bool = Bool.(seg_C_mask_minima)
-    markers_C = label_components(seg_C_mask_minima)
-    segment_C = watershed(distances_C, markers_C; mask=seg_C_mask_bool)
-    labels_C = labels_map(segment_C)
-    watershed_C = ifelse.(labels_C .== 0, 0, 1)
+## segmentation_D is watershed on the `not_ice_mask` from segmentation_B
+const segmentation_D = watershed_ice_floes
+## segmentation_E is watershed on the `segmented_c` from segmentation_C
+const segmentation_E = watershed_ice_floes
+
+"""
+    segmentation_D_E(watershed_B, watershed_C;)
+
+Intersects the outputs of watershed segmentation on intermediate files from segmentation B and C, indicating potential sparse boundaries of ice floes.
+
+# Arguments
+- `watershed_B`: binary cloudmasked and landmasked segmentation mask from `segmentation_D`
+- `watershed_C`: binary cloudmasked and landmasked segmentation mask from `segmentation_E`
+
+"""
+function segmentation_D_E(watershed_B::BitMatrix, watershed_C::BitMatrix;)::BitMatrix
 
     ## Intersect the two watershed files
     watershed_intersect = watershed_B .* watershed_C
 
-    return watershed_B, watershed_C, watershed_intersect
+    return watershed_intersect
 end
