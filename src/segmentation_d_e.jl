@@ -22,9 +22,9 @@ function watershed_ice_floes(intermediate_segmentation_image::BitMatrix)::BitMat
     return watershed_bitmatrix
 end
 
-## segmentation_D is watershed on the `not_ice_mask` from segmentation_B
+## function alias segmentation_D is watershed on the `not_ice_mask` from segmentation_B
 const segmentation_D = watershed_ice_floes
-## segmentation_E is watershed on the `segmented_c` from segmentation_C
+## function alias segmentation_E is watershed on the `segmented_c` from segmentation_C
 const segmentation_E = watershed_ice_floes
 
 """
