@@ -36,22 +36,22 @@
     # 0  0  2  2  2  2  0  0  0  0  0  0  3  3  3
 
     # a) Test there are three blobs
-    d = get_areas(labels); @test length(d) == 3
+    d = IceFloeTracker.get_areas(labels); @test length(d) == 3
 
     # b) Test largest blob is the one with label '1'
-    @test get_max_label(d) == 1
+    @test IceFloeTracker.get_max_label(d) == 1
 
     # c) Test the distribution of the labels
     @test all([d[1]==45,d[2] == 12, d[3] == 9])
 
     # Test 2: Filter smaller blobs from label matrix
-    @test sum(filt_except_label(label, get_max_label(d)) .!=0) == 45
+    @test sum(IceFloeTracker.filt_except_label(labels, IceFloeTracker.get_max_label(d)) .!=0) == 45
 
     # Test 3: Keep largest blob in input matrix a
-    @test sum(bwareamaxfilt(A)) == 45
+    @test sum(IceFloeTracker.bwareamaxfilt(A)) == 45
 
     # Test 4: In-place version of bwareamaxfilt
     A_copy = copy(A);
-    bwareamaxfilt!(A_copy)
-    @test A_copy == bwareamaxfilt(A)
+    IceFloeTracker.bwareamaxfilt!(A_copy)
+    @test A_copy == IceFloeTracker.bwareamaxfilt(A)
 end

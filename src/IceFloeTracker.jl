@@ -23,6 +23,7 @@ include("bwtraceboundary.jl")
 include("resample-boundary.jl")
 include("psi-s.jl")
 include("crosscorr.jl")
+include("bwareamaxfilt.jl")
 
 const sk_measure = PyNULL()
 
