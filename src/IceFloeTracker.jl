@@ -26,6 +26,8 @@ include("resample-boundary.jl")
 include("psi-s.jl")
 include("crosscorr.jl")
 include("register-mismatch.jl")
+include("bwareamaxfilt.jl")
+
 
 const sk_measure = PyNULL()
 
@@ -37,6 +39,7 @@ include("regionprops.jl")
 include("segmentation_a_direct.jl")
 include("segmentation_b.jl")
 include("segmentation_c.jl")
+include("bwperim.jl")
 
 function fetchdata(; output::AbstractString)
     mkpath("$output")
