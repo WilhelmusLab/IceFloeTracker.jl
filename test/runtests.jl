@@ -36,7 +36,9 @@ alltests = [f for f in readdir() if startswith(f, "test-")]
 testnames = [n[6:(end - 3)] for n in alltests]
 
 ## Put the filenames to test below
+
 to_test = alltests # uncomment this line to run all tests or add individual files below 
+
 [
 # "test-create-landmask.jl",
 # "test-create-cloudmask.jl",
@@ -53,6 +55,7 @@ to_test = alltests # uncomment this line to run all tests or add individual file
 # "test-psi-s.jl",
 # "test-crosscorr.jl",
 # "test-bwareamaxfilt.jl",
+# "test-bwperim.jl",
 ]
 
 # Run the tests
