@@ -8,15 +8,15 @@ Performs image processing and watershed segmentation with intermediate files fro
 
 """
 function watershed_ice_floes(intermediate_segmentation_image::BitMatrix)::BitMatrix
-    features = feature_transform(.!intermediate_segmentation_image)
-    distances = 1 .- (distance_transform(features))
+    features = ImageSegmentation.feature_transform(.!intermediate_segmentation_image)
+    distances = -1 .* ImageSegmentation.distance_transform(features)
     seg_mask = ImageSegmentation.hmin_transform(distances, 2)
-    seg_mask_minima = local_minima(seg_mask)
+    seg_mask_minima = ImageSegmentation.local_minima(seg_mask; connectivity=2)
     seg_mask_minima[seg_mask_minima .> 0] .= 1
     seg_mask_bool = Bool.(seg_mask_minima)
-    markers = label_components(seg_mask_minima)
-    segment = watershed(distances, markers; mask=seg_mask_bool)
-    labels = labels_map(segment)
+    markers = ImageSegmentation.label_components(seg_mask_minima)
+    segment = ImageSegmentation.watershed(distances, markers; mask=seg_mask_bool)
+    labels = ImageSegmentation.labels_map(segment)
     watershed_bitmatrix = labels .!= 0
 
     return watershed_bitmatrix
