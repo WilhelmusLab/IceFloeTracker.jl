@@ -11,6 +11,7 @@ using DataFrames
 using PyCall
 using Clustering
 using DSP
+using ImageSegmentation
 
 include("utils.jl")
 include("persist.jl")

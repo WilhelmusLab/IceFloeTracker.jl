@@ -62,3 +62,18 @@ function remove_padding(paddedimg, border_spec::Union{Pad,Fill})::Matrix
     bottom, right = border_spec.hi
     return paddedimg[(top + 1):(end - bottom), (left + 1):(end - right)]
 end
+
+"""
+    imextendedmin()
+
+Mimics MATLAB's imextendedmin function
+
+"""
+function imextendedmin(image::BitMatrix)::BitMatrix
+    features = ImageSegmentation.feature_transform(.!image)
+    distances = -1 .* ImageSegmentation.distance_transform(features)
+    mask = ImageSegmentation.hmin_transform(distances, 2)
+    mask_minima = ImageSegmentation.local_minima(mask; connectivity=2)
+    mask_bool = Bool.(mask_minima)
+    return mask_bool
+end
