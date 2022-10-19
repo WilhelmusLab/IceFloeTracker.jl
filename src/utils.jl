@@ -66,7 +66,7 @@ end
 """
     imextendedmin()
 
-Mimics MATLAB's imextendedmin function
+Mimics MATLAB's imextendedmin function that computes the extended-minima transform, which is the regional minima of the H-minima transform. Regional minima are connected components of pixels with a constant intensity value. This function returns a transformed bitmatrix.
 
 """
 function imextendedmin(image::BitMatrix)::BitMatrix
