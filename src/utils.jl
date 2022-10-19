@@ -73,7 +73,7 @@ Mimics MATLAB's imextendedmin function that computes the extended-minima transfo
 - `h`: suppress minima below this depth threshold
 - `conn`: neighborhood connectivity; in 2D 1 = 4-neighborhood and 2 = 8-neighborhood
 """
-function imextendedmin(binary_image::AbstractArray{Bool}; h=2::Int, conn=2::Int)::BitMatrix
+function imextendedmin(binary_image::AbstractArray{Bool}; h::Int=2, conn::Int=2)::BitMatrix
     features = ImageSegmentation.feature_transform(.!binary_image)
     distances = -1 .* ImageSegmentation.distance_transform(features)
     mask = ImageSegmentation.hmin_transform(distances, h)
