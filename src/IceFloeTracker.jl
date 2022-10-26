@@ -12,6 +12,7 @@ using DataFrames
 using PyCall
 using Clustering
 using DSP
+using ImageSegmentation
 
 include("utils.jl")
 include("persist.jl")
@@ -23,6 +24,8 @@ include("anisotropic_image_diffusion.jl")
 include("bwtraceboundary.jl")
 include("resample-boundary.jl")
 include("psi-s.jl")
+include("crosscorr.jl")
+include("bwareamaxfilt.jl")
 
 const sk_measure = PyNULL()
 
