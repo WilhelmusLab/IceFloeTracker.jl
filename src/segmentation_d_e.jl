@@ -8,18 +8,15 @@ Performs image processing and watershed segmentation with intermediate files fro
 
 """
 function watershed_ice_floes(intermediate_segmentation_image::BitMatrix)::BitMatrix
-    features = ImageSegmentation.feature_transform(.!intermediate_segmentation_image)
-    distances = -1 .* ImageSegmentation.distance_transform(features)
+    features = Images.feature_transform(.!intermediate_segmentation_image)
+    distances = 1 .- Images.distance_transform(features)
     seg_mask = ImageSegmentation.hmin_transform(distances, 2)
-    seg_mask_minima = ImageSegmentation.local_minima(seg_mask; connectivity=2)
-    seg_mask_minima[seg_mask_minima .> 0] .= 1
-    seg_mask_bool = Bool.(seg_mask_minima)
-    markers = ImageSegmentation.label_components(seg_mask_minima)
-    segment = ImageSegmentation.watershed(distances, markers; mask=seg_mask_bool)
+    seg_mask_bool = seg_mask .< 1
+    markers = Images.label_components(seg_mask_bool)
+    segment = ImageSegmentation.watershed(distances, markers)
     labels = ImageSegmentation.labels_map(segment)
-    watershed_bitmatrix = labels .!= 0
-
-    return watershed_bitmatrix
+    borders = Images.isboundary(labels)
+    return borders
 end
 
 ## function alias segmentation_D is watershed on the `not_ice_mask` from segmentation_B
@@ -41,6 +38,5 @@ function segmentation_D_E(watershed_B::BitMatrix, watershed_C::BitMatrix;)::BitM
 
     ## Intersect the two watershed files
     watershed_intersect = watershed_B .* watershed_C
-
     return watershed_intersect
 end
