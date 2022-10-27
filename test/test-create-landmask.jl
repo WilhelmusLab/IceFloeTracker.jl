@@ -26,7 +26,6 @@
     IceFloeTracker.@persist masked_image masked_image_filename
 
     # test for percent difference in landmask images
-    #@test (@test_approx_eq_sigma_eps landmask matlab_landmask [0, 0] 0.05) == nothing
     @test test_similarity(landmask, convert(BitMatrix, matlab_landmask), 0.005)
     #@test (@test_approx_eq_sigma_eps masked_image masked_matlab_image) #TODO #Matlab output is not dilated
 end
