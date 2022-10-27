@@ -9,7 +9,7 @@
     matlab_landmask = float64.(load(matlab_landmask_file)[lm_test_region...])
     lm_image = float64.(load(landmask_file)[lm_test_region...])
     test_image = float64.(load(truecolor_test_image_file)[lm_test_region...])
-    @time landmask = IceFloeTracker.create_landmask(matlab_landmask, struct_elem)
+    @time landmask = IceFloeTracker.create_landmask(lm_image, struct_elem)
 
     @time masked_image = IceFloeTracker.apply_landmask(test_image, landmask)
 
