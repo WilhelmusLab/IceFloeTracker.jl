@@ -56,6 +56,7 @@ to_test = alltests # uncomment this line to run all tests or add individual file
 # "test-bwareamaxfilt.jl",
 # "test-bwperim.jl",
 # "test-utils-imextendedmin.jl",
+# "test-morphSE.jl",
 ]
 
 # Run the tests
