@@ -30,8 +30,8 @@ const segmentation_E = watershed_ice_floes
 Intersects the outputs of watershed segmentation on intermediate files from segmentation B and C, indicating potential sparse boundaries of ice floes.
 
 # Arguments
-- `watershed_B`: binary cloudmasked and landmasked segmentation mask from `segmentation_D`
-- `watershed_C`: binary cloudmasked and landmasked segmentation mask from `segmentation_E`
+- `watershed_B`: binary segmentation mask from `segmentation_D`
+- `watershed_C`: binary segmentation mask from `segmentation_E`
 
 """
 function segmentation_D_E(watershed_B::BitMatrix, watershed_C::BitMatrix;)::BitMatrix
