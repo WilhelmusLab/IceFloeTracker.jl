@@ -2,30 +2,20 @@
     println("------------------------------------------------")
     println("------------ Create Segmentation-D,E Test --------------")
 
-    matlab_segmented_D = convert(
-        BitMatrix,
-        load("$(test_data_dir)/matlab_segmented_b_filled.png"),#
-    )
-    matlab_segmented_E = convert(
-        BitMatrix,
-        load("$(test_data_dir)/matlab_segmented_c.png"),#
-    )
-    matlab_watershed_D = convert(
-        BitMatrix,
-        load("$(test_data_dir)/matlab_watershed_B.png"),#
-    )
-    matlab_watershed_E = convert(
-        BitMatrix,
-        load("$(test_data_dir)/matlab_watershed_C.png"),#
-    )
+    matlab_segmented_D = load("$(test_data_dir)/matlab_not_ice_mask.png") .> 0.5
+
+    matlab_segmented_E = convert(BitMatrix, load("$(test_data_dir)/matlab_segmented_c.png"))
+    matlab_watershed_D = convert(BitMatrix, load("$(test_data_dir)/matlab_watershed_B.png"))
+    matlab_watershed_E = convert(BitMatrix, load("$(test_data_dir)/matlab_watershed_C.png"))
     matlab_watershed_intersect = convert(
         BitMatrix, load("$(test_data_dir)/matlab_watershed_intersect.png")
     )
     segmented_c = convert(BitMatrix, load(segmented_c_test_file))
     not_ice_mask = convert(BitMatrix, load(not_ice_mask_test_file))
+
     ## Run function with Matlab inputs
-    @time watershed_D_borders = IceFloeTracker.segmentation_D(matlab_segmented_D) #not_ice_mask
-    @time watershed_E_borders = IceFloeTracker.segmentation_E(matlab_segmented_E) #segmented_c
+    @time watershed_D_borders = IceFloeTracker.segmentation_D(matlab_segmented_D) #Matlab_not_ice_mask
+    @time watershed_E_borders = IceFloeTracker.segmentation_E(matlab_segmented_E) #matlab_segmented_c
     @time watershed_intersect = IceFloeTracker.segmentation_D_E(
         watershed_D_borders, watershed_E_borders
     )
@@ -77,7 +67,7 @@
     @test typeof(watershed_E_borders) == typeof(matlab_watershed_D)
     @test typeof(watershed_D_borders) == typeof(matlab_watershed_E)
     @test typeof(watershed_intersect) == typeof(matlab_watershed_intersect)
-    @test test_similarity(matlab_watershed_D, watershed_D_borders, 0.06)
+    @test test_similarity(matlab_watershed_D, watershed_D_borders, 0.064)
     @test test_similarity(matlab_watershed_E, watershed_E_borders, 0.08)
     @test test_similarity(matlab_watershed_intersect, watershed_intersect, 0.017)
 

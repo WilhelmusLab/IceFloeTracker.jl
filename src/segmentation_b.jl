@@ -29,7 +29,6 @@ function segmentation_B(
     ## Process sharpened image
     not_ice_mask = .!(sharpened_image .< isolation_threshold)
     adjusted_sharpened = (1 - alpha_level) .* sharpened_image .+ alpha_level .* not_ice_mask
-
     gamma_adjusted_sharpened = ImageContrastAdjustment.adjust_histogram(
         adjusted_sharpened, GammaCorrection(; gamma=gamma_factor)
     )
