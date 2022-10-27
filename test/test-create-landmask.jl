@@ -13,6 +13,12 @@
 
     @time masked_image = IceFloeTracker.apply_landmask(test_image, landmask)
 
+    matlab_landmask_filename =
+        "$(test_output_dir)/matlab_landmask_test_" *
+        Dates.format(Dates.now(), "yyyy-mm-dd-HHMMSS") *
+        ".png"
+    IceFloeTracker.@persist matlab_landmask matlab_landmask_filename
+
     landmask_filename =
         "$(test_output_dir)/landmask_test_" *
         Dates.format(Dates.now(), "yyyy-mm-dd-HHMMSS") *
