@@ -1,6 +1,5 @@
 module IceFloeTracker
 using Images
-using ImageProjectiveGeometry
 using DelimitedFiles
 using Dates
 using ImageContrastAdjustment
