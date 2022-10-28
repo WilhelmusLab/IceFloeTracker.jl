@@ -24,7 +24,7 @@ function create_landmask(
     @time lm_binary_dilated = ImageProjectiveGeometry.imdilate(.!lm_binary, struct_elem)
     lm_binary_dilated = IceFloeTracker.remove_padding(lm_binary_dilated, pad_size)
     println("Closing any holes in mask")
-    landmask_bool = (lm_binary_dilated .< bool_conversion)
+    landmask_bool = (lm_binary_dilated .> bool_conversion)
     @time landmask_bool_filled = ImageMorphology.imfill(
         landmask_bool, (fill_value_lower, fill_value_upper)
     )

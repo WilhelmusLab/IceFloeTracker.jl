@@ -74,9 +74,9 @@ Mimics MATLAB's imextendedmin function that computes the extended-minima transfo
 - `conn`: neighborhood connectivity; in 2D 1 = 4-neighborhood and 2 = 8-neighborhood
 """
 function imextendedmin(binary_image::AbstractArray{Bool}; h::Int=2, conn::Int=2)::BitMatrix
-    features = ImageSegmentation.feature_transform(.!binary_image)
-    distances = -1 .* ImageSegmentation.distance_transform(features)
-    mask = ImageSegmentation.hmin_transform(distances, h)
-    mask_minima = ImageSegmentation.local_minima(mask; connectivity=conn)
+    features = Images.feature_transform(.!binary_image)
+    distances = -1 .* Images.distance_transform(features)
+    mask = Images.hmin_transform(distances, h)
+    mask_minima = Images.local_minima(mask; connectivity=conn)
     return Bool.(mask_minima)
 end
