@@ -4,6 +4,7 @@ using ImageProjectiveGeometry
 using DelimitedFiles
 using Dates
 using ImageContrastAdjustment
+using ImageSegmentation
 using Peaks
 using StatsBase
 using Interpolations
@@ -37,6 +38,8 @@ include("segmentation_a_direct.jl")
 include("segmentation_b.jl")
 include("segmentation_c.jl")
 include("bwperim.jl")
+include("crosscorr.jl")
+include("segmentation_d_e.jl")
 
 function fetchdata(; output::AbstractString)
     mkpath("$output")

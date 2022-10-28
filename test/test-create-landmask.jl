@@ -13,6 +13,12 @@
 
     @time masked_image = IceFloeTracker.apply_landmask(test_image, landmask)
 
+    matlab_landmask_filename =
+        "$(test_output_dir)/matlab_landmask_test_" *
+        Dates.format(Dates.now(), "yyyy-mm-dd-HHMMSS") *
+        ".png"
+    IceFloeTracker.@persist matlab_landmask matlab_landmask_filename
+
     landmask_filename =
         "$(test_output_dir)/landmask_test_" *
         Dates.format(Dates.now(), "yyyy-mm-dd-HHMMSS") *
@@ -26,7 +32,6 @@
     IceFloeTracker.@persist masked_image masked_image_filename
 
     # test for percent difference in landmask images
-    @test (@test_approx_eq_sigma_eps landmask matlab_landmask [0, 0] 0.005) == nothing
-
+    @test test_similarity(landmask, convert(BitMatrix, matlab_landmask), 0.005)
     #@test (@test_approx_eq_sigma_eps masked_image masked_matlab_image) #TODO #Matlab output is not dilated
 end
