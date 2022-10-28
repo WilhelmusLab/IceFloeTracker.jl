@@ -64,16 +64,24 @@ function remove_padding(paddedimg, border_spec::Union{Pad,Fill})::Matrix
 end
 
 """
-    imextendedmin(binary_image)
+    imextendedmin(img)
 
 Mimics MATLAB's imextendedmin function that computes the extended-minima transform, which is the regional minima of the H-minima transform. Regional minima are connected components of pixels with a constant intensity value. This function returns a transformed bitmatrix.
 
+# Arguments
+- `img`: image object
+- `h`: suppress minima below this depth threshold
+- `conn`: neighborhood connectivity; in 2D 1 = 4-neighborhood and 2 = 8-neighborhood
 """
-function imextendedmin(binary_image::BitMatrix)::BitMatrix
-    features = ImageSegmentation.feature_transform(.!binary_image)
-    distances = -1 .* ImageSegmentation.distance_transform(features)
-    mask = ImageSegmentation.hmin_transform(distances, 2)
-    mask_minima = ImageSegmentation.local_minima(mask; connectivity=2)
-    mask_bool = Bool.(mask_minima)
-    return mask_bool
+function imextendedmin(img::AbstractArray; h::Int=2, conn::Int=2)::BitMatrix
+    mask = ImageSegmentation.hmin_transform(img, h)
+    mask_minima = Images.local_minima(mask; connectivity=conn)
+    return Bool.(mask_minima)
 end
+
+"""
+    bwdist(bwimg)
+
+Distance transform for binary image `bwdist`.
+"""
+bwdist(bwimg::AbstractArray{Bool}) = Images.distance_transform(Images.feature_transform(bwimg))::T where T<:AbstractArray{Float64}
