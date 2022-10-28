@@ -104,8 +104,6 @@ Main functionality is `dilate(img, se)` for landmask computations.
 
 # Example
 
-# Examples
-
 ```jldoctest; setup = :(using IceFloeTracker)
 julia> a = zeros(Int, 11, 11); a[6, 6] = 1;
 
