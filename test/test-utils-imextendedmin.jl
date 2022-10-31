@@ -1,6 +1,6 @@
-@testset "imextendedmin" begin
+@testset "imextendedmin and bwdist" begin
     println("-------------------------------------------------")
-    println("---------------- imextendedmin Tests ------------------")
+    println("------- imextendedmin bwdist Tests --------------")
 
     test_matrix = "$(test_data_dir)/test_extendedmin.csv"
     test_image = DelimitedFiles.readdlm(test_matrix, ',', Bool)
@@ -22,7 +22,9 @@
         matlab_extendedmin_output_file, ',', Bool
     )
 
-    extendedmin_bitmatrix = IceFloeTracker.imextendedmin(test_image)
+    # Test workflow for watershed segmentation
+    distances = -IceFloeTracker.bwdist(.!test_image)
+    extendedmin_bitmatrix = IceFloeTracker.imextendedmin(distances)
     # Matlab output
     # 10×10 BitMatrix:
     # 1 1 1 1 1 1 0 0 0 0
