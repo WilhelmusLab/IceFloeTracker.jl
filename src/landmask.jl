@@ -15,6 +15,7 @@ function create_landmask(
     fill_value_lower::Int=0,
     fill_value_upper::Int=2000
 )::BitMatrix
+
     # binarize if not Boolean
     if !(typeof(landmask_image) <: AbstractMatrix{Bool})
         landmask_image = Gray.(landmask_image) .> 0
