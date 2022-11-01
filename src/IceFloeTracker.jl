@@ -25,6 +25,7 @@ include("resample-boundary.jl")
 include("psi-s.jl")
 include("crosscorr.jl")
 include("bwareamaxfilt.jl")
+include("hbreak.jl")
 
 const sk_measure = PyNULL()
 
