@@ -129,5 +129,5 @@ function segmentation_A(
 
     segmented_A = segmented_ice_cloudmasked .|| diff_matrix
 
-    return segmented_ice_cloudmasked, segmented_ice_filled, segmented_A
+    return segmented_ice, segmented_ice_cloudmasked, segmented_A
 end
