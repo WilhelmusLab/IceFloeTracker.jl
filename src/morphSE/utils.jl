@@ -19,12 +19,18 @@ require_select_function(f, ::Type{T}) where {T} = require_select_function(f, T, 
 function require_select_function(f, ::Type{T1}, ::Type{T2}) where {T1,T2}
     if !_is_select_function(f, T1, T2)
         hint = "does `f(x::T1, y::T2)` work as expected?"
-        throw(ArgumentError("function `$f` is not a well-defined select function on type `$T1` and `$T2`: $hint"))
+        throw(
+            ArgumentError(
+                "function `$f` is not a well-defined select function on type `$T1` and `$T2`: $hint",
+            ),
+        )
     end
 end
 _is_select_function(f, ::Type{T}) where {T} = _is_select_function(f, T, T)
 
-_is_select_function(f, ::Type{T1}, ::Type{T2}) where {T1,T2} = _is_select_function_trial(f, T1, T2)
+function _is_select_function(f, ::Type{T1}, ::Type{T2}) where {T1,T2}
+    return _is_select_function_trial(f, T1, T2)
+end
 function _is_select_function(f, ::Type{T1}, ::Type{T2}) where {T1<:Real,T2<:Real}
     f in (min, max) && return true
     return _is_select_function_trial(f, T1, T2)

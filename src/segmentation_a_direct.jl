@@ -26,7 +26,7 @@ Convert a 3-channel false color reflectance image to a 1-channel binary matrix w
 
 # Arguments
 - `reflectance_image`: corrected reflectance false color image - bands [7,2,1]
-- `ice_water_discrimination_image`: output image from `ice-water-discrimination.jl`
+- `gray_image`: output image from `ice-water-discrimination.jl` or gray ice floe leads image in `segmentation_f.jl` 
 - `landmask`: bitmatrix landmask for region of interest
 - `cloudmask`: bitmatrix cloudmask for region of interest
 - `band_7_threshold`: threshold value used to identify ice in band 7, N0f8(RGB intensity/255)
@@ -41,7 +41,7 @@ Convert a 3-channel false color reflectance image to a 1-channel binary matrix w
 """
 function segmentation_A(
     reflectance_image::Matrix{RGB{Float64}},
-    ice_water_discriminated_image::Matrix{Gray{Float64}},
+    gray_image::Matrix{Gray{Float64}},
     landmask::BitMatrix,
     cloudmask::BitMatrix;
     band_7_threshold::Float64=Float64(5 / 255),
@@ -52,25 +52,18 @@ function segmentation_A(
     possible_ice_threshold::Float64=Float64(75 / 255),
     min_opening_area::Real=50,
     fill_range::Tuple=(0, 50),
-)::Tuple{BitMatrix,BitMatrix}
-    ice_water_discriminated_image = Matrix{Float64}(ice_water_discriminated_image)
-    ice_water_discrimination_height, ice_water_discrimination_width = size(
-        ice_water_discriminated_image
-    )
-    ice_water_discriminateed_1d = reshape(
-        ice_water_discriminated_image,
-        1,
-        ice_water_discrimination_height * ice_water_discrimination_width,
-    )
+)::Tuple{BitMatrix,BitMatrix,BitMatrix}
+    gray_image = float64.(gray_image)
+    gray_image_height, gray_image_width = size(gray_image)
+    gray_image_1d = reshape(gray_image, 1, gray_image_height * gray_image_width)
+    println("Done with reshape")
     feature_classes = Clustering.kmeans(
-        ice_water_discriminateed_1d, 4; maxiter=50, display=:iter, init=:kmpp
+        gray_image_1d, 4; maxiter=50, display=:iter, init=:kmpp
     )
     class_assignments = assignments(feature_classes)
 
     ## NOTE(tjd): this reshapes column major vector of kmeans classes back into original image shape
-    segmented = reshape(
-        class_assignments, ice_water_discrimination_height, ice_water_discrimination_width
-    )
+    segmented = reshape(class_assignments, gray_image_height, gray_image_width)
 
     ## Make ice masks
     cv = channelview(reflectance_image)
@@ -79,6 +72,7 @@ function segmentation_A(
     mask_ice_band_1 = cv[3, :, :] .> band_1_threshold #240 / 255
     ice = mask_ice_band_7 .&& mask_ice_band_2 .&& mask_ice_band_1
     ice_labels = remove_landmask(landmask, ice)
+    println("Done with masks")
 
     ## Find obvious ice floes
     if isempty(ice_labels)
@@ -114,7 +108,7 @@ function segmentation_A(
     else
         nlabel = StatsBase.mode(segmented[ice_labels])
     end
-
+    println("Done with ice labels")
     ## Isolate ice floes and contrast from background
     segmented_ice = segmented .== nlabel
     segmented_ice_cloudmasked = segmented_ice .* cloudmask
@@ -128,12 +122,12 @@ function segmentation_A(
     segmented_ice_filled = ImageMorphology.imfill(
         convert(BitMatrix, (segmented_opened_flipped)), fill_range
     ) #BW_test3 in matlab code
-
+    println("Done filling segmented_ice")
     segmented_ice_filled_comp = complement.(segmented_ice_filled)
 
     diff_matrix = segmented_ice_opened .!= segmented_ice_filled_comp
 
     segmented_A = segmented_ice_cloudmasked .|| diff_matrix
 
-    return segmented_ice_cloudmasked, segmented_A
+    return segmented_ice_cloudmasked, segmented_ice_filled, segmented_A
 end

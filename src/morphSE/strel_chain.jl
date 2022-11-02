@@ -23,7 +23,9 @@ strel_size(A::SEChainArray) = size(A._data)
 
 Base.axes(A::SEChainArray) = axes(A._data)
 Base.size(A::SEChainArray) = size(A._data)
-Base.@propagate_inbounds Base.getindex(A::SEChainArray, inds::Int...) = getindex(A._data, inds...)
+Base.@propagate_inbounds function Base.getindex(A::SEChainArray, inds::Int...)
+    return getindex(A._data, inds...)
+end
 
 """
     strel_chain(A, B, ...)

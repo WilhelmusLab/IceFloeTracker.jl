@@ -11,7 +11,7 @@
     matlab_segmented_A_bitmatrix = convert(BitMatrix, matlab_segmented_A)
 
     println("---------- Segment Image - Direct Method ------------")
-    @time segmented_ice, segmented_A = IceFloeTracker.segmentation_A(
+    @time segmented_ice, segmented_ice_filled, segmented_A = IceFloeTracker.segmentation_A(
         reflectance_image, ice_water_discriminated_image, landmask, cloudmask
     )
 

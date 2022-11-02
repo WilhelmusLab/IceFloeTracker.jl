@@ -78,7 +78,9 @@ true
 See also the in-place version [`extreme_filter!`](@ref). Another function in ImageFiltering
 package `ImageFiltering.mapwindow` provides similar functionality.
 """
-extreme_filter(f, A; r=nothing, dims=coords_spatial(A)) = extreme_filter(f, A, strel_box(A, dims; r))
+function extreme_filter(f, A; r=nothing, dims=coords_spatial(A))
+    return extreme_filter(f, A, strel_box(A, dims; r))
+end
 extreme_filter(f, A, Ω::AbstractArray) = extreme_filter!(f, similar(A), A, Ω)
 
 """
@@ -88,7 +90,9 @@ extreme_filter(f, A, Ω::AbstractArray) = extreme_filter!(f, similar(A), A, Ω)
 The in-place version of [`extreme_filter`](@ref) where `out` is the output array that gets
 modified.
 """
-extreme_filter!(f, out, A; r=nothing, dims=coords_spatial(A)) = extreme_filter!(f, out, A, strel_box(A, dims; r))
+function extreme_filter!(f, out, A; r=nothing, dims=coords_spatial(A))
+    return extreme_filter!(f, out, A, strel_box(A, dims; r))
+end
 function extreme_filter!(f, out, A, Ω)
     axes(out) == axes(A) || throw(DimensionMismatch("axes(out) must match axes(A)"))
     require_select_function(f, eltype(A))
@@ -97,19 +101,26 @@ end
 
 _extreme_filter!(::MorphologySE, f, out, A, Ω) = _extreme_filter_generic!(f, out, A, Ω)
 _extreme_filter!(::SEDiamond, f, out, A, Ω) = _extreme_filter_diamond!(f, out, A, Ω)
-function _extreme_filter!(::MorphologySE, f::MAX_OR_MIN, out, A::AbstractArray{T}, Ω) where {T<:Union{Gray{Bool},Bool}}
+function _extreme_filter!(
+    ::MorphologySE, f::MAX_OR_MIN, out, A::AbstractArray{T}, Ω
+) where {T<:Union{Gray{Bool},Bool}}
     # NOTE(johnnychen94): empirical choice based on benchmark results (intel i9-12900k)
     true_ratio = gray(sum(A) / length(A)) # this usually takes <2% of the time but gives a pretty good hint to do the decision
     true_ratio == 1 && (out .= true; return out)
     true_ratio == 0 && (out .= false; return out)
-    use_bool = prod(strel_size(Ω)) > 9 || (f === max && true_ratio > 0.8) || (f === min && true_ratio < 0.2)
+    use_bool =
+        prod(strel_size(Ω)) > 9 ||
+        (f === max && true_ratio > 0.8) ||
+        (f === min && true_ratio < 0.2)
     if use_bool
         return _extreme_filter_bool!(f, out, A, Ω)
     else
         return _extreme_filter_generic!(f, out, A, Ω)
     end
 end
-function _extreme_filter!(::SEDiamond, f::MAX_OR_MIN, out, A::AbstractArray{T}, Ω) where {T<:Union{Gray{Bool},Bool}}
+function _extreme_filter!(
+    ::SEDiamond, f::MAX_OR_MIN, out, A::AbstractArray{T}, Ω
+) where {T<:Union{Gray{Bool},Bool}}
     rΩ = strel_size(Ω) .÷ 2
     if ndims(A) == 2 && all(rΩ[1] .== rΩ)
         # super fast implementation and wins in all cases
@@ -127,7 +138,9 @@ function _extreme_filter!(::SEDiamond, f::MAX_OR_MIN, out, A::AbstractArray{T}, 
         return _extreme_filter_diamond!(f, out, A, Ω)
     end
 end
-function _extreme_filter!(::SEBox, f::MAX_OR_MIN, out, A::AbstractArray{T}, Ω) where {T<:Union{Gray{Bool},Bool}}
+function _extreme_filter!(
+    ::SEBox, f::MAX_OR_MIN, out, A::AbstractArray{T}, Ω
+) where {T<:Union{Gray{Bool},Bool}}
     rΩ = strel_size(Ω) .÷ 2
     if ndims(A) == 2 && all(rΩ[1] .== rΩ)
         # super fast implementation and wins in all cases
@@ -137,13 +150,13 @@ function _extreme_filter!(::SEBox, f::MAX_OR_MIN, out, A::AbstractArray{T}, Ω) 
     return _extreme_filter_bool!(f, out, A, Ω)
 end
 
-
 ###
 # Implementation details
 ###
 
 function _extreme_filter_generic!(f, out, A, Ω)
-    @debug "call the generic `extreme_filter` implementation" fname = _extreme_filter_generic!
+    @debug "call the generic `extreme_filter` implementation" fname =
+        _extreme_filter_generic!
     Ω = strel(CartesianIndex, Ω)
     δ = CartesianIndex(strel_size(Ω) .÷ 2)
 
@@ -187,7 +200,8 @@ function _extreme_filter_diamond!(f, out, A, Ω::SEDiamondArray{N}) where {N}
 end
 
 function _extreme_filter_diamond_generic!(f, out, A, Ω::SEDiamondArray)
-    @debug "call the optimized `extreme_filter` implementation for SEDiamond SE" fname = _extreme_filter_diamond!
+    @debug "call the optimized `extreme_filter` implementation for SEDiamond SE" fname =
+        _extreme_filter_diamond!
     rΩ = strel_size(Ω) .÷ 2
     r = maximum(rΩ)
 
@@ -245,7 +259,9 @@ end
 
 # Shift vector of size N up or down by 1 accorded to dir, pad with v
 const SafeArrayTypes{T,N,NA} = Union{Array{T,N},Base.SubArray{T,N,Array{T,NA}}}
-function _unsafe_padded_copyto!(dest::SafeArrayTypes{T,1}, src::SafeArrayTypes{T,1}, dir, N, v) where {T}
+function _unsafe_padded_copyto!(
+    dest::SafeArrayTypes{T,1}, src::SafeArrayTypes{T,1}, dir, N, v
+) where {T}
     # ptr level optimized implementation for Real types
     # short-circuit all check so unsafe
     if dir
@@ -300,8 +316,11 @@ end
     # Similar approach could be found in
     # Žlaus, Danijel & Mongus, Domen. (2018). In-place SIMD Accelerated Mathematical Morphology. 76-79. 10.1145/3206157.3206176.
     # see https://www.researchgate.net/publication/325480366_In-place_SIMD_Accelerated_Mathematical_Morphology
-    function _extreme_filter_diamond_2D!(f::MAX_OR_MIN, out::AbstractArray{T}, A, iter) where {T}
-        @debug "call the AVX-enabled `extreme_filter` implementation for 2D SEDiamond" fname = _extreme_filter_diamond_2D!
+    function _extreme_filter_diamond_2D!(
+        f::MAX_OR_MIN, out::AbstractArray{T}, A, iter
+    ) where {T}
+        @debug "call the AVX-enabled `extreme_filter` implementation for 2D SEDiamond" fname =
+            _extreme_filter_diamond_2D!
         out_actual = out
 
         out = OffsetArrays.no_offset_view(out)
@@ -367,7 +386,8 @@ end
                 viewnext = view(src, :, c)
                 # dilate(x-1)/erode(x-1)
                 _unsafe_shift_arith!(f, tmp2, tmp, tmp3, viewcurrent)
-                @turbo warn_check_args = false for i in eachindex(viewout, viewprevious, tmp2)
+                @turbo warn_check_args = false for i in
+                                                   eachindex(viewout, viewprevious, tmp2)
                     #sup(x-2,dilate(x-1)),inf(x-2,erode(x-1))
                     #sup(sup(x-2,dilate(x-1),x) || inf(inf(x-2,erode(x-1),x)
                     viewout[i] = f(f(viewprevious[i], tmp2[i]), viewnext[i])
@@ -416,8 +436,11 @@ end
     # Similar approach could be found in
     # Žlaus, Danijel & Mongus, Domen. (2018). In-place SIMD Accelerated Mathematical Morphology. 76-79. 10.1145/3206157.3206176.
     # see https://www.researchgate.net/publication/325480366_In-place_SIMD_Accelerated_Mathematical_Morphology
-    function _extreme_filter_box_2D!(f::MAX_OR_MIN, out::AbstractArray{T}, A, iter) where {T}
-        @debug "call the AVX-enabled `extreme_filter` implementation for 2D SEBox" fname = _extreme_filter_box_2D!
+    function _extreme_filter_box_2D!(
+        f::MAX_OR_MIN, out::AbstractArray{T}, A, iter
+    ) where {T}
+        @debug "call the AVX-enabled `extreme_filter` implementation for 2D SEBox" fname =
+            _extreme_filter_box_2D!
         out_actual = out
 
         out = OffsetArrays.no_offset_view(out)
@@ -519,7 +542,8 @@ end
 # 1) use &&, || instead of max, min
 # 2) short-circuit the result to avoid unnecessary indexing and computation
 function _extreme_filter_bool!(f, out, A::AbstractArray{Bool}, Ω)
-    @debug "call the optimized max/min `extreme_filter` implementation for boolean array" fname = _extreme_filter_bool!
+    @debug "call the optimized max/min `extreme_filter` implementation for boolean array" fname =
+        _extreme_filter_bool!
     Ω = strel(CartesianIndex, Ω)
     δ = CartesianIndex(strel_size(Ω) .÷ 2)
 
