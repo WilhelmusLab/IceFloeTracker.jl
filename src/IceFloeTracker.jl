@@ -39,6 +39,7 @@ include("segmentation_c.jl")
 include("bwperim.jl")
 include("crosscorr.jl")
 include("segmentation_d_e.jl")
+include("find_ice_labels.jl")
 
 function fetchdata(; output::AbstractString)
     mkpath("$output")
