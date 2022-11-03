@@ -1,9 +1,9 @@
 module IceFloeTracker
 using Images
-using ImageProjectiveGeometry
 using DelimitedFiles
 using Dates
 using ImageContrastAdjustment
+using ImageSegmentation
 using Peaks
 using StatsBase
 using Interpolations
@@ -13,6 +13,7 @@ using Clustering
 using DSP
 using RegisterMismatch
 using RegisterQD
+using ImageSegmentation
 
 include("utils.jl")
 include("persist.jl")
@@ -40,6 +41,8 @@ include("segmentation_a_direct.jl")
 include("segmentation_b.jl")
 include("segmentation_c.jl")
 include("bwperim.jl")
+include("crosscorr.jl")
+include("segmentation_d_e.jl")
 
 function fetchdata(; output::AbstractString)
     mkpath("$output")
@@ -96,4 +99,61 @@ function cloudmask(;
     return nothing
 end
 
+"""
+    MorphSE
+
+Module for morphological operations with structuring element functionality adapted from ImageMorphology v0.4.3.
+
+This module is temporary until v0.5 of ImageMorphology is relaeased.
+
+Main functionality is `dilate(img, se)` for landmask computations.
+
+# Example
+
+```jldoctest; setup = :(using IceFloeTracker)
+julia> a = zeros(Int, 11, 11); a[6, 6] = 1;
+
+julia> a
+11×11 Matrix{Int64}:
+ 0  0  0  0  0  0  0  0  0  0  0
+ 0  0  0  0  0  0  0  0  0  0  0
+ 0  0  0  0  0  0  0  0  0  0  0
+ 0  0  0  0  0  0  0  0  0  0  0
+ 0  0  0  0  0  0  0  0  0  0  0
+ 0  0  0  0  0  1  0  0  0  0  0
+ 0  0  0  0  0  0  0  0  0  0  0
+ 0  0  0  0  0  0  0  0  0  0  0
+ 0  0  0  0  0  0  0  0  0  0  0
+ 0  0  0  0  0  0  0  0  0  0  0
+ 0  0  0  0  0  0  0  0  0  0  0
+
+julia> se = trues(5,5);
+
+julia> IceFloeTracker.MorphSE.dilate(a, se)
+11×11 Matrix{Int64}:
+ 0  0  0  0  0  0  0  0  0  0  0
+ 0  0  0  0  0  0  0  0  0  0  0
+ 0  0  0  0  0  0  0  0  0  0  0
+ 0  0  0  1  1  1  1  1  0  0  0
+ 0  0  0  1  1  1  1  1  0  0  0
+ 0  0  0  1  1  1  1  1  0  0  0
+ 0  0  0  1  1  1  1  1  0  0  0
+ 0  0  0  1  1  1  1  1  0  0  0
+ 0  0  0  0  0  0  0  0  0  0  0
+ 0  0  0  0  0  0  0  0  0  0  0
+ 0  0  0  0  0  0  0  0  0  0  0
+```
+"""
+module MorphSE
+using ImageCore
+using ColorTypes
+using LoopVectorization
+using OffsetArrays
+using TiledIteration: EdgeIterator
+include("morphSE/StructuringElements.jl")
+using .StructuringElements
+include("morphSE/extreme_filter.jl")
+include("morphSE/utils.jl")
+include("morphSE/dilate.jl")
+end
 end
