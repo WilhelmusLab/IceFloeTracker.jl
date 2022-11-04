@@ -12,11 +12,13 @@ h2 =   [1 1 1
         1 1 1]  
 """
 function make_hbreak_dict()::Dict{AbstractArray{Bool},Bool}
-    h1 = trues(3,3); h1[[1 3], 2] .= false
-    h2 = trues(3,3); h2[2, [1 3]] .= false
+    h1 = trues(3, 3)
+    h1[[1 3], 2] .= false
+    h2 = trues(3, 3)
+    h2[2, [1 3]] .= false
     d = Dict{AbstractArray{Bool},Bool}()
     d[h1], d[h2] = true, true
-    d
+    return d
 end
 
 """
@@ -58,13 +60,13 @@ hbreak(img) = hbreak!(copy(img))
 
 Inplace version of `hbreak`. See also [`hbreak`](@ref).
 """
-function hbreak!(img::T)::T where T<:AbstractArray{Bool}
-    f = x-> get(make_hbreak_dict(), x, false)
+function hbreak!(img::T)::T where {T<:AbstractArray{Bool}}
+    f = x -> get(make_hbreak_dict(), x, false)
     R = CartesianIndices(img)
     I_first, I_last = first(R), last(R)
     Δ = CartesianIndex(1, 1)
     for I in R
-        nhood = max(I_first, I-Δ):min(I_last, I+Δ)
+        nhood = max(I_first, I - Δ):min(I_last, I + Δ)
         f(view(img, nhood)) ? img[I] = false : continue
     end
     return img

@@ -1,4 +1,23 @@
 """
+    find_reflectance_peaks(reflectance_channel, possible_ice_threshold;)
+
+Find histogram peaks in single channels of a reflectance image and return the second greatest peak. If needed, edges can be returned as the first object from `build_histogram`. Similarly, peak values can be returned as the second object from `findmaxima`.
+
+# Arguments
+- `reflectance_channel`: either band 2 or band 1 of false-color reflectance image
+- `possible_ice_threshold`: threshold value used to identify ice if not found on first or second pass
+
+"""
+function find_reflectance_peaks(reflectance_channel::Matrix{Float64})::Int64
+    reflectance_channel[reflectance_channel .< possible_ice_threshold] .= 0 #75 / 255
+    _, counts = ImageContrastAdjustment.build_histogram(reflectance_channel)
+    locs, _ = Peaks.findmaxima(counts)
+    locs = sort(locs; rev=true)
+    second_peak = locs[2]
+    return second_peak
+end
+
+"""
     find_ice_labels(reflectance_image, landmask; band_7_threshold, band_2_threshold, band_1_threshold, band_7_relaxed_threshold, band_1_relaxed_threshold, possible_ice_threshold)
 
 Locate the pixels of obvious ice from false color reflectance image. Returns a binary mask with ice floes contrasted from background. Default thresholds are defined in the published Ice Floe Tracker article: Remote Sensing of the Environment 234 (2019) 111406.
@@ -11,7 +30,6 @@ Locate the pixels of obvious ice from false color reflectance image. Returns a b
 - `band_1_threshold`: threshold value used to identify ice in band 2, N0f8(RGB intensity/255)
 - `band_7_relaxed_threshold`: threshold value used to identify ice in band 7 if not found on first pass, N0f8(RGB intensity/255)
 - `band_1_relaxed_threshold`: threshold value used to identify ice in band 1 if not found on first pass, N0f8(RGB intensity/255)
-- `possible_ice_threshold`: threshold value used to identify ice if not found on first or second pass
 
 """
 function find_ice_labels(
@@ -35,30 +53,18 @@ function find_ice_labels(
     println("Done with masks")
 
     ## Find obvious ice floes
-    if isempty(ice_labels)
+    if sum(abs.(ice_labels)) == 0
         mask_ice_band_7 = cv[1, :, :] .< band_7_threshold_relaxed #10 / 255
         mask_ice_band_1 = cv[3, :, :] .> band_1_threshold_relaxed #190 / 255
         ice = mask_ice_band_7 .&& mask_ice_band_2 .&& mask_ice_band_1
         ice_labels = remove_landmask(landmask, ice)
-        if isempty(ice_labels)
+        if sum(abs.(ice_labels)) == 0
             ref_image_band_2 = cv[2, :, :]
             ref_image_band_1 = cv[3, :, :]
-            ref_image_band_2[ref_image_band_2 .< possible_ice_threshold] .= 0 #75 / 255
-            ref_image_band_1[ref_image_band_1 .< possible_ice_threshold] .= 0 #75 / 255
-            edges_band_2, counts_band_2 = ImageContrastAdjustment.build_histogram(
-                ref_image_band_2
-            )
-            locs_band_2, peaks_band_2 = Peaks.findmaxima(counts_band_2)
-            locs_band_2 = sort(locs_band_2; rev=true)
-            peak1 = locs_band_2[2]
-            edges_band_1, counts_band_1 = ImageContrastAdjustment.build_histogram(
-                ref_image_band_1
-            )
-            locs_band_1, peaks_band_1 = Peaks.findmaxima(counts_band_1)
-            locs_band_1 = sort(locs_band_1; rev=true)
-            peak2 = locs_band_1[2]
-            mask_ice_band_2 = cv[2, :, :] .> peak1 / 255
-            mask_ice_band_1 = cv[3, :, :] .> peak2 / 255
+            band_2_peak = find_reflectance_peaks(ref_image_band_2)
+            band_1_peak = find_reflectance_peaks(ref_image_band_1)
+            mask_ice_band_2 = cv[2, :, :] .> band_2_peak / 255
+            mask_ice_band_1 = cv[3, :, :] .> band_1_peak / 255
             ice = mask_ice_band_7 .&& mask_ice_band_2 .&& mask_ice_band_1
             ice_labels = remove_landmask(landmask, ice)
         end

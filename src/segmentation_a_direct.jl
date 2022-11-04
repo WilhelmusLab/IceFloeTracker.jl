@@ -62,7 +62,9 @@ function segmentation_A(
         segmented_ice_cloudmasked; min_area=min_opening_area
     ) #BW_test in matlab code
 
-    segmented_opened_flipped = .!segmented_ice_opened
+    segmented_ice_opened_hbreak = IceFloeTracker.hbreak!(segmented_ice_opened)
+
+    segmented_opened_flipped = .!segmented_ice_opened_hbreak
 
     segmented_ice_filled = ImageMorphology.imfill(
         convert(BitMatrix, (segmented_opened_flipped)), fill_range

@@ -13,7 +13,6 @@ using Clustering
 using DSP
 using RegisterMismatch
 using RegisterQD
-using ImageSegmentation
 
 include("utils.jl")
 include("persist.jl")
@@ -29,7 +28,6 @@ include("crosscorr.jl")
 include("register-mismatch.jl")
 include("bwareamaxfilt.jl")
 include("hbreak.jl")
-
 
 const sk_measure = PyNULL()
 
