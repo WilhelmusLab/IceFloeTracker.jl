@@ -5,6 +5,7 @@ using DelimitedFiles
 using Dates
 using DataFrames
 using Random
+using ImageTransformations: imrotate
 include("test_error_rate.jl")
 include("config.jl")
 
@@ -34,7 +35,7 @@ test_region = (1:2707, 1:4458)
 lm_test_region = (1:800, 1:1500)
 ice_floe_test_region = (1640:2060, 1840:2315)
 
-## Get all test files filenames "test-*" in test folder and their corresponding names/label
+## Get all test files filenames "test-*" in test folder and their corresponding names/label 
 alltests = [f for f in readdir() if startswith(f, "test-")]
 testnames = [n[6:(end - 3)] for n in alltests]
 
@@ -58,6 +59,7 @@ to_test = alltests # uncomment this line to run all tests or add individual file
 # "test-psi-s.jl",
 # "test-crosscorr.jl"
 # "test-bwperim.jl",
+# "test-register-mismatch.jl",
 # "test-utils-imextendedmin.jl",
 # "test-morphSE.jl",
 ]

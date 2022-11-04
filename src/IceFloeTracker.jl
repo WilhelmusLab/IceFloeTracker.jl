@@ -11,6 +11,8 @@ using DataFrames
 using PyCall
 using Clustering
 using DSP
+using RegisterMismatch
+using RegisterQD
 using ImageSegmentation
 
 include("utils.jl")
@@ -24,7 +26,9 @@ include("bwtraceboundary.jl")
 include("resample-boundary.jl")
 include("psi-s.jl")
 include("crosscorr.jl")
+include("register-mismatch.jl")
 include("bwareamaxfilt.jl")
+
 
 const sk_measure = PyNULL()
 

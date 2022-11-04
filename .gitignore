@@ -10,7 +10,7 @@ explorations/
 foo/
 docs/build/
 .DS_Store
-.vscode
+.vs*
 
 ## Allow
 !test/test_inputs/*.tiff
