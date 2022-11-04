@@ -95,6 +95,12 @@ git-tree-sha1 = "a0f80a09780eed9b1d106a1bf62041c2efc995bc"
 uuid = "aafaddc9-749c-510e-ac4f-586e18779b91"
 version = "0.2.2"
 
+[[deps.CenterIndexedArrays]]
+deps = ["Interpolations", "OffsetArrays"]
+git-tree-sha1 = "a3b6db870ef9cb1c2240e64ac45747955443c067"
+uuid = "46a7138f-0d70-54e1-8ada-fb8296f91f24"
+version = "0.2.1"
+
 [[deps.ChainRulesCore]]
 deps = ["Compat", "LinearAlgebra", "SparseArrays"]
 git-tree-sha1 = "e7ff6cadf743c098e08fca25c91103ee4303c9bb"
@@ -318,6 +324,17 @@ git-tree-sha1 = "ba2d094a88b6b287bd25cfa86f301e7693ffae2f"
 uuid = "86223c79-3864-5bf0-83f7-82e725a168b6"
 version = "1.7.4"
 
+[[deps.HDF5]]
+deps = ["Compat", "HDF5_jll", "Libdl", "Mmap", "Random", "Requires"]
+git-tree-sha1 = "19effd6b5af759c8aaeb9c77f89422d3f975ab65"
+uuid = "f67ccb44-e63f-5c2f-98bd-6dc0ccc4ba2f"
+version = "0.16.12"
+
+[[deps.HDF5_jll]]
+deps = ["Artifacts", "JLLWrappers", "LibCURL_jll", "Libdl", "OpenSSL_jll", "Pkg", "Zlib_jll"]
+git-tree-sha1 = "4cc2bb72df6ff40b055295fdef6d92955f9dede8"
+uuid = "0234f1f7-429e-5d53-9886-15a909be8d59"
+version = "1.12.2+2"
 [[deps.HostCPUFeatures]]
 deps = ["BitTwiddlingConvenienceFunctions", "IfElse", "Libdl", "Static"]
 git-tree-sha1 = "b7b88a4716ac33fe31d6556c02fc60017594343c"
@@ -691,6 +708,12 @@ version = "3.1.1+0"
 deps = ["Artifacts", "Libdl"]
 uuid = "05823500-19ac-5b8b-9628-191a04bc5112"
 
+[[deps.OpenSSL_jll]]
+deps = ["Artifacts", "JLLWrappers", "Libdl", "Pkg"]
+git-tree-sha1 = "e60321e3f2616584ff98f0a4f18d98ae6f89bbb3"
+uuid = "458c3c95-2e84-50aa-8efc-19380b2a3a95"
+version = "1.1.17+0"
+
 [[deps.OpenSpecFun_jll]]
 deps = ["Artifacts", "CompilerSupportLibraries_jll", "JLLWrappers", "Libdl", "Pkg"]
 git-tree-sha1 = "13652491f6856acfd2db29360e1bbcd4565d04f1"
@@ -760,6 +783,12 @@ git-tree-sha1 = "a6062fe4063cdafe78f4a0a81cfffb89721b30e7"
 uuid = "2dfb63ee-cc39-5dd5-95bd-886bf059d720"
 version = "1.4.2"
 
+[[deps.PositiveFactorizations]]
+deps = ["LinearAlgebra"]
+git-tree-sha1 = "17275485f373e6673f7e7f97051f703ed5b15b20"
+uuid = "85a6dd25-e78a-55b7-8502-1745935b8125"
+version = "0.2.4"
+
 [[deps.Preferences]]
 deps = ["TOML"]
 git-tree-sha1 = "47e5f437cc0e7ef2ce8406ce1e7e24d44915f88d"
@@ -794,6 +823,12 @@ git-tree-sha1 = "18e8f4d1426e965c7b532ddd260599e1510d26ce"
 uuid = "4b34888f-f399-49d4-9bb3-47ed5cae4e65"
 version = "1.0.0"
 
+[[deps.QuadDIRECT]]
+deps = ["LinearAlgebra", "PositiveFactorizations", "StaticArrays"]
+git-tree-sha1 = "4f2d28cfdc85401db5401037fb25d8891c376c37"
+uuid = "dae52e8d-d666-5120-a592-9e15c33b8d7a"
+version = "0.1.2"
+
 [[deps.Quaternions]]
 deps = ["LinearAlgebra", "Random"]
 git-tree-sha1 = "fcebf40de9a04c58da5073ec09c1c1e95944c79b"
@@ -803,6 +838,12 @@ version = "0.6.1"
 [[deps.REPL]]
 deps = ["InteractiveUtils", "Markdown", "Sockets", "Unicode"]
 uuid = "3fa0cd96-eef1-5676-8a61-b3b8758bbffb"
+
+[[deps.RFFT]]
+deps = ["Base64", "Compat", "FFTW", "InteractiveUtils", "LinearAlgebra", "Pkg", "Test"]
+git-tree-sha1 = "7e9f7ac1f1c5c6ac38e64bd59aaa9312a35c9bf7"
+uuid = "3bd9afcd-55df-531a-9b34-dc642dce7b95"
+version = "0.1.0"
 
 [[deps.Random]]
 deps = ["SHA", "Serialization"]
@@ -835,6 +876,42 @@ deps = ["IterTools", "LinearAlgebra", "StaticArrays"]
 git-tree-sha1 = "4618ed0da7a251c7f92e869ae1a19c74a7d2a7f9"
 uuid = "dee08c22-ab7f-5625-9660-a9af2021b33f"
 version = "0.3.2"
+
+[[deps.RegisterCore]]
+deps = ["CenterIndexedArrays", "ImageCore", "ImageFiltering", "Requires"]
+git-tree-sha1 = "76b1c9dda431c8b673e8aeb095c0abac70bb11a8"
+uuid = "67712758-55e7-5c3c-8e85-dda1d7758434"
+version = "0.2.4"
+
+[[deps.RegisterDeformation]]
+deps = ["AxisArrays", "CoordinateTransformations", "Distributed", "FileIO", "ForwardDiff", "HDF5", "ImageAxes", "ImageCore", "ImageTransformations", "Interpolations", "JLD2", "LinearAlgebra", "OffsetArrays", "Pkg", "ProgressMeter", "RegisterUtilities", "Requires", "Rotations", "SharedArrays", "StaticArrays", "Statistics"]
+git-tree-sha1 = "5403283f5a57c29524f33b8fca1d6fe79a60364e"
+uuid = "c19381b7-cf49-59d7-881c-50dfbd227eaf"
+version = "0.4.4"
+
+[[deps.RegisterMismatch]]
+deps = ["FFTW", "ImageCore", "MappedArrays", "PaddedViews", "Printf", "RFFT", "Reexport", "RegisterCore", "RegisterMismatchCommon"]
+git-tree-sha1 = "0bbe3f4b124e8380eaac87f9789bac6f5ecc7e9f"
+uuid = "3c0dd727-6833-5f5d-a1e8-c0d421935c74"
+version = "0.4.0"
+
+[[deps.RegisterMismatchCommon]]
+deps = ["CenterIndexedArrays", "ImageCore", "RegisterCore"]
+git-tree-sha1 = "18f1606581974de100f37d6088aa2b7d66f97ccb"
+uuid = "abb2e897-52bf-5d28-a379-6ca321e3b878"
+version = "0.2.3"
+
+[[deps.RegisterQD]]
+deps = ["CenterIndexedArrays", "CoordinateTransformations", "Images", "Interpolations", "LinearAlgebra", "MappedArrays", "OffsetArrays", "PaddedViews", "QuadDIRECT", "RegisterCore", "RegisterDeformation", "RegisterMismatchCommon", "Rotations", "StaticArrays"]
+git-tree-sha1 = "340009a0b8d457a7163183c4d28e7c5606bf7e06"
+uuid = "ac24ea0c-1830-11e9-18d4-81f172323054"
+version = "0.3.0"
+
+[[deps.RegisterUtilities]]
+deps = ["Base64", "InteractiveUtils", "LinearAlgebra", "Pkg", "RegisterCore", "Test"]
+git-tree-sha1 = "f605060dc690ca50697cceff54aaa7067418a920"
+uuid = "d4862ba2-f42c-5aeb-af4f-96a8884a16c4"
+version = "0.1.0"
 
 [[deps.Requires]]
 deps = ["UUIDs"]
