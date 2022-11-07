@@ -30,7 +30,6 @@ include("register-mismatch.jl")
 include("bwareamaxfilt.jl")
 include("hbreak.jl")
 
-
 const sk_measure = PyNULL()
 
 function __init__()
@@ -145,15 +144,15 @@ julia> IceFloeTracker.MorphSE.dilate(a, se)
 ```
 """
 module MorphSE
-using ImageCore
-using ColorTypes
-using LoopVectorization
-using OffsetArrays
-using TiledIteration: EdgeIterator
-include("morphSE/StructuringElements.jl")
-using .StructuringElements
-include("morphSE/extreme_filter.jl")
-include("morphSE/utils.jl")
-include("morphSE/dilate.jl")
+    using ImageCore
+    using ColorTypes
+    using LoopVectorization
+    using OffsetArrays
+    using TiledIteration: EdgeIterator
+    include("morphSE/StructuringElements.jl")
+    using .StructuringElements
+    include("morphSE/extreme_filter.jl")
+    include("morphSE/utils.jl")
+    include("morphSE/dilate.jl")
 end
 end
