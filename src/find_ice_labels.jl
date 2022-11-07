@@ -8,7 +8,9 @@ Find histogram peaks in single channels of a reflectance image and return the se
 - `possible_ice_threshold`: threshold value used to identify ice if not found on first or second pass
 
 """
-function find_reflectance_peaks(reflectance_channel::Matrix{Float64})::Int64
+function find_reflectance_peaks(
+    reflectance_channel::Matrix{Float64}; possible_ice_threshold::Float64=Float64(75 / 255)
+)::Int64
     reflectance_channel[reflectance_channel .< possible_ice_threshold] .= 0 #75 / 255
     _, counts = ImageContrastAdjustment.build_histogram(reflectance_channel)
     locs, _ = Peaks.findmaxima(counts)
