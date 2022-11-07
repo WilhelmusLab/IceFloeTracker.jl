@@ -13,7 +13,6 @@ using Clustering
 using DSP
 using RegisterMismatch
 using RegisterQD
-using ImageSegmentation
 
 include("utils.jl")
 include("persist.jl")
@@ -42,6 +41,7 @@ include("segmentation_b.jl")
 include("segmentation_c.jl")
 include("bwperim.jl")
 include("segmentation_d_e.jl")
+include("find_ice_labels.jl")
 
 function fetchdata(; output::AbstractString)
     mkpath("$output")

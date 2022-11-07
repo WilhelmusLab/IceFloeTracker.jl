@@ -31,7 +31,9 @@ struct SEDiamond{N,K,R<:AbstractUnitRange{Int}} <: MorphologySE{N}
     axes::NTuple{N,R}
     dims::Dims{K}
     r::Int # radius
-    function SEDiamond{N,K,R}(axes::NTuple{N,R}, dims::Dims{K}, r) where {N,K,R<:AbstractUnitRange{Int}}
+    function SEDiamond{N,K,R}(
+        axes::NTuple{N,R}, dims::Dims{K}, r
+    ) where {N,K,R<:AbstractUnitRange{Int}}
         if !all(r -> first(r) == -last(r), axes)
             throw(ArgumentError("axes must be symmetric along each dimension"))
         end
@@ -43,7 +45,9 @@ struct SEDiamond{N,K,R<:AbstractUnitRange{Int}} <: MorphologySE{N}
         return new{N,K,R}(axes, dims, r)
     end
 end
-function SEDiamond{N}(ax::NTuple{N,R}, dims=ntuple(identity, N); r=maximum(length.(ax)) ÷ 2) where {N,R}
+function SEDiamond{N}(
+    ax::NTuple{N,R}, dims=ntuple(identity, N); r=maximum(length.(ax)) ÷ 2
+) where {N,R}
     return SEDiamond{N,length(dims),R}(ax, dims, r)
 end
 
@@ -71,7 +75,9 @@ end
 @inline Base.axes(A::SEDiamondArray) = A.axes
 @inline Base.size(A::SEDiamondArray) = map(length, axes(A))
 @inline Base.IndexStyle(::SEDiamondArray) = IndexCartesian()
-Base.@propagate_inbounds function Base.getindex(A::SEDiamondArray{N,K}, inds::Int...) where {N,K}
+Base.@propagate_inbounds function Base.getindex(
+    A::SEDiamondArray{N,K}, inds::Int...
+) where {N,K}
     # for remaining dimensions, check if it is at the center position
     ri = _tuple_getindex(inds, A._rdims)
     all(iszero, ri) || return false
@@ -135,7 +141,9 @@ julia> strel_diamond((3,3), (1,)) # 3×3 mask along dimension 1
 
 See also [`strel`](@ref) and [`strel_box`](@ref).
 """
-function strel_diamond(img::AbstractArray{T,N}, dims=coords_spatial(img); r::Union{Nothing,Int}=nothing) where {T,N}
+function strel_diamond(
+    img::AbstractArray{T,N}, dims=coords_spatial(img); r::Union{Nothing,Int}=nothing
+) where {T,N}
     dims = _to_dims(Val(N), dims)
     sz, r = if isnothing(r)
         ntuple(i -> !isempty(dims) && in(i, dims) ? 3 : 1, N), 1
