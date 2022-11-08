@@ -1,6 +1,6 @@
 module IceFloeTracker
 using Images
-using DelimitedFiles
+using DelimitedFiles: readdlm
 using Dates
 using ImageContrastAdjustment
 using ImageSegmentation
@@ -14,6 +14,8 @@ using DSP
 using RegisterMismatch
 using RegisterQD
 using ImageSegmentation
+
+export readdlm, padnhood, bridge
 
 include("utils.jl")
 include("persist.jl")
@@ -29,6 +31,7 @@ include("crosscorr.jl")
 include("register-mismatch.jl")
 include("bwareamaxfilt.jl")
 include("hbreak.jl")
+include("bridge.jl")
 
 
 const sk_measure = PyNULL()
