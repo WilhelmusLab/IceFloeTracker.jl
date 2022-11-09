@@ -73,7 +73,6 @@ Mimics MATLAB's imextendedmin function that computes the extended-minima transfo
 - `h`: suppress minima below this depth threshold
 - `conn`: neighborhood connectivity; in 2D 1 = 4-neighborhood and 2 = 8-neighborhood
 """
-
 function imextendedmin(img::AbstractArray; h::Int=2, conn::Int=2)::BitMatrix
     mask = ImageSegmentation.hmin_transform(img, h)
     mask_minima = Images.local_minima(mask; connectivity=conn)
@@ -85,37 +84,42 @@ end
 
 Distance transform for binary image `bwdist`.
 """
-bwdist(bwimg::AbstractArray{Bool}) = Images.distance_transform(Images.feature_transform(bwimg))::T where T<:AbstractArray{Float64}
+function bwdist(bwimg::AbstractArray{Bool})::T where {T<:AbstractArray{Float64}}
+    return Images.distance_transform(
+        Images.feature_transform(bwimg)
+    )
+end
 
 """
     padnhood(img, I, nhood)
 
-Pad the matrix `img[nhood]` with zeros according to the position of `I` within the edges`img`.
+Pad the matrix `img[nhood]` with zeros according to the position of `I` within the edges of `img`.
 
 Returns `img[nhood]` if `I` is not an edge index.
 """
-function padnhood(img, I, nhood)
-    # adaptive padding
-    maxr, maxc = size(img)
-    tofill = zeros(Int,3,3);
-    if I == CartesianIndex(1,1) # top left corner`
-        tofill[2:3,2:3] = img[nhood]
-    elseif I == CartesianIndex(maxr,1) # bottom left corner 
-        tofill[1:2,2:3] = img[nhood]
-    elseif I == CartesianIndex(1,maxc) # top right corner 
-        tofill[2:3,1:2] = img[nhood]
-    elseif I == CartesianIndex(maxr,maxc) # bottom right corner 
-        tofill[1:2,1:2] = img[nhood]
-    elseif I[1] == 1 # top edge (first row)
-        tofill[2:3,1:3] = img[nhood]
-    elseif I[2] == 1 # left edge (first col)
-        tofill[1:3,2:3] = img[nhood]
-    elseif I[1] == maxr # bottom edge (last row)
-        tofill[1:2,1:3] = img[nhood]
-    elseif I[2] == maxc # right edge (last row)
-        tofill[1:3,1:2] = img[nhood]
-    else
-        tofill = img[nhood]
+function padnhood(img::T, I::CartesianIndex{2},
+    nhood::CartesianIndices{2, Tuple{UnitRange{Int64}, UnitRange{Int64}}})::T where T<:AbstractArray{Bool}
+        # adaptive padding
+        maxr, maxc = size(img)
+        tofill = zeros(Int,3,3);
+        if I == CartesianIndex(1,1) # top left corner`
+            tofill[2:3,2:3] = img[nhood]
+        elseif I == CartesianIndex(maxr,1) # bottom left corner 
+            tofill[1:2,2:3] = img[nhood]
+        elseif I == CartesianIndex(1,maxc) # top right corner 
+            tofill[2:3,1:2] = img[nhood]
+        elseif I == CartesianIndex(maxr,maxc) # bottom right corner 
+            tofill[1:2,1:2] = img[nhood]
+        elseif I[1] == 1 # top edge (first row)
+            tofill[2:3,1:3] = img[nhood]
+        elseif I[2] == 1 # left edge (first col)
+            tofill[1:3,2:3] = img[nhood]
+        elseif I[1] == maxr # bottom edge (last row)
+            tofill[1:2,1:3] = img[nhood]
+        elseif I[2] == maxc # right edge (last row)
+            tofill[1:3,1:2] = img[nhood]
+        else
+            tofill = img[nhood]
+        end
+        return tofill
     end
-    return tofill
-end
