@@ -40,11 +40,12 @@ to_test = alltests # uncomment this line to run all tests or add individual file
 # "test-utils-imextendedmin.jl",
 # "test-morphSE.jl",
 # "test-hbreak.jl",
-# "test-prune.jl"
+# "test-bridge.jl",
+# "test-prune.jl",
 ]
 
 # Run the tests
-@testset "IceFloeTracker.jl" begin
+@testset verbose = true "IceFloeTracker.jl" begin
     for test in to_test
         include(test)
     end
