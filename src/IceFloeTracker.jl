@@ -1,6 +1,6 @@
 module IceFloeTracker
 using Images
-using DelimitedFiles: readdlm
+using DelimitedFiles: readdlm, writedlm
 using Dates
 using ImageContrastAdjustment
 using ImageSegmentation
