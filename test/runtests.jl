@@ -45,7 +45,7 @@ to_test = alltests # uncomment this line to run all tests or add individual file
 ]
 
 # Run the tests
-@testset "IceFloeTracker.jl" begin
+@testset verbose = true "IceFloeTracker.jl" begin
     for test in to_test
         include(test)
     end
