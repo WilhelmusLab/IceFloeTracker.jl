@@ -1,7 +1,7 @@
  """
     prune(img::AbstractArray{Bool})
 
-Remove foreground pixels in the binary image `img` with degree less than 3 (fewer than 3 neigboring `1`s).
+Remove foreground pixels in the binary image `img` with degree less than 3 (fewer than 3 linear or diagonal neighboring `1`s).
 
 # Examples
 ```jldoctest; setup = :(using IceFloeTracker)
