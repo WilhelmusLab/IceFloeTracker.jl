@@ -13,7 +13,6 @@ using Clustering
 using DSP
 using RegisterMismatch
 using RegisterQD
-using ImageSegmentation
 
 include("utils.jl")
 include("persist.jl")
@@ -31,7 +30,6 @@ include("bwareamaxfilt.jl")
 include("hbreak.jl")
 include("prune.jl")
 
-
 const sk_measure = PyNULL()
 
 function __init__()
@@ -44,6 +42,7 @@ include("segmentation_b.jl")
 include("segmentation_c.jl")
 include("bwperim.jl")
 include("segmentation_d_e.jl")
+include("find_ice_labels.jl")
 
 function fetchdata(; output::AbstractString)
     mkpath("$output")
@@ -146,15 +145,15 @@ julia> IceFloeTracker.MorphSE.dilate(a, se)
 ```
 """
 module MorphSE
-using ImageCore
-using ColorTypes
-using LoopVectorization
-using OffsetArrays
-using TiledIteration: EdgeIterator
-include("morphSE/StructuringElements.jl")
-using .StructuringElements
-include("morphSE/extreme_filter.jl")
-include("morphSE/utils.jl")
-include("morphSE/dilate.jl")
+    using ImageCore
+    using ColorTypes
+    using LoopVectorization
+    using OffsetArrays
+    using TiledIteration: EdgeIterator
+    include("morphSE/StructuringElements.jl")
+    using .StructuringElements
+    include("morphSE/extreme_filter.jl")
+    include("morphSE/utils.jl")
+    include("morphSE/dilate.jl")
 end
 end

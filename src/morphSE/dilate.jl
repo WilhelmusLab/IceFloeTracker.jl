@@ -75,4 +75,6 @@ function dilate!(out, img; dims=coords_spatial(img), r=nothing)
     return dilate!(out, img, strel_box(img, dims; r))
 end
 dilate!(out, img, se::AbstractArray) = extreme_filter!(max, out, img, se)
-dilate!(out::AbstractArray{<:Color3}, img, se::AbstractArray) = throw(ArgumentError("color image is not supported"))
+function dilate!(out::AbstractArray{<:Color3}, img, se::AbstractArray)
+    throw(ArgumentError("color image is not supported"))
+end

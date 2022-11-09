@@ -85,4 +85,8 @@ end
 
 Distance transform for binary image `bwdist`.
 """
-bwdist(bwimg::AbstractArray{Bool}) = Images.distance_transform(Images.feature_transform(bwimg))::T where T<:AbstractArray{Float64}
+function bwdist(bwimg::AbstractArray{Bool})
+    return Images.distance_transform(
+        Images.feature_transform(bwimg)
+    )::T where {T<:AbstractArray{Float64}}
+end

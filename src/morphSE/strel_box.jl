@@ -66,7 +66,6 @@ strel_size(se::SEBoxArray) = @. 1 + 2 * se.r
     return true
 end
 
-
 """
     strel_box(A; r=1)
     strel_box(size; r=size .÷ 2)
@@ -112,7 +111,9 @@ julia> strel_box((5,5); r=(1,2))
 
 See also [`strel`](@ref) and [`strel_box`](@ref).
 """
-function strel_box(A::AbstractArray{T,N}, dims=coords_spatial(A); r::Union{Nothing,Dims{N},Int}=nothing) where {T,N}
+function strel_box(
+    A::AbstractArray{T,N}, dims=coords_spatial(A); r::Union{Nothing,Dims{N},Int}=nothing
+) where {T,N}
     dims = _to_dims(Val(N), dims)
     sz, r = if isnothing(r)
         ntuple(i -> !isempty(dims) && in(i, dims) ? 3 : 1, N), 1
@@ -123,7 +124,9 @@ function strel_box(A::AbstractArray{T,N}, dims=coords_spatial(A); r::Union{Nothi
     end
     return strel_box(sz, dims)
 end
-function strel_box(sz::Dims{N}, dims=ntuple(identity, N); r::Union{Nothing,Dims{N},Int}=nothing) where {N}
+function strel_box(
+    sz::Dims{N}, dims=ntuple(identity, N); r::Union{Nothing,Dims{N},Int}=nothing
+) where {N}
     dims = _to_dims(Val(N), dims)
     all(isodd, sz) || throw(ArgumentError("size should be odd integers"))
     radius = if isnothing(r)
