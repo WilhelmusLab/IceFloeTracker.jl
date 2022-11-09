@@ -28,6 +28,7 @@ include("crosscorr.jl")
 include("register-mismatch.jl")
 include("bwareamaxfilt.jl")
 include("hbreak.jl")
+include("prune.jl")
 
 const sk_measure = PyNULL()
 
