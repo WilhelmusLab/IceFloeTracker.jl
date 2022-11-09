@@ -40,6 +40,7 @@ to_test = alltests # uncomment this line to run all tests or add individual file
 # "test-morphSE.jl",
 # "test-hbreak.jl",
 # "test-bridge.jl",
+# "test-prune.jl",
 ]
 
 # Run the tests
