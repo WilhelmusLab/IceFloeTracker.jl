@@ -27,10 +27,10 @@
     IceFloeTracker.@persist sharpened_image sharpened_image_filename
 
     # test for percent difference in normalized images
-    @test (@test_approx_eq_sigma_eps normalized_image matlab_norm_image [0, 0] 0.058) ==
+    @test (@test_approx_eq_sigma_eps normalized_image matlab_norm_image [0, 0] 0.058) ===
         nothing
 
     @test (@test_approx_eq_sigma_eps sharpened_image[ice_floe_test_region...] matlab_sharpened [
         0, 0
-    ] 0.065) == nothing
+    ] 0.065) === nothing
 end

@@ -33,5 +33,5 @@
         ".png"
     IceFloeTracker.@persist ref_image_b7 ref_image_b7_filename
     # test for percent difference in landmask images
-    @test (@test_approx_eq_sigma_eps masked_image matlab_cloudmask [0, 0] 0.005) == nothing
+    @test (@test_approx_eq_sigma_eps masked_image matlab_cloudmask [0, 0] 0.005) === nothing
 end

@@ -19,6 +19,7 @@ segmented_b_filled_test_file = "$(test_data_dir)/segmented_B_filled.png"
 segmented_c_test_file = "$(test_data_dir)/segmented_C.png"
 not_ice_mask_test_file = "$(test_data_dir)/not_ice_mask.png"
 strel_file_2 = "$(test_data_dir)/se2.csv" # original matlab structuring element -  a disk-shaped kernel with radius of 2 px
+strel_file_4 = "$(test_data_dir)/strel_disk_4.csv" # disk-shaped kernel with radius of 4 px
 
 test_region = (1:2707, 1:4458)
 lm_test_region = (1:800, 1:1500)

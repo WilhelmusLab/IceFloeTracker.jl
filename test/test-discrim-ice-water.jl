@@ -24,6 +24,6 @@
         ".png"
     IceFloeTracker.@persist ice_water_discrim ice_water_discrim_filename
 
-    @test (@test_approx_eq_sigma_eps ice_water_discrim matlab_ice_water_discrim [0, 0] 0.061) ==
+    @test (@test_approx_eq_sigma_eps ice_water_discrim matlab_ice_water_discrim [0, 0] 0.061) ===
         nothing
 end
