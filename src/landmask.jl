@@ -21,7 +21,7 @@ function create_landmask(
         landmask_image = Gray.(landmask_image) .> 0
     end
     dilated = IceFloeTracker.MorphSE.dilate(landmask_image, struct_elem)
-    return ImageMorphology.imfill(dilated, (fill_value_lower, fill_value_upper))
+    return .!ImageMorphology.imfill(.!dilated, (fill_value_lower, fill_value_upper))
 end
 
 """
