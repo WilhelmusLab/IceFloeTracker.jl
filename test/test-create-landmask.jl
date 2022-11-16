@@ -11,6 +11,9 @@
     test_image = load(truecolor_test_image_file)[lm_test_region...]
     @time landmask = IceFloeTracker.create_landmask(lm_image, struct_elem)
 
+    # Test method with default se
+    @test landmask == IceFloeTracker.create_landmask(lm_image)
+
     @time masked_image = IceFloeTracker.apply_landmask(test_image, landmask)
 
     matlab_landmask_filename =
