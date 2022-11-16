@@ -36,6 +36,7 @@ to_test = alltests # uncomment this line to run all tests or add individual file
 # "test-psi-s.jl",
 # "test-crosscorr.jl"
 # "test-bwperim.jl",
+# "test-bwareamaxfilt.jl"
 # "test-register-mismatch.jl",
 # "test-utils-imextendedmin.jl",
 # "test-morphSE.jl",
