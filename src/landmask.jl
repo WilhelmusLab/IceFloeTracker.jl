@@ -1,12 +1,15 @@
+include("landmask_se.jl")
+
 """
-    create_landmask(landmask_image, num_pixels_dilate, fill_value)
+    create_landmask(landmask_image, struct_elem, fill_value_lower, fill_value_upper)
 
 Convert a 3-channel RGB land mask image to a 1-channel binary matrix, including a buffer to extend the land over any soft ice regions; land = 0, water/ice = 1.
 
 # Arguments
 - `landmask_image`: land mask image
-- `struct_elem`: structuring element for dilation
-- `fill_value`: number of pixels used to fill holes in land mask
+- `struct_elem`: structuring element for dilation (optional)
+- `fill_value_lower`: fill holes having at least these many pixels (optional)
+- `fill_value_upper`: fill holes having at most these many pixels (optional)
 
 """
 function create_landmask(
@@ -21,7 +24,11 @@ function create_landmask(
         landmask_image = Gray.(landmask_image) .> 0
     end
     dilated = IceFloeTracker.MorphSE.dilate(landmask_image, struct_elem)
-    return ImageMorphology.imfill(dilated, (fill_value_lower, fill_value_upper))
+    return .!ImageMorphology.imfill(.!dilated, (fill_value_lower, fill_value_upper))
+end
+
+function create_landmask(landmask_image::AbstractMatrix)
+    create_landmask(landmask_image, make_landmask_se())
 end
 
 """

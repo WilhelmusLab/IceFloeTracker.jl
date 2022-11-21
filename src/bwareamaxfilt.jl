@@ -61,15 +61,15 @@ function get_areas(labeled_arr::Array{T,2})::Dict{T,Int} where {T}
 end
 
 """
-    bwareamaxfilt(bwimg::AbstractArray{Bool})
+    bwareamaxfilt(bwimg::AbstractArray{Bool}, conn)
 
 Filter the smaller (by area) connected components in `bwimg` keeping the (assumed unique) largest.
+
+Uses 8-pixel connectivity by default (`conn=8`). Use `conn=4` for 4-pixel connectivity.
+
 """
-function bwareamaxfilt(bwimg::AbstractArray{Bool})::BitMatrix
-    label = label_components(bwimg)
-    d = get_areas(label)
-    mx_label = get_max_label(d)
-    return filt_except_label(label, mx_label) .!= 0
+function bwareamaxfilt(bwimg::AbstractArray{Bool}, conn::Int=8)::BitMatrix
+    bwareamaxfilt!(copy(bwimg), conn)
 end
 
 """
@@ -79,8 +79,14 @@ In-place version of bwareamaxfilt.
 
 See also [`bwareamaxfilt`](@ref) 
 """
-function bwareamaxfilt!(bwimg::AbstractArray{Bool})::BitMatrix
-    label = label_components(bwimg)
+function bwareamaxfilt!(bwimg::AbstractArray{Bool}, conn::Int=8)::BitMatrix
+    if conn == 8
+        label = label_components(bwimg, trues(3,3))
+    elseif conn == 4
+        label = label_components(bwimg)
+    else
+        throw(ArgumentError("Only `conn=8`(default) or `conn=4`are allowed."))
+    end
     d = get_areas(label)
     mx_label = get_max_label(d)
     label = (0 .!= filt_except_label!(label, mx_label))

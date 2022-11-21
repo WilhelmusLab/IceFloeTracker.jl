@@ -36,15 +36,17 @@ to_test = alltests # uncomment this line to run all tests or add individual file
 # "test-psi-s.jl",
 # "test-crosscorr.jl"
 # "test-bwperim.jl",
+# "test-bwareamaxfilt.jl"
 # "test-register-mismatch.jl",
 # "test-utils-imextendedmin.jl",
 # "test-morphSE.jl",
 # "test-hbreak.jl",
-# "test-prune.jl"
+# "test-bridge.jl",
+# "test-prune.jl",
 ]
 
 # Run the tests
-@testset "IceFloeTracker.jl" begin
+@testset verbose = true "IceFloeTracker.jl" begin
     for test in to_test
         include(test)
     end
