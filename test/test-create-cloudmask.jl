@@ -13,7 +13,7 @@
         ref_image, cloudmask
     )
 
-    # test for percent difference in landmask images
+    # test for percent difference in cloudmask images
     @test (@test_approx_eq_sigma_eps masked_image matlab_cloudmask [0, 0] 0.005) == nothing
     
     # test for create_clouds_channel
