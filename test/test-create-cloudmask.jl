@@ -36,5 +36,5 @@
         "$(test_output_dir)/clouds_channel_" *
         Dates.format(Dates.now(), "yyyy-mm-dd-HHMMSS") *
         ".png"
-    IceFloeTracker.@persist clouds_channel clouds_channel_filename
+    IceFloeTracker.@persist clds_channel clouds_channel_filename
 end
