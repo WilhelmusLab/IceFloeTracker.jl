@@ -32,6 +32,7 @@ include("bwareamaxfilt.jl")
 include("hbreak.jl")
 include("bridge.jl")
 include("prune.jl")
+include("special_strels.jl")
 
 const sk_measure = PyNULL()
 
