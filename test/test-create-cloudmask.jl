@@ -9,13 +9,18 @@
 
     matlab_cloudmask = float64.(load(matlab_cloudmask_file))
     @time cloudmask = IceFloeTracker.create_cloudmask(ref_image)
-    @time masked_image, clouds_channel = IceFloeTracker.apply_cloudmask(
+    @time masked_image = IceFloeTracker.apply_cloudmask(
         ref_image, cloudmask
     )
 
     # test for percent difference in landmask images
     @test (@test_approx_eq_sigma_eps masked_image matlab_cloudmask [0, 0] 0.005) == nothing
     
+    # test for create_clouds_channel
+    clouds_channel_expected = load(clouds_channel_test_file);
+    clds_channel = IceFloeTracker.create_clouds_channel(cloudmask, ref_image);
+    @test (@test_approx_eq_sigma_eps (clds_channel) (clouds_channel_expected) [0, 0] 0.005) == nothing
+
     # Persist output images
     cloudmask_filename =
         "$(test_output_dir)/cloudmask_" *

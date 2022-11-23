@@ -51,24 +51,23 @@ Zero out pixels containing clouds where clouds and ice are not discernable. Argu
 
 """
 function apply_cloudmask(
-    ref_image::Matrix{RGB{Float64}}, cloudmask::BitMatrix
-)::Tuple{Matrix{RGB{Float64}},Matrix{Gray{Float64}}}
+    ref_image::Matrix{RGB{Float64}}, cloudmask::AbstractArray{Bool}
+)::Matrix{RGB{Float64}}
     masked_image = cloudmask .* ref_image
     image_view = channelview(masked_image)
-    clouds_channel = image_view[1, :, :]
-    clouds_channel = Gray.(clouds_channel)
+    # clouds_channel = image_view[1, :, :]
+    # clouds_channel = Gray.(clouds_channel)
     cloudmasked_view = StackedView(zeroarray, image_view[2, :, :], image_view[3, :, :])
     cloudmasked_image_rgb = colorview(RGB, cloudmasked_view)
-    return cloudmasked_image_rgb, clouds_channel
+    return cloudmasked_image_rgb
 end
 
 function apply_cloudmask(
-    ref_image::Matrix{Gray{Float64}}, cloudmask::BitMatrix
-)::Tuple{Matrix{Gray{Float64}},Matrix{Gray{Float64}}}
-    masked_image = cloudmask .* ref_image
-    image_view = channelview(masked_image)
-    clouds_channel = image_view[1, :, :]
-    clouds_channel = Gray.(clouds_channel)
-    cloudmasked_image_gray = Gray.(masked_image)
-    return cloudmasked_image_gray, clouds_channel
+    ref_image::Matrix{Gray{Float64}}, cloudmask::AbstractArray{Bool}
+)::Matrix{Gray{Float64}}
+    Gray.(cloudmask .* ref_image)
+end
+
+function create_clouds_channel(cloudmask::AbstractArray{Bool}, ref_image::Matrix{RGB{Float64}})::Matrix{Gray{Float64}}
+    Gray.(channelview(cloudmask .* ref_image)[1, :, :])
 end
