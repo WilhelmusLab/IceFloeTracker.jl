@@ -32,24 +32,17 @@ function normalize_image(
     smoothing_param::Int64=10,
     intensity::Float64=2.0,
 )::Tuple{Matrix{Gray{Float64}},Matrix{Gray{Float64}}}
-    radius = Int.(ceil.(size(struct_elem) ./ 3)[1])
-    pad_size = Fill(1, (radius, radius))
+    # radius = Int.(ceil.(size(struct_elem) ./ 3)[1])
+    # pad_size = Fill(1, (radius, radius))
     gray_image = Float64.(Gray.(truecolor_image))
     image_diffused = diffusion(gray_image, lambda, kappa, niters)
     image_diffused_RGB = RGB.(image_diffused)
     masked_view = Float64.(channelview(image_diffused_RGB))
+    # eq = [_adjust_histogram(masked_view[i,:,:],nbins, rblocks, cblocks, clip) for i=1:3]
+    # image_equalized = colorview(RGB, eq...)
+    image_equalized_1 = _adjust_histogram(
+        masked_view[1, :, :],nbins, rblocks, cblocks, clip)
 
-    image_equalized_1 = adjust_histogram(
-        masked_view[1, :, :],
-        AdaptiveEqualization(;
-            nbins=255,
-            rblocks=8,
-            cblocks=8,
-            minval=minimum(masked_view[1, :, :]),
-            maxval=maximum(masked_view[1, :, :]),
-            clip=0.8,
-        ),
-    )
     image_equalized_2 = adjust_histogram(
         masked_view[2, :, :],
         AdaptiveEqualization(;
@@ -96,4 +89,22 @@ function normalize_image(
     image_normalized_masked = IceFloeTracker.apply_landmask(image_opened, landmask)
 
     return image_sharpened_gray, image_normalized_masked
+end
+
+function _adjust_histogram(masked_view, nbins, rblocks, cblocks, clip)
+    adjust_histogram(
+        masked_view,
+        AdaptiveEqualization(;
+            nbins=nbins,
+            rblocks=rblocks,
+            cblocks=cblocks,
+            minval=minimum(masked_view),
+            maxval=maximum(masked_view),
+            clip=clip,
+        ),
+    )
+end
+
+function _adjust_histogram(masked_view)
+    _adjust_histogram(masked_view, 255, 8, 8, 0.95)
 end
