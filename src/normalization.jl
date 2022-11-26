@@ -13,7 +13,7 @@ Adjusts truecolor land-masked image to highlight ice floe features. This functio
 - `nbins`: number of bins during histogram equalization
 - `rblocks`: number of row blocks to divide input image during equalization
 - `cblocks`: number of column blocks to divide input image during equalization
-- `clip`: threshold for clipping histogram bins (0–1); values closer to one minimize contrast enhancement, values closer to zero maximize contrast enhancement 
+- `clip`: tuple (one per channel) with thresholds for clipping histogram bins (0–1); values closer to one minimize contrast enhancement, values closer to zero maximize contrast enhancement 
 - `smoothing_param`: pixel radius for gaussian blurring (1–10)
 - `intensity`: amount of sharpening to perform
 
@@ -28,58 +28,14 @@ function normalize_image(
     nbins::Int64=255,
     rblocks::Int64=8,
     cblocks::Int64=8,
-    clip::Float64=0.95,
+    clip::Tuple{Float64, Float64, Float64}= (0.95, 0.8, 0.8),
     smoothing_param::Int64=10,
     intensity::Float64=2.0,
 )::Tuple{Matrix{Gray{Float64}},Matrix{Gray{Float64}}}
-    # radius = Int.(ceil.(size(struct_elem) ./ 3)[1])
-    # pad_size = Fill(1, (radius, radius))
-    gray_image = Float64.(Gray.(truecolor_image))
-    image_diffused = diffusion(gray_image, lambda, kappa, niters)
-    image_diffused_RGB = RGB.(image_diffused)
-    masked_view = Float64.(channelview(image_diffused_RGB))
-    # eq = [_adjust_histogram(masked_view[i,:,:],nbins, rblocks, cblocks, clip) for i=1:3]
-    # image_equalized = colorview(RGB, eq...)
-    image_equalized_1 = _adjust_histogram(
-        masked_view[1, :, :],nbins, rblocks, cblocks, clip)
+    image_sharpened = imsharpen(truecolor_image, lambda, kappa, niters, nbins, rblocks, cblocks, clip, smoothing_param, intensity)
 
-    image_equalized_2 = adjust_histogram(
-        masked_view[2, :, :],
-        AdaptiveEqualization(;
-            nbins=255,
-            rblocks=8,
-            cblocks=8,
-            minval=minimum(masked_view[2, :, :]),
-            maxval=maximum(masked_view[2, :, :]),
-            clip=0.8,
-        ),
-    )
-    image_equalized_3 = adjust_histogram(
-        masked_view[3, :, :],
-        AdaptiveEqualization(;
-            nbins=255,
-            rblocks=8,
-            cblocks=8,
-            minval=minimum(masked_view[3, :, :]),
-            maxval=maximum(masked_view[3, :, :]),
-            clip=0.8,
-        ),
-    )
-    image_equalized = colorview(
-        RGB, image_equalized_1, image_equalized_2, image_equalized_3
-    )
-    image_equalized_gray = Gray.(image_equalized)
-    image_equalized_view = channelview(image_equalized_gray)
-
-    image_smoothed = imfilter(image_equalized_gray, Kernel.gaussian(smoothing_param))
-    image_smoothed_view = channelview(image_smoothed)
-
-    image_sharpened =
-        image_equalized_view .* (1 + intensity) .+ image_smoothed_view .* (-intensity)
-    image_sharpened = max.(image_sharpened, 0.0)
-    image_sharpened = min.(image_sharpened, 1.0)
-    image_sharpened_landmasked = IceFloeTracker.apply_landmask(image_sharpened, landmask)
-    image_sharpened_gray = colorview(Gray, image_sharpened_landmasked)
+    # Apply landmask and turn to gray
+    image_sharpened_gray = imsharpen_gray(image_sharpened, landmask)
 
     image_dilated = ImageMorphology.dilate(image_sharpened_gray, struct_elem)
 
@@ -105,6 +61,27 @@ function _adjust_histogram(masked_view, nbins, rblocks, cblocks, clip)
     )
 end
 
-function _adjust_histogram(masked_view)
-    _adjust_histogram(masked_view, 255, 8, 8, 0.95)
+function imsharpen(truecolor_image, lambda, kappa, niters, nbins, rblocks, cblocks, clip, smoothing_param, intensity)
+    gray_image = Float64.(Gray.(truecolor_image))
+    image_diffused = diffusion(gray_image, lambda, kappa, niters)
+    image_diffused_RGB = RGB.(image_diffused)
+    masked_view = Float64.(channelview(image_diffused_RGB))
+      
+    eq = [_adjust_histogram(masked_view[i,:,:],nbins, rblocks, cblocks, clip[i]) for i=1:3]
+    image_equalized = colorview(RGB, eq...)
+    image_equalized_gray = Gray.(image_equalized)
+    image_equalized_view = channelview(image_equalized_gray)
+
+    image_smoothed = imfilter(image_equalized_gray, Kernel.gaussian(smoothing_param))
+    image_smoothed_view = channelview(image_smoothed)
+
+    image_sharpened =
+        image_equalized_view .* (1 + intensity) .+ image_smoothed_view .* (-intensity)
+    image_sharpened = max.(image_sharpened, 0.0)
+    image_sharpened = min.(image_sharpened, 1.0)
+end
+
+function imsharpen_gray(imgsharpened, landmask)
+    image_sharpened_landmasked = apply_landmask(imgsharpened, landmask)
+    colorview(Gray, image_sharpened_landmasked)
 end
