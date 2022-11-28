@@ -55,8 +55,6 @@ function apply_cloudmask(
 )::Matrix{RGB{Float64}}
     masked_image = cloudmask .* ref_image
     image_view = channelview(masked_image)
-    # clouds_channel = image_view[1, :, :]
-    # clouds_channel = Gray.(clouds_channel)
     cloudmasked_view = StackedView(zeroarray, image_view[2, :, :], image_view[3, :, :])
     cloudmasked_image_rgb = colorview(RGB, cloudmasked_view)
     return cloudmasked_image_rgb
