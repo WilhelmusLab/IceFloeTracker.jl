@@ -23,7 +23,7 @@ function normalize_image(
     image_opened = ImageMorphology.opening(
         complement.(image_dilated), complement.(image_sharpened)
     )
-    IceFloeTracker.apply_landmask(image_opened, landmask)
+    return IceFloeTracker.apply_landmask(image_opened, landmask)
 end
 
 
@@ -38,7 +38,7 @@ See `imsharpen` for a description of the remaining arguments
 
 """
 function _adjust_histogram(masked_view, nbins, rblocks, cblocks, clip)
-    adjust_histogram(
+    return adjust_histogram(
         masked_view,
         AdaptiveEqualization(;
             nbins=nbins,
@@ -57,7 +57,6 @@ end
 Sharpen `truecolor_image`.
 
 # Arguments
-
 - `truecolor_image`: input image in truecolor
 - `lambda`: speed of diffusion (0–0.25)
 - `kappa`: conduction coefficient for diffusion (25–100)
@@ -86,7 +85,7 @@ function imsharpen(truecolor_image, lambda::Real=0.25, kappa::Real=75, niters::I
     image_sharpened =
         image_equalized_view .* (1 + intensity) .+ image_smoothed_view .* (-intensity)
     image_sharpened = max.(image_sharpened, 0.0)
-    image_sharpened = min.(image_sharpened, 1.0)
+    return min.(image_sharpened, 1.0)
 end
 
 """
@@ -98,4 +97,5 @@ Apply landmask and return Gray type image in colorview for normalization.
 function imsharpen_gray(imgsharpened::Matrix{Float64}, landmask::AbstractArray{Bool})::AbstractMatrix{Gray{Float64}}
     image_sharpened_landmasked = apply_landmask(imgsharpened, landmask)
     colorview(Gray, image_sharpened_landmasked)
+    return image_sharpened_landmasked
 end
