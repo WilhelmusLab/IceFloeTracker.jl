@@ -20,8 +20,8 @@ Adjusts truecolor land-masked image to highlight ice floe features. This functio
 """
 function normalize_image(
     truecolor_image::Matrix{RGB{Float64}},
-    landmask::BitMatrix,
-    struct_elem::Matrix{Bool};
+    landmask::AbstractArray{Bool},
+    struct_elem::AbstractArray{Bool};
     lambda::Real=0.25,
     kappa::Real=75,
     niters::Int64=3,
