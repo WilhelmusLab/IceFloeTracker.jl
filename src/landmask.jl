@@ -1,5 +1,3 @@
-include("landmask_se.jl")
-
 """
     create_landmask(landmask_image, struct_elem, fill_value_lower, fill_value_upper)
 

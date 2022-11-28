@@ -32,7 +32,7 @@ function segmentation_B(
     gamma_adjusted_sharpened = ImageContrastAdjustment.adjust_histogram(
         adjusted_sharpened, GammaCorrection(; gamma=gamma_factor)
     )
-    gamma_adjusted_sharpened_cloudmasked, _ = IceFloeTracker.apply_cloudmask(
+    gamma_adjusted_sharpened_cloudmasked = IceFloeTracker.apply_cloudmask(
         gamma_adjusted_sharpened, cloudmask
     )
     gamma_adjusted_sharpened_cloudmasked[gamma_adjusted_sharpened_cloudmasked .<= adjusted_ice_threshold] .=
