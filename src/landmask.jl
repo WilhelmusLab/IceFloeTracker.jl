@@ -1,5 +1,3 @@
-include("landmask_se.jl")
-
 """
     create_landmask(landmask_image, struct_elem, fill_value_lower, fill_value_upper)
 
@@ -13,22 +11,22 @@ Convert a 3-channel RGB land mask image to a 1-channel binary matrix, including 
 
 """
 function create_landmask(
-    landmask_image::AbstractMatrix,
+    landmask_image::T,
     struct_elem::AbstractMatrix{Bool};
     fill_value_lower::Int=0,
     fill_value_upper::Int=2000,
-)::BitMatrix
+)::BitMatrix where {T<:AbstractMatrix}
 
     # binarize if not Boolean
     if !(typeof(landmask_image) <: AbstractMatrix{Bool})
         landmask_image = Gray.(landmask_image) .> 0
     end
     dilated = IceFloeTracker.MorphSE.dilate(landmask_image, struct_elem)
-    return .!ImageMorphology.imfill(.!dilated, (fill_value_lower, fill_value_upper))
+    return ImageMorphology.imfill(.!dilated, (fill_value_lower, fill_value_upper))
 end
 
-function create_landmask(landmask_image::AbstractMatrix)
-    create_landmask(landmask_image, make_landmask_se())
+function create_landmask(landmask_image)
+    return create_landmask(landmask_image, make_landmask_se())
 end
 
 """
