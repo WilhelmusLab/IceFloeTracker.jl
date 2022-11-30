@@ -26,6 +26,14 @@ function normalize_image(
     return IceFloeTracker.apply_landmask(image_opened, landmask)
 end
 
+function normalize_image(
+    image_sharpened::Matrix{Float64},
+    image_sharpened_gray::AbstractMatrix{Gray{Float64}},
+    landmask::BitMatrix,
+    )::Matrix{Gray{Float64}}
+    return normalize_image(image_sharpened, image_sharpened_gray, landmask,  collect(strel_diamond((5,5))))
+end
+
 
 """
     _adjust_histogram(masked_view, nbins, rblocks, cblocks, clip)
