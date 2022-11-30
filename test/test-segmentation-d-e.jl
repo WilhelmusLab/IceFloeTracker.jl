@@ -10,8 +10,6 @@
     matlab_watershed_intersect = convert(
         BitMatrix, load("$(test_data_dir)/matlab_watershed_intersect.png")
     )
-    segmented_c = convert(BitMatrix, load(segmented_c_test_file))
-    not_ice_mask = convert(BitMatrix, load(not_ice_mask_test_file))
 
     ## Run function with Matlab inputs
     @time watershed_D_borders = IceFloeTracker.segmentation_D(matlab_segmented_D) #Matlab_not_ice_mask
@@ -38,31 +36,6 @@
         ".png"
     IceFloeTracker.@persist watershed_intersect watershed_intersect_filename
 
-    ## Run function with Julia inputs
-    @time julia_watershed_D_borders = IceFloeTracker.segmentation_D(not_ice_mask) #not_ice_mask
-    @time julia_watershed_E_borders = IceFloeTracker.segmentation_E(segmented_c) #segmented_c
-    @time julia_watershed_intersect = IceFloeTracker.segmentation_D_E(
-        julia_watershed_D_borders, julia_watershed_E_borders
-    )
-
-    julia_watershed_D_filename =
-        "$(test_output_dir)/watershed_d_julia_" *
-        Dates.format(Dates.now(), "yyyy-mm-dd-HHMMSS") *
-        ".png"
-    IceFloeTracker.@persist julia_watershed_D_borders julia_watershed_D_filename
-
-    julia_watershed_E_filename =
-        "$(test_output_dir)/watershed_e_julia_" *
-        Dates.format(Dates.now(), "yyyy-mm-dd-HHMMSS") *
-        ".png"
-    IceFloeTracker.@persist julia_watershed_E_borders julia_watershed_E_filename
-
-    julia_watershed_intersect_filename =
-        "$(test_output_dir)/watershed_intersect_julia_" *
-        Dates.format(Dates.now(), "yyyy-mm-dd-HHMMSS") *
-        ".png"
-    IceFloeTracker.@persist julia_watershed_intersect julia_watershed_intersect_filename
-
     ## Tests with Matlab inputs
     @test typeof(watershed_E_borders) == typeof(matlab_watershed_D)
     @test typeof(watershed_D_borders) == typeof(matlab_watershed_E)
@@ -70,10 +43,4 @@
     @test test_similarity(matlab_watershed_D, watershed_D_borders, 0.064)
     @test test_similarity(matlab_watershed_E, watershed_E_borders, 0.08)
     @test test_similarity(matlab_watershed_intersect, watershed_intersect, 0.017)
-
-    ## Tests with Julia inputs
-    @test typeof(julia_watershed_intersect) == typeof(matlab_watershed_intersect)
-    @test test_similarity(matlab_watershed_D, julia_watershed_D_borders, 0.044)
-    @test test_similarity(matlab_watershed_E, julia_watershed_E_borders, 0.09)
-    @test test_similarity(matlab_watershed_intersect, julia_watershed_intersect, 0.009)
 end
