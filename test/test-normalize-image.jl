@@ -14,6 +14,9 @@
     @time sharpenedimg = IceFloeTracker.imsharpen(input_image)
     @time image_sharpened_gray = IceFloeTracker.imsharpen_gray(sharpenedimg, landmask_bitmatrix)
     @time normalized_image = IceFloeTracker.normalize_image(sharpenedimg, image_sharpened_gray, landmask_bitmatrix, struct_elem2)
+
+    # test method with default se
+    @test IceFloeTracker.normalize_image(sharpenedimg, image_sharpened_gray, landmask_bitmatrix) == normalized_image
     
     # test for percent difference in normalized images
     @test (@test_approx_eq_sigma_eps normalized_image matlab_norm_image [0, 0] 0.058) ==
