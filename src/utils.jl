@@ -120,3 +120,45 @@ function padnhood(img, I, nhood)
     end
     return tofill
 end
+
+
+"""
+    _bin9todec(v)
+
+Get decimal representation of a bit vector `v` with the leading bit at its leftmost posistion.
+
+Example
+```
+julia> _bin9todec([0 0 0 0 0 0 0 0 0])    
+0
+
+julia> _bin9todec([1 1 1 1 1 1 1 1 1])    
+511
+```
+"""
+function _bin9todec(v::AbstractArray)::Int64
+    return sum(vec(v) .* 2 .^ (0:length(v)-1))
+end
+
+"""
+    _operator_lut(I, img, nhood, lut)
+
+Look up the neighborhood `nhood` in lookup table `lut`.
+
+Handles cases when the center of `nhood` is on the edge of `img` using data in `I`.
+"""
+function _operator_lut(I::CartesianIndex{2},
+    img::AbstractArray{Bool},
+    nhood::CartesianIndices{2, Tuple{UnitRange{Int64}, UnitRange{Int64}}},
+    lut::Vector{T})::T where T
+
+    # corner pixels
+    if length(nhood) == 4
+        return 0 # not a branch point
+    elseif length(nhood) == 6 # edge pixels
+        filled = padnhood(img, I, nhood)
+    else # interior pixels
+        filled = img[nhood]
+    end
+    return lut[_bin9todec(filled)+1]
+end
