@@ -11,8 +11,8 @@
         Int64.(
             vec(DelimitedFiles.readdlm("$(test_data_dir)/ice_labels_floe_region.csv", ','))
         )
-    strel_disk_2 = readdlm(strel_file_2, ',', Bool)
-    strel_disk_4 = readdlm(strel_file_4, ',', Bool)
+    #strel_disk_2 = readdlm(strel_file_2, ',', Bool)
+    #strel_disk_4 = readdlm(strel_file_4, ',', Bool)
     matlab_isolated_floes = convert(
         BitMatrix, load("$(test_data_dir)/matlab_isolated_floes.png")
     )
@@ -25,8 +25,6 @@
         watershed_intersect[ice_floe_test_region...],
         cloudmask[ice_floe_test_region...],
         ice_labels,
-        strel_disk_2,
-        strel_disk_4,
     )
 
     isolated_floes_filename =
@@ -34,9 +32,6 @@
         Dates.format(Dates.now(), "yyyy-mm-dd-HHMMSS") *
         ".png"
     IceFloeTracker.@persist isolated_floes isolated_floes_filename
-
-    matlab_ice_floes_region = matlab_isolated_floes[ice_floe_test_region...]
-    IceFloeTracker.@persist matlab_ice_floes_region "$(test_output_dir)/matlab_isolated_floes_region.png"
 
     @test typeof(isolated_floes) == typeof(matlab_isolated_floes)
     @test test_similarity(
