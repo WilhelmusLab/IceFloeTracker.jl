@@ -8,7 +8,9 @@
     cloudmask = convert(BitMatrix, load(cloudmask_test_file))
     watershed_intersect = load("$(test_data_dir)/matlab_watershed_intersect.png") .> 0.5
     ice_labels =
-        Int64.(vec(DelimitedFiles.readdlm("$(test_data_dir)/ice_labels_matlab.csv", ',')))
+        Int64.(
+            vec(DelimitedFiles.readdlm("$(test_data_dir)/ice_labels_floe_region.csv", ','))
+        )
     strel_disk_2 = readdlm(strel_file_2, ',', Bool)
     strel_disk_4 = readdlm(strel_file_4, ',', Bool)
     matlab_isolated_floes = convert(
@@ -18,10 +20,10 @@
     ## Run function with Matlab inputs
 
     @time isolated_floes = IceFloeTracker.segmentation_F(
-        segmentation_C_ice_mask,
-        segmentation_B_not_ice_mask,
-        watershed_intersect,
-        cloudmask,
+        segmentation_C_ice_mask[ice_floe_test_region...],
+        segmentation_B_not_ice_mask[ice_floe_test_region...],
+        watershed_intersect[ice_floe_test_region...],
+        cloudmask[ice_floe_test_region...],
         ice_labels,
         strel_disk_2,
         strel_disk_4,
@@ -33,6 +35,11 @@
         ".png"
     IceFloeTracker.@persist isolated_floes isolated_floes_filename
 
+    matlab_ice_floes_region = matlab_isolated_floes[ice_floe_test_region...]
+    IceFloeTracker.@persist matlab_ice_floes_region "$(test_output_dir)/matlab_isolated_floes_region.png"
+
     @test typeof(isolated_floes) == typeof(matlab_isolated_floes)
-    @test test_similarity(isolated_floes, matlab_isolated_floes, 0.5)
+    @test test_similarity(
+        isolated_floes, matlab_isolated_floes[ice_floe_test_region...], 0.7
+    )
 end

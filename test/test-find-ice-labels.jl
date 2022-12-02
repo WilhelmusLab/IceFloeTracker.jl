@@ -14,4 +14,10 @@
     DelimitedFiles.writedlm("ice_labels_julia.csv", ice_labels_julia, ',')
 
     @test ice_labels_matlab == ice_labels_julia
+
+    @time ice_labels_ice_floe_region = IceFloeTracker.find_ice_labels(
+        reflectance_image[ice_floe_test_region...], landmask[ice_floe_test_region...]
+    )
+
+    DelimitedFiles.writedlm("ice_labels_floe_region.csv", ice_labels_ice_floe_region, ',')
 end
