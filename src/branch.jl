@@ -28,8 +28,8 @@ end
 
 Generate lookup table (lut) for 3x3 neighborhoods according to `lutfunc`.
 """
-function make_lut(lutfunc::Function)::Vector{Bool}
-    lut= vec(zeros(Bool,512))
+function make_lut(lutfunc::Function)::Vector{Int}
+    lut= vec(zeros(Int,512))
         for i=1:2^9
             v = parse.(Int, reverse(collect(bitstring(UInt16(i-1))[8:end])))
             v = reshape(v, 3, 3)
@@ -37,24 +37,6 @@ function make_lut(lutfunc::Function)::Vector{Bool}
         end
         return lut
 end
-    
-function _operator_lut(I::CartesianIndex{2},
-    img::AbstractArray{Bool},
-    nhood::CartesianIndices{2, Tuple{UnitRange{Int64}, UnitRange{Int64}}},
-    lut::Tuple{Vector{Int64}, Vector{Int64}})
-
-    # corner pixels
-    if length(nhood) == 4
-        return 0 # not a branch point
-    elseif length(nhood) == 6 # edge pixels
-        filled = padnhood(img, I, nhood)
-    else # interior pixels
-        filled = img[nhood]
-    end
-    val = _bin9todec(filled)+1
-    return lut[1][val], lut[2][val]
-end
-
 
 function _branch_operator_lut(I, img, nhood)
     lutbranchcandidates = make_lut(branch_candidates_func)

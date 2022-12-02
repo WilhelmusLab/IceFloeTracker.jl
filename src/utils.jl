@@ -143,22 +143,34 @@ end
 """
     _operator_lut(I, img, nhood, lut)
 
-Look up the neighborhood `nhood` in lookup table `lut`.
+Look up the neighborhood `nhood` in lookup tables `lut[1]` and `lut[2]`.
 
 Handles cases when the center of `nhood` is on the edge of `img` using data in `I`.
 """
 function _operator_lut(I::CartesianIndex{2},
     img::AbstractArray{Bool},
     nhood::CartesianIndices{2, Tuple{UnitRange{Int64}, UnitRange{Int64}}},
-    lut::Vector{T})::T where T
-
+    lut::Tuple{Vector{Int64}, Vector{Int64}})
+    
     # corner pixels
-    if length(nhood) == 4
-        return 0 # not a branch point
-    elseif length(nhood) == 6 # edge pixels
-        filled = padnhood(img, I, nhood)
-    else # interior pixels
-        filled = img[nhood]
-    end
-    return lut[_bin9todec(filled)+1]
+    length(nhood) == 4 && return false
+    
+    val = IceFloeTracker._bin9todec(_pad_handler(I, img, nhood))+1
+    
+    return lut[1][val], lut[2][val]
+end
+
+function _operator_lut(I::CartesianIndex{2}, img::AbstractArray{Bool},
+    nhood::CartesianIndices{2, Tuple{UnitRange{Int64}, UnitRange{Int64}}},
+    lut::Vector{T})::T where T # for bridge
+    
+    # corner pixels
+    length(nhood) == 4 && return false # for bridge and some other operations like hbreak, branch
+    
+    return lut[_bin9todec(_pad_handler(I, img, nhood))+1]
+end
+
+function _pad_handler(I, img, nhood)
+    (length(nhood) == 6) && return padnhood(img, I, nhood) # edge pixels
+    return img[nhood]
 end
