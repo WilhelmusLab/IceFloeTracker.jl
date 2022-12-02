@@ -11,7 +11,9 @@
         Int64.(vec(DelimitedFiles.readdlm("$(test_data_dir)/ice_labels_matlab.csv", ',')))
     strel_disk_2 = readdlm(strel_file_2, ',', Bool)
     strel_disk_4 = readdlm(strel_file_4, ',', Bool)
-    matlab_isolated_floes = load("$(test_data_dir)/matlab_isolated_floes.png")
+    matlab_isolated_floes = convert(
+        BitMatrix, load("$(test_data_dir)/matlab_isolated_floes.png")
+    )
 
     ## Run function with Matlab inputs
 
