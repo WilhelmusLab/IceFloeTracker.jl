@@ -15,7 +15,7 @@ function create_landmask(
     struct_elem::AbstractMatrix{Bool};
     fill_value_lower::Int=0,
     fill_value_upper::Int=2000,
-)::BitMatrix where T<:AbstractMatrix
+)::BitMatrix where {T<:AbstractMatrix}
 
     # binarize if not Boolean
     if !(typeof(landmask_image) <: AbstractMatrix{Bool})
@@ -26,7 +26,7 @@ function create_landmask(
 end
 
 function create_landmask(landmask_image)
-    create_landmask(landmask_image, make_landmask_se())
+    return create_landmask(landmask_image, make_landmask_se())
 end
 
 """

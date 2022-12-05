@@ -1,4 +1,4 @@
- """
+"""
     prune(img::AbstractArray{Bool})
 
 Remove foreground pixels in the binary image `img` with degree less than 3 (fewer than 3 linear or diagonal neighboring `1`s).
@@ -50,20 +50,23 @@ julia> prune(bw)
  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0
  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0
 """
-function prune(img::T)::T where T<:AbstractArray{Bool}
-    out = ones(Bool,size(img))
+function prune(img::T)::T where {T<:AbstractArray{Bool}}
+    out = ones(Bool, size(img))
     R = CartesianIndices(img)
     I_first, I_last = first(R), last(R)
     Δ = CartesianIndex(1, 1)
     for I in R
-        nhood = max(I_first, I-Δ):min(I_last, I+Δ)
+        nhood = max(I_first, I - Δ):min(I_last, I + Δ)
         out[I] = isprunable(I, img, nhood)
     end
     return out
 end
 
-function isprunable(I::CartesianIndex{2},
-                    img::AbstractArray{Bool}, nhood::CartesianIndices{2, Tuple{UnitRange{Int64}, UnitRange{Int64}}})
+function isprunable(
+    I::CartesianIndex{2},
+    img::AbstractArray{Bool},
+    nhood::CartesianIndices{2,Tuple{UnitRange{Int64},UnitRange{Int64}}},
+)
     if img[I]
         return sum(img[nhood]) > 3
     else

@@ -44,6 +44,7 @@ alltests # uncomment this line to run all tests or add individual files below
 # "test-hbreak.jl",
 # "test-bridge.jl",
 # "test-prune.jl",
+# "test-branch.jl"
 ]
 
 # Run the tests
