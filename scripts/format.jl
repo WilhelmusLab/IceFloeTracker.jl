@@ -2,15 +2,15 @@
 using Pkg
 Pkg.activate(@__DIR__)
 
-using Git 
+using Git
 using JuliaFormatter
 
 function main()
-    staged = readlines(    `$git diff --cached --name-only`)
-    staged = [f for f in staged if endswith(f,"jl")]
+    staged = readlines(`$git diff --cached --name-only`)
+    staged = [f for f in staged if endswith(f, "jl")]
     format(staged, BlueStyle())
     status = (format(staged, BlueStyle();)) ? 0 : 1
-            return exit(status)
+    return exit(status)
 end
 
 main()

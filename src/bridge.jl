@@ -1,20 +1,23 @@
 include("./lut/lutbridge.jl")
 
-function _bridge_operator_lut(I::CartesianIndex{2}, img::AbstractArray{Bool},
-    nhood::CartesianIndices{2, Tuple{UnitRange{Int64}, UnitRange{Int64}}})
+function _bridge_operator_lut(
+    I::CartesianIndex{2},
+    img::AbstractArray{Bool},
+    nhood::CartesianIndices{2,Tuple{UnitRange{Int64},UnitRange{Int64}}},
+)
     lutbridge = make_lutbridge()
     return _operator_lut(I, img, nhood, lutbridge)
 end
 
-function _bridge_filter(img::T, operator::Function)::T where T<:AbstractArray{Bool}
-    out = zeros(Bool,size(img))
+function _bridge_filter(img::T, operator::Function)::T where {T<:AbstractArray{Bool}}
+    out = zeros(Bool, size(img))
     R = CartesianIndices(img)
     I_first, I_last = first(R), last(R)
     Δ = CartesianIndex(1, 1)
     for I in R
         if !img[I] # zero pixels only
-            nhood = max(I_first, I-Δ):min(I_last, I+Δ)        
-            out[I]= operator(I, img, nhood)
+            nhood = max(I_first, I - Δ):min(I_last, I + Δ)
+            out[I] = operator(I, img, nhood)
         end
     end
     return out .|| img
@@ -75,6 +78,6 @@ julia> bridge(bw)
  1  1  1
 ```
 """
-function bridge(bw::T)::T where T<:AbstractArray{Bool}
-    _bridge_filter(bw, _bridge_operator_lut)
+function bridge(bw::T)::T where {T<:AbstractArray{Bool}}
+    return _bridge_filter(bw, _bridge_operator_lut)
 end

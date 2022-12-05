@@ -69,7 +69,7 @@ Uses 8-pixel connectivity by default (`conn=8`). Use `conn=4` for 4-pixel connec
 
 """
 function bwareamaxfilt(bwimg::AbstractArray{Bool}, conn::Int=8)::BitMatrix
-    bwareamaxfilt!(copy(bwimg), conn)
+    return bwareamaxfilt!(copy(bwimg), conn)
 end
 
 """
@@ -81,7 +81,7 @@ See also [`bwareamaxfilt`](@ref)
 """
 function bwareamaxfilt!(bwimg::AbstractArray{Bool}, conn::Int=8)::BitMatrix
     if conn == 8
-        label = label_components(bwimg, trues(3,3))
+        label = label_components(bwimg, trues(3, 3))
     elseif conn == 4
         label = label_components(bwimg)
     else

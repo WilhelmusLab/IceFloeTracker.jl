@@ -63,9 +63,11 @@ end
 function apply_cloudmask(
     ref_image::Matrix{Gray{Float64}}, cloudmask::AbstractArray{Bool}
 )::Matrix{Gray{Float64}}
-    Gray.(cloudmask .* ref_image)
+    return Gray.(cloudmask .* ref_image)
 end
 
-function create_clouds_channel(cloudmask::AbstractArray{Bool}, ref_image::Matrix{RGB{Float64}})::Matrix{Gray{Float64}}
-    Gray.(channelview(cloudmask .* ref_image)[1, :, :])
+function create_clouds_channel(
+    cloudmask::AbstractArray{Bool}, ref_image::Matrix{RGB{Float64}}
+)::Matrix{Gray{Float64}}
+    return Gray.(channelview(cloudmask .* ref_image)[1, :, :])
 end
