@@ -4,9 +4,7 @@
     segmentation_B_not_ice_mask::BitMatrix,
     watershed_intersect::BitMatrix,
     cloudmask::BitMatrix,
-    ice_labels::Vector{Int64},
-    strel_disk_2::Matrix{Bool},
-    strel_disk_4::Matrix{Bool};
+    ice_labels::Vector{Int64};
     lower_min_area_opening::Int64=20,
     upper_min_area_opening::Int64=150,
 )::BitMatrix
