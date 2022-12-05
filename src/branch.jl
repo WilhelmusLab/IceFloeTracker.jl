@@ -30,10 +30,9 @@ Generate lookup table (lut) for 3x3 neighborhoods according to `lutfunc`.
 """
 function make_lut(lutfunc::Function)::Vector{Int}
     lut= vec(zeros(Int,512))
-        for i=1:2^9
+        @inbounds @simd for i=1:2^9
             v = parse.(Int, reverse(collect(bitstring(UInt16(i-1))[8:end])))
-            v = reshape(v, 3, 3)
-            lut[i] = lutfunc(v)
+            lut[i] = lutfunc(SMatrix{3,3}(v))
         end
         return lut
 end
@@ -41,7 +40,7 @@ end
 function _branch_operator_lut(I::CartesianIndex{2}, img::AbstractArray{Bool}, nhood::CartesianIndices{2, Tuple{UnitRange{Int64}, UnitRange{Int64}}})
     lutbranchcandidates = make_lut(branch_candidates_func)
     lutbackcount4 = make_lut(connected_background_count)
-    return _operator_lut(I, img, nhood, (lutbranchcandidates, lutbackcount4))
+    return _operator_lut(I, img, nhood, lutbranchcandidates, lutbackcount4)
 end
 
 """
@@ -58,7 +57,7 @@ function _branch_filter(img::AbstractArray{Bool}, operator::Function)::Tuple{Abs
     I_first, I_last = first(R), last(R)
     Δ = CartesianIndex(1, 1)
 
-    for I in R
+    @inbounds @simd for I in R
         if  img[I] # ones for branch
             nhood = max(I_first, I-Δ):min(I_last, I+Δ)
             C[I], B[I] = operator(I, img, nhood)

@@ -13,6 +13,7 @@ using Clustering
 using DSP
 using RegisterMismatch
 using RegisterQD
+using StaticArrays
 
 export readdlm, padnhood, bridge, branch
 
