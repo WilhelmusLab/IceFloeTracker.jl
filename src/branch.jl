@@ -48,7 +48,7 @@ function _branch_operator_lut(
 end
 
 """
-    _filter(img::AbstractArray{Bool}, operator::Function)
+    _branch_filter(img::AbstractArray{Bool}, operator::Function)
 
 Filter `img` with `operator`.
 """
