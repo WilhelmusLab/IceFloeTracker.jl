@@ -75,7 +75,7 @@ Find branch points in skeletonized image `img` according to Definition 3 of [1].
 [1] Arcelli, Carlo, and Gabriella Sanniti di Baja. "Skeletons of planar patterns." Machine Intelligence and Pattern Recognition. Vol. 19. North-Holland, 1996. 99-143.
 
 """
-function branch(img::AbstractArray{Bool})
+function branch(img::AbstractArray{Bool})::AbstractArray{Bool} 
     # Get candidates C and 4-neighbor count
     C, B = _branch_filter(img, _branch_operator_lut)
 
