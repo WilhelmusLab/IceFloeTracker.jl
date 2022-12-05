@@ -49,7 +49,7 @@ end
 
 Filter `img` with `operator`.
 """
-function _branch_filter(img::AbstractArray{Bool}, operator::Function) #::T where T<:AbstractArray{Bool}
+function _branch_filter(img::AbstractArray{Bool}, operator::Function)::Tuple{AbstractArray{Bool}, AbstractArray{Int64}}
 
     C = zeros(Bool, size(img))
     B = zeros(Int, size(img))
