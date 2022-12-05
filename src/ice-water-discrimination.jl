@@ -1,14 +1,29 @@
 """
-    discriminate_ice_water(reflectance_image, reflectance_image_band7, normalized_image, landmask_bitmatrix, clouds_channel; floes_threshold, mask_clouds_lower, mask_clouds_upper, kurt_thresh_lower, kurt_thresh_upper, skew_thresh, st_dev_thresh_lower, st_dev_thresh_upper, clouds2_threshold, differ_threshold, nbins)
+    discriminate_ice_water(
+    reflectance_image::Matrix{RGB{Float64}}, 
+    image_sharpened::Matrix{Float64}, 
+    landmask_bitmatrix::T,
+    cloudmask_bitmatrix::T,
+    floes_threshold::Float64=Float64(100 / 255),
+    mask_clouds_lower::Float64=Float64(17 / 255),
+    mask_clouds_upper::Float64=Float64(30 / 255),
+    kurt_thresh_lower::Real=2,
+    kurt_thresh_upper::Real=8,
+    skew_thresh::Real=4,
+    st_dev_thresh_lower::Float64=Float64(84 / 255),
+    st_dev_thresh_upper::Float64=Float64(98.9 / 255),
+    clouds_ratio_threshold::Float64=0.02,
+    differ_threshold::Float64=0.6,
+    nbins::Real=155,
+)::AbstractMatrix where T<:AbstractArray{Bool}
 
 Generates an image with ice floes apparent after filtering and combining previously processed versions of reflectance and truecolor images from the same region of interest. Returns an image ready for segmentation to isolate floes.
 
 # Arguments
 - `reflectance_image`: input image in false color reflectance
-- `reflectance_image_band7`: first channel (band 7) of reflectance image, output from `cloudmask.jl`
-- `normalized_image`: a normalized, landmasked truecolor image, output from `normalization.jl`
-- `landmask_bitmatrix`: bitmatrix landmask for region of interest
-- `clouds_channel`: first channel of cloudmasked reflectance image, output from `cloudmask.jl`
+- `image_sharpened`: sharpenened version of true color image
+- `landmask_bitmatrix`: landmask for region of interest
+- `cloudmask_bitmatrix`: cloudmask for region of interest
 - `floes_threshold`: heuristic applied to original reflectance image
 - `mask_clouds_lower`: lower heuristic applied to mask out clouds
 - `mask_clouds_upper`: upper heuristic applied to mask out clouds
@@ -23,11 +38,10 @@ Generates an image with ice floes apparent after filtering and combining previou
 
 """
 function discriminate_ice_water(
-    reflectance_image::Matrix{RGB{Float64}},
-    reflectance_image_band7::Matrix{Gray{Float64}},
-    normalized_image::Matrix{Gray{Float64}},
-    landmask_bitmatrix::BitMatrix,
-    clouds_channel::Matrix{Gray{Float64}};
+    reflectance_image::Matrix{RGB{Float64}}, 
+    image_sharpened::Matrix{Float64}, 
+    landmask_bitmatrix::T,
+    cloudmask_bitmatrix::T,
     floes_threshold::Float64=Float64(100 / 255),
     mask_clouds_lower::Float64=Float64(17 / 255),
     mask_clouds_upper::Float64=Float64(30 / 255),
@@ -39,7 +53,12 @@ function discriminate_ice_water(
     clouds_ratio_threshold::Float64=0.02,
     differ_threshold::Float64=0.6,
     nbins::Real=155,
-)::AbstractMatrix
+)::AbstractMatrix where T<:AbstractArray{Bool}
+    clouds_channel = IceFloeTracker.create_clouds_channel(cloudmask_bitmatrix, reflectance_image)
+    reflectance_image_band7 = channelview(reflectance_image)[1,:,:]
+    image_sharpened_gray =  IceFloeTracker.imsharpen_gray(image_sharpened, landmask_bitmatrix)
+    normalized_image = IceFloeTracker.normalize_image(image_sharpened, image_sharpened_gray, landmask_bitmatrix)
+    
     # first define all of the image variations
     image_clouds = IceFloeTracker.apply_landmask(clouds_channel, landmask_bitmatrix) # output during cloudmask apply, landmasked 
     image_cloudless = IceFloeTracker.apply_landmask(
@@ -73,22 +92,21 @@ function discriminate_ice_water(
     total_all = sum(clouds_bin_counts)
     clouds_ratio = total_clouds / total_all
 
-    threshold_50_check = ( # intensity value of 50
-        (
-            (abs(kurt_band_2 > kurt_thresh_upper)) ||
-            (abs(kurt_band_2 < kurt_thresh_lower)) &&
-            ((abs(kurt_band_1 > kurt_thresh_upper)))
-        ) ||
-        (
-            (abs(kurt_band_2 < kurt_thresh_lower)) &&
-            (abs(skew_band_2 < skew_thresh)) &&
-            proportional_intensity < 0.1
-        ) ||
-        proportional_intensity < 0.01
-    )
-    threshold_130_check = #intensity value of 130
-        (clouds_ratio .< clouds_ratio_threshold && standard_dev > st_dev_thresh_lower) ||
-        (standard_dev > st_dev_thresh_upper)
+    threshold_50_check = 
+        _check_threshold_50(kurt_band_1,
+                            kurt_band_2,
+                            kurt_thresh_lower,
+                            kurt_thresh_upper, 
+                            skew_band_2, 
+                            skew_thresh, 
+                            proportional_intensity)
+
+    threshold_130_check = 
+        _check_threshold_130(clouds_ratio, 
+                             clouds_ratio_threshold, 
+                             standard_dev, 
+                             st_dev_thresh_lower, 
+                             st_dev_thresh_upper)
 
     if threshold_50_check
         THRESH = 50 / 255
@@ -109,4 +127,36 @@ function discriminate_ice_water(
     ice_water_discriminated_image = clamp01nan.(normalized_filtered - (band7_masked * 3))
 
     return ice_water_discriminated_image
+end
+
+function _check_threshold_50(kurt_band_1, 
+    kurt_band_2, 
+    kurt_thresh_lower, 
+    kurt_thresh_upper, 
+    skew_band_2, 
+    skew_thresh, 
+    proportional_intensity)
+    ( # intensity value of 50
+        (
+            (kurt_band_2 > kurt_thresh_upper) ||
+            (kurt_band_2 < kurt_thresh_lower) &&
+            (kurt_band_1 > kurt_thresh_upper)
+        ) ||
+        (
+            (kurt_band_2 < kurt_thresh_lower) &&
+            (skew_band_2 < skew_thresh) &&
+            proportional_intensity < 0.1
+        ) ||
+        proportional_intensity < 0.01
+    )
+end
+
+function _check_threshold_130(
+    clouds_ratio, 
+    clouds_ratio_threshold, 
+    standard_dev, 
+    st_dev_thresh_lower, 
+    st_dev_thresh_upper)
+    return (clouds_ratio .< clouds_ratio_threshold && standard_dev > st_dev_thresh_lower) ||
+        (standard_dev > st_dev_thresh_upper)
 end
