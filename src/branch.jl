@@ -37,16 +37,6 @@ function make_lut(lutfunc::Function)::Vector{Int}
     return lut
 end
 
-# function _branch_operator_lut(
-#     I::CartesianIndex{2},
-#     img::AbstractArray{Bool},
-#     nhood::CartesianIndices{2,Tuple{UnitRange{Int64},UnitRange{Int64}}},
-# )
-#     lutbranchcandidates = make_lut(branch_candidates_func)
-#     lutbackcount4 = make_lut(connected_background_count)
-#     return _operator_lut(I, img, nhood, lutbranchcandidates, lutbackcount4)
-# end
-
 """
     _branch_filter(
     img::AbstractArray{Bool},
