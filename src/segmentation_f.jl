@@ -46,13 +46,14 @@ function segmentation_F(
         Gray.(reconstructed_leads), cloudmask, ice_labels
     )
     println("Done with k-means segmentation")
-    leads_segmented_watershed_applied = IceFloeTracker.hbreak!(
-        leads_segmented .* .!watershed_intersect
-    )
+    leads_segmented_watershed_applied = leads_segmented .* .!watershed_intersect
+    IceFloeTracker.hbreak!(leads_segmented_watershed_applied)
+    leads_segmented_watershed_applied = leads_segmented_watershed_applied .* .!watershed_intersect
+    println(typeof(leads_segmented_watershed_applied))
     leads_branched =
-        IceFloeTracker.prune(leads_segmented_watershed_applied) .* .!watershed_intersect
+        IceFloeTracker.branch(leads_segmented_watershed_applied) .* .!watershed_intersect
     leads_filled = ImageMorphology.imfill(.!leads_branched, 0:5) .* .!watershed_intersect
-    leads_opened = IceFloeTracker.prune(
+    leads_opened = IceFloeTracker.branch(
         ImageMorphology.area_opening(.!leads_filled; min_area=upper_min_area_opening)
     )
     println("Done with area opening")
@@ -62,7 +63,7 @@ function segmentation_F(
     leads_bothat_opened =
         ImageMorphology.area_opening(.!leads_bothat; min_area=lower_min_area_opening) .*
         cloudmask
-    leads_bothat_filled = IceFloeTracker.prune(
+    leads_bothat_filled = IceFloeTracker.branch(
         ImageMorphology.imfill(.!leads_bothat_opened, 0:10)
     )
     floes_opened = ImageMorphology.opening(

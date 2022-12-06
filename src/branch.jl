@@ -53,8 +53,8 @@ end
 Filter `img` with `operator`.
 """
 function _branch_filter(
-    img::AbstractArray{Bool}, operator::Function
-)::Tuple{AbstractArray{Bool},AbstractArray{Int64}}
+    img::T, operator::Function
+)::Tuple{T,AbstractArray{Int64}} where T<:AbstractArray{Bool}
     C = zeros(Bool, size(img))
     B = zeros(Int, size(img))
 
@@ -79,7 +79,7 @@ Find branch points in skeletonized image `img` according to Definition 3 of [1].
 [1] Arcelli, Carlo, and Gabriella Sanniti di Baja. "Skeletons of planar patterns." Machine Intelligence and Pattern Recognition. Vol. 19. North-Holland, 1996. 99-143.
 
 """
-function branch(img::AbstractArray{Bool})::AbstractArray{Bool}
+function branch(img::T)::T where T<:AbstractArray{Bool}
     # Get candidates C and 4-neighbor count
     C, B = _branch_filter(img, _branch_operator_lut)
 
