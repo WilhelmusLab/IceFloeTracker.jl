@@ -37,26 +37,33 @@ function make_lut(lutfunc::Function)::Vector{Int}
     return lut
 end
 
-function _branch_operator_lut(
-    I::CartesianIndex{2},
-    img::AbstractArray{Bool},
-    nhood::CartesianIndices{2,Tuple{UnitRange{Int64},UnitRange{Int64}}},
-)
-    lutbranchcandidates = make_lut(branch_candidates_func)
-    lutbackcount4 = make_lut(connected_background_count)
-    return _operator_lut(I, img, nhood, lutbranchcandidates, lutbackcount4)
-end
+# function _branch_operator_lut(
+#     I::CartesianIndex{2},
+#     img::AbstractArray{Bool},
+#     nhood::CartesianIndices{2,Tuple{UnitRange{Int64},UnitRange{Int64}}},
+# )
+#     lutbranchcandidates = make_lut(branch_candidates_func)
+#     lutbackcount4 = make_lut(connected_background_count)
+#     return _operator_lut(I, img, nhood, lutbranchcandidates, lutbackcount4)
+# end
 
 """
-    _branch_filter(img::AbstractArray{Bool}, operator::Function)
+    _branch_filter(
+    img::AbstractArray{Bool},
+    func1::Function=branch_candidates_func,
+    func2::Function=connected_background_count,)
 
-Filter `img` with `operator`.
+Filter `img` with `_operator_lut` using `lut1` and `lut2`.
 """
 function _branch_filter(
-    img::AbstractArray{Bool}, operator::Function
+    img::AbstractArray{Bool},
+    func1::Function=branch_candidates_func,
+    func2::Function=connected_background_count,
 )::Tuple{AbstractArray{Bool},AbstractArray{Int64}}
     C = zeros(Bool, size(img))
     B = zeros(Int, size(img))
+    lutbranchcandidates = make_lut(func1)
+    lutbackcount4 = make_lut(func2)
 
     R = CartesianIndices(img)
     I_first, I_last = first(R), last(R)
@@ -65,7 +72,7 @@ function _branch_filter(
     @inbounds @simd for I in R
         if img[I] # ones for branch
             nhood = max(I_first, I - Δ):min(I_last, I + Δ)
-            C[I], B[I] = operator(I, img, nhood)
+            C[I], B[I] = _operator_lut(I, img, nhood, lutbranchcandidates, lutbackcount4)
         end
     end
     return C, B
@@ -81,7 +88,7 @@ Find branch points in skeletonized image `img` according to Definition 3 of [1].
 """
 function branch(img::AbstractArray{Bool})::AbstractArray{Bool}
     # Get candidates C and 4-neighbor count
-    C, B = _branch_filter(img, _branch_operator_lut)
+    C, B = _branch_filter(img)
 
     # Get non-end points E
     E = (B .!= 1)
