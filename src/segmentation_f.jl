@@ -48,7 +48,8 @@ function segmentation_F(
     println("Done with k-means segmentation")
     leads_segmented_watershed_applied = leads_segmented .* .!watershed_intersect
     IceFloeTracker.hbreak!(leads_segmented_watershed_applied)
-    leads_segmented_watershed_applied = leads_segmented_watershed_applied .* .!watershed_intersect
+    leads_segmented_watershed_applied =
+        leads_segmented_watershed_applied .* .!watershed_intersect
     println(typeof(leads_segmented_watershed_applied))
     leads_branched =
         IceFloeTracker.branch(leads_segmented_watershed_applied) .* .!watershed_intersect

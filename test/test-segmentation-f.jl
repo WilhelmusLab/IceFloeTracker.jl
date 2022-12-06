@@ -22,7 +22,7 @@
         segmentation_B_not_ice_mask[ice_floe_test_region...],
         watershed_intersect[ice_floe_test_region...],
         cloudmask[ice_floe_test_region...],
-        ice_labels
+        ice_labels,
     )
 
     isolated_floes_filename =
