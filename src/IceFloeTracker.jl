@@ -13,8 +13,9 @@ using Clustering
 using DSP
 using RegisterMismatch
 using RegisterQD
+using StaticArrays
 
-export readdlm, padnhood, bridge
+export readdlm, padnhood, bridge, branch
 
 include("utils.jl")
 include("persist.jl")
@@ -32,6 +33,7 @@ include("bwareamaxfilt.jl")
 include("hbreak.jl")
 include("bridge.jl")
 include("prune.jl")
+include("branch.jl")
 include("special_strels.jl")
 
 const sk_measure = PyNULL()
