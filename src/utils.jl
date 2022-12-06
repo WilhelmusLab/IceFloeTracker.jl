@@ -152,10 +152,10 @@ function _operator_lut(
     nhood::CartesianIndices{2,Tuple{UnitRange{Int64},UnitRange{Int64}}},
     lut1::Vector{Int64},
     lut2::Vector{Int64},
-)
+)::SVector{2, Int64}
 
     # corner pixels
-    length(nhood) == 4 && return false
+    length(nhood) == 4 && return @SVector [false, 0]
 
     val = IceFloeTracker._bin9todec(_pad_handler(I, img, nhood)) + 1
 
