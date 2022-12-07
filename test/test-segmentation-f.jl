@@ -32,5 +32,5 @@
     IceFloeTracker.@persist isolated_floes isolated_floes_filename
 
     @test typeof(isolated_floes) == typeof(matlab_isolated_floes)
-    @test test_similarity(isolated_floes, matlab_isolated_floes, 0.12)
+    @test test_similarity(isolated_floes, matlab_isolated_floes, 0.1)
 end

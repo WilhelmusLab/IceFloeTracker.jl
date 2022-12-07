@@ -75,6 +75,7 @@ function segmentation_F(
     println("Done with area opening")
     #BW_final4(2)
     leads_opened_branched = IceFloeTracker.branch(leads_opened) #BW_final4 
+    
     #BW_final4_bothat
     leads_bothat = ImageMorphology.bothat(
         leads_opened_branched; dims=IceFloeTracker.MorphSE.strel_diamond((5, 5))
@@ -83,7 +84,7 @@ function segmentation_F(
     leads = convert(BitMatrix, (complement.(leads_bothat) .* leads_opened_branched))
     #BW1
     leads_bothat_opened = ImageMorphology.area_opening(
-        leads; min_area=upper_min_area_opening
+        leads; min_area=lower_min_area_opening
     )
     #BW2
     leads_bothat_filled = ImageMorphology.imfill(
@@ -101,6 +102,7 @@ function segmentation_F(
     floes_opened = ImageMorphology.opening(
         leads_masked_branched; dims=IceFloeTracker.se_disk4()
     )
+    floes_opened = .!IceFloeTracker.bwareamaxfilt(.!floes_opened)
     #isolated_floes = ImageMorphology.opening(leads_masked_branched, dims=floes_opened)
     return floes_opened
 end
