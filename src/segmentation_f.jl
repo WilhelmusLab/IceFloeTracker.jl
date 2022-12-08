@@ -31,7 +31,7 @@ function segmentation_F(
     landmask::BitMatrix,
     ice_labels::Vector{Int64};
     lower_min_area_opening::Int64=20,
-    upper_min_area_opening::Int64=200,
+    upper_min_area_opening::Int64=500,
 )::BitMatrix
     segmentation_B_not_ice_mask = IceFloeTracker.apply_landmask(
         segmentation_B_not_ice_mask, landmask
@@ -40,7 +40,7 @@ function segmentation_F(
     ice_mask_watershed_applied = .!watershed_intersect .* segmentation_C_ice_mask
     #BW1
     ice_mask_watershed_opened = ImageMorphology.area_opening(
-        ice_mask_watershed_applied; min_area=lower_min_area_opening
+        ice_mask_watershed_applied; min_area=upper_min_area_opening
     )
     #leads
     ice_leads = ifelse.(.!ice_mask_watershed_opened .== 0, 0.0, 1)
@@ -70,12 +70,12 @@ function segmentation_F(
     leads_filled = ImageMorphology.imfill(.!leads_branched, 0:1) .* .!watershed_intersect
     #BW_final4
     leads_opened = ImageMorphology.area_opening(
-        .!leads_filled; min_area=lower_min_area_opening
+        .!leads_filled; min_area=upper_min_area_opening
     )
     println("Done with area opening")
     #BW_final4(2)
     leads_opened_branched = IceFloeTracker.branch(leads_opened) #BW_final4 
-    
+
     #BW_final4_bothat
     leads_bothat = ImageMorphology.bothat(
         leads_opened_branched; dims=IceFloeTracker.MorphSE.strel_diamond((5, 5))
@@ -84,7 +84,7 @@ function segmentation_F(
     leads = convert(BitMatrix, (complement.(leads_bothat) .* leads_opened_branched))
     #BW1
     leads_bothat_opened = ImageMorphology.area_opening(
-        leads; min_area=lower_min_area_opening
+        leads; min_area=upper_min_area_opening
     )
     #BW2
     leads_bothat_filled = ImageMorphology.imfill(
