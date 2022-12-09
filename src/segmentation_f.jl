@@ -31,7 +31,7 @@ function segmentation_F(
     landmask::BitMatrix,
     ice_labels::Vector{Int64};
     lower_min_area_opening::Int64=20,
-    upper_min_area_opening::Int64=500,
+    upper_min_area_opening::Int64=200,
 )::BitMatrix
     segmentation_B_not_ice_mask = IceFloeTracker.apply_landmask(
         segmentation_B_not_ice_mask, landmask
@@ -40,7 +40,7 @@ function segmentation_F(
     ice_mask_watershed_applied = .!watershed_intersect .* segmentation_C_ice_mask
     #BW1
     ice_mask_watershed_opened = ImageMorphology.area_opening(
-        ice_mask_watershed_applied; min_area=upper_min_area_opening
+        ice_mask_watershed_applied; min_area=lower_min_area_opening
     )
     #leads
     ice_leads = ifelse.(.!ice_mask_watershed_opened .== 0, 0.0, 1)
@@ -52,8 +52,8 @@ function segmentation_F(
     not_ice_reconstructed = ImageMorphology.opening(
         complement.(not_ice_dilated); dims=complement.(segmentation_B_not_ice_mask)
     )
-    #Iobrcbr3
-    reconstructed_leads = float64.(not_ice_reconstructed .* (ice_leads .+ (60 / 255)))
+    #Z(he)
+    reconstructed_leads = float64.(not_ice_reconstructed .*ice_leads) .+ (60 / 255)
     #BW_final
     leads_segmented, _, _ = IceFloeTracker.segmentation_A(
         reconstructed_leads, cloudmask, ice_labels
@@ -63,14 +63,14 @@ function segmentation_F(
     leads_segmented_watershed_applied = leads_segmented .* .!watershed_intersect
     #BW_final1  
     leads_segmented_broken =
-        IceFloeTracker.hbreak!(leads_segmented_watershed_applied) .* .!watershed_intersect
+        IceFloeTracker.hbreak(leads_segmented_watershed_applied) .* .!watershed_intersect
     #BW_final2
     leads_branched = IceFloeTracker.branch(leads_segmented_broken) .* .!watershed_intersect
     #BW_final3
-    leads_filled = ImageMorphology.imfill(.!leads_branched, 0:1) .* .!watershed_intersect
+    leads_filled = .!ImageMorphology.imfill(.!leads_branched, 0:1) .* .!watershed_intersect
     #BW_final4
     leads_opened = ImageMorphology.area_opening(
-        .!leads_filled; min_area=upper_min_area_opening
+        leads_filled; min_area=lower_min_area_opening
     )
     println("Done with area opening")
     #BW_final4(2)
@@ -81,28 +81,30 @@ function segmentation_F(
         leads_opened_branched; dims=IceFloeTracker.MorphSE.strel_diamond((5, 5))
     )
     #BW_final4(3)
-    leads = convert(BitMatrix, (complement.(leads_bothat) .* leads_opened_branched))
+    leads = convert(BitMatrix, (complement.(leads_bothat) .* leads_opened_branched)) .* .!watershed_intersect
     #BW1
     leads_bothat_opened = ImageMorphology.area_opening(
-        leads; min_area=upper_min_area_opening
+        leads; min_area=120
     )
     #BW2
-    leads_bothat_filled = ImageMorphology.imfill(
-        .!leads_bothat_opened, 0:upper_min_area_opening
+    leads_bothat_filled = .!ImageMorphology.imfill(
+        .!leads_bothat_opened, 0:200
     )
+    # leads_bothat_filled = .!IceFloeTracker.bwareamaxfilt(.!leads_bothat_filled)
     #BW2
-    leads_bothat_masked = .!leads_bothat_filled .* cloudmask
+    leads_bothat_masked = leads_bothat_filled .* cloudmask
     #BW3
-    leads_cloudmasked_filled = ImageMorphology.imfill(
-        .!leads_bothat_masked, 0:upper_min_area_opening
+    leads_cloudmasked_filled = .!ImageMorphology.imfill(
+        .!leads_bothat_masked, 0:400
     )
     #BW4
-    leads_masked_branched = IceFloeTracker.branch(.!leads_cloudmasked_filled)
+    leads_masked_branched = IceFloeTracker.branch(leads_cloudmasked_filled)
     #BW5
-    floes_opened = ImageMorphology.opening(
-        leads_masked_branched; dims=IceFloeTracker.se_disk4()
-    )
-    floes_opened = .!IceFloeTracker.bwareamaxfilt(.!floes_opened)
+    floes_erode = ImageMorphology.erode(leads_masked_branched; dims=IceFloeTracker.se_disk4())
+    # floes_opened = ImageMorphology.opening(
+    #     floes_erode; dims=IceFloeTracker.se_disk4()
+    # )
+    floes_opened = .!IceFloeTracker.bwareamaxfilt(.!floes_erode)
     #isolated_floes = ImageMorphology.opening(leads_masked_branched, dims=floes_opened)
     return floes_opened
 end

@@ -7,7 +7,7 @@
     segmentation_C_ice_mask = load(segmented_c_test_file) .> 0.5
     cloudmask = convert(BitMatrix, load(cloudmask_test_file))
     landmask = convert(BitMatrix, load(current_landmask_file))
-    watershed_intersect = load("$(test_data_dir)/matlab_watershed_intersect.png") .> 0.5
+    watershed_intersect = load(watershed_test_file) .> 0.5
     ice_labels =
         Int64.(vec(DelimitedFiles.readdlm("$(test_data_dir)/ice_labels_matlab.csv", ',')))
     matlab_isolated_floes = convert(
@@ -32,5 +32,5 @@
     IceFloeTracker.@persist isolated_floes isolated_floes_filename
 
     @test typeof(isolated_floes) == typeof(matlab_isolated_floes)
-    @test test_similarity(isolated_floes, matlab_isolated_floes, 0.1)
+    @test test_similarity(isolated_floes, matlab_isolated_floes, 0.07)
 end
