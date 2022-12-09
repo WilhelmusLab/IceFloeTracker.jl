@@ -22,7 +22,6 @@ strel_file_2 = "$(test_data_dir)/se2.csv" # original matlab structuring element 
 strel_file_4 = "$(test_data_dir)/strel_disk_4.csv" # disk-shaped kernel with radius of 4 px
 watershed_test_file = "$(test_data_dir)/matlab_watershed_intersect.png"
 
-
 test_region = (1:2707, 1:4458)
 lm_test_region = (1:800, 1:1500)
 ice_floe_test_region = (1640:2060, 1840:2315)
