@@ -86,23 +86,29 @@ function segmentation_F(
         .!watershed_intersect
     #BW1
     leads_bothat_opened = ImageMorphology.area_opening(leads; min_area=120)
+    leads_bothat_opened = IceFloeTracker.prune(leads_bothat_opened)
     #BW2
     leads_bothat_filled = .!ImageMorphology.imfill(.!leads_bothat_opened, 0:200)
-    # leads_bothat_filled = .!IceFloeTracker.bwareamaxfilt(.!leads_bothat_filled)
+    #  leads_bothat_filled = .!IceFloeTracker.bwareamaxfilt(.!leads_bothat_opened)
     #BW2
     leads_bothat_masked = leads_bothat_filled .* cloudmask
+    leads_bothat_masked = IceFloeTracker.prune(leads_bothat_masked)
     #BW3
-    leads_cloudmasked_filled = .!ImageMorphology.imfill(.!leads_bothat_masked, 0:400)
+     leads_cloudmasked_filled = .!ImageMorphology.imfill(.!leads_bothat_masked, 0:400)
+    # leads_cloudmasked_filled = .!IceFloeTracker.bwareamaxfilt(.!leads_bothat_masked)
     #BW4
     leads_masked_branched = IceFloeTracker.branch(leads_cloudmasked_filled)
     #BW5
     floes_erode = ImageMorphology.erode(
         leads_masked_branched; dims=IceFloeTracker.se_disk4()
     )
-    # floes_opened = ImageMorphology.opening(
-    #     floes_erode; dims=IceFloeTracker.se_disk4()
-    # )
-    floes_opened = .!IceFloeTracker.bwareamaxfilt(.!floes_erode)
-    #isolated_floes = ImageMorphology.opening(leads_masked_branched, dims=floes_opened)
+    floes_erode = IceFloeTracker.prune(IceFloeTracker.branch(floes_erode))
+    floes_dilate = ImageMorphology.dilate(
+        floes_erode; dims=IceFloeTracker.se_disk4()
+    )
+    floes_opened = IceFloeTracker.prune(IceFloeTracker.branch(floes_dilate))
+    floes_opened = .!ImageMorphology.imfill(.!floes_opened, 0:1000)
+    floes_opened = .!IceFloeTracker.bwareamaxfilt(.!floes_opened)
+    
     return floes_opened
 end
