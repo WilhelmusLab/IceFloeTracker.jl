@@ -20,9 +20,37 @@ function remove_landmask(landmask::BitMatrix, ice_mask::BitMatrix)::Array{Int64}
 end
 
 """
+    kmeans_segmentation()
+
+Apply k-means segmentation to a gray image to isolate a cluster group representing sea ice. Returns a binary image with ice segmented from background.
+
+# Arguments
+- `gray_image`: output image from `ice-water-discrimination.jl` or gray ice floe leads image in `segmentation_f.jl`
+- `ice_labels`: vector if pixel coordinates output from `find_ice_labels.jl`
+
+"""
+function kmeans_segmentation(gray_image::Matrix{Gray{Float64}}, ice_labels::Vector{Int64})::BitMatrix
+    gray_image = float64.(gray_image)
+    gray_image_height, gray_image_width = size(gray_image)
+    gray_image_1d = reshape(gray_image, 1, gray_image_height * gray_image_width)
+    println("Done with reshape")
+    feature_classes = Clustering.kmeans(
+        gray_image_1d, 4; maxiter=50, display=:iter, init=:kmpp
+    )
+    class_assignments = assignments(feature_classes)
+
+    ## NOTE(tjd): this reshapes column major vector of kmeans classes back into original image shape
+    segmented = reshape(class_assignments, gray_image_height, gray_image_width)
+
+    ## Isolate ice floes and contrast from background
+    nlabel = StatsBase.mode(segmented[ice_labels])
+    segmented_ice = segmented .== nlabel
+    return segmented_ice
+end
+"""
     segmentation_A(gray_image, cloudmask, ice_labels; min_opening_area, fill_range)
 
-Apply k-means segmentation to a gray image to isolate a cluster group representing sea ice. Returns an image segmented and processed as well as intermediate files needed for downstream functions.
+Apply k-means segmentation to a gray image to isolate a cluster group representing sea ice. Returns an image segmented and processed as well as an intermediate files needed for downstream functions.
 
 # Arguments
 
@@ -39,36 +67,21 @@ function segmentation_A(
     ice_labels::Vector{Int64};
     min_opening_area::Real=50,
     fill_range::Tuple=(0, 50),
-)::Tuple{BitMatrix,BitMatrix,BitMatrix}
-    gray_image = float64.(gray_image)
-    gray_image_height, gray_image_width = size(gray_image)
-    gray_image_1d = reshape(gray_image, 1, gray_image_height * gray_image_width)
-    println("Done with reshape")
-    feature_classes = Clustering.kmeans(
-        gray_image_1d, 4; maxiter=50, display=:iter, init=:kmpp
-    )
-    class_assignments = assignments(feature_classes)
-
-    ## NOTE(tjd): this reshapes column major vector of kmeans classes back into original image shape
-    segmented = reshape(class_assignments, gray_image_height, gray_image_width)
-
-    nlabel = StatsBase.mode(segmented[ice_labels])
-
-    ## Isolate ice floes and contrast from background
-    segmented_ice = segmented .== nlabel
+)::Tuple{BitMatrix,BitMatrix}
+    segmented_ice = IceFloeTracker.kmeans_segmentation(gray_image, ice_labels)
     segmented_ice_cloudmasked = segmented_ice .* cloudmask
 
     segmented_ice_opened = ImageMorphology.area_opening(
         segmented_ice_cloudmasked; min_area=min_opening_area
-    ) #BW_test in matlab code
+    ) 
 
-    segmented_ice_opened_hbreak = IceFloeTracker.hbreak!(segmented_ice_opened)
+    IceFloeTracker.hbreak!(segmented_ice_opened)
 
-    segmented_opened_flipped = .!segmented_ice_opened_hbreak
+    segmented_opened_flipped = .!segmented_ice_opened
 
     segmented_ice_filled = ImageMorphology.imfill(
         convert(BitMatrix, (segmented_opened_flipped)), fill_range
-    ) #BW_test3 in matlab code
+    ) 
     println("Done filling segmented_ice")
     segmented_ice_filled_comp = complement.(segmented_ice_filled)
 
@@ -76,5 +89,5 @@ function segmentation_A(
 
     segmented_A = segmented_ice_cloudmasked .|| diff_matrix
 
-    return segmented_ice, segmented_ice_cloudmasked, segmented_A
+    return segmented_ice_cloudmasked, segmented_A
 end
