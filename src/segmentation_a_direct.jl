@@ -85,7 +85,6 @@ function segmentation_A(
 
     segmented_ice_filled = bwareamaxfilt(.!segmented_bridged)
     println("Done filling segmented_ice")
-    #segmented_ice_filled_comp = complement.(segmented_ice_filled)
 
     diff_matrix = segmented_ice_opened .!= segmented_ice_filled
 
