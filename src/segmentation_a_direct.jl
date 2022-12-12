@@ -29,7 +29,9 @@ Apply k-means segmentation to a gray image to isolate a cluster group representi
 - `ice_labels`: vector if pixel coordinates output from `find_ice_labels.jl`
 
 """
-function kmeans_segmentation(gray_image::Matrix{Gray{Float64}}, ice_labels::Vector{Int64})::BitMatrix
+function kmeans_segmentation(
+    gray_image::Matrix{Gray{Float64}}, ice_labels::Vector{Int64}
+)::BitMatrix
     gray_image = float64.(gray_image)
     gray_image_height, gray_image_width = size(gray_image)
     gray_image_1d = reshape(gray_image, 1, gray_image_height * gray_image_width)
@@ -73,15 +75,17 @@ function segmentation_A(
 
     segmented_ice_opened = ImageMorphology.area_opening(
         segmented_ice_cloudmasked; min_area=min_opening_area
-    ) 
+    )
 
     IceFloeTracker.hbreak!(segmented_ice_opened)
 
-    segmented_opened_flipped = .!segmented_ice_opened
+    segmented_opened_branched = IceFloeTracker.branch(segmented_ice_opened)
+
+    segmented_bridged = .!IceFloeTracker.bridge(segmented_opened_branched)
 
     segmented_ice_filled = ImageMorphology.imfill(
-        convert(BitMatrix, (segmented_opened_flipped)), fill_range
-    ) 
+        convert(BitMatrix, (segmented_bridged)), fill_range
+    )
     println("Done filling segmented_ice")
     segmented_ice_filled_comp = complement.(segmented_ice_filled)
 
