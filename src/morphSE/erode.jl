@@ -1,3 +1,4 @@
+# From https://github.com/JuliaImages/ImageMorphology.jl/blob/master/src/ops/dilate.jl
 """
     out = erode(img; dims=coords_spatial(img), r=1)
     out = erode(img, se)

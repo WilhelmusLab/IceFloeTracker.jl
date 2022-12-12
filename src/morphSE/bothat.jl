@@ -1,3 +1,4 @@
+# From https://github.com/JuliaImages/ImageMorphology.jl/blob/master/src/ops/bothat.jl
 """
     bothat(img; dims=coords_spatial(img), r=1)
     bothat(img, se)
