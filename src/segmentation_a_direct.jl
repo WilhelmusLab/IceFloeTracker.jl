@@ -83,13 +83,11 @@ function segmentation_A(
 
     segmented_bridged = .!IceFloeTracker.bridge(segmented_opened_branched)
 
-    segmented_ice_filled = ImageMorphology.imfill(
-        convert(BitMatrix, (segmented_bridged)), fill_range
-    )
+    segmented_ice_filled = bwareamaxfilt(.!segmented_bridged)
     println("Done filling segmented_ice")
-    segmented_ice_filled_comp = complement.(segmented_ice_filled)
+    #segmented_ice_filled_comp = complement.(segmented_ice_filled)
 
-    diff_matrix = segmented_ice_opened .!= segmented_ice_filled_comp
+    diff_matrix = segmented_ice_opened .!= segmented_ice_filled
 
     segmented_A = segmented_ice_cloudmasked .|| diff_matrix
 
