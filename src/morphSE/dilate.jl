@@ -1,3 +1,4 @@
+# From https://github.com/JuliaImages/ImageMorphology.jl/blob/master/src/ops/dilate.jl
 using ColorTypes
 
 const _docstring_se = """
