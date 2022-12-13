@@ -65,9 +65,9 @@ Apply cloudmask to a bitmatrix of segmented ice after kmeans clustering. Returns
 
 
 """
-function segmented_ice_cloudmasking(gray_image::Matrix{Gray{Float64}},
-    cloudmask::BitMatrix,
-    ice_labels::Vector{Int64})::BitMatrix
+function segmented_ice_cloudmasking(
+    gray_image::Matrix{Gray{Float64}}, cloudmask::BitMatrix, ice_labels::Vector{Int64}
+)::BitMatrix
     segmented_ice = IceFloeTracker.kmeans_segmentation(gray_image, ice_labels)
     segmented_ice_cloudmasked = segmented_ice .* cloudmask
     return segmented_ice_cloudmasked
@@ -86,10 +86,8 @@ Apply k-means segmentation to a gray image to isolate a cluster group representi
 
 """
 function segmentation_A(
-    segmented_ice_cloudmasked::BitMatrix;
-    min_opening_area::Real=50,
+    segmented_ice_cloudmasked::BitMatrix; min_opening_area::Real=50
 )::BitMatrix
-
     segmented_ice_opened = ImageMorphology.area_opening(
         segmented_ice_cloudmasked; min_area=min_opening_area
     )
