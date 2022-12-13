@@ -88,7 +88,6 @@ function imsharpen(
     smoothing_param::Int64=10,
     intensity::Float64=2.0,
 )::Matrix{Float64}
-
     image_diffused = diffusion(truecolor_image, lambda, kappa, niters)
     image_diffused_RGB = RGB.(image_diffused)
     masked_view = Float64.(channelview(image_diffused_RGB))
@@ -102,7 +101,7 @@ function imsharpen(
     image_smoothed = imfilter(image_equalized_gray, Kernel.gaussian(smoothing_param))
 
     image_sharpened =
-        image_equalized_gray .* (1 + intensity) .+ image_smoothed.* (-intensity)
+        image_equalized_gray .* (1 + intensity) .+ image_smoothed .* (-intensity)
     image_sharpened = max.(image_sharpened, 0.0)
     return min.(image_sharpened, 1.0)
 end
