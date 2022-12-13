@@ -17,10 +17,10 @@ function normalize_image(
     landmask::BitMatrix,
     struct_elem::Matrix{Bool};
 )::Matrix{Gray{Float64}} where {T<:AbstractMatrix{Gray{Float64}}}
-    image_dilated = ImageMorphology.dilate(image_sharpened_gray, dims=struct_elem)
+    image_dilated = ImageMorphology.dilate(image_sharpened_gray; dims=struct_elem)
 
     image_opened = ImageMorphology.opening(
-        complement.(image_dilated), dims = complement.(image_sharpened)
+        complement.(image_dilated); dims=complement.(image_sharpened)
     )
     return IceFloeTracker.apply_landmask(image_opened, landmask)
 end
@@ -29,8 +29,10 @@ function normalize_image(
     image_sharpened::Matrix{Float64},
     image_sharpened_gray::AbstractMatrix{Gray{Float64}},
     landmask::BitMatrix,
-    )::Matrix{Gray{Float64}}
-    return normalize_image(image_sharpened, image_sharpened_gray, landmask,  collect(strel_diamond((5,5))))
+)::Matrix{Gray{Float64}}
+    return normalize_image(
+        image_sharpened, image_sharpened_gray, landmask, collect(strel_diamond((5, 5)))
+    )
 end
 
 """
@@ -76,7 +78,6 @@ Sharpen `truecolor_image`.
 """
 function imsharpen(
     truecolor_image,
-    landmask_no_dilate::BitMatrix,
     lambda::Real=0.25,
     kappa::Real=75,
     niters::Int64=3,
@@ -87,8 +88,11 @@ function imsharpen(
     smoothing_param::Int64=10,
     intensity::Float64=2.0,
 )::Matrix{Float64}
-    landmasked_image_no_dilate = IceFloeTracker.apply_landmask_no_dilate(truecolor_image, landmask_no_dilate)
-    image_diffused = diffusion(landmasked_image_no_dilate, lambda, kappa, niters)
+    
+    # landmasked_image_no_dilate = IceFloeTracker.apply_landmask_no_dilate(
+    #     truecolor_image, landmask_no_dilate
+    # )
+    image_diffused = diffusion(truecolor_image, lambda, kappa, niters)
     image_diffused_RGB = RGB.(image_diffused)
     masked_view = Float64.(channelview(image_diffused_RGB))
 
@@ -97,13 +101,12 @@ function imsharpen(
     ]
     image_equalized = colorview(RGB, eq...)
     image_equalized_gray = Gray.(image_equalized)
-    image_equalized_view = channelview(image_equalized_gray)
 
-    image_smoothed = imfilter(image_equalized_view, Kernel.gaussian(smoothing_param))
+    image_smoothed = imfilter(image_equalized_gray, Kernel.gaussian(smoothing_param))
     image_smoothed_view = channelview(image_smoothed)
 
     image_sharpened =
-        image_equalized_view .* (1 + intensity) .+ image_smoothed_view .* (-intensity)
+        image_equalized_gray .* (1 + intensity) .+ image_smoothed_view .* (-intensity)
     image_sharpened = max.(image_sharpened, 0.0)
     return min.(image_sharpened, 1.0)
 end

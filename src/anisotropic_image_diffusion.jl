@@ -39,12 +39,14 @@ function pmad_kernel!(image, output, g, λ)
 end
 
 function invert_color(color::RGB{Float64})
-    return RGB(1.0/color.r, 1.0/color.g, 1.0/color.b)
+    return RGB(1.0 / color.r, 1.0 / color.g, 1.0 / color.b)
 end
 function invert_color(color::Gray{Float64})
-    return Gray(1.0/color.val)
+    return Gray(1.0 / color.val)
 end
-function diffusion(image::Matrix{T}, λ::Float64, K::Int, niters::Int) where {T<:Color{Float64}}
+function diffusion(
+    image::Matrix{T}, λ::Float64, K::Int, niters::Int
+) where {T<:Color{Float64}}
     #=
         Perona, Pietro, and Jitendra Malik. 
         "Scale-space and edge detection using anisotropic diffusion." 
