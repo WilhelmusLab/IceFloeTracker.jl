@@ -28,16 +28,16 @@
     ) == normalized_image
 
     # test for percent difference in normalized images
-    @test (@test_approx_eq_sigma_eps normalized_image matlab_norm_image [0, 0] 0.07) ==
+    @test (@test_approx_eq_sigma_eps normalized_image matlab_norm_image [0, 0] 0.055) ==
         nothing
 
     @test (@test_approx_eq_sigma_eps image_sharpened_gray[ice_floe_test_region...] matlab_sharpened [
         0, 0
-    ] 0.06) == nothing
+    ] 0.059) == nothing
 
     @test (@test_approx_eq_sigma_eps IceFloeTracker.apply_landmask_no_dilate(
         image_diffused, landmask_no_dilate
-    ) matlab_diffused [0, 0] 0.009) == nothing
+    ) matlab_diffused [0, 0] 0.007) == nothing
 
     normalized_image_filename =
         "$(test_output_dir)/normalized_test_image_" *
