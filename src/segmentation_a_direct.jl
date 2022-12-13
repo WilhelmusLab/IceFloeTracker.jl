@@ -8,6 +8,7 @@ Find the pixel indexes that are floating ice rather than soft or land ice. Retur
 - `ice_mask`: bitmatrix with ones equal to ice, zeros otherwise
 
 """
+## NOTE(tjd): This function is called in `find_ice_labels.jl`
 function remove_landmask(landmask::BitMatrix, ice_mask::BitMatrix)::Array{Int64}
     indexes_no_landmask = []
     land = IceFloeTracker.apply_landmask(ice_mask, landmask)
@@ -32,10 +33,11 @@ Apply k-means segmentation to a gray image to isolate a cluster group representi
 function kmeans_segmentation(
     gray_image::Matrix{Gray{Float64}}, ice_labels::Vector{Int64}
 )::BitMatrix
-    gray_image = float64.(gray_image)
     gray_image_height, gray_image_width = size(gray_image)
-    gray_image_1d = reshape(gray_image, 1, gray_image_height * gray_image_width)
+    gray_image_1d = vec(gray_image)
     println("Done with reshape")
+
+    ## NOTE(tjd): this clusters into 4 classes and solves iteratively with a max of 50 iterations
     feature_classes = Clustering.kmeans(
         gray_image_1d, 4; maxiter=50, display=:iter, init=:kmpp
     )
@@ -49,29 +51,44 @@ function kmeans_segmentation(
     segmented_ice = segmented .== nlabel
     return segmented_ice
 end
-"""
-    segmentation_A(gray_image, cloudmask, ice_labels; min_opening_area, fill_range)
 
-Apply k-means segmentation to a gray image to isolate a cluster group representing sea ice. Returns an image segmented and processed as well as an intermediate files needed for downstream functions.
+"""
+    segmented_ice_cloudmasking(gray_image, cloudmask, ice_labels)
+
+Apply cloudmask to a bitmatrix of segmented ice after kmeans clustering. Returns a bitmatrix with open water/clouds = 0, ice = 1).
 
 # Arguments
 
 - `gray_image`: output image from `ice-water-discrimination.jl` or gray ice floe leads image in `segmentation_f.jl`
 - `cloudmask`: bitmatrix cloudmask for region of interest
 - `ice_labels`: vector if pixel coordinates output from `find_ice_labels.jl`
+
+
+"""
+function segmented_ice_cloudmasking(gray_image::Matrix{Gray{Float64}},
+    cloudmask::BitMatrix,
+    ice_labels::Vector{Int64})::BitMatrix
+    segmented_ice = IceFloeTracker.kmeans_segmentation(gray_image, ice_labels)
+    segmented_ice_cloudmasked = segmented_ice .* cloudmask
+    return segmented_ice_cloudmasked
+end
+
+"""
+    segmentation_A(gray_image, ice_labels; min_opening_area, fill_range)
+
+Apply k-means segmentation to a gray image to isolate a cluster group representing sea ice. Returns an image segmented and processed as well as an intermediate files needed for downstream functions.
+
+# Arguments
+
+
 - `min_opening_area`: minimum size of pixels to use during morphoilogical opening
 - `fill_range`: range of values dictating the size of holes to fill
 
 """
 function segmentation_A(
-    gray_image::Matrix{Gray{Float64}},
-    cloudmask::BitMatrix,
-    ice_labels::Vector{Int64};
+    segmented_ice_cloudmasked::BitMatrix;
     min_opening_area::Real=50,
-    fill_range::Tuple=(0, 50),
-)::Tuple{BitMatrix,BitMatrix}
-    segmented_ice = IceFloeTracker.kmeans_segmentation(gray_image, ice_labels)
-    segmented_ice_cloudmasked = segmented_ice .* cloudmask
+)::BitMatrix
 
     segmented_ice_opened = ImageMorphology.area_opening(
         segmented_ice_cloudmasked; min_area=min_opening_area
@@ -90,5 +107,5 @@ function segmentation_A(
 
     segmented_A = segmented_ice_cloudmasked .|| diff_matrix
 
-    return segmented_ice_cloudmasked, segmented_A
+    return segmented_A
 end
