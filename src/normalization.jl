@@ -17,10 +17,10 @@ function normalize_image(
     landmask::BitMatrix,
     struct_elem::Matrix{Bool};
 )::Matrix{Gray{Float64}} where {T<:AbstractMatrix{Gray{Float64}}}
-    image_dilated = ImageMorphology.dilate(image_sharpened_gray, struct_elem)
+    image_dilated = ImageMorphology.dilate(image_sharpened_gray, dims=struct_elem)
 
     image_opened = ImageMorphology.opening(
-        complement.(image_dilated), complement.(image_sharpened)
+        complement.(image_dilated), dims = complement.(image_sharpened)
     )
     return IceFloeTracker.apply_landmask(image_opened, landmask)
 end
@@ -76,6 +76,7 @@ Sharpen `truecolor_image`.
 """
 function imsharpen(
     truecolor_image,
+    landmask_no_dilate::BitMatrix,
     lambda::Real=0.25,
     kappa::Real=75,
     niters::Int64=3,
@@ -86,8 +87,8 @@ function imsharpen(
     smoothing_param::Int64=10,
     intensity::Float64=2.0,
 )::Matrix{Float64}
-    gray_image = Float64.(Gray.(truecolor_image))
-    image_diffused = diffusion(gray_image, lambda, kappa, niters)
+    landmasked_image_no_dilate = IceFloeTracker.apply_landmask_no_dilate(truecolor_image, landmask_no_dilate)
+    image_diffused = diffusion(landmasked_image_no_dilate, lambda, kappa, niters)
     image_diffused_RGB = RGB.(image_diffused)
     masked_view = Float64.(channelview(image_diffused_RGB))
 
@@ -98,7 +99,7 @@ function imsharpen(
     image_equalized_gray = Gray.(image_equalized)
     image_equalized_view = channelview(image_equalized_gray)
 
-    image_smoothed = imfilter(image_equalized_gray, Kernel.gaussian(smoothing_param))
+    image_smoothed = imfilter(image_equalized_view, Kernel.gaussian(smoothing_param))
     image_smoothed_view = channelview(image_smoothed)
 
     image_sharpened =
