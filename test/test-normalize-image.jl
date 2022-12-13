@@ -35,8 +35,9 @@
         0, 0
     ] 0.06) == nothing
 
-    @test (@test_approx_eq_sigma_eps IceFloeTracker.apply_landmask_no_dilate(image_diffused, landmask_no_dilate) matlab_diffused [0, 0] 0.009) ==
-        nothing
+    @test (@test_approx_eq_sigma_eps IceFloeTracker.apply_landmask_no_dilate(
+        image_diffused, landmask_no_dilate
+    ) matlab_diffused [0, 0] 0.009) == nothing
 
     normalized_image_filename =
         "$(test_output_dir)/normalized_test_image_" *
@@ -54,5 +55,7 @@
         "$(test_output_dir)/diffused_test_image_" *
         Dates.format(Dates.now(), "yyyy-mm-dd-HHMMSS") *
         ".png"
-    IceFloeTracker.@persist IceFloeTracker.apply_landmask_no_dilate(image_diffused, landmask_no_dilate) diffused_image_filename
+    IceFloeTracker.@persist IceFloeTracker.apply_landmask_no_dilate(
+        image_diffused, landmask_no_dilate
+    ) diffused_image_filename
 end

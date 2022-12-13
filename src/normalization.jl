@@ -88,10 +88,7 @@ function imsharpen(
     smoothing_param::Int64=10,
     intensity::Float64=2.0,
 )::Matrix{Float64}
-    
-    # landmasked_image_no_dilate = IceFloeTracker.apply_landmask_no_dilate(
-    #     truecolor_image, landmask_no_dilate
-    # )
+
     image_diffused = diffusion(truecolor_image, lambda, kappa, niters)
     image_diffused_RGB = RGB.(image_diffused)
     masked_view = Float64.(channelview(image_diffused_RGB))
@@ -103,10 +100,9 @@ function imsharpen(
     image_equalized_gray = Gray.(image_equalized)
 
     image_smoothed = imfilter(image_equalized_gray, Kernel.gaussian(smoothing_param))
-    image_smoothed_view = channelview(image_smoothed)
 
     image_sharpened =
-        image_equalized_gray .* (1 + intensity) .+ image_smoothed_view .* (-intensity)
+        image_equalized_gray .* (1 + intensity) .+ image_smoothed.* (-intensity)
     image_sharpened = max.(image_sharpened, 0.0)
     return min.(image_sharpened, 1.0)
 end
