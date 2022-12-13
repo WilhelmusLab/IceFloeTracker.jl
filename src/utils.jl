@@ -5,7 +5,7 @@
 Makes default filename with timestamp.
 
 """
-function make_filename()
+function make_filename()::String
     return "persisted_mask-" * Dates.format(Dates.now(), "yyyy-mm-dd-HHMMSS") * ".png"
 end
 
@@ -17,7 +17,7 @@ Checks `fname` does not exist in current directory; throws an assertion if this 
 # Arguments
 - `fname`: String object or Symbol to a reference to a String representing a path.
 """
-function check_fname(fname::Union{String,Symbol,Nothing}=nothing)
+function check_fname(fname::Union{String,Symbol,Nothing}=nothing)::String
     if fname isa String # then use as filename
         check_name = fname
     elseif fname isa Symbol
@@ -27,7 +27,7 @@ function check_fname(fname::Union{String,Symbol,Nothing}=nothing)
     end
 
     # check name does not exist in wd
-    @assert !isfile(check_name) "$check_name already exists in $(pwd())"
+    isfile(check_name) && error("$check_name already exists in $(pwd())")
     return check_name
 end
 
