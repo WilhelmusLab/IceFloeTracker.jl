@@ -13,6 +13,10 @@ function main(args)
         help = "Fetch source data for ice floe tracking"
         action = :command
 
+        "landmask"
+        help = "generates land mask images"
+        action = :command
+
         "prep"
         help = "Preprocess input images"
         action = :command
@@ -40,6 +44,12 @@ function main(args)
         required = true
     end
 
+    @add_arg_table! settings["landmask"] begin
+    "output"
+    help = "output image directory"
+    required = true
+end
+
     # metadata requirements might change later
     command_common_args = [
         "metadata",
@@ -49,7 +59,7 @@ function main(args)
         "output",
         Dict(:help => "output image directory", :required => true),
     ]
-
+    # add_arg_table!(settings["landmask"], command_common_args...)
     add_arg_table!(settings["prep"], command_common_args...)
     add_arg_table!(settings["seg"], command_common_args...)
     add_arg_table!(settings["fext"], command_common_args...)
