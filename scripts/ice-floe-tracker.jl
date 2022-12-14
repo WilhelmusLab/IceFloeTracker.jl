@@ -45,10 +45,10 @@ function main(args)
     end
 
     @add_arg_table! settings["landmask"] begin
-    "output"
-    help = "output image directory"
-    required = true
-end
+        "output"
+        help = "output image directory"
+        required = true
+    end
 
     # metadata requirements might change later
     command_common_args = [
