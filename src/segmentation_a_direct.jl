@@ -1,26 +1,4 @@
 """
-    remove_landmask(landmask, ice_mask)
-
-Find the pixel indexes that are floating ice rather than soft or land ice. Returns an array of pixel indexes. 
-
-# Arguments
-- `landmask`: bitmatrix landmask for region of interest
-- `ice_mask`: bitmatrix with ones equal to ice, zeros otherwise
-
-"""
-## NOTE(tjd): This function is called in `find_ice_labels.jl`
-function remove_landmask(landmask::BitMatrix, ice_mask::BitMatrix)::Array{Int64}
-    indexes_no_landmask = []
-    land = IceFloeTracker.apply_landmask(ice_mask, landmask)
-    for (idx, val) in enumerate(land)
-        if val != 0
-            push!(indexes_no_landmask, idx)
-        end
-    end
-    return indexes_no_landmask
-end
-
-"""
     kmeans_segmentation()
 
 Apply k-means segmentation to a gray image to isolate a cluster group representing sea ice. Returns a binary image with ice segmented from background.
@@ -96,9 +74,9 @@ function segmentation_A(
 
     segmented_opened_branched = IceFloeTracker.branch(segmented_ice_opened)
 
-    segmented_bridged = .!IceFloeTracker.bridge(segmented_opened_branched)
+    segmented_bridged = IceFloeTracker.bridge(segmented_opened_branched)
 
-    segmented_ice_filled = bwareamaxfilt(.!segmented_bridged)
+    segmented_ice_filled = bwareamaxfilt(segmented_bridged)
     println("Done filling segmented_ice")
 
     diff_matrix = segmented_ice_opened .!= segmented_ice_filled
