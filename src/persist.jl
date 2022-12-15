@@ -20,3 +20,18 @@ macro persist(_img, fname::Union{String,Symbol,Expr,Nothing}=nothing)
         img
     end
 end
+
+macro persist(_img, fname::Union{String,Symbol,Expr,Nothing}, ts::Bool=false)
+    return quote
+        img = $(esc(_img))
+        fname = check_fname($(esc(fname)))
+        ts && (fname = timestamp(fname))
+        @info "Persisting image to file $(fname) in directory $(pwd()).\nTo load the persisted object use `Images.load(img_path)`"
+        Images.save(fname, img)
+        img
+    end
+end
+
+function timestamp(fname::String)::String
+    return fname * "_" * Dates.format(Dates.now(), "yyyy-mm-dd-HHMMSS")
+end
