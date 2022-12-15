@@ -17,7 +17,7 @@ Given an input directory with a landmask file and possibly truecolor images, cre
 - `output`: path to output dir where land-masked truecolor images are saved
 
 """
-function landmask(; input::String, output::String)::T where {T<:AbstractArray{Bool}}
+function landmask(; input::String, output::String)
     landmask_fname = "landmask.tiff"
     @info "Looking for $landmask_fname in $input"
 
