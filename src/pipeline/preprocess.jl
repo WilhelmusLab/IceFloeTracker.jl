@@ -1,8 +1,10 @@
 function check_landmask_path(lmpath::String)::Nothing
     name = basename(lmpath)
     input = dirname(lmpath)
-    !isfile(lmpath) && error("`$(name)` not found in $input. Please ensure a coastline image file named `$name` exists in $input.")
-    nothing
+    !isfile(lmpath) && error(
+        "`$(name)` not found in $input. Please ensure a coastline image file named `$name` exists in $input.",
+    )
+    return nothing
 end
 
 """
@@ -15,11 +17,11 @@ Given an input directory with a landmask file and possibly truecolor images, cre
 - `output`: path to output dir where land-masked truecolor images are saved
 
 """
-function landmask(; input::String, output::String)::T where T<:AbstractArray{Bool}
+function landmask(; input::String, output::String)::T where {T<:AbstractArray{Bool}}
     landmask_fname = "landmask.tiff"
     @info "Looking for $landmask_fname in $input"
-    
-    lmpath = joinpath(input,landmask_fname)
+
+    lmpath = joinpath(input, landmask_fname)
     check_landmask_path(lmpath)
     @info "$landmask_fname found in $input. Creating landmask..."
 
