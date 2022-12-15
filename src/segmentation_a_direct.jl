@@ -1,5 +1,5 @@
 """
-    kmeans_segmentation()
+    kmeans_segmentation(gray_image, ice_labels;)
 
 Apply k-means segmentation to a gray image to isolate a cluster group representing sea ice. Returns a binary image with ice segmented from background.
 
@@ -31,7 +31,7 @@ function kmeans_segmentation(
 end
 
 """
-    segmented_ice_cloudmasking(gray_image, cloudmask, ice_labels)
+    segmented_ice_cloudmasking(gray_image, cloudmask, ice_labels;)
 
 Apply cloudmask to a bitmatrix of segmented ice after kmeans clustering. Returns a bitmatrix with open water/clouds = 0, ice = 1).
 
@@ -40,7 +40,6 @@ Apply cloudmask to a bitmatrix of segmented ice after kmeans clustering. Returns
 - `gray_image`: output image from `ice-water-discrimination.jl` or gray ice floe leads image in `segmentation_f.jl`
 - `cloudmask`: bitmatrix cloudmask for region of interest
 - `ice_labels`: vector if pixel coordinates output from `find_ice_labels.jl`
-
 
 """
 function segmented_ice_cloudmasking(
@@ -52,14 +51,14 @@ function segmented_ice_cloudmasking(
 end
 
 """
-    segmentation_A(gray_image, ice_labels; min_opening_area, fill_range)
+    segmentation_A(segmented_ice_cloudmasked; min_opening_area)
 
 Apply k-means segmentation to a gray image to isolate a cluster group representing sea ice. Returns an image segmented and processed as well as an intermediate files needed for downstream functions.
 
 # Arguments
 
-
-- `min_opening_area`: minimum size of pixels to use during morphoilogical opening
+- `segmented_ice_cloudmask`: bitmatrix with open water/clouds = 0, ice = 1, output from `segmented_ice_cloudmasking()`
+- `min_opening_area`: minimum size of pixels to use during morphological opening
 - `fill_range`: range of values dictating the size of holes to fill
 
 """
