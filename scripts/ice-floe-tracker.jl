@@ -6,7 +6,6 @@ using ArgParse
 using IceFloeTracker
 
 function main(args)
-    # println(args)
     settings = ArgParseSettings()
 
     @add_arg_table! settings begin
