@@ -1,38 +1,23 @@
 """
-    normalize_image(image_sharpened, image_sharpened_gray, landmask, struct_elem)
+    normalize_image(image_sharpened, image_sharpened_gray, landmask)
 
-Adjusts sharpened land-masked image to highlight ice floe feature.
+Adjusts sharpened land-masked image to highlight ice floe features.
 
-Does dilation, opening, and landmasking to `image_sharpened`.
+Does reconstruction and landmasking to `image_sharpened`.
 
 # Arguments
 - `image_sharpened`: sharpened image (output of `imsharpen`)
 - `image_sharpened_gray`: grayscale, landmasked sharpened image (output of `imsharpen_gray(image_sharpened)`)
 - `landmask`: landmask for region of interest
-- `struct_elem`: structuring element for dilation
+
 """
 function normalize_image(
-    image_sharpened::Matrix{Float64},
-    image_sharpened_gray::T,
-    landmask::BitMatrix,
-    struct_elem::Matrix{Bool};
+    image_sharpened::Matrix{Float64}, image_sharpened_gray::T, landmask::BitMatrix;
 )::Matrix{Gray{Float64}} where {T<:AbstractMatrix{Gray{Float64}}}
-    image_dilated = ImageMorphology.dilate(image_sharpened_gray; dims=struct_elem)
-
-    image_opened = ImageMorphology.opening(
-        complement.(image_dilated); dims=complement.(image_sharpened)
+    image_reconstructed = ImageMorphology.opening(
+        complement.(image_sharpened_gray); dims=complement.(image_sharpened)
     )
-    return IceFloeTracker.apply_landmask(image_opened, landmask)
-end
-
-function normalize_image(
-    image_sharpened::Matrix{Float64},
-    image_sharpened_gray::AbstractMatrix{Gray{Float64}},
-    landmask::BitMatrix,
-)::Matrix{Gray{Float64}}
-    return normalize_image(
-        image_sharpened, image_sharpened_gray, landmask, collect(strel_diamond((5, 5)))
-    )
+    return IceFloeTracker.apply_landmask(image_reconstructed, landmask)
 end
 
 """
@@ -48,7 +33,7 @@ See `imsharpen` for a description of the remaining arguments
 function _adjust_histogram(masked_view, nbins, rblocks, cblocks, clip)
     return adjust_histogram(
         masked_view,
-        AdaptiveEqualization(;
+        ImageContrastAdjustment.AdaptiveEqualization(;
             nbins=nbins,
             rblocks=rblocks,
             cblocks=cblocks,
@@ -78,24 +63,27 @@ Sharpen `truecolor_image`.
 """
 function imsharpen(
     truecolor_image,
-    lambda::Real=0.25,
+    landmask_no_dilate::BitMatrix,
+    lambda::Real=0.1,
     kappa::Real=75,
     niters::Int64=3,
     nbins::Int64=255,
-    rblocks::Int64=8,
-    cblocks::Int64=8,
-    clip::Float64=0.8,
+    rblocks::Int64=22,
+    cblocks::Int64=22,
+    clip::Float64=0.87,
     smoothing_param::Int64=10,
     intensity::Float64=2.0,
 )::Matrix{Float64}
-    image_diffused = diffusion(truecolor_image, lambda, kappa, niters)
-    image_diffused_RGB = RGB.(image_diffused)
-    masked_view = Float64.(channelview(image_diffused_RGB))
+    input_image = IceFloeTracker.apply_landmask(truecolor_image, landmask_no_dilate)
+    image_diffused = IceFloeTracker.diffusion(input_image, lambda, kappa, niters)
+    masked_view = Float64.(channelview(image_diffused))
 
     eq = [
         _adjust_histogram(masked_view[i, :, :], nbins, rblocks, cblocks, clip) for i in 1:3
     ]
+
     image_equalized = colorview(RGB, eq...)
+
     image_equalized_gray = Gray.(image_equalized)
 
     image_smoothed = imfilter(image_equalized_gray, Kernel.gaussian(smoothing_param))
