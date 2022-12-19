@@ -5,8 +5,6 @@
     matlab_normalized_img_file = "$(test_data_dir)/matlab_normalized.png"
     matlab_sharpened_file = "$(test_data_dir)/matlab_sharpened.png"
     matlab_diffused_file = "$(test_data_dir)/matlab_diffused.png"
-    # matlab_gammared_file = "$(test_data_dir)/matlab_gammared.png"
-    # matlab_gammagreen_file = "$(test_data_dir)/matlab_gammagreen.png"
     matlab_equalized_file = "$(test_data_dir)/matlab_equalized.png"
     landmask_bitmatrix = convert(BitMatrix, float64.(load(current_landmask_file)))
     landmask_no_dilate = convert(BitMatrix, float64.(load(landmask_no_dilate_file)))
@@ -15,8 +13,6 @@
     matlab_norm_image = float64.(load(matlab_normalized_img_file)[test_region...])
     matlab_sharpened = float64.(load(matlab_sharpened_file))
     matlab_diffused = float64.(load(matlab_diffused_file)[test_region...])
-    # matlab_gammared = float64.(load(matlab_gammared_file)[ice_floe_test_region...])
-    # matlab_gammagreen = float64.(load(matlab_gammagreen_file)[ice_floe_test_region...])
     matlab_equalized = float64.(load(matlab_equalized_file))
 
     println("-------------- Process Image - Diffusion ----------------")
@@ -39,7 +35,7 @@
     println("-------------- Process Image - Equalization ----------------")
 
     ## Equalization
-    masked_view = (channelview(image_diffused))
+    masked_view = (channelview(matlab_diffused))
     eq = [
         IceFloeTracker._adjust_histogram(masked_view[i, :, :], 255, 22, 22, 0.87) for
         i in 1:3
