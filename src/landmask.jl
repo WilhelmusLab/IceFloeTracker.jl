@@ -16,8 +16,8 @@ function create_landmask(
     fill_value_lower::Int=0,
     fill_value_upper::Int=2000,
 )::BitMatrix where {T<:AbstractMatrix}
-    landmask_image_bool = create_landmask_bool(landmask_image)
-    dilated = IceFloeTracker.MorphSE.dilate(landmask_image_bool, struct_elem)
+    landmask_binary = binarize_landmask(landmask_image)
+    dilated = IceFloeTracker.MorphSE.dilate(landmask_binary, struct_elem)
     return ImageMorphology.imfill(.!dilated, (fill_value_lower, fill_value_upper))
 end
 
@@ -26,14 +26,14 @@ function create_landmask(landmask_image)
 end
 
 """
-    create_landmask_bool(landmask_image)
+    binarize_landmask(landmask_image)
 
 Convert a 3-channel RGB land mask image to a 1-channel binary matrix; land = 0, water/ice = 1.
 
 # Arguments
 - `landmask_image`: RGB land mask image from `fetchdata`
 """
-function create_landmask_bool(landmask_image::T)::BitMatrix where {T<:AbstractMatrix}
+function binarize_landmask(landmask_image::T)::BitMatrix where {T<:AbstractMatrix}
     if !(typeof(landmask_image) <: AbstractMatrix{Bool})
         landmask_no_dilate = Gray.(landmask_image) .> 0
     end
@@ -53,23 +53,5 @@ Zero out pixels in land and soft ice regions on truecolor image, return RGB imag
 """
 function apply_landmask(input_image::AbstractMatrix, landmask_binary::BitMatrix)
     image_masked = landmask_binary .* input_image
-    return image_masked
-end
-
-"""
-    apply_landmask_no_dilate(input_image, landmask_no_dilate)
-
-Zero out pixels in land and soft ice regions on truecolor image, return RGB image with zero for all three channels on land/soft ice.
-
-
-# Arguments
-- `input_image`: truecolor RGB image
-- `landmask_no_dilate`: binary landmask with 1=land, 0=water/ice, output from `create_landmask_no_dilate`
-
-"""
-function apply_landmask_no_dilate(
-    input_image::AbstractMatrix, landmask_no_dilate::BitMatrix
-)
-    image_masked = landmask_no_dilate .* input_image
     return image_masked
 end

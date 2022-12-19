@@ -52,7 +52,9 @@ function diffusion(
         "Scale-space and edge detection using anisotropic diffusion." 
         IEEE Transactions on Pattern Analysis and Machine Intelligence (PAMI), 1990.
     =#
-    @assert 0 <= λ && λ <= 0.25
+    if !(0 <= λ && λ <= 0.25)
+        error("Lambda must be between zero and 0.25")
+    end
     @inline function g(norm∇I)
         coef = (norm∇I / K)
         denom = (T(1) .+ coef ⊙ coef)

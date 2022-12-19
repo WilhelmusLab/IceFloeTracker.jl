@@ -18,10 +18,10 @@
     @test landmask == IceFloeTracker.create_landmask(lm_image)
 
     # Generate testing files
-    @time landmask_no_dilate = IceFloeTracker.create_landmask_bool(lm_image)
+    @time landmask_no_dilate = IceFloeTracker.binarize_landmask(lm_image)
 
     @time masked_image = IceFloeTracker.apply_landmask(test_image, landmask)
-    @time masked_image_no_dilate = IceFloeTracker.apply_landmask_no_dilate(
+    @time masked_image_no_dilate = IceFloeTracker.apply_landmask(
         test_image, .!landmask_no_dilate
     )
 
