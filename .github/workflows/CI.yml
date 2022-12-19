@@ -39,7 +39,7 @@ jobs:
       - uses: julia-actions/cache@v1
       - run: julia -e 'using Pkg; Pkg.Registry.add(RegistrySpec(url = "https://github.com/HolyLab/HolyLabRegistry.git"))'
         shell: bash
-      - uses: julia-actions/julia-buildpkg@v1
+      - uses: julia-actions/julia-buildpkg@v1.2.0
         env:
           PYTHON: python
       - uses: julia-actions/julia-runtest@v1
