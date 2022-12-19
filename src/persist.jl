@@ -18,8 +18,6 @@ macro persist(_img, fname::Union{String,Symbol,Expr,Nothing}=nothing)
     return quote
         img = $(esc(_img))
         fname = check_fname($(esc(fname)))
-        # dir = dirname(fname)
-        # (dir == "") && (dir = pwd()) # if no dir, make it pwd()
         @info "Persisting image to $(fname).\nTo load the persisted object use `Images.load(img_path)`"
         Images.save(fname, img)
         img
