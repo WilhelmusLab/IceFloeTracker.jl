@@ -44,3 +44,25 @@ function apply_landmask(input_image::AbstractMatrix, landmask_binary::BitMatrix)
     image_masked = landmask_binary .* input_image
     return image_masked
 end
+
+"""
+    remove_landmask(landmask, ice_mask)
+
+Find the pixel indexes that are floating ice rather than soft or land ice. Returns an array of pixel indexes. 
+
+# Arguments
+- `landmask`: bitmatrix landmask for region of interest
+- `ice_mask`: bitmatrix with ones equal to ice, zeros otherwise
+
+"""
+## NOTE(tjd): This function is called in `find_ice_labels.jl`
+function remove_landmask(landmask::BitMatrix, ice_mask::BitMatrix)::Array{Int64}
+    indexes_no_landmask = []
+    land = IceFloeTracker.apply_landmask(ice_mask, landmask)
+    for (idx, val) in enumerate(land)
+        if val != 0
+            push!(indexes_no_landmask, idx)
+        end
+    end
+    return indexes_no_landmask
+end

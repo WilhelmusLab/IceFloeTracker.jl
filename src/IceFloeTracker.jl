@@ -14,8 +14,9 @@ using DSP
 using RegisterMismatch
 using RegisterQD
 using StaticArrays
+using OffsetArrays: centered
 
-export readdlm, padnhood, bridge, branch
+export readdlm, padnhood, bridge, branch, @persist
 
 include("utils.jl")
 include("persist.jl")
@@ -162,5 +163,9 @@ module MorphSE
     include("morphSE/extreme_filter.jl")
     include("morphSE/utils.jl")
     include("morphSE/dilate.jl")
+    include("morphSE/erode.jl")
+    include("morphSE/opening.jl")
+    include("morphSE/closing.jl")
+    include("morphSE/bothat.jl")
 end
 end

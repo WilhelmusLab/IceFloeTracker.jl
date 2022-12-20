@@ -5,9 +5,42 @@
 Makes default filename with timestamp.
 
 """
-function make_filename()
-    return "persisted_mask-" * Dates.format(Dates.now(), "yyyy-mm-dd-HHMMSS") * ".png"
+function make_filename()::String
+    return "persisted_img-" * Dates.format(Dates.now(), "yyyy-mm-dd-HHMMSS") * ".png"
 end
+
+function make_filename(fname::T, ext::T=".png")::T where T<:AbstractString
+    return timestamp(fname) * ext
+end
+
+"""
+    timestamp(fname)
+
+Attach timestamp to `fname`.
+"""
+function timestamp(fname::String)
+    ts = Dates.format(Dates.now(), "yyyy-mm-dd-HHMMSS")
+    return fname * "-" * ts   
+end
+
+"""
+    fname_ext_split(fname)
+
+Split `"fname.ext"` into `"fname"` and `"ext"`.
+"""
+function fname_ext_split(fname::String)
+    (name=fname[1:end-4],ext=fname[end-2:end])    
+end
+
+"""
+    fname_ext_splice(fname, ext)
+
+Join `"fname"` and `"ext"` with `'.'`.
+"""
+function fname_ext_splice(fname::String, ext::String)
+    fname * '.' * ext
+end
+
 
 """
     check_fname(fname)
@@ -17,7 +50,7 @@ Checks `fname` does not exist in current directory; throws an assertion if this 
 # Arguments
 - `fname`: String object or Symbol to a reference to a String representing a path.
 """
-function check_fname(fname::Union{String,Symbol,Nothing}=nothing)
+function check_fname(fname::Union{String,Symbol,Nothing}=nothing)::String
     if fname isa String # then use as filename
         check_name = fname
     elseif fname isa Symbol
@@ -27,7 +60,7 @@ function check_fname(fname::Union{String,Symbol,Nothing}=nothing)
     end
 
     # check name does not exist in wd
-    @assert !isfile(check_name) "$check_name already exists in $(pwd())"
+    isfile(check_name) && error("$check_name already exists in $(pwd())")
     return check_name
 end
 

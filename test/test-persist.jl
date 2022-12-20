@@ -1,49 +1,59 @@
 @testset "persist.jl" begin
     println("-------------------------------------------------")
     println("---------- Persist Image Tests ------------")
-    img_path = "/landmask.tiff"
+
     outimage_path = "outimage1.tiff"
-    img = Images.load.(test_data_dir * img_path)
+    img = ones(3,3)
 
     # Test filename in variable
-    IceFloeTracker.@persist img outimage_path
+    @persist img outimage_path
     @test isfile(outimage_path)
 
     # Test filename as string literal
-    IceFloeTracker.@persist img "outimage2.tiff"
+    @persist img "outimage2.tiff"
     @test isfile("outimage2.tiff")
 
-    # Test no-filename call. Default filename startswith 'persisted_mask-' 
+    # Test no-filename call. Default filename startswith 'persisted_img-' 
     # First clear all files that start with this prefix, if any
-    [rm(f) for f in readdir() if startswith(f, "persisted_mask-")]
-    @assert length([f for f in readdir() if startswith(f, "persisted_mask-")]) == 0
-
-    IceFloeTracker.@persist img
-    @test length([f for f in readdir() if startswith(f, "persisted_mask-")]) == 1
+    prefix = "persisted_img-"
+    [rm(f) for f in readdir() if startswith(f, prefix)]
+    
+    @persist img
+    @test length([f for f in readdir() if startswith(f, prefix)]) == 1
 
     # clean up - part 1!
     rm(outimage_path)
     rm("outimage2.tiff")
-
+    [rm(f) for f in readdir() if startswith(f, prefix)]
+    
     # Part 2
-    IceFloeTracker.@persist identity(img) outimage_path
-    IceFloeTracker.@persist identity(img) "outimage2.tiff"
-    IceFloeTracker.@persist identity(img) # no file name given
+    # Test call expressions
+    @persist identity(img) outimage_path
+    @persist identity(img) "outimage2.tiff"
+    @persist identity(img) # no file name given
     @test isfile(outimage_path)
     @test isfile("outimage2.tiff")
-    @test length([f for f in readdir() if startswith(f, "persisted_mask-")]) == 2
+    @test length([f for f in readdir() if startswith(f, prefix)]) == 1
 
     # Part 3
     # Test filename as Expr, such as "$(dir)$(fname).$(ext)"
-    dir = "./"
+    
     fname = "persistedimg"
     ext = "png"
-    IceFloeTracker.@persist img "$(dir)$(fname).$(ext)"
-    @test isfile("$(dir)$(fname).$(ext)")
+    @persist img "$(fname).$(ext)"
+    @test isfile("$(fname).$(ext)")
+
+    # Part 4
+    # Test timestamp
+    
+    [rm(f) for f in readdir() if startswith(f, "foo")] # clear "foo*" files
+
+    # Persist twice the same img with different ts
+    @persist img "foo.png" true
+    foos = [f for f in readdir() if startswith(f, "foo")]
+    @test length(foos) == 1
+    @test length(foos[1]) == 25 # ts adds 19 chars 
 
     # Clean up
-    rm(outimage_path)
-    rm("outimage2.tiff")
-    rm("$(dir)$(fname).$(ext)")
-    [rm(f) for f in readdir() if startswith(f, "persisted_mask-")]
+    [rm(f) for f in readdir() if endswith(f, "png") || endswith(f, "tiff") ]
 end
