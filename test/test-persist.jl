@@ -3,7 +3,7 @@
     println("---------- Persist Image Tests ------------")
 
     outimage_path = "outimage1.tiff"
-    img = ones(3,3)
+    img = ones(3, 3)
 
     # Test filename in variable
     @persist img outimage_path
@@ -17,7 +17,7 @@
     # First clear all files that start with this prefix, if any
     prefix = "persisted_img-"
     [rm(f) for f in readdir() if startswith(f, prefix)]
-    
+
     @persist img
     @test length([f for f in readdir() if startswith(f, prefix)]) == 1
 
@@ -25,7 +25,7 @@
     rm(outimage_path)
     rm("outimage2.tiff")
     [rm(f) for f in readdir() if startswith(f, prefix)]
-    
+
     # Part 2
     # Test call expressions
     @persist identity(img) outimage_path
@@ -37,7 +37,7 @@
 
     # Part 3
     # Test filename as Expr, such as "$(dir)$(fname).$(ext)"
-    
+
     fname = "persistedimg"
     ext = "png"
     @persist img "$(fname).$(ext)"
@@ -45,7 +45,7 @@
 
     # Part 4
     # Test timestamp
-    
+
     [rm(f) for f in readdir() if startswith(f, "foo")] # clear "foo*" files
 
     # Persist twice the same img with different ts
@@ -55,5 +55,5 @@
     @test length(foos[1]) == 25 # ts adds 19 chars 
 
     # Clean up
-    [rm(f) for f in readdir() if endswith(f, "png") || endswith(f, "tiff") ]
+    [rm(f) for f in readdir() if endswith(f, "png") || endswith(f, "tiff")]
 end

@@ -9,7 +9,7 @@ function make_filename()::String
     return "persisted_img-" * Dates.format(Dates.now(), "yyyy-mm-dd-HHMMSS") * ".png"
 end
 
-function make_filename(fname::T, ext::T=".png")::T where T<:AbstractString
+function make_filename(fname::T, ext::T=".png")::T where {T<:AbstractString}
     return timestamp(fname) * ext
 end
 
@@ -20,7 +20,7 @@ Attach timestamp to `fname`.
 """
 function timestamp(fname::String)
     ts = Dates.format(Dates.now(), "yyyy-mm-dd-HHMMSS")
-    return fname * "-" * ts   
+    return fname * "-" * ts
 end
 
 """
@@ -29,7 +29,7 @@ end
 Split `"fname.ext"` into `"fname"` and `"ext"`.
 """
 function fname_ext_split(fname::String)
-    (name=fname[1:end-4],ext=fname[end-2:end])    
+    return (name=fname[1:(end - 4)], ext=fname[(end - 2):end])
 end
 
 """
@@ -38,9 +38,8 @@ end
 Join `"fname"` and `"ext"` with `'.'`.
 """
 function fname_ext_splice(fname::String, ext::String)
-    fname * '.' * ext
+    return fname * '.' * ext
 end
-
 
 """
     check_fname(fname)
