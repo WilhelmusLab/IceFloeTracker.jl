@@ -8,17 +8,13 @@
     cloudmask = IceFloeTracker.create_cloudmask(reflectance_image)
     matlab_ice_water_discrim =
         float64.(load("$(test_data_dir)/matlab_ice_water_discrim.png"))
-    matlab_sharpened =
-        float64.(load("$(test_data_dir)/matlab_sharpened.png"))
 
-    
     image_sharpened = IceFloeTracker.imsharpen(input_image, landmask_no_dilate)
-    ice_water_discrim = 
-    IceFloeTracker.discriminate_ice_water(
-        reflectance_image, 
-        image_sharpened, landmask, cloudmask)
+    ice_water_discrim = IceFloeTracker.discriminate_ice_water(
+        reflectance_image, image_sharpened, landmask, cloudmask
+    )
     @test (@test_approx_eq_sigma_eps ice_water_discrim matlab_ice_water_discrim [0, 0] 0.065) ==
-    nothing
+        nothing
 
     # persist generated image
     ice_water_discrim_filename =
