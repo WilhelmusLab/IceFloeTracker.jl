@@ -13,8 +13,8 @@ end
 Given an input directory with a landmask file and possibly truecolor images, create a land/soft ice mask. The resulting images are saved to the snakemake output directory. 
 
 # Arguments
-- `input`: path to image dir containing truecolor and landmask images
-- `output`: path to output dir where land-masked truecolor images are saved
+- `input`: path to image dir containing truecolor and landmask source images
+- `output`: path to output dir where land-masked truecolor images and the generated binary land mask are saved
 
 """
 function landmask(; input::String, output::String)
@@ -28,6 +28,6 @@ function landmask(; input::String, output::String)
     img = load(lmpath)
     mkpath(output)
     out = @persist create_landmask(img) joinpath(output, "generated_landmask.png")
-    @info "Landmask created succefully."
+    @info "Landmask created succesfully."
     return out
 end
