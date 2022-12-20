@@ -16,7 +16,7 @@ using RegisterQD
 using StaticArrays
 using OffsetArrays: centered
 
-export readdlm, padnhood, bridge, branch
+export readdlm, padnhood, bridge, branch, @persist
 
 include("utils.jl")
 include("persist.jl")
