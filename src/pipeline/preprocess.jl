@@ -31,3 +31,15 @@ function landmask(; input::String, output::String)
     @info "Landmask created succesfully."
     return out
 end
+
+function landmask_truecolor(lm, input::String, output::String)::Nothing
+    # find truecolor imgs in input dir
+    tc = sort([img for img in readdir(input) if contains(img, "truecolor")])
+    total_tc = length(tc)
+    @info "Found $(total_tc) truecolor images in $input. Landmasking true color images..."
+    @simd for img in tc
+        fname = joinpath(output, img*"-landmasked.png")
+        @persist apply_landmask(load(img), lm) fname
+    end
+    return nothing
+end
