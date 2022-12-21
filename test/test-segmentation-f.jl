@@ -12,9 +12,8 @@
         Int64.(
             vec(DelimitedFiles.readdlm("$(test_data_dir)/ice_labels_floe_region.csv", ','))
         )
-    matlab_isolated_floes = convert(
-        BitMatrix, load("$(test_data_dir)/matlab_isolated_floes.png")
-    )
+    matlab_isolated_floes =
+        float64.(load("$(test_data_dir)/matlab_isolated_floes.png")) .> 0.5
 
     ## Run function with Matlab inputs
 
@@ -35,6 +34,6 @@
 
     @test typeof(isolated_floes) == typeof(matlab_isolated_floes)
     @test test_similarity(
-        isolated_floes, matlab_isolated_floes[ice_floe_test_region...], 0.07
+        isolated_floes, matlab_isolated_floes[ice_floe_test_region...], 0.033
     )
 end
