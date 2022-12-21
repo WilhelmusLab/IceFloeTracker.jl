@@ -10,7 +10,7 @@ end
 """
     landmask(; input, output)
 
-Given an input directory with a landmask file and possibly truecolor images, create a land/soft ice mask. The resulting images are saved to the snakemake output directory. 
+Given an input directory with a landmask file and possibly truecolor images, create a land/soft ice mask. The resulting images are saved to the snakemake output directory. Returns the landmkask object. 
 
 # Arguments
 - `input`: path to image dir containing truecolor and landmask source images
@@ -32,17 +32,23 @@ function landmask(; input::String, output::String)
     return out
 end
 
-function cloudmask_reflectance(input::String, output::String)::Nothing
+function cloudmask_reflectance(input::String, output::String)::Vector{BitMatrix}
     # find reflectance imgs in input dir
     ref = sort([img for img in readdir(input) if contains(img, "reflectance")])
-    total_ref = length(tc)
+    total_ref = length(ref)
     @info "Found $(total_ref) reflectance images in $input. 
     Cloudmasking false color images..."
-    @simd for img in ref
-        ref_img = load(img)
-        cloudmask = create_cloudmask(ref_img)
-        fname = joinpath(output, img*"-cloudmasked.png")
-        @persist apply_cloudmask(ref_img, cloudmask) fname
+
+    # Preallocate container for the cloudmasks
+    ref_img = IceFloeTracker.float64.(IceFloeTracker.load(joinpath(input, ref[1]))) # read in the first one to retrieve size
+    sz = size(ref_img)
+    cloudmasks = [BitMatrix(undef, sz) for _ in 1:total_ref]
+
+    # Do the first one because it's loaded already
+    cloudmasks[1] = IceFloeTracker.create_cloudmask(ref_img)
+    # and now the rest
+    for i in 2:total_ref
+        cloudmasks[i] = IceFloeTracker.create_cloudmask(ref_img)
     end
-    return nothing
+    return cloudmasks
 end
