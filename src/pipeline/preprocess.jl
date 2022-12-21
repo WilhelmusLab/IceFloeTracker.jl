@@ -31,3 +31,18 @@ function landmask(; input::String, output::String)
     @info "Landmask created succesfully."
     return out
 end
+
+function cloudmask_reflectance(input::String, output::String)::Nothing
+    # find reflectance imgs in input dir
+    ref = sort([img for img in readdir(input) if contains(img, "reflectance")])
+    total_ref = length(tc)
+    @info "Found $(total_ref) reflectance images in $input. 
+    Cloudmasking false color images..."
+    @simd for img in ref
+        ref_img = load(img)
+        cloudmask = create_cloudmask(ref_img)
+        fname = joinpath(output, img*"-cloudmasked.png")
+        @persist apply_cloudmask(ref_img, cloudmask) fname
+    end
+    return nothing
+end
