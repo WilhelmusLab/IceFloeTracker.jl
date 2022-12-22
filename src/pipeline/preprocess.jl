@@ -32,7 +32,7 @@ function landmask(; input::String, output::String)
     return out
 end
 
-function cloudmask_reflectance(input::String, output::String)::Vector{BitMatrix}
+function cloudmask_reflectance(; input::String, output::String)::Vector{BitMatrix}
     # find reflectance imgs in input dir
     ref = sort([img for img in readdir(input) if contains(img, "reflectance")])
     total_ref = length(ref)
@@ -48,7 +48,8 @@ function cloudmask_reflectance(input::String, output::String)::Vector{BitMatrix}
     cloudmasks[1] = IceFloeTracker.create_cloudmask(ref_img)
     # and now the rest
     for i in 2:total_ref
-        cloudmasks[i] = IceFloeTracker.create_cloudmask(ref_img)
+        img = IceFloeTracker.float64.(IceFloeTracker.load(joinpath(input, ref[i])))
+        cloudmasks[i] = IceFloeTracker.create_cloudmask(img)
     end
     return cloudmasks
 end
