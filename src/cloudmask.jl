@@ -20,7 +20,7 @@ function create_cloudmask(
     ratio_lower::Float64=0.0,
     ratio_upper::Float64=0.75,
 )::BitMatrix
-    # Setting thresholds"
+    # Setting thresholds
     ref_view = channelview(ref_image)
     ref_image_b7 = ref_view[1, :, :]
     clouds_view = ref_image_b7 .> prelim_threshold
@@ -35,7 +35,7 @@ function create_cloudmask(
     b2_masked = mask_b7b2 .* ref_view[2, :, :]
     cloud_ice = Float64.(b7_masked) ./ Float64.(b2_masked)
     mask_cloud_ice = @. cloud_ice >= ratio_lower .&& cloud_ice < ratio_upper
-    # Creating final cloudmask"
+    # Creating final cloudmask
     cloudmask = mask_cloud_ice .|| .!clouds_view
     return cloudmask
 end
