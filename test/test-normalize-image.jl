@@ -1,7 +1,7 @@
 @testset "Normalize Image" begin
     println("-------------------------------------------------")
     println("---------- Create Normalization Test ------------")
-    struct_elem2 = collect(strel_diamond((5,5))) #original matlab structuring element -  a disk-shaped kernel with radius of 2 px
+    struct_elem2 = collect(strel_diamond((5, 5))) #original matlab structuring element -  a disk-shaped kernel with radius of 2 px
     matlab_normalized_img_file = "$(test_data_dir)/matlab_normalized.tiff"
     matlab_sharpened_file = "$(test_data_dir)/matlab_sharpened.png"
     landmask = float64.(load(current_landmask_file))
@@ -12,14 +12,20 @@
 
     println("-------------- Process Image ----------------")
     @time sharpenedimg = IceFloeTracker.imsharpen(input_image)
-    @time image_sharpened_gray = IceFloeTracker.imsharpen_gray(sharpenedimg, landmask_bitmatrix)
-    @time normalized_image = IceFloeTracker.normalize_image(sharpenedimg, image_sharpened_gray, landmask_bitmatrix, struct_elem2)
+    @time image_sharpened_gray = IceFloeTracker.imsharpen_gray(
+        sharpenedimg, landmask_bitmatrix
+    )
+    @time normalized_image = IceFloeTracker.normalize_image(
+        sharpenedimg, image_sharpened_gray, landmask_bitmatrix, struct_elem2
+    )
 
     # test method with default se
-    @test IceFloeTracker.normalize_image(sharpenedimg, image_sharpened_gray, landmask_bitmatrix) == normalized_image
-    
+    @test IceFloeTracker.normalize_image(
+        sharpenedimg, image_sharpened_gray, landmask_bitmatrix
+    ) == normalized_image
+
     # test for percent difference in normalized images
-    @test (@test_approx_eq_sigma_eps normalized_image matlab_norm_image [0, 0] 0.058) ==
+    @test (@test_approx_eq_sigma_eps normalized_image matlab_norm_image [0, 0] 0.045) ==
         nothing
 
     @test (@test_approx_eq_sigma_eps image_sharpened_gray[ice_floe_test_region...] matlab_sharpened [

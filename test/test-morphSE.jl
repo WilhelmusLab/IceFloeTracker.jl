@@ -17,7 +17,13 @@
     erode_withse_exp = readdlm(joinpath(path, "erode_withse1_exp.csv"), ',', Bool)
     bothat_withse_exp = readdlm(joinpath(path, "bothat_withse1_exp.csv"), ',', Bool)
     open_withse_exp = readdlm(joinpath(path, "open_withse1_exp.csv"), ',', Bool)
+    reconstruct_exp = readdlm(joinpath(path, "reconstruct_exp.csv"), ',', Int64)
+    matrix_A = readdlm(joinpath(path, "mat_a.csv"), ',', Int64)
+    matrix_B = readdlm(joinpath(path, "mat_b.csv"), ',', Int64)
     @test open_withse_exp == IceFloeTracker.MorphSE.opening(A, se)
     @test erode_withse_exp == IceFloeTracker.MorphSE.erode(A, se)
     @test bothat_withse_exp == IceFloeTracker.MorphSE.bothat(A, se)
+    @test reconstruct_exp == IceFloeTracker.MorphSE.mreconstruct(
+        IceFloeTracker.MorphSE.dilate, matrix_B, matrix_A
+    )
 end
