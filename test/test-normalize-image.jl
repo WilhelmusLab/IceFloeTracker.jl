@@ -74,7 +74,7 @@
     )
 
     #test for percent difference in normalized images
-    @test (@test_approx_eq_sigma_eps normalized_image matlab_norm_image [0, 0] 0.056) ==
+    @test (@test_approx_eq_sigma_eps normalized_image matlab_norm_image [0, 0] 0.068) ==
         nothing
 
     normalized_image_filename =

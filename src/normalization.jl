@@ -14,9 +14,7 @@ Does reconstruction and landmasking to `image_sharpened`.
 function normalize_image(
     image_sharpened::Matrix{Float64}, image_sharpened_gray::T, landmask::BitMatrix;
 )::Matrix{Gray{Float64}} where {T<:AbstractMatrix{Gray{Float64}}}
-    image_reconstructed = ImageMorphology.opening(
-        complement.(image_sharpened_gray); dims=complement.(image_sharpened)
-    )
+    image_reconstructed = ImageMorphology.dilate(complement.(image_sharpened_gray), dims=complement.(image_sharpened))
     return IceFloeTracker.apply_landmask(image_reconstructed, landmask)
 end
 
