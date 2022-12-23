@@ -1,7 +1,7 @@
 @testset "Normalize Image" begin
     println("-------------------------------------------------")
     println("---------- Create Normalization Test ------------")
-
+    struct_elem2 = collect(strel_diamond((5, 5))) #original matlab structuring element -  a disk-shaped kernel with radius of 2 px
     matlab_normalized_img_file = "$(test_data_dir)/matlab_normalized.png"
     matlab_sharpened_file = "$(test_data_dir)/matlab_sharpened.png"
     matlab_diffused_file = "$(test_data_dir)/matlab_diffused.png"
@@ -70,11 +70,11 @@
 
     ## Normalization
     @time normalized_image = IceFloeTracker.normalize_image(
-        sharpenedimg, image_sharpened_gray, landmask_bitmatrix
+        sharpenedimg, image_sharpened_gray, landmask_bitmatrix, struct_elem2
     )
 
     #test for percent difference in normalized images
-    @test (@test_approx_eq_sigma_eps normalized_image matlab_norm_image [0, 0] 0.068) ==
+    @test (@test_approx_eq_sigma_eps normalized_image matlab_norm_image [0, 0] 0.048) ==
         nothing
 
     normalized_image_filename =

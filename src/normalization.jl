@@ -1,5 +1,5 @@
 """
-    normalize_image(image_sharpened, image_sharpened_gray, landmask)
+    normalize_image(image_sharpened, image_sharpened_gray, landmask, struct_elem;)
 
 Adjusts sharpened land-masked image to highlight ice floe features.
 
@@ -9,10 +9,11 @@ Does reconstruction and landmasking to `image_sharpened`.
 - `image_sharpened`: sharpened image (output of `imsharpen`)
 - `image_sharpened_gray`: grayscale, landmasked sharpened image (output of `imsharpen_gray(image_sharpened)`)
 - `landmask`: landmask for region of interest
+- `struct_elem`: structuring element for dilation
 
 """
 function normalize_image(
-    image_sharpened::Matrix{Float64}, image_sharpened_gray::T, landmask::BitMatrix;
+    image_sharpened::Matrix{Float64}, image_sharpened_gray::T, landmask::BitMatrix, struct_elem::Matrix{Bool};
 )::Matrix{Gray{Float64}} where {T<:AbstractMatrix{Gray{Float64}}}
     image_dilated = MorphSE.dilate(image_sharpened_gray, struct_elem)
 
@@ -24,7 +25,7 @@ end
 
 function normalize_image(
     image_sharpened::Matrix{Float64},
-    image_sharpened_gray::AbstractMatrix{Gray{Float64}},
+    image_sharpened_gray::Matrix{Gray{Float64}},
     landmask::BitMatrix,
 )::Matrix{Gray{Float64}}
     return normalize_image(
@@ -80,9 +81,9 @@ function imsharpen(
     kappa::Real=75,
     niters::Int64=3,
     nbins::Int64=255,
-    rblocks::Int64=22,
-    cblocks::Int64=22,
-    clip::Float64=0.87,
+    rblocks::Int64=10,
+    cblocks::Int64=10,
+    clip::Float64=0.86,
     smoothing_param::Int64=10,
     intensity::Float64=2.0,
 )::Matrix{Float64}
