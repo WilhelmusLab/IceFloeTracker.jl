@@ -10,41 +10,48 @@ function main(args)
 
     @add_arg_table! settings begin
         "fetchdata"
-        help = "Fetches source data for ice floe tracking"
+        help = "Fetch source data for ice floe tracking"
         action = :command
 
         "landmask"
-        help = "generates land mask images"
+        help = "Generate land mask images"
         action = :command
 
         "cloudmask"
-        help = "generates cloud mask images"
+        help = "Generate cloud mask images"
         action = :command
     end
 
     @add_arg_table! settings["fetchdata"] begin
         "output"
-        help = "output image directory"
+        help = "Output image directory"
         required = true
     end
 
+    landmask_args = [
+        "input",
+        Dict(:help => "Input image directory", :required => true),
+        "output",
+        Dict(:help => "Output image directory", :required => true),
+    ]
+
     command_common_args = [
         "metadata",
-        Dict(:help => "image metadata file", :required => true),
+        Dict(:help => "Image metadata file", :required => true),
         "input",
-        Dict(:help => "input image directory", :required => true),
+        Dict(:help => "Input image directory", :required => true),
         "output",
-        Dict(:help => "output image directory", :required => true),
+        Dict(:help => "Output image directory", :required => true),
     ]
-    add_arg_table!(settings["landmask"], command_common_args...)
+
+    add_arg_table!(settings["landmask"], landmask_args...)
     add_arg_table!(settings["cloudmask"], command_common_args...)
 
     parsed_args = parse_args(args, settings; as_symbols=true)
 
     command = parsed_args[:_COMMAND_]
     command_args = parsed_args[command]
-    command_func = getfield(IceFloeTracker, Symbol(parsed_args[:_COMMAND_]))
-
+    command_func = getfield(IceFloeTracker, Symbol(command))
     command_func(; command_args...)
     return nothing
 end

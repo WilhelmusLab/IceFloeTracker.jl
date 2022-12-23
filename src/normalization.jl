@@ -14,10 +14,22 @@ Does reconstruction and landmasking to `image_sharpened`.
 function normalize_image(
     image_sharpened::Matrix{Float64}, image_sharpened_gray::T, landmask::BitMatrix;
 )::Matrix{Gray{Float64}} where {T<:AbstractMatrix{Gray{Float64}}}
-    image_reconstructed = ImageMorphology.dilate(
-        complement.(image_sharpened_gray); dims=complement.(image_sharpened)
+    image_dilated = MorphSE.dilate(image_sharpened_gray, struct_elem)
+
+    image_reconstructed = MorphSE.mreconstruct(
+        MorphSE.dilate, complement.(image_dilated), complement.(image_sharpened)
     )
     return IceFloeTracker.apply_landmask(image_reconstructed, landmask)
+end
+
+function normalize_image(
+    image_sharpened::Matrix{Float64},
+    image_sharpened_gray::AbstractMatrix{Gray{Float64}},
+    landmask::BitMatrix,
+)::Matrix{Gray{Float64}}
+    return normalize_image(
+        image_sharpened, image_sharpened_gray, landmask, collect(strel_diamond((5, 5)))
+    )
 end
 
 """
