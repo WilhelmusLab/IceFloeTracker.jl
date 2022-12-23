@@ -13,7 +13,10 @@ Does reconstruction and landmasking to `image_sharpened`.
 
 """
 function normalize_image(
-    image_sharpened::Matrix{Float64}, image_sharpened_gray::T, landmask::BitMatrix, struct_elem::Matrix{Bool};
+    image_sharpened::Matrix{Float64},
+    image_sharpened_gray::T,
+    landmask::BitMatrix,
+    struct_elem::Matrix{Bool};
 )::Matrix{Gray{Float64}} where {T<:AbstractMatrix{Gray{Float64}}}
     image_dilated = MorphSE.dilate(image_sharpened_gray, struct_elem)
 

@@ -57,7 +57,7 @@ function discriminate_ice_water(
     clouds_channel = IceFloeTracker.create_clouds_channel(cloudmask_bitmatrix, reflectance_image)
     reflectance_image_band7 = channelview(reflectance_image)[1,:,:]
     image_sharpened_gray =  IceFloeTracker.imsharpen_gray(image_sharpened, landmask_bitmatrix)
-    normalized_image = IceFloeTracker.normalize_image(image_sharpened, image_sharpened_gray, landmask_bitmatrix)
+    normalized_image = IceFloeTracker.normalize_image(image_sharpened, image_sharpened_gray, landmask_bitmatrix, collect(strel_diamond((5, 5))))
     
     # first define all of the image variations
     image_clouds = IceFloeTracker.apply_landmask(clouds_channel, landmask_bitmatrix) # output during cloudmask apply, landmasked 
