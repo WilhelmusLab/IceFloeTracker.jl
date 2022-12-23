@@ -133,6 +133,7 @@ module MorphSE
     using LoopVectorization
     using OffsetArrays
     using TiledIteration: EdgeIterator
+    using DataStructures
     include("morphSE/StructuringElements.jl")
     using .StructuringElements
     include("morphSE/extreme_filter.jl")
@@ -142,5 +143,6 @@ module MorphSE
     include("morphSE/opening.jl")
     include("morphSE/closing.jl")
     include("morphSE/bothat.jl")
+    include("morphSE/mreconstruct.jl")
 end
 end

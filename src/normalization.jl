@@ -19,8 +19,8 @@ function normalize_image(
 )::Matrix{Gray{Float64}} where {T<:AbstractMatrix{Gray{Float64}}}
     image_dilated = ImageMorphology.dilate(image_sharpened_gray, struct_elem)
 
-    image_opened = ImageMorphology.opening(
-        complement.(image_dilated), complement.(image_sharpened)
+    image_opened = MorphSE.mreconstruct(
+        MorphSE.dilate, complement.(image_dilated), complement.(image_sharpened)
     )
     return IceFloeTracker.apply_landmask(image_opened, landmask)
 end
@@ -29,8 +29,10 @@ function normalize_image(
     image_sharpened::Matrix{Float64},
     image_sharpened_gray::AbstractMatrix{Gray{Float64}},
     landmask::BitMatrix,
-    )::Matrix{Gray{Float64}}
-    return normalize_image(image_sharpened, image_sharpened_gray, landmask,  collect(strel_diamond((5,5))))
+)::Matrix{Gray{Float64}}
+    return normalize_image(
+        image_sharpened, image_sharpened_gray, landmask, collect(strel_diamond((5, 5)))
+    )
 end
 
 """
