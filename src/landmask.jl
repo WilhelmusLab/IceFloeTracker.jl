@@ -4,7 +4,7 @@
 Convert a 3-channel RGB land mask image to a 1-channel binary matrix, including a buffer to extend the land over any soft ice regions; land = 0, water/ice = 1.
 
 # Arguments
-- `landmask_image`: land mask image
+- `landmask_image`: RGB land mask image from `fetchdata`
 - `struct_elem`: structuring element for dilation (optional)
 - `fill_value_lower`: fill holes having at least these many pixels (optional)
 - `fill_value_upper`: fill holes having at most these many pixels (optional)
@@ -16,17 +16,28 @@ function create_landmask(
     fill_value_lower::Int=0,
     fill_value_upper::Int=2000,
 )::BitMatrix where {T<:AbstractMatrix}
-
-    # binarize if not Boolean
-    if !(typeof(landmask_image) <: AbstractMatrix{Bool})
-        landmask_image = Gray.(landmask_image) .> 0
-    end
-    dilated = IceFloeTracker.MorphSE.dilate(landmask_image, struct_elem)
+    landmask_binary = binarize_landmask(landmask_image)
+    dilated = IceFloeTracker.MorphSE.dilate(landmask_binary, struct_elem)
     return ImageMorphology.imfill(.!dilated, (fill_value_lower, fill_value_upper))
 end
 
 function create_landmask(landmask_image)
     return create_landmask(landmask_image, make_landmask_se())
+end
+
+"""
+    binarize_landmask(landmask_image)
+
+Convert a 3-channel RGB land mask image to a 1-channel binary matrix; land = 0, water/ice = 1.
+
+# Arguments
+- `landmask_image`: RGB land mask image from `fetchdata`
+"""
+function binarize_landmask(landmask_image::T)::BitMatrix where {T<:AbstractMatrix}
+    if !(typeof(landmask_image) <: AbstractMatrix{Bool})
+        landmask_no_dilate = Gray.(landmask_image) .> 0
+    end
+    return landmask_no_dilate
 end
 
 """

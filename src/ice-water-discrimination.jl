@@ -38,8 +38,8 @@ Generates an image with ice floes apparent after filtering and combining previou
 
 """
 function discriminate_ice_water(
-    reflectance_image::Matrix{RGB{Float64}}, 
-    image_sharpened::Matrix{Float64}, 
+    reflectance_image::Matrix{RGB{Float64}},
+    image_sharpened::Matrix{Float64},
     landmask_bitmatrix::T,
     cloudmask_bitmatrix::T,
     floes_threshold::Float64=Float64(100 / 255),
@@ -53,12 +53,21 @@ function discriminate_ice_water(
     clouds_ratio_threshold::Float64=0.02,
     differ_threshold::Float64=0.6,
     nbins::Real=155,
-)::AbstractMatrix where T<:AbstractArray{Bool}
-    clouds_channel = IceFloeTracker.create_clouds_channel(cloudmask_bitmatrix, reflectance_image)
-    reflectance_image_band7 = channelview(reflectance_image)[1,:,:]
-    image_sharpened_gray =  IceFloeTracker.imsharpen_gray(image_sharpened, landmask_bitmatrix)
-    normalized_image = IceFloeTracker.normalize_image(image_sharpened, image_sharpened_gray, landmask_bitmatrix)
-    
+)::AbstractMatrix where {T<:AbstractArray{Bool}}
+    clouds_channel = IceFloeTracker.create_clouds_channel(
+        cloudmask_bitmatrix, reflectance_image
+    )
+    reflectance_image_band7 = channelview(reflectance_image)[1, :, :]
+    image_sharpened_gray = IceFloeTracker.imsharpen_gray(
+        image_sharpened, landmask_bitmatrix
+    )
+    normalized_image = IceFloeTracker.normalize_image(
+        image_sharpened,
+        image_sharpened_gray,
+        landmask_bitmatrix,
+        collect(strel_diamond((5, 5))),
+    )
+
     # first define all of the image variations
     image_clouds = IceFloeTracker.apply_landmask(clouds_channel, landmask_bitmatrix) # output during cloudmask apply, landmasked 
     image_cloudless = IceFloeTracker.apply_landmask(
@@ -92,21 +101,23 @@ function discriminate_ice_water(
     total_all = sum(clouds_bin_counts)
     clouds_ratio = total_clouds / total_all
 
-    threshold_50_check = 
-        _check_threshold_50(kurt_band_1,
-                            kurt_band_2,
-                            kurt_thresh_lower,
-                            kurt_thresh_upper, 
-                            skew_band_2, 
-                            skew_thresh, 
-                            proportional_intensity)
+    threshold_50_check = _check_threshold_50(
+        kurt_band_1,
+        kurt_band_2,
+        kurt_thresh_lower,
+        kurt_thresh_upper,
+        skew_band_2,
+        skew_thresh,
+        proportional_intensity,
+    )
 
-    threshold_130_check = 
-        _check_threshold_130(clouds_ratio, 
-                             clouds_ratio_threshold, 
-                             standard_dev, 
-                             st_dev_thresh_lower, 
-                             st_dev_thresh_upper)
+    threshold_130_check = _check_threshold_130(
+        clouds_ratio,
+        clouds_ratio_threshold,
+        standard_dev,
+        st_dev_thresh_lower,
+        st_dev_thresh_upper,
+    )
 
     if threshold_50_check
         THRESH = 50 / 255
@@ -129,18 +140,19 @@ function discriminate_ice_water(
     return ice_water_discriminated_image
 end
 
-function _check_threshold_50(kurt_band_1, 
-    kurt_band_2, 
-    kurt_thresh_lower, 
-    kurt_thresh_upper, 
-    skew_band_2, 
-    skew_thresh, 
-    proportional_intensity)
-    ( # intensity value of 50
+function _check_threshold_50(
+    kurt_band_1,
+    kurt_band_2,
+    kurt_thresh_lower,
+    kurt_thresh_upper,
+    skew_band_2,
+    skew_thresh,
+    proportional_intensity,
+)
+    return ( # intensity value of 50
         (
             (kurt_band_2 > kurt_thresh_upper) ||
-            (kurt_band_2 < kurt_thresh_lower) &&
-            (kurt_band_1 > kurt_thresh_upper)
+            (kurt_band_2 < kurt_thresh_lower) && (kurt_band_1 > kurt_thresh_upper)
         ) ||
         (
             (kurt_band_2 < kurt_thresh_lower) &&
@@ -152,11 +164,12 @@ function _check_threshold_50(kurt_band_1,
 end
 
 function _check_threshold_130(
-    clouds_ratio, 
-    clouds_ratio_threshold, 
-    standard_dev, 
-    st_dev_thresh_lower, 
-    st_dev_thresh_upper)
+    clouds_ratio,
+    clouds_ratio_threshold,
+    standard_dev,
+    st_dev_thresh_lower,
+    st_dev_thresh_upper,
+)
     return (clouds_ratio .< clouds_ratio_threshold && standard_dev > st_dev_thresh_lower) ||
-        (standard_dev > st_dev_thresh_upper)
+           (standard_dev > st_dev_thresh_upper)
 end
