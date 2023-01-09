@@ -62,7 +62,10 @@ function discriminate_ice_water(
         image_sharpened, landmask_bitmatrix
     )
     normalized_image = IceFloeTracker.normalize_image(
-        image_sharpened, image_sharpened_gray, landmask_bitmatrix
+        image_sharpened,
+        image_sharpened_gray,
+        landmask_bitmatrix,
+        collect(strel_diamond((5, 5))),
     )
 
     # first define all of the image variations

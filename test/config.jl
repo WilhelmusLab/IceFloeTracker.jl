@@ -7,6 +7,7 @@ truecolor_test_image_file = "$(test_data_dir)/NE_Greenland_truecolor.2020162.aqu
 reflectance_test_image_file = "$(test_data_dir)/NE_Greenland.2020162.aqua.250m.tiff"
 reflectance_b7_test_file = "$(test_data_dir)/ref_image_b7.png"
 landmask_file = "$(test_data_dir)/landmask.tiff"
+landmask_no_dilate_file = "$(test_data_dir)/landmask_no_dilate.png"
 current_landmask_file = "$(test_data_dir)/current_landmask.png"
 normalized_test_file = "$(test_data_dir)/normalized_image.png"
 clouds_channel_test_file = "$(test_data_dir)/clouds_channel.png"
