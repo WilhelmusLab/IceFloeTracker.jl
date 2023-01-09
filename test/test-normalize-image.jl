@@ -37,11 +37,11 @@
     ## Equalization
     masked_view = (channelview(matlab_diffused))
     eq = [
-        IceFloeTracker._adjust_histogram(masked_view[i, :, :], 255, 22, 22, 0.87) for
+        IceFloeTracker._adjust_histogram(masked_view[i, :, :], 255, 10, 10, 0.86) for
         i in 1:3
     ]
     image_equalized = colorview(RGB, eq...)
-    @test (@test_approx_eq_sigma_eps image_equalized matlab_equalized [0, 0] 0.056) ==
+    @test (@test_approx_eq_sigma_eps image_equalized matlab_equalized [0, 0] 0.051) ==
         nothing
 
     equalized_image_filename =
@@ -57,7 +57,7 @@
     @time image_sharpened_gray = IceFloeTracker.imsharpen_gray(
         sharpenedimg, landmask_bitmatrix
     )
-    @test (@test_approx_eq_sigma_eps image_sharpened_gray matlab_sharpened [0, 0] 0.052) ==
+    @test (@test_approx_eq_sigma_eps image_sharpened_gray matlab_sharpened [0, 0] 0.046) ==
         nothing
 
     sharpened_image_filename =
@@ -74,7 +74,7 @@
     )
 
     #test for percent difference in normalized images
-    @test (@test_approx_eq_sigma_eps normalized_image matlab_norm_image [0, 0] 0.048) ==
+    @test (@test_approx_eq_sigma_eps normalized_image matlab_norm_image [0, 0] 0.045) ==
         nothing
 
     normalized_image_filename =
