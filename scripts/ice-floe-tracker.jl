@@ -28,7 +28,7 @@ function main(args)
         required = true
     end
 
-    landmask_args = [
+    landmask_cloudmask_args = [
         "input",
         Dict(:help => "Input image directory", :required => true),
         "output",
@@ -44,8 +44,8 @@ function main(args)
         Dict(:help => "Output image directory", :required => true),
     ]
 
-    add_arg_table!(settings["landmask"], landmask_args...)
-    add_arg_table!(settings["cloudmask"], command_common_args...)
+    add_arg_table!(settings["landmask"], landmask_cloudmask_args...)
+    add_arg_table!(settings["cloudmask"], landmask_cloudmask_args...)
 
     parsed_args = parse_args(args, settings; as_symbols=true)
 

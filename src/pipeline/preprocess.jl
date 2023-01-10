@@ -32,9 +32,9 @@ function landmask(; input::String, output::String)
     return out
 end
 
-function cloudmask_reflectance(; input::String, output::String)::Vector{BitMatrix}
+function cloudmask(; input::String, output::String)::Vector{BitMatrix}
     # find reflectance imgs in input dir
-    ref = sort([img for img in readdir(input) if contains(img, "reflectance")])
+    ref = [img for img in readdir(input) if contains(img, "reflectance")] # ref is sorted
     total_ref = length(ref)
     @info "Found $(total_ref) reflectance images in $input. 
     Cloudmasking false color images..."

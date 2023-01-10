@@ -16,7 +16,8 @@ using RegisterQD
 using StaticArrays
 using OffsetArrays: centered
 
-export readdlm, padnhood, bridge, branch, landmask, @persist
+export readdlm,
+    padnhood, bridge, branch, landmask, @persist, load, cloudmask, create_cloudmask
 
 include("utils.jl")
 include("persist.jl")
@@ -69,16 +70,6 @@ function fetchdata(; output::AbstractString)
     touch("$output/reflectance/a.tiff")
     touch("$output/reflectance/b.tiff")
     touch("$output/reflectance/c.tiff")
-    return nothing
-end
-
-function cloudmask(;
-    metadata::AbstractString, input::AbstractString, output::AbstractString
-)
-    mkpath("$output")
-    touch("$output/a.tiff")
-    touch("$output/b.tiff")
-    touch("$output/c.tiff")
     return nothing
 end
 
