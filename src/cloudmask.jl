@@ -22,19 +22,19 @@ function create_cloudmask(
 )::BitMatrix
     # Setting thresholds
     ref_view = channelview(ref_image)
-    ref_image_b7 = ref_view[1, :, :]
+    ref_image_b7 = @view ref_view[1, :, :]
     clouds_view = ref_image_b7 .> prelim_threshold
     mask_b7 = ref_image_b7 .< band_7_threshold
-    mask_b2 = ref_view[2, :, :] .> band_2_threshold
+    mask_b2 = @view(ref_view[2, :, :]) .> band_2_threshold
     # First find all the pixels that meet threshold logic in band 7 (channel 1) and band 2 (channel 2)
     # Masking clouds and discriminating cloud-ice
 
     mask_b7b2 = mask_b7 .&& mask_b2
     # Next find pixels that meet both thresholds and mask them from band 7 (channel 1) and band 2 (channel 2)
     b7_masked = mask_b7b2 .* ref_image_b7
-    b2_masked = mask_b7b2 .* ref_view[2, :, :]
+    b2_masked = mask_b7b2 .* @view(ref_view[2, :, :])
     cloud_ice = Float64.(b7_masked) ./ Float64.(b2_masked)
-    mask_cloud_ice = @. cloud_ice >= ratio_lower .&& cloud_ice < ratio_upper
+    mask_cloud_ice = @. cloud_ice >= ratio_lower && cloud_ice < ratio_upper
     # Creating final cloudmask
     cloudmask = mask_cloud_ice .|| .!clouds_view
     return cloudmask
@@ -55,7 +55,9 @@ function apply_cloudmask(
 )::Matrix{RGB{Float64}}
     masked_image = cloudmask .* ref_image
     image_view = channelview(masked_image)
-    cloudmasked_view = StackedView(zeroarray, image_view[2, :, :], image_view[3, :, :])
+    cloudmasked_view = StackedView(
+        zeroarray, @view(image_view[2, :, :]), @view(image_view[3, :, :])
+    )
     cloudmasked_image_rgb = colorview(RGB, cloudmasked_view)
     return cloudmasked_image_rgb
 end
@@ -69,5 +71,5 @@ end
 function create_clouds_channel(
     cloudmask::AbstractArray{Bool}, ref_image::Matrix{RGB{Float64}}
 )::Matrix{Gray{Float64}}
-    return Gray.(channelview(cloudmask .* ref_image)[1, :, :])
+    return Gray.(@view(channelview(cloudmask .* ref_image)[1, :, :]))
 end
