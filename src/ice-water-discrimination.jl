@@ -65,7 +65,7 @@ function discriminate_ice_water(
         image_sharpened,
         image_sharpened_gray,
         landmask_bitmatrix,
-        collect(strel_diamond((5, 5))),
+        strel_diamond((5, 5)),
     )
 
     # first define all of the image variations
