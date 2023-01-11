@@ -93,7 +93,7 @@ function discriminate_ice_water(
     kurt_band_2 = kurtosis(floes_band_2_keep)
     skew_band_2 = skewness(floes_band_2_keep)
     kurt_band_1 = kurtosis(floes_band_1_keep)
-    standard_dev = std(normalized_image)
+    standard_dev = stdmult(⋅, normalized_image)
 
     # find the ratio of clouds in the image to use in threshold filtering
     _, clouds_bin_counts = build_histogram(image_clouds .> 0)
@@ -128,7 +128,7 @@ function discriminate_ice_water(
     end
 
     normalized_image_copy = copy(normalized_image)
-    normalized_image_copy[normalized_image_copy .> THRESH] .= 0
+    normalized_image_copy[normalized_image_copy.>THRESH] .= 0
     normalized_filtered = normalized_image - (normalized_image_copy * 3)
 
     mask_image_clouds = (
