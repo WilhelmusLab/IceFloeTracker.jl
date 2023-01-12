@@ -78,7 +78,7 @@ Sharpen `truecolor_image`.
 - `intensity`: amount of sharpening to perform
 """
 function imsharpen(
-    truecolor_image,
+    truecolor_image::Matrix{RGB{Float64}},
     landmask_no_dilate::BitMatrix,
     lambda::Real=0.1,
     kappa::Real=75,
@@ -91,11 +91,12 @@ function imsharpen(
     intensity::Float64=2.0,
 )::Matrix{Float64}
     input_image = IceFloeTracker.apply_landmask(truecolor_image, landmask_no_dilate)
-    image_diffused = IceFloeTracker.diffusion(input_image, lambda, kappa, niters)
-    masked_view = Float64.(channelview(image_diffused))
+    input_image .= IceFloeTracker.diffusion(input_image, lambda, kappa, niters)
+    masked_view = Float64.(channelview(input_image))
 
     eq = [
-        _adjust_histogram(masked_view[i, :, :], nbins, rblocks, cblocks, clip) for i in 1:3
+        _adjust_histogram(@view(masked_view[i, :, :]), nbins, rblocks, cblocks, clip) for
+        i in 1:3
     ]
 
     image_equalized = colorview(RGB, eq...)
@@ -106,8 +107,7 @@ function imsharpen(
 
     image_sharpened =
         image_equalized_gray .* (1 + intensity) .+ image_smoothed .* (-intensity)
-    image_sharpened = max.(image_sharpened, 0.0)
-    return min.(image_sharpened, 1.0)
+    return min.(max.(image_sharpened, 0.0), 1.0)
 end
 
 """
