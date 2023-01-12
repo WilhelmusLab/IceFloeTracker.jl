@@ -1,7 +1,7 @@
 @testset "Normalize Image" begin
     println("-------------------------------------------------")
     println("---------- Create Normalization Test ------------")
-    struct_elem2 = collect(strel_diamond((5, 5))) #original matlab structuring element -  a disk-shaped kernel with radius of 2 px
+    struct_elem2 = strel_diamond((5, 5)) #original matlab structuring element -  a disk-shaped kernel with radius of 2 px
     matlab_normalized_img_file = "$(test_data_dir)/matlab_normalized.png"
     matlab_sharpened_file = "$(test_data_dir)/matlab_sharpened.png"
     matlab_diffused_file = "$(test_data_dir)/matlab_diffused.png"
