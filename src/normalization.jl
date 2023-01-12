@@ -16,8 +16,11 @@ function normalize_image(
     image_sharpened::Matrix{Float64},
     image_sharpened_gray::T,
     landmask::BitMatrix,
-    struct_elem::Matrix{Bool};
+    struct_elem::ImageMorphology.MorphologySEArray{2};
 )::Matrix{Gray{Float64}} where {T<:AbstractMatrix{Gray{Float64}}}
+    # if struct_elem isa Matrix{Bool}
+    #     struct_elem = centered(struct_elem)
+    # end
     image_dilated = MorphSE.dilate(image_sharpened_gray, struct_elem)
 
     image_reconstructed = MorphSE.mreconstruct(
