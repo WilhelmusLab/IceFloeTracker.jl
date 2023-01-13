@@ -19,11 +19,11 @@
     )
     println(typeof(segB))
 
-     IceFloeTracker.@persist segB.not_ice "./test_outputs/segB_not_ice_mask.png" true
+    IceFloeTracker.@persist segB.not_ice "./test_outputs/segB_not_ice_mask.png" true
 
-     IceFloeTracker.@persist segB.filled "./test_outputs/segB_filled.png" true
+    IceFloeTracker.@persist segB.filled "./test_outputs/segB_filled.png" true
 
-     IceFloeTracker.@persist segB.ice "./test_outputs/segB_ice.png" true
+    IceFloeTracker.@persist segB.ice "./test_outputs/segB_ice.png" true
 
     @test typeof(segB.filled) == typeof(matlab_segmented_B_filled)
     @test test_similarity(matlab_segmented_B_filled, segB.filled, 0.04)
@@ -32,5 +32,5 @@
     @test test_similarity(matlab_segmented_B_ice, segB.ice, 0.005)
 
     @test typeof(segB.not_ice) == typeof(matlab_not_ice_mask)
-    @test test_similarity(segB.not_ice, (matlab_not_ice_mask), 0.033)
+    @test test_similarity(segB.not_ice, matlab_not_ice_mask, 0.033)
 end
