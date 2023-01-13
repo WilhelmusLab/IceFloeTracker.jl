@@ -29,14 +29,16 @@ function segmentation_B(
     ## Process sharpened image
     not_ice_mask = deepcopy(sharpened_image)
     not_ice_mask[not_ice_mask .< isolation_threshold] .= 0
-    adjusted_sharpened = (1 - alpha_level) .* sharpened_image .+ alpha_level .* ((not_ice_mask * .3) .+ sharpened_image)
+    adjusted_sharpened =
+        (1 - alpha_level) .* sharpened_image .+
+        alpha_level .* ((not_ice_mask * 0.3) .+ sharpened_image)
     gamma_adjusted_sharpened = ImageContrastAdjustment.adjust_histogram(
         adjusted_sharpened, GammaCorrection(; gamma=gamma_factor)
     )
     gamma_adjusted_sharpened_cloudmasked = IceFloeTracker.apply_cloudmask(
         gamma_adjusted_sharpened, cloudmask
     )
-    gamma_adjusted_sharpened_cloudmasked[gamma_adjusted_sharpened_cloudmasked .< adjusted_ice_threshold] .=
+    gamma_adjusted_sharpened_cloudmasked[gamma_adjusted_sharpened_cloudmasked .<= adjusted_ice_threshold] .=
         0
     gamma_adjusted_sharpened_cloudmasked[gamma_adjusted_sharpened_cloudmasked .> adjusted_ice_threshold] .=
         1
@@ -44,7 +46,8 @@ function segmentation_B(
         BitMatrix, gamma_adjusted_sharpened_cloudmasked
     )
 
-    segb_filled = .!ImageMorphology.imfill(.!gamma_adjusted_sharpened_cloudmasked_bit, fill_range)
+    segb_filled =
+        .!ImageMorphology.imfill(.!gamma_adjusted_sharpened_cloudmasked_bit, fill_range)
 
     ## Process ice mask
     sega_closed = MorphSE.closing(segmented_a_ice_mask, struct_elem)
@@ -52,5 +55,5 @@ function segmentation_B(
     ## Create mask from intersect of processed images
     segmented_b_ice_intersect = (segb_filled .* sega_closed)
 
-    return not_ice_mask .> 0, segb_filled, segmented_b_ice_intersect
+    return not_ice_mask, segb_filled, segmented_b_ice_intersect = (not_ice_mask .> 0, segb_filled, segmented_b_ice_intersect)
 end

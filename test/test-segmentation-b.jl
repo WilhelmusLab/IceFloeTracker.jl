@@ -5,7 +5,6 @@
     sharpened_image = float64.(load(sharpened_test_image_file))
     segmented_a_ice_mask = convert(BitMatrix, load(segmented_a_ice_mask_file))
     cloudmask = convert(BitMatrix, load(cloudmask_test_file))
-    struct_elem2 = readdlm(strel_file_2, ',', Bool)
     matlab_segmented_B_filled = convert(
         BitMatrix, load("$(test_data_dir)/matlab_segmented_b_filled.png")
     )
@@ -19,23 +18,11 @@
         sharpened_image, cloudmask, segmented_a_ice_mask, strel_diamond((3, 3))
     )
 
-    not_ice_mask_filename =
-        "$(test_output_dir)/not_ice_mask" *
-        Dates.format(Dates.now(), "yyyy-mm-dd-HHMMSS") *
-        ".png"
-    IceFloeTracker.@persist not_ice_mask not_ice_mask_filename
+    IceFloeTracker.@persist not_ice_mask "./test_outputs/not_ice_mask.png" true
 
-    segmented_b_filled_filename =
-        "$(test_output_dir)/segmented_b_filled" *
-        Dates.format(Dates.now(), "yyyy-mm-dd-HHMMSS") *
-        ".png"
-    IceFloeTracker.@persist segmented_B_filled segmented_b_filled_filename
+    IceFloeTracker.@persist segmented_B_filled "./test_outputs/segmented_b_filled.png" true
 
-    segmented_b_ice_filename =
-        "$(test_output_dir)/segmented_b_ice" *
-        Dates.format(Dates.now(), "yyyy-mm-dd-HHMMSS") *
-        ".png"
-    IceFloeTracker.@persist segmented_B_ice segmented_b_ice_filename
+    IceFloeTracker.@persist segmented_B_ice "./test_outputs/segmented_b_ice.png" true
 
     @test typeof(segmented_B_filled) == typeof(matlab_segmented_B_filled)
     @test test_similarity(matlab_segmented_B_filled, segmented_B_filled, 0.04)
