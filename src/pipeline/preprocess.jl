@@ -32,6 +32,45 @@ function landmask(; input::String, output::String)
     return out
 end
 
+"""
+    cache_vector(type::Type, numel::Int64, size::Tuple{Int64, Int64})::Vector{type}
+
+Build a vector of types `type` with `numel` elements of size `size`.
+
+Example
+
+```jldoctest
+julia> cache_vector(Matrix{Float64}, 3, (2, 2))
+3-element Vector{Matrix{Float64}}:
+ [0.0 6.9525705991269e-310; 6.9525705991269e-310 0.0]
+ [0.0 6.9525705991269e-310; 6.9525705991269e-310 0.0]
+ [0.0 6.95257028858726e-310; 6.95257029000147e-310 0.0]
+```
+"""
+function cache_vector(type::Type, numel::Int64, size::Tuple{Int64,Int64})::Vector{type}
+    return [type(undef, size) for _ in 1:numel]
+end
+
+"""
+    load_imgs(; input::String, image_type::String)
+
+Load all images of type `image_type` (either `"truecolor"` or `"reflectance"`) in `input` into a vector.
+"""
+function load_imgs(; input::String, image_type::Union{Symbol,String})
+    return [
+        float64.(load(joinpath(input, f))) for
+        f in readdir(input) if contains(f, string(image_type))
+    ]
+end
+
+function load_truecolor_imgs(; input::String)
+    return load_imgs(; input=input, image_type="truecolor")
+end
+
+function load_reflectance_imgs(; input::String)
+    return load_imgs(; input=input, image_type="reflectance")
+end
+
 function cloudmask(; input::String, output::String)::Vector{BitMatrix}
     # find reflectance imgs in input dir
     ref = [img for img in readdir(input) if contains(img, "reflectance")] # ref is sorted
