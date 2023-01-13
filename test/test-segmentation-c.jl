@@ -8,12 +8,8 @@
 
     segmented_C = IceFloeTracker.segmentation_C(segmented_B_filled, segmented_B_ice)
 
-    segmented_c_filename =
-        "$(test_output_dir)/segmented_c_" *
-        Dates.format(Dates.now(), "yyyy-mm-dd-HHMMSS") *
-        ".png"
-    IceFloeTracker.@persist segmented_C segmented_c_filename
+    IceFloeTracker.@persist segmented_C "./test_outputs/segmented_c.png" true
 
     @test typeof(segmented_C) == typeof(matlab_segmented_C)
-    @test test_similarity(matlab_segmented_C, segmented_C, 0.078)
+    @test test_similarity(matlab_segmented_C, segmented_C, 0.001)
 end
