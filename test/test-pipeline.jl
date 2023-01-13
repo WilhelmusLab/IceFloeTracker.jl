@@ -38,6 +38,23 @@
             # Compare against generated cloudmasks
             @test cldmasks_expected == IceFloeTracker.cloudmask(; args_to_pass...)
         end
+
+        @testset "load images" begin
+            reflectance_images = IceFloeTracker.load_imgs(;
+                input=input, image_type=:reflectance
+            )
+            @test length(reflectance_images) == 2
+
+            truecolor_images = IceFloeTracker.load_imgs(;
+                input=input, image_type=:truecolor
+            )
+            @test length(truecolor_images) == 2
+
+            @test all(size.(reflectance_images) .== size.(truecolor_images))
+
+            @test IceFloeTracker.load_reflectance_imgs(; input=input) == reflectance_images
+            @test IceFloeTracker.load_truecolor_imgs(; input=input) == truecolor_images
+        end
     end
     # clean up!
     rm(output; recursive=true)

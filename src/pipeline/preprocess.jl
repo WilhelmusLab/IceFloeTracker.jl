@@ -56,10 +56,10 @@ end
 
 Load all images of type `image_type` (either `"truecolor"` or `"reflectance"`) in `input` into a vector.
 """
-function load_imgs(; input::String, image_type::String)
+function load_imgs(; input::String, image_type::Union{Symbol,String})
     return [
         float64.(load(joinpath(input, f))) for
-        f in readdir(input) if contains(f, image_type)
+        f in readdir(input) if contains(f, string(image_type))
     ]
 end
 
@@ -67,7 +67,7 @@ function load_truecolor_imgs(; input::String)
     return load_imgs(; input=input, image_type="truecolor")
 end
 
-function load_reflectance_images(; input::String)
+function load_reflectance_imgs(; input::String)
     return load_imgs(; input=input, image_type="reflectance")
 end
 
