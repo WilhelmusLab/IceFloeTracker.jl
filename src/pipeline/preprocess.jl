@@ -71,6 +71,18 @@ function load_reflectance_imgs(; input::String)
     return load_imgs(; input=input, image_type="reflectance")
 end
 
+"""
+    sharpen(truecolor_imgs::Vector{Matrix{Float64}}, landmask_no_dilate::Matrix{Bool})
+
+Sharpen truecolor images using the landmask. Returns a vector of sharpened images.
+"""
+function sharpen(
+    truecolor_imgs::Vector{Matrix{RGB{Float64}}}, landmask_no_dilate::BitMatrix
+)
+    @info "Sharpening truecolor images..."
+    return [imsharpen(img, landmask_no_dilate) for img in truecolor_imgs]
+end
+
 function cloudmask(; input::String, output::String)::Vector{BitMatrix}
     # find reflectance imgs in input dir
     ref = [img for img in readdir(input) if contains(img, "reflectance")] # ref is sorted
