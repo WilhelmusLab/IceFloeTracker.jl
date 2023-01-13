@@ -24,8 +24,8 @@ function segmentation_B(
     isolation_threshold::Float64=0.4,
     alpha_level::Float64=0.5,
     gamma_factor::Float64=2.5,
-    adjusted_ice_threshold::Float64=0.05,
-)::Tuple{BitMatrix,BitMatrix,BitMatrix}
+    adjusted_ice_threshold::Float64=0.05)
+
     ## Process sharpened image
     not_ice_mask = deepcopy(sharpened_image)
     not_ice_mask[not_ice_mask .< isolation_threshold] .= 0
@@ -55,5 +55,6 @@ function segmentation_B(
     ## Create mask from intersect of processed images
     segmented_b_ice_intersect = (segb_filled .* sega_closed)
 
-    return not_ice_mask, segb_filled, segmented_b_ice_intersect = (not_ice_mask .> 0, segb_filled, segmented_b_ice_intersect)
+    return segB = (; :not_ice => not_ice_mask .> 0, :filled => segb_filled, :ice => segmented_b_ice_intersect
+    )
 end
