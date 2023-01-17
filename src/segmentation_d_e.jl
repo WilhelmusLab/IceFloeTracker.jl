@@ -19,24 +19,24 @@ function watershed_ice_floes(intermediate_segmentation_image::BitMatrix)::BitMat
     return borders
 end
 
-## function alias segmentation_D is watershed on the `not_ice_mask` from segmentation_B
+## function alias segmentation_D is watershed on the `segmented_c` from segmentation_C 
 const segmentation_D = watershed_ice_floes
-## function alias segmentation_E is watershed on the `segmented_c` from segmentation_C
+## function alias segmentation_E is watershed on the `not_ice_mask` from segmentation_B
 const segmentation_E = watershed_ice_floes
 
 """
-    segmentation_D_E(watershed_B, watershed_C;)
+    segmentation_D_E(watershed_D, watershed_E;)
 
 Intersects the outputs of watershed segmentation on intermediate files from segmentation B and C, indicating potential sparse boundaries of ice floes.
 
 # Arguments
-- `watershed_B`: binary segmentation mask from `segmentation_D`
-- `watershed_C`: binary segmentation mask from `segmentation_E`
+- `watershed_D`: binary segmentation mask from `segmentation_D`
+- `watershed_E`: binary segmentation mask from `segmentation_E`
 
 """
-function segmentation_D_E(watershed_B::BitMatrix, watershed_C::BitMatrix;)::BitMatrix
+function segmentation_D_E(watershed_D::BitMatrix, watershed_E::BitMatrix;)::BitMatrix
 
     ## Intersect the two watershed files
-    watershed_intersect = watershed_B .* watershed_C
+    watershed_intersect = watershed_D .* watershed_E
     return watershed_intersect
 end
