@@ -57,7 +57,7 @@ function discriminate_ice_water(
     clouds_channel = IceFloeTracker.create_clouds_channel(
         cloudmask_bitmatrix, reflectance_image
     )
-    reflectance_image_band7 = channelview(reflectance_image)[1, :, :]
+    reflectance_image_band7 = @view(channelview(reflectance_image)[1, :, :])
     image_sharpened_gray = IceFloeTracker.imsharpen_gray(
         image_sharpened, landmask_bitmatrix
     )
@@ -76,12 +76,12 @@ function discriminate_ice_water(
     image_floes = IceFloeTracker.apply_landmask(reflectance_image, landmask_bitmatrix) # source reflectance, landmasked
     image_floes_view = channelview(image_floes)
 
-    floes_band_2 = image_floes_view[2, :, :]
-    floes_band_1 = image_floes_view[3, :, :]
+    floes_band_2 = @view(image_floes_view[2, :, :])
+    floes_band_1 = @view(image_floes_view[3, :, :])
 
     # keep pixels greater than intensity 100 in bands 2 and 1
-    floes_band_2_keep = floes_band_2[floes_band_2 .> floes_threshold]
-    floes_band_1_keep = floes_band_1[floes_band_1 .> floes_threshold]
+    floes_band_2_keep = floes_band_2[floes_band_2.>floes_threshold]
+    floes_band_1_keep = floes_band_1[floes_band_1.>floes_threshold]
 
     _, floes_bin_counts = ImageContrastAdjustment.build_histogram(floes_band_2_keep, nbins)
     _, vals = Peaks.findmaxima(floes_bin_counts)
@@ -129,15 +129,21 @@ function discriminate_ice_water(
 
     normalized_image_copy = copy(normalized_image)
     normalized_image_copy[normalized_image_copy.>THRESH] .= 0
-    normalized_filtered = normalized_image - (normalized_image_copy * 3)
+    @. normalized_image_copy = normalized_image - (normalized_image_copy * 3)
 
-    mask_image_clouds = (
-        image_clouds .< mask_clouds_lower .|| image_clouds .> mask_clouds_upper
+    # reusing memory allocated in landmask_bitmatrix
+    # used to be mask_image_clouds 
+    @. landmask_bitmatrix = (
+        image_clouds < mask_clouds_lower || image_clouds > mask_clouds_upper
     )
-    band7_masked = image_cloudless .* .!mask_image_clouds
-    ice_water_discriminated_image = clamp01nan.(normalized_filtered - (band7_masked * 3))
 
-    return ice_water_discriminated_image
+    # reusing image_cloudless - used to be band7_masked
+    @. image_cloudless = image_cloudless * !landmask_bitmatrix
+
+    # reusing normalized_image_copy - used to be ice_water_discriminated_image
+    @. normalized_image_copy = clamp01nan(normalized_image_copy - (image_cloudless * 3))
+
+    return normalized_image_copy
 end
 
 function _check_threshold_50(
