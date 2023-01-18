@@ -17,7 +17,7 @@ function create_landmask(
     fill_value_upper::Int=2000,
 )::BitMatrix where {T<:AbstractMatrix}
     landmask_binary = binarize_landmask(landmask_image)
-    dilated = IceFloeTracker.MorphSE.dilate(landmask_binary, struct_elem)
+    dilated = IceFloeTracker.MorphSE.dilate(landmask_binary, centered(struct_elem))
     return ImageMorphology.imfill(.!dilated, (fill_value_lower, fill_value_upper))
 end
 
