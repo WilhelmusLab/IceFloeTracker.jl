@@ -12,13 +12,17 @@
 
     args_to_pass = Dict{Symbol,AbstractString}(zip([:input, :output], [input, output]))
 
+    reflectance_images = IceFloeTracker.load_imgs(; input=input, image_type=:reflectance)
+
+    truecolor_images = IceFloeTracker.load_imgs(; input=input, image_type=:truecolor)
+
+    lm_expected =
+        Gray.(load(joinpath(pipelinedir, "expected", "generated_landmask.png"))) .> 0
+
     @testset verbose = true "preprocessing" begin
         @testset "landmask" begin
             println("-------------------------------------------------")
             println("------------ landmask creation tests ---------------")
-            lm_expected =
-                Gray.(load(joinpath(pipelinedir, "expected", "generated_landmask.png"))) .>
-                0
 
             lm_raw = load(joinpath(input, "landmask.tiff"))
             @test lm_expected == IceFloeTracker.landmask(; args_to_pass...)
@@ -42,20 +46,25 @@
         end
 
         @testset "load images" begin
-            reflectance_images = IceFloeTracker.load_imgs(;
-                input=input, image_type=:reflectance
-            )
             @test length(reflectance_images) == 2
 
-            truecolor_images = IceFloeTracker.load_imgs(;
-                input=input, image_type=:truecolor
-            )
             @test length(truecolor_images) == 2
 
             @test all(size.(reflectance_images) .== size.(truecolor_images))
 
             @test IceFloeTracker.load_reflectance_imgs(; input=input) == reflectance_images
             @test IceFloeTracker.load_truecolor_imgs(; input=input) == truecolor_images
+        end
+
+        @testset "ice water discrimination" begin
+            landmask_raw = load(joinpath(input, "landmask.tiff"))
+            landmask_no_dilate = (Gray.(landmask_raw) .> 0)
+            sharpened_imgs = IceFloeTracker.sharpen(truecolor_images, landmask_no_dilate)
+            cloudmasks = map(create_cloudmask, reflectance_images)
+            ice_water_discrim_imgs = IceFloeTracker.disc_ice_water(
+                reflectance_images, sharpened_imgs, cloudmasks, lm_expected
+            )
+            @test length(ice_water_discrim_imgs) == 2
         end
     end
     # clean up!
