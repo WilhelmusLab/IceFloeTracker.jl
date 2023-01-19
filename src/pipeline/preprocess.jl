@@ -74,7 +74,8 @@ end
 """
     sharpen(truecolor_imgs::Vector{Matrix{Float64}}, landmask_no_dilate::Matrix{Bool})
 
-Sharpen truecolor images using the landmask. Returns a vector of sharpened images.
+Sharpen truecolor images with the non-dilated landmask applied. Returns a vector of sharpened images.
+
 """
 function sharpen(
     truecolor_imgs::Vector{Matrix{RGB{Float64}}}, landmask_no_dilate::BitMatrix
@@ -113,7 +114,8 @@ end
     landmask::BitMatrix,
 )
 
-Generate vector of ice/water discrimiated images from the collection of reflectance, sharpened trucolor, and cloudmask images using the uniform landmask. Returns a vector of ice/water masks.
+Generate vector of ice/water discriminated images from the collection of reflectance, sharpened truecolor, and cloudmask images using the study area landmask. Returns a vector of ice/water masks.
+
 """
 function disc_ice_water(
     reflectance_imgs::Vector{Matrix{RGB{Float64}}},
