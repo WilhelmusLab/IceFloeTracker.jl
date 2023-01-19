@@ -20,8 +20,10 @@
                 Gray.(load(joinpath(pipelinedir, "expected", "generated_landmask.png"))) .>
                 0
 
+            lm_raw = load(joinpath(input, "landmask.tiff"))
             @test lm_expected == IceFloeTracker.landmask(; args_to_pass...)
-
+            @test lm_expected == IceFloeTracker.landmask(lm_raw, dilate=true)
+            @test (Gray.(lm_raw) .> 0) == IceFloeTracker.landmask(lm_raw, dilate=false)
             @test isfile(joinpath(output, "generated_landmask.png"))
         end
 
