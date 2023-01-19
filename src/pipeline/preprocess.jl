@@ -32,6 +32,15 @@ function landmask(; input::String, output::String)
     return out
 end
 
+function landmask(;landmask_raw::Matrix{RGB{N0f8}})
+    return create_landmask(landmask_raw)
+end
+
+function landmask(;landmask_raw::Matrix{RGB{N0f8}}, no_dilate::Bool=true)
+    no_dilate || error("To build a dilated landmask use `landmask(landmask_raw)`.")
+    return Gray.(landmask_raw) .> 0
+end
+
 """
     cache_vector(type::Type, numel::Int64, size::Tuple{Int64, Int64})::Vector{type}
 
