@@ -43,14 +43,14 @@ function segmentation_F(
         ice_mask_watershed_applied; min_area=lower_min_area_opening, connectivity=2
     )
     #leads
-    ice_leads = ifelse.(.!ice_mask_watershed_opened .== 0, 0.0, 1)
+    ice_leads = .!ice_mask_watershed_opened
     #Iobrd2
     not_ice_dilated = IceFloeTracker.MorphSE.dilate(
         segmentation_B_not_ice_mask; dims=IceFloeTracker.MorphSE.strel_diamond((5, 5))
     )
     #Iobrcbr2
-    not_ice_reconstructed = MorphSE.opening(
-        complement.(not_ice_dilated); dims=complement.(segmentation_B_not_ice_mask)
+    not_ice_reconstructed = IceFloeTracker.MorphSE.mreconstruct(IceFloeTracker.MorphSE.dilate,
+        complement.(not_ice_dilated), complement.(segmentation_B_not_ice_mask)
     )
     #Z(he)
     reconstructed_leads = float64.(not_ice_reconstructed .* ice_leads) .+ (60 / 255)
@@ -85,13 +85,13 @@ function segmentation_F(
     leads_bothat_opened = IceFloeTracker.prune(leads_bothat_opened)
     #BW2
     leads_bothat_filled = .!ImageMorphology.imfill(.!leads_bothat_opened, 0:160)
-    #leads_bothat_filled = .!IceFloeTracker.bwareamaxfilt(.!leads_bothat_opened)
+    leads_bothat_filled = .!IceFloeTracker.bwareamaxfilt(.!leads_bothat_opened)
     #BW2
     leads_bothat_masked = leads_bothat_filled .* cloudmask
     leads_bothat_masked = IceFloeTracker.prune(leads_bothat_masked)
     #BW3
     leads_cloudmasked_filled = .!ImageMorphology.imfill(.!leads_bothat_masked, 0:300)
-    #leads_cloudmasked_filled = .!IceFloeTracker.bwareamaxfilt(.!leads_bothat_masked)
+    leads_cloudmasked_filled = .!IceFloeTracker.bwareamaxfilt(.!leads_bothat_masked)
     #BW4
     leads_masked_branched = IceFloeTracker.branch(leads_cloudmasked_filled)
     #BW5

@@ -4,16 +4,16 @@
 
     ## Load inputs for comparison
     segmentation_B_not_ice_mask = float64.(load("$(test_data_dir)/matlab_not_ice_mask.png"))
-    segmentation_C_ice_mask = load(segmented_c_test_file) .> 0.5
+    segmentation_C_ice_mask = load(segmented_c_test_file) .>= 0.5
     cloudmask = convert(BitMatrix, load(cloudmask_test_file))
     landmask = convert(BitMatrix, load(current_landmask_file))
-    watershed_intersect = load(watershed_test_file) .> 0.5
+    watershed_intersect = load(watershed_test_file) .>= 0.5
     ice_labels =
         Int64.(
             vec(DelimitedFiles.readdlm("$(test_data_dir)/ice_labels_floe_region.csv", ','))
         )
     matlab_isolated_floes =
-        float64.(load("$(test_data_dir)/matlab_isolated_floes.png")) .> 0.5
+        float64.(load("$(test_data_dir)/matlab_isolated_floes.png")) .>= 0.5
 
     ## Run function with Matlab inputs
 
