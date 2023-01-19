@@ -33,6 +33,18 @@ function landmask(; input::String, output::String)
 end
 
 """
+    landmask(landmask_raw::Matrix{RGB{N0f8}}; dilate::Bool)
+
+Usage: `landmask(landmask_raw, dilate=false)`.
+
+To build a dilated landmask use `landmask(landmask_raw, dilate=true)`.
+"""
+function landmask(landmask_raw::Matrix{RGB{N0f8}}; dilate::Bool)
+    dilate && return create_landmask(landmask_raw)
+    return Gray.(landmask_raw) .> 0
+end
+
+"""
     cache_vector(type::Type, numel::Int64, size::Tuple{Int64, Int64})::Vector{type}
 
 Build a vector of types `type` with `numel` elements of size `size`.
