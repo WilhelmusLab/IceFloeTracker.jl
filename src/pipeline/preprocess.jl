@@ -104,3 +104,25 @@ function cloudmask(; input::String, output::String)::Vector{BitMatrix}
     end
     return cloudmasks
 end
+
+"""
+    disc_ice_water(
+    reflectance_imgs::Vector{Matrix{RGB{Float64}}},
+    sharpened_imgs::Vector{Matrix{Float64}},
+    cloudmasks::Vector{BitMatrix},
+    landmask::BitMatrix,
+)
+
+Generate vector of ice/water discrimiated images from the collection of reflectance, sharpened trucolor, and cloudmask images using the uniform landmask. Returns a vector of ice/water masks.
+"""
+function disc_ice_water(
+    reflectance_imgs::Vector{Matrix{RGB{Float64}}},
+    sharpened_imgs::Vector{Matrix{Float64}},
+    cloudmasks::Vector{BitMatrix},
+    landmask::BitMatrix,
+)
+    return [
+        IceFloeTracker.discriminate_ice_water(ref_img, shrp_img, landmask, cldmsk) for
+        (ref_img, shrp_img, cldmsk) in zip(reflectance_imgs, sharpened_imgs, cloudmasks)
+    ]
+end
