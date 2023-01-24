@@ -40,17 +40,19 @@ function segmentation_F(
     ice_mask_watershed_applied = .!watershed_intersect .* segmentation_C_ice_mask
     #BW1
     ice_mask_watershed_opened = ImageMorphology.area_opening(
-        ice_mask_watershed_applied; min_area=lower_min_area_opening, connectivity=2
+        ice_mask_watershed_applied; min_area=20, connectivity=2
     )
     #leads
     ice_leads = .!ice_mask_watershed_opened
     #Iobrd2
     not_ice_dilated = IceFloeTracker.MorphSE.dilate(
-        segmentation_B_not_ice_mask; dims=IceFloeTracker.MorphSE.strel_diamond((5, 5))
+        segmentation_B_not_ice_mask; dims=IceFloeTracker.MorphSE.strel_diamond((3, 3))
     )
     #Iobrcbr2
-    not_ice_reconstructed = IceFloeTracker.MorphSE.mreconstruct(IceFloeTracker.MorphSE.dilate,
-        complement.(not_ice_dilated), complement.(segmentation_B_not_ice_mask)
+    not_ice_reconstructed = IceFloeTracker.MorphSE.mreconstruct(
+        IceFloeTracker.MorphSE.dilate,
+        complement.(not_ice_dilated),
+        complement.(segmentation_B_not_ice_mask)
     )
     #Z(he)
     reconstructed_leads = float64.(not_ice_reconstructed .* ice_leads) .+ (60 / 255)
@@ -67,40 +69,41 @@ function segmentation_F(
     #BW_final3
     leads_filled = .!ImageMorphology.imfill(.!leads_branched, 0:1) .* .!watershed_intersect
 
+    #BW_final4
+    leads_opened = ImageMorphology.area_opening(leads_filled; min_area=20, connectivity=2)
+
     println("Done with area opening")
     #BW_final4(2)
-    leads_opened_branched = IceFloeTracker.branch(leads_filled) #BW_final4 
-
+    leads_opened_branched = IceFloeTracker.branch(leads_opened) 
+    #BW_final4 
+    leads_filled = IceFloeTracker.MorphSE.fill_holes(leads_opened_branched)
     #BW_final4_bothat
-    leads_bothat = MorphSE.bothat(
-        leads_opened_branched;
-        dims=IceFloeTracker.se_disk4(),#strel_diamond((5, 5))
+    leads_bothat = IceFloeTracker.MorphSE.bothat(
+        leads_filled;
+         dims=IceFloeTracker.MorphSE.strel_diamond((5,5))
     )
     #BW_final4(3)
     leads =
         convert(BitMatrix, (complement.(leads_bothat) .* leads_opened_branched)) .*
         .!watershed_intersect
     #BW1
-    leads_bothat_opened = ImageMorphology.area_opening(leads; min_area=160, connectivity=2)
-    leads_bothat_opened = IceFloeTracker.prune(leads_bothat_opened)
+    leads_bothat_opened = ImageMorphology.area_opening(leads; min_area=20, connectivity=2)
+    #leads_bothat_opened = IceFloeTracker.branch(leads_bothat_opened)
     #BW2
-    leads_bothat_filled = .!ImageMorphology.imfill(.!leads_bothat_opened, 0:160)
-    leads_bothat_filled = .!IceFloeTracker.bwareamaxfilt(.!leads_bothat_opened)
+    leads_bothat_filled = IceFloeTracker.MorphSE.fill_holes(leads_bothat_opened) .* cloudmask
     #BW2
-    leads_bothat_masked = leads_bothat_filled .* cloudmask
-    leads_bothat_masked = IceFloeTracker.prune(leads_bothat_masked)
+    leads_bothat_masked = IceFloeTracker.branch(leads_bothat_filled ) #prune
     #BW3
-    leads_cloudmasked_filled = .!ImageMorphology.imfill(.!leads_bothat_masked, 0:300)
-    leads_cloudmasked_filled = .!IceFloeTracker.bwareamaxfilt(.!leads_bothat_masked)
+    leads_cloudmasked_filled = IceFloeTracker.MorphSE.fill_holes(leads_bothat_masked)
     #BW4
     leads_masked_branched = IceFloeTracker.branch(leads_cloudmasked_filled)
     #BW5
-    floes_erode = MorphSE.erode(leads_masked_branched; dims=IceFloeTracker.se_disk4())
+    floes_erode = IceFloeTracker.MorphSE.erode(leads_masked_branched; dims=IceFloeTracker.se_disk4())
     floes_erode = IceFloeTracker.prune(IceFloeTracker.branch(floes_erode))
-    floes_dilate = MorphSE.dilate(floes_erode; dims=IceFloeTracker.se_disk4())
+    #BW6
+    floes_dilate = IceFloeTracker.MorphSE.dilate(floes_erode, IceFloeTracker.se_disk4())
     floes_opened = IceFloeTracker.prune(IceFloeTracker.branch(floes_dilate))
-    floes_opened = .!ImageMorphology.imfill(.!floes_opened, 0:1000)
-    floes_opened = .!IceFloeTracker.bwareamaxfilt(.!floes_opened)
+    floes_reconstructed = IceFloeTracker.MorphSE.mreconstruct(IceFloeTracker.MorphSE.dilate, leads_masked_branched, floes_dilate)
 
-    return floes_opened
+    return floes_dilate
 end

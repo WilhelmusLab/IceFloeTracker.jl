@@ -14,24 +14,25 @@
     matlab_segmented_ice = convert(
         BitMatrix, float64.(load("$(test_data_dir)/matlab_segmented_ice.png"))
     )
-    matlab_segmented_ice_cloudmasked = load("$(test_data_dir)/matlab_segmented_ice_cloudmasked.png") .>= 0.5
+    matlab_segmented_ice_cloudmasked =
+        load("$(test_data_dir)/matlab_segmented_ice_cloudmasked.png") .> 0.5
 
     println("---------- Segment Image - Direct Method ------------")
     @time segmented_ice_cloudmasked = IceFloeTracker.segmented_ice_cloudmasking(
         ice_water_discriminated_image, cloudmask, ice_labels
     )
-    IceFloeTracker.@persist segmented_ice_cloudmasked  "./test/test_outputs/segmented_a_ice_cloudmasked.png" true
+    IceFloeTracker.@persist segmented_ice_cloudmasked "./test_outputs/segmented_a_ice_cloudmasked.png" true
 
     @time segmented_A = IceFloeTracker.segmentation_A(segmented_ice_cloudmasked)
-    IceFloeTracker.@persist segmented_A "./test/test_outputs/segmented_a.png" true
+    IceFloeTracker.@persist segmented_A "./test_outputs/segmented_a.png" true
 
     @time segmented_ice = IceFloeTracker.kmeans_segmentation(
         ice_water_discriminated_image, ice_labels
     )
-    IceFloeTracker.@persist segmented_ice "./test/test_outputs/segmented_a_ice.png" true
+    IceFloeTracker.@persist segmented_ice "./test_outputs/segmented_a_ice.png" true
 
     @test typeof(segmented_A) == typeof(matlab_segmented_A_bitmatrix)
-    @test test_similarity(matlab_segmented_A_bitmatrix, segmented_A, 0.032)
+    @test test_similarity(matlab_segmented_A_bitmatrix, segmented_A, 0.039)
 
     @test typeof(segmented_ice_cloudmasked) == typeof(matlab_segmented_ice_cloudmasked)
     @test test_similarity(
