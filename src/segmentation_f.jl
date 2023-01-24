@@ -52,7 +52,7 @@ function segmentation_F(
     not_ice_reconstructed = IceFloeTracker.MorphSE.mreconstruct(
         IceFloeTracker.MorphSE.dilate,
         complement.(not_ice_dilated),
-        complement.(segmentation_B_not_ice_mask)
+        complement.(segmentation_B_not_ice_mask),
     )
     #Z(he)
     reconstructed_leads = float64.(not_ice_reconstructed .* ice_leads) .+ (60 / 255)
@@ -74,13 +74,12 @@ function segmentation_F(
 
     println("Done with area opening")
     #BW_final4(2)
-    leads_opened_branched = IceFloeTracker.branch(leads_opened) 
+    leads_opened_branched = IceFloeTracker.branch(leads_opened)
     #BW_final4 
     leads_filled = IceFloeTracker.MorphSE.fill_holes(leads_opened_branched)
     #BW_final4_bothat
     leads_bothat = IceFloeTracker.MorphSE.bothat(
-        leads_filled;
-         dims=IceFloeTracker.MorphSE.strel_diamond((5,5))
+        leads_filled; dims=IceFloeTracker.MorphSE.strel_diamond((5, 5))
     )
     #BW_final4(3)
     leads =
@@ -90,20 +89,25 @@ function segmentation_F(
     leads_bothat_opened = ImageMorphology.area_opening(leads; min_area=20, connectivity=2)
     #leads_bothat_opened = IceFloeTracker.branch(leads_bothat_opened)
     #BW2
-    leads_bothat_filled = IceFloeTracker.MorphSE.fill_holes(leads_bothat_opened) .* cloudmask
+    leads_bothat_filled =
+        IceFloeTracker.MorphSE.fill_holes(leads_bothat_opened) .* cloudmask
     #BW2
-    leads_bothat_masked = IceFloeTracker.branch(leads_bothat_filled ) #prune
+    leads_bothat_masked = IceFloeTracker.branch(leads_bothat_filled) #prune
     #BW3
     leads_cloudmasked_filled = IceFloeTracker.MorphSE.fill_holes(leads_bothat_masked)
     #BW4
     leads_masked_branched = IceFloeTracker.branch(leads_cloudmasked_filled)
     #BW5
-    floes_erode = IceFloeTracker.MorphSE.erode(leads_masked_branched; dims=IceFloeTracker.se_disk4())
+    floes_erode = IceFloeTracker.MorphSE.erode(
+        leads_masked_branched; dims=IceFloeTracker.se_disk4()
+    )
     floes_erode = IceFloeTracker.prune(IceFloeTracker.branch(floes_erode))
     #BW6
     floes_dilate = IceFloeTracker.MorphSE.dilate(floes_erode, IceFloeTracker.se_disk4())
     floes_opened = IceFloeTracker.prune(IceFloeTracker.branch(floes_dilate))
-    floes_reconstructed = IceFloeTracker.MorphSE.mreconstruct(IceFloeTracker.MorphSE.dilate, leads_masked_branched, floes_dilate)
+    floes_reconstructed = IceFloeTracker.MorphSE.mreconstruct(
+        IceFloeTracker.MorphSE.dilate, leads_masked_branched, floes_dilate
+    )
 
     return floes_dilate
 end
