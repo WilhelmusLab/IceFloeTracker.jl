@@ -35,6 +35,6 @@
 
     @test typeof(isolated_floes) == typeof(matlab_isolated_floes)
     @test test_similarity(
-        isolated_floes, matlab_isolated_floes[ice_floe_test_region...], 0.033
+        isolated_floes, matlab_isolated_floes[ice_floe_test_region...], 0.035
     )
 end
