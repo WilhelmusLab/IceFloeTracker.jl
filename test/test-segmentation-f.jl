@@ -29,21 +29,20 @@
         Int64.(
             vec(DelimitedFiles.readdlm("$(test_data_dir)/ice_labels_floe_region.csv", ','))
         )
-    
+
     ## Run function with Matlab inputs
 
-    @time ice_mask_watershed_applied, ice_mask_watershed_opened, not_ice_dilated, reconstructed_leads, leads_segmented, leads_segmented_broken, 
-    leads_branched, leads_filled, leads_opened_branched, leads_bothat, leads, leads_bothat_opened, leads_bothat_filled, leads_masked_branched, floes_erode, floes_dilate, floes_opened, isolated_floes = IceFloeTracker.segmentation_F(
+    @time ice_mask_watershed_applied, ice_mask_watershed_opened, not_ice_dilated, reconstructed_leads, leads_segmented, leads_segmented_broken, leads_branched, leads_filled, leads_opened_branched, leads_bothat, leads, leads_bothat_opened, leads_bothat_filled, leads_masked_branched, floes_erode, floes_dilate, floes_opened, isolated_floes = IceFloeTracker.segmentation_F(
         segmentation_C_ice_mask[ice_floe_test_region...],
         segmentation_B_not_ice_mask[ice_floe_test_region...],
         watershed_intersect[ice_floe_test_region...],
         cloudmask[ice_floe_test_region...],
         landmask[ice_floe_test_region...],
-        ice_labels
+        ice_labels,
     )
-  
+
     IceFloeTracker.@persist isolated_floes "./test_outputs/isolated_floes.png" true
-    
+
     IceFloeTracker.@persist not_ice_dilated "./test_outputs/not_ice_dilated.png" true
     IceFloeTracker.@persist matlab_Iobrd2[ice_floe_test_region...] "./test_outputs/matlab_Iobrd2.png" true
 
@@ -51,34 +50,48 @@
 
     IceFloeTracker.@persist matlab_Iobrcbr2[ice_floe_test_region...] .> 0.499 "./test_outputs/matlab_Iobrcbr2.png" true
 
-    @test test_similarity(matlab_C3_watershed[ice_floe_test_region...], ice_mask_watershed_applied, 0.005)
+    @test test_similarity(
+        matlab_C3_watershed[ice_floe_test_region...], ice_mask_watershed_applied, 0.005
+    )
 
-    @test test_similarity(matlab_BW1[ice_floe_test_region...], ice_mask_watershed_opened, 0.006)
+    @test test_similarity(
+        matlab_BW1[ice_floe_test_region...], ice_mask_watershed_opened, 0.006
+    )
 
-    @test (@test_approx_eq_sigma_eps matlab_Iobrd2[ice_floe_test_region...] not_ice_dilated [0, 0] 0.08) == nothing
+    @test (@test_approx_eq_sigma_eps matlab_Iobrd2[ice_floe_test_region...] not_ice_dilated [
+        0, 0
+    ] 0.08) == nothing
 
-    @test (@test_approx_eq_sigma_eps matlab_Iobrcbr2[ice_floe_test_region...] reconstructed_leads [0, 0] 0.135) == nothing
+    @test (@test_approx_eq_sigma_eps matlab_Iobrcbr2[ice_floe_test_region...] reconstructed_leads [
+        0, 0
+    ] 0.135) == nothing
 
     @test test_similarity(matlab_BW_final[ice_floe_test_region...], leads_segmented, 0.035)
 
-    @test test_similarity(matlab_BW_final1[ice_floe_test_region...], leads_segmented_broken, 0.035)
+    @test test_similarity(
+        matlab_BW_final1[ice_floe_test_region...], leads_segmented_broken, 0.035
+    )
 
     @test test_similarity(matlab_BW_final2[ice_floe_test_region...], leads_branched, 0.047)
 
     @test test_similarity(matlab_BW_final3[ice_floe_test_region...], leads_filled, 0.047)
 
-    @test test_similarity(matlab_BW_final4[ice_floe_test_region...], leads_opened_branched, 0.043)
+    @test test_similarity(
+        matlab_BW_final4[ice_floe_test_region...], leads_opened_branched, 0.043
+    )
 
     @test test_similarity(matlab_C4[ice_floe_test_region...], leads_bothat, 0.017)
 
     @test test_similarity(matlab_C3_C4[ice_floe_test_region...], leads, 0.043)
 
-    @test test_similarity(matlab_BW1_open[ice_floe_test_region...], leads_bothat_opened, 0.033)
+    @test test_similarity(
+        matlab_BW1_open[ice_floe_test_region...], leads_bothat_opened, 0.033
+    )
 
     @test test_similarity(matlab_BW2[ice_floe_test_region...], leads_bothat_filled, 0.068)
 
     IceFloeTracker.@persist leads_bothat_filled "./test_outputs/leads_bothat_filled.png" true
-    
+
     IceFloeTracker.@persist matlab_BW2[ice_floe_test_region...] "./test_outputs/matlab_BW2_floe_region.png" true
 
     @test test_similarity(matlab_BW4[ice_floe_test_region...], leads_masked_branched, 0.05)
