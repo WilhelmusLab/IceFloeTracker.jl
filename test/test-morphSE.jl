@@ -9,10 +9,16 @@
     se = IceFloeTracker.MorphSE.strel_box((n, n))
     @test IceFloeTracker.MorphSE.dilate(a, se) == ones(Int, n, n)
 
-    # Bothat, opening, erode using output from Matlab
+    # Bothat, opening, erode, filling holes, reconstruction using output from Matlab
     A = zeros(Bool, 41, 41)
     A[(21 - 10):(21 + 10), (21 - 10):(21 + 10)] .= 1
+    I = falses(8, 8)
+    I[1:8, 3:6] .= 1
+    I[[CartesianIndex(4, 4), CartesianIndex(5, 5)]] .= 0
+    I
     se = centered(IceFloeTracker.se_disk4())
+
+    #read in expected files from MATLAB
     path = joinpath(test_data_dir, "morphSE")
     erode_withse_exp = readdlm(joinpath(path, "erode_withse1_exp.csv"), ',', Bool)
     bothat_withse_exp = readdlm(joinpath(path, "bothat_withse1_exp.csv"), ',', Bool)
@@ -20,10 +26,14 @@
     reconstruct_exp = readdlm(joinpath(path, "reconstruct_exp.csv"), ',', Int64)
     matrix_A = readdlm(joinpath(path, "mat_a.csv"), ',', Int64)
     matrix_B = readdlm(joinpath(path, "mat_b.csv"), ',', Int64)
+    filled_holes_exp = readdlm(joinpath(path, "filled_holes.csv"), ',', Int64)
+
+    #run tests
     @test open_withse_exp == IceFloeTracker.MorphSE.opening(A, se)
     @test erode_withse_exp == IceFloeTracker.MorphSE.erode(A, se)
     @test bothat_withse_exp == IceFloeTracker.MorphSE.bothat(A, se)
     @test reconstruct_exp == IceFloeTracker.MorphSE.mreconstruct(
         IceFloeTracker.MorphSE.dilate, matrix_B, matrix_A
     )
+    @test filled_holes_exp == IceFloeTracker.MorphSE.fill_holes(I)
 end
