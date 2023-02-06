@@ -140,3 +140,26 @@ function disc_ice_water(
         (ref_img, shrp_img, cldmsk) in zip(reflectance_imgs, sharpened_imgs, cloudmasks)
     ]
 end
+
+
+"""
+    sharpen_gray(
+    sharpened_imgs::Vector{Matrix{Float64}},
+    landmask::AbstractArray{Bool},
+)
+
+Apply the landmask to the collection of sharpened truecolor images and return a gray colorview of the collection.
+"""
+function sharpen_gray(
+    sharpened_imgs::Vector{Matrix{Float64}},
+    landmask::AbstractArray{Bool},
+)
+    return [IceFloeTracker.imsharpen_gray(img, landmask) for img in sharpened_imgs]
+end
+
+function get_ice_labels(
+    reflectance_imgs::Vector{Matrix{RGB{Float64}}},
+    landmask::AbstractArray{Bool}
+)
+    return [IceFloeTracker.find_ice_labels(ref_img, landmask) for ref_img in reflectance_imgs]
+end
