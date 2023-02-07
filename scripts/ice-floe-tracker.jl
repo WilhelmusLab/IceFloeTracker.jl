@@ -20,6 +20,10 @@ function main(args)
         "cloudmask"
         help = "Generate cloud mask images"
         action = :command
+
+        "--extract_features", "-e"
+        help = "Extract ice floe features from segmented floe image"
+        action = :command
     end
 
     @add_arg_table! settings["fetchdata"] begin
@@ -34,6 +38,25 @@ function main(args)
         "output",
         Dict(:help => "Output image directory", :required => true),
     ]
+
+    @add_arg_table! settings["extract_features"] begin
+        "--input", "-i"
+        help = "Input image directory"
+        required = true
+
+        "--output", "-o"
+        help = "Output image directory"
+        required = true
+
+        "--area_threshold", "-a"
+        help = "Minimum and maximum area of ice floes to extract"
+        required = true
+
+        "--features", "-f"
+        help = "Features to extract"
+        required = false
+        default = ["centroid", "area", "major_axis_length", "minor_axis_length", "convex_area", "bbox"]
+    end
 
     command_common_args = [
         "metadata",
