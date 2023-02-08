@@ -49,8 +49,9 @@ function main(args)
         required = true
 
         "--area_threshold", "-a"
-        help = "Minimum and maximum area of ice floes to extract"
-        required = true
+        help = """Minimum and maximum area of ice floes to extract. Format: "(1,5)" """
+        required = false
+        default = (300, 90000)
 
         "--features", "-f"
         help = "Features to extract"
