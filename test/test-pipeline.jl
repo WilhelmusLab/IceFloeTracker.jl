@@ -8,7 +8,7 @@
     input = joinpath(pipelinedir, "input_pipeline")
 
     # output dir
-    output = joinpath(pipelinedir, "output")
+    output = mkpath(joinpath(pipelinedir, "output"))
 
     args_to_pass = Dict{Symbol,AbstractString}(zip([:input, :output], [input, output]))
 
@@ -17,12 +17,11 @@
     truecolor_images = IceFloeTracker.load_imgs(; input=input, image_type=:truecolor)
 
     lm_expected =
-        Gray.(load(joinpath(pipelinedir, "expected", "generated_landmask.png"))) .> 0
+        IceFloeTracker.Gray.(load(joinpath(pipelinedir, "expected", "generated_landmask.png"))) .> 0
 
     lm_raw = load(joinpath(input, "landmask.tiff"))
 
-    landmask_raw = lm_raw
-    landmask_no_dilate = (Gray.(landmask_raw) .> 0)
+    landmask_no_dilate = (IceFloeTracker.Gray.(lm_raw) .> 0)
     sharpened_imgs = IceFloeTracker.sharpen(truecolor_images, landmask_no_dilate)
 
     @testset verbose = true "preprocessing" begin
@@ -32,8 +31,11 @@
 
             @test lm_expected == IceFloeTracker.landmask(; args_to_pass...)
             @test lm_expected == IceFloeTracker.landmask(lm_raw, dilate=true)
-            @test (Gray.(lm_raw) .> 0) == IceFloeTracker.landmask(lm_raw, dilate=false)
+            @test (IceFloeTracker.Gray.(lm_raw) .> 0) == IceFloeTracker.landmask(lm_raw, dilate=false)
             @test isfile(joinpath(output, "generated_landmask.png"))
+
+            # clean up!
+            rm(output; recursive=true)
         end
 
         @testset "cloudmask" begin
@@ -80,7 +82,33 @@
             @test length(sharpenedgray_imgs) == 2
         end
 
+        @testset "feature extraction" begin
+            area_threshold = raw"(1, 5)"
+            properties = "area bbox centroid"
+            ispath(joinpath(@__DIR__, "test_inputs", "pipeline", "feature_extraction", "input")) && rm(joinpath(@__DIR__, "test_inputs", "pipeline", "feature_extraction", "input"), recursive=true)
+            input = mkpath(joinpath(@__DIR__, "test_inputs", "pipeline", "feature_extraction", "input"))
+            output = mkpath(joinpath(@__DIR__, "test_inputs", "pipeline", "feature_extraction", "output"))
+            args = Dict{Symbol,Any}(zip([:input, :output, :area_threshold, :features],
+                [input, output, area_threshold, properties]))
+
+            # generate two random image files with boolean data type using a seed
+            for i in 1:2
+                Random.seed!(i)
+                @persist .!rand((false, false, true, true, true), 200, 100) joinpath(input, "floe$i.png")
+            end
+
+            # run feature extraction
+            IceFloeTracker.extract_floe_features(; args...)
+
+            # check that the output files exist
+            @test isfile(joinpath(output, "floe_library.dat"))
+
+            # load the serialized output file
+            floe_library = IceFloeTracker.deserialize(joinpath(output, "floe_library.dat"))
+            @test typeof(floe_library) == Vector{DataFrame}
+
+            # clean up!
+            rm(joinpath(@__DIR__, "test_inputs", "pipeline", "feature_extraction"), recursive=true)
+        end
     end
-    # clean up!
-    rm(output; recursive=true)
 end

@@ -52,10 +52,10 @@ julia> properties = ["area", "perimeter"]
 ```
 """
 function regionprops_table(
-    label_img::Any,
-    intensity_img::Any=nothing;
-    properties::Union{Vector{String},Tuple{String,Vararg{String}}}=("centroid", "area", "major_axis_length", "minor_axis_length", "convex_area", "bbox"),
-    extra_properties::Union{Tuple{Function,Vararg{Function}},Nothing}=nothing,
+    label_img::Matrix{Int64},
+    intensity_img::Union{Nothing,AbstractMatrix}=nothing;
+    properties::Union{Vector{<:AbstractString},Tuple{String,Vararg{String}}}=("centroid", "area", "major_axis_length", "minor_axis_length", "convex_area", "bbox"),
+    extra_properties::Union{Tuple{Function,Vararg{Function}},Nothing}=nothing
 )::DataFrame
     if !isnothing(extra_properties)
         @error "extra_properties not yet implemented in this wrapper; setting it to `nothing`"
@@ -68,7 +68,7 @@ function regionprops_table(
 
     # Add one to bbox-* cols to account for 0-based indexing
     if "bbox" in properties
-        props[:,["bbox-0", "bbox-1", "bbox-2", "bbox-3"]] .+= 1
+        props[:, ["bbox-0", "bbox-1", "bbox-2", "bbox-3"]] .+= 1
     end
 
     return props
@@ -125,7 +125,7 @@ julia> bw_img = rand([0, 1], 5, 10)
 function regionprops(
     label_img::Any,
     intensity_img::Any=nothing;
-    extra_properties::Union{Tuple{Function,Vararg{Function}},Nothing}=nothing,
+    extra_properties::Union{Tuple{Function,Vararg{Function}},Nothing}=nothing
 )
     if !isnothing(extra_properties)
         @error "<extra_properties> not yet implemented in this wrapper; setting it to <nothing>"
