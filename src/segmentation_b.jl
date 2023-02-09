@@ -51,14 +51,10 @@ function segmentation_B(
         .!ImageMorphology.imfill(.!gamma_adjusted_sharpened_cloudmasked_bit, fill_range)
 
     ## Process ice mask
-    sega_closed = MorphSE.closing(segmented_a_ice_mask, struct_elem)
+    ice_intersect = MorphSE.closing(segmented_a_ice_mask, struct_elem) .* segb_filled
 
     ## Create mask from intersect of processed images
-    segmented_b_ice_intersect = (segb_filled .* sega_closed)
+    # segmented_b_ice_intersect = (  sega_closed)
 
-    return segB = (;
-        :not_ice => not_ice_mask .> 0,
-        :filled => segb_filled,
-        :ice => segmented_b_ice_intersect,
-    )
+    return (; :not_ice => not_ice_mask .> 0, :filled => segb_filled, :ice => ice_intersect)
 end
