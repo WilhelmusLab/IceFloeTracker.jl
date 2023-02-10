@@ -30,29 +30,27 @@ function segmentation_F(
     ice_labels::Vector{Int64};
     min_area_opening::Int64=20,
 )::BitMatrix
-    segmentation_B_not_ice_mask = IceFloeTracker.apply_landmask!(
+    IceFloeTracker.apply_landmask!(
         segmentation_B_not_ice_mask, landmask
     )
 
-    ice_mask_watershed = .!watershed_intersect .* segmentation_C_ice_mask
+    ice_leads = .!watershed_intersect .* segmentation_C_ice_mask
 
-    ice_mask_watershed = ImageMorphology.area_opening(
-        ice_mask_watershed; min_area=min_area_opening, connectivity=2
+    ice_leads .= .!ImageMorphology.area_opening(
+        ice_leads; min_area=min_area_opening, connectivity=2
     )
 
-    ice_leads = .!ice_mask_watershed
-
-    not_ice_dilated = IceFloeTracker.MorphSE.dilate(
+    not_ice = IceFloeTracker.MorphSE.dilate(
         segmentation_B_not_ice_mask, IceFloeTracker.MorphSE.strel_diamond((5, 5))
     )
 
-    not_ice_reconstructed = IceFloeTracker.MorphSE.mreconstruct(
-        IceFloeTracker.MorphSE.dilate,
-        complement.(not_ice_dilated),
+    IceFloeTracker.MorphSE.mreconstruct!( 
+        IceFloeTracker.MorphSE.dilate, not_ice,
+        complement.(not_ice),
         complement.(segmentation_B_not_ice_mask),
     )
 
-    reconstructed_leads = (float64.(not_ice_reconstructed .* ice_leads) .+ (60 / 255))
+    reconstructed_leads = (float64.(not_ice .* ice_leads) .+ (60 / 255))
 
     leads_segmented =
         IceFloeTracker.kmeans_segmentation(reconstructed_leads, ice_labels) .*
@@ -64,36 +62,36 @@ function segmentation_F(
 
     leads_filled = .!ImageMorphology.imfill(.!leads_branched, 0:1)
 
-    leads_opened = ImageMorphology.area_opening(
+    leads_opened = IceFloeTracker.branch(ImageMorphology.area_opening(
         leads_filled; min_area=min_area_opening, connectivity=2
-    )
+    ))
 
-    leads_opened_branched = IceFloeTracker.branch(leads_opened)
+    # leads_opened_branched = leads_opened)
 
     leads_bothat =
         IceFloeTracker.MorphSE.bothat(
-            leads_opened_branched, IceFloeTracker.MorphSE.strel_diamond((5, 5))
+            leads_opened, IceFloeTracker.MorphSE.strel_diamond((5, 5))
         ) .> 0.499
 
-    leads = convert(BitMatrix, (complement.(leads_bothat) .* leads_opened_branched))
+    leads = convert(BitMatrix, (complement.(leads_bothat) .* leads_opened))
 
-    leads_bothat_opened = ImageMorphology.area_opening(
+    ImageMorphology.area_opening!(leads, 
         leads; min_area=min_area_opening, connectivity=2
     )
 
     leads_bothat_filled = (
-        IceFloeTracker.MorphSE.fill_holes(leads_bothat_opened) .* cloudmask
+        IceFloeTracker.MorphSE.fill_holes(leads) .* cloudmask
     )
 
-    leads_masked_branched = IceFloeTracker.branch(leads_bothat_filled)
+    floes = IceFloeTracker.branch(leads_bothat_filled)
 
     floes_opened = IceFloeTracker.MorphSE.opening(
-        leads_masked_branched, IceFloeTracker.se_disk4()
+        floes, IceFloeTracker.se_disk4()
     )
 
-    floes_reconstructed = IceFloeTracker.MorphSE.mreconstruct(
-        IceFloeTracker.MorphSE.dilate, leads_masked_branched, floes_opened
+    IceFloeTracker.MorphSE.mreconstruct!(
+        IceFloeTracker.MorphSE.dilate, floes, floes, floes_opened
     )
 
-    return floes_reconstructed
+    return floes
 end

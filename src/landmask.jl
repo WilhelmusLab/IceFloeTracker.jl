@@ -58,7 +58,8 @@ end
 
 # in-place version
 function apply_landmask!(input_image::AbstractMatrix, landmask_binary::BitMatrix)
-    return landmask_binary .* input_image
+    input_image .= landmask_binary .* input_image
+    return nothing
 end
 
 """
