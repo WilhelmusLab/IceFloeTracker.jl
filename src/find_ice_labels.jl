@@ -14,9 +14,8 @@ function find_reflectance_peaks(
     reflectance_channel[reflectance_channel .< possible_ice_threshold] .= 0 #75 / 255
     _, counts = ImageContrastAdjustment.build_histogram(reflectance_channel)
     locs, _ = Peaks.findmaxima(counts)
-    locs = sort(locs; rev=true)
-    second_peak = locs[2]
-    return second_peak
+    sort!(locs; rev=true)
+    return locs[2] # second greatest peak
 end
 
 """
@@ -47,12 +46,13 @@ function find_ice_labels(
 
     ## Make ice masks
     cv = channelview(reflectance_image)
+
     mask_ice_band_7 = cv[1, :, :] .< band_7_threshold #5 / 255
     mask_ice_band_2 = cv[2, :, :] .> band_2_threshold #230 / 255
     mask_ice_band_1 = cv[3, :, :] .> band_1_threshold #240 / 255
     @. ice = mask_ice_band_7 && mask_ice_band_2 && mask_ice_band_1
     ice_labels = remove_landmask(landmask, ice)
-    println("Done with masks")
+    # @info "Done with masks" # to uncomment when logger is added
 
     ## Find obvious ice floes
     if sum(abs.(ice_labels)) == 0
@@ -61,8 +61,8 @@ function find_ice_labels(
         @. ice = mask_ice_band_7 && mask_ice_band_2 && mask_ice_band_1
         ice_labels = remove_landmask(landmask, ice)
         if sum(abs.(ice_labels)) == 0
-            ref_image_band_2 = cv[2, :, :]
-            ref_image_band_1 = cv[3, :, :]
+            ref_image_band_2 = @view(cv[2, :, :])
+            ref_image_band_1 = @view(cv[3, :, :])
             band_2_peak = find_reflectance_peaks(ref_image_band_2)
             band_1_peak = find_reflectance_peaks(ref_image_band_1)
             mask_ice_band_2 = cv[2, :, :] .> band_2_peak / 255
@@ -71,6 +71,6 @@ function find_ice_labels(
             ice_labels = remove_landmask(landmask, ice)
         end
     end
-    println("Done with ice labels")
+    # @info "Done with ice labels" # to uncomment when logger is added
     return ice_labels
 end

@@ -33,6 +33,18 @@ function landmask(; input::String, output::String)
 end
 
 """
+    landmask(landmask_raw::Matrix{RGB{N0f8}}; dilate::Bool)
+
+Usage: `landmask(landmask_raw, dilate=false)`.
+
+To build a dilated landmask use `landmask(landmask_raw, dilate=true)`.
+"""
+function landmask(landmask_raw::Matrix{RGB{N0f8}}; dilate::Bool)
+    dilate && return create_landmask(landmask_raw)
+    return Gray.(landmask_raw) .> 0
+end
+
+"""
     cache_vector(type::Type, numel::Int64, size::Tuple{Int64, Int64})::Vector{type}
 
 Build a vector of types `type` with `numel` elements of size `size`.
@@ -71,6 +83,19 @@ function load_reflectance_imgs(; input::String)
     return load_imgs(; input=input, image_type="reflectance")
 end
 
+"""
+    sharpen(truecolor_imgs::Vector{Matrix{Float64}}, landmask_no_dilate::Matrix{Bool})
+
+Sharpen truecolor images with the non-dilated landmask applied. Returns a vector of sharpened images.
+
+"""
+function sharpen(
+    truecolor_imgs::Vector{Matrix{RGB{Float64}}}, landmask_no_dilate::BitMatrix
+)
+    @info "Sharpening truecolor images..."
+    return [imsharpen(img, landmask_no_dilate) for img in truecolor_imgs]
+end
+
 function cloudmask(; input::String, output::String)::Vector{BitMatrix}
     # find reflectance imgs in input dir
     ref = [img for img in readdir(input) if contains(img, "reflectance")] # ref is sorted
@@ -91,4 +116,50 @@ function cloudmask(; input::String, output::String)::Vector{BitMatrix}
         cloudmasks[i] = IceFloeTracker.create_cloudmask(img)
     end
     return cloudmasks
+end
+
+"""
+    disc_ice_water(
+    reflectance_imgs::Vector{Matrix{RGB{Float64}}},
+    sharpened_imgs::Vector{Matrix{Float64}},
+    cloudmasks::Vector{BitMatrix},
+    landmask::BitMatrix,
+)
+
+Generate vector of ice/water discriminated images from the collection of reflectance, sharpened truecolor, and cloudmask images using the study area landmask. Returns a vector of ice/water masks.
+
+"""
+function disc_ice_water(
+    reflectance_imgs::Vector{Matrix{RGB{Float64}}},
+    sharpened_imgs::Vector{Matrix{Float64}},
+    cloudmasks::Vector{BitMatrix},
+    landmask::BitMatrix,
+)
+    return [
+        IceFloeTracker.discriminate_ice_water(ref_img, shrp_img, landmask, cldmsk) for
+        (ref_img, shrp_img, cldmsk) in zip(reflectance_imgs, sharpened_imgs, cloudmasks)
+    ]
+end
+
+
+"""
+    sharpen_gray(
+    sharpened_imgs::Vector{Matrix{Float64}},
+    landmask::AbstractArray{Bool},
+)
+
+Apply the landmask to the collection of sharpened truecolor images and return a gray colorview of the collection.
+"""
+function sharpen_gray(
+    sharpened_imgs::Vector{Matrix{Float64}},
+    landmask::AbstractArray{Bool},
+)
+    return [IceFloeTracker.imsharpen_gray(img, landmask) for img in sharpened_imgs]
+end
+
+function get_ice_labels(
+    reflectance_imgs::Vector{Matrix{RGB{Float64}}},
+    landmask::AbstractArray{Bool}
+)
+    return [IceFloeTracker.find_ice_labels(ref_img, landmask) for ref_img in reflectance_imgs]
 end

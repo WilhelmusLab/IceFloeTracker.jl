@@ -74,12 +74,6 @@ Find the pixel indexes that are floating ice rather than soft or land ice. Retur
 """
 ## NOTE(tjd): This function is called in `find_ice_labels.jl`
 function remove_landmask(landmask::BitMatrix, ice_mask::BitMatrix)::Array{Int64}
-    indexes_no_landmask = []
     land = IceFloeTracker.apply_landmask(ice_mask, landmask)
-    for (idx, val) in enumerate(land)
-        if val != 0
-            push!(indexes_no_landmask, idx)
-        end
-    end
-    return indexes_no_landmask
+    return [i for i ∈ 1:length(land) if land[i]]
 end

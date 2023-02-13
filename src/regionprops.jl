@@ -1,6 +1,6 @@
 
 """
-    regionprops_table(label_img, intensity_img; properties, connectivity, extra_properties, dataframe)
+    regionprops_table(label_img, intensity_img; properties, connectivity, extra_properties)
 
 A wrapper of the `regionprops_table` function from the skimage python library.
     
@@ -10,7 +10,6 @@ See its full documentation at https://scikit-image.org/docs/stable/api/skimage.m
 - `label_img`: Image with the labeled objects of interest
 - `intensity_img`: (Optional) Used for generating `extra_properties`, integer/float array from which (presumably) `label_img` was generated 
 - `properties`: List (`Vector` or `Tuple`) of properties to be generated for each connected component in `label_img`
-- `dataframe`: (Optional) `Bool` indicating the output data structure to be a dataframe (with value `true`). A `Dict` is returned if `dataframe` is set to `false`. Default value: `false`
 - `extra_properties`: (Optional) not yet implemented. It will be set to `nothing`
 
 See also [`regionprops`](@ref)
@@ -55,10 +54,9 @@ julia> properties = ["area", "perimeter"]
 function regionprops_table(
     label_img::Any,
     intensity_img::Any=nothing;
-    properties::Union{Vector{String},Tuple{String,Vararg{String}}},
-    dataframe::Bool=false,
+    properties::Union{Vector{String},Tuple{String,Vararg{String}}}=("centroid", "area", "major_axis_length", "minor_axis_length", "convex_area", "bbox"),
     extra_properties::Union{Tuple{Function,Vararg{Function}},Nothing}=nothing,
-)
+)::DataFrame
     if !isnothing(extra_properties)
         @error "extra_properties not yet implemented in this wrapper; setting it to `nothing`"
         extra_properties = nothing
@@ -66,9 +64,14 @@ function regionprops_table(
 
     props = sk_measure.regionprops_table(
         label_img, intensity_img, properties; extra_properties=extra_properties
-    )
+    ) |> DataFrame
 
-    return dataframe ? DataFrame(props) : props
+    # Add one to bbox-* cols to account for 0-based indexing
+    if "bbox" in properties
+        props[:,["bbox-0", "bbox-1", "bbox-2", "bbox-3"]] .+= 1
+    end
+
+    return props
 end
 
 # Also adding regionprops as it might be more computationally efficient to get a property for each object on demand than generating the full regionprops_table at once
