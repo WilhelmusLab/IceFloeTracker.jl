@@ -50,7 +50,7 @@ function find_ice_labels(
     mask_ice_band_7 = cv[1, :, :] .< band_7_threshold #5 / 255
     mask_ice_band_2 = cv[2, :, :] .> band_2_threshold #230 / 255
     mask_ice_band_1 = cv[3, :, :] .> band_1_threshold #240 / 255
-    @. ice = mask_ice_band_7 && mask_ice_band_2 && mask_ice_band_1
+    ice = mask_ice_band_7 .* mask_ice_band_2 .* mask_ice_band_1
     ice_labels = remove_landmask(landmask, ice)
     println("Done with masks")
 
@@ -58,7 +58,7 @@ function find_ice_labels(
     if sum(abs.(ice_labels)) == 0
         mask_ice_band_7 = cv[1, :, :] .< band_7_threshold_relaxed #10 / 255
         mask_ice_band_1 = cv[3, :, :] .> band_1_threshold_relaxed #190 / 255
-        @. ice = mask_ice_band_7 && mask_ice_band_2 && mask_ice_band_1
+        ice = mask_ice_band_7 .* mask_ice_band_2 .* mask_ice_band_1
         ice_labels = remove_landmask(landmask, ice)
         if sum(abs.(ice_labels)) == 0
             ref_image_band_2 = cv[2, :, :]
@@ -67,7 +67,7 @@ function find_ice_labels(
             band_1_peak = find_reflectance_peaks(ref_image_band_1)
             mask_ice_band_2 = cv[2, :, :] .> band_2_peak / 255
             mask_ice_band_1 = cv[3, :, :] .> band_1_peak / 255
-            @. ice = mask_ice_band_7 && mask_ice_band_2 && mask_ice_band_1
+            ice = mask_ice_band_7 .* mask_ice_band_2 .* mask_ice_band_1
             ice_labels = remove_landmask(landmask, ice)
         end
     end
