@@ -104,7 +104,7 @@ julia> [s psi] # inspect psi-s data
  7.99877     9.35147
  7.99926     9.39336
 
- julia> plot(s, psi) # inspect psi-s curve -- should be a straight line from (0, 0) to (2π, 3π)
+ julia> plot(s, psi) # inspect psi-s curve -- should be a straight line from (0, 0) to (8, 3π)
 ```
 """
 function make_psi_s(
