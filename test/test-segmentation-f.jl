@@ -15,7 +15,7 @@
         Int64.(
             vec(DelimitedFiles.readdlm("$(test_data_dir)/ice_labels_floe_region.csv", ','))
         )
-    
+
     ## Run function with Matlab inputs
 
     @time isolated_floes = IceFloeTracker.segmentation_F(

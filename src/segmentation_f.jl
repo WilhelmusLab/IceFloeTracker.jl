@@ -30,22 +30,20 @@ function segmentation_F(
     ice_labels::Vector{Int64};
     min_area_opening::Int64=20,
 )::BitMatrix
-    IceFloeTracker.apply_landmask!(
-        segmentation_B_not_ice_mask, landmask
-    )
+    IceFloeTracker.apply_landmask!(segmentation_B_not_ice_mask, landmask)
 
     ice_leads = .!watershed_intersect .* segmentation_C_ice_mask
 
-    ice_leads .= .!ImageMorphology.area_opening(
-        ice_leads; min_area=min_area_opening, connectivity=2
-    )
+    ice_leads .=
+        .!ImageMorphology.area_opening(ice_leads; min_area=min_area_opening, connectivity=2)
 
     not_ice = IceFloeTracker.MorphSE.dilate(
         segmentation_B_not_ice_mask, IceFloeTracker.MorphSE.strel_diamond((5, 5))
     )
 
-    IceFloeTracker.MorphSE.mreconstruct!( 
-        IceFloeTracker.MorphSE.dilate, not_ice,
+    IceFloeTracker.MorphSE.mreconstruct!(
+        IceFloeTracker.MorphSE.dilate,
+        not_ice,
         complement.(not_ice),
         complement.(segmentation_B_not_ice_mask),
     )
@@ -62,9 +60,11 @@ function segmentation_F(
 
     leads_filled = .!ImageMorphology.imfill(.!leads_branched, 0:1)
 
-    leads_opened = IceFloeTracker.branch(ImageMorphology.area_opening(
-        leads_filled; min_area=min_area_opening, connectivity=2
-    ))
+    leads_opened = IceFloeTracker.branch(
+        ImageMorphology.area_opening(
+            leads_filled; min_area=min_area_opening, connectivity=2
+        ),
+    )
 
     # leads_opened_branched = leads_opened)
 
@@ -75,19 +75,13 @@ function segmentation_F(
 
     leads = convert(BitMatrix, (complement.(leads_bothat) .* leads_opened))
 
-    ImageMorphology.area_opening!(leads, 
-        leads; min_area=min_area_opening, connectivity=2
-    )
+    ImageMorphology.area_opening!(leads, leads; min_area=min_area_opening, connectivity=2)
 
-    leads_bothat_filled = (
-        IceFloeTracker.MorphSE.fill_holes(leads) .* cloudmask
-    )
+    leads_bothat_filled = (IceFloeTracker.MorphSE.fill_holes(leads) .* cloudmask)
 
     floes = IceFloeTracker.branch(leads_bothat_filled)
 
-    floes_opened = IceFloeTracker.MorphSE.opening(
-        floes, IceFloeTracker.se_disk4()
-    )
+    floes_opened = IceFloeTracker.MorphSE.opening(floes, IceFloeTracker.se_disk4())
 
     IceFloeTracker.MorphSE.mreconstruct!(
         IceFloeTracker.MorphSE.dilate, floes, floes, floes_opened
