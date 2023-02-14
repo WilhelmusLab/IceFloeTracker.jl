@@ -63,7 +63,7 @@ function segmentation_F(
     leads_opened = IceFloeTracker.branch(
         ImageMorphology.area_opening(
             leads_filled; min_area=min_area_opening, connectivity=2
-        )
+        ),
     )
 
     leads_bothat =
