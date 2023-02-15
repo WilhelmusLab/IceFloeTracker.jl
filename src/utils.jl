@@ -225,11 +225,11 @@ function check_2_tuple(pair::Tuple{Int64,Int64})
 end
 
 """
-    parse_2tuple(s::String)
+    parse_2_tuple(s::String)
 
 Parse a string of the form "a,b" into a tuple of Int64.
 """
-function parse_2tuple(s::String)::Tuple{Int64,Int64}
+function parse_2_tuple(s::String)::Tuple{Int64,Int64}
     # assert first and last characters are parentheses
     s[1] != '(' && throw(ArgumentError("The first character of `$s` must be a left parenthesis."))
     s[end] != ')' && throw(ArgumentError("The last character of `$s` must be a right parenthesis."))

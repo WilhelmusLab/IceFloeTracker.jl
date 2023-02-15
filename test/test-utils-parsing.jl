@@ -1,6 +1,6 @@
 @testset verbose=true "utils.jl for arg parsing" begin
 
-    @testset "utils.jl parse_2tuple" begin
+    @testset "utils.jl parse_2_tuple" begin
         println("-------------------------------------------------")
         println("--------------- Parse 2 Tuple Tests -------------")
         s = raw"(1   ,   3)" 
@@ -21,7 +21,7 @@
 
     @testset "utils.jl check_2_tuple" begin
         println("-------------------------------------------------")
-        println("--------------- Check_2Tuple Tests -------------")
+        println("--------------- Check 2 Tuple Tests -------------")
         @test_throws ArgumentError IceFloeTracker.check_2_tuple((1, 1))
         @test_throws ArgumentError IceFloeTracker.check_2_tuple((2, 1))
         @test IceFloeTracker.check_2_tuple((1, 2)) == nothing
