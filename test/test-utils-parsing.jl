@@ -4,19 +4,19 @@
         println("-------------------------------------------------")
         println("--------------- Parse 2 Tuple Tests -------------")
         s = raw"(1   ,   3)" 
-        @test (1, 3) == IceFloeTracker.parse_2tuple(s)
+        @test (1, 3) == IceFloeTracker.parse_2_tuple(s)
         s = raw"(1,3)"
-        @test (1, 3) == IceFloeTracker.parse_2tuple(s)
+        @test (1, 3) == IceFloeTracker.parse_2_tuple(s)
         s = raw"(1 3)"
-        @test_throws ArgumentError IceFloeTracker.parse_2tuple(s)
+        @test_throws ArgumentError IceFloeTracker.parse_2_tuple(s)
         s = raw"(1, 3, 5)"
-        @test_throws MethodError IceFloeTracker.parse_2tuple(s)
+        @test_throws MethodError IceFloeTracker.parse_2_tuple(s)
         s = "1 2"
-        @test_throws ArgumentError IceFloeTracker.parse_2tuple(s)
+        @test_throws ArgumentError IceFloeTracker.parse_2_tuple(s)
         s= "1, 2)"
-        @test_throws ArgumentError IceFloeTracker.parse_2tuple(s)
+        @test_throws ArgumentError IceFloeTracker.parse_2_tuple(s)
         s = "(1, 2"
-        @test_throws ArgumentError IceFloeTracker.parse_2tuple(s)
+        @test_throws ArgumentError IceFloeTracker.parse_2_tuple(s)
     end
 
     @testset "utils.jl check_2_tuple" begin
@@ -24,9 +24,8 @@
         println("--------------- Check 2 Tuple Tests -------------")
         @test_throws ArgumentError IceFloeTracker.check_2_tuple((1, 1))
         @test_throws ArgumentError IceFloeTracker.check_2_tuple((2, 1))
-        @test IceFloeTracker.check_2_tuple((1, 2)) == nothing
+        @test IceFloeTracker.check_2_tuple((1, 2)) === nothing
         @test_throws MethodError IceFloeTracker.check_2_tuple((1, 2, 3))
         @test_throws MethodError IceFloeTracker.check_2_tuple((1,))
     end
 end
-

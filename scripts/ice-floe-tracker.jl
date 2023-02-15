@@ -21,7 +21,7 @@ function main(args)
         help = "Generate cloud mask images"
         action = :command
 
-        "--extract_features", "-e"
+        "extract_features"
         help = "Extract ice floe features from segmented floe image"
         action = :command
     end
@@ -54,7 +54,7 @@ function main(args)
         default = (300, 90000)
 
         "--features", "-f"
-        help = "Features to extract"
+        help = """Features to extract. Format: "feature1 feature2". For an extensive list of extractable features see https://scikit-image.org/docs/stable/api/skimage.measure.html#skimage.measure.regionprops:~:text=The%20following%20properties%20can%20be%20accessed%20as%20attributes%20or%20keys"""
         required = false
         default = ["centroid", "area", "major_axis_length", "minor_axis_length", "convex_area", "bbox"]
     end

@@ -235,4 +235,3 @@ function parse_2_tuple(s::String)::Tuple{Int64,Int64}
     s[end] != ')' && throw(ArgumentError("The last character of `$s` must be a right parenthesis."))
     Tuple(parse.(Int64, split(s[2:end-1], ',')))
 end
-
