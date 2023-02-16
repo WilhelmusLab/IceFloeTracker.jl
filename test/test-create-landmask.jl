@@ -60,4 +60,11 @@
     @test test_similarity(
         landmask_no_dilate, convert(BitMatrix, matlab_landmask_no_dilate), 0.005
     )
+
+    # test for in-place allocation reduction
+    normal_lm = @allocated IceFloeTracker.apply_landmask(test_image, landmask)
+    inplace_lm = @allocated IceFloeTracker.apply_landmask!(test_image, landmask)
+    println(normal_lm) 
+    println(inplace_lm)
+    @test normal_lm !== inplace_lm
 end

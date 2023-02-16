@@ -28,6 +28,7 @@
     )
 
     IceFloeTracker.@persist isolated_floes "./test_outputs/isolated_floes.png" true
+    IceFloeTracker.@persist matlab_BW7[ice_floe_test_region...] "./test_outputs/matlab_isolated_floes.png" true
 
     @test test_similarity(matlab_BW7[ice_floe_test_region...], isolated_floes, 0.016)
 end
