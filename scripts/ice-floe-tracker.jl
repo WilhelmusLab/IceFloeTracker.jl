@@ -49,7 +49,7 @@ function main(args)
         required = true
 
         "--area_threshold", "-a"
-        help = """Minimum and maximum area of ice floes to extract. Format: "(1,5)" """
+        help = """Minimum and maximum area of ice floes to extract (# of pixels contained in floe). Format: "(1,5)" """
         required = false
         default = (300, 90000)
 
