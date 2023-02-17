@@ -66,9 +66,9 @@
     @time normal_lm = IceFloeTracker.apply_landmask(test_image, landmask)
     @time IceFloeTracker.apply_landmask!(test_image, landmask)
 
-    x = (@allocated normal_lm = IceFloeTracker.apply_landmask(test_image, landmask))
+    x = @allocated IceFloeTracker.apply_landmask(test_image, landmask)
     println("normal allocations: $x")
-    y = (@allocated IceFloeTracker.apply_landmask!(test_image, landmask))
+    y = @allocated IceFloeTracker.apply_landmask!(test_image, landmask)
     println("in-place allocations: $y")
     @test x > y
 
