@@ -12,7 +12,6 @@
         float64.(load(matlab_landmask_no_dilate_file)[lm_test_region...])
     lm_image = float64.(load(landmask_file)[lm_test_region...])
     test_image = load(truecolor_test_image_file)[lm_test_region...]
-    test_image2 = deepcopy(test_image)
 
     @time landmask = IceFloeTracker.create_landmask(lm_image, struct_elem)
 
@@ -64,13 +63,16 @@
     )
 
     # test for in-place allocation reduction
-    println(@allocated IceFloeTracker.apply_landmask(test_image, landmask))
-    println(@allocated IceFloeTracker.apply_landmask!(test_image2, landmask))
+    @time normal_lm = IceFloeTracker.apply_landmask(test_image, landmask)
+    @time IceFloeTracker.apply_landmask!(test_image, landmask)
 
-    @test ((@allocated normal_lm = IceFloeTracker.apply_landmask(test_image, landmask)) > 
-    (@allocated inplace_lm = IceFloeTracker.apply_landmask!(test_image2, landmask)))
+    x = (@allocated normal_lm = IceFloeTracker.apply_landmask(test_image, landmask))
+    println("normal allocations: $x")
+    y = (@allocated IceFloeTracker.apply_landmask!(test_image, landmask))
+    println("in-place allocations: $y")
+    @test x > y
 
-    # test that the test image has been updaetd in-place and equals the new image with landmask applied
-    @test(test_image2 == normal_lm)
+    # test that the test image has been updated in-place and equals the new image with landmask applied
+    @test(test_image == normal_lm)
     
 end
