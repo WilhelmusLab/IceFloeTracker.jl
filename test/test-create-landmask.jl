@@ -12,6 +12,7 @@
         float64.(load(matlab_landmask_no_dilate_file)[lm_test_region...])
     lm_image = float64.(load(landmask_file)[lm_test_region...])
     test_image = load(truecolor_test_image_file)[lm_test_region...]
+    test_image2 = deepcopy(test_image)
     @time landmask = IceFloeTracker.create_landmask(lm_image, struct_elem)
 
     # Test method with default se
@@ -63,7 +64,7 @@
 
     # test for in-place allocation reduction
     normal_lm = @allocated IceFloeTracker.apply_landmask(test_image, landmask)
-    inplace_lm = @allocated IceFloeTracker.apply_landmask!(test_image, landmask)
+    inplace_lm = @allocated IceFloeTracker.apply_landmask!(test_image2, landmask)
     println(normal_lm)
     println(inplace_lm)
     @test normal_lm > inplace_lm
