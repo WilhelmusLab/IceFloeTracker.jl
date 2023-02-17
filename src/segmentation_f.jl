@@ -82,8 +82,8 @@ function segmentation_F(
     floes_opened = IceFloeTracker.MorphSE.opening(floes, IceFloeTracker.se_disk4())
 
     IceFloeTracker.MorphSE.mreconstruct!(
-        IceFloeTracker.MorphSE.dilate, floes, floes, floes_opened
+        IceFloeTracker.MorphSE.dilate, floes_opened, floes, floes_opened
     )
 
-    return floes
+    return floes_opened
 end

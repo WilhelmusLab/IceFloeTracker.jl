@@ -74,5 +74,4 @@
 
     # test that the test image has been updated in-place and equals the new image with landmask applied
     @test(test_image == normal_lm)
-    
 end
