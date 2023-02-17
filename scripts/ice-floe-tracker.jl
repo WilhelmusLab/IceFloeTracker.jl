@@ -6,7 +6,7 @@ using ArgParse
 using IceFloeTracker
 
 function main(args)
-    settings = ArgParseSettings()
+    settings = ArgParseSettings(; autofix_names=true)
 
     @add_arg_table! settings begin
         "fetchdata"
@@ -21,7 +21,7 @@ function main(args)
         help = "Generate cloud mask images"
         action = :command
 
-        "--extract_features", "-e"
+        "extractfeatures"
         help = "Extract ice floe features from segmented floe image"
         action = :command
     end
@@ -39,7 +39,7 @@ function main(args)
         Dict(:help => "Output image directory", :required => true),
     ]
 
-    @add_arg_table! settings["extract_features"] begin
+    @add_arg_table! settings["extractfeatures"] begin
         "--input", "-i"
         help = "Input image directory"
         required = true
@@ -48,13 +48,18 @@ function main(args)
         help = "Output image directory"
         required = true
 
-        "--area_threshold", "-a"
-        help = """Minimum and maximum area of ice floes to extract. Format: "(1,5)" """
+        "--min-area"
+        help = """Minimum area of ice floes to extract"""
         required = false
-        default = (300, 90000)
+        default = 300
+
+        "--max-area"
+        help = "Maximum area of ice floes to extract"
+        required = false
+        default = 90000
 
         "--features", "-f"
-        help = "Features to extract"
+        help = """Features to extract. Format: "feature1 feature2". For an extensive list of extractable features see https://scikit-image.org/docs/stable/api/skimage.measure.html#skimage.measure.regionprops:~:text=The%20following%20properties%20can%20be%20accessed%20as%20attributes%20or%20keys"""
         required = false
         default = ["centroid", "area", "major_axis_length", "minor_axis_length", "convex_area", "bbox"]
     end

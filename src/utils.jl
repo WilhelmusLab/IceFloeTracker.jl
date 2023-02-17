@@ -212,27 +212,3 @@ function _pad_handler(I, img, nhood)
     (length(nhood) == 6) && return padnhood(img, I, nhood) # edge pixels
     return @view img[nhood]
 end
-
-"""
-    check_2_tuple(pair::Tuple{Int64,Int64})
-
-Check that the first element of `pair` is less than the second.
-"""
-function check_2_tuple(pair::Tuple{Int64,Int64})
-    # assert the first area threshold is less than the second
-    pair[1] >= pair[2] && throw(ArgumentError("The first element of $pair must be less than the second."))
-    nothing
-end
-
-"""
-    parse_2tuple(s::String)
-
-Parse a string of the form "a,b" into a tuple of Int64.
-"""
-function parse_2tuple(s::String)::Tuple{Int64,Int64}
-    # assert first and last characters are parentheses
-    s[1] != '(' && throw(ArgumentError("The first character of `$s` must be a left parenthesis."))
-    s[end] != ')' && throw(ArgumentError("The last character of `$s` must be a right parenthesis."))
-    Tuple(parse.(Int64, split(s[2:end-1], ',')))
-end
-
