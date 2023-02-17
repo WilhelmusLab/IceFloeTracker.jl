@@ -81,34 +81,37 @@
             @test eltype(sharpenedgray_imgs[1]) == Gray{Float64}
             @test length(sharpenedgray_imgs) == 2
         end
+    end
 
-        @testset "feature extraction" begin
-            area_threshold = raw"(1, 5)"
-            properties = "area bbox centroid"
-            ispath(joinpath(@__DIR__, "test_inputs", "pipeline", "feature_extraction", "input")) && rm(joinpath(@__DIR__, "test_inputs", "pipeline", "feature_extraction", "input"), recursive=true)
-            input = mkpath(joinpath(@__DIR__, "test_inputs", "pipeline", "feature_extraction", "input"))
-            output = mkpath(joinpath(@__DIR__, "test_inputs", "pipeline", "feature_extraction", "output"))
-            args = Dict{Symbol,Any}(zip([:input, :output, :area_threshold, :features],
-                [input, output, area_threshold, properties]))
+    @testset "feature extraction" begin
+        min_area = "1"
+        max_area = "5"
+        features = "area bbox centroid"
+        extraction_path = joinpath(@__DIR__, "test_inputs", "pipeline", "feature_extraction")
+        ispath(joinpath(extraction_path, "input")) && rm(joinpath(extraction_path, "input"), recursive=true)
+        input = mkpath(joinpath(extraction_path, "input"))
+        output = mkpath(joinpath(extraction_path, "output"))
+        args = Dict{Symbol,Any}(zip([:input, :output, :min_area, :max_area, :features],
+            [input, output, min_area, max_area, features]))
 
-            # generate two random image files with boolean data type using a seed
-            for i in 1:2
-                Random.seed!(i)
-                @persist .!rand((false, false, true, true, true), 200, 100) joinpath(input, "floe$i.png")
-            end
-
-            # run feature extraction
-            IceFloeTracker.extract_floe_features(; args...)
-
-            # check that the output files exist
-            @test isfile(joinpath(output, "floe_library.dat"))
-
-            # load the serialized output file
-            floe_library = IceFloeTracker.deserialize(joinpath(output, "floe_library.dat"))
-            @test typeof(floe_library) == Vector{DataFrame}
-
-            # clean up!
-            rm(joinpath(@__DIR__, "test_inputs", "pipeline", "feature_extraction"), recursive=true)
+        # generate two random image files with boolean data type using a seed
+        for i in 1:2
+            Random.seed!(i)
+            @persist .!rand((false, false, true, true, true), 200, 100) joinpath(input, "floe$i.png")
         end
+
+        # run feature extraction
+        IceFloeTracker.extractfeatures(; args...)
+
+        # check that the output files exist
+        @test isfile(joinpath(output, "floe_library.dat"))
+
+        # load the serialized output file
+        floe_library = IceFloeTracker.deserialize(joinpath(output, "floe_library.dat"))
+        @test typeof(floe_library) == Vector{DataFrame}
+        @test length(floe_library) == 2
+
+        # clean up!
+        rm(extraction_path, recursive=true)
     end
 end
