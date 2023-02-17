@@ -12,7 +12,7 @@
         float64.(load(matlab_landmask_no_dilate_file)[lm_test_region...])
     lm_image = float64.(load(landmask_file)[lm_test_region...])
     test_image = load(truecolor_test_image_file)[lm_test_region...]
-    test_image2 = deepcopy(test_image)
+    test_image2 = load(truecolor_test_image_file)[lm_test_region...]
     @time landmask = IceFloeTracker.create_landmask(lm_image, struct_elem)
 
     # Test method with default se
