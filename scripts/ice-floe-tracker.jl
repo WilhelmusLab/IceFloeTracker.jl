@@ -49,12 +49,12 @@ function main(args)
         required = true
 
         "--min-area"
-        help = """Minimum area of ice floes to extract"""
+        help = "Minimum area (in pixels) of ice floes to extract"
         required = false
         default = 300
 
         "--max-area"
-        help = "Maximum area of ice floes to extract"
+        help = "Maximum area (in pixels) of ice floes to extract"
         required = false
         default = 90000
 
