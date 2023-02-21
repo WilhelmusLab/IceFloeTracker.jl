@@ -8,7 +8,7 @@
     input = joinpath(pipelinedir, "input_pipeline")
 
     # output dir
-    output = joinpath(pipelinedir, "output")
+    output = mkpath(joinpath(pipelinedir, "output"))
 
     args_to_pass = Dict{Symbol,AbstractString}(zip([:input, :output], [input, output]))
 
@@ -17,12 +17,13 @@
     truecolor_images = IceFloeTracker.load_imgs(; input=input, image_type=:truecolor)
 
     lm_expected =
-        Gray.(load(joinpath(pipelinedir, "expected", "generated_landmask.png"))) .> 0
+        IceFloeTracker.Gray.(
+            load(joinpath(pipelinedir, "expected", "generated_landmask.png"))
+        ) .> 0
 
     lm_raw = load(joinpath(input, "landmask.tiff"))
 
-    landmask_raw = lm_raw
-    landmask_no_dilate = (Gray.(landmask_raw) .> 0)
+    landmask_no_dilate = (IceFloeTracker.Gray.(lm_raw) .> 0)
     sharpened_imgs = IceFloeTracker.sharpen(truecolor_images, landmask_no_dilate)
 
     @testset verbose = true "preprocessing" begin
@@ -31,9 +32,13 @@
             println("------------ landmask creation tests ---------------")
 
             @test lm_expected == IceFloeTracker.landmask(; args_to_pass...)
-            @test lm_expected == IceFloeTracker.landmask(lm_raw, dilate=true)
-            @test (Gray.(lm_raw) .> 0) == IceFloeTracker.landmask(lm_raw, dilate=false)
+            @test lm_expected == IceFloeTracker.landmask(lm_raw; dilate=true)
+            @test (IceFloeTracker.Gray.(lm_raw) .> 0) ==
+                IceFloeTracker.landmask(lm_raw; dilate=false)
             @test isfile(joinpath(output, "generated_landmask.png"))
+
+            # clean up!
+            rm(output; recursive=true)
         end
 
         @testset "cloudmask" begin
@@ -79,8 +84,46 @@
             @test eltype(sharpenedgray_imgs[1]) == Gray{Float64}
             @test length(sharpenedgray_imgs) == 2
         end
-
     end
-    # clean up!
-    rm(output; recursive=true)
+
+    @testset "feature extraction" begin
+        min_area = "1"
+        max_area = "5"
+        features = "area bbox centroid"
+        extraction_path = joinpath(
+            @__DIR__, "test_inputs", "pipeline", "feature_extraction"
+        )
+        ispath(joinpath(extraction_path, "input")) &&
+            rm(joinpath(extraction_path, "input"); recursive=true)
+        input = mkpath(joinpath(extraction_path, "input"))
+        output = mkpath(joinpath(extraction_path, "output"))
+        args = Dict{Symbol,Any}(
+            zip(
+                [:input, :output, :min_area, :max_area, :features],
+                [input, output, min_area, max_area, features],
+            ),
+        )
+
+        # generate two random image files with boolean data type using a seed
+        for i in 1:2
+            Random.seed!(i)
+            @persist .!rand((false, false, true, true, true), 200, 100) joinpath(
+                input, "floe$i.png"
+            )
+        end
+
+        # run feature extraction
+        IceFloeTracker.extractfeatures(; args...)
+
+        # check that the output files exist
+        @test isfile(joinpath(output, "floe_library.dat"))
+
+        # load the serialized output file
+        floe_library = IceFloeTracker.deserialize(joinpath(output, "floe_library.dat"))
+        @test typeof(floe_library) == Vector{DataFrame}
+        @test length(floe_library) == 2
+
+        # clean up!
+        rm(extraction_path; recursive=true)
+    end
 end

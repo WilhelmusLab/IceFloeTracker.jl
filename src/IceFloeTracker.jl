@@ -15,6 +15,7 @@ using RegisterMismatch
 using RegisterQD
 using StaticArrays
 using OffsetArrays: centered
+using Serialization: serialize, deserialize
 
 export readdlm,
     padnhood, bridge, branch, landmask, @persist, load, cloudmask, create_cloudmask
@@ -54,6 +55,7 @@ include("find_ice_labels.jl")
 include("segmentation_f.jl")
 
 include("pipeline/preprocess.jl")
+include("pipeline/feature-extraction.jl")
 
 function fetchdata(; output::AbstractString)
     mkpath("$output")

@@ -52,9 +52,11 @@ julia> properties = ["area", "perimeter"]
 ```
 """
 function regionprops_table(
-    label_img::Any,
-    intensity_img::Any=nothing;
-    properties::Union{Vector{String},Tuple{String,Vararg{String}}}=("centroid", "area", "major_axis_length", "minor_axis_length", "convex_area", "bbox"),
+    label_img::Matrix{Int64},
+    intensity_img::Union{Nothing,AbstractMatrix}=nothing;
+    properties::Union{Vector{<:AbstractString},Tuple{String,Vararg{String}}}=(
+        "centroid", "area", "major_axis_length", "minor_axis_length", "convex_area", "bbox"
+    ),
     extra_properties::Union{Tuple{Function,Vararg{Function}},Nothing}=nothing,
 )::DataFrame
     if !isnothing(extra_properties)
@@ -62,13 +64,15 @@ function regionprops_table(
         extra_properties = nothing
     end
 
-    props = sk_measure.regionprops_table(
-        label_img, intensity_img, properties; extra_properties=extra_properties
-    ) |> DataFrame
+    props = DataFrame(
+        sk_measure.regionprops_table(
+            label_img, intensity_img, properties; extra_properties=extra_properties
+        ),
+    )
 
     # Add one to bbox-* cols to account for 0-based indexing
     if "bbox" in properties
-        props[:,["bbox-0", "bbox-1", "bbox-2", "bbox-3"]] .+= 1
+        props[:, ["bbox-0", "bbox-1", "bbox-2", "bbox-3"]] .+= 1
     end
 
     return props
