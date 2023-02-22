@@ -48,33 +48,40 @@ julia> features = ["centroid", "area", "major_axis_length", "minor_axis_length",
  
 ```
 """
-function extractfeatures(bw::T; min_area::Int64=300, max_area::Int64=90000, features::Union{Vector{Symbol},Vector{<:AbstractString}})::DataFrame where {T<:AbstractArray{Bool}}
+function extractfeatures(
+    bw::T;
+    min_area::Int64=300,
+    max_area::Int64=90000,
+    features::Union{Vector{Symbol},Vector{<:AbstractString}},
+)::DataFrame where {T<:AbstractArray{Bool}}
     # assert the first area threshold is less than the second
-    min_area>=max_area && throw(ArgumentError("The minimum area must be less than the maximum area."))
+    min_area >= max_area &&
+        throw(ArgumentError("The minimum area must be less than the maximum area."))
 
-    props = regionprops_table(label_components(bw, trues(3, 3)), properties=features)
+    props = regionprops_table(label_components(bw, trues(3, 3)); properties=features)
 
     # filter by area using the area thresholds
-    return props[min_area.<=props.area.<=max_area, :]
+    return props[min_area .<= props.area .<= max_area, :]
 end
 
-function extractfeatures(; input::String, output::String, min_area::String, max_area::String, features::String)
+function extractfeatures(;
+    input::String, output::String, min_area::String, max_area::String, features::String
+)
     # parse min_area and max_area as Int64
     min_area = parse(Int64, min_area)
     max_area = parse(Int64, max_area)
-    
+
     # parse the features
     features = split(features)
 
     # load segmented images in input directory
-    segmented_floes = [
-        BitMatrix(load(joinpath(input, f))) for
-        f in readdir(input)
-    ]
+    segmented_floes = [BitMatrix(load(joinpath(input, f))) for f in readdir(input)]
 
     props = [
-        IceFloeTracker.extractfeatures(bw; min_area=min_area, max_area=max_area, features=features) for
-        bw in segmented_floes]
+        IceFloeTracker.extractfeatures(
+            bw; min_area=min_area, max_area=max_area, features=features
+        ) for bw in segmented_floes
+    ]
 
     # serialize the props vector to the output directory 
     serialize(joinpath(output, "floe_library.dat"), props) # need job id for file name?

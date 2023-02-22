@@ -46,10 +46,11 @@ function find_ice_labels(
 
     ## Make ice masks
     cv = channelview(reflectance_image)
+
     mask_ice_band_7 = @view(cv[1, :, :]) .< band_7_threshold #5 / 255
     mask_ice_band_2 = @view(cv[2, :, :]) .> band_2_threshold #230 / 255
     mask_ice_band_1 = @view(cv[3, :, :]) .> band_1_threshold #240 / 255
-    ice = mask_ice_band_7 .&& mask_ice_band_2 .&& mask_ice_band_1
+    ice = mask_ice_band_7 .* mask_ice_band_2 .* mask_ice_band_1
     ice_labels = remove_landmask(landmask, ice)
     # @info "Done with masks" # to uncomment when logger is added
 
@@ -57,8 +58,8 @@ function find_ice_labels(
     if sum(abs.(ice_labels)) == 0
         mask_ice_band_7 = @view(cv[1, :, :]) .< band_7_threshold_relaxed #10 / 255
         mask_ice_band_1 = @view(cv[3, :, :]) .> band_1_threshold_relaxed #190 / 255
-        ice .= mask_ice_band_7 .&& mask_ice_band_2 .&& mask_ice_band_1
-        ice_labels .= remove_landmask(landmask, ice)
+        ice = mask_ice_band_7 .* mask_ice_band_2 .* mask_ice_band_1
+        ice_labels = remove_landmask(landmask, ice)
         if sum(abs.(ice_labels)) == 0
             ref_image_band_2 = @view(cv[2, :, :])
             ref_image_band_1 = @view(cv[3, :, :])
@@ -66,9 +67,8 @@ function find_ice_labels(
             band_1_peak = find_reflectance_peaks(ref_image_band_1)
             mask_ice_band_2 = @view(cv[2, :, :]) .> band_2_peak / 255
             mask_ice_band_1 = @view(cv[3, :, :]) .> band_1_peak / 255
-            ice .= mask_ice_band_7 .&& mask_ice_band_2 .&& mask_ice_band_1
-            ice_labels .= remove_landmask(landmask, ice)
-
+            ice = mask_ice_band_7 .* mask_ice_band_2 .* mask_ice_band_1
+            ice_labels = remove_landmask(landmask, ice)
         end
     end
     # @info "Done with ice labels" # to uncomment when logger is added

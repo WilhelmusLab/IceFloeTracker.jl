@@ -17,7 +17,9 @@
     truecolor_images = IceFloeTracker.load_imgs(; input=input, image_type=:truecolor)
 
     lm_expected =
-        IceFloeTracker.Gray.(load(joinpath(pipelinedir, "expected", "generated_landmask.png"))) .> 0
+        IceFloeTracker.Gray.(
+            load(joinpath(pipelinedir, "expected", "generated_landmask.png"))
+        ) .> 0
 
     lm_raw = load(joinpath(input, "landmask.tiff"))
 
@@ -30,8 +32,9 @@
             println("------------ landmask creation tests ---------------")
 
             @test lm_expected == IceFloeTracker.landmask(; args_to_pass...)
-            @test lm_expected == IceFloeTracker.landmask(lm_raw, dilate=true)
-            @test (IceFloeTracker.Gray.(lm_raw) .> 0) == IceFloeTracker.landmask(lm_raw, dilate=false)
+            @test lm_expected == IceFloeTracker.landmask(lm_raw; dilate=true)
+            @test (IceFloeTracker.Gray.(lm_raw) .> 0) ==
+                IceFloeTracker.landmask(lm_raw; dilate=false)
             @test isfile(joinpath(output, "generated_landmask.png"))
 
             # clean up!
@@ -87,17 +90,26 @@
         min_area = "1"
         max_area = "5"
         features = "area bbox centroid"
-        extraction_path = joinpath(@__DIR__, "test_inputs", "pipeline", "feature_extraction")
-        ispath(joinpath(extraction_path, "input")) && rm(joinpath(extraction_path, "input"), recursive=true)
+        extraction_path = joinpath(
+            @__DIR__, "test_inputs", "pipeline", "feature_extraction"
+        )
+        ispath(joinpath(extraction_path, "input")) &&
+            rm(joinpath(extraction_path, "input"); recursive=true)
         input = mkpath(joinpath(extraction_path, "input"))
         output = mkpath(joinpath(extraction_path, "output"))
-        args = Dict{Symbol,Any}(zip([:input, :output, :min_area, :max_area, :features],
-            [input, output, min_area, max_area, features]))
+        args = Dict{Symbol,Any}(
+            zip(
+                [:input, :output, :min_area, :max_area, :features],
+                [input, output, min_area, max_area, features],
+            ),
+        )
 
         # generate two random image files with boolean data type using a seed
         for i in 1:2
             Random.seed!(i)
-            @persist .!rand((false, false, true, true, true), 200, 100) joinpath(input, "floe$i.png")
+            @persist .!rand((false, false, true, true, true), 200, 100) joinpath(
+                input, "floe$i.png"
+            )
         end
 
         # run feature extraction
@@ -112,6 +124,6 @@
         @test length(floe_library) == 2
 
         # clean up!
-        rm(extraction_path, recursive=true)
+        rm(extraction_path; recursive=true)
     end
 end

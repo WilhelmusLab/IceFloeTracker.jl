@@ -28,7 +28,7 @@ macro persist(_img, _fname::Union{String,Symbol,Expr,Nothing}, ts::Bool)
     # fname provided and ts desired
     if !isnothing(_fname) && ts
         _fname = string(_fname)
-        if _fname[end-3] == '.' # with an ext?
+        if _fname[end - 3] == '.' # with an ext?
             name, ext = fname_ext_split(_fname)
             # tack on the timestamp and splice the ext back
             _fname = fname_ext_splice(timestamp(name), ext)
@@ -36,5 +36,5 @@ macro persist(_img, _fname::Union{String,Symbol,Expr,Nothing}, ts::Bool)
     end
     return quote
         @persist($(esc(_img)), $(esc(_fname)))
-    end 
+    end
 end

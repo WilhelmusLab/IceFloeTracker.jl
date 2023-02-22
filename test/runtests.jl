@@ -30,6 +30,7 @@ to_test = alltests # uncomment this line to run all tests or add individual file
     # "test-segmentation-b.jl",
     # "test-segmentation-c.jl",
     # "test-segmentation-d-e.jl",
+    # "test-segmentation-f.jl",
     # "test-bwtraceboundary.jl",
     # "test-resample-boundary.jl",
     # "test-regionprops.jl",

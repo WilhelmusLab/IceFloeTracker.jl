@@ -52,6 +52,7 @@ include("segmentation_c.jl")
 include("bwperim.jl")
 include("segmentation_d_e.jl")
 include("find_ice_labels.jl")
+include("segmentation_f.jl")
 
 include("pipeline/preprocess.jl")
 include("pipeline/feature-extraction.jl")
@@ -80,7 +81,7 @@ end
 
 Module for morphological operations with structuring element functionality adapted from ImageMorphology v0.4.3.
 
-This module is temporary until v0.5 of ImageMorphology is relaeased.
+This module is temporary until v0.5 of ImageMorphology is released.
 
 Main functionality is `dilate(img, se)` for landmask computations.
 
@@ -137,5 +138,6 @@ module MorphSE
     include("morphSE/closing.jl")
     include("morphSE/bothat.jl")
     include("morphSE/mreconstruct.jl")
+    include("morphSE/fill_holes.jl")
 end
 end

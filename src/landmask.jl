@@ -56,6 +56,12 @@ function apply_landmask(input_image::AbstractMatrix, landmask_binary::BitMatrix)
     return image_masked
 end
 
+# in-place version
+function apply_landmask!(input_image::AbstractMatrix, landmask_binary::BitMatrix)
+    input_image .= landmask_binary .* input_image
+    return nothing
+end
+
 """
     remove_landmask(landmask, ice_mask)
 

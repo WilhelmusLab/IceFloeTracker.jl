@@ -19,16 +19,20 @@ function segmentation_B(
     sharpened_image::Matrix{Gray{Float64}},
     cloudmask::BitMatrix,
     segmented_a_ice_mask::BitMatrix,
-    struct_elem::Matrix{Bool};
-    fill_range::Tuple=(0, 40),
+    struct_elem::ImageMorphology.MorphologySEArray{2};
+    fill_range::Tuple=(0, 1),
     isolation_threshold::Float64=0.4,
     alpha_level::Float64=0.5,
     gamma_factor::Float64=2.5,
-    adjusted_ice_threshold::Float64=0.2,
-)::Tuple{BitMatrix,BitMatrix,BitMatrix}
+    adjusted_ice_threshold::Float64=0.05,
+)
+
     ## Process sharpened image
-    not_ice_mask = .!(sharpened_image .< isolation_threshold)
-    adjusted_sharpened = (1 - alpha_level) .* sharpened_image .+ alpha_level .* not_ice_mask
+    not_ice_mask = deepcopy(sharpened_image)
+    not_ice_mask[not_ice_mask .< isolation_threshold] .= 0
+    adjusted_sharpened =
+        (1 - alpha_level) .* sharpened_image .+
+        alpha_level .* ((not_ice_mask * 0.3) .+ sharpened_image)
     gamma_adjusted_sharpened = ImageContrastAdjustment.adjust_histogram(
         adjusted_sharpened, GammaCorrection(; gamma=gamma_factor)
     )
@@ -43,20 +47,14 @@ function segmentation_B(
         BitMatrix, gamma_adjusted_sharpened_cloudmasked
     )
 
-    adjusted_bitmatrix = .!(gamma_adjusted_sharpened_cloudmasked_bit)
-
-    segb_filled = ImageMorphology.imfill(adjusted_bitmatrix, fill_range)
-    segb_filled = .!(segb_filled)
+    segb_filled =
+        .!ImageMorphology.imfill(.!gamma_adjusted_sharpened_cloudmasked_bit, fill_range)
 
     ## Process ice mask
-    segmented_a_ice_mask_holes = ImageMorphology.imfill(.!segmented_a_ice_mask, fill_range)
-    segmented_a_ice_masked_filled = .!segmented_a_ice_mask_holes
-    segb_closed = ImageMorphology.closing(segmented_a_ice_masked_filled, struct_elem)
+    ice_intersect = MorphSE.closing(segmented_a_ice_mask, struct_elem) .* segb_filled
 
     ## Create mask from intersect of processed images
-    segb_filled_ice = (segb_filled .> 0)
-    segb_closed_ice = (segb_closed .> 0)
-    segmented_b_ice_intersect = (segb_filled_ice .* segb_closed_ice)
+    # segmented_b_ice_intersect = (  sega_closed)
 
-    return not_ice_mask, segb_filled, segmented_b_ice_intersect
+    return (; :not_ice => not_ice_mask .> 0, :filled => segb_filled, :ice => ice_intersect)
 end
