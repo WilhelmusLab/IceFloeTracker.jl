@@ -19,13 +19,33 @@
     @test landmask == IceFloeTracker.create_landmask(lm_image)
 
     # Generate testing files
-    @time landmask_no_dilate = IceFloeTracker.binarize_landmask(lm_image)
+    @time landmask_no_dilate = landmask.non_dilated
 
-    @time masked_image = IceFloeTracker.apply_landmask(test_image, landmask)
+    @time masked_image = IceFloeTracker.apply_landmask(test_image, landmask.dilated)
     @time masked_image_no_dilate = IceFloeTracker.apply_landmask(
         test_image, .!landmask_no_dilate
     )
 
+    # test for percent difference in landmask images
+    @test test_similarity(.!landmask.dilated, convert(BitMatrix, matlab_landmask), 0.005)
+    @test test_similarity(
+        landmask.non_dilated, convert(BitMatrix, matlab_landmask_no_dilate), 0.005
+    )
+
+    # test for in-place allocation reduction
+    @time normal_lm = IceFloeTracker.apply_landmask(test_image, landmask.dilated)
+    @time IceFloeTracker.apply_landmask!(test_image, landmask.dilated)
+
+    x = @allocated IceFloeTracker.apply_landmask(test_image, landmask.dilated)
+    @info("normal allocated: $x")
+    y = @allocated IceFloeTracker.apply_landmask!(test_image, landmask.dilated)
+    @info("in-place allocated: $y")
+    @test x > y
+
+    # test that the test image has been updated in-place and equals the new image with landmask applied
+    @test(test_image == normal_lm)
+
+    # persist imgs
     matlab_landmask_filename =
         "$(test_output_dir)/matlab_landmask_test_" *
         Dates.format(Dates.now(), "yyyy-mm-dd-HHMMSS") *
@@ -36,13 +56,13 @@
         "$(test_output_dir)/landmask_test_" *
         Dates.format(Dates.now(), "yyyy-mm-dd-HHMMSS") *
         ".png"
-    IceFloeTracker.@persist landmask landmask_filename
+    IceFloeTracker.@persist landmask.dilated landmask_filename
 
     landmask_no_dilate_filename =
         "$(test_output_dir)/landmask_test_no_dilate_" *
         Dates.format(Dates.now(), "yyyy-mm-dd-HHMMSS") *
         ".png"
-    IceFloeTracker.@persist landmask_no_dilate landmask_no_dilate_filename
+    IceFloeTracker.@persist landmask.non_dilated landmask_no_dilate_filename
 
     masked_image_filename =
         "$(test_output_dir)/landmasked_truecolor_test_image_" *
@@ -55,23 +75,4 @@
         Dates.format(Dates.now(), "yyyy-mm-dd-HHMMSS") *
         ".png"
     IceFloeTracker.@persist masked_image_no_dilate masked_image_no_dilate_filename
-
-    # test for percent difference in landmask images
-    @test test_similarity(.!landmask, convert(BitMatrix, matlab_landmask), 0.005)
-    @test test_similarity(
-        landmask_no_dilate, convert(BitMatrix, matlab_landmask_no_dilate), 0.005
-    )
-
-    # test for in-place allocation reduction
-    @time normal_lm = IceFloeTracker.apply_landmask(test_image, landmask)
-    @time IceFloeTracker.apply_landmask!(test_image, landmask)
-
-    x = @allocated IceFloeTracker.apply_landmask(test_image, landmask)
-    println("normal allocations: $x")
-    y = @allocated IceFloeTracker.apply_landmask!(test_image, landmask)
-    println("in-place allocations: $y")
-    @test x > y
-
-    # test that the test image has been updated in-place and equals the new image with landmask applied
-    @test(test_image == normal_lm)
 end

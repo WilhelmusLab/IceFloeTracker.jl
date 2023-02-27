@@ -1,7 +1,7 @@
 """
     create_landmask(landmask_image, struct_elem, fill_value_lower, fill_value_upper)
 
-Convert a 3-channel RGB land mask image to a 1-channel binary matrix, including a buffer to extend the land over any soft ice regions; land = 0, water/ice = 1.
+Convert a 3-channel RGB land mask image to a 1-channel binary matrix, including a buffer to extend the land over any soft ice regions; land = 0, water/ice = 1. Retuns a named tuple with the dilated and non-dilated landmask.
 
 # Arguments
 - `landmask_image`: RGB land mask image from `fetchdata`
@@ -14,11 +14,11 @@ function create_landmask(
     landmask_image::T,
     struct_elem::AbstractMatrix{Bool};
     fill_value_lower::Int=0,
-    fill_value_upper::Int=2000,
-)::BitMatrix where {T<:AbstractMatrix}
+    fill_value_upper::Int=2000
+) where {T<:AbstractMatrix}
     landmask_binary = binarize_landmask(landmask_image)
     dilated = IceFloeTracker.MorphSE.dilate(landmask_binary, centered(struct_elem))
-    return ImageMorphology.imfill(.!dilated, (fill_value_lower, fill_value_upper))
+    return (dilated=ImageMorphology.imfill(.!dilated, (fill_value_lower, fill_value_upper)), non_dilated=landmask_binary)
 end
 
 function create_landmask(landmask_image)
