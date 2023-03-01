@@ -1,7 +1,7 @@
 """
     segmentation_F(
     segmentation_C_ice_mask::BitMatrix,
-    segmentation_B_not_ice_mask::BitMatrix,
+    segmentation_B_not_ice_mask::Matrix{Gray::Float64},
     watershed_intersect::BitMatrix,
     cloudmask::BitMatrix,
     landmask::BitMatrix,
@@ -48,7 +48,7 @@ function segmentation_F(
         complement.(segmentation_B_not_ice_mask),
     )
 
-    reconstructed_leads = (float64.(not_ice .* ice_leads) .+ (60 / 255))
+    reconstructed_leads = (not_ice .* ice_leads) .+ (60 / 255)
 
     leads_segmented =
         IceFloeTracker.kmeans_segmentation(reconstructed_leads, ice_labels) .*

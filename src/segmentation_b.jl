@@ -30,9 +30,10 @@ function segmentation_B(
     ## Process sharpened image
     not_ice_mask = deepcopy(sharpened_image)
     not_ice_mask[not_ice_mask .< isolation_threshold] .= 0
+    not_ice_mask = (not_ice_mask .* .3) .+ sharpened_image
     adjusted_sharpened =
-        (1 - alpha_level) .* sharpened_image .+
-        alpha_level .* ((not_ice_mask * 0.3) .+ sharpened_image)
+        ((1 - alpha_level) .* sharpened_image .+
+        alpha_level .* not_ice_mask)
     gamma_adjusted_sharpened = ImageContrastAdjustment.adjust_histogram(
         adjusted_sharpened, GammaCorrection(; gamma=gamma_factor)
     )
@@ -46,15 +47,11 @@ function segmentation_B(
     gamma_adjusted_sharpened_cloudmasked_bit = convert(
         BitMatrix, gamma_adjusted_sharpened_cloudmasked
     )
-
     segb_filled =
         .!ImageMorphology.imfill(.!gamma_adjusted_sharpened_cloudmasked_bit, fill_range)
 
     ## Process ice mask
     ice_intersect = MorphSE.closing(segmented_a_ice_mask, struct_elem) .* segb_filled
 
-    ## Create mask from intersect of processed images
-    # segmented_b_ice_intersect = (  sega_closed)
-
-    return (; :not_ice => not_ice_mask .> 0, :filled => segb_filled, :ice => ice_intersect)
+    return (; :not_ice => map(clamp01nan, not_ice_mask)::Matrix{Gray{Float64}}, :filled => segb_filled::BitMatrix, :ice => ice_intersect::BitMatrix)
 end

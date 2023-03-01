@@ -12,13 +12,14 @@
         BitMatrix, load("$(test_data_dir)/matlab_segmented_b_ice.png")
     )
 
-    matlab_not_ice_mask = float64.(load("$(test_data_dir)/matlab_not_ice_mask.png")) .> 0.5
+    matlab_not_ice_mask = float64.(load("$(test_data_dir)/matlab_I.png"))
 
     @time segB = IceFloeTracker.segmentation_B(
         sharpened_image, cloudmask, segmented_a_ice_mask, strel_diamond((3, 3))
     )
 
     IceFloeTracker.@persist segB.not_ice "./test_outputs/segB_not_ice_mask.png" true
+    IceFloeTracker.@persist matlab_not_ice_mask "./test_outputs/matlab_not_ice_mask.png" true
 
     IceFloeTracker.@persist segB.filled "./test_outputs/segB_filled.png" true
 
@@ -31,5 +32,7 @@
     @test test_similarity(matlab_segmented_B_ice, segB.ice, 0.005)
 
     @test typeof(segB.not_ice) == typeof(matlab_not_ice_mask)
-    @test test_similarity(segB.not_ice, matlab_not_ice_mask, 0.033)
+    @test (@test_approx_eq_sigma_eps segB.not_ice matlab_not_ice_mask [0, 0] 0.001) ==
+    nothing  
+    
 end
