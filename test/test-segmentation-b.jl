@@ -33,6 +33,5 @@
 
     @test typeof(segB.not_ice) == typeof(matlab_not_ice_mask)
     @test (@test_approx_eq_sigma_eps segB.not_ice matlab_not_ice_mask [0, 0] 0.001) ==
-    nothing  
-    
+        nothing
 end
