@@ -15,7 +15,7 @@
     matlab_not_ice_mask = float64.(load("$(test_data_dir)/matlab_I.png"))
 
     @time segB = IceFloeTracker.segmentation_B(
-        sharpened_image, cloudmask, segmented_a_ice_mask, strel_diamond((3, 3))
+        sharpened_image, cloudmask, segmented_a_ice_mask
     )
 
     IceFloeTracker.@persist segB.not_ice "./test_outputs/segB_not_ice_mask.png" true
