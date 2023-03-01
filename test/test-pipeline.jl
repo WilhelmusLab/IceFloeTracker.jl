@@ -31,11 +31,11 @@
             println("-------------------------------------------------")
             println("------------ landmask creation tests ---------------")
 
-            @test lm_expected == IceFloeTracker.landmask(; args_to_pass...)
-            @test lm_expected == IceFloeTracker.landmask(lm_raw; dilate=true)
-            @test (IceFloeTracker.Gray.(lm_raw) .> 0) ==
-                IceFloeTracker.landmask(lm_raw; dilate=false)
-            @test isfile(joinpath(output, "generated_landmask.png"))
+            landmasks = IceFloeTracker.landmask(; args_to_pass...)
+            @test lm_expected == landmasks.dilated
+            @test (IceFloeTracker.Gray.(lm_raw) .> 0) == landmasks.non_dilated
+            @test isfile(joinpath(output, "generated_landmask_dilated.png"))
+            @test isfile(joinpath(output, "generated_landmask_non_dilated.png"))
 
             # clean up!
             rm(output; recursive=true)
