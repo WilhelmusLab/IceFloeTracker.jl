@@ -40,15 +40,10 @@ function segmentation_B(
     gamma_adjusted_sharpened_cloudmasked = IceFloeTracker.apply_cloudmask(
         gamma_adjusted_sharpened, cloudmask
     )
-    gamma_adjusted_sharpened_cloudmasked[gamma_adjusted_sharpened_cloudmasked .<= adjusted_ice_threshold] .=
-        0
-    gamma_adjusted_sharpened_cloudmasked[gamma_adjusted_sharpened_cloudmasked .> adjusted_ice_threshold] .=
-        1
-    gamma_adjusted_sharpened_cloudmasked_bit = convert(
-        BitMatrix, gamma_adjusted_sharpened_cloudmasked
-    )
     segb_filled =
-        .!ImageMorphology.imfill(gamma_adjusted_sharpened_cloudmasked_bit .<= adjusted_ice_threshold, fill_range)
+        .!ImageMorphology.imfill(
+            gamma_adjusted_sharpened_cloudmasked .<= adjusted_ice_threshold, fill_range
+        )
 
     ## Process ice mask
     ice_intersect = MorphSE.closing(segmented_a_ice_mask, struct_elem) .* segb_filled
