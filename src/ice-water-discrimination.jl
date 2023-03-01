@@ -14,7 +14,7 @@
     st_dev_thresh_upper::Float64=Float64(98.9 / 255),
     clouds_ratio_threshold::Float64=0.02,
     differ_threshold::Float64=0.6,
-    nbins::Real=155,
+    nbins::Real=155
 )::AbstractMatrix where T<:AbstractArray{Bool}
 
 Generates an image with ice floes apparent after filtering and combining previously processed versions of reflectance and truecolor images from the same region of interest. Returns an image ready for segmentation to isolate floes.
@@ -52,7 +52,7 @@ function discriminate_ice_water(
     st_dev_thresh_upper::Float64=Float64(98.9 / 255),
     clouds_ratio_threshold::Float64=0.02,
     differ_threshold::Float64=0.6,
-    nbins::Real=155,
+    nbins::Real=155
 )::AbstractMatrix where {T<:AbstractArray{Bool}}
     clouds_channel = IceFloeTracker.create_clouds_channel(
         cloudmask_bitmatrix, reflectance_image
@@ -65,7 +65,7 @@ function discriminate_ice_water(
         image_sharpened,
         image_sharpened_gray,
         landmask_bitmatrix,
-        strel_diamond((5, 5)),
+        strel_diamond((5, 5))
     )
 
     # first define all of the image variations
