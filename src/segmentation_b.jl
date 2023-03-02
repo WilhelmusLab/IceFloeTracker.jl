@@ -30,7 +30,7 @@ function segmentation_B(
     ## Process sharpened image
     not_ice_mask = deepcopy(sharpened_image)
     not_ice_mask[not_ice_mask .< isolation_threshold] .= 0
-    not_ice_mask = (not_ice_mask .* 0.3) .+ sharpened_image
+    not_ice_mask .= (not_ice_mask .* 0.3) .+ sharpened_image
     adjusted_sharpened = (
         (1 - alpha_level) .* sharpened_image .+ alpha_level .* not_ice_mask
     )
