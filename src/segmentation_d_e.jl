@@ -4,7 +4,7 @@
 Performs image processing and watershed segmentation with intermediate files from segmentation_b.jl or segmentation_c.jl to further isolate ice floes, returning a binary segmentation mask indicating potential sparse boundaries of ice floes.
 
 # Arguments
--`intermediate_segmentation_image`: binary cloudmasked and landmasked intermediate file from segmentation B or C, typically either `segmentation_b_not_ice_mask` or `segmented_c`
+-`intermediate_segmentation_image`: binary cloudmasked and landmasked intermediate file from segmentation B or C, typically either `SegB.not_ice_bit` or `segmented_c`
 
 """
 function watershed_ice_floes(intermediate_segmentation_image::BitMatrix)::BitMatrix

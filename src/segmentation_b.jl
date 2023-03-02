@@ -49,6 +49,7 @@ function segmentation_B(
     ice_intersect = MorphSE.closing(segmented_a_ice_mask, struct_elem) .* segb_filled
 
     return (;
+        :not_ice_bit => (not_ice_mask .> 0)::BitMatrix,
         :not_ice => map(clamp01nan, not_ice_mask)::Matrix{Gray{Float64}},
         :filled => segb_filled::BitMatrix,
         :ice => ice_intersect::BitMatrix,

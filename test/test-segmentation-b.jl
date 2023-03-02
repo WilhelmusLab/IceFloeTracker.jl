@@ -13,6 +13,7 @@
     )
 
     matlab_not_ice_mask = float64.(load("$(test_data_dir)/matlab_I.png"))
+    matlab_not_ice_bit  = matlab_not_ice_mask .> 0
 
     @time segB = IceFloeTracker.segmentation_B(
         sharpened_image, cloudmask, segmented_a_ice_mask
@@ -34,4 +35,7 @@
     @test typeof(segB.not_ice) == typeof(matlab_not_ice_mask)
     @test (@test_approx_eq_sigma_eps segB.not_ice matlab_not_ice_mask [0, 0] 0.001) ==
         nothing
+
+    @test typeof(segB.not_ice_bit) == typeof(matlab_not_ice_bit)
+    @test test_similarity(segB.not_ice_bit, matlab_not_ice_bit, 0.001)
 end
