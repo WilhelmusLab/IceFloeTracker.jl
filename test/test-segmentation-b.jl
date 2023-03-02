@@ -13,7 +13,7 @@
     )
 
     matlab_not_ice_mask = float64.(load("$(test_data_dir)/matlab_I.png"))
-    matlab_not_ice_bit  = matlab_not_ice_mask .> 0
+    matlab_not_ice_bit = matlab_not_ice_mask .> 0
 
     @time segB = IceFloeTracker.segmentation_B(
         sharpened_image, cloudmask, segmented_a_ice_mask
