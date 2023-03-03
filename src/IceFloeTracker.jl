@@ -5,6 +5,7 @@ using Dates
 using ImageContrastAdjustment
 using ImageSegmentation
 using Peaks
+using Random
 using StatsBase
 using Interpolations
 using DataFrames

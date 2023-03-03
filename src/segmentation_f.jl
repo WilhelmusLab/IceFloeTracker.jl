@@ -47,7 +47,7 @@ function segmentation_F(
     )
 
     reconstructed_leads = (not_ice .* ice_leads) .+ (60 / 255)
-
+   
     leads_segmented =
         IceFloeTracker.kmeans_segmentation(reconstructed_leads, ice_labels) .*
         .!watershed_intersect
