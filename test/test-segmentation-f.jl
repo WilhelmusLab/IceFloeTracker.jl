@@ -4,10 +4,11 @@
 
     ## Load inputs for comparison
     segmentation_B_not_ice_mask = float64.(load("$(test_data_dir)/matlab_I.png"))
+    segmentation_B_ice_intersect = convert(BitMatrix, load(segmented_c_test_file))
     matlab_BW7 = load("$(test_data_dir)/matlab_BW7.png") .> 0.499
 
     ## Load function arg files
-    segmentation_C_ice_mask = load(segmented_c_test_file) .> 0.499
+   
     cloudmask = convert(BitMatrix, load(cloudmask_test_file))
     landmask = convert(BitMatrix, load(current_landmask_file))
     watershed_intersect = load(watershed_test_file) .> 0.499
@@ -19,12 +20,12 @@
     ## Run function with Matlab inputs
 
     @time isolated_floes = IceFloeTracker.segmentation_F(
-        segmentation_C_ice_mask[ice_floe_test_region...],
         segmentation_B_not_ice_mask[ice_floe_test_region...],
+        segmentation_B_ice_intersect[ice_floe_test_region...],
         watershed_intersect[ice_floe_test_region...],
+        ice_labels,
         cloudmask[ice_floe_test_region...],
         landmask[ice_floe_test_region...],
-        ice_labels,
     )
 
     IceFloeTracker.@persist isolated_floes "./test_outputs/isolated_floes.png" true

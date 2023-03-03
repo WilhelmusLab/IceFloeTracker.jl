@@ -1,4 +1,25 @@
 """
+    watershed_ice_floes(intermediate_segmentation_image;)
+
+Performs image processing and watershed segmentation with intermediate files from segmentation_b.jl or segmentation_c.jl to further isolate ice floes, returning a binary segmentation mask indicating potential sparse boundaries of ice floes.
+
+# Arguments
+-`intermediate_segmentation_image`: binary cloudmasked and landmasked intermediate file from segmentation B, either `SegB.not_ice_bit` or `SegB.ice_mask`
+
+"""
+function watershed_ice_floes(intermediate_segmentation_image::BitMatrix)::BitMatrix
+    features = Images.feature_transform(.!intermediate_segmentation_image)
+    distances = 1 .- Images.distance_transform(features)
+    seg_mask = ImageSegmentation.hmin_transform(distances, 2)
+    seg_mask_bool = seg_mask .< 1
+    markers = Images.label_components(seg_mask_bool)
+    segment = ImageSegmentation.watershed(distances, markers)
+    labels = ImageSegmentation.labels_map(segment)
+    borders = Images.isboundary(labels)
+    return borders
+end
+
+"""
     segmentation_B(sharpened_image, cloudmask, segmented_a_ice_mask, struct_elem; fill_range, isolation_threshold, alpha_level, adjusted_ice_threshold)
 
 Performs image processing and morphological filtering with intermediate files from normalization.jl and segmentation_A to further isolate ice floes, returning a mask of potential ice.
@@ -46,12 +67,19 @@ function segmentation_B(
         )
 
     ## Process ice mask
-    ice_intersect = MorphSE.closing(segmented_a_ice_mask, struct_elem) .* segb_filled
+    segb_ice = MorphSE.closing(segmented_a_ice_mask, struct_elem) .* segb_filled
+
+    ice_intersect= (segb_filled .* segb_ice)
+
+    not_ice_bit = not_ice_mask .> 0.499
+    segb_ice .= watershed_ice_floes(not_ice_bit)
+    ice_intersect .= watershed_ice_floes(ice_intersect)
+
+    watershed_intersect = segb_ice .* ice_intersect
 
     return (;
-        :not_ice_bit => (not_ice_mask .> 0)::BitMatrix,
         :not_ice => map(clamp01nan, not_ice_mask)::Matrix{Gray{Float64}},
-        :filled => segb_filled::BitMatrix,
-        :ice => ice_intersect::BitMatrix,
+        :ice_intersect => ice_intersect ::BitMatrix,
+        :watershed_intersect => watershed_intersect::BitMatrix 
     )
 end
