@@ -8,7 +8,7 @@
     matlab_BW7 = load("$(test_data_dir)/matlab_BW7.png") .> 0.499
 
     ## Load function arg files
-   
+
     cloudmask = convert(BitMatrix, load(cloudmask_test_file))
     landmask = convert(BitMatrix, load(current_landmask_file))
     watershed_intersect = load(watershed_test_file) .> 0.499

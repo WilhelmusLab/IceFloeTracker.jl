@@ -69,7 +69,7 @@ function segmentation_B(
     ## Process ice mask
     segb_ice = MorphSE.closing(segmented_a_ice_mask, struct_elem) .* segb_filled
 
-    ice_intersect= (segb_filled .* segb_ice)
+    ice_intersect = (segb_filled .* segb_ice)
 
     not_ice_bit = not_ice_mask .> 0.499
     segb_ice .= watershed_ice_floes(not_ice_bit)
@@ -79,7 +79,7 @@ function segmentation_B(
 
     return (;
         :not_ice => map(clamp01nan, not_ice_mask)::Matrix{Gray{Float64}},
-        :ice_intersect => ice_intersect ::BitMatrix,
-        :watershed_intersect => watershed_intersect::BitMatrix 
+        :ice_intersect => ice_intersect::BitMatrix,
+        :watershed_intersect => watershed_intersect::BitMatrix,
     )
 end
