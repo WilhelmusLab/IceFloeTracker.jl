@@ -71,7 +71,7 @@ function segmentation_B(
 
     ice_intersect = (segb_filled .* segb_ice)
 
-    not_ice_bit = not_ice_mask .> 0.499
+    not_ice_bit = not_ice_mask .> 0.499 # this threshold converts pixels to zeros and ones at midpoint of the range
     segb_ice .= watershed_ice_floes(not_ice_bit)
     ice_intersect .= watershed_ice_floes(ice_intersect)
 

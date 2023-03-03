@@ -11,10 +11,10 @@ Apply k-means segmentation to a gray image to isolate a cluster group representi
 function kmeans_segmentation(
     gray_image::Matrix{Gray{Float64}}, ice_labels::Vector{Int64}
 )::BitMatrix
-    Random.seed!(45)
+    Random.seed!(45) # this seed generates consistent clusters for the final output
     gray_image_height, gray_image_width = size(gray_image)
     gray_image_1d = vec(gray_image)
-    println("Done with reshape")
+    @info("Done with reshape")
 
     ## NOTE(tjd): this clusters into 4 classes and solves iteratively with a max of 50 iterations
     feature_classes = Clustering.kmeans(
