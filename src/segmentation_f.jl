@@ -1,38 +1,38 @@
 """
     segmentation_F(
-    segmentation_C_ice_mask::BitMatrix,
-    segmentation_B_not_ice_mask::BitMatrix,
-    watershed_intersect::BitMatrix,
+    segmentation_B_not_ice_mask::Matrix{Gray{Float64}},
+    segmentation_B_ice_intersect::BitMatrix,
+    segmentation_B_watershed_intersect::BitMatrix,
+    ice_labels::Vector{Int64},
     cloudmask::BitMatrix,
-    landmask::BitMatrix,
-    ice_labels::Vector{Int64};
-    min_area_opening::Int64=20,
-)::BitMatrix
+    landmask::BitMatrix;
+    min_area_opening::Int64=20
+)
 
 Cleans up past segmentation images with morphological operations, and applies the results of prior watershed segmentation, returning the final cleaned image for tracking with ice floes segmented and isolated. 
 
 # Arguments
-- `segmentation_C_ice_mask`: binary cloudmasked, landmasked intermediate file from segmentation_C (`segmented_ice`)
-- `segmentation_B_not_ice_mask`: binary mask output from `segmentation_b.jl`
-- `watershed_intersect`: ice pixels, output from `segmentation_d_e.jl` 
+- `segmentation_B_not_ice_mask`: gray image output from `segmentation_b.jl`
+- `segmentation_B_ice_intersect`: binary mask output from `segmentation_b.jl`
+- `segmentation_B_watershed_intersect`: ice pixels, output from `segmentation_b.jl` 
+- `ice_labels`: vector of pixel coordinates output from `find_ice_labels.jl`
 - `cloudmask.jl`: bitmatrix cloudmask for region of interest
 - `landmask.jl`: bitmatrix landmask for region of interest
-- `ice_labels`: vector of pixel coordinates output from `find_ice_labels.jl`
 - `min_area_opening`: threshold used for area opening; pixel groups greater than threshold are retained
 
 """
 function segmentation_F(
-    segmentation_C_ice_mask::BitMatrix,
     segmentation_B_not_ice_mask::Matrix{Gray{Float64}},
-    watershed_intersect::BitMatrix,
+    segmentation_B_ice_intersect::BitMatrix,
+    segmentation_B_watershed_intersect::BitMatrix,
+    ice_labels::Vector{Int64},
     cloudmask::BitMatrix,
-    landmask::BitMatrix,
-    ice_labels::Vector{Int64};
+    landmask::BitMatrix;
     min_area_opening::Int64=20,
 )::BitMatrix
     IceFloeTracker.apply_landmask!(segmentation_B_not_ice_mask, landmask)
 
-    ice_leads = .!watershed_intersect .* segmentation_C_ice_mask
+    ice_leads = .!segmentation_B_watershed_intersect .* segmentation_B_ice_intersect
 
     ice_leads .=
         .!ImageMorphology.area_opening(ice_leads; min_area=min_area_opening, connectivity=2)
@@ -48,12 +48,12 @@ function segmentation_F(
         complement.(segmentation_B_not_ice_mask),
     )
 
-    reconstructed_leads = (float64.(not_ice .* ice_leads) .+ (60 / 255))
+    reconstructed_leads = (not_ice .* ice_leads) .+ (60 / 255)
 
     leads_segmented =
         IceFloeTracker.kmeans_segmentation(reconstructed_leads, ice_labels) .*
-        .!watershed_intersect
-    println("Done with k-means segmentation")
+        .!segmentation_B_watershed_intersect
+    @info("Done with k-means segmentation")
     leads_segmented_broken = IceFloeTracker.hbreak(leads_segmented)
 
     leads_branched = IceFloeTracker.branch(leads_segmented_broken)
