@@ -1,7 +1,8 @@
 """
     segmentation_F(
     segmentation_B_not_ice_mask::Matrix{Gray{Float64}},
-    watershed_intersect::BitMatrix,
+    segmentation_B_ice_intersect::BitMatrix,
+    segmentation_B_watershed_intersect::BitMatrix,
     ice_labels::Vector{Int64},
     cloudmask::BitMatrix,
     landmask::BitMatrix;
