@@ -5,6 +5,7 @@ using Dates
 using ImageContrastAdjustment
 using ImageSegmentation
 using Peaks
+using Random
 using StatsBase
 using Interpolations
 using DataFrames
@@ -48,9 +49,7 @@ end
 include("regionprops.jl")
 include("segmentation_a_direct.jl")
 include("segmentation_b.jl")
-include("segmentation_c.jl")
 include("bwperim.jl")
-include("segmentation_d_e.jl")
 include("find_ice_labels.jl")
 include("segmentation_f.jl")
 
