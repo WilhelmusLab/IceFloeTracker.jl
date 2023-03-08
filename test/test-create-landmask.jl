@@ -29,7 +29,7 @@
     # test for percent difference in landmask images
     @test test_similarity(.!landmask.dilated, convert(BitMatrix, matlab_landmask), 0.005)
     @test test_similarity(
-        .!landmask.non_dilated, .!convert(BitMatrix, matlab_landmask_no_dilate), 0.005
+        .!landmask.non_dilated, convert(BitMatrix, matlab_landmask_no_dilate), 0.005
     ) # flipping the landmask to match the matlab landmask
 
     # test for in-place allocation reduction
