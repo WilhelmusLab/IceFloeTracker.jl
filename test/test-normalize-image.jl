@@ -9,7 +9,6 @@
     landmask_bitmatrix = convert(BitMatrix, float64.(load(current_landmask_file)))
     landmask_no_dilate = convert(BitMatrix, float64.(load(landmask_no_dilate_file)))
     input_image = float64.(load(truecolor_test_image_file)[test_region...])
-    input_image = IceFloeTracker.apply_landmask(input_image, landmask_no_dilate)
     matlab_norm_image = float64.(load(matlab_normalized_img_file)[test_region...])
     matlab_sharpened = float64.(load(matlab_sharpened_file))
     matlab_diffused = float64.(load(matlab_diffused_file)[test_region...])
@@ -17,14 +16,15 @@
 
     println("-------------- Process Image - Diffusion ----------------")
 
+    input_landmasked = IceFloeTracker.apply_landmask(input_image, landmask_no_dilate)
     ## Diffusion
-    @time image_diffused = IceFloeTracker.diffusion(input_image, 0.1, 75, 3)
+    @time image_diffused = IceFloeTracker.diffusion(input_landmasked, 0.1, 75, 3)
 
     @test (@test_approx_eq_sigma_eps image_diffused matlab_diffused [0, 0] 0.0054) ==
         nothing
 
-    @test (@test_approx_eq_sigma_eps input_image image_diffused [0, 0] 0.004) == nothing
-    @test (@test_approx_eq_sigma_eps input_image matlab_diffused [0, 0] 0.007) == nothing
+    @test (@test_approx_eq_sigma_eps input_landmasked image_diffused [0, 0] 0.004) == nothing
+    @test (@test_approx_eq_sigma_eps input_landmasked matlab_diffused [0, 0] 0.007) == nothing
 
     diffused_image_filename =
         "$(test_output_dir)/diffused_test_image_" *
