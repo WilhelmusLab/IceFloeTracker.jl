@@ -53,7 +53,7 @@ function discriminate_ice_water(
     clouds_ratio_threshold::Float64=0.02,
     differ_threshold::Float64=0.6,
     nbins::Real=155,
-)::AbstractMatrix where {T<:AbstractArray{Bool}}
+) where {T<:AbstractArray{Bool}}
     clouds_channel = IceFloeTracker.create_clouds_channel(
         cloudmask_bitmatrix, reflectance_image
     )
@@ -143,7 +143,9 @@ function discriminate_ice_water(
     # reusing normalized_image_copy - used to be ice_water_discriminated_image
     @. normalized_image_copy = clamp01nan(normalized_image_copy - (image_cloudless * 3))
 
-    return normalized_image_copy
+    # return named tuple with normalized_image_copy and normalized_image
+    return (ice_water=normalized_image_copy, normalized=normalized_image)
+    
 end
 
 function _check_threshold_50(
