@@ -9,7 +9,7 @@
     struct_elem = readdlm(strel_file, ',', Bool) # read in original matlab structuring element -  a disk-shaped kernel with radius of 50 px
     matlab_landmask = float64.(load(matlab_landmask_file)[lm_test_region...])
     matlab_landmask_no_dilate =
-        float64.(load(matlab_landmask_no_dilate_file)[lm_test_region...])
+        float64.(load(matlab_landmask_no_dilate_file)[lm_test_region...]) # land is white
     lm_image = float64.(load(landmask_file)[lm_test_region...])
     test_image = load(truecolor_test_image_file)[lm_test_region...]
 
@@ -29,8 +29,8 @@
     # test for percent difference in landmask images
     @test test_similarity(.!landmask.dilated, convert(BitMatrix, matlab_landmask), 0.005)
     @test test_similarity(
-        landmask.non_dilated, convert(BitMatrix, matlab_landmask_no_dilate), 0.005
-    )
+        .!landmask.non_dilated, .!convert(BitMatrix, matlab_landmask_no_dilate), 0.005
+    ) # flipping the landmask to match the matlab landmask
 
     # test for in-place allocation reduction
     @time normal_lm = IceFloeTracker.apply_landmask(test_image, landmask.dilated)
