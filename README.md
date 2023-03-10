@@ -9,10 +9,14 @@ Track Ice Floes using Moderate Resolution Imaging Spectroradiometer (MODIS) data
 ## Documentation 
 
 See the package's documentation (in development) at https://wilhelmuslab.github.io/IceFloeTracker.jl/
+## Prerequisites
+1. A `julia` installation; ensure it is available on the `PATH`.
+2. Add the HolyLab registry by invoking the following command from the terminal
+```
+julia -e 'using Pkg; Pkg.Registry.add(RegistrySpec(url = "https://github.com/HolyLab/HolyLabRegistry.git"))' 
+```
 
 ## Clone repo and run tests
-
-Prerequisites: julia is installed and available on the PATH.
 
 Clone the repository.
 ```zsh

@@ -118,7 +118,7 @@ Apply landmask and return Gray type image in colorview for normalization.
 """
 function imsharpen_gray(
     imgsharpened::Matrix{Float64}, landmask::AbstractArray{Bool}
-)::AbstractMatrix{Gray{Float64}}
+)::Matrix{Gray{Float64}}
     image_sharpened_landmasked = apply_landmask(imgsharpened, landmask)
     return colorview(Gray, image_sharpened_landmasked)
 end
