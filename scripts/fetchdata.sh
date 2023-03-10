@@ -78,11 +78,11 @@ sort_xy() {
   local x2="${3}"
   local y2="${4}"
 
-  xmin="$(python -c "print(min(${x1}, ${x2}))")"
-  xmax="$(python -c "print(max(${x1}, ${x2}))")"
+  xmin="$(python3 -c "print(min(${x1}, ${x2}))")"
+  xmax="$(python3 -c "print(max(${x1}, ${x2}))")"
 
-  ymin="$(python -c "print(min(${y1}, ${y2}))")"
-  ymax="$(python -c "print(max(${y1}, ${y2}))")"
+  ymin="$(python3 -c "print(min(${y1}, ${y2}))")"
+  ymax="$(python3 -c "print(max(${y1}, ${y2}))")"
 
   echo "${xmin} ${ymin} ${xmax} ${ymax}"
 }
@@ -154,8 +154,9 @@ download_reflectance() {
   local ext="jpeg"
 
 
-  echo "downloading true color images"
+  echo "downloading reflectance color images"
   while [ "${date}" != "${enddate}" ]; do
+    
     for sat in Aqua Terra; do
       layer="MODIS_${sat}_CorrectedReflectance_Bands721"
       filename="$(echo "${date}" | sed -e 's/-//g').$(echo "${sat}" | tr '[:upper:]' '[:lower:]').reflectance.250m.tiff"
@@ -231,10 +232,12 @@ main() {
   bounding_box="$(sort_xy $x1 $y1 $x2 $y2)"
 
   mkdir -p "${output}"
+  mkdir -p "${output}/reflectance"
+  mkdir -p "${output}/truecolor"
 
   download_landmask "${bounding_box}" "${startdate}" "${output}"
-  download_truecolor "${bounding_box}" "${startdate}" "${enddate}" "${output}"
-  download_reflectance "${bounding_box}" "${startdate}" "${enddate}" "${output}"
+  download_truecolor "${bounding_box}" "${startdate}" "${enddate}" "${output}/truecolor"
+  download_reflectance "${bounding_box}" "${startdate}" "${enddate}" "${output}/reflectance"
 }
 
 main "$@"
