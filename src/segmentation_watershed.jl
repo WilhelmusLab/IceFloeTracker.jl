@@ -23,7 +23,9 @@ Intersects the outputs of watershed segmentation on intermediate files from segm
 - `watershed_B_ice_intersect`: binary segmentation mask from `watershed_ice_floes`
 - `watershed_B_not_ice`: binary segmentation mask from `watershed_ice_floes`
 """
-function watershed_product(watershed_B_ice_intersect::BitMatrix, watershed_B_not_ice::BitMatrix;)::BitMatrix
+function watershed_product(
+    watershed_B_ice_intersect::BitMatrix, watershed_B_not_ice::BitMatrix;
+)::BitMatrix
 
     ## Intersect the two watershed files
     watershed_intersect = watershed_B_ice_intersect .* watershed_B_not_ice

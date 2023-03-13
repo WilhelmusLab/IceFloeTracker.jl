@@ -4,7 +4,9 @@
 
     matlab_not_ice = load("$(test_data_dir)/matlab_not_ice_mask.png")
     matlab_not_ice_bit = matlab_not_ice .> 0.499
-    matlab_ice_intersect = convert(BitMatrix, load("$(test_data_dir)/matlab_segmented_c.png"))
+    matlab_ice_intersect = convert(
+        BitMatrix, load("$(test_data_dir)/matlab_segmented_c.png")
+    )
     matlab_watershed_D = convert(BitMatrix, load("$(test_data_dir)/matlab_watershed_D.png"))
     matlab_watershed_E = convert(BitMatrix, load("$(test_data_dir)/matlab_watershed_E.png"))
     matlab_watershed_intersect = convert(
@@ -12,14 +14,16 @@
     )
 
     ## Run function with Matlab inputs
-    @time watershed_B_ice_intersect = IceFloeTracker.watershed_ice_floes(matlab_ice_intersect)
+    @time watershed_B_ice_intersect = IceFloeTracker.watershed_ice_floes(
+        matlab_ice_intersect
+    )
     @time watershed_B_not_ice = IceFloeTracker.watershed_ice_floes(matlab_not_ice_bit)
     @time watershed_intersect = IceFloeTracker.watershed_product(
         watershed_B_ice_intersect, watershed_B_not_ice
     )
 
     IceFloeTracker.@persist watershed_B_ice_intersect "./test_outputs/watershed_ice_intersect.png" true
-    
+
     IceFloeTracker.@persist watershed_B_not_ice "./test_outputs/watershed_not_ice.png" true
 
     IceFloeTracker.@persist watershed_intersect "./test_outputs/watershed_intersect.png" true
