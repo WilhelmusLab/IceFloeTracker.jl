@@ -67,6 +67,7 @@ Sharpen `truecolor_image`.
 
 # Arguments
 - `truecolor_image`: input image in truecolor
+- `landmask_no_dilate`: landmask for region of interest
 - `lambda`: speed of diffusion (0–0.25)
 - `kappa`: conduction coefficient for diffusion (25–100)
 - `niters`: number of iterations of diffusion
