@@ -21,6 +21,8 @@
 
 Generates an image with ice floes apparent after filtering and combining previously processed versions of reflectance and truecolor images from the same region of interest. Returns an image ready for segmentation to isolate floes.
 
+Note: This function mutates the landmask object to avoid unnecessary memory allocation. If you need the original landmask, make a copy before passing it to this function. Example: `discriminate_ice_water(reflectance_image, normalized_image, copy(landmask_bitmatrix), cloudmask_bitmatrix)`
+
 # Arguments
 - `reflectance_image`: input image in false color reflectance
 - `normalized_image`: normalized version of true color image
