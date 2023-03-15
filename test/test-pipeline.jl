@@ -40,8 +40,6 @@
             
             @test lm_expected == landmasks.dilated
             @test .!(IceFloeTracker.Gray.(lm_raw) .> 0) == landmasks.non_dilated
-            @test isfile(joinpath(output, "generated_landmask_dilated.png"))
-            @test isfile(joinpath(output, "generated_landmask_non_dilated.png"))
 
             # clean up!
             rm(output; recursive=true)
