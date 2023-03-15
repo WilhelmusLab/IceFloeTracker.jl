@@ -25,6 +25,7 @@
 
     landmask_no_dilate = (IceFloeTracker.Gray.(lm_raw) .> 0)
     sharpened_imgs = IceFloeTracker.sharpen(truecolor_images, landmask_no_dilate)
+    sharpenedgray_imgs = IceFloeTracker.sharpen_gray(sharpened_imgs, lm_expected)
 
     @testset verbose = true "preprocessing" begin
         @testset "landmask" begin
@@ -38,8 +39,10 @@
             landmasks = deserialize(joinpath(output, "generated_landmask.jls"))
             
             @test lm_expected == landmasks.dilated
-            @test (IceFloeTracker.Gray.(lm_raw) .> 0) == landmasks.non_dilated
-            
+            @test .!(IceFloeTracker.Gray.(lm_raw) .> 0) == landmasks.non_dilated
+            @test isfile(joinpath(output, "generated_landmask_dilated.png"))
+            @test isfile(joinpath(output, "generated_landmask_non_dilated.png"))
+
             # clean up!
             rm(output; recursive=true)
         end
@@ -71,8 +74,9 @@
 
         @testset "ice water discrimination" begin
             cloudmasks = map(create_cloudmask, reflectance_images)
+            normalized_images = [IceFloeTracker.normalize_image(sharpened_img, sharpened_gray_img, lm_expected) for (sharpened_img, sharpened_gray_img) in zip(sharpened_imgs, sharpenedgray_imgs)]
             ice_water_discrim_imgs = IceFloeTracker.disc_ice_water(
-                reflectance_images, sharpened_imgs, cloudmasks, lm_expected
+                reflectance_images, normalized_images, cloudmasks, lm_expected
             )
             @test length(ice_water_discrim_imgs) == 2
         end
@@ -83,7 +87,6 @@
         end
 
         @testset "sharpen_gray" begin
-            sharpenedgray_imgs = IceFloeTracker.sharpen_gray(sharpened_imgs, lm_expected)
             @test eltype(sharpenedgray_imgs[1]) == Gray{Float64}
             @test length(sharpenedgray_imgs) == 2
         end
