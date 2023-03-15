@@ -153,3 +153,75 @@ function get_ice_labels(
 )
     return [IceFloeTracker.find_ice_labels(ref_img, landmask) for ref_img in reflectance_imgs]
 end
+
+"""
+    load(; dir::String, fname::String)
+
+Load an image from `dir` with filename `fname` into a matrix of `Float64` values. Returns the loaded image.
+"""
+function load(; dir::String, fname::String)
+    return joinpath(dir, fname) |> IceFloeTracker.load |> x->IceFloeTracker.float64.(x)
+end
+
+"""
+    preprocess(; truecolor_image, reflectance_image, landmask_imgs)
+
+Preprocess and segment floes in `truecolor_image` and `reflectance_image` images using the landmasks  `landmask_imgs`. Returns a boolean matrix with segmented floes for feature extraction.
+
+# Arguments
+- `truecolor_image::T`: truecolor image to be processed
+- `reflectance_image::T`: reflectance image to be processed
+- `landmask_imgs`: named tuple with dilated and non-dilated landmask images
+"""
+function preprocess(truecolor_image::T, reflectance_image::T, landmask_imgs::NamedTuple{(:dilated, :non_dilated),Tuple{BitMatrix,BitMatrix}}) where {T<:Matrix{RGB{Float64}}}
+
+    @info "Building cloudmask"
+    cloudmask = create_cloudmask(reflectance_image)
+
+    # 2. Intermediate images
+    @info "Finding ice labels"
+    ice_labels = IceFloeTracker.find_ice_labels(reflectance_image, landmask_imgs.non_dilated)
+
+    @info "Sharpening truecolor image"
+    # a. apply imsharpen to truecolor image using non-dilated landmask
+    sharpened_truecolor_image = IceFloeTracker.imsharpen(truecolor_image, landmask_imgs.non_dilated)
+    # b. apply imsharpen to sharpened truecolor img using dilated landmask
+    sharpened_gray_truecolor_image = IceFloeTracker.imsharpen_gray(sharpened_truecolor_image, landmask_imgs.dilated)
+
+    @info "Normalizing truecolor image"
+    normalized_image = IceFloeTracker.normalize_image(
+        sharpened_truecolor_image, sharpened_gray_truecolor_image, landmask_imgs.dilated)
+
+    # Discriminate ice/water
+    @info "Discriminating ice/water"
+    ice_water_discrim = IceFloeTracker.discriminate_ice_water(
+        reflectance_image, normalized_image, copy(landmask_imgs.dilated), cloudmask)
+
+    # 3. Segmentation
+    @info "Segmenting floes part 1/3"
+    segA = IceFloeTracker.segmentation_A(IceFloeTracker.segmented_ice_cloudmasking(
+        ice_water_discrim, cloudmask, ice_labels
+    ))
+
+    # segmentation_B
+    @info "Segmenting floes part 2/3"
+    segB = IceFloeTracker.segmentation_B(sharpened_gray_truecolor_image, cloudmask, segA)
+
+    # Process watershed in parallel using Folds
+    @info "Building watersheds"
+    # container_for_watersheds = [landmask_imgs.non_dilated, similar(landmask_imgs.non_dilated)]
+    watersheds_segB = Folds.map(IceFloeTracker.watershed_ice_floes, [segB.not_ice_bit, segB.ice_intersect])
+    watershed_intersect = IceFloeTracker.watershed_product(watersheds_segB...)
+
+    # segmentation_F
+    @info "Segmenting floes 3/3"
+    return IceFloeTracker.segmentation_F(
+        segB.not_ice,
+        segB.ice_intersect,
+        watershed_intersect,
+        ice_labels,
+        cloudmask,
+        landmask_imgs.dilated,
+    )
+end
+# 1157.840477 seconds (5.01 G allocations: 521.996 GiB, 4.53% gc time, 0.06% compilation time: 4% of which was recompilation)
