@@ -19,7 +19,7 @@ using OffsetArrays: centered
 using Serialization: serialize, deserialize
 
 export readdlm,
-    padnhood, bridge, branch, landmask, @persist, load, cloudmask, create_cloudmask
+    padnhood, bridge, branch, landmask, @persist, load, cloudmask, create_cloudmask, deserialize, serialize
 
 include("utils.jl")
 include("persist.jl")
