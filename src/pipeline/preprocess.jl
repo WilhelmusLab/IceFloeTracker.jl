@@ -112,7 +112,7 @@ end
 """
     disc_ice_water(
     reflectance_imgs::Vector{Matrix{RGB{Float64}}},
-    sharpened_imgs::Vector{Matrix{Float64}},
+    normalized_imgs::Vector{Matrix{Gray{Float64}}},
     cloudmasks::Vector{BitMatrix},
     landmask::BitMatrix,
 )
@@ -122,13 +122,13 @@ Generate vector of ice/water discriminated images from the collection of reflect
 """
 function disc_ice_water(
     reflectance_imgs::Vector{Matrix{RGB{Float64}}},
-    sharpened_imgs::Vector{Matrix{Float64}},
+    normalized_imgs::Vector{Matrix{Gray{Float64}}},
     cloudmasks::Vector{BitMatrix},
     landmask::BitMatrix,
 )
     return [
-        IceFloeTracker.discriminate_ice_water(ref_img, shrp_img, landmask, cldmsk) for
-        (ref_img, shrp_img, cldmsk) in zip(reflectance_imgs, sharpened_imgs, cloudmasks)
+        IceFloeTracker.discriminate_ice_water(ref_img, norm_img, landmask, cldmsk) for
+        (ref_img, norm_img, cldmsk) in zip(reflectance_imgs, normalized_imgs, cloudmasks)
     ]
 end
 

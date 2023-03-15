@@ -1,7 +1,7 @@
 """
     discriminate_ice_water(
-    reflectance_image::Matrix{RGB{Float64}}, 
-    image_sharpened::Matrix{Float64}, 
+    reflectance_image::Matrix{RGB{Float64}},
+    normalized_image::Matrix{Gray{Float64}},
     landmask_bitmatrix::T,
     cloudmask_bitmatrix::T,
     floes_threshold::Float64=Float64(100 / 255),
@@ -14,14 +14,18 @@
     st_dev_thresh_upper::Float64=Float64(98.9 / 255),
     clouds_ratio_threshold::Float64=0.02,
     differ_threshold::Float64=0.6,
-    nbins::Real=155,
-)::AbstractMatrix where T<:AbstractArray{Bool}
+    nbins::Real=155
+)
+
+
 
 Generates an image with ice floes apparent after filtering and combining previously processed versions of reflectance and truecolor images from the same region of interest. Returns an image ready for segmentation to isolate floes.
 
+Note: This function mutates the landmask object to avoid unnecessary memory allocation. If you need the original landmask, make a copy before passing it to this function. Example: `discriminate_ice_water(reflectance_image, normalized_image, copy(landmask_bitmatrix), cloudmask_bitmatrix)`
+
 # Arguments
 - `reflectance_image`: input image in false color reflectance
-- `image_sharpened`: sharpenened version of true color image
+- `normalized_image`: normalized version of true color image
 - `landmask_bitmatrix`: landmask for region of interest
 - `cloudmask_bitmatrix`: cloudmask for region of interest
 - `floes_threshold`: heuristic applied to original reflectance image
@@ -39,7 +43,7 @@ Generates an image with ice floes apparent after filtering and combining previou
 """
 function discriminate_ice_water(
     reflectance_image::Matrix{RGB{Float64}},
-    image_sharpened::Matrix{Float64},
+    normalized_image::Matrix{Gray{Float64}},
     landmask_bitmatrix::T,
     cloudmask_bitmatrix::T,
     floes_threshold::Float64=Float64(100 / 255),
@@ -58,16 +62,7 @@ function discriminate_ice_water(
         cloudmask_bitmatrix, reflectance_image
     )
     reflectance_image_band7 = @view(channelview(reflectance_image)[1, :, :])
-    image_sharpened_gray = IceFloeTracker.imsharpen_gray(
-        image_sharpened, landmask_bitmatrix
-    )
-    normalized_image = IceFloeTracker.normalize_image(
-        image_sharpened,
-        image_sharpened_gray,
-        landmask_bitmatrix,
-        strel_diamond((5, 5)),
-    )
-
+    
     # first define all of the image variations
     image_clouds = IceFloeTracker.apply_landmask(clouds_channel, landmask_bitmatrix) # output during cloudmask apply, landmasked 
     image_cloudless = IceFloeTracker.apply_landmask(
