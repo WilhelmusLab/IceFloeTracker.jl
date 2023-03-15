@@ -17,7 +17,13 @@ Given an input directory with a landmask file and possibly truecolor images, cre
 - `output`: path to output dir where land-masked truecolor images and the generated binary land mask are saved
 
 """
-function landmask(; input::String, output::String, landmask_fname::String="landmask.tiff", lmdilated="generated_landmask_dilated.png", lm_non_dilated::String="generated_landmask_non_dilated.png")
+function landmask(;
+    input::String,
+    output::String,
+    landmask_fname::String="landmask.tiff",
+    lmdilated="generated_landmask_dilated.png",
+    lm_non_dilated::String="generated_landmask_non_dilated.png",
+)
     @info "Looking for $landmask_fname in $input"
 
     lmpath = joinpath(input, landmask_fname)
@@ -132,7 +138,6 @@ function disc_ice_water(
     ]
 end
 
-
 """
     sharpen_gray(
     sharpened_imgs::Vector{Matrix{Float64}},
@@ -142,15 +147,15 @@ end
 Apply the landmask to the collection of sharpened truecolor images and return a gray colorview of the collection.
 """
 function sharpen_gray(
-    sharpened_imgs::Vector{Matrix{Float64}},
-    landmask::AbstractArray{Bool},
+    sharpened_imgs::Vector{Matrix{Float64}}, landmask::AbstractArray{Bool}
 )
     return [IceFloeTracker.imsharpen_gray(img, landmask) for img in sharpened_imgs]
 end
 
 function get_ice_labels(
-    reflectance_imgs::Vector{Matrix{RGB{Float64}}},
-    landmask::AbstractArray{Bool}
+    reflectance_imgs::Vector{Matrix{RGB{Float64}}}, landmask::AbstractArray{Bool}
 )
-    return [IceFloeTracker.find_ice_labels(ref_img, landmask) for ref_img in reflectance_imgs]
+    return [
+        IceFloeTracker.find_ice_labels(ref_img, landmask) for ref_img in reflectance_imgs
+    ]
 end

@@ -14,11 +14,14 @@ function create_landmask(
     landmask_image::T,
     struct_elem::AbstractMatrix{Bool};
     fill_value_lower::Int=0,
-    fill_value_upper::Int=2000
+    fill_value_upper::Int=2000,
 ) where {T<:AbstractMatrix}
     landmask_binary = binarize_landmask(landmask_image)
     dilated = IceFloeTracker.MorphSE.dilate(landmask_binary, centered(struct_elem))
-    return (dilated=ImageMorphology.imfill(.!dilated, (fill_value_lower, fill_value_upper)), non_dilated=.!landmask_binary)
+    return (
+        dilated=ImageMorphology.imfill(.!dilated, (fill_value_lower, fill_value_upper)),
+        non_dilated=.!landmask_binary,
+    )
 end
 
 function create_landmask(landmask_image)
