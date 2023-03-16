@@ -17,6 +17,7 @@ using RegisterQD
 using StaticArrays
 using OffsetArrays: centered
 using Serialization: serialize, deserialize
+using Folds
 
 export readdlm,
     padnhood, bridge, branch, landmask, @persist, load, cloudmask, create_cloudmask, deserialize, serialize

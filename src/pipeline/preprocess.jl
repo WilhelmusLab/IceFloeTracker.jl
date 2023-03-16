@@ -159,8 +159,8 @@ end
 
 Load an image from `dir` with filename `fname` into a matrix of `Float64` values. Returns the loaded image.
 """
-function load(; dir::String, fname::String)
-    return joinpath(dir, fname) |> IceFloeTracker.load |> x->IceFloeTracker.float64.(x)
+function loadimg(; dir::String, fname::String)
+    return joinpath(dir, fname) |> load |> x-> float64.(x)
 end
 
 """
@@ -211,17 +211,17 @@ function preprocess(truecolor_image::T, reflectance_image::T, landmask_imgs::Nam
     @info "Building watersheds"
     # container_for_watersheds = [landmask_imgs.non_dilated, similar(landmask_imgs.non_dilated)]
     watersheds_segB = Folds.map(IceFloeTracker.watershed_ice_floes, [segB.not_ice_bit, segB.ice_intersect])
-    watershed_intersect = IceFloeTracker.watershed_product(watersheds_segB...)
+    # reuse the memory allocated for the first watershed
+    watersheds_segB[1] .= IceFloeTracker.watershed_product(watersheds_segB...)
 
     # segmentation_F
     @info "Segmenting floes 3/3"
     return IceFloeTracker.segmentation_F(
         segB.not_ice,
         segB.ice_intersect,
-        watershed_intersect,
+        watersheds_segB[1],
         ice_labels,
         cloudmask,
         landmask_imgs.dilated,
     )
 end
-# 1157.840477 seconds (5.01 G allocations: 521.996 GiB, 4.53% gc time, 0.06% compilation time: 4% of which was recompilation)
