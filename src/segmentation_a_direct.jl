@@ -18,7 +18,7 @@ function kmeans_segmentation(
 
     ## NOTE(tjd): this clusters into 4 classes and solves iteratively with a max of 50 iterations
     feature_classes = Clustering.kmeans(
-        gray_image_1d, 4; maxiter=50, display=:iter, init=:kmpp
+        gray_image_1d, 4; maxiter=50, display=:final, init=:kmpp
     )
     class_assignments = assignments(feature_classes)
 
