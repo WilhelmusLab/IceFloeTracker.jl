@@ -1,9 +1,9 @@
 @testset "preprocess" begin
     landmask_imgs = deserialize(joinpath(test_data_dir, "pipeline/preprocess", "landmasks.jls"))
-    truecolor_img = IceFloeTracker.loadimg(dir=".", fname=truecolor_test_image_file)[test_region...]
-    reflectance_img = IceFloeTracker.loadimg(dir=".", fname=reflectance_test_image_file)[test_region...]
+    truecolor_img = loadimg(dir=".", fname=truecolor_test_image_file)[test_region...]
+    reflectance_img = loadimg(dir=".", fname=reflectance_test_image_file)[test_region...]
 
-    segmented_floes = IceFloeTracker.preprocess(
+    segmented_floes = IceFloeTracker.Pipeline.preprocess(
         truecolor_img,
         reflectance_img,
         landmask_imgs)

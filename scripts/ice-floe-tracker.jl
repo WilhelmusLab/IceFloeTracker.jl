@@ -1,7 +1,7 @@
 #!/usr/bin/env julia
 using Pkg
 Pkg.activate(@__DIR__)
-
+Pkg.instantiate()
 using ArgParse
 using IceFloeTracker
 
@@ -17,8 +17,8 @@ function main(args)
         help = "Generate land mask images"
         action = :command
 
-        "cloudmask"
-        help = "Generate cloud mask images"
+        "preprocess"
+        help = "Preprocess truecolor/reflectance images"
         action = :command
 
         "extractfeatures"
@@ -38,6 +38,24 @@ function main(args)
         "output",
         Dict(:help => "Output image directory", :required => true),
     ]
+
+    @add_arg_table! settings["preprocess"] begin
+        "--truedir", "-t"
+        help = "Truecolor image directory"
+        required = true
+
+        "--refdir", "-r"
+        help = "Reflectance image directory"
+        required = true
+
+        "--lmdir", "-l"
+        help = "Land mask image directory"
+        required = true
+
+        "--output", "-o"
+        help = "Output directory"
+        required = true
+        end
 
     @add_arg_table! settings["extractfeatures"] begin
         "--input", "-i"
@@ -81,15 +99,33 @@ function main(args)
     ]
 
     add_arg_table!(settings["landmask"], landmask_cloudmask_args...)
-    add_arg_table!(settings["cloudmask"], landmask_cloudmask_args...)
-
+    
     parsed_args = parse_args(args, settings; as_symbols=true)
 
     command = parsed_args[:_COMMAND_]
     command_args = parsed_args[command]
-    command_func = getfield(IceFloeTracker, Symbol(command))
+    command_func = getfield(IceFloeTracker.Pipeline, Symbol(command))
+    command_func
     command_func(; command_args...)
     return nothing
 end
 
+# truecolor_dir="explorations/preprocess/input_pipeline/truecolor"
+# reflectance_dir =  "explorations/preprocess/input_pipeline/reflectance"
+# lmdir = "./explorations/preprocess/input_pipeline" 
+# outputdir= "explorations/preprocess/output_pipeline"
+# isfile(joinpath("./explorations/preprocess/input_pipeline", "generated_landmask.jls"))
+
+# ARGS = Dict(
+#     "_COMMAND_" => "preprocess",
+#     "truedir"=> truecolor_dir,
+#     "refdir"=>reflectance_dir,
+#     "lmdir"=>lmdir,
+#     "output"=> outputdir
+# )
 main(ARGS)
+
+
+
+
+# preprocess(truecolor_dir=truecolor_dir, reflectance_dir=reflectance_dir, landmask_dir=lmdir, output=outputdir)

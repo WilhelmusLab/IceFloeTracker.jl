@@ -28,7 +28,7 @@ function segmentation_F(
     ice_labels::Vector{Int64},
     cloudmask::BitMatrix,
     landmask::BitMatrix;
-    min_area_opening::Int64=20,
+    min_area_opening::Int64=20
 )::BitMatrix
     IceFloeTracker.apply_landmask!(segmentation_B_not_ice_mask, landmask)
 
@@ -79,7 +79,7 @@ function segmentation_F(
 
     floes = IceFloeTracker.branch(leads_bothat_filled)
 
-    floes_opened = IceFloeTracker.MorphSE.opening(floes, IceFloeTracker.se_disk4())
+    floes_opened = IceFloeTracker.MorphSE.opening(floes, centered(IceFloeTracker.se_disk4()))
 
     IceFloeTracker.MorphSE.mreconstruct!(
         IceFloeTracker.MorphSE.dilate, floes_opened, floes, floes_opened

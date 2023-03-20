@@ -20,7 +20,7 @@ using Serialization: serialize, deserialize
 using Folds
 
 export readdlm,
-    padnhood, bridge, branch, landmask, @persist, load, cloudmask, create_cloudmask, deserialize, serialize
+    padnhood, bridge, branch, landmask, @persist, load, cloudmask, create_cloudmask, deserialize, serialize, check_landmask_path, create_landmask, RGB, Gray, float64, imsharpen, label_components, regionprops_table, loadimg
 
 include("utils.jl")
 include("persist.jl")
@@ -55,9 +55,18 @@ include("bwperim.jl")
 include("find_ice_labels.jl")
 include("segmentation_f.jl")
 
+"""
+    Pipeline
+
+This module contains the wrapper functions called by CLI.
+"""
+module Pipeline
+using IceFloeTracker
+using IceFloeTracker: Folds, DataFrame, RGB, Gray, load, float64, imsharpen
+include("pipeline/landmask.jl")
 include("pipeline/preprocess.jl")
 include("pipeline/feature-extraction.jl")
-
+export sharpen, sharpen_gray, preprocess, cloudmask, extractfeatures, get_ice_labels, load_imgs, load_truecolor_imgs, load_reflectance_imgs, load_cloudmask, disc_ice_water
 function fetchdata(; output::AbstractString)
     mkpath("$output")
     touch("$output/metadata.json")
@@ -77,7 +86,9 @@ function fetchdata(; output::AbstractString)
     return nothing
 end
 
-"""
+end
+
+""""
     MorphSE
 
 Module for morphological operations with structuring element functionality adapted from ImageMorphology v0.4.3.
@@ -123,22 +134,22 @@ julia> IceFloeTracker.MorphSE.dilate(a, se)
 ```
 """
 module MorphSE
-    using ImageCore
-    using ColorTypes
-    using LoopVectorization
-    using OffsetArrays
-    using TiledIteration: EdgeIterator
-    using DataStructures
-    include("morphSE/StructuringElements.jl")
-    using .StructuringElements
-    include("morphSE/extreme_filter.jl")
-    include("morphSE/utils.jl")
-    include("morphSE/dilate.jl")
-    include("morphSE/erode.jl")
-    include("morphSE/opening.jl")
-    include("morphSE/closing.jl")
-    include("morphSE/bothat.jl")
-    include("morphSE/mreconstruct.jl")
-    include("morphSE/fill_holes.jl")
+using ImageCore
+using ColorTypes
+using LoopVectorization
+using OffsetArrays
+using TiledIteration: EdgeIterator
+using DataStructures
+include("morphSE/StructuringElements.jl")
+using .StructuringElements
+include("morphSE/extreme_filter.jl")
+include("morphSE/utils.jl")
+include("morphSE/dilate.jl")
+include("morphSE/erode.jl")
+include("morphSE/opening.jl")
+include("morphSE/closing.jl")
+include("morphSE/bothat.jl")
+include("morphSE/mreconstruct.jl")
+include("morphSE/fill_holes.jl")
 end
 end
