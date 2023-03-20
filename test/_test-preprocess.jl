@@ -1,7 +1,7 @@
 @testset "preprocess" begin
     @testset "core function" begin
     println("-------------------------------------------------")
-    println("-------------preprocess core --------------------")
+    println("-------------  preprocess core ------------------")
     
     # Uses real test data, no land
 
