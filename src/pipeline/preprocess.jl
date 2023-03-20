@@ -190,31 +190,31 @@ function preprocess(truecolor_image::T, reflectance_image::T, landmask_imgs::Nam
 end
 
 """
-    preprocess(truecolor_dir::T, reflectance_dir::T, landmask_dir::Tuple{T, T}, output::T) where {T<:AbstractString}
+    preprocess(truedir::T, refdir::T, lmdir::Tuple{T, T}, output::T)
 
-Preprocess and segment floes in all images in `truecolor_dir` and `reflectance_dir` using the landmasks in `landmask_dir`. Saves the segmented floes in `output`.
+Preprocess and segment floes in all images in `truedir` and `refdir` using the landmasks in `lmdir`. Saves the segmented floes in `output`.
 
 # Arguments
-- `truecolor_dir`: directory with truecolor images to be processed
-- `reflectance_dir`: directory with reflectance images to be processed
-- `landmask_dir`: directory with dilated and non-dilated landmask images
+- `truedir`: directory with truecolor images to be processed
+- `refdir`: directory with reflectance images to be processed
+- `lmdir`: directory with dilated and non-dilated landmask images
 """
 function preprocess(; truedir::T, refdir::T, lmdir::T, output::T) where {T<:AbstractString}
     # 1. Get references to images
-    truecolor_refs = readdir(truedir)
-    reflectance_refs = readdir(refdir)
+    truecolor_refs = [ref for ref in readdir(truedir) if occursin("truecolor", ref)]
+    reflectance_refs = [ref for ref in readdir(refdir) if occursin("reflectance", ref)]
     landmask_imgs = deserialize(joinpath(lmdir, "generated_landmask.jls"))
 
     # 2. Preprocess
     @info "Preprocessing"
-    truecolor_container = loadimg(dir=truecolor_dir, fname=truecolor_refs[1])
+    truecolor_container = loadimg(dir=truedir, fname=truecolor_refs[1]) |> similar
     reflectance_container = similar(truecolor_container)
     segmented_floes = cache_vector(BitMatrix, length(truecolor_refs), size(truecolor_container))
     numimgs = length(truecolor_refs)
     Threads.@threads for i in eachindex(truecolor_refs)
         @info "Processing image $i of $numimgs"
-        truecolor_container .= loadimg(dir=truecolor_dir, fname=truecolor_refs[i])
-        reflectance_container .= loadimg(dir=reflectance_dir, fname=reflectance_refs[i])
+        truecolor_container .= loadimg(dir=truedir, fname=truecolor_refs[i])
+        reflectance_container .= loadimg(dir=refdir, fname=reflectance_refs[i])
         segmented_floes[i] .= preprocess(truecolor_container, reflectance_container, landmask_imgs)
     end
 
@@ -223,11 +223,3 @@ function preprocess(; truedir::T, refdir::T, lmdir::T, output::T) where {T<:Abst
     serialize(joinpath(output, "segmented_floes.jld"), segmented_floes)
     nothing
 end
-
-# truecolor_dir="explorations/preprocess/input_pipeline/truecolor"
-# reflectance_dir =  "explorations/preprocess/input_pipeline/reflectance"
-# lmdir = "./explorations/preprocess/input_pipeline" 
-# outputdir= "explorations/preprocess/output_pipeline"
-# isfile(joinpath("./explorations/preprocess/input_pipeline", "generated_landmask.jls"))
-
-# preprocess(truecolor_dir=truecolor_dir, reflectance_dir=reflectance_dir, landmask_dir=lmdir, output=outputdir)

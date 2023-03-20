@@ -20,7 +20,7 @@ using Serialization: serialize, deserialize
 using Folds
 
 export readdlm,
-    padnhood, bridge, branch, landmask, @persist, load, cloudmask, create_cloudmask, deserialize, serialize, check_landmask_path, create_landmask, RGB, Gray, float64, imsharpen, label_components, regionprops_table, loadimg
+    padnhood, bridge, branch, @persist, load, cloudmask, create_cloudmask, deserialize, serialize, check_landmask_path, create_landmask, RGB, Gray, float64, imsharpen, label_components, regionprops_table, loadimg
 
 include("utils.jl")
 include("persist.jl")
@@ -66,7 +66,8 @@ using IceFloeTracker: Folds, DataFrame, RGB, Gray, load, float64, imsharpen
 include("pipeline/landmask.jl")
 include("pipeline/preprocess.jl")
 include("pipeline/feature-extraction.jl")
-export sharpen, sharpen_gray, preprocess, cloudmask, extractfeatures, get_ice_labels, load_imgs, load_truecolor_imgs, load_reflectance_imgs, load_cloudmask, disc_ice_water
+export sharpen, sharpen_gray, preprocess, cloudmask, extractfeatures, get_ice_labels, load_imgs, load_truecolor_imgs, load_reflectance_imgs, load_cloudmask, disc_ice_water, landmask
+
 function fetchdata(; output::AbstractString)
     mkpath("$output")
     touch("$output/metadata.json")
@@ -85,7 +86,6 @@ function fetchdata(; output::AbstractString)
     touch("$output/reflectance/c.tiff")
     return nothing
 end
-
 end
 
 """"

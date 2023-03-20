@@ -91,6 +91,8 @@
         end
     end
 
+    include("_test-preprocess.jl")
+
     @testset "feature extraction" begin
         min_area = "1"
         max_area = "5"
