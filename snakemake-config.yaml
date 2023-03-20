@@ -1,5 +1,12 @@
-
+$schema: "https://json-schema.org/draft/2020-12/schema"
+## First add SPACEUSER and SPACEPSWD to .bash_profile or .zshrc or add to ENV VARS in Windows 
+## Or export these in Oscar from command line just before running the snakemake job
 startdate: "2023-02-09"
-enddate: "2023-02-14"
-bounding-box: "81 -22 79 12"
-fetchout: "data"
+enddate: "2023-02-11"
+bounding-box: "81 -23 79 12"
+fetchdata-outdir: "output/data"
+landmask-outdir: "output/landmasks"
+centroid-x: "72"
+centroid-y: "-18"
+# rule mkex:
+#   shell: "chmod a+x ./scripts/ice-floe-tracker.jl"
