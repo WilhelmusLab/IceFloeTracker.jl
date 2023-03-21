@@ -12,35 +12,34 @@ validate(config, "./snakemake-config.yaml") ## requires a schema
 #     directory(config["landmask-outdir"])
 
 rule mkdir:
-  params: lmdir = directory(config["landmask-outdir"])
-  shell: "mkdir -p {params.lmdir}"
-
-rule mkex:
-  shell: "chmod a+x ./scripts/ice-floe-tracker.jl"
+  output: main = directory(config["main-output"]),
+          lmdir = directory(config["landmask-outdir"]),
+          soitdir = directory(config["soit-outdir"])
+  shell: """
+          mkdir -p {output.main}
+          mkdir -p {output.lmdir}
+          mkdir -p {output.soitdir}
+         """
 
 rule fetchdata:
-  output: directory(config["fetchdata-outdir"])
+  output: parent = directory("output/data")      
   params:
     help = "-h",
     start = config["startdate"],
     end = config["enddate"],
     bb = config["bounding-box"],
-  shell: "./scripts/fetchdata.sh -o {output} -s {params.start} -e {params.end} {params.bb}"
+  shell: "./scripts/fetchdata.sh -o {output.parent} -s {params.start} -e {params.end} {params.bb}"
 
-# rule soit:
-# #   input:
-# #   output:
-#   params:
-#     spacetrackuser=os.environ["SPACEUSER"],
-#     spacetrackpassword=os.environ["SPACEPSWD"]
-  #shell: 
-#         run soit 
+rule soit:
+  output: directory(rules.mkdir.output.soitdir)
+  shell: "python3 ./scripts/pass_time_snakemake.py"
 #          run delta_time script
 
 rule landmask:
-  input: {rules.fetchdata.output}
-  params: lmdir = {rules.fetchdata.output}
-  script: "./scripts/ice-floe-tracker.jl landmask {input} {params.lmdir}"
+  #input: "output/data/truecolor"
+  params: indir = "output/data/truecolor"
+  output: directory(rules.mkdir.output.lmdir)
+  script: "./scripts/ice-floe-tracker.jl landmask {params.indir} {output}"
 
 # rule preprocess:
 

@@ -47,7 +47,7 @@ def main():
             config = yaml.safe_load(f)
             startdate = config["startdate"]
             enddate = config["enddate"]
-            csvoutpath = config["fetchdata-outdir"]
+            csvoutpath = config["soit-outdir"]
             centroidx = config["centroid-x"]
             centroidy = config["centroid-y"]
 
