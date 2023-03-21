@@ -142,7 +142,7 @@ function bwtraceboundary(
     end
 
     # unpack contour_list in case only one contour is found
-    return length(contour_list) == 1 ? contour_list[1] : contour_list
+    return contour_list
 end
 
 """
