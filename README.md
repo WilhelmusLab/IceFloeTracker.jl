@@ -122,3 +122,10 @@ git add .
 git commit -m "some informative message"
 git push
 ```
+## SOIT Integration
+
+The [Satellite Overpass Identification Tool](https://zenodo.org/record/6475619#.ZBhat-zMJUe) is called to generate a list of satellite times for both Aqua and Terra in the area of interest. 
+The `icefloe-soit` virtual environment can be used to manage dependencies.
+Run `python3 -m venv icefloe-soit`
+Run `source ./icefloe-soit/bin/activate` from the root directory of this repo to load the environment.
+Install the SOIT dependencies with: `pip install pyyaml requests skyfield`

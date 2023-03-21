@@ -8,6 +8,8 @@
 input/
 explorations/
 foo/
+output/
+icefloe-soit/
 docs/build/
 .DS_Store
 .vs*

@@ -62,7 +62,7 @@ function discriminate_ice_water(
         cloudmask_bitmatrix, reflectance_image
     )
     reflectance_image_band7 = @view(channelview(reflectance_image)[1, :, :])
-    
+
     # first define all of the image variations
     image_clouds = IceFloeTracker.apply_landmask(clouds_channel, landmask_bitmatrix) # output during cloudmask apply, landmasked 
     image_cloudless = IceFloeTracker.apply_landmask(
@@ -75,8 +75,8 @@ function discriminate_ice_water(
     floes_band_1 = @view(image_floes_view[3, :, :])
 
     # keep pixels greater than intensity 100 in bands 2 and 1
-    floes_band_2_keep = floes_band_2[floes_band_2.>floes_threshold]
-    floes_band_1_keep = floes_band_1[floes_band_1.>floes_threshold]
+    floes_band_2_keep = floes_band_2[floes_band_2 .> floes_threshold]
+    floes_band_1_keep = floes_band_1[floes_band_1 .> floes_threshold]
 
     _, floes_bin_counts = ImageContrastAdjustment.build_histogram(floes_band_2_keep, nbins)
     _, vals = Peaks.findmaxima(floes_bin_counts)
@@ -123,7 +123,7 @@ function discriminate_ice_water(
     end
 
     normalized_image_copy = copy(normalized_image)
-    normalized_image_copy[normalized_image_copy.>THRESH] .= 0
+    normalized_image_copy[normalized_image_copy .> THRESH] .= 0
     @. normalized_image_copy = normalized_image - (normalized_image_copy * 3)
 
     # reusing memory allocated in landmask_bitmatrix

@@ -11,7 +11,9 @@
 
     image_sharpened = IceFloeTracker.imsharpen(input_image, landmask_no_dilate)
     image_sharpened_gray = IceFloeTracker.imsharpen_gray(image_sharpened, landmask)
-    normalized_image = IceFloeTracker.normalize_image(image_sharpened, image_sharpened_gray, landmask)
+    normalized_image = IceFloeTracker.normalize_image(
+        image_sharpened, image_sharpened_gray, landmask
+    )
     ice_water_discrim = IceFloeTracker.discriminate_ice_water(
         reflectance_image, normalized_image, landmask, cloudmask
     )
