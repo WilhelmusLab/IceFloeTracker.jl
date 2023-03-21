@@ -34,10 +34,10 @@
 
             IceFloeTracker.landmask(; args_to_pass...)
             @test isfile(joinpath(output, "generated_landmask.jls"))
-            
+
             # deserialize landmask
             landmasks = deserialize(joinpath(output, "generated_landmask.jls"))
-            
+
             @test lm_expected == landmasks.dilated
             @test .!(IceFloeTracker.Gray.(lm_raw) .> 0) == landmasks.non_dilated
 
