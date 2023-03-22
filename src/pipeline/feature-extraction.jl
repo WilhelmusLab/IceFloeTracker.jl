@@ -78,7 +78,7 @@ function extractfeatures(;
     segmented_floes = [BitMatrix(load(joinpath(input, f))) for f in readdir(input)]
 
     props = [
-        IceFloeTracker.extractfeatures(
+        IceFloeTracker.Pipeline.extractfeatures(
             bw; min_area=min_area, max_area=max_area, features=features
         ) for bw in segmented_floes
     ]

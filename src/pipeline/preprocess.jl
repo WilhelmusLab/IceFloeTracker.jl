@@ -8,33 +8,6 @@ function check_landmask_path(lmpath::String)::Nothing
 end
 
 """
-    landmask(; input, output)
-
-Given an input directory with a landmask file, create a land/soft ice mask object with both dilated and non_dilated versions. The object is serialized to the snakemake output directory. 
-
-# Arguments
-- `input`: path to image dir containing truecolor and landmask source images
-- `output`: path to output dir where land-masked truecolor images and the generated binary land mask are saved
-- `landmask_fname`: name of the landmask file in `input`. Default is `"landmask.tiff"`
-- `outfile`: name of the serialized landmask object. Default is `"generated_landmask.jls"`
-"""
-function landmask(; input::String, output::String, landmask_fname::String="landmask.tiff", outfile="generated_landmask.jls")
-    @info "Looking for $landmask_fname in $input"
-
-    lmpath = joinpath(input, landmask_fname)
-    check_landmask_path(lmpath)
-    @info "$landmask_fname found in $input. Creating landmask..."
-
-    img = load(lmpath)
-    mkpath(output)
-
-    # create landmask, both dilated and non-dilated as namedtuple
-    serialize(joinpath(output, outfile), create_landmask(img))
-    @info "Landmask created and serialized succesfully."
-    return nothing
-end
-
-"""
     cache_vector(type::Type, numel::Int64, size::Tuple{Int64, Int64})::Vector{type}
 
 Build a vector of types `type` with `numel` elements of size `size`.
@@ -131,7 +104,6 @@ function disc_ice_water(
     ]
 end
 
-
 """
     sharpen_gray(
     sharpened_imgs::Vector{Matrix{Float64}},
@@ -152,15 +124,6 @@ function get_ice_labels(
     landmask::AbstractArray{Bool}
 )
     return [IceFloeTracker.find_ice_labels(ref_img, landmask) for ref_img in reflectance_imgs]
-end
-
-"""
-    load(; dir::String, fname::String)
-
-Load an image from `dir` with filename `fname` into a matrix of `Float64` values. Returns the loaded image.
-"""
-function loadimg(; dir::String, fname::String)
-    return joinpath(dir, fname) |> load |> x-> float64.(x)
 end
 
 """
@@ -224,4 +187,39 @@ function preprocess(truecolor_image::T, reflectance_image::T, landmask_imgs::Nam
         cloudmask,
         landmask_imgs.dilated,
     )
+end
+
+"""
+    preprocess(truedir::T, refdir::T, lmdir::Tuple{T, T}, output::T)
+
+Preprocess and segment floes in all images in `truedir` and `refdir` using the landmasks in `lmdir`. Saves the segmented floes in `output`.
+
+# Arguments
+- `truedir`: directory with truecolor images to be processed
+- `refdir`: directory with reflectance images to be processed
+- `lmdir`: directory with dilated and non-dilated landmask images
+"""
+function preprocess(; truedir::T, refdir::T, lmdir::T, output::T) where {T<:AbstractString}
+    # 1. Get references to images
+    truecolor_refs = [ref for ref in readdir(truedir) if occursin("truecolor", ref)]
+    reflectance_refs = [ref for ref in readdir(refdir) if occursin("reflectance", ref)]
+    landmask_imgs = deserialize(joinpath(lmdir, "generated_landmask.jls"))
+
+    # 2. Preprocess
+    @info "Preprocessing"
+    truecolor_container = loadimg(dir=truedir, fname=truecolor_refs[1]) |> similar
+    reflectance_container = similar(truecolor_container)
+    segmented_floes = cache_vector(BitMatrix, length(truecolor_refs), size(truecolor_container))
+    numimgs = length(truecolor_refs)
+    Threads.@threads for i in eachindex(truecolor_refs)
+        @info "Processing image $i of $numimgs"
+        truecolor_container .= loadimg(dir=truedir, fname=truecolor_refs[i])
+        reflectance_container .= loadimg(dir=refdir, fname=reflectance_refs[i])
+        segmented_floes[i] .= preprocess(truecolor_container, reflectance_container, landmask_imgs)
+    end
+
+    # 3. Save
+    @info "Serializing segmented floes"
+    serialize(joinpath(output, "segmented_floes.jld"), segmented_floes)
+    nothing
 end
