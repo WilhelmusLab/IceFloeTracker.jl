@@ -88,7 +88,7 @@ function fetchdata(; output::AbstractString)
 end
 end
 
-""""
+"""
     MorphSE
 
 Module for morphological operations with structuring element functionality adapted from ImageMorphology v0.4.3.
