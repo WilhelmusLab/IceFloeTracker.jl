@@ -1,5 +1,8 @@
 configfile: "./snakemake-config.yaml"
 from snakemake.utils import validate
+from os import *
+
+# make wildcard for truecolor images
 
 envvars:
   "SPACEUSER",
@@ -10,19 +13,20 @@ validate(config, "./snakemake-config.yaml") ## requires a schema
 # rule all:
 #   input: 
 #     directory(config["landmask-outdir"])
-
+#lmdir = directory(config["landmask-outdir"]),
 rule mkdir:
-  output: main = directory(config["main-output"]),
+  output:
           lmdir = directory(config["landmask-outdir"]),
-          soitdir = directory(config["soit-outdir"])
+          lmgen = directory(config["lm-generated"]),
+          soitdir = directory(config["soit-outdir"]),
   shell: """
-          mkdir -p {output.main}
-          mkdir -p {output.lmdir}
           mkdir -p {output.soitdir}
+          mkdir -p {output.lmdir}
+          mkdir -p {output.lmgen}
          """
 
 rule fetchdata:
-  output: parent = directory("output/data")      
+  output: parent = directory(config["fetchdata-outdir"])      
   params:
     help = "-h",
     start = config["startdate"],
@@ -31,18 +35,20 @@ rule fetchdata:
   shell: "./scripts/fetchdata.sh -o {output.parent} -s {params.start} -e {params.end} {params.bb}"
 
 rule soit:
-  output: directory(rules.mkdir.output.soitdir)
+  output: directory(config["soit-outdir"])
   shell: "python3 ./scripts/pass_time_snakemake.py"
-#          run delta_time script
+# run delta_time script
 
 rule landmask:
-  #input: "output/data/truecolor"
-  params: indir = "output/data/truecolor"
-  output: directory(rules.mkdir.output.lmdir)
-  script: "./scripts/ice-floe-tracker.jl landmask {params.indir} {output}"
+  params: lmdir = "landmasks",
+          outdir = "landmasks/generated"
+  shell: "./scripts/ice-floe-tracker.jl landmask {params.lmdir} {params.outdir}"
 
 # rule preprocess:
 
 # rule segmentation:
 
 # rule feature_extraction:
+
+#output: directory(rules.mkdir.output.soitdir)
+#output: directory(config["landmask-outdir"])
