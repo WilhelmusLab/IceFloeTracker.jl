@@ -1,4 +1,5 @@
 @testset verbose = true "pipeline" begin
+    using IceFloeTracker.Pipeline
     println("-------------------------------------------------")
     println("------------ pipeline funcs tests ---------------")
 
@@ -12,9 +13,9 @@
 
     args_to_pass = Dict{Symbol,AbstractString}(zip([:input, :output], [input, output]))
 
-    reflectance_images = IceFloeTracker.load_imgs(; input=input, image_type=:reflectance)
+    reflectance_images = load_imgs(; input=input, image_type=:reflectance)
 
-    truecolor_images = IceFloeTracker.load_imgs(; input=input, image_type=:truecolor)
+    truecolor_images = load_imgs(; input=input, image_type=:truecolor)
 
     lm_expected =
         IceFloeTracker.Gray.(
@@ -24,19 +25,22 @@
     lm_raw = load(joinpath(input, "landmask.tiff"))
 
     landmask_no_dilate = (IceFloeTracker.Gray.(lm_raw) .> 0)
-    sharpened_imgs = IceFloeTracker.sharpen(truecolor_images, landmask_no_dilate)
-    sharpenedgray_imgs = IceFloeTracker.sharpen_gray(sharpened_imgs, lm_expected)
+    sharpened_imgs = sharpen(truecolor_images, landmask_no_dilate)
+    sharpenedgray_imgs = sharpen_gray(sharpened_imgs, lm_expected)
 
     @testset verbose = true "preprocessing" begin
         @testset "landmask" begin
             println("-------------------------------------------------")
             println("------------ landmask creation tests ---------------")
 
-            landmasks = IceFloeTracker.landmask(; args_to_pass...)
+            IceFloeTracker.Pipeline.landmask(; args_to_pass...)
+            @test isfile(joinpath(output, "generated_landmask.jls"))
+            
+            # deserialize landmask
+            landmasks = deserialize(joinpath(output, "generated_landmask.jls"))
+            
             @test lm_expected == landmasks.dilated
             @test .!(IceFloeTracker.Gray.(lm_raw) .> 0) == landmasks.non_dilated
-            @test isfile(joinpath(output, "generated_landmask_dilated.png"))
-            @test isfile(joinpath(output, "generated_landmask_non_dilated.png"))
 
             # clean up!
             rm(output; recursive=true)
@@ -53,7 +57,7 @@
                 ])
 
             # Compare against generated cloudmasks
-            @test cldmasks_expected == IceFloeTracker.cloudmask(; args_to_pass...)
+            @test cldmasks_expected == cloudmask(; args_to_pass...)
         end
 
         @testset "load images" begin
@@ -63,26 +67,21 @@
 
             @test all(size.(reflectance_images) .== size.(truecolor_images))
 
-            @test IceFloeTracker.load_reflectance_imgs(; input=input) == reflectance_images
-            @test IceFloeTracker.load_truecolor_imgs(; input=input) == truecolor_images
+            @test load_reflectance_imgs(; input=input) == reflectance_images
+            @test load_truecolor_imgs(; input=input) == truecolor_images
         end
 
         @testset "ice water discrimination" begin
             cloudmasks = map(create_cloudmask, reflectance_images)
-            normalized_images = [
-                IceFloeTracker.normalize_image(
-                    sharpened_img, sharpened_gray_img, lm_expected
-                ) for (sharpened_img, sharpened_gray_img) in
-                zip(sharpened_imgs, sharpenedgray_imgs)
-            ]
-            ice_water_discrim_imgs = IceFloeTracker.disc_ice_water(
+            normalized_images = [IceFloeTracker.normalize_image(sharpened_img, sharpened_gray_img, lm_expected) for (sharpened_img, sharpened_gray_img) in zip(sharpened_imgs, sharpenedgray_imgs)]
+            ice_water_discrim_imgs = disc_ice_water(
                 reflectance_images, normalized_images, cloudmasks, lm_expected
             )
             @test length(ice_water_discrim_imgs) == 2
         end
 
         @testset "ice labels" begin
-            ice_labels = IceFloeTracker.get_ice_labels(reflectance_images, lm_expected)
+            ice_labels = get_ice_labels(reflectance_images, lm_expected)
             @test length(ice_labels) == 2
         end
 
@@ -91,6 +90,8 @@
             @test length(sharpenedgray_imgs) == 2
         end
     end
+
+    include("_test-preprocess.jl")
 
     @testset "feature extraction" begin
         min_area = "1"
@@ -119,7 +120,7 @@
         end
 
         # run feature extraction
-        IceFloeTracker.extractfeatures(; args...)
+        extractfeatures(; args...)
 
         # check that the output files exist
         @test isfile(joinpath(output, "floe_library.dat"))

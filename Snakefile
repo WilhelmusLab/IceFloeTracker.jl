@@ -10,10 +10,13 @@ envvars:
 
 validate(config, "./snakemake-config.yaml") ## requires a schema
 
-# rule all:
+rule all:
+  input: "file.done"
+  
 #   input: 
 #     directory(config["landmask-outdir"])
 #lmdir = directory(config["landmask-outdir"]),
+
 rule mkdir:
   output:
           lmdir = directory(config["landmask-outdir"]),
@@ -26,7 +29,7 @@ rule mkdir:
          """
 
 rule fetchdata:
-  output: parent = directory(config["fetchdata-outdir"])      
+  output: parent = directory(config["fetchdata-outdir"]), t = touch("file.done")      
   params:
     help = "-h",
     start = config["startdate"],
@@ -39,10 +42,19 @@ rule soit:
   shell: "python3 ./scripts/pass_time_snakemake.py"
 # run delta_time script
 
+# rule mvlm:
+#   params: infile = "images/landmask.tiff",
+#           outdir = directory("landmasks")
+#   shell: "mv {params.infile} {params.outdir}"
+
 rule landmask:
+  input: "file.done"
   params: lmdir = "landmasks",
           outdir = "landmasks/generated"
-  shell: "./scripts/ice-floe-tracker.jl landmask {params.lmdir} {params.outdir}"
+  shell: """
+          mv images/landmask.tiff landmasks
+          ./scripts/ice-floe-tracker.jl landmask {params.lmdir} {params.outdir}
+        """
 
 # rule preprocess:
 

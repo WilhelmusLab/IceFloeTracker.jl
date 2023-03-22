@@ -8,40 +8,6 @@ function check_landmask_path(lmpath::String)::Nothing
 end
 
 """
-    landmask(; input, output)
-
-Given an input directory with a landmask file and possibly truecolor images, create a land/soft ice mask. The resulting images are saved to the snakemake output directory. Returns the landmkask object. 
-
-# Arguments
-- `input`: path to image dir containing truecolor and landmask source images
-- `output`: path to output dir where land-masked truecolor images and the generated binary land mask are saved
-
-"""
-function landmask(;
-    input::String,
-    output::String,
-    landmask_fname::String="landmask.tiff",
-    lmdilated="generated_landmask_dilated.png",
-    lm_non_dilated::String="generated_landmask_non_dilated.png",
-)
-    @info "Looking for $landmask_fname in $input"
-
-    lmpath = joinpath(input, landmask_fname)
-    check_landmask_path(lmpath)
-    @info "$landmask_fname found in $input. Creating landmask..."
-
-    img = load(lmpath)
-    mkpath(output)
-
-    # create landmask, both dilated and non-dilated as namedtuple
-    landmasks = create_landmask(img)
-    @persist landmasks.dilated joinpath(output, lmdilated)
-    @persist landmasks.non_dilated joinpath(output, lm_non_dilated)
-    @info "Landmask created succesfully."
-    return landmasks
-end
-
-"""
     cache_vector(type::Type, numel::Int64, size::Tuple{Int64, Int64})::Vector{type}
 
 Build a vector of types `type` with `numel` elements of size `size`.
@@ -155,7 +121,103 @@ end
 function get_ice_labels(
     reflectance_imgs::Vector{Matrix{RGB{Float64}}}, landmask::AbstractArray{Bool}
 )
-    return [
-        IceFloeTracker.find_ice_labels(ref_img, landmask) for ref_img in reflectance_imgs
-    ]
+    return [IceFloeTracker.find_ice_labels(ref_img, landmask) for ref_img in reflectance_imgs]
+end
+
+"""
+    preprocess(; truecolor_image, reflectance_image, landmask_imgs)
+
+Preprocess and segment floes in `truecolor_image` and `reflectance_image` images using the landmasks  `landmask_imgs`. Returns a boolean matrix with segmented floes for feature extraction.
+
+# Arguments
+- `truecolor_image::T`: truecolor image to be processed
+- `reflectance_image::T`: reflectance image to be processed
+- `landmask_imgs`: named tuple with dilated and non-dilated landmask images
+"""
+function preprocess(truecolor_image::T, reflectance_image::T, landmask_imgs::NamedTuple{(:dilated, :non_dilated),Tuple{BitMatrix,BitMatrix}}) where {T<:Matrix{RGB{Float64}}}
+
+    @info "Building cloudmask"
+    cloudmask = create_cloudmask(reflectance_image)
+
+    # 2. Intermediate images
+    @info "Finding ice labels"
+    ice_labels = IceFloeTracker.find_ice_labels(reflectance_image, landmask_imgs.non_dilated)
+
+    @info "Sharpening truecolor image"
+    # a. apply imsharpen to truecolor image using non-dilated landmask
+    sharpened_truecolor_image = IceFloeTracker.imsharpen(truecolor_image, landmask_imgs.non_dilated)
+    # b. apply imsharpen to sharpened truecolor img using dilated landmask
+    sharpened_gray_truecolor_image = IceFloeTracker.imsharpen_gray(sharpened_truecolor_image, landmask_imgs.dilated)
+
+    @info "Normalizing truecolor image"
+    normalized_image = IceFloeTracker.normalize_image(
+        sharpened_truecolor_image, sharpened_gray_truecolor_image, landmask_imgs.dilated)
+
+    # Discriminate ice/water
+    @info "Discriminating ice/water"
+    ice_water_discrim = IceFloeTracker.discriminate_ice_water(
+        reflectance_image, normalized_image, copy(landmask_imgs.dilated), cloudmask)
+
+    # 3. Segmentation
+    @info "Segmenting floes part 1/3"
+    segA = IceFloeTracker.segmentation_A(IceFloeTracker.segmented_ice_cloudmasking(
+        ice_water_discrim, cloudmask, ice_labels
+    ))
+
+    # segmentation_B
+    @info "Segmenting floes part 2/3"
+    segB = IceFloeTracker.segmentation_B(sharpened_gray_truecolor_image, cloudmask, segA)
+
+    # Process watershed in parallel using Folds
+    @info "Building watersheds"
+    # container_for_watersheds = [landmask_imgs.non_dilated, similar(landmask_imgs.non_dilated)]
+    watersheds_segB = Folds.map(IceFloeTracker.watershed_ice_floes, [segB.not_ice_bit, segB.ice_intersect])
+    # reuse the memory allocated for the first watershed
+    watersheds_segB[1] .= IceFloeTracker.watershed_product(watersheds_segB...)
+
+    # segmentation_F
+    @info "Segmenting floes 3/3"
+    return IceFloeTracker.segmentation_F(
+        segB.not_ice,
+        segB.ice_intersect,
+        watersheds_segB[1],
+        ice_labels,
+        cloudmask,
+        landmask_imgs.dilated,
+    )
+end
+
+"""
+    preprocess(truedir::T, refdir::T, lmdir::Tuple{T, T}, output::T)
+
+Preprocess and segment floes in all images in `truedir` and `refdir` using the landmasks in `lmdir`. Saves the segmented floes in `output`.
+
+# Arguments
+- `truedir`: directory with truecolor images to be processed
+- `refdir`: directory with reflectance images to be processed
+- `lmdir`: directory with dilated and non-dilated landmask images
+"""
+function preprocess(; truedir::T, refdir::T, lmdir::T, output::T) where {T<:AbstractString}
+    # 1. Get references to images
+    truecolor_refs = [ref for ref in readdir(truedir) if occursin("truecolor", ref)]
+    reflectance_refs = [ref for ref in readdir(refdir) if occursin("reflectance", ref)]
+    landmask_imgs = deserialize(joinpath(lmdir, "generated_landmask.jls"))
+
+    # 2. Preprocess
+    @info "Preprocessing"
+    truecolor_container = loadimg(dir=truedir, fname=truecolor_refs[1]) |> similar
+    reflectance_container = similar(truecolor_container)
+    segmented_floes = cache_vector(BitMatrix, length(truecolor_refs), size(truecolor_container))
+    numimgs = length(truecolor_refs)
+    Threads.@threads for i in eachindex(truecolor_refs)
+        @info "Processing image $i of $numimgs"
+        truecolor_container .= loadimg(dir=truedir, fname=truecolor_refs[i])
+        reflectance_container .= loadimg(dir=refdir, fname=reflectance_refs[i])
+        segmented_floes[i] .= preprocess(truecolor_container, reflectance_container, landmask_imgs)
+    end
+
+    # 3. Save
+    @info "Serializing segmented floes"
+    serialize(joinpath(output, "segmented_floes.jld"), segmented_floes)
+    nothing
 end

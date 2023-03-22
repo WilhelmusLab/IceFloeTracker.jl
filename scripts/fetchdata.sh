@@ -236,7 +236,7 @@ main() {
   mkdir -p "${output}/truecolor"
   mkdir -p "./landmasks"
 
-  download_landmask "${bounding_box}" "${startdate}" "./landmasks"
+  download_landmask "${bounding_box}" "${startdate}" "${output}"
   download_truecolor "${bounding_box}" "${startdate}" "${enddate}" "${output}/truecolor"
   download_reflectance "${bounding_box}" "${startdate}" "${enddate}" "${output}/reflectance"
 }
