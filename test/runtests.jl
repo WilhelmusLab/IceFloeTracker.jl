@@ -8,6 +8,7 @@ using Random
 using ImageTransformations: imrotate
 include("test_error_rate.jl")
 include("config.jl")
+using Distributed
 
 # Setting things up (see config.jl)
 

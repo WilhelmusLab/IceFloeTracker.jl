@@ -17,7 +17,8 @@ using RegisterQD
 using StaticArrays
 using OffsetArrays: centered
 using Serialization: serialize, deserialize
-using Folds
+using Distributed
+# addprocs(1)
 
 export readdlm,
     padnhood, bridge, branch, @persist, load, cloudmask, create_cloudmask, deserialize, serialize, check_landmask_path, create_landmask, RGB, Gray, float64, imsharpen, label_components, regionprops_table, loadimg
@@ -62,7 +63,8 @@ This module contains the wrapper functions called by CLI.
 """
 module Pipeline
 using IceFloeTracker
-using IceFloeTracker: Folds, DataFrame, RGB, Gray, load, float64, imsharpen
+using IceFloeTracker: DataFrame, RGB, Gray, load, float64, imsharpen
+using Distributed: pmap, @everywhere
 include("pipeline/landmask.jl")
 include("pipeline/preprocess.jl")
 include("pipeline/feature-extraction.jl")

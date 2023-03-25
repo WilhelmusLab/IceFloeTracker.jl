@@ -1,3 +1,5 @@
+nprocs() == 1 && addprocs(1)
+@everywhere using IceFloeTracker: watershed_ice_floes
 @testset verbose = true "pipeline" begin
     using IceFloeTracker.Pipeline
     println("-------------------------------------------------")

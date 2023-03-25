@@ -172,8 +172,8 @@ function preprocess(truecolor_image::T, reflectance_image::T, landmask_imgs::Nam
 
     # Process watershed in parallel using Folds
     @info "Building watersheds"
-    # container_for_watersheds = [landmask_imgs.non_dilated, similar(landmask_imgs.non_dilated)]
-    watersheds_segB = Folds.map(IceFloeTracker.watershed_ice_floes, [segB.not_ice_bit, segB.ice_intersect])
+
+    watersheds_segB = pmap(IceFloeTracker.watershed_ice_floes, [segB.not_ice_bit, segB.ice_intersect])
     # reuse the memory allocated for the first watershed
     watersheds_segB[1] .= IceFloeTracker.watershed_product(watersheds_segB...)
 
