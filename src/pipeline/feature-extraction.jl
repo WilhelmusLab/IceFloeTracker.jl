@@ -1,4 +1,13 @@
 """
+    ploop(f, itr)
+
+Threaded parallel loop over `itr` using `f` as the function to apply to each element of `itr`. Returns a vector of the results.
+"""
+function ploop(f, itr)
+    map(fetch, map(i -> Threads.@spawn(f(i)), itr))
+end
+
+"""
     extractfeatures(bw::AbstractArray{Bool}, area_threshold::Tuple{Int64,Int64}, features::Union{Vector{Symbol},Vector{String}})::DataFrame
 
 Extract features from the labeled image `bw` using the area thresholds in `area_threshold` and the vector of features `features`. Returns a DataFrame of the extracted features.
@@ -75,13 +84,11 @@ function extractfeatures(;
     features = split(features)
 
     # load segmented images in input directory
-    segmented_floes = [BitMatrix(load(joinpath(input, f))) for f in readdir(input)]
-
-    props = [
-        IceFloeTracker.Pipeline.extractfeatures(
-            bw; min_area=min_area, max_area=max_area, features=features
-        ) for bw in segmented_floes
-    ]
+    segmented_floes = deserialize(joinpath(input, "segmented_floes.jls"))
+    f = x -> IceFloeTracker.Pipeline.extractfeatures(
+        x; min_area=min_area, max_area=max_area, features=features
+    )
+    props = ploop(f, segmented_floes)
 
     # serialize the props vector to the output directory 
     serialize(joinpath(output, "floe_library.dat"), props) # need job id for file name?
