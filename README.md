@@ -129,3 +129,8 @@ The `icefloe-soit` virtual environment can be used to manage dependencies.
 Run `python3 -m venv icefloe-soit`
 Run `source ./icefloe-soit/bin/activate` from the root directory of this repo to load the environment.
 Install the SOIT dependencies with: `pip install pyyaml requests skyfield`
+
+### Example: export SOIT username/password to environment variable
+
+`export SPACEUSER=<firstname>.<lastname>@brown.edu`
+`export SPACEPSWD=<password>`
