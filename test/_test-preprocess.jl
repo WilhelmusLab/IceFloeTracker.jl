@@ -32,7 +32,7 @@
             refdir=imgsdir,
             lmdir=imgsdir,
             output=imgsdir)
-        outfile = joinpath(imgsdir, "segmented_floes.jld")
+        outfile = joinpath(imgsdir, "segmented_floes.jls")
         @test isfile(outfile)
         rm(outfile)
     end
