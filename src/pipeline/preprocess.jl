@@ -220,6 +220,6 @@ function preprocess(; truedir::T, refdir::T, lmdir::T, output::T) where {T<:Abst
 
     # 3. Save
     @info "Serializing segmented floes"
-    serialize(joinpath(output, "segmented_floes.jld"), segmented_floes)
+    serialize(joinpath(output, "segmented_floes.jls"), segmented_floes)
     nothing
 end
