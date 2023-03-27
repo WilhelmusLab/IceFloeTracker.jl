@@ -35,10 +35,10 @@
 
             IceFloeTracker.Pipeline.landmask(; args_to_pass...)
             @test isfile(joinpath(output, "generated_landmask.jls"))
-            
+
             # deserialize landmask
             landmasks = deserialize(joinpath(output, "generated_landmask.jls"))
-            
+
             @test lm_expected == landmasks.dilated
             @test .!(IceFloeTracker.Gray.(lm_raw) .> 0) == landmasks.non_dilated
 
@@ -73,7 +73,12 @@
 
         @testset "ice water discrimination" begin
             cloudmasks = map(create_cloudmask, reflectance_images)
-            normalized_images = [IceFloeTracker.normalize_image(sharpened_img, sharpened_gray_img, lm_expected) for (sharpened_img, sharpened_gray_img) in zip(sharpened_imgs, sharpenedgray_imgs)]
+            normalized_images = [
+                IceFloeTracker.normalize_image(
+                    sharpened_img, sharpened_gray_img, lm_expected
+                ) for (sharpened_img, sharpened_gray_img) in
+                zip(sharpened_imgs, sharpenedgray_imgs)
+            ]
             ice_water_discrim_imgs = disc_ice_water(
                 reflectance_images, normalized_images, cloudmasks, lm_expected
             )

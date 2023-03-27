@@ -62,7 +62,7 @@ def main():
     lat = int(centroidx)
     long = int(centroidy)
     print(csvoutpath)
-    print(end_date, start_date)
+    print(f"Timeframe starts on {start_date}, and ends on {end_date}")
     print(centroidx, centroidy)
 
     end_date = getNextDay(end_date)

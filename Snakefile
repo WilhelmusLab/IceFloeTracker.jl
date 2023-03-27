@@ -2,8 +2,6 @@ configfile: "./snakemake-config.yaml"
 from snakemake.utils import validate
 from os import *
 
-# make wildcard for truecolor images
-
 envvars:
   "SPACEUSER",
   "SPACEPSWD"
@@ -11,25 +9,10 @@ envvars:
 validate(config, "./snakemake-config.yaml") ## requires a schema
 
 rule all:
-  input: "file.done"
-  
-#   input: 
-#     directory(config["landmask-outdir"])
-#lmdir = directory(config["landmask-outdir"]),
-
-rule mkdir:
-  output:
-          lmdir = directory(config["landmask-outdir"]),
-          lmgen = directory(config["lm-generated"]),
-          soitdir = directory(config["soit-outdir"]),
-  shell: """
-          mkdir -p {output.soitdir}
-          mkdir -p {output.lmdir}
-          mkdir -p {output.lmgen}
-         """
+  input: "runall.txt", "soit.txt"
 
 rule fetchdata:
-  output: parent = directory(config["fetchdata-outdir"]), t = touch("file.done")      
+  output: parent = directory(config["fetchdata-outdir"]), t = touch("runall.txt"), truedir = directory(config["truecolor-outdir"]), refdir = directory(config["reflectance-outdir"])      
   params:
     help = "-h",
     start = config["startdate"],
@@ -38,29 +21,39 @@ rule fetchdata:
   shell: "./scripts/fetchdata.sh -o {output.parent} -s {params.start} -e {params.end} {params.bb}"
 
 rule soit:
-  output: directory(config["soit-outdir"])
-  shell: "python3 ./scripts/pass_time_snakemake.py"
+  input: rules.fetchdata.output.t
+  output: outdir = directory(config["soit-outdir"]), s = touch("soit.txt")
+  shell: """
+          mkdir -p output/soit
+          python3 ./scripts/pass_time_snakemake.py
+         """
 # run delta_time script
 
-# rule mvlm:
-#   params: infile = "images/landmask.tiff",
-#           outdir = directory("landmasks")
-#   shell: "mv {params.infile} {params.outdir}"
-
 rule landmask:
-  input: "file.done"
-  params: lmdir = "landmasks",
-          outdir = "landmasks/generated"
+  input: rules.soit.output.s
+  params: lmdir = rules.fetchdata.output.parent
+  output: outdir = directory(config["landmask-outdir"]), outfile = "output/landmasks/generated_landmask.jls"
   shell: """
-          mv images/landmask.tiff landmasks
-          ./scripts/ice-floe-tracker.jl landmask {params.lmdir} {params.outdir}
-        """
+          mkdir -p {output.outdir}
+          ./scripts/ice-floe-tracker.jl landmask {params.lmdir} {output.outdir}
+         """
 
-# rule preprocess:
+rule preprocess: 
+  input: rules.landmask.output.outfile
+  output: outdir = directory(config["preprocess-outdir"]), p = touch("preprocess.txt")
+  shell: """
+          mkdir -p {output.outdir}
+          julia -t auto ./scripts/ice-floe-tracker.jl preprocess -t {rules.fetchdata.output.truedir} -r {rules.fetchdata.output.refdir} -l {rules.landmask.output.outdir} -o {output.outdir}
+         """
 
-# rule segmentation:
+rule cleanup:
+  input: rules.preprocess.output.p
+  shell: """
+          rm runall.txt
+          rm soit.txt
+          rm preprocess.txt
+         """
 
 # rule feature_extraction:
-
-#output: directory(rules.mkdir.output.soitdir)
-#output: directory(config["landmask-outdir"])
+#   input: "{rules.preprocess.output}/segmented_floes.jld"
+#   output: directory(config[])

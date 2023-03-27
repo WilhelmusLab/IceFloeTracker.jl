@@ -4,10 +4,14 @@
 *.jl.*.cov
 *.jl.cov
 *.jl.mem
+*.jls
+*.jld
 .snakemake
+*.snakemake_timestamp
 input/
 explorations/
 foo/
+images/
 output/
 icefloe-soit/
 docs/build/
