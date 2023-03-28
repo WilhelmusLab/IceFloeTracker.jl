@@ -112,15 +112,17 @@
         )
 
         # generate two random image files with boolean data type using a seed
-        for i in 1:2
+        segfloes = [zeros(Bool, 800, 400) for i in 1:2]
+    
+        for i in eachindex(segfloes)
             Random.seed!(i)
-            @persist .!rand((false, false, true, true, true), 200, 100) joinpath(
-                input, "floe$i.png"
-            )
+            segfloes[i] = .!rand((false, false, true, true, true), 800, 400) 
         end
-
+        
+        serialize(joinpath(input, "segmented_floes.jls"), segfloes)
+        
         # run feature extraction
-        extractfeatures(; args...)
+        @time IceFloeTracker.Pipeline.extractfeatures(; args...)
 
         # check that the output files exist
         @test isfile(joinpath(output, "floe_library.dat"))

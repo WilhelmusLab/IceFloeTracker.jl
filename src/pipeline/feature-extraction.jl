@@ -52,7 +52,7 @@ function extractfeatures(
     bw::T;
     min_area::Int64=300,
     max_area::Int64=90000,
-    features::Union{Vector{Symbol},Vector{<:AbstractString}},
+    features::Union{Vector{Symbol},Vector{SubString{String}}},
 )::DataFrame where {T<:AbstractArray{Bool}}
     # assert the first area threshold is less than the second
     min_area >= max_area &&
@@ -75,14 +75,17 @@ function extractfeatures(;
     features = split(features)
 
     # load segmented images in input directory
-    segmented_floes = [BitMatrix(load(joinpath(input, f))) for f in readdir(input)]
+    segmented_floes = deserialize(joinpath(input, "segmented_floes.jls"))
 
-    props = [
-        IceFloeTracker.Pipeline.extractfeatures(
-            bw; min_area=min_area, max_area=max_area, features=features
-        ) for bw in segmented_floes
-    ]
+    props = Vector{DataFrame}(undef, length(segmented_floes))
 
+    f = x -> IceFloeTracker.Pipeline.extractfeatures(
+        x; min_area=min_area, max_area=max_area, features=features
+    )
+    for i in eachindex(segmented_floes)
+        props[i] = f(segmented_floes[i])
+    end
+    
     # serialize the props vector to the output directory 
     serialize(joinpath(output, "floe_library.dat"), props) # need job id for file name?
     return nothing
