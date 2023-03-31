@@ -1,5 +1,15 @@
 @testset verbose = true "pipeline" begin
-    using IceFloeTracker.Pipeline: cache_vector, extractfeatures, load_imgs, sharpen,sharpen_gray, disc_ice_water, load_truecolor_imgs, load_reflectance_imgs, cloudmask, get_ice_labels
+    using IceFloeTracker.Pipeline:
+        cache_vector,
+        extractfeatures,
+        load_imgs,
+        sharpen,
+        sharpen_gray,
+        disc_ice_water,
+        load_truecolor_imgs,
+        load_reflectance_imgs,
+        cloudmask,
+        get_ice_labels
     println("-------------------------------------------------")
     println("------------ pipeline funcs tests ---------------")
 

@@ -79,13 +79,14 @@ function extractfeatures(;
 
     props = Vector{DataFrame}(undef, length(segmented_floes))
 
-    f = x -> IceFloeTracker.Pipeline.extractfeatures(
-        x; minarea=minarea, maxarea=maxarea, features=features
-    )
+    f =
+        x -> IceFloeTracker.Pipeline.extractfeatures(
+            x; minarea=minarea, maxarea=maxarea, features=features
+        )
     for i in eachindex(segmented_floes)
         props[i] = f(segmented_floes[i])
     end
-    
+
     # serialize the props vector to the output directory 
     serialize(joinpath(output, "floe_props.jls"), props)
     return nothing
