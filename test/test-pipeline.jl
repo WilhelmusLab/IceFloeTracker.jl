@@ -1,5 +1,5 @@
 @testset verbose = true "pipeline" begin
-    using IceFloeTracker.Pipeline
+    using IceFloeTracker.Pipeline: cache_vector, extractfeatures, load_imgs, sharpen,sharpen_gray, disc_ice_water, load_truecolor_imgs, load_reflectance_imgs, cloudmask, get_ice_labels
     println("-------------------------------------------------")
     println("------------ pipeline funcs tests ---------------")
 
@@ -99,8 +99,8 @@
     include("_test-preprocess.jl")
 
     @testset "feature extraction" begin
-        min_area = "1"
-        max_area = "5"
+        minarea = "1"
+        maxarea = "5"
         features = "area bbox centroid"
         extraction_path = joinpath(
             @__DIR__, "test_inputs", "pipeline", "feature_extraction"
@@ -111,29 +111,30 @@
         output = mkpath(joinpath(extraction_path, "output"))
         args = Dict{Symbol,Any}(
             zip(
-                [:input, :output, :min_area, :max_area, :features],
-                [input, output, min_area, max_area, features],
+                [:input, :output, :minarea, :maxarea, :features],
+                [input, output, minarea, maxarea, features],
             ),
         )
 
         # generate two random image files with boolean data type using a seed
-        for i in 1:2
+        container_to_serialize = cache_vector(Matrix{Bool}, 2, (200, 100))
+        for i in eachindex(container_to_serialize)
             Random.seed!(i)
-            @persist .!rand((false, false, true, true, true), 200, 100) joinpath(
-                input, "floe$i.png"
-            )
+            container_to_serialize[i] .= .!rand((false, false, true, true, true), 200, 100)
         end
 
+        serialize(joinpath(input, "segmented_floes.jls"), container_to_serialize)
+
         # run feature extraction
-        extractfeatures(; args...)
+        @time extractfeatures(; args...)
 
         # check that the output files exist
-        @test isfile(joinpath(output, "floe_library.dat"))
+        @test isfile(joinpath(output, "floe_props.jls"))
 
         # load the serialized output file
-        floe_library = IceFloeTracker.deserialize(joinpath(output, "floe_library.dat"))
-        @test typeof(floe_library) == Vector{DataFrame}
-        @test length(floe_library) == 2
+        floe_props = IceFloeTracker.deserialize(joinpath(output, "floe_props.jls"))
+        @test typeof(floe_props) == Vector{DataFrame}
+        @test length(floe_props) == 2
 
         # clean up!
         rm(extraction_path; recursive=true)

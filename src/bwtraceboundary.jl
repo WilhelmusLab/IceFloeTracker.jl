@@ -4,9 +4,9 @@
 # Suzuki, Satoshi. "Topological structural analysis of digitized binary images by border following." Computer vision, graphics, and image processing 30.1 (1985): 32-46.
 
 """
-    bwtraceboundary(image::Union{Matrix{Int64},Matrix{Float64},BitMatrix};
+    bwtraceboundary(image::Union{Matrix{Int64},Matrix{Float64},T};
                     P0::Union{Tuple{Int,Int},CartesianIndex{2},Nothing}=nothing,
-                    closed::Bool=true)
+                    closed::Bool=true) where T<:AbstractMatrix{Bool}
 
 Trace the boundary of objects in `image` 
 
@@ -54,10 +54,10 @@ julia> boundary[3]
 ```
 """
 function bwtraceboundary(
-    image::Union{Matrix{Int64},Matrix{Float64},BitMatrix};
+    image::Union{Matrix{Int64},Matrix{Float64},T};
     P0::Union{Tuple{Int,Int},CartesianIndex{2},Nothing}=nothing,
-    closed::Bool=true,
-)
+    closed::Bool=true
+) where {T<:AbstractArray{Bool,2}}
     if typeof(image[1]) != Float64
         image = Float64.(image)
     end
@@ -142,7 +142,7 @@ function bwtraceboundary(
     end
 
     # unpack contour_list in case only one contour is found
-    return length(contour_list) == 1 ? contour_list[1] : contour_list
+    return contour_list
 end
 
 """

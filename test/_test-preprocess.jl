@@ -28,10 +28,12 @@
         println("-------------preprocess CLI --------------------")
         # Uses toy test data
         imgsdir = joinpath(test_data_dir, "pipeline/input_pipeline")
-        IceFloeTracker.Pipeline.preprocess(;
-            truedir=imgsdir, refdir=imgsdir, lmdir=imgsdir, output=imgsdir
-        )
-        outfile = joinpath(imgsdir, "segmented_floes.jld")
+        IceFloeTracker.Pipeline.preprocess(
+            truedir=imgsdir,
+            refdir=imgsdir,
+            lmdir=imgsdir,
+            output=imgsdir)
+        outfile = joinpath(imgsdir, "segmented_floes.jls")
         @test isfile(outfile)
         rm(outfile)
     end
