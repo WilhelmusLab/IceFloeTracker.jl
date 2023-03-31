@@ -1,6 +1,7 @@
 $schema: "https://json-schema.org/draft/2020-12/schema"
 ## First add SPACEUSER and SPACEPSWD to .bash_profile or .zshrc or add to ENV VARS in Windows 
 ## Or export these in Oscar from command line just before running the snakemake job
+## At least two days of data are required for the run 
 
 ## Update this block with your area of interest and timeframe
 startdate: "2022-03-09"

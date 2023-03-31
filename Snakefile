@@ -24,7 +24,7 @@ rule soit:
   input: rules.fetchdata.output.t
   output: outdir = directory(config["soit-outdir"]), s = touch("soit.txt")
   shell: """
-          mkdir -p output/soit
+          mkdir -p {output.outdir}
           python3 ./scripts/pass_time_snakemake.py
          """
 # run delta_time script
@@ -51,7 +51,7 @@ rule extractfeatures:
   output: directory(config["features-outdir"])
   shell: """
           mkdir -p {output}
-          ./scripts/ice-floe-tracker.jl extractfeatures -i {rules.preprocess.output.outdir} -o {output} --min_area 300 --max_area 90000
+          ./scripts/ice-floe-tracker.jl extractfeatures -i {rules.preprocess.output.outdir} -o {output}
          """
 
 rule cleanup:
