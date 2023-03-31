@@ -66,12 +66,12 @@ function main(args)
         help = "Output image directory"
         required = true
 
-        "--min-area"
+        "--minarea"
         help = "Minimum area (in pixels) of ice floes to extract"
         required = false
         default = 300
 
-        "--max-area"
+        "--maxarea"
         help = "Maximum area (in pixels) of ice floes to extract"
         required = false
         default = 90000

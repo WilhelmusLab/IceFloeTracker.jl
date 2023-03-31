@@ -1,11 +1,11 @@
 """
-    extractfeatures(bw::AbstractArray{Bool}, area_threshold::Tuple{Int64,Int64}, features::Union{Vector{Symbol},Vector{String}})::DataFrame
+    extractfeatures(bw::T; minarea, maxarea, features)
 
 Extract features from the labeled image `bw` using the area thresholds in `area_threshold` and the vector of features `features`. Returns a DataFrame of the extracted features.
 
 # Arguments
 - `bw``: A labeled image.
-- `min_area` and `max_area`: The minimum and maximum (inclusive) areas of the floes to extract.
+- `minarea` and `maxarea`: The minimum and maximum (inclusive) areas of the floes to extract.
 - `features`: A vector of the features to extract.
 
 # Example
@@ -29,10 +29,10 @@ julia> features = ["centroid", "area", "major_axis_length", "minor_axis_length",
  "convex_area"
  "bbox"
 
- julia> min_area, max_area = 1, 5
+ julia> minarea, maxarea = 1, 5
  (1, 5)
 
- julia> IceFloeTracker.extractfeatures(bw_img, min_area=min_area, max_area=max_area, features=features)
+ julia> IceFloeTracker.Pipeline.extractfeatures(bw_img; minarea=minarea, maxarea=maxarea, features=features)
  8×10 DataFrame
   Row │ area   bbox-0  bbox-1  bbox-2  bbox-3  centroid-0  centroid-1  convex_area  major_axis_length  minor_axis_length 
       │ Int32  Int32   Int32   Int32   Int32   Float64     Float64     Int32        Float64            Float64
@@ -50,26 +50,26 @@ julia> features = ["centroid", "area", "major_axis_length", "minor_axis_length",
 """
 function extractfeatures(
     bw::T;
-    min_area::Int64=300,
-    max_area::Int64=90000,
-    features::Union{Vector{Symbol},Vector{SubString{String}}},
+    minarea::Int64=300,
+    maxarea::Int64=90000,
+    features::Union{Vector{Symbol},Vector{<:AbstractString}},
 )::DataFrame where {T<:AbstractArray{Bool}}
     # assert the first area threshold is less than the second
-    min_area >= max_area &&
+    minarea >= maxarea &&
         throw(ArgumentError("The minimum area must be less than the maximum area."))
 
     props = regionprops_table(label_components(bw, trues(3, 3)); properties=features)
 
     # filter by area using the area thresholds
-    return props[min_area .<= props.area .<= max_area, :]
+    return props[minarea .<= props.area .<= maxarea, :]
 end
 
 function extractfeatures(;
-    input::String, output::String, min_area::String, max_area::String, features::String
+    input::String, output::String, minarea::String, maxarea::String, features::String
 )
-    # parse min_area and max_area as Int64
-    min_area = parse(Int64, min_area)
-    max_area = parse(Int64, max_area)
+    # parse minarea and minarea as Int64
+    minarea = parse(Int64, minarea)
+    maxarea = parse(Int64, maxarea)
 
     # parse the features
     features = split(features)
@@ -80,13 +80,13 @@ function extractfeatures(;
     props = Vector{DataFrame}(undef, length(segmented_floes))
 
     f = x -> IceFloeTracker.Pipeline.extractfeatures(
-        x; min_area=min_area, max_area=max_area, features=features
+        x; minarea=minarea, maxarea=maxarea, features=features
     )
     for i in eachindex(segmented_floes)
         props[i] = f(segmented_floes[i])
     end
     
     # serialize the props vector to the output directory 
-    serialize(joinpath(output, "floe_library.dat"), props) # need job id for file name?
+    serialize(joinpath(output, "floe_props.jls"), props)
     return nothing
 end
