@@ -46,6 +46,14 @@ rule preprocess:
           julia -t auto ./scripts/ice-floe-tracker.jl preprocess -t {rules.fetchdata.output.truedir} -r {rules.fetchdata.output.refdir} -l {rules.landmask.output.outdir} -o {output.outdir}
          """
 
+rule extractfeatures:
+  input: rules.preprocess.output.p
+  output: directory(config["features-outdir"])
+  shell: """
+          mkdir -p {output}
+          ./scripts/ice-floe-tracker.jl extractfeatures -i {rules.preprocess.output.outdir} -o {output} --min_area 300 --max_area 90000
+         """
+
 rule cleanup:
   input: rules.preprocess.output.p
   shell: """
@@ -53,7 +61,3 @@ rule cleanup:
           rm soit.txt
           rm preprocess.txt
          """
-
-# rule feature_extraction:
-#   input: "{rules.preprocess.output}/segmented_floes.jld"
-#   output: directory(config[])
