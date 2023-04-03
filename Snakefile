@@ -1,4 +1,4 @@
-configfile: "./snakemake-config.yaml"
+configfile: "./hpc/snakemake-config.yaml"
 from snakemake.utils import validate
 from os import *
 
@@ -6,10 +6,10 @@ envvars:
   "SPACEUSER",
   "SPACEPSWD"
 
-validate(config, "./snakemake-config.yaml") ## requires a schema
+validate(config, "./hpc/snakemake-config.yaml") ## requires a schema
 
 rule all:
-  input: "runall.txt", "soit.txt"
+  input: "runall.txt", "soit.txt", "preprocess.txt"
 
 rule fetchdata:
   output: parent = directory(config["fetchdata-outdir"]), t = touch("runall.txt"), truedir = directory(config["truecolor-outdir"]), refdir = directory(config["reflectance-outdir"])      

@@ -8,12 +8,14 @@
 *.jld
 .snakemake
 *.snakemake_timestamp
+
 input/
 explorations/
 foo/
 images/
 output/
 icefloe-soit/
+oscar-env/
 docs/build/
 .DS_Store
 .vs*

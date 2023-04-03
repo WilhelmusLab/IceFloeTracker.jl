@@ -130,7 +130,12 @@ Run `python3 -m venv icefloe-soit`
 Run `source ./icefloe-soit/bin/activate` from the root directory of this repo to load the environment.
 Install the SOIT dependencies with: `pip install pyyaml requests skyfield`
 
-### Example: export SOIT username/password to environment variable
+Make sure the HolyLab registry is added as described in the [prerequisites section](#prerequisites)
 
-`export SPACEUSER=<firstname>.<lastname>@brown.edu`
+julia -e "using Pkg; Pkg.activate("."); Pkg.instantiate()"
+
+### Example: 
+export SOIT username/password to environment variable
+
+`export SPACEUSER=<firstname>_<lastname>@brown.edu`
 `export SPACEPSWD=<password>`
