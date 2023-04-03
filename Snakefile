@@ -51,7 +51,7 @@ rule extractfeatures:
   output: directory(config["features-outdir"])
   shell: """
           mkdir -p {output}
-          ./scripts/ice-floe-tracker.jl extractfeatures -i {rules.preprocess.output.outdir} -o {output}
+          julia -t auto ./scripts/ice-floe-tracker.jl extractfeatures -i {rules.preprocess.output.outdir} -o {output}
          """
 
 rule cleanup:
