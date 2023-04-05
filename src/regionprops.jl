@@ -154,7 +154,7 @@ end
 Returns the column names of the centroid columns in `props`.
 """
 function getcentroidcolumns(props::DataFrame)
-    filter(col -> occursin(r"^centroid-\d$", col), names(props))
+    return filter(col -> occursin(r"^centroid-\d$", col), names(props))
 end
 
 """
@@ -163,7 +163,7 @@ end
 Return the column names of the bounding box columns in `props`.
 """
 function getbboxcolumns(props::DataFrame)
-    filter(col -> occursin(r"^bbox-\d$", col), names(props))
+    return filter(col -> occursin(r"^bbox-\d$", col), names(props))
 end
 
 """
@@ -172,14 +172,18 @@ end
 Crops the floe delimited by the bounding box data in `props` at index `i` from the floe image `floesimg`.
 """
 function cropfloe(floesimg::BitMatrix, props::DataFrame, i::Int64)
-    # Crop the floe using the bounding box data. Considered using a view, but if there are multiple components in the floe, the array with the floes will be modified.
-    prefloe = floesimg[props.min_row[i]:props.max_row[i]-1, props.min_col[i]:props.max_col[i]-1]
+    #= 
+    Crop the floe using bounding box data in props.
+    Note: Using a view of the cropped floe was considered but if there were multiple components in the cropped floe, the source array with the floes would be modified. =#
+    prefloe = floesimg[
+        props.min_row[i]:(props.max_row[i] - 1), props.min_col[i]:(props.max_col[i] - 1)
+    ]
 
     #= Check if more than one component is present in the cropped image.
     If so, keep only the largest component by removing all on pixels not in the largest component =#
-    components = label_components(prefloe, trues(3,3))
-        
-    if length(unique(components))>2
+    components = label_components(prefloe, trues(3, 3))
+
+    if length(unique(components)) > 2
         mask = IceFloeTracker.bwareamaxfilt(components .> 0)
         prefloe[.!mask] .= 0
     end
@@ -189,12 +193,20 @@ end
 """
     addfloearrays(props::DataFrame, floeimg::BitMatrix)
 
-Add a column to `props` called `floearray` containing the cropped floe images from `floeimg`.
+Add a column to `props` called `floearray` containing the cropped floe masks from `floeimg`.
 """
-function addfloearrays!(props::DataFrame, floeimg::BitMatrix)
-    # Add the floe arrays to the DataFrame
-    props.floearray = map(i->cropfloe(floeimg, props, i), 1:nrow(props))
-    nothing
+function addfloemasks!(props::DataFrame, floeimg::BitMatrix)
+    props.mask = getfloemasks(props, floeimg)
+    return nothing
+end
+
+"""
+    getfloemasks(props::DataFrame, floeimg::BitMatrix)
+
+Return a vector of cropped floe masks from `floeimg` using the bounding box data in `props`.
+"""
+function getfloemasks(props::DataFrame, floeimg::BitMatrix)
+    return map(i -> cropfloe(floeimg, props, i), 1:nrow(props))
 end
 
 """
@@ -202,9 +214,11 @@ end
 
 Fix the zero-indexing of the `props_to_fix` columns in `props` by adding 1 to each element.
 """
-function fixzeroindexing!(props::DataFrame, props_to_fix::Vector{T}) where T<:Union{Symbol,String}
+function fixzeroindexing!(
+    props::DataFrame, props_to_fix::Vector{T}
+) where {T<:Union{Symbol,String}}
     props[:, props_to_fix] .+= 1
-    nothing
+    return nothing
 end
 
 """
@@ -212,9 +226,11 @@ end
 
 Rename the `oldnames` columns in `props` to `newnames`.
 """
-function renamecols!(props::DataFrame, oldnames::Vector{T}, newnames::Vector{T}) where T<:Union{Symbol,String}
+function renamecols!(
+    props::DataFrame, oldnames::Vector{T}, newnames::Vector{T}
+) where {T<:Union{Symbol,String}}
     rename!(props, Dict(zip(oldnames, newnames)))
-    nothing
+    return nothing
 end
 
 """
@@ -222,7 +238,7 @@ end
 
 Round the `colnames` columns in `props` to `Int`.
 """
-function roundtoint!(props::DataFrame, colnames::Vector{T}) where T<:Union{Symbol,String}
-    props[!, colnames] = round.(Int, props[!, colnames]) |> x->convert.(Int, x)
-    nothing
+function roundtoint!(props::DataFrame, colnames::Vector{T}) where {T<:Union{Symbol,String}}
+    props[!, colnames] = (x -> convert.(Int, x))(round.(Int, props[!, colnames]))
+    return nothing
 end
