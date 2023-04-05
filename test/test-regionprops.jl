@@ -3,32 +3,42 @@
     println("-------------- regionprops Tests ----------------")
 
     Random.seed!(123)
-    bw_img = rand([0, 1], 5, 10)
+    bw_img = Bool.(rand([0, 1], 5, 10))
+    bw_img[end, 7] = 1
     label_img = IceFloeTracker.label_components(bw_img, trues(3, 3))
-    properties = ("centroid", "area", "major_axis_length", "minor_axis_length", "convex_area", "bbox")
-    extra_props = nothing
-    table = IceFloeTracker.regionprops_table(
-        label_img, bw_img; properties=properties
+    properties = (
+        "centroid", "area", "major_axis_length", "minor_axis_length", "convex_area", "bbox"
     )
+    extra_props = nothing
+    table = IceFloeTracker.regionprops_table(label_img, bw_img; properties=properties)
     total_labels = maximum(label_img)
 
     # Tests for regionprops_table
 
     @test typeof(table) <: DataFrame && # check correct data type
-          4 == [p in names(table) for p in properties] |> sum && # check correct set of properties
-          size(table) == (total_labels, length(properties) + 4) # check correct table size
+        4 == sum([p in names(table) for p in properties]) && # check correct set of properties
+        size(table) == (total_labels, length(properties) + 4) # check correct table size
 
-    # Check no value in columns bbox-* of table is 0 (zero indexing from skimage)
-    @test Matrix(table[:, ["bbox-0", "bbox-1", "bbox-2", "bbox-3"]] .> 0) |> all
+    # Check no value in bbox cols is 0 (zero indexing from skimage)
+    @test all(Matrix(table[:, ["min_row", "min_col", "max_row", "max_col"]] .> 0))
+
+    # Check no value in centroid cols is 0 (zero indexing from skimage)
+    @test all(Matrix(table[:, ["row_centroid", "col_centroid"]] .> 0))
 
     # check default properties
-    @test table == IceFloeTracker.regionprops_table(label_img) 
+    @test table == IceFloeTracker.regionprops_table(label_img)
 
     # Tests for regionprops
-
     regions = IceFloeTracker.regionprops(label_img, bw_img)
 
     # Check some data matches in table
     randnum = rand(1:total_labels)
     @test table.area[randnum] == regions[randnum].area
+
+    # Check floe masks generation and correct cropping
+    IceFloeTracker.addfloemasks!(table, bw_img)
+    all([
+        sum(unique(label_components(table.mask[i], trues(3, 3)))) == 2 for
+        i in 1:nrow(table)
+    ])
 end

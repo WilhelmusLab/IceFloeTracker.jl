@@ -11,6 +11,7 @@ foo/
 docs/build/
 .DS_Store
 .vs*
+.JuliaFormatter.toml
 
 ## Allow
 !test/test_inputs/*.tiff
