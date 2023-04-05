@@ -11,6 +11,10 @@ validate(config, "./hpc/snakemake-config.yaml") ## requires a schema
 rule all:
   input: "runall.txt", "soit.txt", "preprocess.txt"
 
+# rule buildpackage:
+#   output:
+#   shell:
+
 rule fetchdata:
   output: parent = directory(config["fetchdata-outdir"]), t = touch("runall.txt"), truedir = directory(config["truecolor-outdir"]), refdir = directory(config["reflectance-outdir"])      
   params:
@@ -48,10 +52,11 @@ rule preprocess:
 
 rule extractfeatures:
   input: rules.preprocess.output.p
+  params: minarea = config["minfloearea"], maxarea = config["maxfloearea"]
   output: directory(config["features-outdir"])
   shell: """
           mkdir -p {output}
-          julia -t auto ./scripts/ice-floe-tracker.jl extractfeatures -i {rules.preprocess.output.outdir} -o {output}
+          julia -t auto ./scripts/ice-floe-tracker.jl extractfeatures -i {rules.preprocess.output.outdir} -o {output} --minarea {params.minarea} --maxarea {params.maxarea}
          """
 
 rule cleanup:

@@ -4,11 +4,13 @@ $schema: "https://json-schema.org/draft/2020-12/schema"
 ## At least two days of data are required for the run 
 
 ## Update this block with your area of interest and timeframe
-startdate: "2022-02-09"
-enddate: "2022-02-10"
+startdate: "2022-06-09"
+enddate: "2022-06-10"
 bounding-box: "81 -23 79 12"
 centroid-x: "80"
 centroid-y: "-18"
+minfloearea: "300"
+maxfloearea: "90000"
 
 ## Suggest using the default paths below for the workflow
 fetchdata-outdir: "images"
