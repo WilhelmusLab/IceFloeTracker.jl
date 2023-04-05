@@ -37,7 +37,6 @@
 
     # Check floe masks generation and correct cropping
     IceFloeTracker.addfloemasks!(table, bw_img)
-    floemasks = IceFloeTracker.regionprops(label_img, bw_img)
     all([
         sum(unique(label_components(table.mask[i], trues(3, 3)))) == 2 for
         i in 1:nrow(table)
