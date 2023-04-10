@@ -21,6 +21,8 @@ docs/build/
 runall.txt
 soit.txt
 preprocess.txt
+.JuliaFormatter.toml
+
 
 ## Allow
 !test/test_inputs/*.tiff

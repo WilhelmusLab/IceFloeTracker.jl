@@ -68,7 +68,7 @@ Filter the smaller (by area) connected components in `bwimg` keeping the (assume
 Uses 8-pixel connectivity by default (`conn=8`). Use `conn=4` for 4-pixel connectivity.
 
 """
-function bwareamaxfilt(bwimg::AbstractArray{Bool}, conn::Int=8)::BitMatrix
+function bwareamaxfilt(bwimg::AbstractArray, conn::Int=8)::BitMatrix
     return bwareamaxfilt!(copy(bwimg), conn)
 end
 
@@ -79,7 +79,7 @@ In-place version of bwareamaxfilt.
 
 See also [`bwareamaxfilt`](@ref) 
 """
-function bwareamaxfilt!(bwimg::AbstractArray{Bool}, conn::Int=8)::BitMatrix
+function bwareamaxfilt!(bwimg::AbstractArray, conn::Int=8)::BitMatrix
     if conn == 8
         label = label_components(bwimg, trues(3, 3))
     elseif conn == 4
