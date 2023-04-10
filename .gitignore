@@ -14,11 +14,13 @@ explorations/
 foo/
 images/
 output/
-icefloe-soit/
 oscar-env/
 docs/build/
 .DS_Store
 .vs*
+runall.txt
+soit.txt
+preprocess.txt
 
 ## Allow
 !test/test_inputs/*.tiff
