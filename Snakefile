@@ -11,10 +11,6 @@ validate(config, "./hpc/snakemake-config.yaml") ## requires a schema
 rule all:
   input: "runall.txt", "soit.txt", "preprocess.txt"
 
-# rule buildpackage:
-#   output:
-#   shell:
-
 rule fetchdata:
   output: parent = directory(config["fetchdata-outdir"]), t = touch("runall.txt"), truedir = directory(config["truecolor-outdir"]), refdir = directory(config["reflectance-outdir"])      
   params:
@@ -65,4 +61,5 @@ rule cleanup:
           rm runall.txt
           rm soit.txt
           rm preprocess.txt
+         
          """
