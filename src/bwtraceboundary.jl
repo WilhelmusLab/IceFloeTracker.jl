@@ -56,7 +56,7 @@ julia> boundary[3]
 function bwtraceboundary(
     image::Union{Matrix{Int64},Matrix{Float64},T};
     P0::Union{Tuple{Int,Int},CartesianIndex{2},Nothing}=nothing,
-    closed::Bool=true
+    closed::Bool=true,
 ) where {T<:AbstractArray{Bool,2}}
     if typeof(image[1]) != Float64
         image = Float64.(image)

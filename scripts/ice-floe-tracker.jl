@@ -55,7 +55,7 @@ function main(args)
         "--output", "-o"
         help = "Output directory"
         required = true
-        end
+    end
 
     @add_arg_table! settings["extractfeatures"] begin
         "--input", "-i"
@@ -92,7 +92,7 @@ function main(args)
     ]
 
     add_arg_table!(settings["landmask"], landmask_cloudmask_args...)
-    
+
     parsed_args = parse_args(args, settings; as_symbols=true)
 
     command = parsed_args[:_COMMAND_]

@@ -4,14 +4,25 @@
 *.jl.*.cov
 *.jl.cov
 *.jl.mem
+*.jls
+*.jld
 .snakemake
+*.snakemake_timestamp
+
 input/
 explorations/
 foo/
+images/
+output/
+oscar-env/
 docs/build/
 .DS_Store
 .vs*
+runall.txt
+soit.txt
+preprocess.txt
 .JuliaFormatter.toml
+
 
 ## Allow
 !test/test_inputs/*.tiff
