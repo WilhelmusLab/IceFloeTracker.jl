@@ -17,9 +17,10 @@ function pair_floes(
     floe_library = input_data["FLOE_LIBRARY"] # used in matchcorr
     numdays = size(properties, 2) - 1
 
-    # Initialize container for props of matched pairs of floes, their similarity ratios, and their distances
+    # Initialize container for props of matched pairs of floes, their similarity ratios, and their distances between their centroids
     tracked = Tracked()
 
+    # Traverse each pair of succesive "days" of floe properties. Grab the properties of floe r in day k. Find all preliminary matches for floe r in day k+1 and keep the best match. If floe s in day k+1 is paired with more than one floe in day k, keep the best matching pair and remove all others. 
     for dayi in 1:numdays
         props_day1, props_day2 = getpropsday1day2(properties, dayi)
         delta_time = input_data["delta_t"][dayi]
@@ -29,6 +30,7 @@ function pair_floes(
 
         while true # there are no more floes to match in props_day1
             # This rutine mutates props_day1 and props_day2.
+
             # Container for props of matched floe pairs and their similarity ratios. Matches will be updated and added to match_total
             matched_pairs = MatchedPairs(props_day1)
 
@@ -42,16 +44,16 @@ function pair_floes(
                         (props_day1, r), (props_day2, s), delta_time, condition_thresholds
                     )
 
-                    if callmatchcorr(conditions) # decide whether to call matchcorr
+                    if callmatchcorr(conditions)
                         (area_under, corr) = matchcorr(r, s, dayi, delta_time, floe_library) # TODO: build matchcorr
 
-                        # collect all matches for floe r in matching_floes_props and their respective ratios and distances in matching_floes
-                        if arefloesgoodmatch(conditions, mc_thresholds, area_under, corr)
-                            appendrows!(
+                        if isfloegoodmatch(conditions, mc_thresholds, area_under, corr)
+                            # collect collect data for matching floe s 
+                            appendrow!(
                                 matching_floes,
                                 props_day2[s, :],
                                 (ratios..., area_under, 1 - corr),
-                                s,
+                                s, # is this really needed?
                                 dist,
                             )
                         end
@@ -81,5 +83,6 @@ function pair_floes(
         end # of while loop
         update!(tracked, match_total)
     end
+    sort!(tracked)
     return tracked
 end

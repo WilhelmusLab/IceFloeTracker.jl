@@ -94,6 +94,11 @@ struct Tracked
     data::Vector{MatchedPairs}
 end
 
+"""
+    sort!(tracked::Tracked)
+
+Sort the floes in `tracked` by area in descending order.
+"""
 function sort!(tracked::Tracked)
     for container in tracked.data
         p = sortperm(container.day1props, "area"; rev=true)
@@ -122,15 +127,6 @@ Return the mode of `x` or `NaN` if `x` is empty.
 function modenan(x::AbstractVector{<:Int64})
     length(x) == 0 && return NaN
     return mode(x)
-end
-
-"""
-getcentroid(props_day, r)
-
-Get the coordinates of the `r`th floe in `props_day`.
-"""
-function getcentroid(props_day::T, r) where {T<:Props}
-    return (x=props_day.x[r], y=props_day.y[r])
 end
 
 """
@@ -163,7 +159,7 @@ end
 """
     propmatrix2df(propmatrix)
 
-Convert floe properties matrix `propmatrix` to a dataframe-like struct with fields `area`, `majoraxis`, `minoraxis`, `convexarea`, `x_coord`, `y_coord` for the tacker step. Used for development purposes.
+Convert floe properties matrix `propmatrix` to a dataframe-like struct with fields `area`, `majoraxis`, `minoraxis`, `convexarea`, `x_coord`, `y_coord` for the tacker step. Used for development purposes. TODO: remove this function when development is complete.
 """
 function propmatrix2df(propmatrix)
     # convert props_day1 to dataframe with column names area, majoraxis, minoraxis, convexarea, coords
@@ -301,7 +297,7 @@ function callmatchcorr(conditions)
 end
 
 """
-    arefloesgoodmatch(conditions, mct, area_under, corr)
+    isfloegoodmatch(conditions, mct, area_under, corr)
 
 Return `true` if the floes are a good match as per the set thresholds. Return `false` otherwise.
 
@@ -310,7 +306,7 @@ Return `true` if the floes are a good match as per the set thresholds. Return `f
 - `mct`: tuple of thresholds for the match correlation test
 - `area_under` and `corr`: values returned by `match_corr`
 """
-function arefloesgoodmatch(conditions, mct, area_under, corr)
+function isfloegoodmatch(conditions, mct, area_under, corr)
     return (
         (conditions.cond3 && area_under < mct.area3) ||
         (conditions.cond2 && area_under < mct.area2)
@@ -403,7 +399,7 @@ Add `numtodadd` more matches to `matchingfloes` using the floes in `props_day`.
 function addmorematches!(matchingfloes, props_day, numtodadd=5)
     for j in 1:numtodadd
         s = rand(1:4)
-        appendrows!(matchingfloes, props_day[s, :], randratios(), s)
+        appendrow!(matchingfloes, props_day[s, :], randratios(), s)
     end
     return nothing
 end
