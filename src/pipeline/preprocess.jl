@@ -113,17 +113,17 @@ end
 Apply the landmask to the collection of sharpened truecolor images and return a gray colorview of the collection.
 """
 function sharpen_gray(
-    sharpened_imgs::Vector{Matrix{Float64}},
-    landmask::AbstractArray{Bool},
+    sharpened_imgs::Vector{Matrix{Float64}}, landmask::AbstractArray{Bool}
 )
     return [IceFloeTracker.imsharpen_gray(img, landmask) for img in sharpened_imgs]
 end
 
 function get_ice_labels(
-    reflectance_imgs::Vector{Matrix{RGB{Float64}}},
-    landmask::AbstractArray{Bool}
+    reflectance_imgs::Vector{Matrix{RGB{Float64}}}, landmask::AbstractArray{Bool}
 )
-    return [IceFloeTracker.find_ice_labels(ref_img, landmask) for ref_img in reflectance_imgs]
+    return [
+        IceFloeTracker.find_ice_labels(ref_img, landmask) for ref_img in reflectance_imgs
+    ]
 end
 
 """
@@ -136,35 +136,46 @@ Preprocess and segment floes in `truecolor_image` and `reflectance_image` images
 - `reflectance_image::T`: reflectance image to be processed
 - `landmask_imgs`: named tuple with dilated and non-dilated landmask images
 """
-function preprocess(truecolor_image::T, reflectance_image::T, landmask_imgs::NamedTuple{(:dilated, :non_dilated),Tuple{BitMatrix,BitMatrix}}) where {T<:Matrix{RGB{Float64}}}
-
+function preprocess(
+    truecolor_image::T,
+    reflectance_image::T,
+    landmask_imgs::NamedTuple{(:dilated, :non_dilated),Tuple{BitMatrix,BitMatrix}},
+) where {T<:Matrix{RGB{Float64}}}
     @info "Building cloudmask"
     cloudmask = create_cloudmask(reflectance_image)
 
     # 2. Intermediate images
     @info "Finding ice labels"
-    ice_labels = IceFloeTracker.find_ice_labels(reflectance_image, landmask_imgs.non_dilated)
+    ice_labels = IceFloeTracker.find_ice_labels(
+        reflectance_image, landmask_imgs.non_dilated
+    )
 
     @info "Sharpening truecolor image"
     # a. apply imsharpen to truecolor image using non-dilated landmask
-    sharpened_truecolor_image = IceFloeTracker.imsharpen(truecolor_image, landmask_imgs.non_dilated)
+    sharpened_truecolor_image = IceFloeTracker.imsharpen(
+        truecolor_image, landmask_imgs.non_dilated
+    )
     # b. apply imsharpen to sharpened truecolor img using dilated landmask
-    sharpened_gray_truecolor_image = IceFloeTracker.imsharpen_gray(sharpened_truecolor_image, landmask_imgs.dilated)
+    sharpened_gray_truecolor_image = IceFloeTracker.imsharpen_gray(
+        sharpened_truecolor_image, landmask_imgs.dilated
+    )
 
     @info "Normalizing truecolor image"
     normalized_image = IceFloeTracker.normalize_image(
-        sharpened_truecolor_image, sharpened_gray_truecolor_image, landmask_imgs.dilated)
+        sharpened_truecolor_image, sharpened_gray_truecolor_image, landmask_imgs.dilated
+    )
 
     # Discriminate ice/water
     @info "Discriminating ice/water"
     ice_water_discrim = IceFloeTracker.discriminate_ice_water(
-        reflectance_image, normalized_image, copy(landmask_imgs.dilated), cloudmask)
+        reflectance_image, normalized_image, copy(landmask_imgs.dilated), cloudmask
+    )
 
     # 3. Segmentation
     @info "Segmenting floes part 1/3"
-    segA = IceFloeTracker.segmentation_A(IceFloeTracker.segmented_ice_cloudmasking(
-        ice_water_discrim, cloudmask, ice_labels
-    ))
+    segA = IceFloeTracker.segmentation_A(
+        IceFloeTracker.segmented_ice_cloudmasking(ice_water_discrim, cloudmask, ice_labels)
+    )
 
     # segmentation_B
     @info "Segmenting floes part 2/3"
@@ -173,7 +184,9 @@ function preprocess(truecolor_image::T, reflectance_image::T, landmask_imgs::Nam
     # Process watershed in parallel using Folds
     @info "Building watersheds"
     # container_for_watersheds = [landmask_imgs.non_dilated, similar(landmask_imgs.non_dilated)]
-    watersheds_segB = Folds.map(IceFloeTracker.watershed_ice_floes, [segB.not_ice_bit, segB.ice_intersect])
+    watersheds_segB = Folds.map(
+        IceFloeTracker.watershed_ice_floes, [segB.not_ice_bit, segB.ice_intersect]
+    )
     # reuse the memory allocated for the first watershed
     watersheds_segB[1] .= IceFloeTracker.watershed_product(watersheds_segB...)
 
@@ -207,19 +220,23 @@ function preprocess(; truedir::T, refdir::T, lmdir::T, output::T) where {T<:Abst
 
     # 2. Preprocess
     @info "Preprocessing"
-    truecolor_container = loadimg(dir=truedir, fname=truecolor_refs[1]) |> similar
+    truecolor_container = similar(loadimg(; dir=truedir, fname=truecolor_refs[1]))
     reflectance_container = similar(truecolor_container)
-    segmented_floes = cache_vector(BitMatrix, length(truecolor_refs), size(truecolor_container))
+    segmented_floes = cache_vector(
+        BitMatrix, length(truecolor_refs), size(truecolor_container)
+    )
     numimgs = length(truecolor_refs)
     Threads.@threads for i in eachindex(truecolor_refs)
         @info "Processing image $i of $numimgs"
-        truecolor_container .= loadimg(dir=truedir, fname=truecolor_refs[i])
-        reflectance_container .= loadimg(dir=refdir, fname=reflectance_refs[i])
-        segmented_floes[i] .= preprocess(truecolor_container, reflectance_container, landmask_imgs)
+        truecolor_container .= loadimg(; dir=truedir, fname=truecolor_refs[i])
+        reflectance_container .= loadimg(; dir=refdir, fname=reflectance_refs[i])
+        segmented_floes[i] .= preprocess(
+            truecolor_container, reflectance_container, landmask_imgs
+        )
     end
 
     # 3. Save
     @info "Serializing segmented floes"
     serialize(joinpath(output, "segmented_floes.jls"), segmented_floes)
-    nothing
+    return nothing
 end

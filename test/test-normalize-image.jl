@@ -17,14 +17,16 @@
     println("-------------- Process Image - Diffusion ----------------")
 
     input_landmasked = IceFloeTracker.apply_landmask(input_image, landmask_no_dilate)
-    ## Diffusion
+
     @time image_diffused = IceFloeTracker.diffusion(input_landmasked, 0.1, 75, 3)
 
     @test (@test_approx_eq_sigma_eps image_diffused matlab_diffused [0, 0] 0.0054) ==
         nothing
 
-    @test (@test_approx_eq_sigma_eps input_landmasked image_diffused [0, 0] 0.004) == nothing
-    @test (@test_approx_eq_sigma_eps input_landmasked matlab_diffused [0, 0] 0.007) == nothing
+    @test (@test_approx_eq_sigma_eps input_landmasked image_diffused [0, 0] 0.004) ==
+        nothing
+    @test (@test_approx_eq_sigma_eps input_landmasked matlab_diffused [0, 0] 0.007) ==
+        nothing
 
     diffused_image_filename =
         "$(test_output_dir)/diffused_test_image_" *
