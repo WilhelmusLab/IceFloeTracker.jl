@@ -12,6 +12,11 @@ See its full documentation at https://scikit-image.org/docs/stable/api/skimage.m
 - `properties`: List (`Vector` or `Tuple`) of properties to be generated for each connected component in `label_img`
 - `extra_properties`: (Optional) not yet implemented. It will be set to `nothing`
 
+# Notes
+- Zero indexing has been corrected for the `bbox` and `centroid` properties
+- `bbox` data (`max_col` and `max_row`) are inclusive
+- `centroid` data are rounded to the nearest integer
+
 See also [`regionprops`](@ref)
 
 # Examples
@@ -72,7 +77,7 @@ function regionprops_table(
 
     if "bbox" in properties
         bbox_cols = getbboxcolumns(props)
-        fixzeroindexing!(props, bbox_cols)
+        fixzeroindexing!(props, bbox_cols[1:2])
         renamecols!(props, bbox_cols, ["min_row", "min_col", "max_row", "max_col"])
     end
 
@@ -175,9 +180,7 @@ function cropfloe(floesimg::BitMatrix, props::DataFrame, i::Int64)
     #= 
     Crop the floe using bounding box data in props.
     Note: Using a view of the cropped floe was considered but if there were multiple components in the cropped floe, the source array with the floes would be modified. =#
-    prefloe = floesimg[
-        props.min_row[i]:(props.max_row[i] - 1), props.min_col[i]:(props.max_col[i] - 1)
-    ]
+    prefloe = floesimg[props.min_row[i]:props.max_row[i], props.min_col[i]:props.max_col[i]]
 
     #= Check if more than one component is present in the cropped image.
     If so, keep only the largest component by removing all on pixels not in the largest component =#
