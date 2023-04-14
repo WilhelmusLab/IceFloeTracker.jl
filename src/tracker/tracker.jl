@@ -7,53 +7,59 @@ function pair_floes(
     indir::String, condition_thresholds, mc_thresholds=(area3=0.18, area2=0.236, corr=0.68)
 )
     input_data = deserialize(joinpath(indir, "MB_tracker_inputs.dat"))
-    # Keys:
-    #     "FLOE_LIBRARY"  [x]
-    #     "old_data_expected" [x]
-    #     "prop"     [x]
-    #     "delta_t"  [x]
-
     properties = input_data["prop"]
-    floe_library = input_data["FLOE_LIBRARY"] # used in matchcorr
-    numdays = size(properties, 2) - 1
+    segmented_imgs = input_data["FLOE_LIBRARY"] # used in matchcorr
+    delta_time = input_data["delta_t"]
+    return newpairfloes(
+        segmented_imgs, properties, delta_time, condition_thresholds, mc_thresholds
+    )
+end
 
+function pairfloes(
+    segmented_imgs::Vector{BitMatrix},
+    props::Vector{DataFrame},
+    dt::Vector{Int64},
+    condition_thresholds,
+    mc_thresholds,
+)
     # Initialize container for props of matched pairs of floes, their similarity ratios, and their distances between their centroids
     tracked = Tracked()
 
-    # Traverse each pair of succesive "days" of floe properties. Grab the properties of floe r in day k. Find all preliminary matches for floe r in day k+1 and keep the best match. If floe s in day k+1 is paired with more than one floe in day k, keep the best matching pair and remove all others. 
+    # Crop floes from the images using the bounding box data in `props`.
+    addfloemasks!(props, segmented_imgs)
+
+    numdays = length(imgs) - 1
+
     for dayi in 1:numdays
-        props_day1, props_day2 = getpropsday1day2(properties, dayi)
-        delta_time = input_data["delta_t"][dayi]
+        props1, props2 = getpropsday1day2(props, dayi)
+        Δt = dt[dayi]
 
         # Container for matches in dayi which will be used to populate tracked
-        match_total = MatchedPairs(props_day1)
-
-        while true # there are no more floes to match in props_day1
-            # This rutine mutates props_day1 and props_day2.
+        match_total = MatchedPairs(props1)
+        while true # there are no more floes to match in props1
+            # This rutine mutates both props1 and props2.
 
             # Container for props of matched floe pairs and their similarity ratios. Matches will be updated and added to match_total
-            matched_pairs = MatchedPairs(props_day1)
-
-            for r in 1:nrow(props_day1) # TODO: consider using eachrow(props_day1) to iterate over rows
-
+            matched_pairs = MatchedPairs(props1)
+            for r in 1:nrow(props1) # TODO: consider using eachrow(props1) to iterate over rows
                 # 1. Collect preliminary matches for floe r in matching_floes
-                matching_floes = makeemptydffrom(props_day1)
-
-                Threads.@threads for s in 1:nrow(props_day2) # TODO: consider using eachrow(props_day2) to iterate over rows
+                matching_floes = makeemptydffrom(props1)
+                # Threads.@threads 
+                for s in 1:nrow(props2) # TODO: consider using eachrow(props2) to iterate over rows
                     ratios, conditions, dist = compute_ratios_conditions(
-                        (props_day1, r), (props_day2, s), delta_time, condition_thresholds
+                        (props1, r), (props2, s), Δt, condition_thresholds
                     )
 
                     if callmatchcorr(conditions)
-                        (area_under, corr) = matchcorr(r, s, dayi, delta_time, floe_library) # TODO: build matchcorr
+                        (area_under, corr) = matchcorr((r, props1), (s, props2), Δt) # TODO: build matchcorr
 
                         if isfloegoodmatch(conditions, mc_thresholds, area_under, corr)
-                            # collect collect data for matching floe s 
-                            appendrow!(
+                            # collect data for matching floe s 
+                            appendrows!(
                                 matching_floes,
-                                props_day2[s, :],
+                                props2[s, :],
                                 (ratios..., area_under, 1 - corr),
-                                s, # is this really needed?
+                                s,
                                 dist,
                             )
                         end
@@ -64,11 +70,12 @@ function pair_floes(
                 best_match_idx = getidxmostminimumeverything(matching_floes.ratios)
                 if isnotnan(best_match_idx)
                     bestmatchdata = getbestmatchdata(
-                        best_match_idx, r, props_day1, matching_floes
+                        best_match_idx, r, props1, matching_floes
                     ) # might be copying data unnecessarily
+
                     addmatch!(matched_pairs, bestmatchdata)
                 end
-            end # of for r = 1:nrow(props_day1)
+            end # of for r = 1:nrow(props1)
 
             # exit while loop if there are no more floes to match
             isempty(matched_pairs) && break
@@ -77,8 +84,7 @@ function pair_floes(
             Are there floes in day k+1 paired with more than one
             floe in day k? If so, keep the best matching pair and remove all others. =#
             resolvecollisions!(matched_pairs)
-
-            deletematched!((props_day1, props_day2), matched_pairs)
+            deletematched!((props1, props2), matched_pairs)
             update!(match_total, matched_pairs)
         end # of while loop
         update!(tracked, match_total)

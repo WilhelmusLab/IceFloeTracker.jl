@@ -566,9 +566,9 @@ function addψs!(props)
     return nothing
 end
 
-function test_matched_pairs(matched_pairs)
-    return nrow(matched_pairs.props1) ==
-           nrow(matched_pairs.props2) ==
-           nrow(matched_pairs.ratios) ==
-           length(matched_pairs.dist)
+function addfloemasks!(props, imgs)
+    for (img, prop) in zip(imgs, props)
+        IceFloeTracker.addfloemasks!(prop, img)
+    end
+    return nothing
 end
