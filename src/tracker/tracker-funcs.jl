@@ -11,11 +11,11 @@ struct MatchingProps
 end
 
 """
-Container for matched pairs of floes. `day1props` and `day2props` are dataframes with the same column names as the input dataframes. `ratios` is a dataframe with column names `area`, `majoraxis`, `minoraxis`, `convexarea`, `area_under`, and `corr` for similarity ratios.
+Container for matched pairs of floes. `props1` and `props2` are dataframes with the same column names as the input dataframes. `ratios` is a dataframe with column names `area`, `majoraxis`, `minoraxis`, `convex_area`, `area_under`, and `corr` for similarity ratios.
 """
 struct MatchedPairs
-    day1props::DataFrame
-    day2props::DataFrame
+    props1::DataFrame
+    props2::DataFrame
     ratios::DataFrame
     dist::Vector{Float64}
 end
@@ -23,7 +23,7 @@ end
 """
     MatchedPairs(df)
 
-Return an object of type `MatchedPairs` with an empty dataframe with the same column names as `df`, an empty dataframe with column names `area`, `majoraxis`, `minoraxis`, `convexarea`, `area_under`, and `corr` for similarity ratios, and an empty vector for distances.
+Return an object of type `MatchedPairs` with an empty dataframe with the same column names as `df`, an empty dataframe with column names `area`, `majoraxis`, `minoraxis`, `convex_area`, `area_under`, and `corr` for similarity ratios, and an empty vector for distances.
 """
 function MatchedPairs(df)
     emptypropsdf = similar(df, 0)
@@ -36,8 +36,8 @@ end
 Update `match_total` with the data from `matched_pairs`.
 """
 function update!(match_total::MatchedPairs, matched_pairs::MatchedPairs)
-    append!(match_total.day1props, matched_pairs.day1props)
-    append!(match_total.day2props, matched_pairs.day2props)
+    append!(match_total.props1, matched_pairs.props1)
+    append!(match_total.props2, matched_pairs.props2)
     append!(match_total.ratios, matched_pairs.ratios)
     append!(match_total.dist, matched_pairs.dist)
     return nothing
@@ -49,16 +49,16 @@ end
 Add `newmatch` to `matched_pairs`.
 """
 function addmatch!(matched_pairs::MatchedPairs, newmatch)
-    push!(matched_pairs.day1props, newmatch.day1props)
-    push!(matched_pairs.day2props, newmatch.day2props)
+    push!(matched_pairs.props1, newmatch.props1)
+    push!(matched_pairs.props2, newmatch.props2)
     push!(matched_pairs.ratios, newmatch.ratios)
     push!(matched_pairs.dist, newmatch.dist)
     return nothing
 end
 
 function isempty(matched_pairs::MatchedPairs)
-    return isempty(matched_pairs.day1props) &&
-           isempty(matched_pairs.day2props) &&
+    return isempty(matched_pairs.props1) &&
+           isempty(matched_pairs.props2) &&
            isempty(matched_pairs.ratios)
 end
 
@@ -101,7 +101,7 @@ Sort the floes in `tracked` by area in descending order.
 """
 function sort!(tracked::Tracked)
     for container in tracked.data
-        p = sortperm(container.day1props, "area"; rev=true)
+        p = sortperm(container.props1, "area"; rev=true)
         for nm in namesof(container)
             getproperty(container, nm)[:, :] = getproperty(container, nm)[p, :]
         end
@@ -135,15 +135,15 @@ getcentroid(props_day::DataFrame, r)
 Get the coordinates of the `r`th floe in `props_day`.
 """
 function getcentroid(props_day::DataFrame, r)
-    return props_day[r, [:x, :y]]
+    return props_day[r, [:row_centroid, :col_centroid]]
 end
 
 """
-absdiffmeanratio(x,y)
+absdiffmeanratio(x, y)
 
 Calculate the absolute difference between `x` and `y` divided by the mean of `x` and `y`.
 """
-function absdiffmeanratio(x::Float64, y::Float64)::Float64
+function absdiffmeanratio(x::T, y::T)::Float64 where {T<:Real}
     return abs(x - y) / mean(x, y)
 end
 
@@ -152,28 +152,28 @@ mean(x,y)
 
 Compute the mean of `x` and `y`.
 """
-function mean(x::T, y::T)::T where {T<:Float64}
+function mean(x::T, y::T)::Float64 where {T<:Real}
     return (x + y) / 2
 end
 
 """
     propmatrix2df(propmatrix)
 
-Convert floe properties matrix `propmatrix` to a dataframe-like struct with fields `area`, `majoraxis`, `minoraxis`, `convexarea`, `x_coord`, `y_coord` for the tacker step. Used for development purposes. TODO: remove this function when development is complete.
+Convert floe properties matrix `propmatrix` to a dataframe-like struct with fields `area`, `major_axis_length`, `minor_axis_length`, `convex_area`, `x_coord`, `y_coord` for the tacker step. Used for development purposes. TODO: remove this function when development is complete.
 """
 function propmatrix2df(propmatrix)
-    # convert props_day1 to dataframe with column names area, majoraxis, minoraxis, convexarea, coords
+    # convert props_day1 to dataframe with column names area, majoraxis, minoraxis, convex_area, coords
     return DataFrame(
         propmatrix,
         [
             :area,
             :perimeter,
-            :majoraxis,
-            :minoraxis,
+            :major_axis_length,
+            :minor_axis_length,
             :orientation,
-            :x,
-            :y,
-            :convexarea,
+            :row_centroid,
+            :col_centroid,
+            :convex_area,
             :solidity,
             :left,
             :top,
@@ -196,7 +196,7 @@ end
 """
     makeemptydffrom(df::DataFrame)
 
-Return an object with an empty dataframe with the same column names as `df` and an empty dataframe with column names `area`, `majoraxis`, `minoraxis`, `convexarea`, `area_under`, and `corr` for similarity ratios. 
+Return an object with an empty dataframe with the same column names as `df` and an empty dataframe with column names `area`, `majoraxis`, `minoraxis`, `convex_area`, `area_under`, and `corr` for similarity ratios. 
 """
 function makeemptydffrom(df::DataFrame)
     return MatchingProps(
@@ -207,14 +207,14 @@ end
 """
     makeemptyratiosdf()
 
-Return an empty dataframe with column names `area`, `majoraxis`, `minoraxis`, `convexarea`, `area_under`, and `corr` for similarity ratios.
+Return an empty dataframe with column names `area`, `majoraxis`, `minoraxis`, `convex_area`, `area_under`, and `corr` for similarity ratios.
 """
 function makeemptyratiosdf()
     return DataFrame(;
         area=Float64[],
         majoraxis=Float64[],
         minoraxis=Float64[],
-        convexarea=Float64[],
+        convex_area=Float64[],
         area_under=Float64[],
         corr=Float64[],
     )
@@ -242,30 +242,24 @@ function trackercond1(d, delta_time, t1=(dt=(30, 100, 1300), dist=(15, 30, 120))
 end
 
 """
-    trackercond2(area1, ratios, t2=(area=1200, arearatio=0.28, majaxisratio=0.10, minaxisratio=0.12, convexarearatio=0.14))
+    trackercond2(area1, ratios, t2=(area=1200, arearatio=0.28, majaxisratio=0.10, minaxisratio=0.12, convex_area=0.14))
 
 Return `true` if the floe at `p1` and the floe at `p2` are within a certain distance of each other and the displacement time is within a certain range. Return `false` otherwise.
 """
 function trackercond2(
     area1,
     ratios,
-    t2=(
-        area=1200,
-        arearatio=0.28,
-        majaxisratio=0.10,
-        minaxisratio=0.12,
-        convexarearatio=0.14,
-    ),
+    t2=(area=1200, arearatio=0.28, majaxisratio=0.10, minaxisratio=0.12, convex_area=0.14),
 )
     return area1 > t2.area &&
            ratios.area < t2.arearatio &&
            ratios.majoraxis < t2.majaxisratio &&
            ratios.minoraxis < t2.minaxisratio &&
-           ratios.convexarea < t2.convexarearatio
+           ratios.convex_area < t2.convexarearatio
 end
 
 """
-    trackercond3(area1, ratios, t3=(area=1200, arearatio=0.18, majaxisratio=0.07, minaxisratio=0.08, convexarearatio=0.09))
+    trackercond3(area1, ratios, t3=(area=1200, arearatio=0.18, majaxisratio=0.07, minaxisratio=0.08, convex_area=0.09))
 
 Return `true` if the floe at `p1` and the floe at `p2` are within a certain distance of each other and the displacement time is within a certain range. Return `false` otherwise.
 """
@@ -284,7 +278,7 @@ function trackercond3(
            ratios.area < t3.arearatio &&
            ratios.majoraxis < t3.majaxisratio &&
            ratios.minoraxis < t3.minaxisratio &&
-           ratios.convexarea < t3.convexarearatio
+           ratios.convex_area < t3.convexarearatio
 end
 
 """
@@ -326,14 +320,18 @@ Compute the ratios of the floe properties between the `r`th floe in `props_day1`
 """
 function compute_ratios((props_day1, r), (props_day2, s))
     arearatio = absdiffmeanratio(props_day1.area[r], props_day2.area[s])
-    majoraxisratio = absdiffmeanratio(props_day1.majoraxis[r], props_day2.majoraxis[s])
-    minoraxisratio = absdiffmeanratio(props_day1.minoraxis[r], props_day2.minoraxis[s])
-    convexarearatio = absdiffmeanratio(props_day1.convexarea[r], props_day2.convexarea[s])
+    majoraxisratio = absdiffmeanratio(
+        props_day1.major_axis_length[r], props_day2.major_axis_length[s]
+    )
+    minoraxisratio = absdiffmeanratio(
+        props_day1.minor_axis_length[r], props_day2.minor_axis_length[s]
+    )
+    convex_area = absdiffmeanratio(props_day1.convex_area[r], props_day2.convex_area[s])
     return (
         area=arearatio,
         majoraxis=majoraxisratio,
         minoraxis=minoraxisratio,
-        convexarea=convexarearatio,
+        convex_area=convex_area,
     )
 end
 
@@ -369,7 +367,9 @@ end
 Return the distance between the points `p1` and `p2`.
 """
 function dist(p1, p2)
-    return sqrt((p1.x - p2.x)^2 + (p1.y - p2.y)^2)
+    return sqrt(
+        (p1.row_centroid - p2.row_centroid)^2 + (p1.col_centroid - p2.col_centroid)^2
+    )
 end
 
 """
@@ -411,8 +411,8 @@ Collect the data for the best match between the `r`th floe in `props_day1` and t
 """
 function getbestmatchdata(idx, r, props_day1, matching_floes)
     return (
-        day1props=props_day1[r, :],
-        day2props=matching_floes.props[idx, :],
+        props1=props_day1[r, :],
+        props2=matching_floes.props[idx, :],
         ratios=matching_floes.ratios[idx, :],
         dist=matching_floes.dist[idx],
     )
@@ -456,8 +456,8 @@ end
 function deletematched!(
     (propsday1, propsday2)::Tuple{DataFrame,DataFrame}, matched::MatchedPairs
 )
-    deletematched!(propsday1, matched.day1props)
-    deletematched!(propsday2, matched.day2props)
+    deletematched!(propsday1, matched.props1)
+    deletematched!(propsday2, matched.props2)
     return nothing
 end
 
@@ -467,11 +467,12 @@ end
 Delete all rows in `matched_pairs` except for the row with index `keeper` in `idxs`.
 """
 function deleteallbut!(matched_pairs, idxs, keeper)
-    for i in idxs
+    for i in sort(idxs; rev=true)
         if i !== keeper
             deleteat!(matched_pairs.ratios, i)
-            deleteat!(matched_pairs.day1props, i)
-            deleteat!(matched_pairs.day2props, i)
+            deleteat!(matched_pairs.props1, i)
+            deleteat!(matched_pairs.props2, i)
+            deleteat!(matched_pairs.dist, i)
         end
     end
 end
@@ -486,7 +487,7 @@ function ismember(df1, df2)
 end
 
 function resolvecollisions!(matched_pairs)
-    collisions = getcollisionslocs(matched_pairs.day2props)
+    collisions = getcollisionslocs(matched_pairs.props2)
     for collision in collisions
         bestentry = getidxmostminimumeverything(matched_pairs.ratios[collision.idxs, :])
         keeper = collision.idxs[bestentry]
@@ -507,7 +508,7 @@ function randratios()
         area=rand(),
         majoraxis=rand(),
         minoraxis=rand(),
-        convexarea=rand(),
+        convex_area=rand(),
         area_under=rand(),
         corr=rand(),
     )
@@ -516,11 +517,12 @@ end
 # match_corr related functions
 """
     TODO
-    matchcorr(r, s, dayi, delta_time, floe_library)
+    matchcorr((r,props1), (s,props2), Δt)
+    
 
 Compute the match correlation between the `r`th floe in `props_day1` and the `s`th floe in `props_day2`. Return a tuple of the area under the curve and their correlation score.
 """
-function matchcorr(r, s, dayi, delta_time, floe_library)
+function matchcorr((r, props1), (s, props2), Δt)
     return (area_under=rand() / 4, corr=1 - rand() / 3)
 end
 
@@ -562,4 +564,11 @@ end
 function addψs!(props)
     props.psi = map(buildψs, props.mask)
     return nothing
+end
+
+function test_matched_pairs(matched_pairs)
+    return nrow(matched_pairs.props1) ==
+           nrow(matched_pairs.props2) ==
+           nrow(matched_pairs.ratios) ==
+           length(matched_pairs.dist)
 end
