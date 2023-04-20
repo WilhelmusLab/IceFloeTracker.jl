@@ -6,7 +6,7 @@
     c = ones(Bool, 10, 10) # fully occluded
     l = (dilated=rand(Bool, 10, 10), non_dilated=ones(Bool, 10, 10))
 
-    imgs = (t=truecolor_image, r=reflectance_image, l=landmask_imgs, c=cloudmask)
+    imgs = (t=t, r=r, l=l, c=c)
 
     serialize(joinpath(imgdir, "generated_landmask.jls"), imgs.l)
 
