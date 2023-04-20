@@ -1,3 +1,12 @@
+# Type of ref_image_band_2
+__T__ = SubArray{
+    Float64,
+    2,
+    Base.ReinterpretArray{Float64,3,RGB{Float64},Matrix{RGB{Float64}},true},
+    Tuple{Int64,Base.Slice{Base.OneTo{Int64}},Base.Slice{Base.OneTo{Int64}}},
+    false,
+}
+
 """
     find_reflectance_peaks(reflectance_channel, possible_ice_threshold;)
 
@@ -9,7 +18,8 @@ Find histogram peaks in single channels of a reflectance image and return the se
 
 """
 function find_reflectance_peaks(
-    reflectance_channel::Matrix{Float64}; possible_ice_threshold::Float64=Float64(75 / 255)
+    reflectance_channel::Union{__T__,Matrix{Float64}};
+    possible_ice_threshold::Float64=Float64(75 / 255),
 )::Int64
     reflectance_channel[reflectance_channel .< possible_ice_threshold] .= 0 #75 / 255
     _, counts = ImageContrastAdjustment.build_histogram(reflectance_channel)
