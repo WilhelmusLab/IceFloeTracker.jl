@@ -37,7 +37,8 @@ export readdlm,
     imsharpen,
     label_components,
     regionprops_table,
-    loadimg
+    loadimg,
+    matchcorr
 
 include("utils.jl")
 include("persist.jl")
@@ -72,6 +73,7 @@ include("bwperim.jl")
 include("find_ice_labels.jl")
 include("segmentation_f.jl")
 include("tracker/tracker-funcs.jl")
+include("tracker/matchcorr.jl")
 include("tracker/tracker.jl")
 
 """

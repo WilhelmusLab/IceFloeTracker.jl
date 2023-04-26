@@ -515,16 +515,6 @@ function randratios()
 end
 
 # match_corr related functions
-"""
-    TODO
-    matchcorr((r,props1), (s,props2), Δt)
-    
-
-Compute the match correlation between the `r`th floe in `props_day1` and the `s`th floe in `props_day2`. Return a tuple of the area under the curve and their correlation score.
-"""
-function matchcorr((r, props1), (s, props2), Δt)
-    return (area_under=rand() / 4, corr=1 - rand() / 3)
-end
 
 """
     corr(f1,f2)
@@ -542,8 +532,6 @@ end
 Return the index of the maximum value in `mms` and the maximum value.
 """
 myargmax(mms) = (max=maximum(mms), idx=argmax(mms) + 1)
-
-myargmin(mms) = (min=minimum(mms), idx=argmin(mms) + 1)
 
 """
     computethetarevROT180(revised,t=180)
