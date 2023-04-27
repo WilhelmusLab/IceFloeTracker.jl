@@ -1,12 +1,17 @@
 """
     matchcorr(
-    f1, f2, Δt, mxrot=10, psi_s_thresh=0.95, sz_thresh=16, comp_tresh=0.25, mm_thresh=0.22
-)
+    f1::T,
+    f2::T,
+    Δt::S,
+    mxrot::S=10,
+    psi_thresh::F=0.95,
+    sz_thresh::S=16,
+    comp_tresh::F=0.25,
+    mm_thresh::F=0.22
+    )
+    where {T<:AbstractArray{Bool,2},S<:Int64,F<:Float64}
 
-
-    matchcorr(f1, f2, Δt, mxrot, psi_s_thresh, sz_thresh, comp_tresh)
-
-Compute the mismatch `mm` and psi-correlation `c` for floes with masks `f1` and `f2`.
+Compute the mismatch `mm` and psi-s-correlation `c` for floes with masks `f1` and `f2`.
 
 The criteria for floes to be considered equivalent is as follows:
     - `c` greater than `mm_thresh` 
@@ -18,15 +23,22 @@ A pair of `NaN` is returned for cases for which one of their mask dimension is t
 - `f1`: mask of floe 1
 - `f2`: mask of floe 2
 - `Δt`: time difference between floes
-- `mxrot`: maximum rotation allowed between floes
-- `psi_thresh`: psi-correlation threshold
-- `sz_thresh`: size threshold
-- `comp_tresh`: size comparability threshold
-- `mm_thresh`: mismatch threshold
+- `mxrot`: maximum rotation (in degrees) allowed between floesn (default: 10)
+- `psi_thresh`: psi-s-correlation threshold (default: 0.95)
+- `sz_thresh`: size threshold (default: 16)
+- `comp_tresh`: size comparability threshold (default: 0.25)
+- `mm_thresh`: mismatch threshold (default: 0.22)
 """
 function matchcorr(
-    f1, f2, Δt, mxrot=10, psi_thresh=0.95, sz_thresh=16, comp_tresh=0.25, mm_thresh=0.22
-)
+    f1::T,
+    f2::T,
+    Δt::S,
+    mxrot::S=10,
+    psi_thresh::F=0.95,
+    sz_thresh::S=16,
+    comp_tresh::F=0.25,
+    mm_thresh::F=0.22,
+) where {T<:AbstractArray{Bool,2},S<:Int64,F<:Float64}
 
     # check if the floes are too small and size are comparable
     sz = size.([f1, f2])
@@ -56,7 +68,7 @@ Check if the size of two floes `s1` and `s2` are comparable. The size is defined
 - `s1`: size of floe 1
 - `s2`: size of floe 2
 """
-function getsizecomparability(s1, s2)
+function getsizecomparability(s1::T, s2::T) where {T<:Tuple{Int64,Int64}}
     a1 = *(s1...)
     a2 = *(s2...)
     return abs(a1 - a2) / a1
@@ -65,9 +77,9 @@ end
 """
     corr(f1,f2)
 
-Return the correlation between the psi-s curves `p1` and `p2`.
+Return the normalized cross-correlation between the psi-s curves `p1` and `p2`.
 """
-function corr(p1, p2)
+function corr(p1::T, p2::T) where {T<:AbstractArray}
     cc, _ = maximum.(IceFloeTracker.crosscorr(p1, p2; normalize=true))
     return cc
 end
