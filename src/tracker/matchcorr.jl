@@ -42,20 +42,30 @@ function matchcorr(
 
     # check if the floes are too small and size are comparable
     sz = size.([f1, f2])
-    (any([(sz...)...] .< sz_thresh) || getsizecomparability(sz...) > comp_tresh) &&
+    if (any([(sz...)...] .< sz_thresh) || getsizecomparability(sz...) > comp_tresh)
+        @warn "Floes are too small or their sizes are not comparable"
         return (mm=NaN, c=NaN)
+    end
 
     psi = buildψs.([f1, f2])
     c = corr(psi...)
 
-    c < psi_thresh && return (mm=NaN, c=NaN)
+    if c < psi_thresh
+        @warn "correlation too low, c: $c"
+        return (mm=NaN, c=NaN)
+    else
+        return (mm=0.0, c=c)
+    end
 
     # check if the time difference is too large or the rotation is too large
     mm, rot = mismatch(f1, f2; mxrot=deg2rad(mxrot))
-    any([Δt < 300, rot > mxrot, mm > mm_thresh]) && return (mm=NaN, c=NaN)
-
-    mm < 0.1 && return (mm=0, c=c)
-
+    if all([Δt < 300, rot > mxrot]) || mm > mm_thresh
+        @warn "time difference too small for a large rotation or mismatch too large\nmm: $mm, rot: $rot"
+        return (mm=NaN, c=NaN)
+    end
+    if mm < 0.1
+        mm = 0.0
+    end
     return (mm=mm, c=c)
 end
 
@@ -82,4 +92,25 @@ Return the normalized cross-correlation between the psi-s curves `p1` and `p2`.
 function corr(p1::T, p2::T) where {T<:AbstractArray}
     cc, _ = maximum.(IceFloeTracker.crosscorr(p1, p2; normalize=true))
     return cc
+end
+
+function matchcorr_simple(
+    f1::T, f2::T, psi_thresh::F=0.95, sz_thresh::S=16, comp_tresh::F=0.25
+) where {T<:AbstractArray{Bool,2},S<:Int64,F<:Float64}
+
+    # check if the floes are too small and size are comparable
+    sz = size.([f1, f2])
+    if (any([(sz...)...] .< sz_thresh) || getsizecomparability(sz...) > comp_tresh)
+        @warn "Floes are too small or their sizes are not comparable"
+        return NaN
+    end
+
+    psi = buildψs.([f1, f2])
+    c = corr(psi...)
+
+    if c < psi_thresh
+        @warn "correlation too low, c: $c"
+        return NaN
+    end
+    return c
 end

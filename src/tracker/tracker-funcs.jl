@@ -90,6 +90,10 @@ function isequal(matchedpairs1::MatchedPairs, matchedpairs2::MatchedPairs)
 end
 
 # Final pairs container and associated methods
+"""
+
+Container for final matched pairs of floes. `data` is a vector of `MatchedPairs` objects.
+"""
 struct Tracked
     data::Vector{MatchedPairs}
 end
@@ -244,7 +248,7 @@ end
 """
     trackercond2(area1, ratios, t2=(area=1200, arearatio=0.28, majaxisratio=0.10, minaxisratio=0.12, convex_area=0.14))
 
-Return `true` if the floe at `p1` and the floe at `p2` are within a certain distance of each other and the displacement time is within a certain range. Return `false` otherwise.
+Set of conditions for "big" floes. Return `true` if the area of the floe is greater than `t2.area` and the similarity ratios are less than the corresponding thresholds in `t2`. Return `false` otherwise.
 """
 function trackercond2(
     area1,
@@ -261,7 +265,7 @@ end
 """
     trackercond3(area1, ratios, t3=(area=1200, arearatio=0.18, majaxisratio=0.07, minaxisratio=0.08, convex_area=0.09))
 
-Return `true` if the floe at `p1` and the floe at `p2` are within a certain distance of each other and the displacement time is within a certain range. Return `false` otherwise.
+Set of conditions for "small" floes. Return `true` if the area of the floe is less than `t3.area` and the similarity ratios are less than the corresponding thresholds in `t3`. Return `false` otherwise
 """
 function trackercond3(
     area1,
@@ -388,7 +392,7 @@ end
 Return the floe properties for day `dayidx` and day `dayidx+1`.
 """
 function getpropsday1day2(properties, dayidx::Int64)
-    return properties[dayidx], properties[dayidx + 1]
+    return copy(properties[dayidx]), copy(properties[dayidx + 1])
 end
 
 """
@@ -549,8 +553,10 @@ function buildψs(floe)
     return IceFloeTracker.make_psi_s(bdres)[1]
 end
 
-function addψs!(props)
-    props.psi = map(buildψs, props.mask)
+function addψs!(props::Vector{DataFrame})
+    for prop in props
+        prop.psi = map(buildψs, prop.mask)
+    end
     return nothing
 end
 
