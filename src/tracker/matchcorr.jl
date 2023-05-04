@@ -43,7 +43,6 @@ function matchcorr(
     # check if the floes are too small and size are comparable
     sz = size.([f1, f2])
     if (any([(sz...)...] .< sz_thresh) || getsizecomparability(sz...) > comp_tresh)
-        @warn "Floes are too small or their sizes are not comparable"
         return (mm=NaN, c=NaN)
     end
 
