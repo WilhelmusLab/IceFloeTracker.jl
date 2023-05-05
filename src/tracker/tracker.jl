@@ -1,21 +1,4 @@
 """
-    pair_floes(indir::String, condition_thresholds, mc_thresholds=(area3=0.18, area2=0.236, corr=0.68))
-
-$(include("pair_floes_docstring.jl"))
-"""
-function pair_floes(
-    indir::String, condition_thresholds, mc_thresholds=(area3=0.18, area2=0.236, corr=0.68)
-)
-    input_data = deserialize(joinpath(indir, "MB_tracker_inputs.dat"))
-    properties = input_data["prop"]
-    segmented_imgs = input_data["FLOE_LIBRARY"] # used in matchcorr
-    delta_time = input_data["delta_t"]
-    return pairfloes(
-        segmented_imgs, properties, delta_time, condition_thresholds, mc_thresholds
-    )
-end
-
-"""
     pairfloes(
     segmented_imgs::Vector{BitMatrix},
     props::Vector{DataFrame},

@@ -24,6 +24,10 @@ function main(args)
         "extractfeatures"
         help = "Extract ice floe features from segmented floe image"
         action = :command
+
+        "track"
+        help = "Pair ice floes"
+        action = :command
     end
 
     @add_arg_table! settings["fetchdata"] begin
@@ -80,6 +84,26 @@ function main(args)
         help = """Features to extract. Format: "feature1 feature2". For an extensive list of extractable features see https://scikit-image.org/docs/stable/api/skimage.measure.html#skimage.measure.regionprops:~:text=The%20following%20properties%20can%20be%20accessed%20as%20attributes%20or%20keys"""
         required = false
         default = "centroid area major_axis_length minor_axis_length convex_area bbox orientation"
+
+        "--"
+    end
+
+    @add_arg_table! settings["track"] begin
+        "--imgs"
+        help = "Path to object with segmented images"
+        required = true
+
+        "--props"
+        help = "Path to object with extracted features"
+        required = true
+
+        "--params"
+        help = "Path to file with algorithm parameters"
+        required = true
+
+        "--output", "-o"
+        help = "Output directory"
+        required = false
     end
 
     command_common_args = [

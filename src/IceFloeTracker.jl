@@ -18,6 +18,7 @@ using StaticArrays
 using OffsetArrays: centered
 using Serialization: serialize, deserialize
 using Folds
+using TOML
 
 export readdlm,
     padnhood,
