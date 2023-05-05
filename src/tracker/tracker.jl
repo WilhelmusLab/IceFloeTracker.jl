@@ -66,7 +66,7 @@ function pairfloes(
         # Container for matches in dayi which will be used to populate tracked
         match_total = MatchedPairs(props1)
         while true # there are no more floes to match in props1
-            # This rutine mutates both props1 and props2.
+            # This routine mutates both props1 and props2.
 
             # Container for props of matched floe pairs and their similarity ratios. Matches will be updated and added to match_total
             matched_pairs = MatchedPairs(props1)
