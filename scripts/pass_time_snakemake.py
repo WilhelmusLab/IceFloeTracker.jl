@@ -53,7 +53,7 @@ def main():
 
         return startdate, enddate, csvoutpath, centroidx, centroidy
     
-    startdate, enddate, csvoutpath, centroidx, centroidy = load_conf_file("hpc/snakemake-config.yaml")
+    startdate, enddate, csvoutpath, centroidx, centroidy = load_conf_file("/Users/tdivoll/IceFloeTracker.jl/hpc/snakemake-config.yaml")
     configUsr = os.environ["SPACEUSER"]
     configPwd = os.environ["SPACEPSWD"]
     siteCred = {'identity': configUsr, 'password': configPwd}
