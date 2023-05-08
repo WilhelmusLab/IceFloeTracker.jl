@@ -230,9 +230,16 @@ function preprocess(; truedir::T, refdir::T, lmdir::T, output::T) where {T<:Abst
         @info "Processing image $i of $numimgs"
         truecolor_container .= loadimg(; dir=truedir, fname=truecolor_refs[i])
         reflectance_container .= loadimg(; dir=refdir, fname=reflectance_refs[i])
-        segmented_floes[i] .= preprocess(
-            truecolor_container, reflectance_container, landmask_imgs
-        )
+        try
+            segmented_floes[i] .= preprocess(
+                truecolor_container, reflectance_container, landmask_imgs
+            )
+        catch e
+            if isa(e, ArgumentError)
+                @warn "ArgumentError: $(e.msg).\nIs there excessive cloud coverage? Skipping image $i."
+            end
+            segmented_floes[i] .= BitMatrix(zeros(size(reflectance_container)))
+        end
     end
 
     # 3. Save

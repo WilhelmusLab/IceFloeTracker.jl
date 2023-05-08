@@ -538,7 +538,7 @@ Return the index of the maximum value in `mms` and the maximum value.
 myargmax(mms) = (max=maximum(mms), idx=argmax(mms) + 1)
 
 """
-    computethetarevROT180(revised,t=180)
+   normalizeangle(revised,t=180)
 
 Normalize angle to be between -180 and 180 degrees.
 """
