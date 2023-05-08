@@ -9,10 +9,6 @@ function main(args)
     settings = ArgParseSettings(; autofix_names=true)
 
     @add_arg_table! settings begin
-        "fetchdata"
-        help = "Fetch source data for ice floe tracking"
-        action = :command
-
         "landmask"
         help = "Generate land mask images"
         action = :command
@@ -24,12 +20,6 @@ function main(args)
         "extractfeatures"
         help = "Extract ice floe features from segmented floe image"
         action = :command
-    end
-
-    @add_arg_table! settings["fetchdata"] begin
-        "output"
-        help = "Output image directory"
-        required = true
     end
 
     landmask_cloudmask_args = [
