@@ -11,7 +11,7 @@ Pair floes in `props[k]` to floes in `props[k+1]` for `k=1:length(props)-1` into
 
 The main steps of the algorithm are as follows:
 
-1. Crop floes from the `segmented_imgs` using the bounding box data in `props`.
+1. Crop floes from `segmented_imgs` using bounding box data in `props`.
 2. For each floe_k_r in `props[k]`, compare to floe_k+1_s in `props[k+1]` by computing similarity ratios, set of `conditions`, and drift distance `dist`. If the conditions are met, compute the area mismatch `mm` and psi-s correlation `c` for this pair of floes. Pair these two floes if `mm` and `c` satisfy the thresholds in `mc_thresholds`.
 3. If there are collisions (i.e. floe `s` in `props[k+1]` is paired to more than one floe in `props[k]`), then the floe in `props[k]` with the best match is paired to floe `s` in `props[k+1]`.
 4. Drop paired floes from `props[k]` and `props[k+1]` and repeat steps 2 and 3 until there are no more floes to match in `props[k]`.
