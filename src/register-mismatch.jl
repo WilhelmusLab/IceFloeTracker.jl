@@ -1,5 +1,3 @@
-# Pkg.add("RegisterMismatch"); Pkg.add("RegisterQD")
-
 """
     mismatch(fixed::AbstractArray,
                   moving::AbstractArray,
@@ -10,7 +8,7 @@
 
 Estimate a rigid transformation (translation + rotation) that minimizes the 'mismatch' of aligning `moving` with `fixed` using the [QuadDIRECT algorithm](https://github.com/timholy/QuadDIRECT.jl#readme).
 
-Returns a pair with the mismatch score `mm` and the associated transformation `tfm`.
+Returns a pair with the mismatch score `mm` and the associated registration angle `rot`.
 
 # Arguments
 - `fixed`,`moving`: images to align via a rigid transformation
@@ -24,7 +22,7 @@ Returns a pair with the mismatch score `mm` and the associated transformation `t
 function mismatch(
     fixed::AbstractArray,
     moving::AbstractArray,
-    mxshift::Tuple{Int64,Int64}=(10, 10),
+    mxshift::Tuple{Int64,Int64}=(100, 100),
     mxrot::Float64=pi / 4;
     kwargs...,
 )
@@ -32,5 +30,5 @@ function mismatch(
         centered(fixed), centered(moving), mxshift, mxrot; print_interval=typemax(Int)
     )
 
-    return mm, tfm
+    return (mm=mm, rot=acosd(tfm.linear[1]))
 end
