@@ -9,10 +9,6 @@ function main(args)
     settings = ArgParseSettings(; autofix_names=true)
 
     @add_arg_table! settings begin
-        "fetchdata"
-        help = "Fetch source data for ice floe tracking"
-        action = :command
-
         "landmask"
         help = "Generate land mask images"
         action = :command
@@ -26,14 +22,8 @@ function main(args)
         action = :command
 
         "track"
-        help = "Pair ice floes"
+        help = "Pair ice floes in day k with ice floes in day k+1"
         action = :command
-    end
-
-    @add_arg_table! settings["fetchdata"] begin
-        "output"
-        help = "Output image directory"
-        required = true
     end
 
     landmask_cloudmask_args = [
@@ -84,8 +74,6 @@ function main(args)
         help = """Features to extract. Format: "feature1 feature2". For an extensive list of extractable features see https://scikit-image.org/docs/stable/api/skimage.measure.html#skimage.measure.regionprops:~:text=The%20following%20properties%20can%20be%20accessed%20as%20attributes%20or%20keys"""
         required = false
         default = "centroid area major_axis_length minor_axis_length convex_area bbox orientation"
-
-        "--"
     end
 
     @add_arg_table! settings["track"] begin
@@ -99,11 +87,11 @@ function main(args)
 
         "--params"
         help = "Path to file with algorithm parameters"
-        required = true
+        required = false
 
         "--output", "-o"
         help = "Output directory"
-        required = false
+        required = true
     end
 
     command_common_args = [
