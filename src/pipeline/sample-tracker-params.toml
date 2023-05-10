@@ -1,20 +1,20 @@
+area = 1200
+
 [t1] # drift and elapsed time from image k to image k+1
-dist = [200, 250, 300]
+dist = [15, 30, 120]
 dt = [30, 100, 1300]
 
 [t2] # for small floes?
+arearatio = 0.18
+majaxisratio = 0.07
+minaxisratio = 0.08
+convexarearatio = 0.09
+
+[t3] # for large floe?
+arearatio = 0.28
 majaxisratio = 0.1
 minaxisratio = 0.12
 convexarearatio = 0.14
-arearatio = 0.28
-area = 1200
-
-[t3] # for large floe?
-majaxisratio = 0.1
-minaxisratio = 0.15
-convexarearatio = 0.2
-arearatio = 0.18
-area = 10000
 
 [mc_thresholds]
 corr = 0.68

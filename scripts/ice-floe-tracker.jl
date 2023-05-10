@@ -62,20 +62,18 @@ function main(args)
 
         "--minarea"
         help = "Minimum area (in pixels) of ice floes to extract"
-        required = false
         default = "300"
 
         "--maxarea"
         help = "Maximum area (in pixels) of ice floes to extract"
-        required = false
         default = "90000"
 
         "--features", "-f"
         help = """Features to extract. Format: "feature1 feature2". For an extensive list of extractable features see https://scikit-image.org/docs/stable/api/skimage.measure.html#skimage.measure.regionprops:~:text=The%20following%20properties%20can%20be%20accessed%20as%20attributes%20or%20keys"""
-        required = false
         default = "centroid area major_axis_length minor_axis_length convex_area bbox orientation"
     end
 
+    add_arg_group!(settings["track"], "arguments")
     @add_arg_table! settings["track"] begin
         "--imgs"
         help = "Path to object with segmented images"
@@ -85,13 +83,62 @@ function main(args)
         help = "Path to object with extracted features"
         required = true
 
-        "--params"
-        help = "Path to file with algorithm parameters"
-        required = false
+        "--deltat"
+        help = "Path to object with time deltas between consecutive images"
+        required = true
 
         "--output", "-o"
         help = "Output directory"
         required = true
+    end
+
+    add_arg_group!(settings["track"], "optional arguments")
+    @add_arg_table! settings["track"] begin
+        "--params"
+        help = "Path to TOML file with algorithm parameters"
+
+        "--area"
+        help = "Area thresholds to use for pairing floes"
+        arg_type = Int64
+        default = 1200
+
+        "--dist"
+        help = "Distance threholds to use for pairing floes"
+        default = "15 30 120"
+
+        "--dt-thresh"
+        help = "Time thresholds to use for pairing floes"
+        default = "30 100 1300"
+
+        "--Smajaxisratio"
+        help = "Major axis ratio threshold to use for pairing floes"
+        arg_type = Float64
+        default = 0.1
+
+        "--Sminaxisratio"
+        help = "Minor axis ratio threshold to use for pairing floes"
+        arg_type = Float64
+        default = 0.12
+
+        "--Sconvexarearatio"
+        help = "Convex area ratio threshold to use for pairing floes"
+        arg_type = Float64
+        default = 0.14
+
+        "--Lmajaxisratio"
+        help = "Major axis ratio threshold to use for pairing floes"
+        arg_type = Float64
+        default = 0.1
+
+        "--Lminaxisratio"
+        help = "Minor axis ratio threshold to use for pairing floes"
+        arg_type = Float64
+        default = 0.15
+
+        "--Lconvexarearatio"
+        help = "Convex area ratio threshold to use for pairing floes"
+        arg_type = Float64
+        default = 0.14
     end
 
     command_common_args = [

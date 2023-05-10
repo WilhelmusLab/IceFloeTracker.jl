@@ -10,13 +10,9 @@
 $(include("track-docstring.jl"))
 """
 function track(;
-    imgsdir::String,
-    propsdir::String,
-    timedeltasdir::String,
-    paramsdir::String,
-    outdir::String,
+    imgs::String, props::String, deltat::String, params::String, output::String, args...
 )
-    @show imgsdir propsdir timedeltasdir paramsdir outdir
+    @show imgs props deltat params output
     # imgs = deserialize(joinpath(imgsdir, "segmented_floes.jls"))
     # properties = deserialize(joinpath(propsdir, "floe_props.jls"))
     # delta_time = deserialize(joinpath(timedeltasdir, "passtimes.jls")) # TODO: process passtimes
@@ -35,3 +31,11 @@ end
 Convert a dictionary `d` to a NamedTuple.
 """
 dict2nt(d) = NamedTuple((Symbol(key), value) for (key, value) in d)
+
+function parse_item(::Type{Vector{Int64}}, x::AbstractString)
+    return parse.(Int64, split(x))
+end
+
+function parse_item(::Type{Vector{Float64}}, x::AbstractString)
+    return parse.(Float64, split(x))
+end

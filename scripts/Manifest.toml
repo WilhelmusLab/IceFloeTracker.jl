@@ -429,7 +429,7 @@ version = "0.1.14"
 
 [[deps.IceFloeTracker]]
 deps = ["AxisArrays", "Clustering", "ColorTypes", "DSP", "DataFrames", "DataStructures", "Dates", "DelimitedFiles", "FileIO", "Folds", "Git", "ImageContrastAdjustment", "ImageCore", "ImageIO", "ImageMorphology", "ImageSegmentation", "Images", "Interpolations", "LoopVectorization", "OffsetArrays", "Peaks", "PyCall", "Random", "RegisterMismatch", "RegisterQD", "Serialization", "StaticArrays", "StatsBase", "TOML", "TiledIteration"]
-git-tree-sha1 = "02e36a4a21fa5a20b3383b0dee62468c59dec72b"
+git-tree-sha1 = "e78092f0d0993793607492ef6742b32b74671e08"
 repo-rev = "283-pipeline-build-tracker-task"
 repo-url = ".."
 uuid = "04643c7a-9ac6-48c5-822f-2704f9e70bd3"
