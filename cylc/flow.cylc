@@ -5,45 +5,36 @@
     initial cycle point = 1
     [[graph]]
         R1 = """
-            mkpaths => fetchdata => soit & mvlm => preprocess => extractfeatures
+            mkpaths => fetchdata => soit & landmask => preprocess => extractfeatures
              """
 [runtime]
     [[mkpaths]]
         script = """
-        mkdir -p ~/IceFloeTracker.jl/output/soit
-        mkdir -p ~/IceFloeTracker.jl/output/landmasks
-        mkdir -p ~/IceFloeTracker.jl/output/preprocessing
-        mkdir -p ~/IceFloeTracker.jl/output/features
+            mkdir -p ~/IceFloeTracker.jl/output/soit
+            mkdir -p ~/IceFloeTracker.jl/output/landmasks
+            mkdir -p ~/IceFloeTracker.jl/output/preprocessing
+            mkdir -p ~/IceFloeTracker.jl/output/features
         """
     [[fetchdata]]
-        script = "~/IceFloeTracker.jl/scripts/fetchdata.sh -o ~/IceFloeTracker.jl/images -s 2017-05-21 -e 2017-05-23 78.186394 38.250605 70.749318 15.32373"
+        script = """
+            ~/IceFloeTracker.jl/scripts/fetchdata.sh -o ~/IceFloeTracker.jl/images -s 2017-05-21 -e 2017-05-23 78.186394 38.250605 70.749318 15.32373
+        """
     [[soit]]
         script = """
-          
-          python ~/IceFloeTracker.jl/scripts/pass_time_snakemake.py
-         """
+            python ~/IceFloeTracker.jl/scripts/pass_time_snakemake.py
+        """
         [[[environment]]]
             SPACEUSER = "timothy_divoll@brown.edu"
             SPACEPSWD = "velveteenwabbit10!"
-    # [[landmask]]
-    #     script = """
-          
-    #       ~/IceFloeTracker.jl/scripts/ice-floe-tracker.jl landmask ~/IceFloeTracker.jl/images ~/IceFloeTracker.jl/output/landmasks
-    #      """
-    [[mvlm]]
+    [[landmask]]
         script = """
-        cp ~/IceFloeTracker.jl/cylc/landmasks/generated_landmask.jls /Users/tdivoll/IceFloeTracker.jl/output/landmasks/generated_landmask.jls"""
-    [[preprocessing]]
-        script = """
-         
-        julia -t auto --project=/Users/tdivoll/IceFloeTracker.jl/scripts/ /Users/tdivoll/IceFloeTracker.jl/scripts/ice-floe-tracker.jl preprocess -t /Users/tdivoll/IceFloeTracker.jl/images/truecolor -r /Users/tdivoll/IceFloeTracker.jl/images/reflectance -l /Users/tdivoll/IceFloeTracker.jl/output/landmasks -o /Users/tdivoll/IceFloeTracker.jl/output/preprocessing
+            ~/IceFloeTracker.jl/scripts/ice-floe-tracker.jl landmask ~/IceFloeTracker.jl/images ~/IceFloeTracker.jl/output/landmasks
         """
-        [[[environment]]]
-            HOME = "/Users/tdivoll/IceFloeTracker.jl"
+    [[preprocess]]
+        script = """
+            julia -t auto ~/IceFloeTracker.jl/scripts/ice-floe-tracker.jl preprocess -t ~/IceFloeTracker.jl/images/truecolor -r ~/IceFloeTracker.jl/images/reflectance -l ~/IceFloeTracker.jl/output/landmasks -o ~/IceFloeTracker.jl/output/preprocessing
+         """
     [[extractfeatures]]
         script = """
-          
-          julia -t auto $HOME/scripts/ice-floe-tracker.jl extractfeatures -i $HOME/output/preprocessing -o $HOME/output/features --minarea 300 --maxarea 90000
-         """
-         [[[environment]]]
-            HOME = "/Users/tdivoll/IceFloeTracker.jl"
+            julia -t auto ~/IceFloeTracker.jl/scripts/ice-floe-tracker.jl extractfeatures -i ~/IceFloeTracker.jl/output/preprocessing -o ~/IceFloeTracker.jl/output/features --minarea 300 --maxarea 90000
+        """
