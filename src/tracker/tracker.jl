@@ -33,6 +33,7 @@ function pairfloes(
     condition_thresholds,
     mc_thresholds,
 )
+
     # Initialize container for props of matched pairs of floes, their similarity ratios, and their distances between their centroids
     tracked = Tracked()
 
@@ -62,9 +63,13 @@ function pairfloes(
                     )
 
                     if callmatchcorr(conditions)
-                        (area_under, corr) = matchcorr(props1.mask[r], props2.mask[s], Δt)
+                        (area_under, corr) = matchcorr(
+                            props1.mask[r], props2.mask[s], Δt; mc_thresholds.comp...
+                        )
 
-                        if isfloegoodmatch(conditions, mc_thresholds, area_under, corr)
+                        if isfloegoodmatch(
+                            conditions, mc_thresholds.goodness, area_under, corr
+                        )
                             appendrows!(
                                 matching_floes,
                                 props2[s, :],

@@ -4,18 +4,18 @@
     f2::T,
     Δt::S,
     mxrot::S=10,
-    psi_thresh::F=0.95,
-    sz_thresh::S=16,
-    comp_tresh::F=0.25,
-    mm_thresh::F=0.22
+    psi::F=0.95,
+    sz::S=16,
+    comp::F=0.25,
+    mm::F=0.22
     )
     where {T<:AbstractArray{Bool,2},S<:Int64,F<:Float64}
 
 Compute the mismatch `mm` and psi-s-correlation `c` for floes with masks `f1` and `f2`.
 
 The criteria for floes to be considered equivalent is as follows:
-    - `c` greater than `mm_thresh` 
-    - `mm` is less than `mm_thresh`
+    - `c` greater than `mm` 
+    - `_mm` is less than `mm`
 
 A pair of `NaN` is returned for cases for which one of their mask dimension is too small or their sizes are not comparable.
 
@@ -24,32 +24,25 @@ A pair of `NaN` is returned for cases for which one of their mask dimension is t
 - `f2`: mask of floe 2
 - `Δt`: time difference between floes
 - `mxrot`: maximum rotation (in degrees) allowed between floesn (default: 10)
-- `psi_thresh`: psi-s-correlation threshold (default: 0.95)
-- `sz_thresh`: size threshold (default: 16)
-- `comp_tresh`: size comparability threshold (default: 0.25)
-- `mm_thresh`: mismatch threshold (default: 0.22)
+- `psi`: psi-s-correlation threshold (default: 0.95)
+- `sz`: size threshold (default: 16)
+- `comp`: size comparability threshold (default: 0.25)
+- `mm`: mismatch threshold (default: 0.22)
 """
 function matchcorr(
-    f1::T,
-    f2::T,
-    Δt::S,
-    mxrot::S=10,
-    psi_thresh::F=0.95,
-    sz_thresh::S=16,
-    comp_tresh::F=0.25,
-    mm_thresh::F=0.22,
+    f1::T, f2::T, Δt::S; mxrot::S=10, psi::F=0.95, sz::S=16, comp::F=0.25, mm::F=0.22
 ) where {T<:AbstractArray{Bool,2},S<:Int64,F<:Float64}
 
     # check if the floes are too small and size are comparable
-    sz = size.([f1, f2])
-    if (any([(sz...)...] .< sz_thresh) || getsizecomparability(sz...) > comp_tresh)
+    _sz = size.([f1, f2])
+    if (any([(_sz...)...] .< sz) || getsizecomparability(_sz...) > comp)
         return (mm=NaN, c=NaN)
     end
 
-    psi = buildψs.([f1, f2])
-    c = corr(psi...)
+    _psi = buildψs.([f1, f2])
+    c = corr(_psi...)
 
-    if c < psi_thresh
+    if c < psi
         @warn "correlation too low, c: $c"
         return (mm=NaN, c=NaN)
     else
@@ -57,8 +50,8 @@ function matchcorr(
     end
 
     # check if the time difference is too large or the rotation is too large
-    mm, rot = mismatch(f1, f2; mxrot=deg2rad(mxrot))
-    if all([Δt < 300, rot > mxrot]) || mm > mm_thresh
+    _mm, rot = mismatch(f1, f2; mxrot=deg2rad(mxrot))
+    if all([Δt < 300, rot > mxrot]) || _mm > mm
         @warn "time difference too small for a large rotation or mismatch too large\nmm: $mm, rot: $rot"
         return (mm=NaN, c=NaN)
     end
@@ -94,20 +87,20 @@ function corr(p1::T, p2::T) where {T<:AbstractArray}
 end
 
 function matchcorr_simple(
-    f1::T, f2::T, psi_thresh::F=0.95, sz_thresh::S=16, comp_tresh::F=0.25
+    f1::T, f2::T, psi::F=0.95, size::S=16, comp::F=0.25
 ) where {T<:AbstractArray{Bool,2},S<:Int64,F<:Float64}
 
     # check if the floes are too small and size are comparable
     sz = size.([f1, f2])
-    if (any([(sz...)...] .< sz_thresh) || getsizecomparability(sz...) > comp_tresh)
+    if (any([(sz...)...] .< size) || getsizecomparability(sz...) > comp)
         @warn "Floes are too small or their sizes are not comparable"
         return NaN
     end
 
-    psi = buildψs.([f1, f2])
-    c = corr(psi...)
+    _psi = buildψs.([f1, f2])
+    c = corr(_psi...)
 
-    if c < psi_thresh
+    if c < psi
         @warn "correlation too low, c: $c"
         return NaN
     end

@@ -73,6 +73,7 @@ function main(args)
         default = "centroid area major_axis_length minor_axis_length convex_area bbox orientation"
     end
 
+    # Required arguments for track
     add_arg_group!(settings["track"], "arguments")
     @add_arg_table! settings["track"] begin
         "--imgs"
@@ -110,6 +111,11 @@ function main(args)
         help = "Time thresholds to use for pairing floes"
         default = "30 100 1300"
 
+        "--Sarearatio"
+        help = "Area ratio threshold"
+        arg_type = Float64
+        default = 0.18
+
         "--Smajaxisratio"
         help = "Major axis ratio threshold to use for pairing floes"
         arg_type = Float64
@@ -125,6 +131,11 @@ function main(args)
         arg_type = Float64
         default = 0.14
 
+        "Larearatio"
+        help = "Area ratio threshold"
+        arg_type = Float64
+        default = 0.28
+
         "--Lmajaxisratio"
         help = "Major axis ratio threshold to use for pairing floes"
         arg_type = Float64
@@ -139,6 +150,48 @@ function main(args)
         help = "Convex area ratio threshold to use for pairing floes"
         arg_type = Float64
         default = 0.14
+
+        # matchcorr computation
+        "--mxrot"
+        help = "Maximum rotation"
+        arg_type = Int64
+        default = 10
+
+        "--psi"
+        help = "Minimum psi-s correlation"
+        arg_type = Float64
+        default = 0.95
+
+        "--sz"
+        help = "Minimum side length of floe mask"
+        arg_type = Int64
+        default = 16
+
+        "--comp"
+        help = "Size comparability"
+        arg_type = Float64
+        default = 0.25
+
+        "--mm"
+        help = "Maximum registration mismatch"
+        arg_type = Float64
+        default = 0.22
+
+        # Goodness of match
+        "--corr"
+        help = "Mininimun psi-s correlation"
+        arg_type = Float64
+        default = 0.68
+
+        "--area2"
+        help = "Area thresholds to use for pairing floes"
+        arg_type = Float64
+        default = 0.236
+
+        "--area3"
+        help = "Area thresholds to use for pairing floes"
+        arg_type = Float64
+        default = 0.18
     end
 
     command_common_args = [
