@@ -95,11 +95,11 @@ add_day() {
     macos='true'
   fi
 
-  # if [ "${macos}" = 'true' ]; then
-  #   date -j -v +1d -f "%Y-%m-%d" "${date}" +%Y-%m-%d
-  # else
+  if [ "${macos}" = 'true' ]; then
+    date -j -v +1d -f "%Y-%m-%d" "${date}" +%Y-%m-%d
+  else
     date -d "${date} 1 days" +%Y-%m-%d
-  #fi
+  fi
 }
 
 download_landmask() {
