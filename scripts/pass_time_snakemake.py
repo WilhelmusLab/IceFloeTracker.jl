@@ -26,6 +26,9 @@ import csv
 import math
 import yaml
 import os
+from os.path import expanduser
+from cylc.flow.parsec import fileparse
+
 
 
 # URLs for space track login.
@@ -42,18 +45,29 @@ def main():
 
     # Read in username, password, start date, end dates from configuration file.
     
-    def load_conf_file(config_file):
-        with open(config_file, "r") as f:
-            config = yaml.safe_load(f)
-            startdate = config["startdate"]
-            enddate = config["enddate"]
-            csvoutpath = config["soit-outdir"]
-            centroidx = config["centroid-x"]
-            centroidy = config["centroid-y"]
-
-        return startdate, enddate, csvoutpath, centroidx, centroidy
+    ProjectHome = expanduser("~")+ "/IceFloeTracker.jl"
     
-    startdate, enddate, csvoutpath, centroidx, centroidy = load_conf_file("/Users/tdivoll/IceFloeTracker.jl/hpc/snakemake-config.yaml")
+
+    # def load_conf_file(config_file):
+    #     with open(config_file, "r") as f:
+    #         config = yaml.safe_load(f)
+    #         startdate = os.environ["startdate"]
+    #         enddate = os.environ["enddate"]
+    #         csvdir = config["soitdir"]
+    #         csvoutpath = f'{ProjectHome}/{csvdir}'
+    #         centroidx = config["centroid-x"]
+    #         centroidy = config["centroid-y"]
+
+    #     return startdate, enddate, csvoutpath, centroidx, centroidy
+   
+    startdate = os.environ["startdate"]
+    enddate = os.environ["enddate"]
+    csvdir = os.environ["soit_dir"]
+    csvoutpath = f'{ProjectHome}/{csvdir}'
+    centroidx = os.environ["centroid_x"]
+    centroidy = os.environ["centroid_y"]
+
+    #startdate, enddate, csvoutpath, centroidx, centroidy = load_conf_file(f'{ProjectHome}/cylc/flow.cylc')
     configUsr = os.environ["SPACEUSER"]
     configPwd = os.environ["SPACEPSWD"]
     siteCred = {'identity': configUsr, 'password': configPwd}

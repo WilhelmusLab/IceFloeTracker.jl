@@ -8,33 +8,49 @@
             mkpaths => fetchdata => soit & landmask => preprocess => extractfeatures
              """
 [runtime]
+    [[root]]
+        [[[environment]]]
+            # Update these variables with your run parameters
+            startdate = "2022-05-04"
+            enddate = "2022-05-06"
+            bounding_box = "78.186394 38.250605 70.749318 15.32373"
+            centroid_x = "80"
+            centroid_y = "-18"
+            minfloearea = "300"
+            maxfloearea = "90000"
+            # Recommend using these default paths for output
+            project_dir = "~/IceFloeTracker.jl"
+            fetchdata_dir = $project_dir/"images"
+            truecolor_dir = "images/truecolor"
+            reflectance_dir = "images/reflectance"
+            landmask_dir = "output/landmasks"
+            preprocess_dir = "output/preprocess"
+            soit_dir = "/output/soit"
+            features_dir = "output/features"
     [[mkpaths]]
         script = """
-            mkdir -p ~/IceFloeTracker.jl/output/soit
-            mkdir -p ~/IceFloeTracker.jl/output/landmasks
-            mkdir -p ~/IceFloeTracker.jl/output/preprocessing
-            mkdir -p ~/IceFloeTracker.jl/output/features
+            mkdir -p $project_dir/$soit_dir
+            mkdir -p $project_dir/$landmask_dir
+            mkdir -p $project_dir/$preprocess_dir
+            mkdir -p $project_dir/$features_dir
         """
     [[fetchdata]]
         script = """
-            ~/IceFloeTracker.jl/scripts/fetchdata.sh -o ~/IceFloeTracker.jl/images -s 2017-05-21 -e 2017-05-23 78.186394 38.250605 70.749318 15.32373
+            $project_dir/scripts/fetchdata.sh -o $fetchdata_dir -s $startdate -e $enddate $bounding_box
         """
     [[soit]]
         script = """
-            python ~/IceFloeTracker.jl/scripts/pass_time_snakemake.py
+            python $project_dir/scripts/pass_time_snakemake.py
         """
-        [[[environment]]]
-            SPACEUSER = "timothy_divoll@brown.edu"
-            SPACEPSWD = "velveteenwabbit10!"
     [[landmask]]
         script = """
-            ~/IceFloeTracker.jl/scripts/ice-floe-tracker.jl landmask ~/IceFloeTracker.jl/images ~/IceFloeTracker.jl/output/landmasks
+            $project_dir/scripts/ice-floe-tracker.jl landmask $fetchdata_dir $project_dir/$landmask_dir
         """
     [[preprocess]]
         script = """
-            julia -t auto ~/IceFloeTracker.jl/scripts/ice-floe-tracker.jl preprocess -t ~/IceFloeTracker.jl/images/truecolor -r ~/IceFloeTracker.jl/images/reflectance -l ~/IceFloeTracker.jl/output/landmasks -o ~/IceFloeTracker.jl/output/preprocessing
+            julia -t auto $project_dir/scripts/ice-floe-tracker.jl preprocess -t $fetchdata_dir/truecolor -r $fetchdata_dir/reflectance -l $project_dir/$landmask_dir -o $project_dir/$preprocess_dir
          """
     [[extractfeatures]]
         script = """
-            julia -t auto ~/IceFloeTracker.jl/scripts/ice-floe-tracker.jl extractfeatures -i ~/IceFloeTracker.jl/output/preprocessing -o ~/IceFloeTracker.jl/output/features --minarea 300 --maxarea 90000
+            julia -t auto $project_dir/scripts/ice-floe-tracker.jl extractfeatures -i $project_dir/$preprocess_dir -o $project_dir/$features_dir --minarea 300 --maxarea 90000
         """

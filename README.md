@@ -98,13 +98,20 @@ For example:
 ./scripts/ice-floe-tracker.jl landmask <METADATA FILE> <INPUT DIR> <OUTPUT DIR>
 ```
 
-## Snakemake
+## Cylc
 
-Snakemake is used to encode the entire pipeline from start to finish. Snakemake relies on the command line scripts to automate the pipeline. The snakemake file should be suitable for runs on HPC systems. To run snakemake locally, run the following from a terminal in the root of this project:
+Cylc is used to encode the entire pipeline from start to finish. Cylc relies on the command line scripts to automate the pipeline. The flow.cylc file should be suitable for runs on HPC systems. To run cylc locally, there are a few commands to run from a terminal in the root directory of this project:
 
 ```
-snakemake -c<NUM CORES>
+cylc install -n <workflow-name> ./cylc
+cylc graph <workflow-name>
+cylc play <workflow-name>
+cylc tui <workflow-name>
 ```
+The text-based user interface provides a simple way to watch the status of each task called in the `flow.cylc` workflow. Use arrow keys to investigate each task as see more [here](https://cylc.github.io/cylc-doc/latest/html/7-to-8/major-changes/ui.html#cylc-tui).
+![tui](tui-example.png)
+
+Remember to remove the `images` and `output` folders from the root project directory and use a new workflow name when running the pipeline again.
 
 ## Development
 
