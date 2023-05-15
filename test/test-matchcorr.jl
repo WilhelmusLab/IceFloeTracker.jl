@@ -29,7 +29,9 @@
             convexarearatio=0.2,
         )
         condition_thresholds = (t1, t2, t3)
-        mc_thresholds = (area3=0.18, area2=0.236, corr=0.68)
+        mc_thresholds = (
+            goodness=(area3=0.18, area2=0.236, corr=0.68), comp=(mxrot=10, sz=16)
+        )
         dt = [15, 20]
 
         # Load data
