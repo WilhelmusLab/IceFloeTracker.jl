@@ -5,7 +5,7 @@
     initial cycle point = 1
     [[graph]]
         R1 = """
-            mkpaths => fetchdata => soit & landmask => preprocess => extractfeatures
+            mkpaths => fetchdata => soit & landmask #=> preprocess => extractfeatures
              """
 [runtime]
     [[root]]

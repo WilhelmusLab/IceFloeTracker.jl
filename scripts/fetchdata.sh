@@ -114,7 +114,7 @@ download_landmask() {
   xml="$(echo "${GDAL_WMS_TEMPLATE}" | sed -e "s/%%LAYER%%/${layer}/" -e "s/%%EXT%%/${ext}/" -e "s/%%DATE%%/${date}/" )" 
 
   echo 'downloading landmask'
-  gdalwarp -t_srs "${GDAL_SRS}" -te ${bounding_box} "${xml}" "${output}/landmask.tiff" &> /dev/null
+  gdalwarp -overwrite -t_srs "${GDAL_SRS}" -te ${bounding_box} "${xml}" "${output}/landmask.tiff" &> /dev/null
 }
 
 download_truecolor() {
@@ -134,7 +134,7 @@ download_truecolor() {
       filename="$(echo "${date}" | sed -e 's/-//g').$(echo "${sat}" | tr '[:upper:]' '[:lower:]').truecolor.250m.tiff"
       xml="$(echo "${GDAL_WMS_TEMPLATE}" | sed -e "s/%%LAYER%%/${layer}/" -e "s/%%EXT%%/${ext}/" -e "s/%%DATE%%/${date}/" )" 
 
-      gdalwarp -t_srs "${GDAL_SRS}" -te ${bounding_box} "${xml}" "${output}/${filename}" &> /dev/null
+      gdalwarp -overwrite -t_srs "${GDAL_SRS}" -te ${bounding_box} "${xml}" "${output}/${filename}" &> /dev/null
     done
 
     date="$(add_day "${date}")"
@@ -162,7 +162,7 @@ download_reflectance() {
       filename="$(echo "${date}" | sed -e 's/-//g').$(echo "${sat}" | tr '[:upper:]' '[:lower:]').reflectance.250m.tiff"
 
       xml="$(echo "${GDAL_WMS_TEMPLATE}" | sed -e "s/%%LAYER%%/${layer}/" -e "s/%%EXT%%/${ext}/" -e "s/%%DATE%%/${date}/" )" 
-      gdalwarp -t_srs "${GDAL_SRS}" -te ${bounding_box} "${xml}" "${output}/${filename}" &> /dev/null
+      gdalwarp -overwrite -t_srs "${GDAL_SRS}" -te ${bounding_box} "${xml}" "${output}/${filename}" &> /dev/null
     done
 
     date="$(add_day "${date}")"

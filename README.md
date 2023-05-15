@@ -154,9 +154,9 @@ Remember to remove the `images` and `output` folders from the root project direc
     * `mamba env update -n icefloe-oscar -f ./hpc/oscar-env.yaml`
 5. Make sure the HolyLab registry is added as described in the [prerequisites section](#prerequisites)
 6. Build the package
-    * `julia -e "ENV["PYTHON"]="""`
-    * `julia -e "using Pkg; Pkg.activate("."); Pkg.instantiate(); Pkg.build"`
-    * `julia -e "using Pkg; Pkg.activate("scripts"); Pkg.instantiate(); Pkg.build"`
+    * `julia -e 'ENV["PYTHON"]="~/anaconda/icefloe-oscar/bin/python3.10"'`
+    * `julia -e 'using Pkg; Pkg.activate("."); Pkg.instantiate(); Pkg.build'`
+    * `julia -e 'using Pkg; Pkg.activate("scripts"); Pkg.instantiate(); Pkg.build'`
 7. Register an account with [space-track.org](https://www.space-track.org/) for SOIT
 8. Export SOIT username/password to environment variable
     * From your home directory`nano .bash_profile`
@@ -168,7 +168,6 @@ Remember to remove the `images` and `output` folders from the root project direc
 9. Run the workflow with Cylc
     ````
     cylc install -n <workflow-name> ./cylc
-    cylc graph <workflow-name>
     cylc play <workflow-name>
     cylc tui <workflow-name>
     ```
