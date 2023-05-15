@@ -43,14 +43,14 @@ def main():
     # Read in username, password, start date, end dates from configuration file.
     
     ProjectHome = expanduser("~")+ "/IceFloeTracker.jl"
-    startdate = os.environ["startdate"]
-    enddate = os.environ["enddate"]
-    csvdir = os.environ["soit_dir"]
+    startdate = os.environ.get("startdate")
+    enddate = os.environ.get("enddate")
+    csvdir = os.environ.get("soit_dir")
     csvoutpath = f'{ProjectHome}/{csvdir}'
-    centroidx = os.environ["centroid_x"]
-    centroidy = os.environ["centroid_y"]
-    configUsr = os.environ["SPACEUSER"]
-    configPwd = os.environ["SPACEPSWD"]
+    centroidx = os.environ.get("centroid_x")
+    centroidy = os.environ.get("centroid_y")
+    configUsr = os.environ.get("SPACEUSER")
+    configPwd = os.environ.get("SPACEPSWD")
     siteCred = {'identity': configUsr, 'password': configPwd}
     end_date = datetime.datetime.strptime(enddate, "%Y-%m-%d").strftime("%m-%d-%Y").split('-')
     start_date = datetime.datetime.strptime(startdate, "%Y-%m-%d").strftime("%m-%d-%Y").split('-')

@@ -25,7 +25,7 @@
             reflectance_dir = "images/reflectance"
             landmask_dir = "output/landmasks"
             preprocess_dir = "output/preprocess"
-            soit_dir = "/output/soit"
+            soit_dir = "output/soit"
             features_dir = "output/features"
     [[mkpaths]]
         script = """

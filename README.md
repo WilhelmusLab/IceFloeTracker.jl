@@ -98,21 +98,6 @@ For example:
 ./scripts/ice-floe-tracker.jl landmask <METADATA FILE> <INPUT DIR> <OUTPUT DIR>
 ```
 
-## Cylc
-
-Cylc is used to encode the entire pipeline from start to finish. Cylc relies on the command line scripts to automate the pipeline. The flow.cylc file should be suitable for runs on HPC systems. To run cylc locally, there are a few commands to run from a terminal in the root directory of this project:
-
-```
-cylc install -n <workflow-name> ./cylc
-cylc graph <workflow-name>
-cylc play <workflow-name>
-cylc tui <workflow-name>
-```
-The text-based user interface provides a simple way to watch the status of each task called in the `flow.cylc` workflow. Use arrow keys to investigate each task as see more [here](https://cylc.github.io/cylc-doc/latest/html/7-to-8/major-changes/ui.html#cylc-tui).
-![tui](tui-example.png)
-
-Remember to remove the `images` and `output` folders from the root project directory and use a new workflow name when running the pipeline again.
-
 ## Development
 
 Git hooks are used to run common developer tasks on commits (e.g. code formatting, tests, etc.). If you are running git version 2.9 or later run the following from the root of the project to enable git hooks.
@@ -130,36 +115,60 @@ git commit -m "some informative message"
 git push
 ```
 
-## SOIT Integration via Oscar
+## SOIT Integration
 
 The [Satellite Overpass Identification Tool](https://zenodo.org/record/6475619#.ZBhat-zMJUe) is called to generate a list of satellite times for both Aqua and Terra in the area of interest. This program is written in Python and it's dependencies are added to the `oscar-env.yaml` that we build in the next section.
+
+## Cylc to run the pipeline
+
+Cylc is used to encode the entire pipeline from start to finish. Cylc relies on the command line scripts to automate the pipeline. The `flow.cylc` file should be suitable for runs on HPC systems. To run cylc locally, there are a few commands to run from a terminal in the root directory of this project:
+
+```
+cylc install -n <workflow-name> ./cylc
+cylc graph <workflow-name>
+cylc play <workflow-name>
+cylc tui <workflow-name>
+```
+The text-based user interface provides a simple way to watch the status of each task called in the `flow.cylc` workflow. Use arrow keys to investigate each task as see more [here](https://cylc.github.io/cylc-doc/latest/html/7-to-8/major-changes/ui.html#cylc-tui).
+![tui](tui-example.png)
+
+Remember to remove the `images` and `output` folders from the root project directory and use a new workflow name when running the pipeline again.
 
 ## Running the workflow on Oscar
 #### Python=3.9.13
 
-1. ssh to Oscar
-2. Load the latest anaconda module
+1. `ssh` to Oscar
+2. Move to a compute node
+    * `interact -n 20 -t 24:00:00 -m 16g`
+    * this will start a compute session for 1 day with 16 GB memory and 20 cores
+    * see [here](https://docs.ccv.brown.edu/oscar/submitting-jobs/interact) for more options
+3. Load the latest anaconda module
     * `module load anaconda/2022.05`
     * `source /gpfs/runtime/opt/anaconda/2022.05/etc/profile.d/conda.sh`
-3. Build a virtual environment
+4. Build a virtual environment
     * `conda create -n icefloe-oscar`
     * `conda activate icefloe-oscar`
     * `conda install -c conda-forge mamba`
     * `git clone https://github.com/WilhelmusLab/IceFloeTracker.jl.git`
     * `cd IceFloeTracker.jl`
     * `mamba env update -n icefloe-oscar -f ./hpc/oscar-env.yaml`
-4. Make sure the HolyLab registry is added as described in the [prerequisites section](#prerequisites)
-5. Build the package
+5. Make sure the HolyLab registry is added as described in the [prerequisites section](#prerequisites)
+6. Build the package
     * `julia -e "ENV["PYTHON"]="""`
     * `julia -e "using Pkg; Pkg.activate("."); Pkg.instantiate(); Pkg.build"`
     * `julia -e "using Pkg; Pkg.activate("scripts"); Pkg.instantiate(); Pkg.build"`
-6. Register an account with [space-track.org](https://www.space-track.org/) for SOIT
-7. Export SOIT username/password to environment variable
+7. Register an account with [space-track.org](https://www.space-track.org/) for SOIT
+8. Export SOIT username/password to environment variable
     * From your home directory`nano .bash_profile`
     * add `export HISTCONTROL=ignoreboth` to the bottom of your .bash_profile
         * this will ensure that your username/password are not stored in history
         * when exporting the following environment variables, there must a space in front of each command
     * ` export SPACEUSER=<firstname>_<lastname>@brown.edu`
     * ` export SPACEPSWD=<password>`
-8. Run the workflow with Snakemake
-    * `snakemake fetchdata extractfeatures --cores all`
+9. Run the workflow with Cylc
+    ````
+    cylc install -n <workflow-name> ./cylc
+    cylc graph <workflow-name>
+    cylc play <workflow-name>
+    cylc tui <workflow-name>
+    ```
