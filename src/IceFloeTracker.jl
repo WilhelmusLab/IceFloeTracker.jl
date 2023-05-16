@@ -18,7 +18,6 @@ using StaticArrays
 using OffsetArrays: centered
 using Serialization: serialize, deserialize
 using Folds
-using TOML
 
 export readdlm,
     padnhood,
@@ -85,6 +84,7 @@ This module contains the wrapper functions called by CLI.
 module Pipeline
     using IceFloeTracker
     using IceFloeTracker: Folds, DataFrame, RGB, Gray, load, float64, imsharpen
+    using TOML: parsefile
     include("pipeline/landmask.jl")
     include("pipeline/preprocess.jl")
     include("pipeline/feature-extraction.jl")
