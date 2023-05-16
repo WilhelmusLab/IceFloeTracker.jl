@@ -95,7 +95,8 @@ add_day() {
     macos='true'
   fi
 
-  if [ "${macos}" = 'true' ] && [ -z "${CYLC_VERSION}" ]; then
+  if [ "${macos}" = 'true' ] && [[ ! -v "${CYLC_VERSION+x}" ]];
+  then
     date -j -v +1d -f "%Y-%m-%d" "${date}" +%Y-%m-%d
   else
     date -d "${date} 1 days" +%Y-%m-%d

@@ -146,26 +146,26 @@ Remember to remove the `images` and `output` folders from the root project direc
     * `module load anaconda/2022.05`
     * `source /gpfs/runtime/opt/anaconda/2022.05/etc/profile.d/conda.sh`
 4. Build a virtual environment
-    * `conda create -n icefloe-oscar`
+    * `conda create -n icefloe-oscar python=3.9`
     * `conda activate icefloe-oscar`
     * `conda install -c conda-forge mamba`
     * `git clone https://github.com/WilhelmusLab/IceFloeTracker.jl.git`
     * `cd IceFloeTracker.jl`
     * `mamba env update -n icefloe-oscar -f ./hpc/oscar-env.yaml`
-5. Make sure the HolyLab registry is added as described in the [prerequisites section](#prerequisites)
-6. Build the package
-    * `julia -e 'ENV["PYTHON"]="~/anaconda/icefloe-oscar/bin/python3.10"'`
-    * `julia -e 'using Pkg; Pkg.activate("."); Pkg.instantiate(); Pkg.build'`
-    * `julia -e 'using Pkg; Pkg.activate("scripts"); Pkg.instantiate(); Pkg.build'`
-7. Register an account with [space-track.org](https://www.space-track.org/) for SOIT
-8. Export SOIT username/password to environment variable
+5. Build the package
+    * `julia -e 'using Pkg; Pkg.Registry.add(RegistrySpec(url = "https://github.com/HolyLab/HolyLabRegistry.git"))'`
+    * `julia -e 'ENV["PYTHON"]=""'`
+    * `julia -e 'using Pkg; Pkg.activate("."); Pkg.instantiate(); Pkg.build()'`
+    * `julia -e 'using Pkg; Pkg.activate("scripts"); Pkg.instantiate(); Pkg.build()'`
+6. Register an account with [space-track.org](https://www.space-track.org/) for SOIT
+7. Export SOIT username/password to environment variable
     * From your home directory`nano .bash_profile`
     * add `export HISTCONTROL=ignoreboth` to the bottom of your .bash_profile
         * this will ensure that your username/password are not stored in history
         * when exporting the following environment variables, there must a space in front of each command
     * ` export SPACEUSER=<firstname>_<lastname>@brown.edu`
     * ` export SPACEPSWD=<password>`
-9. Run the workflow with Cylc
+8. Run the workflow with Cylc
     ````
     cylc install -n <workflow-name> ./cylc
     cylc play <workflow-name>
