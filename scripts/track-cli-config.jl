@@ -48,42 +48,42 @@ function mkclitrack!(settings)
         default = "30 100 1300"
 
         "--Sarearatio"
-        help = "Area ratio threshold"
+        help = "Area ratio threshold for small floes"
         arg_type = Float64
         default = 0.18
 
         "--Smajaxisratio"
-        help = "Major axis ratio threshold to use for pairing floes"
+        help = "Major axis ratio threshold for small floes"
         arg_type = Float64
         default = 0.1
 
         "--Sminaxisratio"
-        help = "Minor axis ratio threshold to use for pairing floes"
+        help = "Minor axis ratio threshold for small floes"
         arg_type = Float64
         default = 0.12
 
         "--Sconvexarearatio"
-        help = "Convex area ratio threshold to use for pairing floes"
+        help = "Convex area ratio threshold for small floes"
         arg_type = Float64
         default = 0.14
 
-        "Larearatio"
-        help = "Area ratio threshold"
+        "--Larearatio"
+        help = "Area ratio threshold for large floes"
         arg_type = Float64
         default = 0.28
 
         "--Lmajaxisratio"
-        help = "Major axis ratio threshold to use for pairing floes"
+        help = "Major axis ratio threshold for large floes"
         arg_type = Float64
         default = 0.1
 
         "--Lminaxisratio"
-        help = "Minor axis ratio threshold to use for pairing floes"
+        help = "Minor axis ratio threshold for large floes"
         arg_type = Float64
         default = 0.15
 
         "--Lconvexarearatio"
-        help = "Convex area ratio threshold to use for pairing floes"
+        help = "Convex area ratio threshold for large floes"
         arg_type = Float64
         default = 0.14
 
