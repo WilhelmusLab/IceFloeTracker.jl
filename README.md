@@ -142,20 +142,18 @@ Remember to remove the `images` and `output` folders from the root project direc
     * `interact -n 20 -t 24:00:00 -m 16g`
     * this will start a compute session for 1 day with 16 GB memory and 20 cores
     * see [here](https://docs.ccv.brown.edu/oscar/submitting-jobs/interact) for more options
-3. Load the latest anaconda module
-    * `module load anaconda/2022.05`
-    * `source /gpfs/runtime/opt/anaconda/2022.05/etc/profile.d/conda.sh`
+3. Load the latest miniconda module
+    * `module load miniconda`
 4. Build a virtual environment
-    * `conda create -n icefloe-oscar python=3.9`
+    * `conda create -n icefloe-oscar`
     * `conda activate icefloe-oscar`
-    * `conda install -c conda-forge mamba`
+    * `conda env update -n icefloe-oscar -f ./hpc/oscar-env.yaml`
     * `git clone https://github.com/WilhelmusLab/IceFloeTracker.jl.git`
     * `cd IceFloeTracker.jl`
-    * `mamba env update -n icefloe-oscar -f ./hpc/oscar-env.yaml`
+    
 5. Build the package
     * `julia -e 'using Pkg; Pkg.Registry.add(RegistrySpec(url = "https://github.com/HolyLab/HolyLabRegistry.git"))'`
-    * `julia -e 'ENV["PYTHON"]=""'`
-    * `julia -e 'using Pkg; Pkg.activate("."); Pkg.instantiate(); Pkg.build()'`
+    * `julia -e 'using Pkg; Pkg.activate("."); ENV["PYTHON"]=""; Pkg.instantiate(); Pkg.build()'`
     * `julia -e 'using Pkg; Pkg.activate("scripts"); Pkg.instantiate(); Pkg.build()'`
 6. Register an account with [space-track.org](https://www.space-track.org/) for SOIT
 7. Export SOIT username/password to environment variable
