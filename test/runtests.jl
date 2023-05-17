@@ -6,6 +6,7 @@ using Dates
 using DataFrames
 using Random
 using ImageTransformations: imrotate
+using ArgParse: ArgParseSettings, @add_arg_table!, add_arg_group!, parse_args
 include("test_error_rate.jl")
 include("config.jl")
 

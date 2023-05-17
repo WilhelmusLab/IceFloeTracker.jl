@@ -278,7 +278,7 @@ function trackercond3(
         convexarearatio=0.09,
     ),
 )
-    return area1 < t3.area &&
+    return area1 <= t3.area &&
            ratios.area < t3.arearatio &&
            ratios.majoraxis < t3.majaxisratio &&
            ratios.minoraxis < t3.minaxisratio &&

@@ -84,9 +84,11 @@ This module contains the wrapper functions called by CLI.
 module Pipeline
     using IceFloeTracker
     using IceFloeTracker: Folds, DataFrame, RGB, Gray, load, float64, imsharpen
+    using TOML: parsefile
     include("pipeline/landmask.jl")
     include("pipeline/preprocess.jl")
     include("pipeline/feature-extraction.jl")
+    include("pipeline/tracker.jl")
     export sharpen,
         sharpen_gray,
         preprocess,
@@ -98,7 +100,8 @@ module Pipeline
         load_reflectance_imgs,
         load_cloudmask,
         disc_ice_water,
-        landmask
+        landmask,
+        track
 end
 
 """

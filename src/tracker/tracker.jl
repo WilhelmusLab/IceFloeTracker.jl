@@ -1,21 +1,4 @@
 """
-    pair_floes(indir::String, condition_thresholds, mc_thresholds=(area3=0.18, area2=0.236, corr=0.68))
-
-$(include("pair_floes_docstring.jl"))
-"""
-function pair_floes(
-    indir::String, condition_thresholds, mc_thresholds=(area3=0.18, area2=0.236, corr=0.68)
-)
-    input_data = deserialize(joinpath(indir, "MB_tracker_inputs.dat"))
-    properties = input_data["prop"]
-    segmented_imgs = input_data["FLOE_LIBRARY"] # used in matchcorr
-    delta_time = input_data["delta_t"]
-    return pairfloes(
-        segmented_imgs, properties, delta_time, condition_thresholds, mc_thresholds
-    )
-end
-
-"""
     pairfloes(
     segmented_imgs::Vector{BitMatrix},
     props::Vector{DataFrame},
@@ -28,7 +11,7 @@ Pair floes in `props[k]` to floes in `props[k+1]` for `k=1:length(props)-1` into
 
 The main steps of the algorithm are as follows:
 
-1. Crop floes from the `segmented_imgs` using the bounding box data in `props`.
+1. Crop floes from `segmented_imgs` using bounding box data in `props`.
 2. For each floe_k_r in `props[k]`, compare to floe_k+1_s in `props[k+1]` by computing similarity ratios, set of `conditions`, and drift distance `dist`. If the conditions are met, compute the area mismatch `mm` and psi-s correlation `c` for this pair of floes. Pair these two floes if `mm` and `c` satisfy the thresholds in `mc_thresholds`.
 3. If there are collisions (i.e. floe `s` in `props[k+1]` is paired to more than one floe in `props[k]`), then the floe in `props[k]` with the best match is paired to floe `s` in `props[k+1]`.
 4. Drop paired floes from `props[k]` and `props[k+1]` and repeat steps 2 and 3 until there are no more floes to match in `props[k]`.
@@ -50,6 +33,7 @@ function pairfloes(
     condition_thresholds,
     mc_thresholds,
 )
+
     # Initialize container for props of matched pairs of floes, their similarity ratios, and their distances between their centroids
     tracked = Tracked()
 
@@ -79,9 +63,13 @@ function pairfloes(
                     )
 
                     if callmatchcorr(conditions)
-                        (area_under, corr) = matchcorr(props1.mask[r], props2.mask[s], Δt)
+                        (area_under, corr) = matchcorr(
+                            props1.mask[r], props2.mask[s], Δt; mc_thresholds.comp...
+                        )
 
-                        if isfloegoodmatch(conditions, mc_thresholds, area_under, corr)
+                        if isfloegoodmatch(
+                            conditions, mc_thresholds.goodness, area_under, corr
+                        )
                             appendrows!(
                                 matching_floes,
                                 props2[s, :],
