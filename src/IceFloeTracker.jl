@@ -62,7 +62,7 @@ include("special_strels.jl")
 const sk_measure = PyNULL()
 
 function __init__()
-    return copy!(sk_measure, pyimport_conda("skimage.measure", "scikit-image"))
+    return copy!(sk_measure, pyimport_conda("skimage.measure", "scikit-image=0.20.0"))
 end
 
 include("regionprops.jl")
