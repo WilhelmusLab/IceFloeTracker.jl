@@ -60,7 +60,7 @@ function regionprops_table(
     label_img::Matrix{Int64},
     intensity_img::Union{Nothing,AbstractMatrix}=nothing;
     properties::Union{Vector{<:AbstractString},Tuple{String,Vararg{String}}}=(
-        "centroid", "area", "major_axis_length", "minor_axis_length", "convex_area", "bbox"
+        "centroid", "area", "major_axis_length", "minor_axis_length", "convex_area", "bbox", "perimeter"
     ),
     extra_properties::Union{Tuple{Function,Vararg{Function}},Nothing}=nothing,
 )::DataFrame
