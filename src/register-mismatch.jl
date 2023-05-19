@@ -26,7 +26,7 @@ function mismatch(
     mxrot::Float64=pi / 4;
     kwargs...,
 )
-    tfm, mm = qd_rigid(
+    tfm, mm = IceFloeTracker.Register.RegisterQD.qd_rigid(
         centered(fixed), centered(moving), mxshift, mxrot; print_interval=typemax(Int)
     )
 
