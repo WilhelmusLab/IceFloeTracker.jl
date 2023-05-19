@@ -5,7 +5,7 @@
     initial cycle point = 1
     [[graph]]
         R1 = """
-            mkpaths => fetchdata => soit & landmask #=> preprocess => extractfeatures
+            mkpaths => fetchdata => soit & landmask => preprocess => extractfeatures => tracking
              """
 [runtime]
     [[root]]
@@ -13,6 +13,7 @@
             # Update these variables with your run parameters
             startdate = "2022-05-04"
             enddate = "2022-05-06"
+            crs = "wgs84" #epsg3413 for polar stereographic
             bounding_box = "78.186394 38.250605 70.749318 15.32373"
             centroid_x = "80"
             centroid_y = "-18"
@@ -36,7 +37,7 @@
         """
     [[fetchdata]]
         script = """
-            $project_dir/scripts/fetchdata.sh -o $fetchdata_dir -s $startdate -e $enddate $bounding_box
+            $project_dir/scripts/fetchdata.sh -o $fetchdata_dir -s $startdate -e $enddate -c $crs $bounding_box
         """
     [[soit]]
         script = """
