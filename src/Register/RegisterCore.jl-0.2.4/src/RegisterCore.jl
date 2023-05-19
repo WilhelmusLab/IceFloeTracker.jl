@@ -1,6 +1,6 @@
 module RegisterCore
 
-using CenterIndexedArrays
+using ..CenterIndexedArrays
 using ImageCore, ImageFiltering
 using Requires
 
@@ -67,24 +67,32 @@ NumDenom(n::Gray, d) = NumDenom(gray(n), d)
 NumDenom(n, d::Gray) = NumDenom(n, gray(d))
 NumDenom(n, d) = NumDenom(promote(n, d)...)
 
-(+)(p1::NumDenom, p2::NumDenom) = NumDenom(p1.num+p2.num, p1.denom+p2.denom)
-(-)(p1::NumDenom, p2::NumDenom) = NumDenom(p1.num-p2.num, p1.denom-p2.denom)
-(*)(n::Number, p::NumDenom) = NumDenom(n*p.num, n*p.denom)
-(*)(p::NumDenom, n::Number) = n*p
-(/)(p::NumDenom, n::Number) = NumDenom(p.num/n, p.denom/n)
-Base.oneunit(::Type{NumDenom{T}}) where {T} = NumDenom{T}(oneunit(T),oneunit(T))
+(+)(p1::NumDenom, p2::NumDenom) = NumDenom(p1.num + p2.num, p1.denom + p2.denom)
+(-)(p1::NumDenom, p2::NumDenom) = NumDenom(p1.num - p2.num, p1.denom - p2.denom)
+(*)(n::Number, p::NumDenom) = NumDenom(n * p.num, n * p.denom)
+(*)(p::NumDenom, n::Number) = n * p
+(/)(p::NumDenom, n::Number) = NumDenom(p.num / n, p.denom / n)
+Base.oneunit(::Type{NumDenom{T}}) where {T} = NumDenom{T}(oneunit(T), oneunit(T))
 Base.oneunit(p::NumDenom) = oneunit(typeof(p))
-Base.zero(::Type{NumDenom{T}}) where {T} = NumDenom(zero(T),zero(T))
+Base.zero(::Type{NumDenom{T}}) where {T} = NumDenom(zero(T), zero(T))
 Base.zero(p::NumDenom) = zero(typeof(p))
-Base.promote_rule(::Type{NumDenom{T1}}, ::Type{T2}) where {T1,T2<:Number} = NumDenom{promote_type(T1,T2)}
-Base.promote_rule(::Type{NumDenom{T1}}, ::Type{NumDenom{T2}}) where {T1,T2} = NumDenom{promote_type(T1,T2)}
+function Base.promote_rule(::Type{NumDenom{T1}}, ::Type{T2}) where {T1,T2<:Number}
+    return NumDenom{promote_type(T1, T2)}
+end
+function Base.promote_rule(::Type{NumDenom{T1}}, ::Type{NumDenom{T2}}) where {T1,T2}
+    return NumDenom{promote_type(T1, T2)}
+end
 Base.eltype(::Type{NumDenom{T}}) where {T} = T
 Base.convert(::Type{NumDenom{T}}, p::NumDenom{T}) where {T} = p
 Base.convert(::Type{NumDenom{T}}, p::NumDenom) where {T} = NumDenom{T}(p.num, p.denom)
 
-Base.round(::Type{NumDenom{T}}, p::NumDenom) where T = NumDenom{T}(round(T, p.num), round(T, p.denom))
+function Base.round(::Type{NumDenom{T}}, p::NumDenom) where {T}
+    return NumDenom{T}(round(T, p.num), round(T, p.denom))
+end
 
-Base.convert(::Type{F}, p::NumDenom) where F<:AbstractFloat = error("`convert($F, ::NumDenom)` is deliberately not defined, see `?NumDenom`.")
+function Base.convert(::Type{F}, p::NumDenom) where {F<:AbstractFloat}
+    return error("`convert($F, ::NumDenom)` is deliberately not defined, see `?NumDenom`.")
+end
 
 function Base.show(io::IO, p::NumDenom)
     print(io, "NumDenom(")
@@ -92,7 +100,7 @@ function Base.show(io::IO, p::NumDenom)
     print(io, ",")
     show(io, p.denom)
     print(io, ")")
-    return
+    return nothing
 end
 
 const MismatchArray{ND<:NumDenom,N,A} = CenterIndexedArray{ND,N,A}
@@ -109,11 +117,12 @@ maxshift(A::MismatchArray) = A.halfsize
 `(num,denom)` into a single `MismatchArray`.  This is useful
 preparation for interpolation.
 """
-function (::Type{M})(num::AbstractArray, denom::AbstractArray) where M<:MismatchArray
-    size(num) == size(denom) || throw(DimensionMismatch("num and denom must have the same size"))
+function (::Type{M})(num::AbstractArray, denom::AbstractArray) where {M<:MismatchArray}
+    size(num) == size(denom) ||
+        throw(DimensionMismatch("num and denom must have the same size"))
     T = promote_type(eltype(num), eltype(denom))
     numdenom = CenterIndexedArray{NumDenom{T}}(undef, size(num))
-    _packnd!(numdenom, num, denom)
+    return _packnd!(numdenom, num, denom)
 end
 
 function _packnd!(numdenom::AbstractArray, num::AbstractArray, denom::AbstractArray)
@@ -131,14 +140,16 @@ function _packnd!(numdenom::AbstractArray, num::AbstractArray, denom::AbstractAr
             @inbounds numdenom[Ind] = NumDenom(num[Inum], denom[Idenom])
         end
     end
-    numdenom
+    return numdenom
 end
 
-function _packnd!(numdenom::CenterIndexedArray, num::CenterIndexedArray, denom::CenterIndexedArray)
+function _packnd!(
+    numdenom::CenterIndexedArray, num::CenterIndexedArray, denom::CenterIndexedArray
+)
     @simd for I in eachindex(num)
         @inbounds numdenom[I] = NumDenom(num[I], denom[I])
     end
-    numdenom
+    return numdenom
 end
 
 # The next are mostly used just for testing
@@ -147,7 +158,9 @@ end
 
 `mms = mismatcharrays(nums, denom)`, for `denom` a single array, uses the same `denom` array for all `nums`.
 """
-function mismatcharrays(nums::AbstractArray{A}, denom::AbstractArray{T}) where {A<:AbstractArray,T<:Number}
+function mismatcharrays(
+    nums::AbstractArray{A}, denom::AbstractArray{T}
+) where {A<:AbstractArray,T<:Number}
     first = true
     local mms
     for i in eachindex(nums)
@@ -159,11 +172,15 @@ function mismatcharrays(nums::AbstractArray{A}, denom::AbstractArray{T}) where {
         end
         mms[i] = mm
     end
-    mms
+    return mms
 end
 
-function mismatcharrays(nums::AbstractArray{A1}, denoms::AbstractArray{A2}) where {A1<:AbstractArray,A2<:AbstractArray}
-    size(nums) == size(denoms) || throw(DimensionMismatch("nums and denoms arrays must have the same number of apertures"))
+function mismatcharrays(
+    nums::AbstractArray{A1}, denoms::AbstractArray{A2}
+) where {A1<:AbstractArray,A2<:AbstractArray}
+    size(nums) == size(denoms) || throw(
+        DimensionMismatch("nums and denoms arrays must have the same number of apertures"),
+    )
     first = true
     local mms
     for i in eachindex(nums, denoms)
@@ -174,14 +191,14 @@ function mismatcharrays(nums::AbstractArray{A1}, denoms::AbstractArray{A2}) wher
         end
         mms[i] = mm
     end
-    mms
+    return mms
 end
 
 """
 `num, denom = separate(mm)` splits an `AbstractArray{NumDenom}` into separate
 numerator and denominator arrays.
 """
-function separate(data::AbstractArray{NumDenom{T}}) where T
+function separate(data::AbstractArray{NumDenom{T}}) where {T}
     num = Array{T}(undef, size(data))
     denom = similar(num)
     for I in eachindex(data)
@@ -189,22 +206,22 @@ function separate(data::AbstractArray{NumDenom{T}}) where T
         num[I] = nd.num
         denom[I] = nd.denom
     end
-    num, denom
+    return num, denom
 end
 
 function separate(mm::MismatchArray)
     num, denom = separate(mm.data)
-    CenterIndexedArray(num), CenterIndexedArray(denom)
+    return CenterIndexedArray(num), CenterIndexedArray(denom)
 end
 
-function separate(mma::AbstractArray{M}) where M<:MismatchArray
+function separate(mma::AbstractArray{M}) where {M<:MismatchArray}
     T = eltype(eltype(M))
     nums = Array{CenterIndexedArray{T,ndims(M)}}(undef, size(mma))
     denoms = similar(nums)
-    for (i,mm) in enumerate(mma)
+    for (i, mm) in enumerate(mma)
         nums[i], denoms[i] = separate(mm)
     end
-    nums, denoms
+    return nums, denoms
 end
 
 """
@@ -214,24 +231,27 @@ Return `nd.num/nd.denom`, unless `nd.denom < thresh`, in which case return `fill
 to the same type as the ratio.
 Choosing a `thresh` of zero will always return the ratio.
 """
-@inline function ratio(nd::NumDenom{T}, thresh, fillval=convert(T,NaN)) where {T}
-    r = nd.num/nd.denom
+@inline function ratio(nd::NumDenom{T}, thresh, fillval=convert(T, NaN)) where {T}
+    r = nd.num / nd.denom
     return nd.denom < thresh ? oftype(r, fillval) : r
 end
 ratio(r::Real, thresh, fillval=NaN) = r
 
-(::Type{M})(::Type{T}, dims::Dims) where {M<:MismatchArray,T} = CenterIndexedArray{NumDenom{T}}(undef, dims)
-(::Type{M})(::Type{T}, dims::Integer...) where {M<:MismatchArray,T} = CenterIndexedArray{NumDenom{T}}(undef, dims)
+function (::Type{M})(::Type{T}, dims::Dims) where {M<:MismatchArray,T}
+    return CenterIndexedArray{NumDenom{T}}(undef, dims)
+end
+function (::Type{M})(::Type{T}, dims::Integer...) where {M<:MismatchArray,T}
+    return CenterIndexedArray{NumDenom{T}}(undef, dims)
+end
 
-function Base.copyto!(M::MismatchArray, nd::Tuple{AbstractArray, AbstractArray})
+function Base.copyto!(M::MismatchArray, nd::Tuple{AbstractArray,AbstractArray})
     num, denom = nd
     size(M) == size(num) == size(denom) || error("all sizes must match")
     for (IM, Ind) in zip(eachindex(M), eachindex(num))
         M[IM] = NumDenom(num[Ind], denom[Ind])
     end
-    M
+    return M
 end
-
 
 #### Utility functions ####
 
@@ -243,13 +263,13 @@ will never choose an edge point.  `index` is a CartesianIndex into the
 arrays.
 """
 function indmin_mismatch(numdenom::MismatchArray{NumDenom{T},N}, thresh::Real) where {T,N}
-    imin = CartesianIndex(ntuple(d->0, Val(N)))
+    imin = CartesianIndex(ntuple(d -> 0, Val(N)))
     rmin = typemax(T)
     threshT = convert(T, thresh)
     @inbounds for I in CartesianIndices(map(trimedges, axes(numdenom)))
         nd = numdenom[I]
         if nd.denom > threshT
-            r = nd.num/nd.denom
+            r = nd.num / nd.denom
             if r < rmin
                 imin = I
                 rmin = r
@@ -260,7 +280,7 @@ function indmin_mismatch(numdenom::MismatchArray{NumDenom{T},N}, thresh::Real) w
 end
 
 function indmin_mismatch(r::CenterIndexedArray{T,N}) where {T<:Number,N}
-    imin = CartesianIndex(ntuple(d->0, Val(N)))
+    imin = CartesianIndex(ntuple(d -> 0, Val(N)))
     rmin = typemax(T)
     @inbounds for I in CartesianIndices(map(trimedges, axes(r)))
         rval = r[I]
@@ -272,7 +292,7 @@ function indmin_mismatch(r::CenterIndexedArray{T,N}) where {T<:Number,N}
     return imin
 end
 
-trimedges(r::AbstractUnitRange) = first(r)+1:last(r)-1
+trimedges(r::AbstractUnitRange) = (first(r) + 1):(last(r) - 1)
 
 ### Miscellaneous
 
@@ -289,14 +309,14 @@ If you do not wish to highpass-filter along a particular axis, put
 You may optionally specify the element type of the result, which for
 `Integer` or `FixedPoint` inputs defaults to `Float32`.
 """
-function highpass(::Type{T}, data::AbstractArray, sigma) where T
+function highpass(::Type{T}, data::AbstractArray, sigma) where {T}
     if any(isinf, sigma)
         datahp = convert(Array{T,ndims(data)}, data)
     else
         datahp = data - imfilter(T, data, KernelFactors.IIRGaussian(T, (sigma...,)), NA())
     end
     datahp[datahp .< 0] .= 0  # truncate anything below 0
-    datahp
+    return datahp
 end
 highpass(data::AbstractArray{T}, sigma) where {T<:AbstractFloat} = highpass(T, data, sigma)
 highpass(data::AbstractArray, sigma) = highpass(Float32, data, sigma)
@@ -327,27 +347,28 @@ end
 
 function preprocess(pp::PreprocessSNF, A::AbstractArray)
     Af = sqrt_subtract_bias(A, pp.bias)
-    imfilter(highpass(Af, pp.sigmahp), KernelFactors.IIRGaussian((pp.sigmalp...,)), NA())
+    return imfilter(
+        highpass(Af, pp.sigmahp), KernelFactors.IIRGaussian((pp.sigmalp...,)), NA()
+    )
 end
 (pp::PreprocessSNF)(A::AbstractArray) = preprocess(pp, A)
 # For SubArrays, extend to the parent along any non-sliced
 # dimension. That way, we keep any information from padding.
 function (pp::PreprocessSNF)(A::SubArray)
     Bpad = preprocess(pp, paddedview(A))
-    trimmedview(Bpad, A)
+    return trimmedview(Bpad, A)
 end
 # ImageMeta method is defined under @require in __init__
 
 function sqrt_subtract_bias(A, bias)
-#    T = typeof(sqrt(one(promote_type(eltype(A), typeof(bias)))))
+    #    T = typeof(sqrt(one(promote_type(eltype(A), typeof(bias)))))
     T = Float32
     out = Array{T}(undef, size(A))
     for I in eachindex(A)
         @inbounds out[I] = sqrt(max(zero(T), convert(T, A[I]) - bias))
     end
-    out
+    return out
 end
-
 
 """
 `Apad = paddedview(A)`, for a SubArray `A`, returns a SubArray that
@@ -355,38 +376,51 @@ extends to the full parent along any non-sliced dimensions of the
 parent. See also [`trimmedview`](@ref).
 """
 paddedview(A::SubArray) = _paddedview(A, (), (), A.indices...)
-_paddedview(A::SubArray{T,N,P,I}, newindexes, newsize) where {T,N,P,I} =
-    SubArray(A.parent, newindexes)
+function _paddedview(A::SubArray{T,N,P,I}, newindexes, newsize) where {T,N,P,I}
+    return SubArray(A.parent, newindexes)
+end
 @inline function _paddedview(A, newindexes, newsize, index, indexes...)
-    d = length(newindexes)+1
-    _paddedview(A, (newindexes..., pdindex(A.parent, d, index)), pdsize(A.parent, newsize, d, index), indexes...)
+    d = length(newindexes) + 1
+    return _paddedview(
+        A,
+        (newindexes..., pdindex(A.parent, d, index)),
+        pdsize(A.parent, newsize, d, index),
+        indexes...,
+    )
 end
 pdindex(A, d, i::Base.Slice) = i
 pdindex(A, d, i::Real) = i
-pdindex(A, d, i::UnitRange) = 1:size(A,d)
+pdindex(A, d, i::UnitRange) = 1:size(A, d)
 pdindex(A, d, i) = error("Cannot pad with an index of type ", typeof(i))
 
-pdsize(A, newsize, d, i::Base.Slice) = tuple(newsize..., size(A,d))
+pdsize(A, newsize, d, i::Base.Slice) = tuple(newsize..., size(A, d))
 pdsize(A, newsize, d, i::Real) = newsize
-pdsize(A, newsize, d, i::UnitRange) = tuple(newsize..., size(A,d))
+pdsize(A, newsize, d, i::UnitRange) = tuple(newsize..., size(A, d))
 
 """
 `B = trimmedview(Bpad, A::SubArray)` returns a SubArray `B` with
 `axes(B) = axes(A)`. `Bpad` must have the same size as `paddedview(A)`.
 """
 function trimmedview(Bpad, A::SubArray)
-    ndims(Bpad) == ndims(A) || throw(DimensionMismatch("dimensions $(ndims(Bpad)) and $(ndims(A)) of Bpad and A must match"))
-    _trimmedview(Bpad, A.parent, 1, (), A.indices...)
+    ndims(Bpad) == ndims(A) || throw(
+        DimensionMismatch(
+            "dimensions $(ndims(Bpad)) and $(ndims(A)) of Bpad and A must match"
+        ),
+    )
+    return _trimmedview(Bpad, A.parent, 1, (), A.indices...)
 end
 _trimmedview(Bpad, P, d, newindexes) = view(Bpad, newindexes...)
-@inline _trimmedview(Bpad, P, d, newindexes, index::Real, indexes...) =
-    _trimmedview(Bpad, P, d+1, newindexes, indexes...)
+@inline function _trimmedview(Bpad, P, d, newindexes, index::Real, indexes...)
+    return _trimmedview(Bpad, P, d + 1, newindexes, indexes...)
+end
 @inline function _trimmedview(Bpad, P, d, newindexes, index, indexes...)
-    dB = length(newindexes)+1
+    dB = length(newindexes) + 1
     Bsz = size(Bpad, dB)
     Psz = size(P, d)
-    Bsz == Psz || throw(DimensionMismatch("dimension $dB of Bpad has size $Bsz, should have size $Psz"))
-    _trimmedview(Bpad, P, d+1, (newindexes..., index), indexes...)
+    Bsz == Psz || throw(
+        DimensionMismatch("dimension $dB of Bpad has size $Bsz, should have size $Psz")
+    )
+    return _trimmedview(Bpad, P, d + 1, (newindexes..., index), indexes...)
 end
 
 # For faster and type-stable slicing
@@ -394,8 +428,10 @@ struct ColonFun end
 ColonFun(::Int) = Colon()
 
 function __init__()
-    @require ImageMetadata="bc367c6b-8a6b-528e-b4bd-a4b897500b49" begin
-        (pp::PreprocessSNF)(A::ImageMetadata.ImageMeta) = ImageMetadata.shareproperties(A, pp(ImageMetadata.arraydata(A)))
+    @require ImageMetadata = "bc367c6b-8a6b-528e-b4bd-a4b897500b49" begin
+        function (pp::PreprocessSNF)(A::ImageMetadata.ImageMeta)
+            return ImageMetadata.shareproperties(A, pp(ImageMetadata.arraydata(A)))
+        end
     end
 end
 

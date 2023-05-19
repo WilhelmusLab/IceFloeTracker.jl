@@ -169,6 +169,7 @@ module MorphSE
 end
 
 module Register
+    include("Register/CenterIndexedArrays.jl-0.2.0/CenterIndexedArrays.jl")
     include("Register/RegisterCore.jl-0.2.4/src/RegisterCore.jl")
     include("Register/RegisterMismatchCommon.jl-master/RegisterMismatchCommon.jl")
     include("Register/RegisterUtilities.jl-master/RegisterUtilities.jl")
