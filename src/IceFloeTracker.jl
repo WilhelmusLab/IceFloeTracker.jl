@@ -12,8 +12,6 @@ using DataFrames
 using PyCall
 using Clustering
 using DSP
-using RegisterMismatch
-using RegisterQD
 using StaticArrays
 using OffsetArrays: centered
 using Serialization: serialize, deserialize
@@ -38,7 +36,9 @@ export readdlm,
     label_components,
     regionprops_table,
     loadimg,
-    matchcorr
+    matchcorr,
+    centered,
+    imrotate
 
 include("utils.jl")
 include("persist.jl")
@@ -166,5 +166,17 @@ module MorphSE
     include("morphSE/bothat.jl")
     include("morphSE/mreconstruct.jl")
     include("morphSE/fill_holes.jl")
+end
+
+module Register
+    include("Register/CenterIndexedArrays.jl-0.2.0/CenterIndexedArrays.jl")
+    include("Register/RegisterCore.jl-0.2.4/src/RegisterCore.jl")
+    include("Register/RegisterMismatchCommon.jl-master/RegisterMismatchCommon.jl")
+    include("Register/RegisterUtilities.jl-master/RegisterUtilities.jl")
+    include("Register/RFFT.jl-master/RFFT.jl")
+    include("Register/RegisterDeformation.jl-0.4.4/RegisterDeformation.jl")
+    include("Register/QuadDIRECT.jl-master/QuadDIRECT.jl")
+    include("Register/RegisterQD.jl-0.3.1/RegisterQD.jl")
+    include("Register/RegisterMismatch.jl-0.4.0/RegisterMismatch.jl")
 end
 end
