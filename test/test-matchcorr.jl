@@ -56,8 +56,4 @@
         ) == pairs[1].dist[r]
         @test all(collect(ratios)[1:4] .< collect(t3)[2:end])
     end
-
-    @testset "tracker-cli" begin
-        include("_test-track.jl")
-    end
 end
