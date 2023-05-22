@@ -12,7 +12,7 @@ RUN gdalwarp --version
 # RUN tar zxvf julia-1.9.0-linux-x86_64.tar.gz
 # RUN cp -r julia-1.9.0 /opt/
 # RUN ln -s /opt/julia-1.9.0/bin/julia /usr/local/bin/julia
-RUN julia -e 'using Pkg'
+RUN julia -e 'using Pkg; Pkg.versioninfo()'
 
 RUN pip3 install skyfield \ 
         requests
