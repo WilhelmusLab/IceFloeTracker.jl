@@ -24,7 +24,14 @@ expressed in pixels if `normalization=:pixels` and in sum-of-squared-intensity i
 
 One can compute an overall transformation by composing `initial_tfm` with the returned shift `I`.
 """
-function best_shift(fixed, moving, mxshift, thresh; normalization=:intensity, initial_tfm=IdentityTransformation())
+function best_shift(
+    fixed,
+    moving,
+    mxshift,
+    thresh;
+    normalization=:intensity,
+    initial_tfm=IdentityTransformation(),
+)
     moving, fixed = warp_and_intersect(moving, fixed, initial_tfm)
     mms = mismatch(fixed, moving, mxshift; normalization=normalization)
     best_i = indmin_mismatch(mms, thresh)
@@ -49,14 +56,11 @@ The columns of `SD` should correspond to the physical-coordinate displacement
 achieved by shifting by one array element along each axis of the array.
 Specifically, `SD[:,j]` should be the physical displacement of one array voxel along dimension `j`.
 """
-arrayscale(ptfm::AbstractAffineMap, SD::AbstractMatrix) =
-    arrayscale(ptfm, LinearMap(SD))
+arrayscale(ptfm::AbstractAffineMap, SD::AbstractMatrix) = arrayscale(ptfm, LinearMap(SD))
 
-arrayscale(ptfm::AbstractAffineMap, scale::LinearMap) =
-    inv(scale) ∘ ptfm ∘ scale
+arrayscale(ptfm::AbstractAffineMap, scale::LinearMap) = inv(scale) ∘ ptfm ∘ scale
 
 arrayscale(ptfm::AbstractAffineMap, scale::UniformScaling) = ptfm
-
 
 """
     pt = pscale(it, SD)
@@ -66,15 +70,14 @@ See [`arrayscale`](@ref) for more information.
 """
 pscale(t::Translation, SD::AbstractMatrix) = pscale(t, LinearMap(SD))
 pscale(t::Translation, scale::LinearMap) = Translation(scale(t.translation))
-pscale(t::Translation, scale::UniformScaling) = Translation(scale.λ*t.translation)
-
+pscale(t::Translation, scale::UniformScaling) = Translation(scale.λ * t.translation)
 
 #returns new minbounds and maxbounds with range sizes change by fac
 function scalebounds(minb, maxb, fac::Real)
-    orng = maxb.-minb
-    newradius = fac.*orng./2
-    ctrs = minb.+(orng./2)
-    return ctrs.-newradius, ctrs.+newradius
+    orng = maxb .- minb
+    newradius = fac .* orng ./ 2
+    ctrs = minb .+ (orng ./ 2)
+    return ctrs .- newradius, ctrs .+ newradius
 end
 
 """
@@ -90,12 +93,12 @@ along the diagonal and off the diagnonal, respectively.
 e.g. `dmax=0.05` implies that diagonal elements can range from 0.95 to 1.05.
 The space is centered on the identity matrix
 """
-function default_linmap_bounds(img::AbstractArray{T,N}; dmax=0.05, ndmax=0.05) where {T, N}
-    deltas = fill(abs(ndmax), N,N)
-    for i=1:N
-        deltas[i,i] = abs(dmax)
+function default_linmap_bounds(img::AbstractArray{T,N}; dmax=0.05, ndmax=0.05) where {T,N}
+    deltas = fill(abs(ndmax), N, N)
+    for i in 1:N
+        deltas[i, i] = abs(dmax)
     end
-    return Matrix(1.0*I,N,N).-deltas, Matrix(1.0*I,N,N).+deltas
+    return Matrix(1.0 * I, N, N) .- deltas, Matrix(1.0 * I, N, N) .+ deltas
 end
 
 """
@@ -106,10 +109,10 @@ This can be useful for setting the `minwidth` parameter of QuadDIRECT when perfo
 full affine registration. `dmin` and `ndmin` set the tolerances for diagonal and
 off-diagonal elements of the linear transformation matrix, respectively.
 """
-function default_lin_minwidths(img::AbstractArray{T,N}; dmin=1e-5, ndmin=1e-5) where {T, N}
-    mat = fill(abs(ndmin), N,N)
-    for i=1:N
-        mat[i,i] = abs(dmin)
+function default_lin_minwidths(img::AbstractArray{T,N}; dmin=1e-5, ndmin=1e-5) where {T,N}
+    mat = fill(abs(ndmin), N, N)
+    for i in 1:N
+        mat[i, i] = abs(dmin)
     end
     return mat[:]
 end
@@ -123,22 +126,23 @@ of size `Δc` (in pixels) for any index in `ci`.
 function default_minrot(ci::CartesianIndices, SD=I; Δc=0.1)
     L = -Inf
     for x in CornerIterator(ci)
-        x′ = SD*SVector(Tuple(x))  # position of corner point in physical space
+        x′ = SD * SVector(Tuple(x))  # position of corner point in physical space
         L = max(L, norm(x′))
     end
-    S2 = SD'*SD
+    S2 = SD' * SD
     if SD == I
         λ = 1
     else
         F = eigen(S2)
         λ = minimum(F.values)
     end
-    ℓ = sqrt(λ)*Δc
-    return 2*asin(ℓ/(2*L))
+    ℓ = sqrt(λ) * Δc
+    return 2 * asin(ℓ / (2 * L))
 end
 
-default_minwidth_rot(ci::CartesianIndices{2}, SD=I; kwargs...) =
-    [default_minrot(ci, SD; kwargs...)]
+function default_minwidth_rot(ci::CartesianIndices{2}, SD=I; kwargs...)
+    return [default_minrot(ci, SD; kwargs...)]
+end
 function default_minwidth_rot(ci::CartesianIndices{3}, SD=I; kwargs...)
     θ = default_minrot(ci, SD; kwargs...)
     return [θ, θ, θ]
@@ -169,12 +173,12 @@ julia> getSD(myimage)
 ```
 """
 getSD(A::AbstractArray) = getSD(spacedirections(A)) #takes advantage of how spacedirections automatically strips out the time component
-function getSD(sd::NTuple{N,Tuple}) where N
-    SD = zeros(N,N)
+function getSD(sd::NTuple{N,Tuple}) where {N}
+    SD = zeros(N, N)
     denom = oneunit(sd[1][1]) #dividing by a unit should remove unit inconsistancies
-    for i = 1:N
-        for j = 1:N
-            SD[i,j] = sd[i][j]/denom
+    for i in 1:N
+        for j in 1:N
+            SD[i, j] = sd[i][j] / denom
         end
     end
     return SMatrix{N,N}(SD) #returns static matrix for faster type inferrence
@@ -191,13 +195,13 @@ as an option. (Do not smooth `moving`.)
 `T` allows you to specify the output eltype (default `Float32`).
 """
 function qsmooth(::Type{T}, img::AbstractArray{T2,N}) where {T,N,T2}
-    kern1 = centered(T[1/8, 3/4, 1/8])   # quadratic B-spline kernel
-    return imfilter(img, kernelfactors(ntuple(i->kern1, Val(N))))
+    kern1 = centered(T[1 / 8, 3 / 4, 1 / 8])   # quadratic B-spline kernel
+    return imfilter(img, kernelfactors(ntuple(i -> kern1, Val(N))))
 end
 qsmooth(img::AbstractArray) = qsmooth(Float32, img)
 
-function qinterp(::Type{T}, moving) where T
-    widen1(ax) = first(ax)-1:last(ax)+1
+function qinterp(::Type{T}, moving) where {T}
+    widen1(ax) = (first(ax) - 1):(last(ax) + 1)
 
     # This sets up an interpolant object *without* using Interpolations.prefilter
     # Prefiltering is a form of "anti-smoothing," meaning that for quadratic interpolation
@@ -210,9 +214,13 @@ function qinterp(::Type{T}, moving) where T
     nanT = convert(T, NaN)
     mmpad = PaddedView(nanT, of_eltype(T, moving), widen1.(axes(moving)))
     # Create the interpolant, bypassing prefiltering
-    return extrapolate(Interpolations.BSplineInterpolation(T, T.(mmpad), BSpline(Quadratic(Free(OnCell()))), axes(moving)), nanT)
+    return extrapolate(
+        Interpolations.BSplineInterpolation(
+            T, T.(mmpad), BSpline(Quadratic(Free(OnCell()))), axes(moving)
+        ),
+        nanT,
+    )
 end
-
 
 #     θ = Inf
 #     # R = I + [0 -Δθ; Δθ 0] is a rotmtrx for infinitesimal Δθ
@@ -237,11 +245,16 @@ end
 
 #sets splits based on lower and upper bounds
 function _analyze(f, lower, upper; kwargs...)
-    splits = ([[lower[i]; lower[i]+(upper[i]-lower[i])/2; upper[i]] for i=1:length(lower)]...,)
-    QuadDIRECT.analyze(f, splits, lower, upper; kwargs...)
+    splits = (
+        [
+            [lower[i]; lower[i] + (upper[i] - lower[i]) / 2; upper[i]] for
+            i in 1:length(lower)
+        ]...,
+    )
+    return QuadDIRECT.analyze(f, splits, lower, upper; kwargs...)
 end
 
 # abs2 was removed in https://github.com/JuliaGraphics/ColorVectorSpace.jl/pull/131
 # this is the current recommended replacement
 # TODO: follow https://github.com/JuliaGraphics/ColorVectorSpace.jl/issues/157 and adjust for changes
-_abs2(c) = mapreducec(v->float(v)^2, +, float(zero(eltype(c))), c)
+_abs2(c) = mapreducec(v -> float(v)^2, +, float(zero(eltype(c))), c)

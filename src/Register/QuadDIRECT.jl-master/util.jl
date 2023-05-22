@@ -1,7 +1,7 @@
-dummyvalue(::Type{T}) where T<:AbstractFloat = T(NaN)
-dummyvalue(::Type{T}) where T = typemax(T)
+dummyvalue(::Type{T}) where {T<:AbstractFloat} = T(NaN)
+dummyvalue(::Type{T}) where {T} = typemax(T)
 
-isdummy(val::T) where T = isequal(val, dummyvalue(T))
+isdummy(val::T) where {T} = isequal(val, dummyvalue(T))
 
 """
     qnthresh(N)
@@ -9,7 +9,7 @@ isdummy(val::T) where T = isequal(val, dummyvalue(T))
 Return the minimum number of points needed to specify the quasi-Newton quadratic model
 in `N` dimensions.
 """
-qnthresh(N) = ((N+1)*(N+2))÷2
+qnthresh(N) = ((N + 1) * (N + 2)) ÷ 2
 
 """
    xvert, fvert, qcoef = qfit(xm=>fm, x0=>f0, xp=>fp)
@@ -27,12 +27,16 @@ function qfit(xfm, xf0, xfp)
     xm, fm = xfm
     x0, f0 = xf0
     xp, fp = xfp
-    qvalue(x) = cm*(x-x0)*(x-xp) + c0*(x-xm)*(x-xp) + cp*(x-xm)*(x-x0)
-    qcoef = cm+c0+cp
+    function qvalue(x)
+        return cm * (x - x0) * (x - xp) +
+               c0 * (x - xm) * (x - xp) +
+               cp * (x - xm) * (x - x0)
+    end
+    qcoef = cm + c0 + cp
     if fm == f0 == fp
         return x0, f0, zero(qcoef) # when it's flat, use the middle point as the "vertex"
     end
-    xvert = (cm*(x0+xp) + c0*(xm+xp) + cp*(xm+x0))/(2*qcoef)
+    xvert = (cm * (x0 + xp) + c0 * (xm + xp) + cp * (xm + x0)) / (2 * qcoef)
     return xvert, qvalue(xvert), qcoef
 end
 
@@ -41,10 +45,10 @@ end
     x0, f0 = xf0.first, xf0.second
     xp, fp = xfp.first, xfp.second
     @assert(xp > x0 && x0 > xm && isfinite(xm) && isfinite(xp))
-    cm = fm/((xm-x0)*(xm-xp))  # coefficients of Lagrange polynomial
-    c0 = f0/((x0-xm)*(x0-xp))
-    cp = fp/((xp-xm)*(xp-x0))
-    cm, c0, cp
+    cm = fm / ((xm - x0) * (xm - xp))  # coefficients of Lagrange polynomial
+    c0 = f0 / ((x0 - xm) * (x0 - xp))
+    cp = fp / ((xp - xm) * (xp - x0))
+    return cm, c0, cp
 end
 
 """
@@ -62,11 +66,15 @@ function qdelta(box::Box)
     xm, x0, xp = xv[1], xv[2], xv[3]
     fm, f0, fp = fv[1], fv[2], fv[3]
     fbox = box.parent.fvalues[box.parent_cindex]
-    cm, c0, cp = lagrangecoefs(xm=>fm, x0=>f0, xp=>fp)
-    qvalue(x) = cm*(x-x0)*(x-xp) + c0*(x-xm)*(x-xp) + cp*(x-xm)*(x-x0)
+    cm, c0, cp = lagrangecoefs(xm => fm, x0 => f0, xp => fp)
+    function qvalue(x)
+        return cm * (x - x0) * (x - xp) +
+               c0 * (x - xm) * (x - xp) +
+               cp * (x - xm) * (x - x0)
+    end
     bb = boxbounds(box)
-    qcoef = cm+c0+cp
-    xvert = (cm*(x0+xp) + c0*(xm+xp) + cp*(xm+x0))/(2*qcoef)
+    qcoef = cm + c0 + cp
+    xvert = (cm * (x0 + xp) + c0 * (xm + xp) + cp * (xm + x0)) / (2 * qcoef)
     if qcoef > 0 && bb[1] <= xvert <= bb[2]
         # Convex and the vertex is inside the box
         return qvalue(xvert) - fbox
@@ -74,22 +82,22 @@ function qdelta(box::Box)
     # Otherwise, the minimum is achieved at one of the edges
     # This needs careful evaluation in the case of infinite boxes to avoid Inf - Inf == NaN.
     if isinf(bb[1]) || isinf(bb[2])
-        lcoef = -cm*(x0+xp) - c0*(xm+xp) - cp*(xm+x0)
-        ccoef = cm*x0*xp + c0*xm*xp + cp*xm*x0
+        lcoef = -cm * (x0 + xp) - c0 * (xm + xp) - cp * (xm + x0)
+        ccoef = cm * x0 * xp + c0 * xm * xp + cp * xm * x0
         if qcoef == 0  # the function is linear
             let lcoef = lcoef, ccoef = ccoef
-                lvalue(x) = lcoef*x + ccoef
+                lvalue(x) = lcoef * x + ccoef
                 return min(lvalue(bb[1]), lvalue(bb[2])) - fbox
             end
         else
-            qvalue_inf(x) = isinf(x) ? abs(x)*sign(qcoef) : qvalue(x)
+            qvalue_inf(x) = isinf(x) ? abs(x) * sign(qcoef) : qvalue(x)
             return min(qvalue_inf(bb[1]), qvalue_inf(bb[2])) - fbox
         end
     end
     return min(qvalue(bb[1]), qvalue(bb[2])) - fbox
 end
 
-function qdelta(box::Box{T}, splitdim::Integer) where T
+function qdelta(box::Box{T}, splitdim::Integer) where {T}
     p = find_parent_with_splitdim(box, splitdim)
     return p.parent.splitdim == splitdim ? qdelta(p) : zero(T)
 end
@@ -98,13 +106,13 @@ function is_diag_convex(box)
     # Test whether we're likely to be in a convex patch. This only checks the
     # diagonals, because that's quick.
     isdiagconvex = true
-    for i = 1:ndims(box)
+    for i in 1:ndims(box)
         p = find_parent_with_splitdim(box, i)
         if isroot(p)
             isdiagconvex = false
         else
             xs, fs = p.parent.xvalues, p.parent.fvalues
-            xvert, fvert, qcoef = qfit(xs[1]=>fs[1], xs[2]=>fs[2], xs[3]=>fs[3])
+            xvert, fvert, qcoef = qfit(xs[1] => fs[1], xs[2] => fs[2], xs[3] => fs[3])
             isdiagconvex &= qcoef > 0
         end
         isdiagconvex || break
@@ -181,7 +189,7 @@ function popfirst!(mel::MELink)
     return item
 end
 
-Base.length(mel::MELink) = count(x->true, mel)
+Base.length(mel::MELink) = count(x -> true, mel)
 
 function Base.show(io::IO, mel::MELink)
     print(io, "List(")
@@ -191,32 +199,35 @@ function Base.show(io::IO, mel::MELink)
         mel = next
         next = next.next
     end
-    print(io, ')')
+    return print(io, ')')
 end
-
 
 ### Box utilities
 function Base.show(io::IO, box::Box)
     x = fill(NaN, ndims(box))
     position!(x, box)
     val = isroot(box) ? "Root" : value(box)
-    print(io, "Box$val@", x)
+    return print(io, "Box$val@", x)
 end
 
 function value(box::Box)
     isroot(box) && error("root box does not have a unique value")
-    box.parent.fvalues[box.parent_cindex]
+    return box.parent.fvalues[box.parent_cindex]
 end
-value_safe(box::Box{T}) where T = isroot(box) ? typemax(T) : value(box)
+value_safe(box::Box{T}) where {T} = isroot(box) ? typemax(T) : value(box)
 
 Base.isless(box1::Box, box2::Box) = isless(value_safe(box1), value_safe(box2))
 
 function pick_other(xvalues, fvalues, idx)
     j = 1
-    if j == idx j += 1 end
+    if j == idx
+        j += 1
+    end
     xf1 = xvalues[j] => fvalues[j]
     j += 1
-    if j == idx j += 1 end
+    if j == idx
+        j += 1
+    end
     xf2 = xvalues[j] => fvalues[j]
     return xf1, xf2
 end
@@ -235,11 +246,14 @@ function treeprint(io::IO, f::Function, root::Box)
         print(io, ')')
     end
 end
-treeprint(io::IO, root::Box) = treeprint(io, x->nothing, root)
+treeprint(io::IO, root::Box) = treeprint(io, x -> nothing, root)
 
-function add_children!(parent::Box{T}, splitdim, xvalues, fvalues, u::Real, v::Real) where T
+function add_children!(
+    parent::Box{T}, splitdim, xvalues, fvalues, u::Real, v::Real
+) where {T}
     isleaf(parent) || error("cannot add children to non-leaf node")
-    (length(xvalues) == 3 && xvalues[1] < xvalues[2] < xvalues[3]) || throw(ArgumentError("xvalues must be monotonic, got $xvalues"))
+    (length(xvalues) == 3 && xvalues[1] < xvalues[2] < xvalues[3]) ||
+        throw(ArgumentError("xvalues must be monotonic, got $xvalues"))
     parent.splitdim = splitdim
     p = find_parent_with_splitdim(parent, splitdim)
     if isroot(p)
@@ -247,18 +261,18 @@ function add_children!(parent::Box{T}, splitdim, xvalues, fvalues, u::Real, v::R
     else
         parent.minmax = boxbounds(p)
     end
-    for i = 1:3
+    for i in 1:3
         @assert(parent.minmax[1] <= xvalues[i] <= parent.minmax[2])
     end
-    minsep = eps(T)*(xvalues[3]-xvalues[1])
-    @assert(xvalues[2]-xvalues[1] > minsep)
-    @assert(xvalues[3]-xvalues[2] > minsep)
+    minsep = eps(T) * (xvalues[3] - xvalues[1])
+    @assert(xvalues[2] - xvalues[1] > minsep)
+    @assert(xvalues[3] - xvalues[2] > minsep)
     parent.xvalues = xvalues
     parent.fvalues = fvalues
-    for i = 1:3
+    for i in 1:3
         Box(parent, i)  # creates the children of parent
     end
-    parent
+    return parent
 end
 
 function cycle_free(box)
@@ -310,7 +324,7 @@ function greedy_smallest_child_leaf(box::Box)
         idx = argmin(box.fvalues)
         box = box.children[idx]
     end
-    box
+    return box
 end
 
 """
@@ -357,7 +371,7 @@ function find_leaf_at(root::Box, x)
         end
         found || error("$(x[i]) not within $(root.minmax)")
     end
-    root
+    return root
 end
 
 """
@@ -415,11 +429,11 @@ Base.position(box::Box) = position!(fill(NaN, ndims(box)), box)
 function Base.position(box::Box, x0::AbstractVector)
     x = similar(x0)
     flag = falses(length(x0))
-    position!(x, flag, box, x0)
+    return position!(x, flag, box, x0)
 end
 function position!(x, flag, box::Box, x0::AbstractVector)
     copyto!(x, x0)
-    position!(x, flag, box)
+    return position!(x, flag, box)
 end
 function position!(x, box::Box)
     flag = falses(length(x))
@@ -438,16 +452,17 @@ function position!(x, flag, box::Box)
         end
         box = box.parent
     end
-    x
+    return x
 end
 function default_position!(x, flag, xdefault)
-    length(x) == length(flag) == length(xdefault) || throw(DimensionMismatch("all three inputs must have the same length"))
-    for i = 1:length(x)
+    length(x) == length(flag) == length(xdefault) ||
+        throw(DimensionMismatch("all three inputs must have the same length"))
+    for i in 1:length(x)
         if !flag[i]
             x[i] = xdefault[i]
         end
     end
-    x
+    return x
 end
 
 """
@@ -460,13 +475,13 @@ function boxbounds(box::Box)
     isroot(box) && error("cannot compute bounds on root Box")
     p = parent(box)
     if box.parent_cindex == 1
-        return (p.minmax[1], (p.xvalues[1]+p.xvalues[2])/2)
+        return (p.minmax[1], (p.xvalues[1] + p.xvalues[2]) / 2)
     elseif box.parent_cindex == 2
-        return ((p.xvalues[1]+p.xvalues[2])/2, (p.xvalues[2]+p.xvalues[3])/2)
+        return ((p.xvalues[1] + p.xvalues[2]) / 2, (p.xvalues[2] + p.xvalues[3]) / 2)
     elseif box.parent_cindex == 3
-        return ((p.xvalues[2]+p.xvalues[3])/2, p.minmax[2])
+        return ((p.xvalues[2] + p.xvalues[3]) / 2, p.minmax[2])
     end
-    error("invalid parent_cindex $(box.parent_cindex)")
+    return error("invalid parent_cindex $(box.parent_cindex)")
 end
 
 """
@@ -485,10 +500,11 @@ end
 
 Compute the bounds of `box` along all dimensions.
 """
-function boxbounds(box::Box{T}, lower::AbstractVector, upper::AbstractVector) where T
-    length(lower) == length(upper) == ndims(box) || throw(DimensionMismatch("lower and upper must match dimensions of box"))
-    bb = [(T(lower[i]), T(upper[i])) for i = 1:ndims(box)]
-    boxbounds!(bb, box)
+function boxbounds(box::Box{T}, lower::AbstractVector, upper::AbstractVector) where {T}
+    length(lower) == length(upper) == ndims(box) ||
+        throw(DimensionMismatch("lower and upper must match dimensions of box"))
+    bb = [(T(lower[i]), T(upper[i])) for i in 1:ndims(box)]
+    return boxbounds!(bb, box)
 end
 
 """
@@ -496,9 +512,11 @@ end
 
 Compute the bounds of `box` along dimension `splitdim`.
 """
-function boxbounds(box::Box{T}, splitdim::Integer, lower::AbstractVector, upper::AbstractVector) where T
+function boxbounds(
+    box::Box{T}, splitdim::Integer, lower::AbstractVector, upper::AbstractVector
+) where {T}
     p = find_parent_with_splitdim(box, splitdim)
-    boxbounds(p, lower[splitdim], upper[splitdim])
+    return boxbounds(p, lower[splitdim], upper[splitdim])
 end
 
 function boxbounds!(bb, box::Box)
@@ -525,13 +543,13 @@ function boxbounds!(bb, flag, box::Box)
         end
         box = box.parent
     end
-    bb
+    return bb
 end
 function boxbounds!(bb, flag, box::Box, lower, upper)
-    for i = 1:ndims(box)
+    for i in 1:ndims(box)
         bb[i] = (lower[i], upper[i])
     end
-    boxbounds!(bb, flag, box)
+    return boxbounds!(bb, flag, box)
 end
 
 """
@@ -546,12 +564,17 @@ Note that a box that extends to infinity still has a finite `scale`. Moreover, a
 where one evaluation point is at the edge has a scale bigger than zero.
 """
 function boxscale(box::Box{T,N}, splits) where {T,N}
-    bxscale(s1, s2, s3) = s1 == s2 ? s3 - s2 :
-                          s2 == s3 ? s2 - s1 :
-                          min(s2-s1, s3-s2)
+    bxscale(s1, s2, s3) =
+        if s1 == s2
+            s3 - s2
+        elseif s2 == s3
+            s2 - s1
+        else
+            min(s2 - s1, s3 - s2)
+        end
     bxscale(s) = bxscale(s[1], s[2], s[3])
     scale = Vector{T}(undef, N)
-    for i = 1:N
+    for i in 1:N
         p = find_parent_with_splitdim(box, i)
         splitsi = splits[i]
         if isroot(p)
@@ -567,25 +590,26 @@ function width(box::Box, splitdim::Integer, xdefault::Real, lower::Real, upper::
     p = find_parent_with_splitdim(box, splitdim)
     bb = boxbounds(p, lower, upper)
     x = isroot(p) ? xdefault : p.parent.xvalues[p.parent_cindex]
-    max(x-bb[1], bb[2]-x)
+    return max(x - bb[1], bb[2] - x)
 end
-width(box::Box, splitdim::Integer, xdefault, lower, upper) =
-    width(box, splitdim, xdefault[splitdim], lower[splitdim], upper[splitdim])
+function width(box::Box, splitdim::Integer, xdefault, lower, upper)
+    return width(box, splitdim, xdefault[splitdim], lower[splitdim], upper[splitdim])
+end
 
 function isinside(x, lower, upper)
     ret = true
-    for i = 1:length(x)
+    for i in 1:length(x)
         ret &= lower[i] <= x[i] <= upper[i]
     end
-    ret
+    return ret
 end
-function isinside(x, bb::Vector{Tuple{T,T}}) where T
+function isinside(x, bb::Vector{Tuple{T,T}}) where {T}
     ret = true
-    for i = 1:length(x)
+    for i in 1:length(x)
         bbi = bb[i]
         ret &= bbi[1] <= x[i] <= bbi[2]
     end
-    ret
+    return ret
 end
 
 """
@@ -603,15 +627,15 @@ function within(x::Real, bb::Tuple{Real,Real}, dir)
     return true
 end
 
-function epswidth(bb::Tuple{T,T}) where T<:Real
+function epswidth(bb::Tuple{T,T}) where {T<:Real}
     w1 = isfinite(bb[1]) ? eps(bb[1]) : T(0)
     w2 = isfinite(bb[2]) ? eps(bb[2]) : T(0)
-    return 10*min(w1, w2)
+    return 10 * min(w1, w2)
 end
 
 function count_splits(box::Box)
     nsplits = Vector{Int}(undef, ndims(box))
-    count_splits!(nsplits, box)
+    return count_splits!(nsplits, box)
 end
 
 function count_splits!(nsplits, box::Box)
@@ -637,7 +661,7 @@ function Base.extrema(root::Box)
         minv = min(minv, mn)
         maxv = max(maxv, mx)
     end
-    minv, maxv
+    return minv, maxv
 end
 
 ## Utilities for experimenting with topology of the tree
@@ -670,14 +694,16 @@ splitprint(box::Box) = splitprint(stdout, box)
 Like [`splitprint`](@ref), except that `innerbox` is highlighted in red, and the chain
 of parents of `innerbox` are highlighted in cyan.
 """
-function splitprint_colored(io::IO, box::Box, thisbox::Box, allparents=get_allparents(thisbox))
+function splitprint_colored(
+    io::IO, box::Box, thisbox::Box, allparents=get_allparents(thisbox)
+)
     if isleaf(box)
-        box == thisbox ? printstyled(io, 'l', color=:light_red) : print(io, 'l')
+        box == thisbox ? printstyled(io, 'l'; color=:light_red) : print(io, 'l')
     else
         if box == thisbox
-            printstyled(io, box.splitdim, color=:light_red)
+            printstyled(io, box.splitdim; color=:light_red)
         elseif box ∈ allparents
-            printstyled(io, box.splitdim, color=:cyan)
+            printstyled(io, box.splitdim; color=:cyan)
         else
             print(io, box.splitdim)
         end
@@ -699,7 +725,7 @@ function get_allparents(box)
         p = parent(p)
         push!(allparents, p)
     end
-    allparents
+    return allparents
 end
 
 """
@@ -708,26 +734,26 @@ end
 Parse a `string`, in the output format of [`splitprint`](@ref), and generate
 a tree of boxes with that structure.
 """
-function Base.parse(::Type{B}, str::AbstractString) where B<:Box
+function Base.parse(::Type{B}, str::AbstractString) where {B<:Box}
     b = B()
-    splitbox!(b, str)
+    return splitbox!(b, str)
 end
 
 # splitbox! uses integer-valued positions and sets all function values to 0
 function splitbox!(box::Box{T,N}, dim) where {T,N}
     x = position(box, zeros(N))
     xd = x[dim]
-    add_children!(box, dim, [xd,xd+1,xd+2], zeros(3), -Inf, Inf)
-    box
+    add_children!(box, dim, [xd, xd + 1, xd + 2], zeros(3), -Inf, Inf)
+    return box
 end
 
 function splitbox!(box::Box, str::AbstractString)
-    str == "l" && return
+    str == "l" && return nothing
     m = match(r"([0-9]*)\((.*)\)", str)
     dim = parse(Int, m.captures[1])
     dimstr = m.captures[2]
     splitbox!(box, dim)
-    commapos = [0,0]
+    commapos = [0, 0]
     commaidx = 0
     open = 0
     i = firstindex(dimstr)
@@ -738,11 +764,14 @@ function splitbox!(box::Box, str::AbstractString)
         elseif c == ')'
             open -= 1
         elseif c == ',' && open == 0
-            commapos[commaidx+=1] = prevind(dimstr, i)
+            commapos[commaidx += 1] = prevind(dimstr, i)
         end
     end
     splitbox!(box.children[1], strip(dimstr[1:prevind(dimstr, commapos[1])]))
-    splitbox!(box.children[2], strip(dimstr[nextind(dimstr, commapos[1]):prevind(dimstr, commapos[2])]))
+    splitbox!(
+        box.children[2],
+        strip(dimstr[nextind(dimstr, commapos[1]):prevind(dimstr, commapos[2])]),
+    )
     splitbox!(box.children[3], strip(dimstr[nextind(dimstr, commapos[2]):end]))
     return box
 end
@@ -758,7 +787,7 @@ function get_root(box::Box)
     while !isroot(box)
         box = parent(box)
     end
-    box
+    return box
 end
 
 abstract type DepthFirstIterator end
@@ -769,7 +798,7 @@ struct DepthFirstLeafIterator{B<:Box} <: DepthFirstIterator
 end
 
 function leaves(root::Box)
-    DepthFirstLeafIterator(root)
+    return DepthFirstLeafIterator(root)
 end
 
 function Base.iterate(iter::DepthFirstLeafIterator)
@@ -812,9 +841,9 @@ end
 
 function up(box, root)
     local i
-    box == root && return (box, length(box.children)+1)
+    box == root && return (box, length(box.children) + 1)
     while true
-        box, i = box.parent, box.parent_cindex+1
+        box, i = box.parent, box.parent_cindex + 1
         box == root && return (box, i)
         i <= length(box.children) && break
     end
@@ -835,9 +864,10 @@ end
 ## Utilities for working with both mutable and immutable vectors
 replacecoordinate!(x, i::Integer, val) = (x[i] = val; x)
 
-replacecoordinate!(x::SVector{N,T}, i::Integer, val) where {N,T} =
-    SVector{N,T}(_rpc(Tuple(x), i-1, T(val)))
-@inline _rpc(t, i, val) = (ifelse(i == 0, val, t[1]), _rpc(Base.tail(t), i-1, val)...)
+function replacecoordinate!(x::SVector{N,T}, i::Integer, val) where {N,T}
+    return SVector{N,T}(_rpc(Tuple(x), i - 1, T(val)))
+end
+@inline _rpc(t, i, val) = (ifelse(i == 0, val, t[1]), _rpc(Base.tail(t), i - 1, val)...)
 _rps(::Tuple{}, i, val) = ()
 
 ipcopy!(dest, src) = copyto!(dest, src)
@@ -866,7 +896,7 @@ function order_pairs(xf1, xf2, xf3)
 end
 
 function biggest_interval(a, b, c, d)
-    ab, bc, cd = b-a, c-b, d-c
+    ab, bc, cd = b - a, c - b, d - c
     if ab <= bc && ab <= cd
         return (a, b)
     elseif bc <= ab && bc <= cd
@@ -875,30 +905,32 @@ function biggest_interval(a, b, c, d)
     return (c, d)
 end
 
-function ensure_distinct(x::T, xref, bb::Tuple{Real,Real}; minfrac = 0.1) where T
+function ensure_distinct(x::T, xref, bb::Tuple{Real,Real}; minfrac=0.1) where {T}
     Δx = min(xref - bb[1], bb[2] - xref)
     if !isfinite(Δx)
         x != xref && return x
         return xref + 1
     end
-    Δxmin = T(minfrac*Δx)
+    Δxmin = T(minfrac * Δx)
     if abs(x - xref) < Δxmin
-        s = x == xref ? (bb[2] - xref > xref - bb[1] ? 1 : -1) : sign(x-xref)
-        x = T(xref + Δxmin*s)
+        s = x == xref ? (bb[2] - xref > xref - bb[1] ? 1 : -1) : sign(x - xref)
+        x = T(xref + Δxmin * s)
     end
     return x
 end
 
-function ensure_distinct(x::T, x1, x2, bb::Tuple{Real,Real}; minfrac = 0.1) where T
+function ensure_distinct(x::T, x1, x2, bb::Tuple{Real,Real}; minfrac=0.1) where {T}
     x1, x2 = lohi(x1, x2)
-    Δxmin = minfrac*min(x2-x1, bb[2] == x2 ? T(Inf) : bb[2]-x2, bb[1] == x1 ? T(Inf) : x1-bb[1])
+    Δxmin =
+        minfrac *
+        min(x2 - x1, bb[2] == x2 ? T(Inf) : bb[2] - x2, bb[1] == x1 ? T(Inf) : x1 - bb[1])
     @assert(Δxmin > 0)
     if abs(x - x1) < Δxmin
-        s = x == x1 ? 1 : sign(x-x1)
-        x = T(max(bb[1], x1 + Δxmin*s))
+        s = x == x1 ? 1 : sign(x - x1)
+        x = T(max(bb[1], x1 + Δxmin * s))
     elseif abs(x - x2) < Δxmin
-        s = x == x2 ? -1 : sign(x-x2)
-        x = T(min(bb[2], x2 + Δxmin*s))
+        s = x == x2 ? -1 : sign(x - x2)
+        x = T(min(bb[2], x2 + Δxmin * s))
     end
     return x
 end
@@ -911,17 +943,17 @@ delimited by `bb` (a vector of `(lo, hi)` tuples). Also return the coordinate di
 along which the exit occurs.
 """
 function pathlength_box_exit(x0, dx, bb)
-    t = oftype((bb[1][1] - x0[1])/dx[1], Inf)
+    t = oftype((bb[1][1] - x0[1]) / dx[1], Inf)
     exitdim = 0
-    for i = 1:length(x0)
+    for i in 1:length(x0)
         xi, dxi, bbi = x0[i], dx[i], bb[i]
-        ti = (ifelse(dxi >= 0, bbi[2], bbi[1]) - xi)/dxi
+        ti = (ifelse(dxi >= 0, bbi[2], bbi[1]) - xi) / dxi
         if ti < t
             t = ti
             exitdim = i
         end
     end
-    t, exitdim
+    return t, exitdim
 end
 
 """
@@ -931,17 +963,17 @@ Compute the maximum pathlength `t` (up to a value of `tmax`) at which the ray `x
 intersects one of the hyperplanes specified by `x[i] = xtarget[i]` for any dimension `i`.
 """
 function pathlength_hyperplane_intersect(x0, dx, xtarget, tmax)
-    t = zero(typeof((xtarget[1] - x0[1])/dx[1]))
+    t = zero(typeof((xtarget[1] - x0[1]) / dx[1]))
     intersectdim = 0
-    for i = 1:length(x0)
+    for i in 1:length(x0)
         xi, dxi, xti = x0[i], dx[i], xtarget[i]
-        ti = (xti - xi)/dxi
+        ti = (xti - xi) / dxi
         if ti <= tmax && ti > t
             t = ti
             intersectdim = i
         end
     end
-    t, intersectdim
+    return t, intersectdim
 end
 
 # function different_basins(boxes::AbstractVector{B}, x0, lower, upper) where B<:Box
@@ -1026,17 +1058,17 @@ function pick3(a, b, bb)
     a, b = lohi(a, b)
     imin, imax = biggest_interval(bb[1], a, b, bb[2])
     if isinf(imin)
-        return a-2*(b-a), a, b
+        return a - 2 * (b - a), a, b
     elseif isinf(imax)
-        return a, b, b+2*(b-a)
+        return a, b, b + 2 * (b - a)
     end
-    return a, b, c = lohi(a, b, (imin+imax)/2)
+    return a, b, c = lohi(a, b, (imin + imax) / 2)
 end
 
 function issame(x1, x2, scale, rtol=sqrt(eps(eltype(x1))))
     same = true
-    for i = 1:length(x1)
-        same &= abs(x1[i] - x2[i]) < rtol*scale[i]
+    for i in 1:length(x1)
+        same &= abs(x1[i] - x2[i]) < rtol * scale[i]
     end
     return same
 end

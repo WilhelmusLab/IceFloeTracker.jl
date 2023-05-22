@@ -6,7 +6,7 @@ end
 
 function SymRange(r::AbstractUnitRange)
     first(r) == -last(r) || error("cannot convert $r to a SymRange")
-    SymRange(last(r))
+    return SymRange(last(r))
 end
 
 Base.first(r::SymRange) = -r.n
@@ -17,12 +17,12 @@ Base.axes(r::SymRange) = (r,)
 
 function iterate(r::SymRange)
     r.n == 0 && return nothing
-    first(r), first(r)
+    return first(r), first(r)
 end
 
 function iterate(r::SymRange, s)
     s == last(r) && return nothing
-    copy(s+1), s+1
+    return copy(s + 1), s + 1
 end
 
 @inline function Base.getindex(v::SymRange, i::Int)
@@ -34,7 +34,7 @@ Base.intersect(r::SymRange, s::SymRange) = SymRange(min(last(r), last(s)))
 
 @inline function Base.getindex(r::SymRange, s::SymRange)
     @boundscheck checkbounds(r, s)
-    s
+    return s
 end
 
 @inline function Base.getindex(r::SymRange, s::AbstractUnitRange{<:Integer})
@@ -44,10 +44,10 @@ end
 
 # TODO: should we be worried about the mismatch in axes?
 # And should `convert(SymRange, r)` fail if axes(r) isn't the same as the result?
-Base.promote_rule(::Type{SymRange}, ::Type{UR}) where {UR<:AbstractUnitRange} =
-    UR
-Base.promote_rule(::Type{UnitRange{T2}}, ::Type{SymRange}) where {T2} =
-    UnitRange{promote_type(T2, Int)}
+Base.promote_rule(::Type{SymRange}, ::Type{UR}) where {UR<:AbstractUnitRange} = UR
+function Base.promote_rule(::Type{UnitRange{T2}}, ::Type{SymRange}) where {T2}
+    return UnitRange{promote_type(T2, Int)}
+end
 
 Base.show(io::IO, r::SymRange) = print(io, "SymRange(", repr(last(r)), ')')
 

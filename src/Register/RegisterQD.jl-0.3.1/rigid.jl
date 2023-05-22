@@ -24,21 +24,29 @@ function rot(qx::Number, qy::Number, qz::Number)
     r2 = qx^2 + qy^2 + qz^2
     r2 > 1 && return nothing
     qr = sqrt(1 - r2)
-    R = @SMatrix([1 - 2*(qy^2 + qz^2)  2*(qx*qy - qz*qr)    2*(qx*qz + qy*qr);
-                  2*(qx*qy + qz*qr)    1 - 2*(qx^2 + qz^2)  2*(qy*qz - qx*qr);
-                  2*(qx*qz - qy*qr)    2*(qy*qz + qx*qr)    1 - 2*(qx^2 + qy^2)])
+    R = @SMatrix(
+        [
+            1-2 * (qy^2 + qz^2) 2*(qx * qy - qz * qr) 2*(qx * qz + qy * qr)
+            2*(qx * qy + qz * qr) 1-2 * (qx^2 + qz^2) 2*(qy * qz - qx * qr)
+            2*(qx * qz - qy * qr) 2*(qy * qz + qx * qr) 1-2 * (qx^2 + qy^2)
+        ]
+    )
     return LinearMap(RotMatrix(R))
 end
 
 #rotation + translation
 tfmrigid(dx::Number, dy::Number, θ::Number) = Translation(dx, dy) ∘ rot(θ)
 
-tfmrigid(dx::Number, dy::Number, dz::Number, qx::Number, qy::Number, qz::Number) =
-    Translation(dx, dy, dz) ∘ rot(qx, qy, qz)
+function tfmrigid(dx::Number, dy::Number, dz::Number, qx::Number, qy::Number, qz::Number)
+    return Translation(dx, dy, dz) ∘ rot(qx, qy, qz)
+end
 
 ## Transformations supplied as vectors, for which we pass the array so we can infer the dimensionality
 
-@noinline dimcheck(v, lv) = length(v) == lv || throw(DimensionMismatch("expected $lv parameters, got $(length(v))"))
+@noinline function dimcheck(v, lv)
+    return length(v) == lv ||
+           throw(DimensionMismatch("expected $lv parameters, got $(length(v))"))
+end
 
 function rot(theta, img::AbstractArray{T,2}) where {T}
     dimcheck(theta, 1)
@@ -66,7 +74,9 @@ end
 ## Computing mismatch
 
 #rotation + shift, fast because it uses fourier method for shift
-function rigid_mm_fast(theta, mxshift, fixed, moving, thresh, SD; initial_tfm=IdentityTransformation())
+function rigid_mm_fast(
+    theta, mxshift, fixed, moving, thresh, SD; initial_tfm=IdentityTransformation()
+)
     # The reason this is `initial_tfm ∘ rot` rather than `rot ∘ initial_tfm`
     # is explained in `linmap`
     tfm = arrayscale(initial_tfm ∘ rot(theta, moving), SD)
@@ -76,36 +86,65 @@ function rigid_mm_fast(theta, mxshift, fixed, moving, thresh, SD; initial_tfm=Id
 end
 
 #rotation + shift, slow because it warps for every rotation and shift
-function rigid_mm_slow(params, fixed, moving, thresh, SD; initial_tfm=IdentityTransformation())
+function rigid_mm_slow(
+    params, fixed, moving, thresh, SD; initial_tfm=IdentityTransformation()
+)
     tfm = arrayscale(initial_tfm ∘ tfmrigid(params, moving), SD)
     moving, fixed = warp_and_intersect(moving, fixed, tfm)
     mm = mismatch0(fixed, moving; normalization=:intensity)
     return ratio(mm, thresh, Inf)
 end
 
-function qd_rigid_coarse(fixed, moving, mxshift, mxrot, minwidth_rot;
-                         SD=I,
-                         initial_tfm=IdentityTransformation(),
-                         thresh=0.1*sum(_abs2.(fixed[.!(isnan.(fixed))])),
-                         kwargs...)
+function qd_rigid_coarse(
+    fixed,
+    moving,
+    mxshift,
+    mxrot,
+    minwidth_rot;
+    SD=I,
+    initial_tfm=IdentityTransformation(),
+    thresh=0.1 * sum(_abs2.(fixed[.!(isnan.(fixed))])),
+    kwargs...,
+)
     #note: if a trial rotation results in image overlap < thresh for all possible shifts then QuadDIRECT throws an error
     f(x) = rigid_mm_fast(x, mxshift, fixed, moving, thresh, SD; initial_tfm=initial_tfm)
     upper = [mxrot...]
     lower = -upper
-    root_coarse, x0coarse = _analyze(f, lower, upper;
-                                     minwidth=minwidth_rot, print_interval=100, maxevals=5e4, kwargs..., atol=0, rtol=1e-3)
+    root_coarse, x0coarse = _analyze(
+        f,
+        lower,
+        upper;
+        minwidth=minwidth_rot,
+        print_interval=100,
+        maxevals=5e4,
+        kwargs...,
+        atol=0,
+        rtol=1e-3,
+    )
     box_coarse = minimum(root_coarse)
     tfmcoarse0 = initial_tfm ∘ rot(position(box_coarse, x0coarse), moving)
-    best_shft, mm = best_shift(fixed, moving, mxshift, thresh; normalization=:intensity, initial_tfm=arrayscale(tfmcoarse0, SD))
+    best_shft, mm = best_shift(
+        fixed,
+        moving,
+        mxshift,
+        thresh;
+        normalization=:intensity,
+        initial_tfm=arrayscale(tfmcoarse0, SD),
+    )
     tfmcoarse = tfmcoarse0 ∘ pscale(Translation(best_shft), SD)
     return tfmcoarse, mm
 end
 
-function qd_rigid_fine(fixed, moving, mxrot, minwidth_rot;
-                       SD=I,
-                       initial_tfm=IdentityTransformation(),
-                       thresh=0.1*sum(_abs2.(fixed[.!(isnan.(fixed))])),
-                       kwargs...)
+function qd_rigid_fine(
+    fixed,
+    moving,
+    mxrot,
+    minwidth_rot;
+    SD=I,
+    initial_tfm=IdentityTransformation(),
+    thresh=0.1 * sum(_abs2.(fixed[.!(isnan.(fixed))])),
+    kwargs...,
+)
     f(x) = rigid_mm_slow(x, fixed, moving, thresh, SD; initial_tfm=initial_tfm)
     upper_shft = fill(2.0, ndims(fixed))
     upper_rot = mxrot
@@ -113,7 +152,9 @@ function qd_rigid_fine(fixed, moving, mxrot, minwidth_rot;
     lower = -upper
     minwidth_shfts = fill(0.005, ndims(fixed))
     minwidth = vcat(minwidth_shfts, minwidth_rot)
-    root, x0 = _analyze(f, lower, upper; minwidth=minwidth, print_interval=100, maxevals=5e4, kwargs...)
+    root, x0 = _analyze(
+        f, lower, upper; minwidth=minwidth, print_interval=100, maxevals=5e4, kwargs...
+    )
     box = minimum(root)
     tfmfine = initial_tfm ∘ tfmrigid(position(box, x0), moving)
     return tfmfine, value(box)
@@ -175,14 +216,19 @@ Both the output `tfm` and any `initial_tfm` are represented in *physical* coordi
 as long as `initial_tfm` is a rigid transformation, `tfm` will be a pure rotation+translation.
 If `SD` is not the identity, use `arrayscale` before applying the result to `moving`.
 """
-function qd_rigid(fixed, moving, mxshift::VecLike, mxrot::Union{Number,VecLike};
-                  presmoothed=false,
-                  SD=I,
-                  minwidth_rot=default_minwidth_rot(CartesianIndices(fixed), SD),
-                  thresh=0.1*sum(_abs2.(fixed[.!(isnan.(fixed))])),
-                  initial_tfm=IdentityTransformation(),
-                  print_interval=100,
-                  kwargs...)
+function qd_rigid(
+    fixed,
+    moving,
+    mxshift::VecLike,
+    mxrot::Union{Number,VecLike};
+    presmoothed=false,
+    SD=I,
+    minwidth_rot=default_minwidth_rot(CartesianIndices(fixed), SD),
+    thresh=0.1 * sum(_abs2.(fixed[.!(isnan.(fixed))])),
+    initial_tfm=IdentityTransformation(),
+    print_interval=100,
+    kwargs...,
+)
     #TODO make sure isrotation(initial_tfm.linear) returns true, else throw a warning and an option to terminate? do I still allow the main block to run?
     if initial_tfm == IdentityTransformation() || isrotation(initial_tfm.linear)
     else
@@ -195,8 +241,30 @@ function qd_rigid(fixed, moving, mxshift::VecLike, mxrot::Union{Number,VecLike};
     end
     mxrot = [mxrot...]
     print_interval < typemax(Int) && print("Running coarse step\n")
-    tfm_coarse, mm_coarse = qd_rigid_coarse(fixed, moving, mxshift, mxrot, minwidth_rot; SD=SD, initial_tfm=initial_tfm, thresh=thresh, print_interval=print_interval, kwargs...)
-    print_interval < typemax(Int) && print("Obtained mismatch $mm_coarse from coarse step, running fine step\n")
-    final_tfm, mm_fine = qd_rigid_fine(fixed, moving, mxrot./2, minwidth_rot; SD=SD, initial_tfm=tfm_coarse, thresh=thresh, print_interval=print_interval, kwargs...)
+    tfm_coarse, mm_coarse = qd_rigid_coarse(
+        fixed,
+        moving,
+        mxshift,
+        mxrot,
+        minwidth_rot;
+        SD=SD,
+        initial_tfm=initial_tfm,
+        thresh=thresh,
+        print_interval=print_interval,
+        kwargs...,
+    )
+    print_interval < typemax(Int) &&
+        print("Obtained mismatch $mm_coarse from coarse step, running fine step\n")
+    final_tfm, mm_fine = qd_rigid_fine(
+        fixed,
+        moving,
+        mxrot ./ 2,
+        minwidth_rot;
+        SD=SD,
+        initial_tfm=tfm_coarse,
+        thresh=thresh,
+        print_interval=print_interval,
+        kwargs...,
+    )
     return final_tfm, mm_fine
 end

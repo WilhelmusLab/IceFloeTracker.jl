@@ -228,14 +228,11 @@ function aperture_grid(ssize::Dims{N}, gridsize) where {N}
         error("ssize and gridsize must have the same length, got $ssize and $gridsize")
     end
     grid = Array{NTuple{N,Float64},N}(undef, (gridsize...,))
-    centers = map(
-        i -> if gridsize[i] > 1
-            collect(range(1; stop=ssize[i], length=gridsize[i]))
-        else
-            [(ssize[i] + 1) / 2]
-        end,
-        1:N,
-    )
+    centers = map(i -> if gridsize[i] > 1
+        collect(range(1; stop=ssize[i], length=gridsize[i]))
+    else
+        [(ssize[i] + 1) / 2]
+    end, 1:N)
     for I in CartesianIndices(size(grid))
         grid[I] = ntuple(i -> centers[i][I[i]], N)
     end
@@ -515,7 +512,7 @@ end
 function unsafe_reindex(
     V, idxs::Tuple{UnitRange,Vararg{Any}}, subidxs::Tuple{UnitRange,Vararg{Any}}
 )
-    (Base.@_propagate_inbounds_meta;
+    return (Base.@_propagate_inbounds_meta;
     @inbounds new1 = get_index_wo_boundcheck(idxs[1], subidxs[1]);
     (new1, unsafe_reindex(V, tail(idxs), tail(subidxs))...))
 end

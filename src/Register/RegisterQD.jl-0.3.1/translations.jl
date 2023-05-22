@@ -1,23 +1,29 @@
 ####################  Translation Search ##########################
 
 function tfmshift(params, img::AbstractArray{T,N}) where {T,N}
-    length(params) == N || throw(DimensionMismatch("expected $N parameters, got $(length(params))"))
+    length(params) == N ||
+        throw(DimensionMismatch("expected $N parameters, got $(length(params))"))
     return Translation(params...)
 end
 
 #slow because it warps for every shift instead of using fourier method
-function translate_mm_slow(params, fixed, moving, thresh; initial_tfm=IdentityTransformation())
+function translate_mm_slow(
+    params, fixed, moving, thresh; initial_tfm=IdentityTransformation()
+)
     tfm = initial_tfm ∘ tfmshift(params, moving)
     moving, fixed = warp_and_intersect(moving, fixed, tfm)
     mm = mismatch0(fixed, moving; normalization=:intensity)
     return ratio(mm, thresh, Inf)
 end
 
-function qd_translate_fine(fixed, moving;
-                           initial_tfm=IdentityTransformation(),
-                           minwidth=fill(0.01, ndims(fixed)),
-                           thresh=0.1*sum(_abs2.(fixed[.!(isnan.(fixed))])),
-                           kwargs...)
+function qd_translate_fine(
+    fixed,
+    moving;
+    initial_tfm=IdentityTransformation(),
+    minwidth=fill(0.01, ndims(fixed)),
+    thresh=0.1 * sum(_abs2.(fixed[.!(isnan.(fixed))])),
+    kwargs...,
+)
     f(x) = translate_mm_slow(x, fixed, moving, thresh; initial_tfm=initial_tfm)
     upper = fill(1.0, ndims(fixed))
     lower = -upper
@@ -54,11 +60,18 @@ If the `crop` keyword arg is `true` then `fixed` is cropped by `mxshift` (after 
 so that there will be complete overlap between `fixed` and `moving` for any evaluated shift. This avoids edge effects
 that can occur due to normalization when the transformed `moving` doesn't fully overlap with `fixed`.
 """
-function qd_translate(fixed, moving, mxshift;
-                      presmoothed=false,
-                      thresh=0.1*sum(_abs2.(fixed[.!(isnan.(fixed))])),
-                      initial_tfm=IdentityTransformation(),
-                      minwidth=fill(0.01, ndims(fixed)), print_interval=100, crop=false, kwargs...)
+function qd_translate(
+    fixed,
+    moving,
+    mxshift;
+    presmoothed=false,
+    thresh=0.1 * sum(_abs2.(fixed[.!(isnan.(fixed))])),
+    initial_tfm=IdentityTransformation(),
+    minwidth=fill(0.01, ndims(fixed)),
+    print_interval=100,
+    crop=false,
+    kwargs...,
+)
     fixed, moving = float(fixed), float(moving)
     if presmoothed
         moving = qinterp(eltype(fixed), moving)
@@ -67,8 +80,10 @@ function qd_translate(fixed, moving, mxshift;
     if crop
         #we enforce that moving is always bigger than fixed by amount 2*(maxshift+1) (the +1 is for the fine step)
         sz = size(fixed) .- (2 .* mxshift)
-        if any(size(moving) .< (2 .* (mxshift.+1)))
-            error("Moving image size must be at least 2 * (mxshift+1) when crop_edges is set to true")
+        if any(size(moving) .< (2 .* (mxshift .+ 1)))
+            error(
+                "Moving image size must be at least 2 * (mxshift+1) when crop_edges is set to true",
+            )
         end
         cropped_inds_f = crop_rng.(axes(fixed), mxshift)
         cropped_inds_m = crop_rng.(axes(moving), mxshift)
@@ -79,10 +94,25 @@ function qd_translate(fixed, moving, mxshift;
         fixed_inner = fixed
         moving_inner = moving_fine = moving
     end
-    best_shft, mm = best_shift(fixed_inner, moving_inner, mxshift, thresh; normalization=:intensity, initial_tfm=initial_tfm)
+    best_shft, mm = best_shift(
+        fixed_inner,
+        moving_inner,
+        mxshift,
+        thresh;
+        normalization=:intensity,
+        initial_tfm=initial_tfm,
+    )
     tfm_coarse = initial_tfm ∘ Translation(best_shft)
     print_interval < typemax(Int) && print("Running fine step\n")
-    return qd_translate_fine(fixed_inner, moving_fine; initial_tfm=tfm_coarse, thresh=thresh, minwidth=minwidth, print_interval=print_interval, kwargs...)
+    return qd_translate_fine(
+        fixed_inner,
+        moving_fine;
+        initial_tfm=tfm_coarse,
+        thresh=thresh,
+        minwidth=minwidth,
+        print_interval=print_interval,
+        kwargs...,
+    )
 end
 
-crop_rng(rng::AbstractUnitRange{Int}, amt::Int) = (first(rng)+amt):(last(rng)-amt)
+crop_rng(rng::AbstractUnitRange{Int}, amt::Int) = (first(rng) + amt):(last(rng) - amt)

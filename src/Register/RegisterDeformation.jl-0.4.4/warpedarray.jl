@@ -22,20 +22,20 @@ struct WarpedArray{T,N,A<:Extrapolatable,D<:AbstractDeformation} <: AbstractArra
 end
 
 # User already supplied an interpolatable ϕ
-function WarpedArray(data::Extrapolatable{T,N},
-                     ϕ::GridDeformation{S,N,A}) where {T,N,S,A<:AbstractInterpolation}
-    WarpedArray{T,N,typeof(data),typeof(ϕ)}(data, ϕ)
+function WarpedArray(
+    data::Extrapolatable{T,N}, ϕ::GridDeformation{S,N,A}
+) where {T,N,S,A<:AbstractInterpolation}
+    return WarpedArray{T,N,typeof(data),typeof(ϕ)}(data, ϕ)
 end
 
 # Create an interpolatable ϕ
 function WarpedArray(data::Extrapolatable{T,N}, ϕ::GridDeformation) where {T,N}
     itp = scale(interpolate(ϕ.u, BSpline(Quadratic(Flat(OnCell())))), ϕ.nodes...)
     ϕ′ = GridDeformation(itp, ϕ.nodes)
-    WarpedArray{T,N,typeof(data),typeof(ϕ′)}(data, ϕ′)
+    return WarpedArray{T,N,typeof(data),typeof(ϕ′)}(data, ϕ′)
 end
 
 WarpedArray(data, ϕ::GridDeformation) = WarpedArray(to_etp(data), ϕ)
-
 
 Base.size(A::WarpedArray) = size(A.data)
 Base.size(A::WarpedArray, i::Integer) = size(A.data, i)
@@ -47,5 +47,6 @@ Base.axes(A::WarpedArray, i::Integer) = axes(A.data, i)
     return W.data(ϕx...)
 end
 
-ImageAxes.getindex!(dest, W::WarpedArray{T,N}, coords::Vararg{Any,N}) where {T,N} =
-    Base._unsafe_getindex!(dest, W, coords...)
+function ImageAxes.getindex!(dest, W::WarpedArray{T,N}, coords::Vararg{Any,N}) where {T,N}
+    return Base._unsafe_getindex!(dest, W, coords...)
+end
