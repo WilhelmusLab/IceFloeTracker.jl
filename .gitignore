@@ -9,6 +9,7 @@
 .snakemake
 *.snakemake_timestamp
 *.simg
+*.tar
 
 input/
 explorations/
