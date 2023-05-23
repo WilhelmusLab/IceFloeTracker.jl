@@ -2,7 +2,7 @@
 # Adapted for use in a snakemake pipeline for IceFloeTracker by Timothy Divoll (2023)
 
 # ACTION REQUIRED FROM YOU:
-# 1. Update the following parameters in the `snakemake-config.yaml`:
+# 1. Update the following parameters in the `flow.cylc` file:
 
 # startdate = YYYY-MM-DD
 # enddate = YYYY-MM-DD
@@ -24,7 +24,6 @@ from skyfield.api import wgs84, load, EarthSatellite
 import numpy as np
 import csv
 import math
-import yaml
 import os
 from os.path import expanduser
 
