@@ -37,7 +37,8 @@
         """
     [[fetchdata]]
         script = """
-            $project_dir/scripts/fetchdata.sh -o $fetchdata_dir -s $startdate -e $enddate -c $crs $bounding_box
+            docker exec -e CYLC_VERSION=false fetch-container fetchdata.sh -o $fetchdata_dir -s $startdate -e $enddate -c $crs $bounding_box
+            docker cp fetch-container:$fetchdata_dir $fetchdata_dir
         """
     [[soit]]
         script = """
