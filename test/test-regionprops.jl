@@ -7,7 +7,13 @@
     bw_img[end, 7] = 1
     label_img = IceFloeTracker.label_components(bw_img, trues(3, 3))
     properties = (
-        "centroid", "area", "major_axis_length", "minor_axis_length", "convex_area", "bbox"
+        "centroid",
+        "area",
+        "major_axis_length",
+        "minor_axis_length",
+        "convex_area",
+        "bbox",
+        "perimeter",
     )
     extra_props = nothing
     table = IceFloeTracker.regionprops_table(label_img, bw_img; properties=properties)
@@ -16,7 +22,7 @@
     # Tests for regionprops_table
 
     @test typeof(table) <: DataFrame && # check correct data type
-        4 == sum([p in names(table) for p in properties]) && # check correct set of properties
+        5 == sum([p in names(table) for p in properties]) && # check correct set of properties
         size(table) == (total_labels, length(properties) + 4) # check correct table size
 
     # Check no value in bbox cols is 0 (zero indexing from skimage)
