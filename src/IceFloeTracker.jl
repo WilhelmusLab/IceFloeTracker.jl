@@ -76,34 +76,6 @@ include("tracker/matchcorr.jl")
 include("tracker/tracker.jl")
 
 """
-    Pipeline
-
-This module contains the wrapper functions called by CLI.
-"""
-module Pipeline
-    using IceFloeTracker
-    using IceFloeTracker: Folds, DataFrame, RGB, Gray, load, float64, imsharpen
-    using TOML: parsefile
-    include("pipeline/landmask.jl")
-    include("pipeline/preprocess.jl")
-    include("pipeline/feature-extraction.jl")
-    include("pipeline/tracker.jl")
-    export sharpen,
-        sharpen_gray,
-        preprocess,
-        cloudmask,
-        extractfeatures,
-        get_ice_labels,
-        load_imgs,
-        load_truecolor_imgs,
-        load_reflectance_imgs,
-        load_cloudmask,
-        disc_ice_water,
-        landmask,
-        track
-end
-
-"""
     MorphSE
 
 Module for morphological operations with structuring element functionality adapted from ImageMorphology v0.4.3.
