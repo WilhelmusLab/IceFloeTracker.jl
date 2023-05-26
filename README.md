@@ -122,7 +122,7 @@ Cylc is used to encode the entire pipeline from start to finish. Cylc relies on 
 
 ```
 cylc install -n <workflow-name> ./cylc
-cylc graph <workflow-name>
+cylc graph <workflow-name> #install graphviz locally
 cylc play <workflow-name>
 cylc tui <workflow-name>
 ```
@@ -139,13 +139,13 @@ Remember to remove the `images` and `output` folders from the root project direc
     * `interact -n 20 -t 24:00:00 -m 16g`
     * this will start a compute session for 1 day with 16 GB memory and 20 cores
     * see [here](https://docs.ccv.brown.edu/oscar/submitting-jobs/interact) for more options
-3. Load the latest miniconda module
-    * `module load miniconda`
-4. Build a virtual environment
-    * `conda create -n icefloe-oscar`
-    * `conda activate icefloe-oscar`
-    * `conda env update -n icefloe-oscar -f ./hpc/oscar-env.yaml`
-    * `git clone https://github.com/WilhelmusLab/IceFloeTracker.jl.git`
+3. Load the latest Anaconda module and Python 3.9.0
+    * `module load anaconda`
+    * `module load python/3.9.0`
+
+4. Build a virtual environment and install Cylc
+    * `conda env create -f ./hpc/oscar-env.yaml`
+    * `conda activate oscar-env`
     * `cd IceFloeTracker.jl`
     
 5. Build the package
@@ -160,9 +160,36 @@ Remember to remove the `images` and `output` folders from the root project direc
         * when exporting the following environment variables, there must a space in front of each command
     * ` export SPACEUSER=<firstname>_<lastname>@brown.edu`
     * ` export SPACEPSWD=<password>`
-8. Run the workflow with Cylc
+8. Prepare the runtime environment 
+
+    Cylc will use software inside a Singularity container to fetch images and satellite times from external APIs. 
+    It is a good idea to reset the Singularity cache dir as specified [here](https://docs.ccv.brown.edu/oscar/singularity-containers/building-images)
+
+    * first update the parameters at the top of the `flow.cylc` file:
+     - startdate
+     - enddate
+     - crs
+     - bounding_box
+     - centroid_x
+     - centroid_y
+     - minfloearea
+     - maxfloearea
+    * run `singularity remote login --username <github-username> docker://ghcr.io`
+        - This will prompt you for a personal access token (i.e., your GitHub PAT)
+    * run `singularity build fetchdata.simg docker://ghcr.io/wilhelmuslab/icefloetracker.jl/fetchdata:pr-289`
+        - This will pull the image containing all the dependent software and make it accessible to Cylc
+    * then, build the workflow, run it, and open the text-based user interface (TUI) to monitor the progress of each task
+
     ````
     cylc install -n <workflow-name> ./cylc
     cylc play <workflow-name>
     cylc tui <workflow-name>
     ```
+
+    If you need to change parameters and re-run a workfloew, first do:
+    
+    ```
+    cylc stop --now cylc/<workflow-name>
+    cylc clean cylc/<workflow-name>
+    ```
+    Then, proceed to install, play, and open the TUI

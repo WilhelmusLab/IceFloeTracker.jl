@@ -5,7 +5,7 @@
     initial cycle point = 1
     [[graph]]
         R1 = """
-            mkpaths => fetchdata => soit & landmask => preprocess => extractfeatures => tracking
+            mkpaths => fetchdata => soit #& landmask => preprocess => extractfeatures => tracking
              """
 [runtime]
     [[root]]
@@ -37,12 +37,11 @@
         """
     [[fetchdata]]
         script = """
-            docker exec -e CYLC_VERSION=false fetch-container fetchdata.sh -o $fetchdata_dir -s $startdate -e $enddate -c $crs $bounding_box
-            docker cp fetch-container:$fetchdata_dir $fetchdata_dir
+            singularity exec $project_dir/fetchdata.simg fetchdata.sh -o $fetchdata_dir -s $startdate -e $enddate -c $crs $bounding_box
         """
     [[soit]]
         script = """
-            python $project_dir/scripts/pass_time_snakemake.py
+            singularity exec $project_dir/fetchdata.simg python3 $project_dir/scripts/pass_time_snakemake.py
         """
     [[landmask]]
         script = """
