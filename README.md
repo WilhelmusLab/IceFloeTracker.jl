@@ -132,7 +132,7 @@ The text-based user interface provides a simple way to watch the status of each 
 Remember to remove the `images` and `output` folders from the root project directory and use a new workflow name when running the pipeline again.
 
 ## Running the workflow on Oscar
-#### Python=3.9.13
+#### Python=3.9
 
 1. `ssh` to Oscar
 2. Move to a compute node
@@ -174,9 +174,7 @@ Remember to remove the `images` and `output` folders from the root project direc
      - centroid_y
      - minfloearea
      - maxfloearea
-    * run `singularity remote login --username <github-username> docker://ghcr.io`
-        - This will prompt you for a personal access token (i.e., your GitHub PAT)
-    * run `singularity build fetchdata.simg docker://ghcr.io/wilhelmuslab/icefloetracker.jl/fetchdata:pr-289`
+    * run `singularity build fetchdata.simg docker://brownccv/icefloetracker-fetchdata:latest`
         - This will pull the image containing all the dependent software and make it accessible to Cylc
     * then, build the workflow, run it, and open the text-based user interface (TUI) to monitor the progress of each task
 
@@ -186,10 +184,15 @@ Remember to remove the `images` and `output` folders from the root project direc
     cylc tui <workflow-name>
     ```
 
-    If you need to change parameters and re-run a workfloew, first do:
+    If you need to change parameters and re-run a workflow, first do:
     
     ```
     cylc stop --now cylc/<workflow-name>
     cylc clean cylc/<workflow-name>
     ```
     Then, proceed to install, play, and open the TUI
+
+    __Note__ Error logs are available for each task:
+    ```
+    cat ~/cylc-run/<workflow-name>/<run#>/log/job/1/<task-name>/01/job.err
+    ```
