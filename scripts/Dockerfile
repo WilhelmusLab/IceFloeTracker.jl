@@ -12,6 +12,6 @@ RUN pip3 install skyfield \
         requests
 
 COPY fetchdata.sh /usr/local/bin
-COPY pass_time_snakemake.py /usr/local/bin
+COPY pass_time_cylc.py /usr/local/bin
 
 ENTRYPOINT bash
