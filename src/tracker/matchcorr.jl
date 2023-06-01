@@ -2,7 +2,7 @@
     matchcorr(
     f1::T,
     f2::T,
-    Δt::S,
+    Δt::F,
     mxrot::S=10,
     psi::F=0.95,
     sz::S=16,
@@ -30,7 +30,7 @@ A pair of `NaN` is returned for cases for which one of their mask dimension is t
 - `mm`: mismatch threshold (default: 0.22)
 """
 function matchcorr(
-    f1::T, f2::T, Δt::S; mxrot::S=10, psi::F=0.95, sz::S=16, comp::F=0.25, mm::F=0.22
+    f1::T, f2::T, Δt::F; mxrot::S=10, psi::F=0.95, sz::S=16, comp::F=0.25, mm::F=0.22
 ) where {T<:AbstractArray{Bool,2},S<:Int64,F<:Float64}
 
     # check if the floes are too small and size are comparable

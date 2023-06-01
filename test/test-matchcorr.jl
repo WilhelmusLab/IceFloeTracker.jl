@@ -32,7 +32,7 @@
         mc_thresholds = (
             goodness=(area3=0.18, area2=0.236, corr=0.68), comp=(mxrot=10, sz=16)
         )
-        dt = [15, 20]
+        dt = [15.0, 20.0]
 
         # Load data
         data = deserialize(joinpath(path, "tracker_test_data.dat"))
