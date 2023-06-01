@@ -37,10 +37,11 @@ Convert a 3-channel RGB land mask image to a 1-channel binary matrix; land = 0, 
 - `landmask_image`: RGB land mask image from `fetchdata`
 """
 function binarize_landmask(landmask_image::T)::BitMatrix where {T<:AbstractMatrix}
-    if !(typeof(landmask_image) <: AbstractMatrix{Bool})
-        landmask_no_dilate = Gray.(landmask_image) .> 0
-    end
-    return landmask_no_dilate
+    return ifelse(
+        !(typeof(landmask_image) <: AbstractMatrix{Bool}),
+        Gray.(landmask_image) .> 0,
+        landmask_image,
+    )
 end
 
 """
@@ -78,5 +79,5 @@ Find the pixel indexes that are floating ice rather than soft or land ice. Retur
 ## NOTE(tjd): This function is called in `find_ice_labels.jl`
 function remove_landmask(landmask::BitMatrix, ice_mask::BitMatrix)::Array{Int64}
     land = IceFloeTracker.apply_landmask(ice_mask, landmask)
-    return [i for i ∈ 1:length(land) if land[i]]
+    return [i for i in 1:length(land) if land[i]]
 end
