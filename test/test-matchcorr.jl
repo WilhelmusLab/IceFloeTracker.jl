@@ -13,7 +13,7 @@
 
     @testset "tracker" begin
         # Set thresholds
-        t1 = (dt=(30, 100, 1300), dist=(200, 250, 300))
+        t1 = (dt=(30.0, 100.0, 1300.0), dist=(200, 250, 300))
         t2 = (
             area=1200,
             arearatio=0.28,
