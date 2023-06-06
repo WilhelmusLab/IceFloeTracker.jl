@@ -78,7 +78,7 @@ function segmentation_A(
 
     #segmented_ice_filled = .!bwareamaxfilt(.!segmented_bridged)
     segmented_ice_filled = IceFloeTracker.MorphSE.fill_holes(segmented_bridged)
-    println("Done filling segmented_ice")
+    @info "Done filling segmented_ice"
 
     diff_matrix = segmented_ice_opened .!= segmented_ice_filled
 
