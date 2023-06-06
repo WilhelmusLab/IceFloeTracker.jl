@@ -29,7 +29,7 @@ Returns an array of `MatchedPairs` containing the properties of matched floe pai
 function pairfloes(
     segmented_imgs::Vector{BitMatrix},
     props::Vector{DataFrame},
-    dt::Vector{Int64},
+    dt::Vector{Float64},
     condition_thresholds,
     mc_thresholds,
 )
