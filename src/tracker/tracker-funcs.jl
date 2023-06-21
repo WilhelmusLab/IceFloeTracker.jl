@@ -11,7 +11,7 @@ struct MatchingProps
 end
 
 """
-Container for matched pairs of floes. `props1` and `props2` are dataframes with the same column names as the input dataframes. `ratios` is a dataframe with column names `area`, `majoraxis`, `minoraxis`, `convex_area`, `area_under`, and `corr` for similarity ratios.
+Container for matched pairs of floes. `props1` and `props2` are dataframes with the same column names as the input dataframes. `ratios` is a dataframe with column names `area`, `majoraxis`, `minoraxis`, `convex_area`, `area_under`, and `corr` for similarity ratios. `dist` is a vector of (pixel) distances between paired floes.
 """
 struct MatchedPairs
     props1::DataFrame
