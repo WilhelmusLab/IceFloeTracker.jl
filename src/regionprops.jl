@@ -22,6 +22,8 @@ See also [`regionprops`](@ref)
 # Examples
 
 ```jldoctest; setup = :(using IceFloeTracker, Random)
+julia> using IceFloeTracker, Random
+
 julia> Random.seed!(123);
 
 julia> bw_img = rand([0, 1], 5, 10)
@@ -32,7 +34,7 @@ julia> bw_img = rand([0, 1], 5, 10)
  0  1  0  1  0  0  0  0  1  0
  1  0  0  0  0  1  0  1  0  1
 
-julia> label_img = Images.label_components(bw_img, trues(3,3))
+julia> label_img = IceFloeTracker.label_components(bw_img, trues(3,3))
 5×10 Matrix{Int64}:
  1  0  1  0  0  0  0  0  0  4
  1  0  1  1  1  0  0  0  4  4
@@ -45,7 +47,7 @@ julia> properties = ["area", "perimeter"]
  "area"
  "perimeter"
 
- julia> regionprops_table(label_img, bw_img, properties = properties, dataframe=true)
+ julia> IceFloeTracker.regionprops_table(label_img, bw_img, properties = properties)
  4×2 DataFrame
   Row │ area   perimeter 
       │ Int32  Float64   
