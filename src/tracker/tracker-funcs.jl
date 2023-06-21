@@ -492,7 +492,7 @@ end
 
 function resolvecollisions!(matched_pairs)
     collisions = getcollisionslocs(matched_pairs.props2)
-    for collision in collisions
+    for collision in reverse(collisions)
         bestentry = getidxmostminimumeverything(matched_pairs.ratios[collision.idxs, :])
         keeper = collision.idxs[bestentry]
         deleteallbut!(matched_pairs, collision.idxs, keeper)
