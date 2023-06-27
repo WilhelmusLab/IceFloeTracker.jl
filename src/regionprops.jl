@@ -69,6 +69,7 @@ function regionprops_table(
         "convex_area",
         "bbox",
         "perimeter",
+        "orientation",
     ),
     extra_properties::Union{Tuple{Function,Vararg{Function}},Nothing}=nothing,
 )::DataFrame
