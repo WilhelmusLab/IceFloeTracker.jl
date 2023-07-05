@@ -14,6 +14,7 @@
         "convex_area",
         "bbox",
         "perimeter",
+        "orientation",
     )
     extra_props = nothing
     table = IceFloeTracker.regionprops_table(label_img, bw_img; properties=properties)
@@ -22,7 +23,7 @@
     # Tests for regionprops_table
 
     @test typeof(table) <: DataFrame && # check correct data type
-        5 == sum([p in names(table) for p in properties]) && # check correct set of properties
+        6 == sum([p in names(table) for p in properties]) && # check correct set of properties
         size(table) == (total_labels, length(properties) + 4) # check correct table size
 
     # Check no value in bbox cols is 0 (zero indexing from skimage)
