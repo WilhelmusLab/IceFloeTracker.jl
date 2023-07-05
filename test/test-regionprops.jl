@@ -14,6 +14,7 @@
         "convex_area",
         "bbox",
         "perimeter",
+        "orientation",
     )
     extra_props = nothing
     table = IceFloeTracker.regionprops_table(label_img, bw_img; properties=properties)
