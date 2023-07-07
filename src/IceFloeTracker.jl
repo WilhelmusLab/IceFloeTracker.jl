@@ -40,6 +40,12 @@ export readdlm,
     centered,
     imrotate
 
+# For IFTPipeline
+using HDF5
+export HDF5, PyCall
+export DataFrames, DataFrame, nrow, Not, select!
+export Dates, Time, Date, DateTime,@dateformat_str
+
 include("utils.jl")
 include("persist.jl")
 include("landmask.jl")
