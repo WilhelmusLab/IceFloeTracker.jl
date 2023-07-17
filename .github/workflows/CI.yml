@@ -47,6 +47,6 @@ jobs:
       - uses: codecov/codecov-action@v3
         with:
           paths-ignore:
-             - src/Register
-             - src/MorphSE
+             - Register
+             - morphSE
           files: lcov.info
