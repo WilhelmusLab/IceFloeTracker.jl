@@ -68,7 +68,6 @@ const sk_measure = PyNULL()
 
 function __init__()
     copy!(sk_measure, pyimport_conda("skimage.measure", "scikit-image=0.20.0"))
-    # pyimport_conda("numpy", "numpy=1.25.0")
     pyimport_conda("pyproj", "pyproj=3.6.0")
     pyimport_conda("rasterio", "rasterio=1.3.7")
     pyimport_conda("requests", "requests=2.31.0")
