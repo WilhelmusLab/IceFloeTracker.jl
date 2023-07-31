@@ -44,7 +44,7 @@ export readdlm,
 using HDF5
 export HDF5, PyCall
 export DataFrames, DataFrame, nrow, Not, select!
-export Dates, Time, Date, DateTime,@dateformat_str
+export Dates, Time, Date, DateTime, @dateformat_str
 
 include("utils.jl")
 include("persist.jl")
@@ -67,7 +67,12 @@ include("special_strels.jl")
 const sk_measure = PyNULL()
 
 function __init__()
-    return copy!(sk_measure, pyimport_conda("skimage.measure", "scikit-image=0.20.0"))
+    copy!(sk_measure, pyimport_conda("skimage.measure", "scikit-image=0.20.0"))
+    pyimport_conda("pyproj", "pyproj=3.6.0")
+    pyimport_conda("rasterio", "rasterio=1.3.7")
+    pyimport_conda("requests", "requests=2.31.0")
+    pyimport_conda("skyfield", "skyfield=1.45.0")
+    return nothing
 end
 
 include("regionprops.jl")
