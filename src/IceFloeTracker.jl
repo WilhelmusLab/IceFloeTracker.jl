@@ -15,7 +15,6 @@ using DSP
 using StaticArrays
 using OffsetArrays: centered
 using Serialization: serialize, deserialize
-using Folds
 
 export readdlm,
     padnhood,

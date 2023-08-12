@@ -161,43 +161,6 @@ function mean(x::T, y::T)::Float64 where {T<:Real}
 end
 
 """
-    propmatrix2df(propmatrix)
-
-Convert floe properties matrix `propmatrix` to a dataframe-like struct with fields `area`, `major_axis_length`, `minor_axis_length`, `convex_area`, `x_coord`, `y_coord` for the tacker step. Used for development purposes. TODO: remove this function when development is complete.
-"""
-function propmatrix2df(propmatrix)
-    # convert props_day1 to dataframe with column names area, majoraxis, minoraxis, convex_area, coords
-    return DataFrame(
-        propmatrix,
-        [
-            :area,
-            :perimeter,
-            :major_axis_length,
-            :minor_axis_length,
-            :orientation,
-            :row_centroid,
-            :col_centroid,
-            :convex_area,
-            :solidity,
-            :left,
-            :top,
-            :width,
-            :height,
-        ],
-    )
-    # Props((col for col in eachcol(propmatrix[:, [1, 3, 4, 8, 6, 7]]))...)
-end
-
-"""
-    poprow!(df::DataFrame, idx::Int64)
-
-"""
-function poprow!(df::DataFrame, idx::Int64)
-    deleteat!(df, idx)
-    return nothing
-end
-
-"""
     makeemptydffrom(df::DataFrame)
 
 Return an object with an empty dataframe with the same column names as `df` and an empty dataframe with column names `area`, `majoraxis`, `minoraxis`, `convex_area`, `area_under`, and `corr` for similarity ratios. 
@@ -396,19 +359,6 @@ function getpropsday1day2(properties, dayidx::Int64)
 end
 
 """
-    addmorematches!(matchingfloes, props_day, numtodadd=5)
-
-Add `numtodadd` more matches to `matchingfloes` using the floes in `props_day`.
-"""
-function addmorematches!(matchingfloes, props_day, numtodadd=5)
-    for j in 1:numtodadd
-        s = rand(1:4)
-        appendrow!(matchingfloes, props_day[s, :], randratios(), s)
-    end
-    return nothing
-end
-
-"""
     getbestmatchdata(idx, r, props_day1, matching_floes)
 
 Collect the data for the best match between the `r`th floe in `props_day1` and the `idx`th floe in `matching_floes`. Return a tuple of the floe properties for day 1 and day 2 and the ratios.
@@ -506,18 +456,6 @@ end
 
 isnotnan(x) = !isnan(x)
 
-# generate random ratio data
-function randratios()
-    return (
-        area=rand(),
-        majoraxis=rand(),
-        minoraxis=rand(),
-        convex_area=rand(),
-        area_under=rand(),
-        corr=rand(),
-    )
-end
-
 # match_corr related functions
 
 """
@@ -529,13 +467,6 @@ function corr(p1, p2)
     cc, _ = maximum.(IceFloeTracker.crosscorr(p1, p2; normalize=true))
     return cc
 end
-
-"""
-    myargmax(mms)
-
-Return the index of the maximum value in `mms` and the maximum value.
-"""
-myargmax(mms) = (max=maximum(mms), idx=argmax(mms) + 1)
 
 """
    normalizeangle(revised,t=180)

@@ -85,24 +85,3 @@ function corr(p1::T, p2::T) where {T<:AbstractArray}
     cc, _ = maximum.(IceFloeTracker.crosscorr(p1, p2; normalize=true))
     return cc
 end
-
-function matchcorr_simple(
-    f1::T, f2::T, psi::F=0.95, size::S=16, comp::F=0.25
-) where {T<:AbstractArray{Bool,2},S<:Int64,F<:Float64}
-
-    # check if the floes are too small and size are comparable
-    sz = size.([f1, f2])
-    if (any([(sz...)...] .< size) || getsizecomparability(sz...) > comp)
-        @warn "Floes are too small or their sizes are not comparable"
-        return NaN
-    end
-
-    _psi = buildψs.([f1, f2])
-    c = corr(_psi...)
-
-    if c < psi
-        @warn "correlation too low, c: $c"
-        return NaN
-    end
-    return c
-end
