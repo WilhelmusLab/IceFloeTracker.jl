@@ -65,13 +65,14 @@ include("branch.jl")
 include("special_strels.jl")
 
 const sk_measure = PyNULL()
+const getlatlon = PyNULL()
 
 function __init__()
     copy!(sk_measure, pyimport_conda("skimage.measure", "scikit-image=0.20.0"))
     pyimport_conda("pyproj", "pyproj=3.6.0")
     pyimport_conda("rasterio", "rasterio=1.3.7")
-    pyimport_conda("requests", "requests=2.31.0")
-    pyimport_conda("skyfield", "skyfield=1.45.0")
+    @pyinclude(joinpath(@__DIR__, "latlon.py"))
+    copy!(getlatlon, py"getlatlon")
     return nothing
 end
 
