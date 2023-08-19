@@ -70,8 +70,11 @@ const getlatlon = PyNULL()
 const _version = []
 
 function __init__()
-    push!(_version, Pkg.TOML.parsefile("Project.toml")["version"])
-
+    try
+        push!(_version, Pkg.TOML.parsefile("Project.toml")["version"])
+    catch 
+        push!(_version, "unknown")
+    end
     copy!(sk_measure, pyimport_conda("skimage.measure", "scikit-image=0.20.0"))
     pyimport_conda("pyproj", "pyproj=3.6.0")
     pyimport_conda("rasterio", "rasterio=1.3.7")
@@ -81,7 +84,7 @@ function __init__()
 end
 
 function getiftversion()
-    return _version[]
+    return first(_version)
 end
 
 include("regionprops.jl")
