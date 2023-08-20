@@ -1,3 +1,3 @@
 println("------------------------------------------------
 ----------------- Misc. Tests ------------------")
-@test IFTVERSION == Pkg.project().version
+@test IFTVERSION == VersionNumber(0, 2, 0)
