@@ -5,6 +5,7 @@ using Dates
 using ImageContrastAdjustment
 using ImageSegmentation
 using Peaks
+using Pkg
 using Random
 using StatsBase
 using Interpolations
@@ -37,7 +38,8 @@ export readdlm,
     loadimg,
     matchcorr,
     centered,
-    imrotate
+    imrotate,
+    getiftversion
 
 # For IFTPipeline
 using HDF5
@@ -65,14 +67,24 @@ include("special_strels.jl")
 
 const sk_measure = PyNULL()
 const getlatlon = PyNULL()
+const _version = []
 
 function __init__()
+    try
+        push!(_version, Pkg.TOML.parsefile("Project.toml")["version"])
+    catch 
+        push!(_version, "unknown")
+    end
     copy!(sk_measure, pyimport_conda("skimage.measure", "scikit-image=0.20.0"))
     pyimport_conda("pyproj", "pyproj=3.6.0")
     pyimport_conda("rasterio", "rasterio=1.3.7")
     @pyinclude(joinpath(@__DIR__, "latlon.py"))
     copy!(getlatlon, py"getlatlon")
     return nothing
+end
+
+function getiftversion()
+    return first(_version)
 end
 
 include("regionprops.jl")
