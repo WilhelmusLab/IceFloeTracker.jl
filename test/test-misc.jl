@@ -1,3 +1,3 @@
 println("------------------------------------------------
 ----------------- Misc. Tests ------------------")
-@test getiftversion() == "0.2.0"
+@test IFTVERSION == VersionNumber(0, 2, 1)

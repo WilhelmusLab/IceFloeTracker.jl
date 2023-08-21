@@ -39,7 +39,7 @@ export readdlm,
     matchcorr,
     centered,
     imrotate,
-    getiftversion
+    IFTVERSION
 
 # For IFTPipeline
 using HDF5
@@ -67,24 +67,15 @@ include("special_strels.jl")
 
 const sk_measure = PyNULL()
 const getlatlon = PyNULL()
-const _version = []
+const IFTVERSION = VersionNumber(0, 2, 1)
 
 function __init__()
-    try
-        push!(_version, Pkg.TOML.parsefile("Project.toml")["version"])
-    catch 
-        push!(_version, "unknown")
-    end
     copy!(sk_measure, pyimport_conda("skimage.measure", "scikit-image=0.20.0"))
     pyimport_conda("pyproj", "pyproj=3.6.0")
     pyimport_conda("rasterio", "rasterio=1.3.7")
     @pyinclude(joinpath(@__DIR__, "latlon.py"))
     copy!(getlatlon, py"getlatlon")
     return nothing
-end
-
-function getiftversion()
-    return first(_version)
 end
 
 include("regionprops.jl")
@@ -144,34 +135,34 @@ julia> IceFloeTracker.MorphSE.dilate(a, se)
 ```
 """
 module MorphSE
-    using ImageCore
-    using ColorTypes
-    using LoopVectorization
-    using OffsetArrays
-    using TiledIteration: EdgeIterator
-    using DataStructures
-    include("morphSE/StructuringElements.jl")
-    using .StructuringElements
-    include("morphSE/extreme_filter.jl")
-    include("morphSE/utils.jl")
-    include("morphSE/dilate.jl")
-    include("morphSE/erode.jl")
-    include("morphSE/opening.jl")
-    include("morphSE/closing.jl")
-    include("morphSE/bothat.jl")
-    include("morphSE/mreconstruct.jl")
-    include("morphSE/fill_holes.jl")
+using ImageCore
+using ColorTypes
+using LoopVectorization
+using OffsetArrays
+using TiledIteration: EdgeIterator
+using DataStructures
+include("morphSE/StructuringElements.jl")
+using .StructuringElements
+include("morphSE/extreme_filter.jl")
+include("morphSE/utils.jl")
+include("morphSE/dilate.jl")
+include("morphSE/erode.jl")
+include("morphSE/opening.jl")
+include("morphSE/closing.jl")
+include("morphSE/bothat.jl")
+include("morphSE/mreconstruct.jl")
+include("morphSE/fill_holes.jl")
 end
 
 module Register
-    include("Register/CenterIndexedArrays.jl-0.2.0/CenterIndexedArrays.jl")
-    include("Register/RegisterCore.jl-0.2.4/src/RegisterCore.jl")
-    include("Register/RegisterMismatchCommon.jl-master/RegisterMismatchCommon.jl")
-    include("Register/RegisterUtilities.jl-master/RegisterUtilities.jl")
-    include("Register/RFFT.jl-master/RFFT.jl")
-    include("Register/RegisterDeformation.jl-0.4.4/RegisterDeformation.jl")
-    include("Register/QuadDIRECT.jl-master/QuadDIRECT.jl")
-    include("Register/RegisterQD.jl-0.3.1/RegisterQD.jl")
-    include("Register/RegisterMismatch.jl-0.4.0/RegisterMismatch.jl")
+include("Register/CenterIndexedArrays.jl-0.2.0/CenterIndexedArrays.jl")
+include("Register/RegisterCore.jl-0.2.4/src/RegisterCore.jl")
+include("Register/RegisterMismatchCommon.jl-master/RegisterMismatchCommon.jl")
+include("Register/RegisterUtilities.jl-master/RegisterUtilities.jl")
+include("Register/RFFT.jl-master/RFFT.jl")
+include("Register/RegisterDeformation.jl-0.4.4/RegisterDeformation.jl")
+include("Register/QuadDIRECT.jl-master/QuadDIRECT.jl")
+include("Register/RegisterQD.jl-0.3.1/RegisterQD.jl")
+include("Register/RegisterMismatch.jl-0.4.0/RegisterMismatch.jl")
 end
 end
