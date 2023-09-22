@@ -11,6 +11,15 @@
         @test all(isnan.(collect(matchcorr(floes[3], floes[4], 400.0))))
     end
 
+    @testset "process_soit" begin
+        soitdir = dirname("test_inputs/pipeline/tracker/passtimes_lat.csv")
+        datetimes = process_soit(soitdir)
+        @test names(datetimes) = ["sat", "pass_time"]
+        @test nrow(datetimes) == 2
+        @test typeof(datetimes.sat[1]) == String
+        @test typeof(datetimes.pass_time[1]) == DateTime
+    end
+
     @testset "tracker" begin
         # Set thresholds
         t1 = (dt=(30.0, 100.0, 1300.0), dist=(200, 250, 300))
