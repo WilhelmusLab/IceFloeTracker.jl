@@ -9,7 +9,7 @@ using Pkg
 using Random
 using StatsBase
 using Interpolations
-using DataFrames
+using DataFrames: DataFrame, nrow, Not, select!, sort!
 using PyCall
 using Clustering
 using DSP
@@ -45,7 +45,7 @@ export readdlm,
 using HDF5
 export HDF5, PyCall
 export DataFrames, DataFrame, nrow, Not, select!
-export Dates, Time, Date, DateTime, @dateformat_str
+export Dates, Time, Date, DateTime, @dateformat_str, process_soit
 
 include("utils.jl")
 include("persist.jl")

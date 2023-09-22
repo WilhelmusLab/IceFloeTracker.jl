@@ -12,7 +12,7 @@
     end
 
     @testset "process_soit" begin
-        soitdir = dirname("test_inputs/pipeline/tracker/passtimes_lat.csv")
+        soitdir = dirname("test/test_inputs/pipeline/tracker/passtimes_lat.csv")
         datetimes = process_soit(soitdir)
         @test names(datetimes) = ["sat", "pass_time"]
         @test nrow(datetimes) == 2
