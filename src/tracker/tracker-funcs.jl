@@ -538,7 +538,7 @@ function process_soit(passtimesdir::String)
     # drop the date column
     select!(df, Not(:date))
 
-    sort!(df, :pass_time)
+    DataFrames.sort!(df, :pass_time)
 
     return df
 end

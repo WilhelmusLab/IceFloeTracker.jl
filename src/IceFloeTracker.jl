@@ -9,7 +9,8 @@ using Pkg
 using Random
 using StatsBase
 using Interpolations
-using DataFrames: DataFrame, nrow, Not, select!, sort!
+using DataFrames
+using DataFrames: DataFrame, nrow, Not, select!
 using PyCall
 using Clustering
 using DSP
