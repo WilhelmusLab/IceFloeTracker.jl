@@ -107,3 +107,47 @@ function pairfloes(
     sort!(tracked)
     return tracked.data
 end
+
+# #= Floe Tagging =#
+"""
+    lookup_value(df, key, key_column::Symbol=:ID_1, value_column::Symbol=:ID)
+
+Look up a value in a DataFrame by a `key` in column `key_column` and return the value in column `value_column`. If the key is not found, return `missing`.
+"""
+function lookup_value(df, key, key_column::Symbol=:ID_1, value_column::Symbol=:ID)
+    row = findfirst(df[:, key_column] .== key)
+    if row !== nothing
+        return df[row, value_column]
+    else
+        return missing
+    end
+end
+
+"""
+    tagfloes!(floedata, pairs)
+
+Tag floes in the `data.props` by assigning a unique `Floe_ID`` to each floe in each image using pair data in `pairs`. The ID is stored in the `Floe_ID` column of the `props` DataFrame in `data`.
+
+# Arguments
+- `data::Data`: the data structure containing the images and properties of the floes (output of `IFTPipeline.extractfeatures`). The `props` field of `data` is modified in-place.
+- `pairs`: the output of `pairfloes`.
+"""
+function tagfloes!(props, pairs)
+
+    for (i, pair) in enumerate(pairs)
+        getmatchingfloe(key) = lookup_value(pair, key)
+        insertcols!(props[i+1], 1, :Floe_ID => getmatchingfloe.(props[i+1].ID))
+        DataFrames.sort!(props[i+1], :Floe_ID)
+
+        n0 = last(props[i].ID)
+        _missing = ismissing.(props[i+1].Floe_ID)
+        _start = n0 + 1
+        _end = sum(_missing)
+        props[i+1][_missing, :Floe_ID] = _start:_end+_start-1
+    end
+
+    # make a new column "Floe_ID" in props[1] with old ID column, delete old ID column
+    insertcols!(props[1], 1, :Floe_ID => props[1].ID)
+    select!(props[1], Not([:ID]))
+    return nothing
+end
