@@ -36,7 +36,7 @@
 
         # Load data
         data = deserialize(joinpath(path, "tracker_test_data.dat"))
-        passtimes = deserialize(joinpath(path, "passtimes.jls"))
+        passtimes = deserialize(joinpath(path, "passtimes.dat"))
 
         # Filtering out small floes. Algorithm performs poorly on small, amorphous floes as they seem to look similar (too `blobby`) to each other
         for (i, prop) in enumerate(data.props)
