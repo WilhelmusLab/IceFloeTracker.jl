@@ -36,24 +36,33 @@
 
         # Load data
         data = deserialize(joinpath(path, "tracker_test_data.dat"))
+        passtimes = deserialize(joinpath(path, "passtimes.jls"))
 
-        # sort floe data by area
-        for i in 1:3
-            sort!(data.props[i], :area; rev=true)
+        # Filtering out small floes. Algorithm performs poorly on small, amorphous floes as they seem to look similar (too `blobby`) to each other
+        for (i, prop) in enumerate(data.props)
+            data.props[i] = prop[prop[:, :area].>=350, :]
         end
 
-        pairs = IceFloeTracker.pairfloes(
-            data.imgs, data.props, dt, condition_thresholds, mc_thresholds
+        _pairs, _ = IceFloeTracker.pairfloes(
+            data.imgs, data.props, passtimes, dt, condition_thresholds, mc_thresholds
         )
-        @test length(pairs) == 2
 
-        r = rand(1:(length(pairs[1].props1[:, :area])))
-        f1 = pairs[1].props1[r, :]
-        f2 = pairs[1].props2[r, :]
-        ratios = pairs[1].ratios[r, :]
-        @test sqrt(
-            (f1.row_centroid - f2.row_centroid)^2 + (f1.col_centroid - f2.col_centroid)^2
-        ) == pairs[1].dist[r]
-        @test all(collect(ratios)[1:4] .< collect(t3)[2:end])
+        @test maximum(_pairs.ID) == 10
+        @test names(_pairs) == ["ID",
+            "passtime",
+            "area",
+            "min_row",
+            "min_col",
+            "max_row",
+            "max_col",
+            "row_centroid",
+            "col_centroid",
+            "convex_area",
+            "major_axis_length",
+            "minor_axis_length",
+            "orientation",
+            "perimeter",
+            "mask"]
+        @test issorted(_pairs, :ID)
     end
 end
