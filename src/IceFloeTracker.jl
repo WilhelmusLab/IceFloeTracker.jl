@@ -73,6 +73,8 @@ function __init__()
     copy!(sk_measure, pyimport_conda("skimage.measure", "scikit-image=0.20.0"))
     pyimport_conda("pyproj", "pyproj=3.6.0")
     pyimport_conda("rasterio", "rasterio=1.3.7")
+    pyimport_conda("jinja2", "jinja2=3.1.2")
+    pyimport_conda("pandas", "pandas=2")
     @pyinclude(joinpath(@__DIR__, "latlon.py"))
     copy!(getlatlon, py"getlatlon")
     return nothing
