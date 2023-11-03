@@ -497,3 +497,28 @@ function addfloemasks!(props, imgs)
     end
     return nothing
 end
+
+"""
+    getdist(grp, cols::Vector{Symbol})
+
+Return the distances between the centroids of the floes in `grp` using data in the columns specified by `cols`.
+"""
+function getdist(grp, cols::Vector{Symbol})
+    u, v = [v .^ 2 for v in (diff.(eachcol(grp[:, cols])))]
+    norm_ = sqrt.(u .+ v)
+    return norm_ == Float64[] ? [NaN] : vcat([NaN], norm_)
+end
+
+"""
+    adddist!(props::DataFrame)
+
+Add a column `dist` to `props` with the distances between the centroids of the floes in `props`.
+
+# Arguments
+- `props`: floe properties in long format
+"""
+function adddist!(props::DataFrame)
+    cols = [:row_centroid, :col_centroid]
+    props[!, "dist"] = vcat([getdist(grp, cols) for grp in groupby(props, :ID)]...)
+    return nothing
+end
