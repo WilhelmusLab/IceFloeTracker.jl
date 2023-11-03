@@ -118,8 +118,11 @@ function pairfloes(
     sort!(tracked)
     _pairs = tracked.data
 
+    # Concatenate horizontally props1, props2, tracked, and add dist as the last column for each item in _pairs
+    _pairs = [hcat(hcat(p.props1, p.props2, makeunique=true), p.ratios[:, ["area_under", "corr"]]) for p in _pairs]
+
     # Make a dict with keys in _pairs[i].props2.uuid and values in _pairs[i-1].props1.uuid
-    mappings = [Dict(pair.props2.uuid .=> pair.props1.uuid) for pair in _pairs]
+    mappings = [Dict(zip(p.uuid_1, p.uuid)) for p in _pairs]
 
     # Convert mappings to functions
     funcsfrommappings = [x -> get(mapping, x, x) for mapping in mappings]
@@ -127,36 +130,53 @@ function pairfloes(
     # Compose functions in reverse order to push uuids forward
     mapuuid = foldr((f, g) -> x -> f(g(x)), funcsfrommappings)
 
-    for prop in props[2:end]
-        prop.uuid = mapuuid.(prop.uuid)
-    end
+    # Apply mapuuid to uuid_1 in each set of props in _pairs => get consolidated uuids
+    [prop.uuid_0 = mapuuid.(prop.uuid_1) for prop in _pairs]
 
-    # Collect all unique uuids in props[i] to label as simple ints starting from 1
-    uuids = unique([uuid for prop in props for uuid in prop.uuid])
+
+    propsvert = vcat(_pairs...)
+    DataFrames.sort!(propsvert, [:uuid_0, :passtime])
+    rightcolnames = vcat([name for name in names(propsvert) if all([!(name in ["uuid_1", "psi_1", "mask_1"]), endswith(name, "_1")])], ["uuid_0"])
+    leftcolnames = [split(name, "_1")[1] for name in rightcolnames]
+    matchcolnames = ["area_under", "corr", "uuid_0", "passtime", "passtime_1",]
     
-    # create mapping from uuids to index
+    leftdf = propsvert[:, leftcolnames]
+    rightdf = propsvert[:, rightcolnames]
+    matchdf = propsvert[:, matchcolnames]
+    rename!(rightdf, Dict(zip(rightcolnames, leftcolnames)))
+
+    df = vcat(leftdf, rightdf)
+
+    # sort by uuid_0, passtime and keep unique rows
+    df = DataFrames.sort!(df, [:uuid_0, :passtime]) |> unique
+    
+    
+    df = leftjoin(df, matchdf, on=[:uuid_0, :passtime])
+    DataFrames.sort!(df, [:uuid_0, :passtime])
+
+    # create mapping from uuids to index as ID
+    uuids = unique(df.uuid_0)
     uuid2index = Dict(uuid => i for (i, uuid) in enumerate(uuids))
+    df.ID = [uuid2index[uuid] for uuid in df.uuid_0]
+    df = df[:, [name for name in names(df) if name != "uuid_0"]]
 
-    # apply the uuid2index mapping to props
-    for prop in props
-        prop.uuid .= [uuid2index[uuid] for uuid in prop.uuid]
-    end
-
-    # Merge all props into one long DataFrame
-    propsvert = vcat(props...)
-
-    # rename uuid to ID
-    rename!(propsvert, :uuid => :ID)
-
-    # 2. Sort propsvert by uuid and then by passtime
-    DataFrames.sort!(propsvert, [:ID, :passtime])
-
-    # 3. Move ID, passtime columns to the front
-    propsvert = propsvert[:, unique(["ID", "passtime", names(propsvert)...])]
-
-    return (props = propsvert[:, names(propsvert)[1:15]], trackdata = _pairs)
+    # list ID, passtime as first columns drop passtime_1
+    df = df[:, vcat(["ID", "passtime"], [name for name in names(df) if !(name in ["ID", "passtime"])])]
+    df = df[:, names(df)[1:end-1]]
+    return df
 end
 
+"""
+    addlatlon(pairedfloesdf::DataFrame, refimage::AbstractString)
+
+Add columns `latitude`, `longitude`, and pixel coordinates `x`, `y` to `pairedfloesdf` 
+"""
+function addlatlon(pairedfloesdf::DataFrame, refimage::AbstractString)
+    latlondata = getlatlon(refimage)
+    colstodrop = [:row_centroid, :col_centroid, :min_row, :min_col, :max_row, :max_col]
+    converttounits!(pairedfloesdf, latlondata, colstodrop)
+    return pairedfloesdf
+end
 
 """
     add_passtimes!(props, passtimes)
