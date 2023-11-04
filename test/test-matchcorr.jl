@@ -50,8 +50,6 @@
 
         IceFloeTracker.addlatlon!(_pairs, latlondata)
 
-
-
         @test maximum(_pairs.ID) == 6
         @test names(_pairs) == ["ID",
             "passtime",

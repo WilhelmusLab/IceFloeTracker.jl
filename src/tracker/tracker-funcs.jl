@@ -498,33 +498,6 @@ function addfloemasks!(props, imgs)
     return nothing
 end
 
-"""
-    getdist(grp, cols::Vector{Symbol})
-
-Return the distances between the centroids of the floes in `grp` using data in the columns specified by `cols`.
-"""
-function getdist(grp, cols::Vector{Symbol})
-    # Compute the square root of the sum of squares of differences between consecutive elements in specified columns of a data frame, and then prepending a NaN to the result. NaN is prepended because the first floe in a group has no previous floe to compare with.
-    u, v = [v .^ 2 for v in (diff.(eachcol(grp[:, cols])))]
-    norm_ = sqrt.(u .+ v)
-    return norm_ == Float64[] ? [NaN] : vcat([NaN], norm_)
-end
-
-"""
-    adddist!(props::DataFrame)
-
-Add a column `dist` to `props` with the distances between the centroids of the floes in `props`.
-
-# Arguments
-- `props`: floe properties in long format
-"""
-function adddist!(props::DataFrame, cols = ["row_centroid", "col_centroid"])
-    # grouping a floe `props` by the :ID, calculating a "dist" values for each group using the `getdist`` function and the :row_centroid and :col_centroid columns, and adding these "dist" values as a new column to `props`.
-    props[!, "dist"] = vcat([getdist(grp, cols) for grp in groupby(props, :ID)]...)
-    return nothing
-end
-
-
 ## LatLon functions originally from IFTPipeline.jl
 
 """
