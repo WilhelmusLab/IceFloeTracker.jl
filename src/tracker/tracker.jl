@@ -171,11 +171,11 @@ end
 
 Add columns `latitude`, `longitude`, and pixel coordinates `x`, `y` to `pairedfloesdf` 
 """
-function addlatlon(pairedfloesdf::DataFrame, refimage::AbstractString)
+function addlatlon!(pairedfloesdf::DataFrame, refimage::AbstractString)
     latlondata = getlatlon(refimage)
     colstodrop = [:row_centroid, :col_centroid, :min_row, :min_col, :max_row, :max_col]
     converttounits!(pairedfloesdf, latlondata, colstodrop)
-    return pairedfloesdf
+    return nothing
 end
 
 """
