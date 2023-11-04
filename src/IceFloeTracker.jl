@@ -46,6 +46,7 @@ using HDF5
 export HDF5, PyCall
 export DataFrames, DataFrame, nrow, Not, select!
 export Dates, Time, Date, DateTime, @dateformat_str
+export addlatlon!, getlatlon
 
 include("utils.jl")
 include("persist.jl")

@@ -169,10 +169,29 @@ end
 """
     addlatlon(pairedfloesdf::DataFrame, refimage::AbstractString)
 
-Add columns `latitude`, `longitude`, and pixel coordinates `x`, `y` to `pairedfloesdf` 
+Add columns `latitude`, `longitude`, and pixel coordinates `x`, `y` to `pairedfloesdf`.
+
+# Arguments
+- `pairedfloesdf`: dataframe containing floe tracking data.
+- `refimage`: path to reference image.
 """
 function addlatlon!(pairedfloesdf::DataFrame, refimage::AbstractString)
     latlondata = getlatlon(refimage)
+    colstodrop = [:row_centroid, :col_centroid, :min_row, :min_col, :max_row, :max_col]
+    converttounits!(pairedfloesdf, latlondata, colstodrop)
+    return nothing
+end
+
+"""
+    addlatlon!(pairedfloesdf::DataFrame, latlondata::AbstractDict)
+
+Add columns `latitude`, `longitude`, and pixel coordinates `x`, `y` to `pairedfloesdf`.
+
+# Arguments
+- `pairedfloesdf`: dataframe containing floe tracking data.
+- `latlondata`: dictionary containing latitude and longitude data.
+"""
+function addlatlon!(pairedfloesdf::DataFrame, latlondata::AbstractDict)
     colstodrop = [:row_centroid, :col_centroid, :min_row, :min_col, :max_row, :max_col]
     converttounits!(pairedfloesdf, latlondata, colstodrop)
     return nothing
