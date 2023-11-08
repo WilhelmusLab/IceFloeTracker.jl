@@ -1,6 +1,6 @@
 """
     discriminate_ice_water(
-    reflectance_image::Matrix{RGB{Float64}},
+    falsecolor_image::Matrix{RGB{Float64}},
     normalized_image::Matrix{Gray{Float64}},
     landmask_bitmatrix::T,
     cloudmask_bitmatrix::T,
@@ -19,16 +19,16 @@
 
 
 
-Generates an image with ice floes apparent after filtering and combining previously processed versions of reflectance and truecolor images from the same region of interest. Returns an image ready for segmentation to isolate floes.
+Generates an image with ice floes apparent after filtering and combining previously processed versions of falsecolor and truecolor images from the same region of interest. Returns an image ready for segmentation to isolate floes.
 
-Note: This function mutates the landmask object to avoid unnecessary memory allocation. If you need the original landmask, make a copy before passing it to this function. Example: `discriminate_ice_water(reflectance_image, normalized_image, copy(landmask_bitmatrix), cloudmask_bitmatrix)`
+Note: This function mutates the landmask object to avoid unnecessary memory allocation. If you need the original landmask, make a copy before passing it to this function. Example: `discriminate_ice_water(falsecolor_image, normalized_image, copy(landmask_bitmatrix), cloudmask_bitmatrix)`
 
 # Arguments
-- `reflectance_image`: input image in false color reflectance
+- `falsecolor_image`: input image in false color reflectance
 - `normalized_image`: normalized version of true color image
 - `landmask_bitmatrix`: landmask for region of interest
 - `cloudmask_bitmatrix`: cloudmask for region of interest
-- `floes_threshold`: heuristic applied to original reflectance image
+- `floes_threshold`: heuristic applied to original false color image
 - `mask_clouds_lower`: lower heuristic applied to mask out clouds
 - `mask_clouds_upper`: upper heuristic applied to mask out clouds
 - `kurt_thresh_lower`: lower heuristic used to set pixel value threshold based on kurtosis in histogram
@@ -42,7 +42,7 @@ Note: This function mutates the landmask object to avoid unnecessary memory allo
 
 """
 function discriminate_ice_water(
-    reflectance_image::Matrix{RGB{Float64}},
+    falsecolor_image::Matrix{RGB{Float64}},
     normalized_image::Matrix{Gray{Float64}},
     landmask_bitmatrix::T,
     cloudmask_bitmatrix::T,
@@ -59,16 +59,16 @@ function discriminate_ice_water(
     nbins::Real=155,
 )::AbstractMatrix where {T<:AbstractArray{Bool}}
     clouds_channel = IceFloeTracker.create_clouds_channel(
-        cloudmask_bitmatrix, reflectance_image
+        cloudmask_bitmatrix, falsecolor_image
     )
-    reflectance_image_band7 = @view(channelview(reflectance_image)[1, :, :])
+    falsecolor_image_band7 = @view(channelview(falsecolor_image)[1, :, :])
 
     # first define all of the image variations
     image_clouds = IceFloeTracker.apply_landmask(clouds_channel, landmask_bitmatrix) # output during cloudmask apply, landmasked 
     image_cloudless = IceFloeTracker.apply_landmask(
-        reflectance_image_band7, landmask_bitmatrix
-    ) # channel 1 (band 7) from source reflectance image, landmasked
-    image_floes = IceFloeTracker.apply_landmask(reflectance_image, landmask_bitmatrix) # source reflectance, landmasked
+        falsecolor_image_band7, landmask_bitmatrix
+    ) # channel 1 (band 7) from source falsecolor image, landmasked
+    image_floes = IceFloeTracker.apply_landmask(falsecolor_image, landmask_bitmatrix) # source false color reflectance, landmasked
     image_floes_view = channelview(image_floes)
 
     floes_band_2 = @view(image_floes_view[2, :, :])
