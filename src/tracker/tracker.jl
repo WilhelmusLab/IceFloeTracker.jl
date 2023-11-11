@@ -237,10 +237,8 @@ function pairfloes(
         condition_thresholds,
         mc_thresholds,
     )
-    latlondata = getlatlon(latlonrefimage)
-    colstodrop = [:row_centroid, :col_centroid, :min_row, :min_col, :max_row, :max_col]
-    converttounits!(_pairs, latlondata, colstodrop)
-
+    addlatlon!(_pairs, latlonrefimage)
+    
     cols = [:ID, :passtime, :area, :convex_area, :major_axis_length, :minor_axis_length, :orientation, :perimeter, :latitude, :longitude, :x, :y, :area_mismatch, :corr]
     _pairs = _pairs[:, cols]
     return _pairs
