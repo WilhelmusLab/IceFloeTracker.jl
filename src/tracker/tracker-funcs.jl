@@ -11,7 +11,7 @@ struct MatchingProps
 end
 
 """
-Container for matched pairs of floes. `props1` and `props2` are dataframes with the same column names as the input dataframes. `ratios` is a dataframe with column names `area`, `majoraxis`, `minoraxis`, `convex_area`, `area_under`, and `corr` for similarity ratios. `dist` is a vector of (pixel) distances between paired floes.
+Container for matched pairs of floes. `props1` and `props2` are dataframes with the same column names as the input dataframes. `ratios` is a dataframe with column names `area`, `majoraxis`, `minoraxis`, `convex_area`, `area_mismatch`, and `corr` for similarity ratios. `dist` is a vector of (pixel) distances between paired floes.
 """
 struct MatchedPairs
     props1::DataFrame
@@ -23,7 +23,7 @@ end
 """
     MatchedPairs(df)
 
-Return an object of type `MatchedPairs` with an empty dataframe with the same column names as `df`, an empty dataframe with column names `area`, `majoraxis`, `minoraxis`, `convex_area`, `area_under`, and `corr` for similarity ratios, and an empty vector for distances.
+Return an object of type `MatchedPairs` with an empty dataframe with the same column names as `df`, an empty dataframe with column names `area`, `majoraxis`, `minoraxis`, `convex_area`, `area_mismatch`, and `corr` for similarity ratios, and an empty vector for distances.
 """
 function MatchedPairs(df)
     emptypropsdf = similar(df, 0)
@@ -163,7 +163,7 @@ end
 """
     makeemptydffrom(df::DataFrame)
 
-Return an object with an empty dataframe with the same column names as `df` and an empty dataframe with column names `area`, `majoraxis`, `minoraxis`, `convex_area`, `area_under`, and `corr` for similarity ratios. 
+Return an object with an empty dataframe with the same column names as `df` and an empty dataframe with column names `area`, `majoraxis`, `minoraxis`, `convex_area`, `area_mismatch`, and `corr` for similarity ratios. 
 """
 function makeemptydffrom(df::DataFrame)
     return MatchingProps(
@@ -174,7 +174,7 @@ end
 """
     makeemptyratiosdf()
 
-Return an empty dataframe with column names `area`, `majoraxis`, `minoraxis`, `convex_area`, `area_under`, and `corr` for similarity ratios.
+Return an empty dataframe with column names `area`, `majoraxis`, `minoraxis`, `convex_area`, `area_mismatch`, and `corr` for similarity ratios.
 """
 function makeemptyratiosdf()
     return DataFrame(;
@@ -182,7 +182,7 @@ function makeemptyratiosdf()
         majoraxis=Float64[],
         minoraxis=Float64[],
         convex_area=Float64[],
-        area_under=Float64[],
+        area_mismatch=Float64[],
         corr=Float64[],
     )
 end
@@ -258,19 +258,19 @@ function callmatchcorr(conditions)
 end
 
 """
-    isfloegoodmatch(conditions, mct, area_under, corr)
+    isfloegoodmatch(conditions, mct, area_mismatch, corr)
 
 Return `true` if the floes are a good match as per the set thresholds. Return `false` otherwise.
 
 # Arguments
 - `conditions`: tuple of booleans for evaluating the conditions
 - `mct`: tuple of thresholds for the match correlation test
-- `area_under` and `corr`: values returned by `match_corr`
+- `area_mismatch` and `corr`: values returned by `match_corr`
 """
-function isfloegoodmatch(conditions, mct, area_under, corr)
+function isfloegoodmatch(conditions, mct, area_mismatch, corr)
     return (
-        (conditions.cond3 && area_under < mct.area3) ||
-        (conditions.cond2 && area_under < mct.area2)
+        (conditions.cond3 && area_mismatch < mct.area3) ||
+        (conditions.cond2 && area_mismatch < mct.area2)
     ) && corr > mct.corr
 end
 
