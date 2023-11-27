@@ -49,7 +49,7 @@ function _pairfloes(
     props::Vector{DataFrame},
     passtimes::Vector{DateTime},
     condition_thresholds,
-    mc_thresholds,
+    mc_thresholds
 )
     dt = diff(passtimes) ./ Minute(1)
 
