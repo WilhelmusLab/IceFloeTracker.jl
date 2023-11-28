@@ -37,32 +37,34 @@
         # Load data
         data = deserialize(joinpath(path, "tracker_test_data.dat"))
         passtimes = deserialize(joinpath(path, "passtimes.dat"))
+        latlonimgpth = "test_inputs/NE_Greenland_truecolor.2020162.aqua.250m.tiff"
 
         # Filtering out small floes. Algorithm performs poorly on small, amorphous floes as they seem to look similar (too `blobby`) to each other
         for (i, prop) in enumerate(data.props)
             data.props[i] = prop[prop[:, :area].>=350, :]
         end
 
-        _pairs, _ = IceFloeTracker.pairfloes(
-            data.imgs, data.props, passtimes, dt, condition_thresholds, mc_thresholds
+        _pairs = IceFloeTracker.pairfloes(
+            data.imgs, data.props, passtimes, latlonimgpth, condition_thresholds, mc_thresholds
         )
 
-        @test maximum(_pairs.ID) == 10
-        @test names(_pairs) == ["ID",
+        @test maximum(_pairs.ID) == 6
+        expectedcols = ["ID",
             "passtime",
             "area",
-            "min_row",
-            "min_col",
-            "max_row",
-            "max_col",
-            "row_centroid",
-            "col_centroid",
             "convex_area",
             "major_axis_length",
             "minor_axis_length",
             "orientation",
             "perimeter",
-            "mask"]
+            "area_mismatch",
+            "corr",
+            "latitude",
+            "longitude",
+            "x",
+            "y"]
+        @test all([name in expectedcols for name in names(_pairs)])
         @test issorted(_pairs, :ID)
+        @test all([issorted(grp, :passtime) for grp in groupby(_pairs, :ID)])
     end
 end
