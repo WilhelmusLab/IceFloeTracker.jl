@@ -203,6 +203,7 @@ The main steps of the algorithm are as follows:
 - `segmented_imgs`: array of images with segmented floes
 - `props`: array of dataframes containing floe properties
 - `passtimes`: array of `DateTime` objects containing the time of the image in which the floes were captured
+- `latlonrefimage`: path to geotiff reference image for getting latitude and longitude of floe centroids
 - `condition_thresholds`: 3-tuple of thresholds (each a named tuple) for deciding whether to match floe `i` from day `k` to floe j from day `k+1`
 - `mc_thresholds`: thresholds for area mismatch and psi-s shape correlation
 
