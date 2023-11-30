@@ -9,6 +9,7 @@ Track Ice Floes using Moderate Resolution Imaging Spectroradiometer (MODIS) data
 ## Documentation 
 
 See the package's documentation (in development) at https://wilhelmuslab.github.io/IceFloeTracker.jl/
+
 ## Prerequisites
 
 A `julia` installation; ensure it is available on the `PATH`.
@@ -31,7 +32,7 @@ julia> ]
 ... to enter package mode.
 
 ```
-(@v1.7) pkg> activate IceFloeTracker.jl/
+(@v1.9) pkg> activate IceFloeTracker.jl/
 Activating project at `~/IceFloeTracker.jl`
 ```
 
@@ -40,7 +41,6 @@ Instantiate the environment and run the tests:
 (IceFloeTracker) pkg> instantiate
 (IceFloeTracker) pkg> test
 ```
-
 
 ## Notebooks
 
@@ -69,39 +69,9 @@ import IceFloeTracker
 
 You now have access to `IceFloeTracker` from inside your Pluto notebook!
 
-## Fetch Data
+## Using in a Pipeline
 
-The [`fetchdata.sh`](/scripts/fetchdata.sh) script requires the utilities [`gdal`](https://gdal.org/) and [`proj`](https://proj.org/). This repository includes a brewfile for ease of installation on MacOS. To install `gdal` and `proj` via homebrew, first [install homebrew](https://brew.sh/), then run `brew bundle install`
-
-### Example
-
-```
-$ ./scripts/fetchdata.sh -o data -s 2022-05-01 81 -22 79 -12
-```
-
-## Commandline
-
-To call each step of Ice Floe Tracker pipeline from the command line you can run:
-
-```
-./scripts/ice-floe-tracker.jl
-```
-
-Each step of the pipeline is implemented as a command to the script. Most commands take a metadata file, input directory, and output directory.
-
-For example:
-
-```
-./scripts/ice-floe-tracker.jl landmask <METADATA FILE> <INPUT DIR> <OUTPUT DIR>
-```
-
-## Snakemake
-
-Snakemake is used to encode the entire pipeline from start to finish. Snakemake relies on the command line scripts to automate the pipeline. The snakemake file should be suitable for runs on HPC systems. To run snakemake locally, run the following from a terminal in the root of this project:
-
-```
-snakemake -c<NUM CORES>
-```
+See the related tools at `https://github.com/WilhelmusLab/ice-floe-tracker-pipeline.git` for a Julia Command-line Interface to access all the source functions and templates for using the Cylc pipeline orchestrator.
 
 ## Development
 
