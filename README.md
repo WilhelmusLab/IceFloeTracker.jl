@@ -44,34 +44,11 @@ Instantiate the environment and run the tests:
 
 ## Notebooks
 
-To use notebooks with `IceFloeTracker.jl` you must activate the notebooks project and start Pluto
+There are a Jupyter notebooks in `IceFloeTracker.jl` that can be used as examples to access some of the image processing and tracking functions, available at `IceFloeTracker.jl/notebooks`. 
 
-To activate the notebooks project, start a Julia session from the root of this project and run the following commands
+## Interface for Pipeline Workflows
 
-```
-] activate "./notebooks"
-```
-
-To start pluto run the following from the same Julia session:
-
-```
-import Pluto; Pluto.run()
-```
-
-Each notebook must activate the project as well. Add the following code to your notebook
-
-```julia
-import Pkg
-Pkg.activate(".")
-
-import IceFloeTracker
-```
-
-You now have access to `IceFloeTracker` from inside your Pluto notebook!
-
-## Using in a Pipeline
-
-See the related tools at `https://github.com/WilhelmusLab/ice-floe-tracker-pipeline.git` for a Julia Command-line Interface to access all the source functions and templates for using the Cylc pipeline orchestrator.
+See related tools in the [IFTPipeline repository](https://github.com/WilhelmusLab/ice-floe-tracker-pipeline#ice-floe-tracker-pipeline), including a Julia Command-line Interface and templates that leverage the [Cylc](https://cylc.github.io) pipeline orchestrator.
 
 ## Development
 
