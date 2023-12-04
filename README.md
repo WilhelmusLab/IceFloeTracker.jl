@@ -44,7 +44,7 @@ Instantiate the environment and run the tests:
 
 ## Notebooks
 
-There are Jupyter notebooks in `IceFloeTracker.jl` that can be used as examples to access some of the image processing and tracking functions, available at `IceFloeTracker.jl/notebooks`. 
+There are Jupyter notebooks illustrating the main image processing and tracking functions, in the `/notebooks` folder. 
 
 ## Interface for Pipeline Workflows
 
