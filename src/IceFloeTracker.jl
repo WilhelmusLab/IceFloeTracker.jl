@@ -68,7 +68,7 @@ include("special_strels.jl")
 
 const sk_measure = PyNULL()
 const getlatlon = PyNULL()
-const IFTVERSION = VersionNumber(0, 2, 1)
+const IFTVERSION = VersionNumber(0, 4, 0)
 
 function __init__()
     copy!(sk_measure, pyimport_conda("skimage.measure", "scikit-image=0.20.0"))
