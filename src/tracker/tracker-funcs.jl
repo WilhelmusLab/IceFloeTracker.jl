@@ -533,7 +533,7 @@ Convert the floe properties from pixels to kilometers and square kilometers wher
 function converttounits!(propdf, latlondata, colstodrop)
     if nrow(propdf) == 0
         dropcols!(propdf, colstodrop)
-        insertcols!(propdf, :latitude=>Float64[], :longitude=>Float64[], :x=>Float64, :y=>Float64)
+        insertcols!(propdf, :latitude=>Float64, :longitude=>Float64, :x=>Float64, :y=>Float64)
         return nothing
     end
     convertcentroid!(propdf, latlondata, colstodrop)
