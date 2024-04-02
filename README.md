@@ -66,3 +66,16 @@ git add .
 git commit -m "some informative message"
 git push
 ```
+
+### Versioning the registered package
+
+1. Update the major or minor version numbers at the top of `Project.toml`
+2. Add `@JuliaRegistrator register` in a comment on your PR
+    - this bot will open a PR on the [Julia register](https://github.com/JuliaRegistries/General/tree/master/I/IceFloeTracker)
+3. Check the Julia register to make sure the version is accepted and merged
+4. Create a new version tag
+    - The bot will generate git commands that you can run in a terminal to add a tag 
+5. Create the new release on the [repo console](https://github.com/WilhelmusLab/IceFloeTracker.jl/releases)
+    - Click on `Draft a new release`
+    - Choose the new tag you created
+    - Click on `Generate release notes` or add a custom description
