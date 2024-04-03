@@ -1,0 +1,22 @@
+    # trigger-docker-julia.yml
+    name: Trigger `ice-floe-tracker-pipeline` Docker build
+    on:
+    workflow_run:
+        workflows: [Build and PushContainer] # Name of GitHub workflow to trigger in target repository
+        types:
+        - completed
+    jobs:
+    trigger-docker-julia:
+        if: github.event.workflow_run.conclusion == 'success' # Run only when workflow run has succeeded, i.e. all jobs have succeeded
+        runs-on: ubuntu-latest
+        steps:
+        - uses: actions/github-script@v6
+        with:
+            github-token: ${{ secrets.TRIGGER_PAT }} # GitHub PAT that was saved as repository secret
+            script: |
+            await github.rest.actions.createworkflowDispatch({
+                owner: 'WilhelmusLab',
+                repo: 'ice-floe-tracker-pipeline',
+                workflow_id: 'build-docker-julia.yml',
+                ref: 'main'
+            })
