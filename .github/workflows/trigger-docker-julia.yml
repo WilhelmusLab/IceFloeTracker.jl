@@ -13,7 +13,7 @@ jobs:
           with:
            owner: WilhelmusLab
            repo: ice-floe-tracker-pipeline
-           github-token: ${{ secrets.TRIGGER_PAT }}
+           github_token: ${{ secrets.TRIGGER_PAT }}
            workflow_file_name: build-docker-julia.yml
            ref: main
            wait_interval: 30
