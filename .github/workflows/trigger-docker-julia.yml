@@ -9,7 +9,7 @@ jobs:
       runs-on: ubuntu-latest 
       steps:
         - name: Trigger Julia Docker build
-          uses: convictional/trigger-workflow-and-wait@v1.6.5
+        - uses: convictional/trigger-workflow-and-wait@v1.6.5
           with:
            owner: WilhelmusLab
            repo: ice-floe-tracker-pipeline
