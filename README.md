@@ -79,3 +79,6 @@ git push
     - Click on `Draft a new release`
     - Choose the new tag you created
     - Click on `Generate release notes` or add a custom description
+6. Head over the `ice-floe-tracker-pipeline` [repo](https://github.com/WilhelmusLab/ice-floe-tracker-pipeline/blob/main/Project.toml) and update the `[compat]` section of the `Project.toml` where `IceFloeTracker` is a dependency.
+
+**Note:** After the PR for the release is merged, a trigger workflow will force a rebuild of Docker container used in the [pipeline](https://github.com/WilhelmusLab/ice-floe-tracker-pipeline).
