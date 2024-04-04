@@ -1,0 +1,22 @@
+# trigger-docker-julia.yml
+name: Trigger Docker build - Julia
+on:
+    push:
+        branches:
+          - main
+jobs:
+    trigger_workflow:
+      runs-on: ubuntu-latest 
+      steps:
+        - uses: convictional/trigger-workflow-and-wait@v1.6.5
+          name: Trigger Julia Docker build
+          with:
+           owner: WilhelmusLab
+           repo: ice-floe-tracker-pipeline
+           github-token: ${{ secrets.TRIGGER_PAT }}
+           workflow_file_name: build-docker-julia.yml
+           ref: main
+           wait_interval: 30
+           propagate_failure: true
+           trigger_workflow: true
+           wait_workflow: true
