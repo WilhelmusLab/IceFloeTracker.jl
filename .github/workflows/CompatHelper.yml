@@ -1,7 +1,7 @@
 name: CompatHelper
 on:
   schedule:
-    # Check for dep updates on run at midnight on the first day of every month
+    # Check for dep updates; run at midnight on the first day of every month
     - cron: 0 0 1 * *
   workflow_dispatch:
 permissions:
