@@ -91,7 +91,7 @@ Rotations = "1.5"
 StaticArrays = "1.5"
 StatsBase = "0.34"
 TOML = "1"
-TiledIteration = "0.3"
+TiledIteration = "0.3, 0.4"
 UpdateJulia = "0.4"
 julia = "1.8"
 
