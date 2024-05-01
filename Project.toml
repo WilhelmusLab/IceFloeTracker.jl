@@ -92,7 +92,7 @@ StaticArrays = "1.5"
 Statistics = "1"
 StatsBase = "0.34"
 TOML = "1"
-TiledIteration = "0.3, 0.4"
+TiledIteration = "0.5"
 UpdateJulia = "0.4"
 julia = "1.8"
 
