@@ -61,7 +61,7 @@ function _adjust_histogram(masked_view, nbins, rblocks, cblocks, clip)
 end
 
 """
-    imsharpen(truecolor_image, lambda, kappa, niters, nbins, rblocks, cblocks, clip, smoothing_param, intensity)
+    imsharpen(truecolor_image, landmask_no_dilate, lambda, kappa, niters, nbins, rblocks, cblocks, clip, smoothing_param, intensity)
 
 Sharpen `truecolor_image`.
 
