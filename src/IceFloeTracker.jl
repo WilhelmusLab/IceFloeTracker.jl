@@ -77,14 +77,31 @@ end
 
 const IFTVERSION = get_version_from_toml()
 
+function parse_requirements(file_path)
+    requirements = Dict{String, String}()
+    open(file_path, "r") do f
+        for line in eachline(f)
+            pkg, version = split(line, "==")
+            requirements[pkg] = version
+        end
+    end
+    return requirements
+end
+
 function __init__()
-    pyimport_conda("numpy", "numpy=1.23")
-    pyimport_conda("pyproj", "pyproj=3.6.0")
-    pyimport_conda("rasterio", "rasterio=1.3.7")
-    pyimport_conda("jinja2", "jinja2=3.1.2")
-    pyimport_conda("pandas", "pandas=2")
+
+    deps = parse_requirements(joinpath(dirname(@__DIR__), "requirements.txt"))
+
+    for (pkg, version) in deps
+        if pkg == "scikit-image"
+            sk_measure_module = pyimport_conda("skimage.measure", "$(pkg)=$(version)")
+            copy!(sk_measure, sk_measure_module)
+        else
+            pyimport_conda(pkg, "$(pkg)=$(version)")
+        end
+    end
+
     @pyinclude(joinpath(@__DIR__, "latlon.py"))
-    copy!(sk_measure, pyimport_conda("skimage.measure", "scikit-image=0.20.0"))
     copy!(getlatlon, py"getlatlon")
     return nothing
 end
