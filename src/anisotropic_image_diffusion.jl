@@ -38,12 +38,14 @@ function pmad_kernel!(image, output, g, λ)
     end
 end
 
-function invert_color(color::RGB{Float64})
+function invert_color(color::RGB{T}) where {T<:AbstractFloat}
     return RGB(1.0 / color.r, 1.0 / color.g, 1.0 / color.b)
 end
+
 function invert_color(color::Gray{Float64})
     return Gray(1.0 / color.val)
 end
+
 function diffusion(
     image::Matrix{T}, λ::Float64, K::Int, niters::Int
 ) where {T<:Color{Float64}}
@@ -55,6 +57,7 @@ function diffusion(
     if !(0 <= λ && λ <= 0.25)
         error("Lambda must be between zero and 0.25")
     end
+
     @inline function g(norm∇I)
         coef = (norm∇I / K)
         denom = (T(1) .+ coef ⊙ coef)
