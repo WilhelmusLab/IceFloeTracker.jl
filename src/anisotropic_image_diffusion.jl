@@ -62,8 +62,7 @@ function diffusion(
     end
 
     output = deepcopy(image)
-    image = deepcopy(image)
-    for i in 1:niters
+    for _ in 1:niters
         pmad_kernel!(image, output, g, λ)
         @swap!(image, output)
     end
