@@ -32,7 +32,7 @@ function invert_color(color::RGB{T}) where {T<:AbstractFloat}
     return RGB(1.0 / color.r, 1.0 / color.g, 1.0 / color.b)
 end
 
-function invert_color(color::Gray{Float64})
+function invert_color(color::Gray{T}) where {T<:AbstractFloat}
     return Gray(1.0 / color.val)
 end
 
