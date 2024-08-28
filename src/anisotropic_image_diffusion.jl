@@ -44,9 +44,9 @@ function diffusion(
         "Scale-space and edge detection using anisotropic diffusion." 
         IEEE Transactions on Pattern Analysis and Machine Intelligence (PAMI), 1990.
     =#
-    if !(0 <= λ <= 0.25)
-        error("Lambda must be between zero and 0.25")
-    end
+    !(0 <= λ <= 0.25) && throw(ArgumentError("Lambda must be between zero and 0.25"))
+    !(K > 0) && throw(ArgumentError("K must be greater than zero"))
+    !(niters > 0) && throw(ArgumentError("Number of iterations must be greater than zero"))
 
     @inline function g(norm∇I)
         coef = norm∇I / K
