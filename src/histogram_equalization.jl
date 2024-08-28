@@ -26,7 +26,7 @@ function anisotropic_diffusion_3D(I)
         rgbchannels[:, :, i] .= anisotropic_diffusion_2D(rgbchannels[:, :, i])
     end
 
-return rgbchannels
+    return rgbchannels
 
 end
 
@@ -48,7 +48,7 @@ function anisotropic_diffusion_2D(I::AbstractMatrix{T}; gradient_threshold::Unio
 
     for _ in 1:niter
         # These are zero-indexed offset arrays
-        diff_img_north = padded_img[0:end-1, 1:end-1] .- padded_img[1:end,1:end-1]
+        diff_img_north = padded_img[0:end-1, 1:end-1] .- padded_img[1:end, 1:end-1]
         diff_img_east = padded_img[1:end-1, 1:end] .- padded_img[1:end-1, 0:end-1]
         diff_img_nw = padded_img[0:end-2, 0:end-2] .- I
         diff_img_ne = padded_img[0:end-2, 2:end] .- I
@@ -87,7 +87,7 @@ end
 
 
 function imshow(img)
-    if typeof(img)<: BitMatrix
+    if typeof(img) <: BitMatrix
         return Gray.(img)
     end
     Gray.(img ./ 255)
@@ -100,7 +100,6 @@ function to_uint8(img)
 end
 
 function adapthisteq(img, nbins=256, clip=0.01)
-
     # Step 1: Normalize the image to [0, 1] based on its own min and max
     image_min, image_max = minimum(img), maximum(img)
     normalized_image = (img .- image_min) / (image_max - image_min)
@@ -121,6 +120,18 @@ function adapthisteq(img, nbins=256, clip=0.01)
     return final_image
 end
 
+"""
+    getrbc_channels(img)
+
+Get the RBC (Red, Blue, and Green) channels of an image.
+
+# Arguments
+- `img`: The input image.
+
+# Returns
+An m x n x 3 array the Red, Blue, and Green channels of the input image.
+
+"""
 function getrbc_channels(img)
     redc = red.(img) * 255
     greenc = green.(img) * 255
@@ -130,59 +141,64 @@ function getrbc_channels(img)
 end
 
 
-function getrbc_channels_(img)::Tuple{AbstractMatrix{Int64}, AbstractMatrix{Int64}, AbstractMatrix{Int64}}
-    # Extract color channels as vectors
-    red_vector = red.(img)
-    green_vector = green.(img)
-    blue_vector = blue.(img)
+"""
+    conditional_histeq(true_color_img, clouds, landmask, rblocks::Int=8, cblocks::Int=6, entropy_threshold::AbstractFloat=4.0, white_threshold::AbstractFloat=25.5, white_fraction_threshold::AbstractFloat=0.4)
 
-    # Convert vectors to matrices if necessary (e.g., assuming square images)
-    img_size = size(img)
-    redc = reshape(red_vector, img_size) .* 255
-    greenc = reshape(green_vector, img_size) .* 255
-    bluec = reshape(blue_vector, img_size) .* 255
+Performs conditional histogram equalization on a true color image.
 
-    # Convert to Int64 if necessary
-    redc = Int64.(redc)
-    greenc = Int64.(greenc)
-    bluec = Int64.(bluec)
+# Arguments
+- `true_color_img`: The true color image to be equalized.
+- `clouds`: The cloud mask indicating the cloud regions in the image.
+- `landmask`: The land mask indicating the land regions in the image.
+- `rblocks`: The number of row-blocks to divide the image into for histogram equalization. Default is 8.
+- `cblocks`: The number of column-blocks to divide the image into for histogram equalization. Default is 6.
+- `entropy_threshold`: The entropy threshold used to determine if a block should be equalized. Default is 4.0.
+- `white_threshold`: The white threshold used to determine if a pixel should be considered white. Default is 25.5.
+- `white_fraction_threshold`: The white fraction threshold used to determine if a block should be equalized. Default is 0.4.
 
-    return redc, greenc, bluec
-end
+# Returns
+The equalized true color image.
 
-# TODO: Put this in a function
+"""
+function conditional_histeq(
+    true_color_img,
+    clouds,
+    landmask,
+    rblocks::Int=8,
+    cblocks::Int=6,
+    entropy_threshold::AbstractFloat=4.0,
+    white_threshold::AbstractFloat=25.5,
+    white_fraction_threshold::AbstractFloat=0.4)
 
-# Input Images: true color, false color, and landmask
+    # 1. Apply diffuse (anisotropic diffusion) to each channel of true color image
+    # TODO: See about using 8-point connectivity as in the original MATLAB script
+    true_color_diffused = IceFloeTracker.diffusion(float64.(true_color_img), 0.1, 75, 3)
 
-rgbchannels = getrbc_channels(true_color_img)
+    # 2. Apply landmask to clouds/falscolor image
+    IceFloeTracker.apply_landmask!(clouds, landmask.dilated)
 
-# 1. Apply diffuse (anisotropic diffusion) to each channel of true color image
-aniso_diff_rgb = anisotropic_diffusion_3D(true_color_img)
+    # 3. Get tiles
+    rtile, ctile = size(clouds)
+    tile_size = Tuple{Int,Int}((rtile / rblocks, ctile / cblocks))
+    tiles = TileIterator(axes(clouds), tile_size)
 
-# 2. Apply landmask to falscolor image
-IceFloeTracker.apply_landmask!(clouds, landmask.dilated)
+    rgbchannels = getrbc_channels(true_color_diffused)
 
-# 3. Split falscolor into tiles; split each channel of true color image into tiles
-# traverse tiles
-rtile, ctile = size(clouds)
-tile_size = (rtile / 8, ctile / 6)
-
-# convert tile_size to Tuple{Int, Int}
-tile_size = Tuple{Int, Int}(tile_size)
-cloudtiles = TileIterator(axes(clouds),tile_size)
-# truecolortiles = TileIterator(axes(clouds),tile_size)
-
-
-# # 4. For each tile, compute the entropy in the falscolor tile, and the fraction of white and black pixels
-for tile in cloudtiles
-        entropy = shannon_entropy(clouds[tile...])
-        whitefraction = sum(clouds[tile...] .> 25.5) / length(clouds[tile...])
+    # 4. For each tile, compute the entropy in the falscolor tile, and the fraction of white and black pixels
+    for tile in tiles
+        clouds_tile = clouds[tile...]
+        entropy = shannon_entropy(clouds_tile)
+        whitefraction = sum(clouds_tile .> white_threshold) / length(clouds_tile)
 
         # 5. If the entropy is above a threshold, and the fraction of white pixels is above a threshold, then apply histogram equalization to the tiles of each channel of the true color image. Otherwise, keep the original tiles.
-        if entropy > 4 && whitefraction > 0.4
+        if entropy > entropy_threshold && whitefraction > white_fraction_threshold
             for i in 1:3
-                rgbchannels[:,:,i][tile...] .= adapthisteq(rgbchannels[:,:,i][tile...])
+                eqhist = adapthisteq(rgbchannels[:, :, i][tile...])
+                @view(rgbchannels[:, :, i])[tile...] .= eqhist
             end
         end
-end
 
+    end
+
+    return rgbchannels
+end
