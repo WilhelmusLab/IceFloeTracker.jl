@@ -1,6 +1,6 @@
 # Anisotropic Image Diffusion
 # Adapted from https://github.com/Red-Portal/UltrasoundDesignGallery.jl
-## MIT license with permission to use 
+## MIT license with permission to use
 
 function pmad_kernel!(image, output, g, λ)
     M, N = size(image)
@@ -40,8 +40,8 @@ function diffusion(
     image::Matrix{T}, λ::Float64, K::Int, niters::Int
 ) where {T<:Color{Float64}}
     #=
-        Perona, Pietro, and Jitendra Malik. 
-        "Scale-space and edge detection using anisotropic diffusion." 
+        Perona, Pietro, and Jitendra Malik.
+        "Scale-space and edge detection using anisotropic diffusion."
         IEEE Transactions on Pattern Analysis and Machine Intelligence (PAMI), 1990.
     =#
     !(0 <= λ <= 0.25) && throw(ArgumentError("Lambda must be between zero and 0.25"))
