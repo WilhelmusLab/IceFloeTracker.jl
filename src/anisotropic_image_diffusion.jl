@@ -1,19 +1,9 @@
-# Anisotropic Image Diffusion ##
-# This script is borrowed from https://github.com/Red-Portal/UltrasoundDesignGallery.jl ##
+# Anisotropic Image Diffusion
+# Adapted from https://github.com/Red-Portal/UltrasoundDesignGallery.jl
 ## MIT license with permission to use 
 
-macro swap!(a::Symbol, b::Symbol)
-    blk = quote
-        c = $(esc(a))
-        $(esc(a)) = $(esc(b))
-        $(esc(b)) = c
-    end
-    return blk
-end
-
 function pmad_kernel!(image, output, g, λ)
-    M = size(image, 1)
-    N = size(image, 2)
+    M, N = size(image)
 
     @inbounds for j in 1:N
         @simd for i in 1:M
@@ -54,20 +44,20 @@ function diffusion(
         "Scale-space and edge detection using anisotropic diffusion." 
         IEEE Transactions on Pattern Analysis and Machine Intelligence (PAMI), 1990.
     =#
-    if !(0 <= λ && λ <= 0.25)
+    if !(0 <= λ <= 0.25)
         error("Lambda must be between zero and 0.25")
     end
 
     @inline function g(norm∇I)
-        coef = (norm∇I / K)
-        denom = (T(1) .+ coef ⊙ coef)
+        coef = norm∇I / K
+        denom = T(1) .+ coef ⊙ coef
         return invert_color(denom)
     end
 
     output = deepcopy(image)
     for _ in 1:niters
         pmad_kernel!(image, output, g, λ)
-        @swap!(image, output)
+        image, output = output, image
     end
     return output
 end
