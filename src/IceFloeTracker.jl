@@ -78,13 +78,13 @@ end
 const IFTVERSION = get_version_from_toml()
 
 function __init__()
-    pyimport_conda("numpy", "numpy=1.23")
-    pyimport_conda("pyproj", "pyproj=3.6.0")
-    pyimport_conda("rasterio", "rasterio=1.3.7")
-    pyimport_conda("jinja2", "jinja2=3.1.2")
-    pyimport_conda("pandas", "pandas=2")
+    pyimport_conda("numpy", "numpy=1.26")
+    pyimport_conda("pyproj", "pyproj")
+    pyimport_conda("rasterio", "rasterio")
+    pyimport_conda("jinja2", "jinja2")
+    pyimport_conda("pandas", "pandas")
     @pyinclude(joinpath(@__DIR__, "latlon.py"))
-    copy!(sk_measure, pyimport_conda("skimage.measure", "scikit-image=0.20.0"))
+    copy!(sk_measure, pyimport_conda("skimage.measure", "scikit-image"))
     copy!(getlatlon, py"getlatlon")
     return nothing
 end

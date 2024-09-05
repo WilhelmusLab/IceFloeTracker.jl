@@ -36,6 +36,15 @@ julia> ]
 Activating project at `~/IceFloeTracker.jl`
 ```
 
+Rebuild PyCall
+```
+julia> using Pkg
+julia> ENV["PYTHON"]=""
+julia> Pkg.build("PyCall")
+
+
+```
+
 Instantiate the environment and run the tests:
 ```
 (IceFloeTracker) pkg> instantiate
