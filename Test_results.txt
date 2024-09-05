@@ -1,0 +1,570 @@
+# Test 1 – unpin dependencies in IceFloeTracker.jl
+
+Pyimport block now looks like:
+
+```julia
+
+function __init__()
+    pyimport_conda("numpy", "numpy=1.26")
+    pyimport_conda("pyproj", "pyproj")
+    pyimport_conda("rasterio", "rasterio")
+    pyimport_conda("jinja2", "jinja2")
+    pyimport_conda("pandas", "pandas")
+    @pyinclude(joinpath(@__DIR__, "latlon.py"))
+    copy!(sk_measure, pyimport_conda("skimage.measure", "scikit-image"))
+    copy!(getlatlon, py"getlatlon")
+    return nothing
+end
+
+```
+
+Results:
+```
+(IceFloeTracker) pkg> test
+┌ Warning: The project dependencies or compat requirements have changed since the manifest was last resolved.
+│ It is recommended to `Pkg.resolve()` or consider `Pkg.update()` if necessary.
+└ @ Pkg.API ~/.julia/juliaup/julia-1.10.5+0.aarch64.linux.gnu/share/julia/stdlib/v1.10/Pkg/src/API.jl:1848
+     Testing IceFloeTracker
+      Status `/tmp/jl_phCL87/Project.toml`
+  [c7e460c6] ArgParse v1.2.0
+  [a93c6f00] DataFrames v1.6.1
+  [8bb1440f] DelimitedFiles v1.9.1
+  [04643c7a] IceFloeTracker v0.5.0 `/workspaces/IceFloeTracker.jl`
+⌅ [02fcd773] ImageTransformations v0.9.5
+⌅ [916415d5] Images v0.25.3
+  [438e738f] PyCall v1.96.4
+  [ade2ca70] Dates
+  [9a3f8284] Random
+  [8dfed614] Test
+      Status `/tmp/jl_phCL87/Manifest.toml`
+  [621f4979] AbstractFFTs v1.5.0
+⌅ [79e6a3ab] Adapt v3.7.2
+  [c7e460c6] ArgParse v1.2.0
+  [ec485272] ArnoldiMethod v0.4.0
+⌃ [4fba245c] ArrayInterface v7.7.1
+⌃ [13072b0f] AxisAlgorithms v1.0.1
+  [39de3d68] AxisArrays v0.4.7
+  [62783981] BitTwiddlingConvenienceFunctions v0.1.6
+  [fa961155] CEnum v0.5.0
+  [2a0fbf3d] CPUSummary v0.2.6
+  [aafaddc9] CatIndices v0.2.2
+  [d360d2e6] ChainRulesCore v1.24.0
+  [fb6a15b2] CloseOpenIntervals v0.1.13
+  [aaaa29a8] Clustering v0.15.7
+  [35d6a980] ColorSchemes v3.26.0
+  [3da002f7] ColorTypes v0.11.5
+⌅ [c3611d14] ColorVectorSpace v0.9.10
+  [5ae59095] Colors v0.12.11
+  [f70d9fcc] CommonWorldInvalidations v1.0.0
+⌃ [34da2185] Compat v4.15.0
+  [ed09eef8] ComputationalResources v0.3.2
+  [8f4d0f93] Conda v1.10.2
+⌃ [187b0558] ConstructionBase v1.5.6
+  [150eb455] CoordinateTransformations v0.6.3
+  [adafc99b] CpuId v0.3.1
+  [a8cc5b0e] Crayons v4.1.1
+  [dc8bdbbb] CustomUnitRanges v1.0.2
+  [717857b8] DSP v0.7.9
+  [9a962f9c] DataAPI v1.16.0
+  [a93c6f00] DataFrames v1.6.1
+  [864edb3b] DataStructures v0.18.20
+  [e2d170a0] DataValueInterfaces v1.0.0
+  [8bb1440f] DelimitedFiles v1.9.1
+  [b4f34e82] Distances v0.10.11
+  [ffbed154] DocStringExtensions v0.9.3
+  [4f61f5a4] FFTViews v0.3.2
+  [7a1cc6ca] FFTW v1.8.0
+  [5789e2e9] FileIO v1.16.3
+  [53c48c17] FixedPointNumbers v0.8.5
+  [d7ba0133] Git v1.3.1
+  [a2bd30eb] Graphics v1.1.2
+  [86223c79] Graphs v1.11.2
+  [f67ccb44] HDF5 v0.17.2
+  [3e5b6fbb] HostCPUFeatures v0.1.17
+  [04643c7a] IceFloeTracker v0.5.0 `/workspaces/IceFloeTracker.jl`
+  [615f187c] IfElse v0.1.1
+  [2803e5a7] ImageAxes v0.6.11
+⌃ [c817782e] ImageBase v0.1.5
+  [f332f351] ImageContrastAdjustment v0.3.12
+⌅ [a09fc81d] ImageCore v0.9.4
+  [51556ac3] ImageDistances v0.2.17
+⌃ [6a3955dd] ImageFiltering v0.7.6
+  [82e4d734] ImageIO v0.6.8
+⌃ [6218d12a] ImageMagick v1.2.1
+  [bc367c6b] ImageMetadata v0.9.9
+⌅ [787d08f9] ImageMorphology v0.3.2
+  [2996bd0c] ImageQualityIndexes v0.3.7
+⌃ [80713f31] ImageSegmentation v1.8.1
+  [4e3cecfd] ImageShow v0.3.8
+⌅ [02fcd773] ImageTransformations v0.9.5
+⌅ [916415d5] Images v0.25.3
+  [9b13fd28] IndirectArrays v1.0.0
+  [d25df0c9] Inflate v0.1.5
+  [842dd82b] InlineStrings v1.4.2
+  [1d092043] IntegralArrays v0.1.5
+⌅ [a98d9a8b] Interpolations v0.14.7
+  [8197267c] IntervalSets v0.7.10
+  [41ab1584] InvertedIndices v1.3.0
+  [92d709cd] IrrationalConstants v0.2.2
+  [c8e1da08] IterTools v1.10.0
+  [82899510] IteratorInterfaceExtensions v1.0.0
+⌃ [033835bb] JLD2 v0.4.50
+⌃ [692b3bcd] JLLWrappers v1.5.0
+  [682c06a0] JSON v0.21.4
+  [b835a17e] JpegTurbo v0.1.5
+  [b964fa9f] LaTeXStrings v1.3.1
+  [10f19ff3] LayoutPointers v0.1.17
+  [8cdb02fc] LazyModules v0.3.1
+  [2ab3a3ac] LogExpFunctions v0.3.28
+  [bdcacae8] LoopVectorization v0.12.171
+  [3da0fdf6] MPIPreferences v0.1.11
+  [1914dd2f] MacroTools v0.5.13
+  [d125e4d3] ManualMemory v0.1.8
+  [dbb5928d] MappedArrays v0.4.2
+  [626554b9] MetaGraphs v0.7.2
+  [e1d29d7a] Missings v1.2.0
+  [e94cdb99] MosaicViews v0.3.4
+  [77ba4419] NaNMath v1.0.2
+  [b8a86587] NearestNeighbors v0.4.18
+  [f09324ee] Netpbm v1.1.1
+  [6fe1bfb0] OffsetArrays v1.14.1
+  [52e1d378] OpenEXR v0.3.2
+  [bac558e1] OrderedCollections v1.6.3
+  [f57f5aa1] PNGFiles v0.4.3
+  [5432bcbf] PaddedViews v0.5.12
+  [d96e819e] Parameters v0.12.3
+  [69de0a69] Parsers v2.8.1
+⌅ [18e31ff7] Peaks v0.5.2
+  [eebad327] PkgVersion v0.3.3
+  [1d0040c9] PolyesterWeave v0.2.2
+  [f27b6e38] Polynomials v4.0.11
+  [2dfb63ee] PooledArrays v1.4.3
+  [85a6dd25] PositiveFactorizations v0.2.4
+  [aea7be01] PrecompileTools v1.2.1
+  [21216c6a] Preferences v1.4.3
+  [08abe8d2] PrettyTables v2.3.2
+  [92933f4c] ProgressMeter v1.10.2
+  [438e738f] PyCall v1.96.4
+  [4b34888f] QOI v1.0.0
+  [94ee1d12] Quaternions v0.7.6
+  [b3c3ace0] RangeArrays v0.3.2
+  [c84ed2f1] Ratios v0.4.5
+  [c1ae055f] RealDot v0.1.0
+  [3cdcf5f2] RecipesBase v1.3.4
+  [189a3867] Reexport v1.2.2
+  [dee08c22] RegionTrees v0.3.2
+  [ae029012] Requires v1.3.0
+  [6038ab10] Rotations v1.7.1
+  [fdea26ae] SIMD v3.5.0
+  [94e857df] SIMDTypes v0.1.0
+  [476501e8] SLEEFPirates v0.6.43
+  [91c51154] SentinelArrays v1.4.5
+  [efcf1570] Setfield v1.1.1
+  [699a6c99] SimpleTraits v0.9.4
+  [47aef6b3] SimpleWeightedGraphs v1.4.0
+  [45858cf5] Sixel v0.1.3
+  [a2af1166] SortingAlgorithms v1.2.1
+  [276daf66] SpecialFunctions v2.4.0
+  [cae243ae] StackViews v0.1.1
+  [aedffcd0] Static v1.1.1
+⌃ [0d7ed370] StaticArrayInterface v1.5.1
+  [90137ffa] StaticArrays v1.9.7
+  [1e83bf80] StaticArraysCore v1.4.3
+  [82ae8749] StatsAPI v1.7.0
+  [2913bbd2] StatsBase v0.34.3
+  [892a3eda] StringManipulation v0.3.4
+⌃ [fd094767] Suppressor v0.2.7
+  [3783bdb8] TableTraits v1.0.1
+  [bd369af6] Tables v1.12.0
+  [62fd8b95] TensorCore v0.1.1
+  [b718987f] TextWrap v1.0.2
+  [8290d209] ThreadingUtilities v0.5.2
+  [731e570b] TiffImages v0.10.0
+⌅ [06e1c1a7] TiledIteration v0.3.1
+⌃ [3bb67fe8] TranscodingStreams v0.11.1
+  [3a884ed6] UnPack v1.0.2
+  [770da0de] UpdateJulia v0.4.4
+  [3d5dd08c] VectorizationBase v0.21.70
+  [81def892] VersionParsing v1.3.0
+⌅ [efce3f68] WoodburyMatrices v0.5.6
+  [2e619515] Expat_jll v2.6.2+0
+  [f5851436] FFTW_jll v3.3.10+0
+  [61579ee1] Ghostscript_jll v9.55.0+4
+  [f8c6e375] Git_jll v2.44.0+2
+⌃ [0234f1f7] HDF5_jll v1.14.2+1
+  [e33a78d0] Hwloc_jll v2.11.1+0
+⌅ [c73af94c] ImageMagick_jll v6.9.13+0
+  [905a6f67] Imath_jll v3.1.11+0
+⌃ [1d5cc7b8] IntelOpenMP_jll v2024.2.0+0
+  [aacddb02] JpegTurbo_jll v3.0.3+0
+⌅ [88015f11] LERC_jll v3.0.0+1
+⌃ [1d63c593] LLVMOpenMP_jll v15.0.7+0
+  [94ce4f54] Libiconv_jll v1.17.0+0
+⌃ [89763e89] Libtiff_jll v4.5.1+1
+  [d3a379c0] LittleCMS_jll v2.16.0+0
+  [856f044c] MKL_jll v2024.2.0+0
+  [7cb0a576] MPICH_jll v4.2.2+0
+  [f1f71cc9] MPItrampoline_jll v5.4.0+0
+  [9237b28f] MicrosoftMPI_jll v10.1.4+2
+  [18a262bb] OpenEXR_jll v3.2.4+0
+  [643b3616] OpenJpeg_jll v2.5.2+0
+⌃ [fe0851c0] OpenMPI_jll v5.0.4+0
+⌃ [458c3c95] OpenSSL_jll v3.0.14+0
+  [efe28fd5] OpenSpecFun_jll v0.5.5+0
+  [ffd25f8a] XZ_jll v5.4.6+0
+  [3161d3a3] Zstd_jll v1.5.6+0
+  [477f73a3] libaec_jll v1.1.2+0
+  [b53b4c65] libpng_jll v1.6.43+1
+  [075b6546] libsixel_jll v1.10.3+0
+  [1317d2d5] oneTBB_jll v2021.12.0+0
+  [0dad84c5] ArgTools v1.1.1
+  [56f22d72] Artifacts
+  [2a0f44e3] Base64
+  [ade2ca70] Dates
+  [8ba89e20] Distributed
+  [f43a241f] Downloads v1.6.0
+  [7b1f6079] FileWatching
+  [9fa8497b] Future
+  [b77e0a4c] InteractiveUtils
+  [4af54fe1] LazyArtifacts
+  [b27032c2] LibCURL v0.6.4
+  [76f85450] LibGit2
+  [8f399da3] Libdl
+  [37e2e46d] LinearAlgebra
+  [56ddb016] Logging
+  [d6f4376e] Markdown
+  [a63ad114] Mmap
+  [ca575930] NetworkOptions v1.2.0
+  [44cfe95a] Pkg v1.10.0
+  [de0858da] Printf
+  [3fa0cd96] REPL
+  [9a3f8284] Random
+  [ea8e919c] SHA v0.7.0
+  [9e88b42a] Serialization
+  [1a1011a3] SharedArrays
+  [6462fe0b] Sockets
+  [2f01184e] SparseArrays v1.10.0
+  [10745b16] Statistics v1.10.0
+  [4607b0f0] SuiteSparse
+  [fa267f1f] TOML v1.0.3
+  [a4e569a6] Tar v1.10.0
+  [8dfed614] Test
+  [cf7118a7] UUIDs
+  [4ec0a83e] Unicode
+  [e66e0078] CompilerSupportLibraries_jll v1.1.1+0
+  [deac9b47] LibCURL_jll v8.4.0+0
+  [e37daf67] LibGit2_jll v1.6.4+0
+  [29816b5a] LibSSH2_jll v1.11.0+1
+  [c8ffd9c3] MbedTLS_jll v2.28.2+1
+  [14a3606d] MozillaCACerts_jll v2023.1.10
+  [4536629a] OpenBLAS_jll v0.3.23+4
+  [05823500] OpenLibm_jll v0.8.1+2
+  [efcefdf7] PCRE2_jll v10.42.0+1
+  [bea87d4a] SuiteSparse_jll v7.2.1+1
+  [83775a58] Zlib_jll v1.2.13+1
+  [8e850b90] libblastrampoline_jll v5.11.0+0
+  [8e850ede] nghttp2_jll v1.52.0+1
+  [3f19e933] p7zip_jll v17.4.0+2
+        Info Packages marked with ⌃ and ⌅ have new versions available. Those with ⌃ may be upgradable, but those with ⌅ are restricted by compatibility constraints from upgrading.
+Precompiling project...
+  1 dependency successfully precompiled in 7 seconds. 218 already precompiled.
+  1 dependency had output during precompilation:
+┌ IceFloeTracker
+│  WARNING: Wrapping `Vararg` directly in UnionAll is deprecated (wrap the tuple instead).
+│  You may need to write `f(x::Vararg{T})` rather than `f(x::Vararg{<:T})` or `f(x::Vararg{T}) where T` instead of `f(x::Vararg{T} where T)`.
+│  WARNING: Wrapping `Vararg` directly in UnionAll is deprecated (wrap the tuple instead).
+│  You may need to write `f(x::Vararg{T})` rather than `f(x::Vararg{<:T})` or `f(x::Vararg{T}) where T` instead of `f(x::Vararg{T} where T)`.
+└  
+     Testing Running tests...
+[ Info: Installing skimage.measure via the Conda scikit-image package...
+[ Info: Running `conda install -y scikit-image` in root environment
+Channels:
+ - conda-forge
+Platform: linux-aarch64
+Collecting package metadata (repodata.json): done
+Solving environment: done
+
+## Package Plan ##
+
+  environment location: /home/vscode/.julia/conda/3/aarch64
+
+  added / updated specs:
+    - scikit-image
+
+
+The following packages will be downloaded:
+
+    package                    |            build
+    ---------------------------|-----------------
+    aom-3.9.1                  |       hcccb83c_0         3.1 MB  conda-forge
+    brotli-1.1.0               |       h86ecc28_2          19 KB  conda-forge
+    brotli-bin-1.1.0           |       h86ecc28_2          18 KB  conda-forge
+    brunsli-0.1                |       h01db608_0         196 KB  conda-forge
+    c-blosc2-2.15.1            |       hb9328e4_0         282 KB  conda-forge
+    charls-2.4.2               |       h2f0025b_0         144 KB  conda-forge
+    dav1d-1.2.1                |       h31becfc_0         339 KB  conda-forge
+    imagecodecs-2024.6.1       |  py312h7586630_3         2.0 MB  conda-forge
+    imageio-2.35.1             |     pyh12aca89_0         286 KB  conda-forge
+    importlib-metadata-8.4.0   |     pyha770c72_0          28 KB  conda-forge
+    jxrlib-1.1                 |       h31becfc_3         233 KB  conda-forge
+    lazy-loader-0.4            |     pyhd8ed1ab_1          16 KB  conda-forge
+    lazy_loader-0.4            |     pyhd8ed1ab_1           6 KB  conda-forge
+    libavif16-1.1.1            |       ha8a48cf_1         113 KB  conda-forge
+    libbrotlicommon-1.1.0      |       h86ecc28_2          67 KB  conda-forge
+    libbrotlidec-1.1.0         |       h86ecc28_2          31 KB  conda-forge
+    libbrotlienc-1.1.0         |       h86ecc28_2         283 KB  conda-forge
+    libhwy-1.1.0               |       h2a328a1_0         911 KB  conda-forge
+    libjxl-0.10.3              |       h29da276_0         1.2 MB  conda-forge
+    libzopfli-1.0.3            |       h01db608_0         167 KB  conda-forge
+    networkx-3.3               |     pyhd8ed1ab_1         1.1 MB  conda-forge
+    pillow-10.4.0              |  py312hc0f7016_0        40.2 MB  conda-forge
+    pywavelets-1.7.0           |  py312hc5fbee2_0         3.5 MB  conda-forge
+    rav1e-0.6.6                |       h1d8f897_2        13.7 MB  conda-forge
+    scikit-image-0.24.0        |  py312h14eacfc_2        10.5 MB  conda-forge
+    scipy-1.14.1               |  py312hca5e164_0        16.6 MB  conda-forge
+    svt-av1-2.2.1              |       h5ad3122_0         1.7 MB  conda-forge
+    tifffile-2024.8.30         |     pyhd8ed1ab_0         176 KB  conda-forge
+    zfp-1.0.1                  |       h0a1ffab_1         237 KB  conda-forge
+    zipp-3.20.1                |     pyhd8ed1ab_0          21 KB  conda-forge
+    zlib-ng-2.2.1              |       h0a1ffab_0         103 KB  conda-forge
+    ------------------------------------------------------------
+                                           Total:        97.2 MB
+
+The following NEW packages will be INSTALLED:
+
+  aom                conda-forge/linux-aarch64::aom-3.9.1-hcccb83c_0 
+  brotli             conda-forge/linux-aarch64::brotli-1.1.0-h86ecc28_2 
+  brotli-bin         conda-forge/linux-aarch64::brotli-bin-1.1.0-h86ecc28_2 
+  brunsli            conda-forge/linux-aarch64::brunsli-0.1-h01db608_0 
+  c-blosc2           conda-forge/linux-aarch64::c-blosc2-2.15.1-hb9328e4_0 
+  charls             conda-forge/linux-aarch64::charls-2.4.2-h2f0025b_0 
+  dav1d              conda-forge/linux-aarch64::dav1d-1.2.1-h31becfc_0 
+  imagecodecs        conda-forge/linux-aarch64::imagecodecs-2024.6.1-py312h7586630_3 
+  imageio            conda-forge/noarch::imageio-2.35.1-pyh12aca89_0 
+  importlib-metadata conda-forge/noarch::importlib-metadata-8.4.0-pyha770c72_0 
+  jxrlib             conda-forge/linux-aarch64::jxrlib-1.1-h31becfc_3 
+  lazy-loader        conda-forge/noarch::lazy-loader-0.4-pyhd8ed1ab_1 
+  lazy_loader        conda-forge/noarch::lazy_loader-0.4-pyhd8ed1ab_1 
+  libavif16          conda-forge/linux-aarch64::libavif16-1.1.1-ha8a48cf_1 
+  libbrotlicommon    conda-forge/linux-aarch64::libbrotlicommon-1.1.0-h86ecc28_2 
+  libbrotlidec       conda-forge/linux-aarch64::libbrotlidec-1.1.0-h86ecc28_2 
+  libbrotlienc       conda-forge/linux-aarch64::libbrotlienc-1.1.0-h86ecc28_2 
+  libhwy             conda-forge/linux-aarch64::libhwy-1.1.0-h2a328a1_0 
+  libjxl             conda-forge/linux-aarch64::libjxl-0.10.3-h29da276_0 
+  libzopfli          conda-forge/linux-aarch64::libzopfli-1.0.3-h01db608_0 
+  networkx           conda-forge/noarch::networkx-3.3-pyhd8ed1ab_1 
+  pillow             conda-forge/linux-aarch64::pillow-10.4.0-py312hc0f7016_0 
+  pywavelets         conda-forge/linux-aarch64::pywavelets-1.7.0-py312hc5fbee2_0 
+  rav1e              conda-forge/linux-aarch64::rav1e-0.6.6-h1d8f897_2 
+  scikit-image       conda-forge/linux-aarch64::scikit-image-0.24.0-py312h14eacfc_2 
+  scipy              conda-forge/linux-aarch64::scipy-1.14.1-py312hca5e164_0 
+  svt-av1            conda-forge/linux-aarch64::svt-av1-2.2.1-h5ad3122_0 
+  tifffile           conda-forge/noarch::tifffile-2024.8.30-pyhd8ed1ab_0 
+  zfp                conda-forge/linux-aarch64::zfp-1.0.1-h0a1ffab_1 
+  zipp               conda-forge/noarch::zipp-3.20.1-pyhd8ed1ab_0 
+  zlib-ng            conda-forge/linux-aarch64::zlib-ng-2.2.1-h0a1ffab_0 
+
+
+
+Downloading and Extracting Packages:
+                                                                                                                                                                                                                                                                                           
+Preparing transaction: done                                                                                                                                                                                                                                                                
+Verifying transaction: done                                                                                                                                                                                                                                                                
+Executing transaction: done                                                                                                                                                                                                                                                                
+-------------------------------------------------                                                                                                                                                                                                                                          
+---------------- bridge tests -------------------                                                                                                                                                                                                                                          
+-------------------------------------------------                                                                                                                                                                                                                                          
+------------ bwareamaxfilt Tests --------------                                                                                                                                                                                                                                            
+-------------------------------------------------                                                                                                                                                                                                                                          
+---------------- bwperim Tests ------------------                                                                                                                                                                                                                                          
+-------------------------------------------------                                                                                                                                                                                                                                          
+------------ bwtraceboundary Tests --------------                                                                                                                                                                                                                                          
+┌ Warning: Point at (0, 0) not found in any contour. Returning all found countours.                                                                                                                                                                                                        
+└ @ IceFloeTracker /workspaces/IceFloeTracker.jl/src/bwtraceboundary.jl:133                                                                                                                                                                                                                
+┌ Warning: Point at (4, 4) not found in any contour. Returning all found countours.                                                                                                                                                                                                        
+└ @ IceFloeTracker /workspaces/IceFloeTracker.jl/src/bwtraceboundary.jl:133                                                                                                                                                                                                                
+-------------------------------------------------                                                                                                                                                                                                                                          
+------------ Create Cloudmask Test --------------                                                                                                                                                                                                                                          
+--------- Create and apply cloudmask --------                                                                                                                                                                                                                                              
+  0.309433 seconds (30 allocations: 284.867 MiB)                                                                                                                                                                                                                                           
+  0.318118 seconds (8 allocations: 552.421 MiB, 10.50% gc time)                                                                                                                                                                                                                            
+┌ Info: Persisting image to ./test_outputs/cloudmask_2024-09-05-191332.png.                                                                                                                                                                                                                
+└ To load the persisted object use `Images.load(img_path)`                                                                                                                                                                                                                                 
+┌ Info: Persisting image to ./test_outputs/cloudmasked_reflectance_test_image_2024-09-05-191332.png.                                                                                                                                                                                       
+└ To load the persisted object use `Images.load(img_path)`                                                                                                                                                                                                                                 
+┌ Info: Persisting image to ./test_outputs/clouds_channel_2024-09-05-191333.png.                                                                                                                                                                                                           
+└ To load the persisted object use `Images.load(img_path)`                                                                                                                                                                                                                                 
+------------------------------------------------                                                                                                                                                                                                                                           
+------------ Create Landmask Test --------------                                                                                                                                                                                                                                           
+  7.181578 seconds (1.42 M allocations: 99.760 MiB, 13.66% compilation time)                                                                                                                                                                                                               
+  0.002740 seconds (370 allocations: 26.828 KiB, 98.51% compilation time)                                                                                                                                                                                                                  
+  0.187514 seconds (211.86 k allocations: 17.122 MiB, 98.21% compilation time)
+  0.144820 seconds (12.65 k allocations: 3.966 MiB, 97.55% compilation time)
+[ Info: Test passed with 8.916666666666666e-5 mismatch with threshold 0.005
+[ Info: Test passed with 0.0 mismatch with threshold 0.005
+  0.003346 seconds (2 allocations: 3.433 MiB)
+  0.098366 seconds (44.53 k allocations: 2.518 MiB, 96.74% compilation time)
+[ Info: normal allocated: 3600048
+[ Info: in-place allocated: 0
+┌ Info: Persisting image to ./test_outputs/matlab_landmask_test_2024-09-05-191359.png.
+└ To load the persisted object use `Images.load(img_path)`
+┌ Info: Persisting image to ./test_outputs/landmask_test_2024-09-05-191359.png.
+└ To load the persisted object use `Images.load(img_path)`
+┌ Info: Persisting image to ./test_outputs/landmask_test_no_dilate_2024-09-05-191359.png.
+└ To load the persisted object use `Images.load(img_path)`
+┌ Info: Persisting image to ./test_outputs/landmasked_truecolor_test_image_2024-09-05-191359.png.
+└ To load the persisted object use `Images.load(img_path)`
+┌ Info: Persisting image to ./test_outputs/landmasked_truecolor_test_no_dilate_image_2024-09-05-191359.png.
+└ To load the persisted object use `Images.load(img_path)`
+-------------------------------------------------
+----------- cross correlation tests -------------
+------------------------------------------------
+------------ Create Ice-Water Discrimination Test --------------
+┌ Info: Persisting image to ./test_outputs/ice_water_discrim_test_image_2024-09-05-191507.png.
+└ To load the persisted object use `Images.load(img_path)`
+------------------------------------------------
+------------ Create Ice Labels Test --------------
+  0.062592 seconds (24 allocations: 7.208 MiB)
+  0.065396 seconds (50.92 k allocations: 8.156 MiB, 94.89% compilation time)
+┌ Warning: correlation too low, c: 0.9109228896144568
+└ @ IceFloeTracker /workspaces/IceFloeTracker.jl/src/tracker/matchcorr.jl:46
+------------------------------------------------
+----------------- Misc. Tests ------------------
+------------------------------------------------
+---------------- MorphSE Tests -----------------
+-------------------------------------------------
+---------- Create Normalization Test ------------
+-------------- Process Image - Diffusion ----------------
+  0.420969 seconds (16 allocations: 552.422 MiB, 14.10% gc time)
+┌ Info: Persisting image to ./test_outputs/diffused_test_image_2024-09-05-191603.png.
+└ To load the persisted object use `Images.load(img_path)`
+-------------- Process Image - Equalization ----------------
+┌ Info: Persisting image to ./test_outputs/equalized_test_image_2024-09-05-191609.png.
+└ To load the persisted object use `Images.load(img_path)`
+-------------- Process Image - Sharpening ----------------
+  8.049463 seconds (314.27 k allocations: 3.651 GiB, 30.68% gc time)
+  0.084692 seconds (12 allocations: 184.141 MiB, 46.85% gc time)
+┌ Info: Persisting image to ./test_outputs/sharpened_test_image_2024-09-05-191619.png.
+└ To load the persisted object use `Images.load(img_path)`
+-------------- Process Image - Normalization ----------------
+ 40.237140 seconds (1.20 G allocations: 29.718 GiB, 8.19% gc time)
+┌ Info: Persisting image to ./test_outputs/normalized_test_image_2024-09-05-191700.png.
+└ To load the persisted object use `Images.load(img_path)`
+-------------------------------------------------
+---------- Persist Image Tests ------------
+┌ Info: Persisting image to outimage1.tiff.
+└ To load the persisted object use `Images.load(img_path)`
+┌ Info: Persisting image to outimage2.tiff.
+└ To load the persisted object use `Images.load(img_path)`
+┌ Info: Persisting image to persisted_img-2024-09-05-191701.png.
+└ To load the persisted object use `Images.load(img_path)`
+┌ Info: Persisting image to outimage1.tiff.
+└ To load the persisted object use `Images.load(img_path)`
+┌ Info: Persisting image to outimage2.tiff.
+└ To load the persisted object use `Images.load(img_path)`
+┌ Info: Persisting image to persisted_img-2024-09-05-191701.png.
+└ To load the persisted object use `Images.load(img_path)`
+┌ Info: Persisting image to persistedimg.png.
+└ To load the persisted object use `Images.load(img_path)`
+┌ Info: Persisting image to foo-2024-09-05-191700.png.
+└ To load the persisted object use `Images.load(img_path)`
+-------------------------------------------------
+-------------- regionprops Tests ----------------
+-------------------------------------------------
+------------ resample_boundary Tests --------------
+------------------------------------------------
+------------ Create Segmentation-A Test --------------
+---------- Segment Image - Direct Method ------------
+[ Info: Done with reshape
+  5.436510 seconds (956.32 k allocations: 2.040 GiB, 7.33% gc time, 19.30% compilation time)
+┌ Info: Persisting image to ./test_outputs/segmented_a_ice_cloudmasked-2024-09-05-191714.png.
+└ To load the persisted object use `Images.load(img_path)`
+[ Info: Done filling segmented_ice
+685.241299 seconds (2.28 G allocations: 164.425 GiB, 1.66% gc time, 0.01% compilation time)
+┌ Info: Persisting image to ./test_outputs/segmented_a-2024-09-05-191714.png.
+└ To load the persisted object use `Images.load(img_path)`
+[ Info: Done with reshape
+  5.544004 seconds (273 allocations: 1.979 GiB, 16.40% gc time)
+┌ Info: Persisting image to ./test_outputs/segmented_a_ice-2024-09-05-191714.png.
+└ To load the persisted object use `Images.load(img_path)`
+[ Info: Test passed with 0.03881857232375131 mismatch with threshold 0.039
+[ Info: Test passed with 0.0500808514820341 mismatch with threshold 0.051
+[ Info: Test passed with 8.808560561878439e-5 mismatch with threshold 0.001
+------------------------------------------------
+------------ Create Segmentation-B Test --------------
+  0.900134 seconds (97 allocations: 700.603 MiB, 6.74% gc time)
+┌ Info: Persisting image to ./test_outputs/segB_not_ice_mask-2024-09-05-192902.png.
+└ To load the persisted object use `Images.load(img_path)`
+┌ Info: Persisting image to ./test_outputs/segB_ice_mask-2024-09-05-192902.png.
+└ To load the persisted object use `Images.load(img_path)`
+┌ Info: Persisting image to ./test_outputs/matlab_not_ice_mask-2024-09-05-192902.png.
+└ To load the persisted object use `Images.load(img_path)`
+┌ Info: Persisting image to ./test_outputs/matlab_ice_intersect-2024-09-05-192902.png.
+└ To load the persisted object use `Images.load(img_path)`
+[ Info: Test passed with 0.0 mismatch with threshold 0.001
+[ Info: Test passed with 0.004319757874795137 mismatch with threshold 0.005
+------------------------------------------------
+--------- Create Segmentation-F Test -----------
+[ Info: Done with reshape
+[ Info: Done with k-means segmentation
+  3.841342 seconds (61.85 M allocations: 1.841 GiB, 5.80% gc time, 32.56% compilation time)
+┌ Info: Persisting image to ./test_outputs/isolated_floes-2024-09-05-192907.png.
+└ To load the persisted object use `Images.load(img_path)`
+┌ Info: Persisting image to ./test_outputs/matlab_isolated_floes-2024-09-05-192907.png.
+└ To load the persisted object use `Images.load(img_path)`
+[ Info: Test passed with 0.012415417473402662 mismatch with threshold 0.013
+------------------------------------------------
+------------ Create Segmentation-Watershed Test --------------
+111.041469 seconds (34.48 k allocations: 166.595 GiB, 1.59% gc time, 0.09% compilation time)
+ 95.282588 seconds (6.79 k allocations: 119.681 GiB, 2.57% gc time)
+  0.001243 seconds (3 allocations: 1.439 MiB)
+┌ Info: Persisting image to ./test_outputs/watershed_ice_intersect-2024-09-05-192917.png.
+└ To load the persisted object use `Images.load(img_path)`
+┌ Info: Persisting image to ./test_outputs/watershed_not_ice-2024-09-05-192917.png.
+└ To load the persisted object use `Images.load(img_path)`
+┌ Info: Persisting image to ./test_outputs/watershed_intersect-2024-09-05-192917.png.
+└ To load the persisted object use `Images.load(img_path)`
+┌ Info: Persisting image to ./test_outputs/matlab_not_ice_bit-2024-09-05-192917.png.
+└ To load the persisted object use `Images.load(img_path)`
+[ Info: Test passed with 0.11491094570131472 mismatch with threshold 0.12
+[ Info: Test passed with 0.14431421917123957 mismatch with threshold 0.15
+[ Info: Test passed with 0.03286686908954287 mismatch with threshold 0.033
+-------------------------------------------------
+------- imextendedmin bwdist Tests --------------
+-------------------------------------------------
+--------------- Pad Image Tests -----------------
+Test Summary:              | Pass  Total      Time
+IceFloeTracker.jl          |  102    102  23m26.9s
+  branch points tests      |    2      2      3.5s
+  bridge tests             |    1      1      0.6s
+  bwareamaxfilt test       |    6      6      0.6s
+  bwperim                  |    1      1      1.4s
+  bwtraceboundary test     |    8      8      0.4s
+  Create Cloudmask         |    2      2     12.4s
+  Create Landmask          |    5      5     25.1s
+  crosscorr tests          |    1      1      0.6s
+  Discriminate Ice-Water   |    1      1   1m07.1s
+  Find_Ice_Labels          |    1      1      4.2s
+  hbreak tests             |    1      1      0.4s
+  tracker/matchcorr        |    6      6     40.2s
+  Version number           |    1      1      0.0s
+  MorphSE test             |    6      6      2.0s
+  Normalize Image          |    6      6   1m03.9s
+  persist.jl               |    9      9      0.7s
+  ψ-s curve test           |    9      9      0.5s
+  regionprops.jl           |    6      6      1.7s
+  register_mismatch tests  |    2      2     10.1s
+  resample_boundary test   |    3      3      0.3s
+  Segmentation-A           |    6      6  11m37.4s
+  Segmentation-B           |    6      6      2.6s
+  Segmentation-F           |    1      1      4.3s
+  Segmentation-Watershed   |    6      6   7m19.3s
+  imextendedmin and bwdist |    1      1      0.6s
+  utils.jl pad utilities   |    5      5      0.2s
+     Testing IceFloeTracker tests passed 
+```
+
+Next thing to try: 
+
+build the environment manually using a conda environment file and load that environment in PyCall. Is there a way we can specify an environment file?
+We can also give it just a virtualenv – might be easier than Conda. 
