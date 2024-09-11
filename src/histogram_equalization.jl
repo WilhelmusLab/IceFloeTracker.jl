@@ -4,9 +4,6 @@ using DelimitedFiles
 using IceFloeTracker
 using Images
 
-using PyCall
-skimage = PyCall.pyimport("skimage")
-
 function shannon_entropy(img)
     # Compute the histogram and normalize
     hist = fit(Histogram, vec(img), 0:255)
@@ -99,20 +96,20 @@ function to_uint8(img)
     return img
 end
 
-function adapthisteq(img, nbins=256, clip=0.01)
+function adapthisteq(img::Matrix{T}, nbins=256, clip=0.01) where {T}
     # Step 1: Normalize the image to [0, 1] based on its own min and max
     image_min, image_max = minimum(img), maximum(img)
     normalized_image = (img .- image_min) / (image_max - image_min)
 
     # Step 2: Apply adaptive histogram equalization. equalize_adapthist handles the tiling to 1/8 of the image size (equivalent to 8x8 blocks in MATLAB)
-    equalized_image = skimage.exposure.equalize_adapthist(
+    equalized_image = sk_exposure.equalize_adapthist(
         normalized_image,
-        clip_limit=0.01,  # Equivalent to MATLAB's 'ClipLimit'
-        nbins=255         # Number of histogram bins. 255 is used to match the default in MATLAB script
+        clip_limit=clip,  # Equivalent to MATLAB's 'ClipLimit'
+        nbins=nbins         # Number of histogram bins. 255 is used to match the default in MATLAB script
     )
 
     # Step 3: Rescale the image back to the original range [image_min, image_max]
-    final_image = skimage.exposure.rescale_intensity(equalized_image, in_range="image", out_range=(image_min, image_max))
+    final_image = sk_exposure.rescale_intensity(equalized_image, in_range="image", out_range=(image_min, image_max))
 
     # Convert back to the original data type if necessary
     final_image = to_uint8(final_image)
@@ -133,6 +130,7 @@ An m x n x 3 array the Red, Blue, and Green channels of the input image.
 
 """
 function getrbc_channels(img)
+    # TODO: might be able to use channelview instead
     redc = red.(img) * 255
     greenc = green.(img) * 255
     bluec = blue.(img) * 255
@@ -148,7 +146,7 @@ Performs conditional histogram equalization on a true color image.
 
 # Arguments
 - `true_color_img`: The true color image to be equalized.
-- `clouds`: The cloud mask indicating the cloud regions in the image.
+- `clouds_red`: Preproccesed red channel of false color (clouds) image for this purpose. Used to determine which regions of the true color image should be equalized.
 - `landmask`: The land mask indicating the land regions in the image.
 - `rblocks`: The number of row-blocks to divide the image into for histogram equalization. Default is 8.
 - `cblocks`: The number of column-blocks to divide the image into for histogram equalization. Default is 6.
@@ -162,7 +160,7 @@ The equalized true color image.
 """
 function conditional_histeq(
     true_color_img,
-    clouds,
+    clouds_red,
     landmask,
     rblocks::Int=8,
     cblocks::Int=6,
@@ -175,18 +173,19 @@ function conditional_histeq(
     true_color_diffused = IceFloeTracker.diffusion(float64.(true_color_img), 0.1, 75, 3)
 
     # 2. Apply landmask to clouds/falscolor image
-    IceFloeTracker.apply_landmask!(clouds, landmask.dilated)
+    IceFloeTracker.apply_landmask!(clouds_red, landmask.dilated)
 
     # 3. Get tiles
-    rtile, ctile = size(clouds)
+    # TODO: Define tile size based on the desired number of pixels per tile (WIP)
+    rtile, ctile = size(clouds_red)
     tile_size = Tuple{Int,Int}((rtile / rblocks, ctile / cblocks))
-    tiles = TileIterator(axes(clouds), tile_size)
+    tiles = TileIterator(axes(clouds_red), tile_size)
 
     rgbchannels = getrbc_channels(true_color_diffused)
 
     # 4. For each tile, compute the entropy in the falscolor tile, and the fraction of white and black pixels
     for tile in tiles
-        clouds_tile = clouds[tile...]
+        clouds_tile = clouds_red[tile...]
         entropy = shannon_entropy(clouds_tile)
         whitefraction = sum(clouds_tile .> white_threshold) / length(clouds_tile)
 
