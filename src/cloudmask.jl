@@ -1,3 +1,47 @@
+function convert_to_255_matrix(img)
+    img_clamped = clamp.(img, 0.0, 1.0)
+    return round.(Int, img_clamped * 255)
+end
+
+function _get_masks(
+    ref_image::Matrix{RGB{Float64}};
+    prelim_threshold::Float64=Float64(110 / 255),
+    band_7_threshold::Float64=Float64(200 / 255),
+    band_2_threshold::Float64=Float64(190 / 255),
+    ratio_lower::Float64=0.0,
+    ratio_upper::Float64=0.75,
+    use_uint8::Bool=false,
+)::Tuple{BitMatrix, BitMatrix}0.0
+
+    # Setting thresholds
+    ref_view = channelview(ref_image)
+    ref_image_b7 = @view ref_view[1, :, :]
+    if use_uint8
+        ref_image_b7 = convert_to_255_matrix(ref_image_b7)
+    end
+    clouds_view = ref_image_b7 .> prelim_threshold
+    mask_b7 = ref_image_b7 .< band_7_threshold
+    mask_b2 = @view(ref_view[2, :, :])
+    if use_uint8
+        mask_b2 = convert_to_255_matrix(@view(ref_view[2, :, :]))
+    end
+    mask_b2 = mask_b2 .> band_2_threshold
+
+    # First find all the pixels that meet threshold logic in band 7 (channel 1) and band 2 (channel 2)
+    # Masking clouds and discriminating cloud-ice
+
+    mask_b7b2 = mask_b7 .&& mask_b2
+    # Next find pixels that meet both thresholds and mask them from band 7 (channel 1) and band 2 (channel 2)
+    b7_masked = mask_b7b2 .* ref_image_b7
+    b2_masked = mask_b7b2 .* @view(ref_view[2, :, :])
+    cloud_ice = Float64.(b7_masked) ./ Float64.(b2_masked)
+    mask_cloud_ice = @. cloud_ice >= ratio_lower && cloud_ice < ratio_upper
+
+    return mask_cloud_ice, clouds_view
+
+end
+
+
 """
     create_cloudmask(falsecolor_image; prelim_threshold, band_7_threshold, band_2_threshold, ratio_lower, ratio_upper)
 
@@ -20,21 +64,15 @@ function create_cloudmask(
     ratio_lower::Float64=0.0,
     ratio_upper::Float64=0.75,
 )::BitMatrix
-    # Setting thresholds
-    ref_view = channelview(ref_image)
-    ref_image_b7 = @view ref_view[1, :, :]
-    clouds_view = ref_image_b7 .> prelim_threshold
-    mask_b7 = ref_image_b7 .< band_7_threshold
-    mask_b2 = @view(ref_view[2, :, :]) .> band_2_threshold
-    # First find all the pixels that meet threshold logic in band 7 (channel 1) and band 2 (channel 2)
-    # Masking clouds and discriminating cloud-ice
+    mask_cloud_ice, clouds_view = _get_masks(
+        ref_image,
+        prelim_threshold=prelim_threshold,
+        band_7_threshold=band_7_threshold,
+        band_2_threshold=band_2_threshold,
+        ratio_lower=ratio_lower,
+        ratio_upper=ratio_upper,
+    )
 
-    mask_b7b2 = mask_b7 .&& mask_b2
-    # Next find pixels that meet both thresholds and mask them from band 7 (channel 1) and band 2 (channel 2)
-    b7_masked = mask_b7b2 .* ref_image_b7
-    b2_masked = mask_b7b2 .* @view(ref_view[2, :, :])
-    cloud_ice = Float64.(b7_masked) ./ Float64.(b2_masked)
-    mask_cloud_ice = @. cloud_ice >= ratio_lower && cloud_ice < ratio_upper
     # Creating final cloudmask
     cloudmask = mask_cloud_ice .|| .!clouds_view
     return cloudmask
@@ -73,3 +111,4 @@ function create_clouds_channel(
 )::Matrix{Gray{Float64}}
     return Gray.(@view(channelview(cloudmask .* ref_image)[1, :, :]))
 end
+
