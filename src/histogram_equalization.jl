@@ -1,20 +1,9 @@
-using StatsBase
-using TiledIteration
-using DelimitedFiles
-using IceFloeTracker
-using Images
-
-function shannon_entropy(img)
-    # Compute the histogram and normalize
-    hist = fit(Histogram, vec(img), 0:255)
-    p = hist.weights / sum(hist.weights)
-
-    # Filter out zero probabilities and compute entropy
-    p = p[p.>0]
-    H = -sum(p .* log2.(p))
-
-    return H
+function to_uint8(img)
+    img = UInt8.(round.(img))
+    img = clamp.(img, 0, 255)
+    return img
 end
+
 
 function anisotropic_diffusion_3D(I)
     rgbchannels = getrbc_channels(I)
@@ -90,11 +79,7 @@ function imshow(img)
     Gray.(img ./ 255)
 end
 
-function to_uint8(img)
-    img = UInt8.(round.(img))
-    img = clamp.(img, 0, 255)
-    return img
-end
+
 
 function adapthisteq(img::Matrix{T}, nbins=256, clip=0.01) where {T}
     # Step 1: Normalize the image to [0, 1] based on its own min and max
@@ -186,7 +171,7 @@ function conditional_histeq(
     # 4. For each tile, compute the entropy in the falscolor tile, and the fraction of white and black pixels
     for tile in tiles
         clouds_tile = clouds_red[tile...]
-        entropy = shannon_entropy(clouds_tile)
+        entropy = Images.entropy(clouds_tile)
         whitefraction = sum(clouds_tile .> white_threshold) / length(clouds_tile)
 
         # 5. If the entropy is above a threshold, and the fraction of white pixels is above a threshold, then apply histogram equalization to the tiles of each channel of the true color image. Otherwise, keep the original tiles.
