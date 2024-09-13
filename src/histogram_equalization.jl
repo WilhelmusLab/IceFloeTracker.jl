@@ -131,7 +131,7 @@ Performs conditional histogram equalization on a true color image.
 
 # Arguments
 - `true_color_img`: The true color image to be equalized.
-- `clouds_red`: Preproccesed red channel of false color (clouds) image for this purpose. Used to determine which regions of the true color image should be equalized.
+- `false_color_image`: The false color image used to determine the regions to equalize.
 - `landmask`: The land mask indicating the land regions in the image.
 - `rblocks`: The number of row-blocks to divide the image into for histogram equalization. Default is 8.
 - `cblocks`: The number of column-blocks to divide the image into for histogram equalization. Default is 6.
@@ -145,22 +145,30 @@ The equalized true color image.
 """
 function conditional_histeq(
     true_color_img,
-    clouds_red,
+    false_color_image,
     landmask,
     rblocks::Int=8,
     cblocks::Int=6,
     entropy_threshold::AbstractFloat=4.0,
     white_threshold::AbstractFloat=25.5,
-    white_fraction_threshold::AbstractFloat=0.4)
+    white_fraction_threshold::AbstractFloat=0.4,
+    prelim_threshold=110.0,
+    band_7_threshold=200.0,
+    band_2_threshold=190.0,)
 
-    # 1. Apply diffuse (anisotropic diffusion) to each channel of true color image
+    # Get image for basis of conditional adaptive histogram equalization
+    clouds_red = get_red_channel_cloud_cae(
+        false_color_image=false_color_image, landmask=landmask,
+        prelim_threshold=prelim_threshold,
+        band_7_threshold=band_7_threshold,
+        band_2_threshold=band_2_threshold,
+    )
+
+    # Apply diffuse (anisotropic diffusion) to each channel of true color image
     # TODO: See about using 8-point connectivity as in the original MATLAB script
     true_color_diffused = IceFloeTracker.diffusion(float64.(true_color_img), 0.1, 75, 3)
 
-    # 2. Apply landmask to clouds/falscolor image
-    IceFloeTracker.apply_landmask!(clouds_red, landmask.dilated)
-
-    # 3. Get tiles
+    # Get tiles
     # TODO: Define tile size based on the desired number of pixels per tile (WIP)
     rtile, ctile = size(clouds_red)
     tile_size = Tuple{Int,Int}((rtile / rblocks, ctile / cblocks))
@@ -168,21 +176,42 @@ function conditional_histeq(
 
     rgbchannels = getrbc_channels(true_color_diffused)
 
-    # 4. For each tile, compute the entropy in the falscolor tile, and the fraction of white and black pixels
+    # For each tile, compute the entropy in the falscolor tile, and the fraction of white and black pixels
     for tile in tiles
         clouds_tile = clouds_red[tile...]
         entropy = Images.entropy(clouds_tile)
         whitefraction = sum(clouds_tile .> white_threshold) / length(clouds_tile)
 
-        # 5. If the entropy is above a threshold, and the fraction of white pixels is above a threshold, then apply histogram equalization to the tiles of each channel of the true color image. Otherwise, keep the original tiles.
+        # If the entropy is above a threshold, and the fraction of white pixels is above a threshold, then apply histogram equalization to the tiles of each channel of the true color image. Otherwise, keep the original tiles.
         if entropy > entropy_threshold && whitefraction > white_fraction_threshold
             for i in 1:3
                 eqhist = adapthisteq(rgbchannels[:, :, i][tile...])
                 @view(rgbchannels[:, :, i])[tile...] .= eqhist
             end
         end
-
     end
 
     return rgbchannels
+end
+
+function _get_red_channel_cloud_cae(; false_color_image, landmask,
+    prelim_threshold=110.0,
+    band_7_threshold=200.0,
+    band_2_threshold=190.0,
+)
+    mask_cloud_ice, clouds_view = IceFloeTracker._get_masks(
+        false_color_image,
+        prelim_threshold=prelim_threshold,
+        band_7_threshold=band_7_threshold,
+        band_2_threshold=band_2_threshold,
+        use_uint8=true,
+    )
+
+    clouds_view[mask_cloud_ice] .= 0
+
+    # remove clouds and land from red channel
+    red_channel = Int.(red.(false_color_image) * 255)
+    red_channel[clouds_view.|landmask] .= 0
+
+    return red_channel
 end
