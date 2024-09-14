@@ -1,4 +1,4 @@
-function to_uint8(img)
+function to_uint8(img::AbstractMatrix{T}) where {T<:AbstractFloat}
     img = UInt8.(round.(img))
     img = clamp.(img, 0, 255)
     return img
@@ -114,7 +114,7 @@ Get the RBC (Red, Blue, and Green) channels of an image.
 An m x n x 3 array the Red, Blue, and Green channels of the input image.
 
 """
-function getrbc_channels(img)
+function getrgb_channels(img)
     # TODO: might be able to use channelview instead
     redc = red.(img) * 255
     greenc = green.(img) * 255
@@ -130,7 +130,7 @@ end
 Performs conditional histogram equalization on a true color image.
 
 # Arguments
-- `true_color_img`: The true color image to be equalized.
+- `true_color_image`: The true color image to be equalized.
 - `false_color_image`: The false color image used to determine the regions to equalize.
 - `landmask`: The land mask indicating the land regions in the image.
 - `rblocks`: The number of row-blocks to divide the image into for histogram equalization. Default is 8.
@@ -144,7 +144,7 @@ The equalized true color image.
 
 """
 function conditional_histeq(
-    true_color_img,
+    true_color_image,
     false_color_image,
     landmask,
     rblocks::Int=8,
@@ -157,7 +157,7 @@ function conditional_histeq(
     band_2_threshold=190.0,)
 
     # Get image for basis of conditional adaptive histogram equalization
-    clouds_red = get_red_channel_cloud_cae(
+    clouds_red = _get_red_channel_cloud_cae(
         false_color_image=false_color_image, landmask=landmask,
         prelim_threshold=prelim_threshold,
         band_7_threshold=band_7_threshold,
@@ -166,7 +166,7 @@ function conditional_histeq(
 
     # Apply diffuse (anisotropic diffusion) to each channel of true color image
     # TODO: See about using 8-point connectivity as in the original MATLAB script
-    true_color_diffused = IceFloeTracker.diffusion(float64.(true_color_img), 0.1, 75, 3)
+    true_color_diffused = IceFloeTracker.diffusion(float64.(true_color_image), 0.1, 75, 3)
 
     # Get tiles
     # TODO: Define tile size based on the desired number of pixels per tile (WIP)
@@ -174,7 +174,7 @@ function conditional_histeq(
     tile_size = Tuple{Int,Int}((rtile / rblocks, ctile / cblocks))
     tiles = TileIterator(axes(clouds_red), tile_size)
 
-    rgbchannels = getrbc_channels(true_color_diffused)
+    rgbchannels = getrgb_channels(true_color_diffused)
 
     # For each tile, compute the entropy in the falscolor tile, and the fraction of white and black pixels
     for tile in tiles

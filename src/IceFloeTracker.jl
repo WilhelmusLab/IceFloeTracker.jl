@@ -68,6 +68,7 @@ include("branch.jl")
 include("special_strels.jl")
 
 const sk_measure = PyNULL()
+const sk_exposure = PyNULL()
 const getlatlon = PyNULL()
 
 function get_version_from_toml(pth=dirname(dirname(pathof(IceFloeTracker))))::VersionNumber
