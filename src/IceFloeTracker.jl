@@ -66,6 +66,7 @@ include("hbreak.jl")
 include("bridge.jl")
 include("branch.jl")
 include("special_strels.jl")
+include("histogram_equalization.jl")
 
 const sk_measure = PyNULL()
 const sk_exposure = PyNULL()
