@@ -74,7 +74,7 @@ Sharpen `truecolor_image`.
 - `nbins`: number of bins during histogram equalization
 - `rblocks`: number of row blocks to divide input image during equalization
 - `cblocks`: number of column blocks to divide input image during equalization
-- `clip`: Thresholds for clipping histogram bins (0–1); values closer to one minimize contrast enhancement, values closer to zero maximize contrast enhancement 
+- `clip`: Thresholds for clipping histogram bins (0–1); values closer to one minimize contrast enhancement, values closer to zero maximize contrast enhancement
 - `smoothing_param`: pixel radius for gaussian blurring (1–10)
 - `intensity`: amount of sharpening to perform
 """
@@ -85,14 +85,16 @@ function imsharpen(
     kappa::Real=75,
     niters::Int64=3,
     nbins::Int64=255,
-    rblocks::Int64=10,
-    cblocks::Int64=10,
-    clip::Float64=0.86,
+    rblocks::Int64=10, # matlab default is 8 CP
+    cblocks::Int64=10, # matlab default is 8 CP
+    clip::Float64=0.86, # matlab default is 0.01 CP
     smoothing_param::Int64=10,
     intensity::Float64=2.0,
 )::Matrix{Float64}
     input_image = IceFloeTracker.apply_landmask(truecolor_image, landmask_no_dilate)
+
     input_image .= IceFloeTracker.diffusion(input_image, lambda, kappa, niters)
+
     masked_view = Float64.(channelview(input_image))
 
     eq = [
@@ -115,7 +117,7 @@ end
     imsharpen_gray(imgsharpened, landmask)
 
 Apply landmask and return Gray type image in colorview for normalization.
-    
+
 """
 function imsharpen_gray(
     imgsharpened::Matrix{Float64}, landmask::AbstractArray{Bool}
@@ -123,3 +125,5 @@ function imsharpen_gray(
     image_sharpened_landmasked = apply_landmask(imgsharpened, landmask)
     return colorview(Gray, image_sharpened_landmasked)
 end
+
+
