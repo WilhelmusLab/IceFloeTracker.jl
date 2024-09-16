@@ -40,7 +40,7 @@ function _get_masks(
     b2_masked = mask_b7b2 .* b2_masked
 
     cloud_ice = Float64.(b7_masked) ./ Float64.(b2_masked)
-    mask_cloud_ice = @. cloud_ice >= ratio_lower && cloud_ice < ratio_upper
+    mask_cloud_ice = @. (cloud_ice >= ratio_lower) && (cloud_ice < ratio_upper)
 
     return mask_cloud_ice, clouds_view
 end
