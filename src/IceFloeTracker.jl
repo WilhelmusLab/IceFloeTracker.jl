@@ -1,21 +1,23 @@
 module IceFloeTracker
-using Images
-using DelimitedFiles: readdlm, writedlm
-using Dates
-using ImageContrastAdjustment
-using ImageSegmentation
-using Peaks
-using Pkg
-using Random
-using StatsBase
-using Interpolations
-using DataFrames
-using PyCall
 using Clustering
 using DSP
-using StaticArrays
+using DataFrames
+using Dates
+using DelimitedFiles: readdlm, writedlm
+using ImageContrastAdjustment
+using ImageSegmentation
+using Images
+using Interpolations
 using OffsetArrays: centered
-using Serialization: serialize, deserialize
+using Peaks
+using Pkg
+using PyCall
+using Random
+using Serialization: deserialize, serialize
+using StatsBase
+using StaticArrays
+using StatsBase
+using TiledIteration
 using TOML
 
 export readdlm,
