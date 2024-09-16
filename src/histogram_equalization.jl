@@ -114,7 +114,7 @@ Get the RBC (Red, Blue, and Green) channels of an image.
 An m x n x 3 array the Red, Blue, and Green channels of the input image.
 
 """
-function getrgb_channels(img)
+function get_rgb_channels(img)
     # TODO: might be able to use channelview instead
     redc = red.(img) * 255
     greenc = green.(img) * 255
@@ -125,7 +125,7 @@ end
 
 
 """
-    conditional_histeq(true_color_img, clouds, landmask, rblocks::Int=8, cblocks::Int=6, entropy_threshold::AbstractFloat=4.0, white_threshold::AbstractFloat=25.5, white_fraction_threshold::AbstractFloat=0.4)
+    conditional_histeq(true_color_image, clouds, landmask, rblocks::Int=8, cblocks::Int=6, entropy_threshold::AbstractFloat=4.0, white_threshold::AbstractFloat=25.5, white_fraction_threshold::AbstractFloat=0.4)
 
 Performs conditional histogram equalization on a true color image.
 
@@ -174,7 +174,7 @@ function conditional_histeq(
     tile_size = Tuple{Int,Int}((rtile / rblocks, ctile / cblocks))
     tiles = TileIterator(axes(clouds_red), tile_size)
 
-    rgbchannels = getrgb_channels(true_color_diffused)
+    rgbchannels = get_rgb_channels(true_color_diffused)
 
     # For each tile, compute the entropy in the falscolor tile, and the fraction of white and black pixels
     for tile in tiles
