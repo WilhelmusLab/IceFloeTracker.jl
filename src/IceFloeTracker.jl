@@ -83,7 +83,13 @@ function parse_requirements(file_path)
     requirements = Dict{String, String}()
     open(file_path, "r") do f
         for line in eachline(f)
+            if occursin("==", line)
             pkg, version = split(line, "==")
+            elseif occursin("=", line)
+            pkg, version = split(line, "=")
+            else
+            pkg, version = line, ""
+            end
             requirements[pkg] = version
         end
     end
@@ -96,8 +102,13 @@ function __init__()
 
     for (pkg, version) in deps
         if pkg == "scikit-image"
-            sk_measure_module = pyimport_conda("skimage.measure", "$(pkg)=$(version)")
-            copy!(sk_measure, sk_measure_module)
+            _modules = ["measure", "exposure"]
+            for _module in _modules
+                imported_module = pyimport_conda("skimage.$_module", "$(pkg)=$(version)")
+                reference_module = eval(Symbol("sk_$_module"))
+                copy!(reference_module, imported_module)
+            end
+
         else
             pyimport_conda(pkg, "$(pkg)=$(version)")
         end
