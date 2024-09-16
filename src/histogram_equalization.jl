@@ -6,7 +6,7 @@ end
 
 
 function anisotropic_diffusion_3D(I)
-    rgbchannels = getrbc_channels(I)
+    rgbchannels = get_rgb_channels(I)
 
     for i in 1:3
         rgbchannels[:, :, i] .= anisotropic_diffusion_2D(rgbchannels[:, :, i])
@@ -103,7 +103,7 @@ function adapthisteq(img::Matrix{T}, nbins=256, clip=0.01) where {T}
 end
 
 """
-    getrbc_channels(img)
+    get_rgb_channels(img)
 
 Get the RBC (Red, Blue, and Green) channels of an image.
 
@@ -143,7 +143,7 @@ Performs conditional histogram equalization on a true color image.
 The equalized true color image.
 
 """
-function conditional_histeq(
+function conditional_histeq(;
     true_color_image,
     false_color_image,
     landmask,
