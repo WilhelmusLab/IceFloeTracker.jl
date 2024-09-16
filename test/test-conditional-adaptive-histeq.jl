@@ -9,14 +9,8 @@ end
 
 function test_cloud_image_workflow()
     @testset "Prereq cloud image" begin
-
-        datadir = joinpath(@__DIR__, "test_inputs/")
-        path_ref_image = joinpath(datadir, "NE_Greenland_reflectance.2020162.aqua.250m.tiff")
-        ref_image = float64.(load(path_ref_image))
-        dilated_landmask = BitMatrix(load(joinpath(datadir, "matlab_landmask.png")))
-
         redchannel_cahe = IceFloeTracker._get_red_channel_cloud_cae(
-            false_color_image=ref_image,
+            false_color_image=false_color_image,
             landmask=dilated_landmask,
             prelim_threshold=110.0,
             band_7_threshold=200.0,
@@ -36,9 +30,30 @@ function test_adaphisteq()
     end
 end
 
-@testset "Conditional adaptivehisteq" begin
+function test_conditional_adaptivehisteq()
+    @testset "Conditional adaptivehisteq" begin
+        true_color_eq = IceFloeTracker.conditional_histeq(
+            true_color_image=true_color_image,
+            false_color_image=false_color_image,
+            landmask=dilated_landmask,
+            rblocks=8,
+            cblocks=6,
+            entropy_threshold=4.0,
+            white_threshold=25.5,
+            white_fraction_threshold=0.4,
+            prelim_threshold=110.0,
+            band_7_threshold=200.0,
+            band_2_threshold=190.0)
 
+        # This differs from MATLAB script due to disparity in the implementations
+        # of the adaptive histogram equalization / diffusion functions
+        # For the moment testing for regression
+        @test sum(IceFloeTracker.to_uint8(true_color_eq[:, :, 1])) == 6372159606
+    end
+end
+
+@testset "Conditional adaptivehisteq" begin
     test_cloud_image_workflow()
     test_adaphisteq()
-
+    test_conditional_adaptivehisteq()
 end
