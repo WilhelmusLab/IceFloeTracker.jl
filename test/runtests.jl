@@ -1,18 +1,19 @@
-using IceFloeTracker
-using Images
-using Test
-using DelimitedFiles
-using Dates
+using ArgParse: @add_arg_table!, ArgParseSettings, add_arg_group!, parse_args
 using DataFrames
-using Random
+using Dates
+using DelimitedFiles
+using IceFloeTracker
 using ImageTransformations: imrotate
-using ArgParse: ArgParseSettings, @add_arg_table!, add_arg_group!, parse_args
+using Images
+using Random
+using Test
+using TestImages
 include("test_error_rate.jl")
 include("config.jl")
 
 # Setting things up (see config.jl)
 
-## Get all test files filenames "test-*" in test folder and their corresponding names/label 
+## Get all test files filenames "test-*" in test folder and their corresponding names/label
 alltests = [f for f in readdir() if startswith(f, "test-")]
 testnames = [n[6:(end - 3)] for n in alltests]
 

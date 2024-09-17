@@ -1,19 +1,9 @@
-# Anisotropic Image Diffusion ##
-# This script is borrowed from https://github.com/Red-Portal/UltrasoundDesignGallery.jl ##
-## MIT license with permission to use 
-
-macro swap!(a::Symbol, b::Symbol)
-    blk = quote
-        c = $(esc(a))
-        $(esc(a)) = $(esc(b))
-        $(esc(b)) = c
-    end
-    return blk
-end
+# Anisotropic Image Diffusion
+# Adapted from https://github.com/Red-Portal/UltrasoundDesignGallery.jl
+## MIT license with permission to use
 
 function pmad_kernel!(image, output, g, λ)
-    M = size(image, 1)
-    N = size(image, 2)
+    M, N = size(image)
 
     @inbounds for j in 1:N
         @simd for i in 1:M
@@ -38,34 +28,36 @@ function pmad_kernel!(image, output, g, λ)
     end
 end
 
-function invert_color(color::RGB{Float64})
+function invert_color(color::RGB{T}) where {T<:AbstractFloat}
     return RGB(1.0 / color.r, 1.0 / color.g, 1.0 / color.b)
 end
-function invert_color(color::Gray{Float64})
+
+function invert_color(color::Gray{T}) where {T<:AbstractFloat}
     return Gray(1.0 / color.val)
 end
+
 function diffusion(
     image::Matrix{T}, λ::Float64, K::Int, niters::Int
 ) where {T<:Color{Float64}}
     #=
-        Perona, Pietro, and Jitendra Malik. 
-        "Scale-space and edge detection using anisotropic diffusion." 
+        Perona, Pietro, and Jitendra Malik.
+        "Scale-space and edge detection using anisotropic diffusion."
         IEEE Transactions on Pattern Analysis and Machine Intelligence (PAMI), 1990.
     =#
-    if !(0 <= λ && λ <= 0.25)
-        error("Lambda must be between zero and 0.25")
-    end
+    !(0 <= λ <= 0.25) && throw(ArgumentError("Lambda must be between zero and 0.25"))
+    !(K > 0) && throw(ArgumentError("K must be greater than zero"))
+    !(niters > 0) && throw(ArgumentError("Number of iterations must be greater than zero"))
+
     @inline function g(norm∇I)
-        coef = (norm∇I / K)
-        denom = (T(1) .+ coef ⊙ coef)
+        coef = norm∇I / K
+        denom = T(1) .+ coef ⊙ coef
         return invert_color(denom)
     end
 
     output = deepcopy(image)
-    image = deepcopy(image)
-    for i in 1:niters
+    for _ in 1:niters
         pmad_kernel!(image, output, g, λ)
-        @swap!(image, output)
+        image, output = output, image
     end
     return output
 end
