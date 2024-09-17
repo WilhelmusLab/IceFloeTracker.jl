@@ -50,3 +50,4 @@ gots = get_optimal_tile_size
         _, m, _, n = get_tile_meta(adjusted_tiles[end, end]) - get_tile_meta(tiles[end-1, end-1])
         @test (m, n) == bumpby
     end
+end 
