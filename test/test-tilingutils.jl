@@ -1,71 +1,52 @@
-function getfit(dims::Tuple{Int,Int}, l::Int)::Tuple{Int,Int}
-    return dims .÷ l
-end
+using IceFloeTracker: get_optimal_tile_size
+gots = get_optimal_tile_size
 
-function get_area_missed(l::Int, dims::Tuple{Int,Int}, area::Int)::Float64
-    return 1 - prod(getfit(dims, l)) * l^2 / area
-end
+@testset "Tiling utils" begin
 
-"""
-    get_optimal_tile_size(l0::Int, dims::Tuple{Int,Int}) -> Int
+    @test gots(2, (10, 10)) == 2 # disregard tiles of 1 pixel
+    @test gots(3, (15, 15)) == 3
+    @test gots(4, (20, 20)) == 5 # prefer larger tile size
 
-Calculate the optimal tile size in the range [l0-1, l0+1] for the given size `l0` and image dimensions `dims`.
+    # Test with edge case for minimum l0
+    @test gots(3, (5, 5)) == 4
+    @test gots(5, (5, 5)) == 5
 
-# Description
-This function computes the optimal tile size for tiling an area with given dimensions. It ensures that the initial tile size `l0` is at least 2 and not larger than any of the given dimensions. The function evaluates candidate tile sizes and selects the one that minimizes the area missed during tiling. In case of a tie, it prefers the larger tile size.
+    # Test with non-square dimensions
+    @test gots(3, (10, 20)) == 2
+    @test gots(3, (10, 7)) == 2
 
-# Example
-```
-julia> get_optimal_tile_size(3, (10, 7))
-```
-"""
-function get_optimal_tile_size(l0::Int, dims::Tuple{Int,Int})::Int
-    l0 < 2 && error("l0 must be at least 2")
-    any(l0 .> dims) && error("l0 = $l0 is too large for the given dimensions $dims")
+    # Test error handling for invalid l0
+    @test_throws ErrorException gots(1, (10, 10))
+    @test_throws ErrorException gots(7, (5, 5)) == 5
 
-    area = prod(dims)
-    minimal_shift = l0 == 2 ? 0 : 1
-    candidates = [l0 + i for i in -minimal_shift:1]
 
-    minl, M = 0, Inf
-    for l in candidates
-        missedarea = get_area_missed(l, dims, area)
-        if missedarea <= M # prefer larger l in case of tie
-            M, minl = missedarea, l
-        end
+    tile = (1:2, 3:4)
+
+    @testset "get_tile_meta" begin
+        @test get_tile_meta(tile) == (1, 2, 3, 4)
     end
-    return minl
-end
 
-"""
-    get_tile_meta(tile)
-
-Extracts metadata from a given tile.
-
-# Arguments
-- `tile`: A collection of tuples, where each tuple represents a coordinate pair.
-
-# Returns
-- A tuple `(a, b, c, d)` where:
-  - `a`: The first element of the first tuple in `tile`.
-  - `b`: The last element of the first tuple in `tile`.
-  - `c`: The first element of the last tuple in `tile`.
-  - `d`: The last element of the last tuple in `tile`.
-"""
-function get_optimal_tile_size(l0::Int, dims::Tuple{Int,Int})::Int
-    l0 < 2 && error("l0 must be at least 2")
-    any(l0 .> dims) && error("l0 = $l0 is too large for the given dimensions $dims")
-
-    area = prod(dims)
-    minimal_shift = l0 == 2 ? 0 : 1
-    candidates = [l0 + i for i in -minimal_shift:1]
-
-    minl, M = 0, Inf
-    for l in candidates
-        missedarea = get_area_missed(l, dims, area)
-        if missedarea <= M # prefer larger l in case of tie
-            M, minl = missedarea, l
-        end
+    @testset "bump_tile" begin
+        extrarows, extracols = 1, 2
+        bumpby = (extrarows, extracols)
+        @info tile
+        @test bump_tile(tile, bumpby) == (1:2+extrarows, 3:4+extracols)
     end
-    return minl
-end
+
+    @testset "adjust_edge_tiles" begin
+        array = rand(40, 20)
+        l = 6
+        tile_size = (l, l)
+        bumpby = mod.(size(array), l)
+
+        tiles = TileIterator(axes(array), tile_size) |> collect
+
+        adjusted_tiles = adjust_edge_tiles(deepcopy(tiles), bumpby)
+
+        # Test adjusted_tiles have one fewer row and column
+        @test all(size(tiles) .- size(adjusted_tiles) .== (1, 1))
+
+        # Test right edge tiles are bumped correctly
+        _, m, _, n = get_tile_meta(adjusted_tiles[end, end]) - get_tile_meta(tiles[end-1, end-1])
+        @test (m, n) == bumpby
+    end
