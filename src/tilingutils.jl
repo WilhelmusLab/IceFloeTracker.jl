@@ -37,3 +37,54 @@ function get_optimal_tile_size(l0::Int, dims::Tuple{Int,Int})::Int
     end
     return minl
 end
+
+"""
+    get_tile_meta(tile)
+
+Extracts metadata from a given tile.
+
+# Arguments
+- `tile`: A collection of tuples, where each tuple represents a coordinate pair.
+
+# Returns
+- A tuple `(a, b, c, d)` where:
+  - `a`: The first element of the first tuple in `tile`.
+  - `b`: The last element of the first tuple in `tile`.
+  - `c`: The first element of the last tuple in `tile`.
+  - `d`: The last element of the last tuple in `tile`.
+"""
+function get_tile_meta(tile)
+    a, c = first.(tile)
+    b, d = last.(tile)
+    return [a, b, c, d]
+end
+
+
+function bump_tile(tile, dims)
+    extrarows, extracols = dims
+    a, b, c, d = get_tile_meta(tile)
+    b += extrarows
+    d += extracols
+    return (a:b, c:d)
+end
+
+
+"""
+    adjust_edge_tiles(tiles, bumpby)
+
+Adjusts the edge tiles of a tiling by bumping them with the given dimensions.
+
+The algorithm works in two steps: first fold the right edge tiles, then fold the bottom edge tiles.
+
+# Arguments
+- `tiles`: A collection of tiles.
+- `bumpby`: A tuple `(extrarows, extracols)` representing the dimensions to bump the tiles.
+"""
+function adjust_edge_tiles(tiles, bumpby)
+    tiles_right_edge = @view tiles[:, end-1]
+    tiles_right_edge .= bump_tile.(tiles_right_edge, Ref((0, last(bumpby))))
+
+    tiles_bottom_edge = @view tiles[end-1, :]
+    tiles_bottom_edge .= bump_tile.(tiles_bottom_edge, Ref((first(bumpby), 0)))
+    return tiles[1:end-1, 1:end-1]
+end
