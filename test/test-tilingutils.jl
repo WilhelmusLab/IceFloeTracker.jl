@@ -1,4 +1,4 @@
-using IceFloeTracker: get_optimal_tile_size
+using IceFloeTracker: get_optimal_tile_size, get_tile_meta, bump_tile, adjust_edge_tiles
 gots = get_optimal_tile_size
 
 @testset "Tiling utils" begin
@@ -23,13 +23,12 @@ gots = get_optimal_tile_size
     tile = (1:2, 3:4)
 
     @testset "get_tile_meta" begin
-        @test get_tile_meta(tile) == (1, 2, 3, 4)
+        @test get_tile_meta(tile) == [1, 2, 3, 4]
     end
 
     @testset "bump_tile" begin
         extrarows, extracols = 1, 2
         bumpby = (extrarows, extracols)
-        @info tile
         @test bump_tile(tile, bumpby) == (1:2+extrarows, 3:4+extracols)
     end
 
@@ -50,4 +49,4 @@ gots = get_optimal_tile_size
         _, m, _, n = get_tile_meta(adjusted_tiles[end, end]) - get_tile_meta(tiles[end-1, end-1])
         @test (m, n) == bumpby
     end
-end 
+end
