@@ -85,11 +85,25 @@ The algorithm works in two steps: first fold the right edge tiles, then fold the
 - `tiles`: A collection of tiles.
 - `bumpby`: A tuple `(extrarows, extracols)` representing the dimensions to bump the tiles.
 """
-function adjust_edge_tiles(tiles, bumpby)
-    tiles_right_edge = @view tiles[:, end-1]
-    tiles_right_edge .= bump_tile.(tiles_right_edge, Ref((0, last(bumpby))))
+function adjust_edge_tiles(tiles, bumpby=nothing)
+    if isnothing(bumpby)
+        bumpby = get_tile_dims(tiles[end])
+    end
 
-    tiles_bottom_edge = @view tiles[end-1, :]
-    tiles_bottom_edge .= bump_tile.(tiles_bottom_edge, Ref((first(bumpby), 0)))
-    return tiles[1:end-1, 1:end-1]
+    _, l = get_tile_dims(tiles[1])
+    shift_height, shift_width = 0, 0
+
+    # Fold right edge tiles if leftover width is less than half of the standard width
+    if last(bumpby) < l ÷ 2
+        tiles_right_edge = @view tiles[:, end-1]
+        tiles_right_edge .= bump_tile.(tiles_right_edge, Ref((0, last(bumpby))))
+        shift_height += 1
+    end
+
+    if first(bumpby) < l ÷ 2
+        tiles_bottom_edge = @view tiles[end-1, :]
+        tiles_bottom_edge .= bump_tile.(tiles_bottom_edge, Ref((first(bumpby), 0)))
+        shift_width += 1
+    end
+    return tiles[1:end-shift_width, 1:end-shift_height]
 end
