@@ -74,36 +74,39 @@ function get_tile_dims(tile)
     return (width, height)
 end
 
+
 """
-    adjust_edge_tiles(tiles, bumpby)
+    get_tiles(array, l)
 
-Adjusts the edge tiles of a tiling by bumping them with the given dimensions.
+Generate a collection of tiles from an array.
 
-The algorithm works in two steps: first fold the right edge tiles, then fold the bottom edge tiles.
-
-# Arguments
-- `tiles`: A collection of tiles.
-- `bumpby`: A tuple `(extrarows, extracols)` representing the dimensions to bump the tiles.
+Unlike `TileIterator`, the function adjusts the bottom and right edges of the tile matrix if they are smaller than half the tile size `l`.
 """
-function adjust_edge_tiles(tiles, bumpby=nothing)
-    if isnothing(bumpby)
-        bumpby = get_tile_dims(tiles[end])
+function get_tiles(array, l)
+
+    tiles = TileIterator(axes(array), (l, l)) |> collect
+
+    bottombump, rightbump = mod.(size(array), l)
+
+    if bottombump == 0 && rightbump == 0
+        return tiles
     end
 
-    _, l = get_tile_dims(tiles[1])
-    shift_height, shift_width = 0, 0
+    crop_height, crop_width = 0, 0
 
-    # Fold right edge tiles if leftover width is less than half of the standard width
-    if last(bumpby) < l ÷ 2
-        tiles_right_edge = @view tiles[:, end-1]
-        tiles_right_edge .= bump_tile.(tiles_right_edge, Ref((0, last(bumpby))))
-        shift_height += 1
+    # Adjust bottom edge if necessary
+    if bottombump <= l ÷ 2
+        bottom_edge = tiles[end-1, :]
+        tiles[end-1, :] .= bump_tile.(bottom_edge, Ref((bottombump, 0)))
+        crop_height += 1
     end
 
-    if first(bumpby) < l ÷ 2
-        tiles_bottom_edge = @view tiles[end-1, :]
-        tiles_bottom_edge .= bump_tile.(tiles_bottom_edge, Ref((first(bumpby), 0)))
-        shift_width += 1
+    # Adjust right edge if necessary
+    if rightbump <= l ÷ 2
+        right_edge = tiles[:, end-1]
+        tiles[:, end-1] .= bump_tile.(right_edge, Ref((0, rightbump)))
+        crop_width += 1
     end
-    return tiles[1:end-shift_width, 1:end-shift_height]
+
+    return tiles[1:end-crop_height, 1:end-crop_width]
 end
