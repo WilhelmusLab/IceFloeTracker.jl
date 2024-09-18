@@ -42,11 +42,11 @@ gots = get_optimal_tile_size
 
         adjusted_tiles = adjust_edge_tiles(deepcopy(tiles), bumpby)
 
-        # Test adjusted_tiles have one fewer row and column
-        @test all(size(tiles) .- size(adjusted_tiles) .== (1, 1))
+        # Test adjusted_tiles have one fewer column
+        @test all(size(tiles) .- size(adjusted_tiles) .== (0, 1))
 
         # Test right edge tiles are bumped correctly
-        _, m, _, n = get_tile_meta(adjusted_tiles[end, end]) - get_tile_meta(tiles[end-1, end-1])
+        _, m, _, n = get_tile_meta(adjusted_tiles[end]) - get_tile_meta(tiles[end-1, end-1])
         @test (m, n) == bumpby
     end
 end
