@@ -68,6 +68,11 @@ function bump_tile(tile, dims)
     return (a:b, c:d)
 end
 
+function get_tile_dims(tile)
+    a, b, c, d = get_tile_meta(tile)
+    width, height = d - c + 1, b - a + 1
+    return (width, height)
+end
 
 """
     adjust_edge_tiles(tiles, bumpby)
