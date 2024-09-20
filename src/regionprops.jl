@@ -181,13 +181,15 @@ function getbboxcolumns(props::DataFrame)
 end
 
 
+floesimgtype = Union{Matrix{T} where {T<:Union{Bool, Integer}}, BitMatrix}
+floesimgvectortype = Vector{T} where {T<:floesimgtype}
 
 """
     cropfloe(floesimg, label)
 
 Crops the floe from `floesimg` with the label `label`, adding a one pixel border of zeros and converting to a BitMatrix.
 """
-function cropfloe(floesimg::Matrix{I}, label::I) where {I<:Integer}
+function cropfloe(floesimg::floesimgtype, label::I) where {I<:Integer}
     #= Remove any pixels not corresponding to that numbered floe 
     (each segment has a different integer) =#
     floe_area = floesimg .== label
@@ -245,7 +247,7 @@ end
 
 Crops the floe from `floesimg` with the label `label`, returning the region bounded by `min_row`, `min_col`, `max_row`, `max_col`, and converting to a BitMatrix.
 """
-function cropfloe(floesimg::Matrix{I}, min_row::J, min_col::J, max_row::J, max_col::J, label::I)  where {I<:Integer, J<:Integer}
+function cropfloe(floesimg::AbstractMatrix{I}, min_row::J, min_col::J, max_row::J, max_col::J, label::I)  where {I<:Union{Bool, Integer}, J<:Integer}
     #= 
     Crop the floe using bounding box data in props.
     Note: Using a view of the cropped floe was considered but if there were multiple components in the cropped floe, the source array with the floes would be modified. =#
@@ -264,7 +266,6 @@ function cropfloe(floesimg::Matrix{I}, min_row::J, min_col::J, max_row::J, max_c
     return prefloe
 end
 
-
 """
     cropfloe(floesimg, props, i)
 
@@ -278,7 +279,7 @@ If the dataframe has only a `label` and no bounding box data, then returns the c
 
 
 """
-function cropfloe(floesimg::Union{BitMatrix, Matrix{<:Integer}}, props::DataFrame, i::Integer)
+function cropfloe(floesimg::floesimgtype, props::DataFrame, i::Integer)
     props_row = props[i, :]
     colnames = names(props_row)
     if "min_row" in colnames && "min_col" in colnames && "max_row" in colnames && "max_col" in colnames
@@ -312,7 +313,7 @@ end
 
 Add a column to `props` called `floearray` containing the cropped floe masks from `floeimg`.
 """
-function addfloemasks!(props::DataFrame, floeimg::Union{BitMatrix, Matrix{<:Integer}})
+function addfloemasks!(props::DataFrame, floeimg::floesimgtype)
     props.mask = getfloemasks(props, floeimg)
     return nothing
 end
@@ -322,7 +323,7 @@ end
 
 Return a vector of cropped floe masks from `floeimg` using the bounding box data in `props`.
 """
-function getfloemasks(props::DataFrame, floeimg::Union{BitMatrix, Matrix{<:Integer}})
+function getfloemasks(props::DataFrame, floeimg::floesimgtype)
     return map(i -> cropfloe(floeimg, props, i), 1:nrow(props))
 end
 
