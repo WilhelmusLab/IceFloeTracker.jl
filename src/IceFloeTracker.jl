@@ -68,7 +68,9 @@ include("hbreak.jl")
 include("bridge.jl")
 include("branch.jl")
 include("special_strels.jl")
+include("tilingutils.jl")
 include("histogram_equalization.jl")
+
 
 const sk_measure = PyNULL()
 const sk_exposure = PyNULL()
@@ -82,7 +84,7 @@ end
 const IFTVERSION = get_version_from_toml()
 
 function parse_requirements(file_path)
-    requirements = Dict{String, String}()
+    requirements = Dict{String,String}()
     open(file_path, "r") do f
         for line in eachline(f)
             if occursin("==", line)
