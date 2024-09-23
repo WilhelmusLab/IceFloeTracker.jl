@@ -17,7 +17,7 @@ function test_cloud_image_workflow()
             band_2_threshold=190.0,
         )
 
-        @test sum(redchannel_cahe) == 1320925065
+        @test sum(redchannel_cahe) == 1_320_925_065
     end
 end
 
@@ -26,7 +26,7 @@ function test_adaphisteq()
     @testset "Adaptive histogram equalization" begin
         img = IceFloeTracker.convert_to_255_matrix(testimage("cameraman"))
         img_eq = IceFloeTracker.adapthisteq(img)
-        @test sum(img_eq) == 32387397
+        @test sum(img_eq) == 32_387_397
     end
 end
 
@@ -48,7 +48,7 @@ function test_conditional_adaptivehisteq()
         # This differs from MATLAB script due to disparity in the implementations
         # of the adaptive histogram equalization / diffusion functions
         # For the moment testing for regression
-        @test sum(IceFloeTracker.to_uint8(true_color_eq[:, :, 1])) == 6372159606
+        @test sum(IceFloeTracker.to_uint8(true_color_eq[:, :, 1])) == 6_372_159_606
     end
 end
 
