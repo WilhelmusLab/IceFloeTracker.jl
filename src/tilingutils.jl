@@ -1,9 +1,9 @@
-function getfit(dims::Tuple{Int,Int}, l::Int)::Tuple{Int,Int}
-    return dims .÷ l
+function getfit(dims::Tuple{Int,Int}, side_length::Int)::Tuple{Int,Int}
+    return dims .÷ side_length
 end
 
-function get_area_missed(l::Int, dims::Tuple{Int,Int}, area::Int)::Float64
-    return 1 - prod(getfit(dims, l)) * l^2 / area
+function get_area_missed(side_length::Int, dims::Tuple{Int,Int}, area::Int)::Float64
+    return 1 - prod(getfit(dims, side_length)) * side_length^2 / area
 end
 
 """
@@ -29,10 +29,10 @@ function get_optimal_tile_size(l0::Int, dims::Tuple{Int,Int})::Int
     candidates = [l0 + i for i in -minimal_shift:1]
 
     minl, M = 0, Inf
-    for l in candidates
-        missedarea = get_area_missed(l, dims, area)
-        if missedarea <= M # prefer larger l in case of tie
-            M, minl = missedarea, l
+    for side_length in candidates
+        missedarea = get_area_missed(side_length, dims, area)
+        if missedarea <= M # prefer larger side_length in case of tie
+            M, minl = missedarea, side_length
         end
     end
     return minl
@@ -76,17 +76,17 @@ end
 
 
 """
-    get_tiles(array, l)
+    get_tiles(array, side_length)
 
 Generate a collection of tiles from an array.
 
-Unlike `TileIterator`, the function adjusts the bottom and right edges of the tile matrix if they are smaller than half the tile size `l`.
+Unlike `TileIterator`, the function adjusts the bottom and right edges of the tile matrix if they are smaller than half the tile size `side_length`.
 """
-function get_tiles(array, l)
+function get_tiles(array, side_length)
 
-    tiles = TileIterator(axes(array), (l, l)) |> collect
+    tiles = TileIterator(axes(array), (side_length, side_length)) |> collect
 
-    bottombump, rightbump = mod.(size(array), l)
+    bottombump, rightbump = mod.(size(array), side_length)
 
     if bottombump == 0 && rightbump == 0
         return tiles
@@ -95,14 +95,14 @@ function get_tiles(array, l)
     crop_height, crop_width = 0, 0
 
     # Adjust bottom edge if necessary
-    if bottombump <= l ÷ 2
+    if bottombump <= side_length ÷ 2
         bottom_edge = tiles[end-1, :]
         tiles[end-1, :] .= bump_tile.(bottom_edge, Ref((bottombump, 0)))
         crop_height += 1
     end
 
     # Adjust right edge if necessary
-    if rightbump <= l ÷ 2
+    if rightbump <= side_length ÷ 2
         right_edge = tiles[:, end-1]
         tiles[:, end-1] .= bump_tile.(right_edge, Ref((0, rightbump)))
         crop_width += 1

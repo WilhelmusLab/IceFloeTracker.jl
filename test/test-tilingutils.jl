@@ -34,25 +34,25 @@ gots = get_optimal_tile_size
 
     @testset "get_tiles" begin
         # unadjusted tiles
-        _get_tiles(array, l) = TileIterator(axes(array), (l, l)) |> collect
+        _get_tiles(array, side_length) = TileIterator(axes(array), (side_length, side_length)) |> collect
 
         array = rand(40, 20)
 
         # Total coverage, no adjustment needed
-        l = 5
-        tiles = _get_tiles(array, l)
-        @test tiles == get_tiles(array, l)
+        side_length = 5
+        tiles = _get_tiles(array, side_length)
+        @test tiles == get_tiles(array, side_length)
 
-        # Leftovers greater than l ÷ 2, no adjustment needed
-        l = 7 # bumpby = (5, 6)
-        tiles = _get_tiles(array, l)
-        adjusted_tiles = get_tiles(array, l)
-        @test tiles == get_tiles(array, l)
+        # Leftovers greater than side_length ÷ 2, no adjustment needed
+        side_length = 7 # bumpby = (5, 6)
+        tiles = _get_tiles(array, side_length)
+        adjusted_tiles = get_tiles(array, side_length)
+        @test tiles == get_tiles(array, side_length)
 
         # adjust right edge tiles
-        l = 6 # bumpby = (4, 2) => crop 1 column and bump by 2
-        tiles = _get_tiles(array, l)
-        adjusted_tiles = get_tiles(array, l)
+        side_length = 6 # bumpby = (4, 2) => crop 1 column and bump by 2
+        tiles = _get_tiles(array, side_length)
+        adjusted_tiles = get_tiles(array, side_length)
         @test all(size(tiles) .- size(adjusted_tiles) .== (0, 1))
 
         # general case with both edges adjusted
@@ -60,8 +60,8 @@ gots = get_optimal_tile_size
             (6:12, 1:5) (6:12, 6:10) (6:12, 11:16)]
 
         array = rand(12, 16)
-        l = 5
-        newtiles = get_tiles(array, l)
+        side_length = 5
+        newtiles = get_tiles(array, side_length)
         @test expected_tiles == newtiles
 
         lowerleft_tile = newtiles[end, 1]

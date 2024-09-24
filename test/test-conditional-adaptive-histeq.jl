@@ -48,12 +48,12 @@ function test_conditional_adaptivehisteq()
 
 
         # Use custom tile size
-        l = size(true_color_eq, 1) ÷ 8
+        side_length = size(true_color_eq, 1) ÷ 8
         true_color_eq = IceFloeTracker.conditional_histeq(
             true_color_image,
             false_color_image,
             dilated_landmask,
-            l)
+            side_length)
         @test sum(IceFloeTracker.to_uint8(true_color_eq[:, :, 1])) == 6_328_796_398
     end
 end
