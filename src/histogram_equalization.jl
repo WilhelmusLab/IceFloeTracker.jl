@@ -123,6 +123,44 @@ function get_rgb_channels(img)
     return cat(redc, greenc, bluec, dims=3)
 end
 
+function get_tiles(false_color_image; rblocks, cblocks)
+    rtile, ctile = size(false_color_image)
+    tile_size = Tuple{Int,Int}((rtile / rblocks, ctile / cblocks))
+    return TileIterator(axes(false_color_image), tile_size)
+end
+
+function _process_image_tiles(true_color_image, false_color_image, landmask, tiles, white_threshold, entropy_threshold, white_fraction_threshold, prelim_threshold, band_7_threshold, band_2_threshold)
+    # Get the red channel for cloud detection
+    clouds_red = _get_red_channel_cloud_cae(
+        false_color_image=false_color_image, landmask=landmask,
+        prelim_threshold=prelim_threshold,
+        band_7_threshold=band_7_threshold,
+        band_2_threshold=band_2_threshold,
+    )
+
+    # Apply diffuse (anisotropic diffusion) to each channel of true color image
+    true_color_diffused = IceFloeTracker.diffusion(float64.(true_color_image), 0.1, 75, 3)
+
+    rgbchannels = get_rgb_channels(true_color_diffused)
+
+    # For each tile, compute the entropy in the false color tile, and the fraction of white and black pixels
+    for tile in tiles
+        clouds_tile = clouds_red[tile...]
+        entropy = Images.entropy(clouds_tile)
+        whitefraction = sum(clouds_tile .> white_threshold) / length(clouds_tile)
+
+        # If the entropy is above a threshold, and the fraction of white pixels is above a threshold, then apply histogram equalization to the tiles of each channel of the true color image. Otherwise, keep the original tiles.
+        if entropy > entropy_threshold && whitefraction > white_fraction_threshold
+            for i in 1:3
+                eqhist = adapthisteq(rgbchannels[:, :, i][tile...])
+                @view(rgbchannels[:, :, i])[tile...] .= eqhist
+            end
+        end
+    end
+
+    return rgbchannels
+end
+
 
 """
     conditional_histeq(true_color_image, clouds, landmask, rblocks::Int=8, cblocks::Int=6, entropy_threshold::AbstractFloat=4.0, white_threshold::AbstractFloat=25.5, white_fraction_threshold::AbstractFloat=0.4)
@@ -143,55 +181,87 @@ Performs conditional histogram equalization on a true color image.
 The equalized true color image.
 
 """
-function conditional_histeq(;
+function conditional_histeq(
     true_color_image,
     false_color_image,
     landmask,
-    rblocks::Int=8,
-    cblocks::Int=6,
+    rblocks::Int,
+    cblocks::Int,
     entropy_threshold::AbstractFloat=4.0,
     white_threshold::AbstractFloat=25.5,
     white_fraction_threshold::AbstractFloat=0.4,
     prelim_threshold=110.0,
     band_7_threshold=200.0,
-    band_2_threshold=190.0,)
+    band_2_threshold=190.0
+)
 
-    # Get image for basis of conditional adaptive histogram equalization
-    clouds_red = _get_red_channel_cloud_cae(
-        false_color_image=false_color_image, landmask=landmask,
-        prelim_threshold=prelim_threshold,
-        band_7_threshold=band_7_threshold,
-        band_2_threshold=band_2_threshold,
+    tiles = get_tiles(false_color_image, rblocks=rblocks, cblocks=cblocks)
+
+    rgbchannels_equalized = _process_image_tiles(
+        true_color_image,
+        false_color_image,
+        landmask,
+        tiles,
+        white_threshold,
+        entropy_threshold,
+        white_fraction_threshold,
+        prelim_threshold,
+        band_7_threshold,
+        band_2_threshold
     )
 
-    # Apply diffuse (anisotropic diffusion) to each channel of true color image
-    # TODO: See about using 8-point connectivity as in the original MATLAB script
-    true_color_diffused = IceFloeTracker.diffusion(float64.(true_color_image), 0.1, 75, 3)
+    return rgbchannels_equalized
 
-    # Get tiles
-    # TODO: Define tile size based on the desired number of pixels per tile (WIP)
-    rtile, ctile = size(clouds_red)
-    tile_size = Tuple{Int,Int}((rtile / rblocks, ctile / cblocks))
-    tiles = TileIterator(axes(clouds_red), tile_size)
+end
 
-    rgbchannels = get_rgb_channels(true_color_diffused)
+"""
+    conditional_histeq(
+    true_color_image,
+    false_color_image,
+    landmask,
+    l::Int,
+    entropy_threshold::AbstractFloat=4.0,
+    white_threshold::AbstractFloat=25.5,
+    white_fraction_threshold::AbstractFloat=0.4,
+    prelim_threshold=110.0,
+    band_7_threshold=200.0,
+    band_2_threshold=190.0
+)
 
-    # For each tile, compute the entropy in the falscolor tile, and the fraction of white and black pixels
-    for tile in tiles
-        clouds_tile = clouds_red[tile...]
-        entropy = Images.entropy(clouds_tile)
-        whitefraction = sum(clouds_tile .> white_threshold) / length(clouds_tile)
+Performs conditional histogram equalization on a true color image using tiles of approximately sidelength size `l`. If a perfect tiling is not possible, the tiling on the egde of the image is adjusted to ensure that the tiles are as close to `l` as possible. See `get_tiles(array, l)` for more details.
+"""
+function conditional_histeq(
+    true_color_image,
+    false_color_image,
+    landmask,
+    l::Int,
+    entropy_threshold::AbstractFloat=4.0,
+    white_threshold::AbstractFloat=25.5,
+    white_fraction_threshold::AbstractFloat=0.4,
+    prelim_threshold=110.0,
+    band_7_threshold=200.0,
+    band_2_threshold=190.0
+)
 
-        # If the entropy is above a threshold, and the fraction of white pixels is above a threshold, then apply histogram equalization to the tiles of each channel of the true color image. Otherwise, keep the original tiles.
-        if entropy > entropy_threshold && whitefraction > white_fraction_threshold
-            for i in 1:3
-                eqhist = adapthisteq(rgbchannels[:, :, i][tile...])
-                @view(rgbchannels[:, :, i])[tile...] .= eqhist
-            end
-        end
-    end
+    l = IceFloeTracker.get_optimal_tile_size(l, size(false_color_image))
 
-    return rgbchannels
+    tiles = IceFloeTracker.get_tiles(false_color_image, l)
+
+    rgbchannels_equalized = _process_image_tiles(
+        true_color_image,
+        false_color_image,
+        landmask,
+        tiles,
+        white_threshold,
+        entropy_threshold,
+        white_fraction_threshold,
+        prelim_threshold,
+        band_7_threshold,
+        band_2_threshold
+    )
+
+    return rgbchannels_equalized
+
 end
 
 function _get_red_channel_cloud_cae(; false_color_image, landmask,
