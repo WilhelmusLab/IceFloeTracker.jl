@@ -17,7 +17,7 @@
     ice_water_discrim = IceFloeTracker.discriminate_ice_water(
         falsecolor_image, normalized_image, landmask, cloudmask
     )
-    @test (@test_approx_eq_sigma_eps ice_water_discrim matlab_ice_water_discrim [0, 0] 0.065) ==
+    @test (@test_approx_eq_sigma_eps ice_water_discrim matlab_ice_water_discrim [0, 0] 0.065) ===
         nothing
 
     # persist generated image

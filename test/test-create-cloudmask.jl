@@ -12,12 +12,12 @@
     @time masked_image = IceFloeTracker.apply_cloudmask(ref_image, cloudmask)
 
     # test for percent difference in cloudmask images
-    @test (@test_approx_eq_sigma_eps masked_image matlab_cloudmask [0, 0] 0.005) == nothing
+    @test (@test_approx_eq_sigma_eps masked_image matlab_cloudmask [0, 0] 0.005) === nothing
 
     # test for create_clouds_channel
     clouds_channel_expected = load(clouds_channel_test_file)
     clds_channel = IceFloeTracker.create_clouds_channel(cloudmask, ref_image)
-    @test (@test_approx_eq_sigma_eps (clds_channel) (clouds_channel_expected) [0, 0] 0.005) ==
+    @test (@test_approx_eq_sigma_eps (clds_channel) (clouds_channel_expected) [0, 0] 0.005) ===
         nothing
 
     # Persist output images

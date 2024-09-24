@@ -21,7 +21,7 @@
     IceFloeTracker.@persist matlab_ice_intersect "./test_outputs/matlab_ice_intersect.png" true
 
     @test typeof(segB.not_ice) == typeof(matlab_not_ice_mask)
-    @test (@test_approx_eq_sigma_eps segB.not_ice matlab_not_ice_mask [0, 0] 0.001) ==
+    @test (@test_approx_eq_sigma_eps segB.not_ice matlab_not_ice_mask [0, 0] 0.001) ===
         nothing
 
     @test typeof(segB.not_ice_bit) == typeof(matlab_not_ice_mask .> 0.499)
