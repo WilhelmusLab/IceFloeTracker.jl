@@ -32,23 +32,29 @@ end
 
 function test_conditional_adaptivehisteq()
     @testset "Conditional adaptivehisteq" begin
+
+        # Using rblocks = 8, cblocks = 6
         true_color_eq = IceFloeTracker.conditional_histeq(
-            true_color_image=true_color_image,
-            false_color_image=false_color_image,
-            landmask=dilated_landmask,
-            rblocks=8,
-            cblocks=6,
-            entropy_threshold=4.0,
-            white_threshold=25.5,
-            white_fraction_threshold=0.4,
-            prelim_threshold=110.0,
-            band_7_threshold=200.0,
-            band_2_threshold=190.0)
+            true_color_image,
+            false_color_image,
+            dilated_landmask,
+            8,
+            6)
 
         # This differs from MATLAB script due to disparity in the implementations
         # of the adaptive histogram equalization / diffusion functions
         # For the moment testing for regression
         @test sum(IceFloeTracker.to_uint8(true_color_eq[:, :, 1])) == 6_372_159_606
+
+
+        # Use custom tile size
+        l = size(true_color_eq, 1) ÷ 8
+        true_color_eq = IceFloeTracker.conditional_histeq(
+            true_color_image,
+            false_color_image,
+            dilated_landmask,
+            l)
+        @test sum(IceFloeTracker.to_uint8(true_color_eq[:, :, 1])) == 6_328_796_398
     end
 end
 
