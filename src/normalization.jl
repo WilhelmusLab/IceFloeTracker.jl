@@ -106,11 +106,13 @@ function imsharpen(
 
     image_equalized_gray = Gray.(image_equalized)
 
-    image_smoothed = imfilter(image_equalized_gray, Kernel.gaussian(smoothing_param))
+    return unsharp_mask(image_equalized_gray, smoothing_param, intensity)
+end
 
-    image_sharpened =
-        image_equalized_gray .* (1 + intensity) .+ image_smoothed .* (-intensity)
-    return min.(max.(image_sharpened, 0.0), 1.0)
+function unsharp_mask(image_equalized_gray, smoothing_param, intensity)
+    image_smoothed = imfilter(image_equalized_gray, Kernel.gaussian(smoothing_param))
+    image_sharpened = image_equalized_gray .* (1 + intensity) .+ image_smoothed .* (-intensity)
+    return clamp.(image_sharpened, 0.0, 1.0)
 end
 
 """
