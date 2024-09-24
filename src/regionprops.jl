@@ -259,11 +259,7 @@ function cropfloe(floesimg::AbstractMatrix{I}, min_row::J, min_col::J, max_row::
     floe_area = prefloe .== label
     @debug "mask: $floe_area"
 
-    prefloe[floe_area] .= 1
-    prefloe[.!floe_area] .= 0
-    @debug "final prefloe: $prefloe"
-
-    return prefloe
+    return floe_area
 end
 
 """
