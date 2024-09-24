@@ -247,7 +247,7 @@ end
 
 Crops the floe from `floesimg` with the label `label`, returning the region bounded by `min_row`, `min_col`, `max_row`, `max_col`, and converting to a BitMatrix.
 """
-function cropfloe(floesimg::AbstractMatrix{I}, min_row::J, min_col::J, max_row::J, max_col::J, label::I)  where {I<:Union{Bool, Integer}, J<:Integer}
+function cropfloe(floesimg::floesimgtype, min_row::J, min_col::J, max_row::J, max_col::J, label::I)  where {I<:Union{Bool, Integer}, J<:Integer}
     #= 
     Crop the floe using bounding box data in props.
     Note: Using a view of the cropped floe was considered but if there were multiple components in the cropped floe, the source array with the floes would be modified. =#
