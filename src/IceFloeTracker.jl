@@ -1,21 +1,23 @@
 module IceFloeTracker
-using Images
-using DelimitedFiles: readdlm, writedlm
-using Dates
-using ImageContrastAdjustment
-using ImageSegmentation
-using Peaks
-using Pkg
-using Random
-using StatsBase
-using Interpolations
-using DataFrames
-using PyCall
 using Clustering
 using DSP
-using StaticArrays
+using DataFrames
+using Dates
+using DelimitedFiles: readdlm, writedlm
+using ImageContrastAdjustment
+using ImageSegmentation
+using Images
+using Interpolations
 using OffsetArrays: centered
-using Serialization: serialize, deserialize
+using Peaks
+using Pkg
+using PyCall
+using Random
+using Serialization: deserialize, serialize
+using StatsBase
+using StaticArrays
+using StatsBase
+using TiledIteration
 using TOML
 
 export readdlm,
@@ -66,8 +68,12 @@ include("hbreak.jl")
 include("bridge.jl")
 include("branch.jl")
 include("special_strels.jl")
+include("tilingutils.jl")
+include("histogram_equalization.jl")
+
 
 const sk_measure = PyNULL()
+const sk_exposure = PyNULL()
 const getlatlon = PyNULL()
 
 function get_version_from_toml(pth=dirname(dirname(pathof(IceFloeTracker))))::VersionNumber
@@ -77,14 +83,42 @@ end
 
 const IFTVERSION = get_version_from_toml()
 
+function parse_requirements(file_path)
+    requirements = Dict{String,String}()
+    open(file_path, "r") do f
+        for line in eachline(f)
+            if occursin("==", line)
+            pkg, version = split(line, "==")
+            elseif occursin("=", line)
+            pkg, version = split(line, "=")
+            else
+            pkg, version = line, ""
+            end
+            requirements[pkg] = version
+        end
+    end
+    return requirements
+end
+
 function __init__()
-    pyimport_conda("numpy", "numpy=1.23")
-    pyimport_conda("pyproj", "pyproj=3.6.0")
-    pyimport_conda("rasterio", "rasterio=1.3.7")
-    pyimport_conda("jinja2", "jinja2=3.1.2")
-    pyimport_conda("pandas", "pandas=2")
+
+    deps = parse_requirements(joinpath(dirname(@__DIR__), "requirements.txt"))
+
+    for (pkg, version) in deps
+        if pkg == "scikit-image"
+            _modules = ["measure", "exposure"]
+            for _module in _modules
+                imported_module = pyimport_conda("skimage.$_module", "$(pkg)=$(version)")
+                reference_module = eval(Symbol("sk_$_module"))
+                copy!(reference_module, imported_module)
+            end
+
+        else
+            pyimport_conda(pkg, "$(pkg)=$(version)")
+        end
+    end
+
     @pyinclude(joinpath(@__DIR__, "latlon.py"))
-    copy!(sk_measure, pyimport_conda("skimage.measure", "scikit-image=0.20.0"))
     copy!(getlatlon, py"getlatlon")
     return nothing
 end
