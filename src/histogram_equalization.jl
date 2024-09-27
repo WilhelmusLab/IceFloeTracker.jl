@@ -129,14 +129,14 @@ function get_tiles(false_color_image; rblocks, cblocks)
     return TileIterator(axes(false_color_image), tile_size)
 end
 
-function _process_image_tiles(true_color_image, false_color_image, landmask, tiles, white_threshold, entropy_threshold, white_fraction_threshold, prelim_threshold, band_7_threshold, band_2_threshold)
-    # Get the red channel for cloud detection
-    clouds_red = _get_red_channel_cloud_cae(
-        false_color_image=false_color_image, landmask=landmask,
-        prelim_threshold=prelim_threshold,
-        band_7_threshold=band_7_threshold,
-        band_2_threshold=band_2_threshold,
-    )
+function _process_image_tiles(
+    true_color_image,
+    clouds_red,
+    tiles,
+    white_threshold,
+    entropy_threshold,
+    white_fraction_threshold,
+)
 
     # Apply diffuse (anisotropic diffusion) to each channel of true color image
     true_color_diffused = IceFloeTracker.diffusion(float64.(true_color_image), 0.1, 75, 3)
