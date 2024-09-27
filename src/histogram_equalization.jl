@@ -284,9 +284,4 @@ Convert an RGB image to grayscale in the range [0, 255].
 """
 function rgb2gray(img::Matrix{RGB{Float64}})
     return round.(Int, Gray.(img) * 255)
-end        @views channels[i, :, :][mask] .= 0
-    end
-
-    return channels
 end
-
