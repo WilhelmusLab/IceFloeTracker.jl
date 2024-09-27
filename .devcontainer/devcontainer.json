@@ -1,6 +1,4 @@
-// See https://github.com/julia-vscode/julia-devcontainer/blob/master/Dockerfile for image contents
 {
-	"name": "Julia (Community)",
 	"image": "mcr.microsoft.com/vscode/devcontainers/base",
 
 	// Configure tool-specific properties.
