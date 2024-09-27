@@ -13,13 +13,12 @@ function test_cloud_image_workflow()
     @testset "Prereq cloud image" begin
         false_color_cloudmasked = _get_false_color_cloudmasked(
             false_color_image=false_color_image,
-            landmask=dilated_landmask,
             prelim_threshold=110.0,
             band_7_threshold=200.0,
             band_2_threshold=190.0,
         )
 
-        @test sum(false_color_cloudmasked[1, :, :]) == 1_320_925_065
+        @test [sum(false_color_cloudmasked[i, :, :]) for i in 1:3] == [1_736_661_355, 5_997_708_807, 6_083_703_526]
     end
 end
 
@@ -37,13 +36,15 @@ function test_conditional_adaptivehisteq()
     @testset "Conditional adaptivehisteq" begin
         clouds = _get_false_color_cloudmasked(
             false_color_image=false_color_image,
-            landmask=dilated_landmask,
             prelim_threshold=110.0,
             band_7_threshold=200.0,
             band_2_threshold=190.0,
         )
 
         clouds_red = clouds[1, :, :]
+        clouds_red[dilated_landmask] .= 0
+
+        @test sum(clouds_red) == 1_320_925_065
 
         # Using rblocks = 8, cblocks = 6
         true_color_eq = conditional_histeq(
