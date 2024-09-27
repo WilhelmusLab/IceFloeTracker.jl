@@ -250,7 +250,7 @@ function conditional_histeq(
 
 end
 
-function _get_false_color_cloudmasked(; false_color_image, landmask,
+function __get_false_color_cloudmasked(; false_color_image,
     prelim_threshold=110.0,
     band_7_threshold=200.0,
     band_2_threshold=190.0,
@@ -267,11 +267,10 @@ function _get_false_color_cloudmasked(; false_color_image, landmask,
 
     # remove clouds and land from each channel
     channels = Int.(channelview(false_color_image) * 255)
-    mask = clouds_view .| landmask
 
     # Apply the mask to each channel
     for i in 1:3
-        @views channels[i, :, :][mask] .= 0
+        @views channels[i, :, :][clouds_view] .= 0
     end
 
     return channels
