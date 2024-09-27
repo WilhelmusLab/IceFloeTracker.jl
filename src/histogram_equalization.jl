@@ -214,47 +214,36 @@ end
 """
     conditional_histeq(
     true_color_image,
-    false_color_image,
-    landmask,
+    clouds_red,
     side_length::Int,
     entropy_threshold::AbstractFloat=4.0,
     white_threshold::AbstractFloat=25.5,
     white_fraction_threshold::AbstractFloat=0.4,
-    prelim_threshold=110.0,
-    band_7_threshold=200.0,
-    band_2_threshold=190.0
+
 )
 
 Performs conditional histogram equalization on a true color image using tiles of approximately sidelength size `side_length`. If a perfect tiling is not possible, the tiling on the egde of the image is adjusted to ensure that the tiles are as close to `side_length` as possible. See `get_tiles(array, side_length)` for more details.
 """
 function conditional_histeq(
     true_color_image,
-    false_color_image,
-    landmask,
+    clouds_red,
     side_length::Int,
     entropy_threshold::AbstractFloat=4.0,
     white_threshold::AbstractFloat=25.5,
     white_fraction_threshold::AbstractFloat=0.4,
-    prelim_threshold=110.0,
-    band_7_threshold=200.0,
-    band_2_threshold=190.0
 )
 
-    side_length = IceFloeTracker.get_optimal_tile_size(side_length, size(false_color_image))
+    side_length = IceFloeTracker.get_optimal_tile_size(side_length, size(true_color_image))
 
-    tiles = IceFloeTracker.get_tiles(false_color_image, side_length)
+    tiles = IceFloeTracker.get_tiles(true_color_image, side_length)
 
     rgbchannels_equalized = _process_image_tiles(
         true_color_image,
-        false_color_image,
-        landmask,
+        clouds_red,
         tiles,
         white_threshold,
         entropy_threshold,
         white_fraction_threshold,
-        prelim_threshold,
-        band_7_threshold,
-        band_2_threshold
     )
 
     return rgbchannels_equalized
