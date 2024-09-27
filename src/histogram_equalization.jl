@@ -197,15 +197,6 @@ function conditional_histeq(
     white_threshold::AbstractFloat=25.5,
     white_fraction_threshold::AbstractFloat=0.4,
 )
-
-    # # Get the red channel for cloud detection
-    # clouds_red = _get_red_channel_cloud_cae(
-    #     false_color_image=false_color_image, landmask=landmask,
-    #     prelim_threshold=prelim_threshold,
-    #     band_7_threshold=band_7_threshold,
-    #     band_2_threshold=band_2_threshold,
-    # )
-
     tiles = get_tiles(true_color_image, rblocks=rblocks, cblocks=cblocks)
     rgbchannels_equalized = _process_image_tiles(
         true_color_image,
