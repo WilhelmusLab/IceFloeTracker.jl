@@ -163,14 +163,21 @@ end
 
 
 """
-    conditional_histeq(true_color_image, clouds, landmask, rblocks::Int=8, cblocks::Int=6, entropy_threshold::AbstractFloat=4.0, white_threshold::AbstractFloat=25.5, white_fraction_threshold::AbstractFloat=0.4)
+    conditional_histeq(
+    true_color_image,
+    clouds_red,
+    rblocks::Int,
+    cblocks::Int,
+    entropy_threshold::AbstractFloat=4.0,
+    white_threshold::AbstractFloat=25.5,
+    white_fraction_threshold::AbstractFloat=0.4,
+)
 
 Performs conditional histogram equalization on a true color image.
 
 # Arguments
 - `true_color_image`: The true color image to be equalized.
-- `false_color_image`: The false color image used to determine the regions to equalize.
-- `landmask`: The land mask indicating the land regions in the image.
+- `clouds_red`: The land/cloud masked red channel of the false color image.
 - `rblocks`: The number of row-blocks to divide the image into for histogram equalization. Default is 8.
 - `cblocks`: The number of column-blocks to divide the image into for histogram equalization. Default is 6.
 - `entropy_threshold`: The entropy threshold used to determine if a block should be equalized. Default is 4.0.
@@ -183,31 +190,30 @@ The equalized true color image.
 """
 function conditional_histeq(
     true_color_image,
-    false_color_image,
-    landmask,
+    clouds_red,
     rblocks::Int,
     cblocks::Int,
     entropy_threshold::AbstractFloat=4.0,
     white_threshold::AbstractFloat=25.5,
     white_fraction_threshold::AbstractFloat=0.4,
-    prelim_threshold=110.0,
-    band_7_threshold=200.0,
-    band_2_threshold=190.0
 )
 
-    tiles = get_tiles(false_color_image, rblocks=rblocks, cblocks=cblocks)
+    # # Get the red channel for cloud detection
+    # clouds_red = _get_red_channel_cloud_cae(
+    #     false_color_image=false_color_image, landmask=landmask,
+    #     prelim_threshold=prelim_threshold,
+    #     band_7_threshold=band_7_threshold,
+    #     band_2_threshold=band_2_threshold,
+    # )
 
+    tiles = get_tiles(true_color_image, rblocks=rblocks, cblocks=cblocks)
     rgbchannels_equalized = _process_image_tiles(
         true_color_image,
-        false_color_image,
-        landmask,
+        clouds_red,
         tiles,
         white_threshold,
         entropy_threshold,
         white_fraction_threshold,
-        prelim_threshold,
-        band_7_threshold,
-        band_2_threshold
     )
 
     return rgbchannels_equalized
