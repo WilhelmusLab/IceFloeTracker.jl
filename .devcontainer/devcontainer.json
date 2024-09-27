@@ -1,17 +1,5 @@
 {
 	"image": "mcr.microsoft.com/vscode/devcontainers/base",
-
-	// Configure tool-specific properties.
-	"customizations": {
-		// Configure properties specific to VS Code.
-		"vscode": {
-			// Add the IDs of extensions you want installed when the container is created.
-			"extensions": [
-				"julialang.language-julia"
-			]
-		}
-	},
-	
 	"features": {
 		"ghcr.io/julialang/devcontainer-features/julia:1": {},
    	 	"ghcr.io/devcontainers/features/python:1": {}
