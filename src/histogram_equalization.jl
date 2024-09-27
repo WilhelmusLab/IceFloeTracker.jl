@@ -250,7 +250,7 @@ function conditional_histeq(
 
 end
 
-function __get_false_color_cloudmasked(; false_color_image,
+function _get_false_color_cloudmasked(; false_color_image,
     prelim_threshold=110.0,
     band_7_threshold=200.0,
     band_2_threshold=190.0,
