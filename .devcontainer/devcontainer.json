@@ -1,9 +1,7 @@
 {
 	"image": "mcr.microsoft.com/vscode/devcontainers/base",
 	"features": {
-		"ghcr.io/julialang/devcontainer-features/julia:1": {
-			"channel": "release"
-		},
+		"ghcr.io/julialang/devcontainer-features/julia:1": {},
    	 	"ghcr.io/devcontainers/features/python:1": {}
 	},
 }
