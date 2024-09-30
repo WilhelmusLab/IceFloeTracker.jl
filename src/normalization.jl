@@ -112,20 +112,22 @@ end
 """
     unsharp_mask(image_equalized_gray, smoothing_param, intensity)
 
-Apply unsharp masking to an equalized grayscale image to enhance its sharpness.
+Apply unsharp masking on (equalized) grayscale ([0, `clapmax`]) image to enhance its sharpness.
 
 # Arguments
-- `image_equalized_gray: The input grayscale image that has been equalized.
+- `image_equalized_gray: The input grayscale image, typically already equalized.
 - `smoothing_param::Int`: The pixel radius for Gaussian blurring (typically between 1 and 10).
 - `intensity: The amount of sharpening to apply. Higher values result in more pronounced sharpening.
 
 # Returns
-The sharpened grayscale image with values clipped between 0.0 and 1.0.
+The sharpened grayscale image with values clipped between 0 and `clapmax`.
 """
-function unsharp_mask(image_equalized_gray, smoothing_param, intensity)
+function unsharp_mask(image_equalized_gray, smoothing_param, intensity, clampmax=1)
     image_smoothed = imfilter(image_equalized_gray, Kernel.gaussian(smoothing_param))
-    image_sharpened = image_equalized_gray .* (1 + intensity) .+ image_smoothed .* (-intensity)
-    return clamp.(image_sharpened, 0.0, 1.0)
+    clamp!(image_smoothed, 0.0, clampmax)
+    image_sharpened = image_equalized_gray * (1 + intensity) .- image_smoothed * intensity
+    clamp!(image_sharpened, 0.0, clampmax)
+    return round.(Int, image_sharpened)
 end
 
 """
