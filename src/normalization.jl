@@ -122,12 +122,19 @@ Apply unsharp masking on (equalized) grayscale ([0, `clapmax`]) image to enhance
 # Returns
 The sharpened grayscale image with values clipped between 0 and `clapmax`.
 """
-function unsharp_mask(image_equalized_gray, smoothing_param, intensity, clampmax=1)
+function unsharp_mask(image_equalized_gray, smoothing_param, intensity, clampmax)
     image_smoothed = imfilter(image_equalized_gray, Kernel.gaussian(smoothing_param))
     clamp!(image_smoothed, 0.0, clampmax)
     image_sharpened = image_equalized_gray * (1 + intensity) .- image_smoothed * intensity
     clamp!(image_sharpened, 0.0, clampmax)
     return round.(Int, image_sharpened)
+end
+
+# For old workflow in final2020.m
+function unsharp_mask(image_equalized_gray, smoothing_param, intensity)
+    image_smoothed = imfilter(image_equalized_gray, Kernel.gaussian(smoothing_param))
+    image_sharpened = image_equalized_gray * (1 + intensity) .- image_smoothed * intensity
+    return clamp.(image_sharpened, 0.0, 1.0)
 end
 
 """
