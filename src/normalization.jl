@@ -110,30 +110,30 @@ function imsharpen(
 end
 
 """
-    unsharp_mask(image_equalized_gray, smoothing_param, intensity)
+    unsharp_mask(image_gray, smoothing_param, intensity)
 
 Apply unsharp masking on (equalized) grayscale ([0, `clapmax`]) image to enhance its sharpness.
 
 # Arguments
-- `image_equalized_gray: The input grayscale image, typically already equalized.
+- `image_gray: The input grayscale image, typically already equalized.
 - `smoothing_param::Int`: The pixel radius for Gaussian blurring (typically between 1 and 10).
 - `intensity: The amount of sharpening to apply. Higher values result in more pronounced sharpening.
 
 # Returns
 The sharpened grayscale image with values clipped between 0 and `clapmax`.
 """
-function unsharp_mask(image_equalized_gray, smoothing_param, intensity, clampmax)
-    image_smoothed = imfilter(image_equalized_gray, Kernel.gaussian(smoothing_param))
+function unsharp_mask(image_gray, smoothing_param, intensity, clampmax)
+    image_smoothed = imfilter(image_gray, Kernel.gaussian(smoothing_param))
     clamp!(image_smoothed, 0.0, clampmax)
-    image_sharpened = image_equalized_gray * (1 + intensity) .- image_smoothed * intensity
+    image_sharpened = image_gray * (1 + intensity) .- image_smoothed * intensity
     clamp!(image_sharpened, 0.0, clampmax)
     return round.(Int, image_sharpened)
 end
 
 # For old workflow in final2020.m
-function unsharp_mask(image_equalized_gray, smoothing_param, intensity)
-    image_smoothed = imfilter(image_equalized_gray, Kernel.gaussian(smoothing_param))
-    image_sharpened = image_equalized_gray * (1 + intensity) .- image_smoothed * intensity
+function unsharp_mask(image_gray, smoothing_param, intensity)
+    image_smoothed = imfilter(image_gray, Kernel.gaussian(smoothing_param))
+    image_sharpened = image_gray * (1 + intensity) .- image_smoothed * intensity
     return clamp.(image_sharpened, 0.0, 1.0)
 end
 
