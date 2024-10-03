@@ -110,15 +110,15 @@ function imsharpen(
 end
 
 """
-    unsharp_mask(image_gray, smoothing_param, intensity)
+    unsharp_mask(image_gray, smoothing_param, intensity, clampmax)
 
-Apply unsharp masking on (equalized) grayscale ([0, `clapmax`]) image to enhance its sharpness.
+Apply unsharp masking on (equalized) grayscale ([0, `clampmax`]) image to enhance its sharpness.
 
 # Arguments
-- `image_gray: The input grayscale image, typically already equalized.
+- `image_gray`: The input grayscale image, typically already equalized.
 - `smoothing_param::Int`: The pixel radius for Gaussian blurring (typically between 1 and 10).
-- `intensity: The amount of sharpening to apply. Higher values result in more pronounced sharpening.
-
+- `intensity`: The amount of sharpening to apply. Higher values result in more pronounced sharpening.
+- `clampmax`: upper limit of intensity values in the returned image.`
 # Returns
 The sharpened grayscale image with values clipped between 0 and `clapmax`.
 """
