@@ -24,13 +24,12 @@ function get_optimal_tile_size(l0::Int, dims::Tuple{Int,Int})::Int
     l0 < 2 && error("l0 must be at least 2")
     any(l0 .> dims) && error("l0 = $l0 is too large for the given dimensions $dims")
 
-    area = prod(dims)
     minimal_shift = l0 == 2 ? 0 : 1
     candidates = [l0 + i for i in -minimal_shift:1]
 
     minl, M = 0, Inf
     for side_length in candidates
-        missedarea = get_area_missed(side_length, dims, area)
+        missedarea = get_area_missed(side_length, dims)
         if missedarea <= M # prefer larger side_length in case of tie
             M, minl = missedarea, side_length
         end
