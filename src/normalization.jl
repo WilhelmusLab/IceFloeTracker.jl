@@ -131,6 +131,21 @@ function unsharp_mask(image_gray, smoothing_param, intensity, clampmax)
 end
 
 # For old workflow in final2020.m
+"""
+    (Deprecated)
+    unsharp_mask(image_gray, smoothing_param, intensity)
+
+Apply unsharp masking on (equalized) grayscale image to enhance its sharpness.
+
+Does not perform clamping after the smoothing step. Kept for legacy tests of IceFloeTracker.jl.
+
+# Arguments
+- `image_gray`: The input grayscale image, typically already equalized.
+- `smoothing_param::Int`: The pixel radius for Gaussian blurring (typically between 1 and 10).
+- `intensity`: The amount of sharpening to apply. Higher values result in more pronounced sharpening.
+# Returns
+The sharpened grayscale image with values clipped between 0 and `clapmax`.
+"""
 function unsharp_mask(image_gray, smoothing_param, intensity)
     image_smoothed = imfilter(image_gray, Kernel.gaussian(smoothing_param))
     image_sharpened = image_gray * (1 + intensity) .- image_smoothed * intensity
