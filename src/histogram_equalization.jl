@@ -123,11 +123,6 @@ function get_rgb_channels(img)
     return cat(redc, greenc, bluec, dims=3)
 end
 
-function get_tiles(false_color_image; rblocks, cblocks)
-    rtile, ctile = size(false_color_image)
-    tile_size = Tuple{Int,Int}((rtile / rblocks, ctile / cblocks))
-    return TileIterator(axes(false_color_image), tile_size)
-end
 
 function _process_image_tiles(true_color_image, false_color_image, landmask, tiles, white_threshold, entropy_threshold, white_fraction_threshold, prelim_threshold, band_7_threshold, band_2_threshold)
     # Get the red channel for cloud detection
