@@ -151,17 +151,19 @@ end
 
 
 """
-    get_tiles(array, side_length)
+    get_tiles(array, t::Tuple{Int,Int})
 
 Generate a collection of tiles from an array.
 
-Unlike `TileIterator`, the function adjusts the bottom and right edges of the tile matrix if they are smaller than half the tile size `side_length`.
+The function adjusts the bottom and right edges of the tile matrix if they are smaller than half the tile sizes in `t`.
 """
-function get_tiles(array, side_length)
+function get_tiles(array, t::Tuple{Int,Int})
+    a, b = t
+    tiles = TileIterator(axes(array), (a, b)) |> collect
+    _a, _b = size(array)
 
-    tiles = TileIterator(axes(array), (side_length, side_length)) |> collect
-
-    bottombump, rightbump = mod.(size(array), side_length)
+    bottombump = mod(_a, a)
+    rightbump = mod(_b, b)
 
     if bottombump == 0 && rightbump == 0
         return tiles
@@ -170,18 +172,35 @@ function get_tiles(array, side_length)
     crop_height, crop_width = 0, 0
 
     # Adjust bottom edge if necessary
-    if bottombump <= side_length ÷ 2
+    if bottombump <= a ÷ 2
         bottom_edge = tiles[end-1, :]
         tiles[end-1, :] .= bump_tile.(bottom_edge, Ref((bottombump, 0)))
         crop_height += 1
     end
 
     # Adjust right edge if necessary
-    if rightbump <= side_length ÷ 2
+    if rightbump <= b ÷ 2
         right_edge = tiles[:, end-1]
         tiles[:, end-1] .= bump_tile.(right_edge, Ref((0, rightbump)))
         crop_width += 1
     end
 
     return tiles[1:end-crop_height, 1:end-crop_width]
+end
+
+"""
+    get_tiles(array, side_length)
+
+Generate a collection of tiles from an array.
+
+Unlike `TileIterator`, the function adjusts the bottom and right edges of the tile matrix if they are smaller than half the tile size `side_length`.
+"""
+function get_tiles(array, side_length::Int)
+    return get_tiles(array, (side_length, side_length))
+end
+
+function get_tiles(array; rblocks, cblocks)
+    rtile, ctile = size(array)
+    tile_size = (rtile ÷ rblocks, ctile ÷ cblocks)
+    return TileIterator(axes(array), tile_size)
 end
