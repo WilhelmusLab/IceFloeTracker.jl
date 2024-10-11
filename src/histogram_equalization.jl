@@ -129,14 +129,14 @@ function get_tiles(false_color_image; rblocks, cblocks)
     return TileIterator(axes(false_color_image), tile_size)
 end
 
-function _process_image_tiles(true_color_image, false_color_image, landmask, tiles, white_threshold, entropy_threshold, white_fraction_threshold, prelim_threshold, band_7_threshold, band_2_threshold)
-    # Get the red channel for cloud detection
-    clouds_red = _get_red_channel_cloud_cae(
-        false_color_image=false_color_image, landmask=landmask,
-        prelim_threshold=prelim_threshold,
-        band_7_threshold=band_7_threshold,
-        band_2_threshold=band_2_threshold,
-    )
+function _process_image_tiles(
+    true_color_image,
+    clouds_red,
+    tiles,
+    white_threshold,
+    entropy_threshold,
+    white_fraction_threshold,
+)
 
     # Apply diffuse (anisotropic diffusion) to each channel of true color image
     true_color_diffused = IceFloeTracker.diffusion(float64.(true_color_image), 0.1, 75, 3)
@@ -163,14 +163,21 @@ end
 
 
 """
-    conditional_histeq(true_color_image, clouds, landmask, rblocks::Int=8, cblocks::Int=6, entropy_threshold::AbstractFloat=4.0, white_threshold::AbstractFloat=25.5, white_fraction_threshold::AbstractFloat=0.4)
+    conditional_histeq(
+    true_color_image,
+    clouds_red,
+    rblocks::Int,
+    cblocks::Int,
+    entropy_threshold::AbstractFloat=4.0,
+    white_threshold::AbstractFloat=25.5,
+    white_fraction_threshold::AbstractFloat=0.4,
+)
 
 Performs conditional histogram equalization on a true color image.
 
 # Arguments
 - `true_color_image`: The true color image to be equalized.
-- `false_color_image`: The false color image used to determine the regions to equalize.
-- `landmask`: The land mask indicating the land regions in the image.
+- `clouds_red`: The land/cloud masked red channel of the false color image.
 - `rblocks`: The number of row-blocks to divide the image into for histogram equalization. Default is 8.
 - `cblocks`: The number of column-blocks to divide the image into for histogram equalization. Default is 6.
 - `entropy_threshold`: The entropy threshold used to determine if a block should be equalized. Default is 4.0.
@@ -183,31 +190,21 @@ The equalized true color image.
 """
 function conditional_histeq(
     true_color_image,
-    false_color_image,
-    landmask,
+    clouds_red,
     rblocks::Int,
     cblocks::Int,
     entropy_threshold::AbstractFloat=4.0,
     white_threshold::AbstractFloat=25.5,
     white_fraction_threshold::AbstractFloat=0.4,
-    prelim_threshold=110.0,
-    band_7_threshold=200.0,
-    band_2_threshold=190.0
 )
-
-    tiles = get_tiles(false_color_image, rblocks=rblocks, cblocks=cblocks)
-
+    tiles = get_tiles(true_color_image, rblocks=rblocks, cblocks=cblocks)
     rgbchannels_equalized = _process_image_tiles(
         true_color_image,
-        false_color_image,
-        landmask,
+        clouds_red,
         tiles,
         white_threshold,
         entropy_threshold,
         white_fraction_threshold,
-        prelim_threshold,
-        band_7_threshold,
-        band_2_threshold
     )
 
     return rgbchannels_equalized
@@ -217,54 +214,43 @@ end
 """
     conditional_histeq(
     true_color_image,
-    false_color_image,
-    landmask,
+    clouds_red,
     side_length::Int,
     entropy_threshold::AbstractFloat=4.0,
     white_threshold::AbstractFloat=25.5,
     white_fraction_threshold::AbstractFloat=0.4,
-    prelim_threshold=110.0,
-    band_7_threshold=200.0,
-    band_2_threshold=190.0
+
 )
 
 Performs conditional histogram equalization on a true color image using tiles of approximately sidelength size `side_length`. If a perfect tiling is not possible, the tiling on the egde of the image is adjusted to ensure that the tiles are as close to `side_length` as possible. See `get_tiles(array, side_length)` for more details.
 """
 function conditional_histeq(
     true_color_image,
-    false_color_image,
-    landmask,
+    clouds_red,
     side_length::Int,
     entropy_threshold::AbstractFloat=4.0,
     white_threshold::AbstractFloat=25.5,
     white_fraction_threshold::AbstractFloat=0.4,
-    prelim_threshold=110.0,
-    band_7_threshold=200.0,
-    band_2_threshold=190.0
 )
 
-    side_length = IceFloeTracker.get_optimal_tile_size(side_length, size(false_color_image))
+    side_length = IceFloeTracker.get_optimal_tile_size(side_length, size(true_color_image))
 
-    tiles = IceFloeTracker.get_tiles(false_color_image, side_length)
+    tiles = IceFloeTracker.get_tiles(true_color_image, side_length)
 
     rgbchannels_equalized = _process_image_tiles(
         true_color_image,
-        false_color_image,
-        landmask,
+        clouds_red,
         tiles,
         white_threshold,
         entropy_threshold,
         white_fraction_threshold,
-        prelim_threshold,
-        band_7_threshold,
-        band_2_threshold
     )
 
     return rgbchannels_equalized
 
 end
 
-function _get_red_channel_cloud_cae(; false_color_image, landmask,
+function _get_false_color_cloudmasked(; false_color_image,
     prelim_threshold=110.0,
     band_7_threshold=200.0,
     band_2_threshold=190.0,
@@ -279,9 +265,22 @@ function _get_red_channel_cloud_cae(; false_color_image, landmask,
 
     clouds_view[mask_cloud_ice] .= 0
 
-    # remove clouds and land from red channel
-    red_channel = Int.(red.(false_color_image) * 255)
-    red_channel[clouds_view.|landmask] .= 0
+    # remove clouds and land from each channel
+    channels = Int.(channelview(false_color_image) * 255)
 
-    return red_channel
+    # Apply the mask to each channel
+    for i in 1:3
+        @views channels[i, :, :][clouds_view] .= 0
+    end
+
+    return channels
+end
+
+"""
+    rgb2gray(img::Matrix{RGB{Float64}})
+
+Convert an RGB image to grayscale in the range [0, 255].
+"""
+function rgb2gray(img::Matrix{RGB{Float64}})
+    return round.(Int, Gray.(img) * 255)
 end
