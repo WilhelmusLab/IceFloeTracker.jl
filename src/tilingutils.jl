@@ -157,7 +157,7 @@ Generate a collection of tiles from an array.
 
 The function adjusts the bottom and right edges of the tile matrix if they are smaller than half the tile sizes in `t`.
 """
-function get_tiles(array, t::Tuple{Int,Int})
+function get_tiles(array, t::Tuple{T,T}) where T<:Union{Int,Int64}
     a, b = t
     tiles = TileIterator(axes(array), (a, b)) |> collect
     _a, _b = size(array)
