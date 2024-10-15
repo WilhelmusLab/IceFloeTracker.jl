@@ -105,3 +105,14 @@ function branchbridge(img)
     return img
 end
 
+"""
+    imgradientmag(img)
+
+Compute the gradient magnitude of an image using the Sobel operator.
+"""
+function imgradientmag(img)
+    h = centered([-1 0 1; -2 0 2; -1 0 1]')
+    Gx = imfilter(img, h', "replicate")
+    Gy = imfilter(img, h, "replicate")
+    return hypot.(Gx, Gy)
+end
