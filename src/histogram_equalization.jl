@@ -1,4 +1,4 @@
-function to_uint8(img::AbstractMatrix{T}) where {T<:AbstractFloat}
+function to_uint8(arr::AbstractMatrix{T}) where {T<:AbstractFloat}
     img = Int.(round.(arr, RoundNearestTiesAway))
     img = clamp.(img, 0, 255)
     return img
