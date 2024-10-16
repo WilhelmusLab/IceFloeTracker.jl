@@ -86,3 +86,33 @@ function segmentation_A(
 
     return segmented_A
 end
+
+function get_holes(img, min_opening_area=20, se=IceFloeTracker.se_disk4())
+    img .= ImageMorphology.area_opening(img; min_area=min_opening_area)
+    IceFloeTracker.hbreak!(img)
+
+    out = branchbridge(img)
+    out = IceFloeTracker.MorphSE.opening(out, centered(se))
+    out = IceFloeTracker.MorphSE.fill_holes(out)
+
+    return out .!= img
+
+end
+
+function branchbridge(img)
+    img = IceFloeTracker.branch(img)
+    img = IceFloeTracker.bridge(img)
+    return img
+end
+
+"""
+    imgradientmag(img)
+
+Compute the gradient magnitude of an image using the Sobel operator.
+"""
+function imgradientmag(img)
+    h = centered([-1 0 1; -2 0 2; -1 0 1]')
+    Gx = imfilter(img, h', "replicate")
+    Gy = imfilter(img, h, "replicate")
+    return hypot.(Gx, Gy)
+end

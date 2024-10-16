@@ -11,7 +11,7 @@ Performs image processing and morphological filtering with intermediate files fr
 - `fill_range`: range of values dictating the size of holes to fill
 - `isolation_threshold`: threshold used to isolated pixels from `sharpened_image`; between 0-1
 - `alpha_level`: alpha threshold used to adjust contrast
-- `gamma_factor`: amount of gamma adjustment 
+- `gamma_factor`: amount of gamma adjustment
 - `adjusted_ice_threshold`: threshold used to set ice equal to one after gamma adjustment
 
 """

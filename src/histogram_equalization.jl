@@ -1,5 +1,5 @@
-function to_uint8(img::AbstractMatrix{T}) where {T<:AbstractFloat}
-    img = UInt8.(round.(img))
+function to_uint8(arr::AbstractMatrix{T}) where {T<:AbstractFloat}
+    img = Int.(round.(arr, RoundNearestTiesAway))
     img = clamp.(img, 0, 255)
     return img
 end
@@ -123,11 +123,6 @@ function get_rgb_channels(img)
     return cat(redc, greenc, bluec, dims=3)
 end
 
-function get_tiles(false_color_image; rblocks, cblocks)
-    rtile, ctile = size(false_color_image)
-    tile_size = Tuple{Int,Int}((rtile / rblocks, ctile / cblocks))
-    return TileIterator(axes(false_color_image), tile_size)
-end
 
 function _process_image_tiles(
     true_color_image,

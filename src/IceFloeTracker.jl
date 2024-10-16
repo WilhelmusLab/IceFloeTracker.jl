@@ -4,6 +4,7 @@ using DSP
 using DataFrames
 using Dates
 using DelimitedFiles: readdlm, writedlm
+using ImageBinarization
 using ImageContrastAdjustment
 using ImageSegmentation
 using Images
@@ -88,11 +89,11 @@ function parse_requirements(file_path)
     open(file_path, "r") do f
         for line in eachline(f)
             if occursin("==", line)
-            pkg, version = split(line, "==")
+                pkg, version = split(line, "==")
             elseif occursin("=", line)
-            pkg, version = split(line, "=")
+                pkg, version = split(line, "=")
             else
-            pkg, version = line, ""
+                pkg, version = line, ""
             end
             requirements[pkg] = version
         end

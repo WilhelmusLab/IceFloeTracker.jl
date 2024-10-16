@@ -64,7 +64,7 @@ function discriminate_ice_water(
     falsecolor_image_band7 = @view(channelview(falsecolor_image)[1, :, :])
 
     # first define all of the image variations
-    image_clouds = IceFloeTracker.apply_landmask(clouds_channel, landmask_bitmatrix) # output during cloudmask apply, landmasked 
+    image_clouds = IceFloeTracker.apply_landmask(clouds_channel, landmask_bitmatrix) # output during cloudmask apply, landmasked
     image_cloudless = IceFloeTracker.apply_landmask(
         falsecolor_image_band7, landmask_bitmatrix
     ) # channel 1 (band 7) from source falsecolor image, landmasked
@@ -91,7 +91,7 @@ function discriminate_ice_water(
     standard_dev = stdmult(⋅, normalized_image)
 
     # find the ratio of clouds in the image to use in threshold filtering
-    _, clouds_bin_counts = build_histogram(image_clouds .> 0)
+    _, clouds_bin_counts = ImageContrastAdjustment.build_histogram(image_clouds .> 0)
     total_clouds = sum(clouds_bin_counts[51:end])
     total_all = sum(clouds_bin_counts)
     clouds_ratio = total_clouds / total_all
@@ -127,7 +127,7 @@ function discriminate_ice_water(
     @. normalized_image_copy = normalized_image - (normalized_image_copy * 3)
 
     # reusing memory allocated in landmask_bitmatrix
-    # used to be mask_image_clouds 
+    # used to be mask_image_clouds
     @. landmask_bitmatrix = (
         image_clouds < mask_clouds_lower || image_clouds > mask_clouds_upper
     )
