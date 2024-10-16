@@ -8,7 +8,7 @@ using IceFloeTracker: imgradientmag, to_uint8, imbinarize, adjustgamma, get_hole
     close(r)
 
     @testset "imgradientmag" begin
-        gmag = imgradientmag(coins) |> to_uint8
+        gmag = to_uint8(imgradientmag(coins))
         @test sum(gmag) == 2938959
     end
 
@@ -17,11 +17,11 @@ using IceFloeTracker: imgradientmag, to_uint8, imbinarize, adjustgamma, get_hole
     end
 
     @testset "adjustgamma" begin
-        @test adjustgamma(coins, 1.5) |> sum == 5330608
+        @test sum(adjustgamma(coins, 1.5)) == 5330608
     end
 
     @testset "get_holes" begin
         bw = coins .> 100
-        @test get_holes(bw, 20, se_disk4()) |> sum == 2536
+        @test sum(get_holes(bw)) == 2536
     end
 end
