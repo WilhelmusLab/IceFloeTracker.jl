@@ -87,7 +87,7 @@ function segmentation_A(
     return segmented_A
 end
 
-function get_holes(img, min_opening_area, se=IceFloeTracker.MorphSE.se_disk4())
+function get_holes(img, min_opening_area=20, se=IceFloeTracker.se_disk4())
     img .= ImageMorphology.area_opening(img; min_area=min_opening_area)
     IceFloeTracker.hbreak!(img)
 
