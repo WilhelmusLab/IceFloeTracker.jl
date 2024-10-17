@@ -110,7 +110,8 @@ function __init__()
             _modules = ["measure", "exposure"]
             for _module in _modules
                 imported_module = pyimport_conda("skimage.$_module", "$(pkg)=$(version)")
-                reference_module = eval(Symbol("sk_$_module"))
+
+                reference_module = getfield(Main, Symbol("sk_$_module"))
                 copy!(reference_module, imported_module)
             end
 
@@ -123,6 +124,7 @@ function __init__()
     copy!(getlatlon, py"getlatlon")
     return nothing
 end
+
 
 include("regionprops.jl")
 include("segmentation_a_direct.jl")
