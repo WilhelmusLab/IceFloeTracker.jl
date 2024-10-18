@@ -204,3 +204,29 @@ function get_tiles(array; rblocks, cblocks)
     tile_size = (rtile ÷ rblocks, ctile ÷ cblocks)
     return TileIterator(axes(array), tile_size)
 end
+
+"""
+    get_brighten_mask(equalized_gray_reconstructed_img, gamma_green)
+
+# Arguments
+
+- `equalized_gray_reconstructed_img`: The equalized gray reconstructed image (uint8 in Matlab).
+- `gamma_green`: The gamma value for the green channel (also uint8).
+
+# Returns
+Difference equalized_gray_reconstructed_img - gamma_green clamped between 0 and 255.
+
+"""
+function get_brighten_mask(equalized_gray_reconstructed_img, gamma_green)
+    return to_uint8(equalized_gray_reconstructed_img - gamma_green)
+end
+
+
+
+function imbrighten(img, brighten_mask, bright_factor)
+    img = Float64.(img);
+    brighten_mask = brighten_mask .> 0
+    img[brighten_mask] .= img[brighten_mask] * bright_factor
+    img = to_uint8(img)
+end
+
