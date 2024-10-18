@@ -1,9 +1,17 @@
-function to_uint8(arr::AbstractMatrix{T}) where {T<:AbstractFloat}
+function to_uint8(arr::AbstractMatrix{T}) where {T<:Union{AbstractFloat,Int,Signed}}
     img = Int.(round.(arr, RoundNearestTiesAway))
     img = clamp.(img, 0, 255)
     return img
 end
 
+function to_uint8(num::T) where {T<:Union{AbstractFloat,Int,Signed}}
+    num = Int(round(num, RoundNearestTiesAway))
+    return clamp(num, 0, 255)
+end
+
+function mat2uint8(arr::AbstractMatrix{T}) where {T<:Union{AbstractFloat,Int,Signed}}
+    return to_uint8.(arr)
+end
 
 function anisotropic_diffusion_3D(I)
     rgbchannels = get_rgb_channels(I)
