@@ -56,14 +56,14 @@ jobs:
         run: |
           for notebook in $(find notebooks -name "*.ipynb"); do
             echo "Converting $notebook to Julia script"
-            jupyter nbconvert --to script "$notebook" --output-dir=. --output "$notebook.jl"
+            jupyter nbconvert --to script "$notebook" --output-dir=.
           done
 
       # Update HOME variable in nb => .jl scripts
       # HOME = "../.." => "."
       - name: Update Paths in Converted Julia Scripts
         run: |
-          for script in $(find converted_notebooks -maxdepth 1 -name "*.jl"); do
+          for script in $(find . -maxdepth 1 -name "*.jl"); do
             echo "Updating paths in $script"
             sed -i 's|\.\./\.\.|.|g' "$script"
           done
