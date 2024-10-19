@@ -1,0 +1,82 @@
+name: Check notebooks
+
+on:
+  push:
+    branches:
+      - main
+    tags: '*'
+  pull_request:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ startsWith(github.ref, 'refs/pull/') }}
+
+jobs:
+  test:
+    name: Julia ${{ matrix.version }} - ${{ matrix.os }} - ${{ matrix.arch }} - ${{ github.event_name }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        version: ['lts', '1']
+        os: [ubuntu-latest, macos-latest]
+        arch: [x64, arm64]
+        exclude:
+          - os: ubuntu-latest
+            arch: arm64
+          - os: macos-latest
+            arch: x64
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Update pip
+        run: python -m pip install -U pip
+
+      - name: Install Python dependencies
+        run: python -m pip install -U -r requirements.txt
+
+      - name: Install nbconvert
+        run: python -m pip install nbconvert
+
+      - uses: julia-actions/setup-julia@v2
+        with:
+          version: ${{ matrix.version }}
+          arch: ${{ matrix.arch }}
+
+      - uses: julia-actions/cache@v2
+
+      - uses: julia-actions/julia-buildpkg@v1
+        env:
+          PYTHON: python
+
+      # Convert notebooks to .jl files using nbconvert
+      - name: Convert Notebooks to Julia Scripts
+        run: |
+          for notebook in $(find notebooks -name "*.ipynb"); do
+            echo "Converting $notebook to Julia script"
+            jupyter nbconvert --to script "$notebook" --output-dir=.
+          done
+
+      # Update HOME variable in nb => .jl scripts
+      # HOME = "../.." => "."
+      - name: Update Paths in Converted Julia Scripts
+        run: |
+          for script in $(find . -maxdepth 1 -name "*.jl"); do
+            echo "Updating paths in $script"
+            sed -i 's|\.\./\.\.|.|g' "$script"
+          done
+
+      # Run converted .jl files using Julia
+      - name: Run Julia Scripts
+        run: |
+          EXIT_CODE=0
+          for script in $(find . -maxdepth 1 -name "*.jl"); do
+            echo "Running Julia script: $script"
+            julia --project=. "$script" || EXIT_CODE=$?
+          done
+          exit $EXIT_CODE
