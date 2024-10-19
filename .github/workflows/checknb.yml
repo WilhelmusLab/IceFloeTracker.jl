@@ -38,6 +38,9 @@ jobs:
         run: python -m pip install -U pip
 
       - name: Install Python dependencies
+        run: python -m pip install -U -r requirements.txt
+        
+      - name: Install nbconvert  
         run: python -m pip install nbconvert
 
       - uses: julia-actions/setup-julia@v2
