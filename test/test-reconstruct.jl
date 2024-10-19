@@ -1,10 +1,8 @@
-# WIP
-using ZipFile # delete later
-using DelimitedFiles: readdlm
-using IceFloeTracker: imcomplement
+using IceFloeTracker: imcomplement, reconstruct, reconstruct_erosion
 
-r = ZipFile.Reader("test/test_inputs/coins.zip")
+r = ZipFile.Reader("test_inputs/coins.zip")
 coins = readdlm(r.files[1], ',', Int)
+coins_gray = Gray.(coins ./ 255)
 close(r)
 
 @testset "reconstruct" begin
@@ -15,14 +13,31 @@ close(r)
         @test imcomplement(coins_gray) == 1 .- coins_gray
     end
 
+    se_disk1 = IceFloeTracker.MorphSE.StructuringElements.strel_diamond((3, 3))
+
+    _round(x) = Int(round(x, RoundNearestTiesAway))
+
+    function run_tests(test_cases, func, se)
+        for (img, expected) in test_cases
+            result = func(img, se)
+            @test _round(Float64(sum(result))) == _round(expected)
+        end
+    end
+
+    _reconstruct(img, se, type) = reconstruct(img, se, type, false)
+
     @testset "open_by_reconstruction" begin
-        se_disk1 = IceFloeTracker.MorphSE.StructuringElements.strel_diamond((3, 3))
-        coins_opened = open_by_reconstruction(coins, se_disk1)
-        @test sum(coins_opened) == 7552396
+        test_cases = [(coins, 7552396), (coins_gray, 29617.239215686277)]
+        run_tests(test_cases, (img, se) -> _reconstruct(img, se, "erosion"), se_disk1)
+    end
+
+    @testset "close_by_reconstruction" begin
+        test_cases = [(coins, 7599858), (coins_gray, 29803.36470588235)]
+        run_tests(test_cases, (img, se) -> _reconstruct(img, se, "dilation"), se_disk1)
     end
 
     @testset "reconstruct_erosion" begin
-        coins_r_erosion = reconstruct_erosion(coins, se_disk1)
-        @test sum(coins_r_erosion) == 11179481
+        test_cases = [(coins, 11179481), (coins_gray, 43841.10196078432)]
+        run_tests(test_cases, reconstruct_erosion, se_disk1)
     end
 end
