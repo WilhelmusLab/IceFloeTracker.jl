@@ -11,3 +11,10 @@ function open_by_reconstruction(img, se)
     marker = IceFloeTracker.MorphSE.erode(img, se)
     return IceFloeTracker.MorphSE.mreconstruct(IceFloeTracker.MorphSE.dilate, marker, img)
 end
+
+function reconstruct_erosion(img, se)
+    marker = IceFloeTracker.MorphSE.dilate(img, se)
+    return IceFloeTracker.MorphSE.mreconstruct(
+        IceFloeTracker.MorphSE.dilate, imcomplement(marker), imcomplement(img)
+    )
+end
