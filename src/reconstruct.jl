@@ -7,22 +7,7 @@ function imcomplement(img::Matrix{Gray{Float64}})
     return 1 .- img
 end
 
-
-
-
-function reconstruct(img, se, type, invert)
-
-    if type == "dilation"
-        morphed = IceFloeTracker.MorphSE.erode(img, se)
-    elseif type == "erosion"
-        morphed = IceFloeTracker.MorphSE.dilate(img, se)
-    end
-
-    if invert == 1
-        morphed = imcomplement(morphed);
-        img = imcomplement(img);
-    end
-
-    reconstructed = imreconstruct(morphed, img);
-
+function open_by_reconstruction(img, se)
+    marker = IceFloeTracker.MorphSE.erode(img, se)
+    return IceFloeTracker.MorphSE.mreconstruct(IceFloeTracker.MorphSE.dilate, marker, img)
 end
