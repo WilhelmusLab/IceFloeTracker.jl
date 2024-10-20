@@ -196,6 +196,13 @@ function get_tiles(array, side_length::Int)
     return get_tiles(array, (side_length, side_length))
 end
 
+"""
+    get_tiles(array; rblocks, cblocks)
+
+Generate a collection of tiles from an array.
+
+The function divides the array into `rblocks` rows and `cblocks` columns of tiles.
+"""
 function get_tiles(array; rblocks, cblocks)
     rtile, ctile = size(array)
     tile_size = (rtile ÷ rblocks, ctile ÷ cblocks)
