@@ -92,9 +92,7 @@ function segmentation_A(
 
     segmented_bridged = IceFloeTracker.bridge(segmented_opened_branched)
 
-    #segmented_ice_filled = .!bwareamaxfilt(.!segmented_bridged)
     segmented_ice_filled = IceFloeTracker.MorphSE.fill_holes(segmented_bridged)
-    @info "Done filling segmented_ice"
 
     diff_matrix = segmented_ice_opened .!= segmented_ice_filled
 
@@ -112,7 +110,6 @@ function get_holes(img, min_opening_area=20, se=IceFloeTracker.se_disk4())
     out = IceFloeTracker.MorphSE.fill_holes(out)
 
     return out .!= img
-
 end
 
 function branchbridge(img)
