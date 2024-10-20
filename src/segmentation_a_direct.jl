@@ -9,12 +9,23 @@ Apply k-means segmentation to a gray image to isolate a cluster group representi
 
 """
 function kmeans_segmentation(
-    gray_image::Matrix{Gray{Float64}}, ice_labels::Vector{Int64}
+    gray_image::Matrix{Gray{Float64}},
+    ice_labels::Vector{Int64},
+    k::Int64=4,
+    maxiter::Int64=50,
 )::BitMatrix
-    Random.seed!(45) # this seed generates consistent clusters for the final output
-    gray_image_height, gray_image_width = size(gray_image)
-    gray_image_1d = vec(gray_image)
-    @info("Done with reshape")
+    segmented = kmeans_segmentation(gray_image; k=k, maxiter=maxiter)
+
+    ## Isolate ice floes and contrast from background
+    nlabel = StatsBase.mode(segmented[ice_labels])
+    segmented_ice = segmented .== nlabel
+    return segmented_ice
+end
+
+function kmeans_segmentation(
+    gray_image::Matrix{Gray{Float64}}; k::Int64=4, maxiter::Int64=50
+)
+    Random.seed!(45)
 
     ## NOTE(tjd): this clusters into 4 classes and solves iteratively with a max of 50 iterations
     feature_classes = Clustering.kmeans(
