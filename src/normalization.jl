@@ -180,6 +180,7 @@ function adjustgamma(img, gamma=1.5, asuint8=true)
 end
 
 function imbinarize(img)
-    f = AdaptiveThreshold(img) # infer the best `window_size` using `img`
+    # infer the "best" `window_size` using `img`
+    f = AdaptiveThreshold(img)
     return binarize(img, f)
 end
