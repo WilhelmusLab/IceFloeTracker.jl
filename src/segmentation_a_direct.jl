@@ -27,15 +27,20 @@ function kmeans_segmentation(
 )
     Random.seed!(45)
 
-    ## NOTE(tjd): this clusters into 4 classes and solves iteratively with a max of 50 iterations
+    ## NOTE(tjd): this clusters into k classes and solves iteratively with a max of maxiter iterations
     feature_classes = Clustering.kmeans(
-        gray_image_1d, 4; maxiter=50, display=:none, init=:kmpp
+        vec(gray_image), k; maxiter=maxiter, display=:none, init=:kmpp
     )
+
     class_assignments = assignments(feature_classes)
 
-    ## NOTE(tjd): this reshapes column major vector of kmeans classes back into original image shape
-    segmented = reshape(class_assignments, gray_image_height, gray_image_width)
+    ## NOTE(tjd): this clusters into 4 classes and solves iteratively with a max of 50 iterations
+    segmented = reshape(class_assignments, size(gray_image))
 
+    return segmented
+end
+
+function get_segmented_ice(segmented::BitMatrix, ice_labels::Vector{Int64})
     ## Isolate ice floes and contrast from background
     nlabel = StatsBase.mode(segmented[ice_labels])
     segmented_ice = segmented .== nlabel
