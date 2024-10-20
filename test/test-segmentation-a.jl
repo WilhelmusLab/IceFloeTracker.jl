@@ -1,4 +1,3 @@
-
 @testset "Segmentation-A" begin
     println("------------------------------------------------")
     println("------------ Create Segmentation-A Test --------------")
