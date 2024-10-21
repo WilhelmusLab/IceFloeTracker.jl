@@ -1,9 +1,9 @@
 module IceFloeTracker
 using Clustering
-using DSP
 using DataFrames
 using Dates
 using DelimitedFiles: readdlm, writedlm
+using DSP
 using ImageBinarization
 using ImageContrastAdjustment
 using ImageSegmentation
@@ -15,12 +15,6 @@ using Pkg
 using PyCall
 using Random
 using Serialization: deserialize, serialize
-using StatsBase
-using Interpolations
-using DataFrames
-using PyCall
-using Clustering
-using DSP
 using StaticArrays
 using StatsBase
 using TiledIteration
