@@ -91,6 +91,7 @@ const IFTVERSION = get_version_from_toml()
 
 function __init__()
     copy!(sk_measure, pyimport_conda("skimage.measure", "scikit-image=0.20.0"))
+    copy!(sk_exposure, pyimport_conda("skimage.exposure", "scikit-image=0.20.0"))
     pyimport_conda("pyproj", "pyproj=3.6.0")
     pyimport_conda("rasterio", "rasterio=1.3.7")
     pyimport_conda("jinja2", "jinja2=3.1.2")
