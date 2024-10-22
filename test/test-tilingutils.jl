@@ -1,5 +1,13 @@
 using IceFloeTracker:
-    get_optimal_tile_size, get_tile_meta, bump_tile, get_tiles, to_uint8, get_brighten_mask, imbrighten
+    get_optimal_tile_size,
+    get_tile_meta,
+    bump_tile,
+    get_tiles,
+    to_uint8,
+    get_brighten_mask,
+    imbrighten,
+    get_image_peaks
+using Random
 gots = get_optimal_tile_size
 
 @testset "Tiling utils" begin
@@ -93,5 +101,13 @@ gots = get_optimal_tile_size
             result = imbrighten(img, brighten_mask, bright_factor)
             @test result == expected_result
         end
+    end
+
+    @testset "get_image_peaks" begin
+        Random.seed!(123)
+        img = rand(0:255, 10, 10)
+        l, h = get_image_peaks(img)
+        @test sum(l[1:5]) == 324
+        @test sum(h[1:5]) == 11
     end
 end
