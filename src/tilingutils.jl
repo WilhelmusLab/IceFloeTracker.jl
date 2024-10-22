@@ -278,11 +278,42 @@ function get_image_peaks(arr, imgtype="uint8")
     return (locs=locs, heights=heights)
 end
 
-function get_ice_labels(ref_img::Matrix{RGB{N0f8}}, tile, factor, relaxed_thresholds)
+function get_ice_labels(ref_img::Matrix{RGB{N0f8}}, tile, factor, thresholds)
     cv = channelview(ref_img)
     cv = [float64.(cv[i, :, :])[tile...] .* factor for i in 1:3]
-    mask_ice_band_7 = cv[1] .< relaxed_thresholds[1]
-    mask_ice_band_2 = cv[2] .> relaxed_thresholds[2]
-    mask_ice_band_1 = cv[3] .> relaxed_thresholds[3]
+    mask_ice_band_7 = cv[1] .< thresholds[1]
+    mask_ice_band_2 = cv[2] .> thresholds[2]
+    mask_ice_band_1 = cv[3] .> thresholds[3]
     return mask_ice_band_7 .* mask_ice_band_2 .* mask_ice_band_1
+end
+
+function get_nlabel(
+    ref_img,
+    morph_residue,
+    tile,
+    factor,
+    possible_ice_threshold,
+    band_7_threshold_relaxed,
+    band_2_threshold,
+)
+    # filter b/c channels (landmasked channels 2 and 3) and compute peaks
+    b, c = [float64.(channelview(ref_img)[i, :, :])[tile...] .* factor for i in 2:3]
+    morph_residue = morph_residue[tile...]
+
+    b[b .< possible_ice_threshold] .= 0
+    c[c .< possible_ice_threshold] .= 0
+    pksb, pksc = get_image_peaks.([b, c])
+
+    !all(length.([pksb.locs, pksc.locs]) .> 2) && return 1
+
+    relaxed_thresholds = [band_7_threshold_relaxed, pksb.locs[2], pksc.locs[2]]
+    ice_labels = get_ice_labels(ref_img, tile, factor, relaxed_thresholds)
+
+    sum(ice_labels) > 0 && return StatsBase.mode(morph_residue[ice_labels])
+
+    # Final relaxation
+    mask_b = b .> band_2_threshold
+    sum(mask_b) > 0 && return StatsBase.mode(morph_residue[mask_b])
+
+    # TODO: Should a fallback value be added? Return nothing if no ice is found? return 1? throw error?
 end

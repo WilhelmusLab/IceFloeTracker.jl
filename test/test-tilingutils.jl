@@ -7,7 +7,8 @@ using IceFloeTracker:
     get_brighten_mask,
     imbrighten,
     get_image_peaks,
-    get_ice_labels
+    get_ice_labels,
+    get_nlabel
 using Random
 gots = get_optimal_tile_size
 
@@ -112,13 +113,20 @@ gots = get_optimal_tile_size
         @test sum(h[1:5]) == 11
     end
 
+    ref_img = load(falsecolor_test_image_file)
+    tiles = get_tiles(ref_img; rblocks=8, cblocks=6)
+    tile = tiles[1]
+    factor = 255
+    thresholds = [10, 118, 120]
+    morph_residue = readdlm("test_inputs/morph_residue_tile.csv", ',', Int)
+
     @testset "get_ice_labels" begin
         # regular use case applies landmask
-        ref_img = load(falsecolor_test_image_file)
-        tiles = get_tiles(ref_img; rblocks=8, cblocks=6)
-        tile = tiles[1]
-        factor = 255
-        thresholds = [10, 118, 120]
         @test sum(get_ice_labels(ref_img, tile, 255, thresholds)) == 6515
+    end
+
+    @testset "get_nlabel" begin
+        # regular use case applies landmask
+        @test get_nlabel(ref_img, morph_residue, tile, factor, 75, 10, 230) == 1
     end
 end
