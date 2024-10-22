@@ -244,3 +244,38 @@ function imbrighten(img, brighten_mask, bright_factor)
     img[brighten_mask] .= img[brighten_mask] * bright_factor
     return img = to_uint8(img)
 end
+
+function imhist(img, imgtype="uint8")
+
+    # TODO: add validation for arr: either uint8 0:255 or grayscale 0:1
+
+    rng = imgtype == "uint8" ? range(0, 255) : range(0; stop=1, length=256)
+    # use range(0, stop=1, length=256) for grayscale images
+
+    # build histogram
+    d = Dict(k => 0 for k in rng)
+    for i in img
+        d[i] = d[i] + 1
+    end
+
+    # sort by key (bins)
+    k, heights = collect.([Base.keys(d), Base.values(d)])
+    order = sortperm(k)
+    k, heights = k[order], heights[order]
+
+    return k, heights
+end
+
+function get_image_peaks(arr, imgtype="uint8")
+    # TODO: add validation for arr: either uint8 0:255 or grayscale 0:1
+
+    _, heights = imhist(arr, imgtype)
+
+    locs, heights, _ = Peaks.findmaxima(heights)
+
+    # TODO: make this conditional on input args
+    order = sortperm(heights; rev=true)
+    locs, heights = locs[order], heights[order]
+
+    return locs, heights
+end
