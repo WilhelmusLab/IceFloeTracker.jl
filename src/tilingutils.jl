@@ -267,8 +267,6 @@ function imhist(img, imgtype="uint8")
 end
 
 function get_image_peaks(arr, imgtype="uint8")
-    # TODO: add validation for arr: either uint8 0:255 or grayscale 0:1
-
     _, heights = imhist(arr, imgtype)
 
     locs, heights, _ = Peaks.findmaxima(heights)
@@ -277,5 +275,14 @@ function get_image_peaks(arr, imgtype="uint8")
     order = sortperm(heights; rev=true)
     locs, heights = locs[order], heights[order]
 
-    return locs, heights
+    return (locs=locs, heights=heights)
+end
+
+function get_ice_labels(ref_img::Matrix{RGB{N0f8}}, tile, factor, relaxed_thresholds)
+    cv = channelview(ref_img)
+    cv = [float64.(cv[i, :, :])[tile...] .* factor for i in 1:3]
+    mask_ice_band_7 = cv[1] .< relaxed_thresholds[1]
+    mask_ice_band_2 = cv[2] .> relaxed_thresholds[2]
+    mask_ice_band_1 = cv[3] .> relaxed_thresholds[3]
+    return mask_ice_band_7 .* mask_ice_band_2 .* mask_ice_band_1
 end

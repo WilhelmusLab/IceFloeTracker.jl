@@ -6,7 +6,8 @@ using IceFloeTracker:
     to_uint8,
     get_brighten_mask,
     imbrighten,
-    get_image_peaks
+    get_image_peaks,
+    get_ice_labels
 using Random
 gots = get_optimal_tile_size
 
@@ -109,5 +110,15 @@ gots = get_optimal_tile_size
         l, h = get_image_peaks(img)
         @test sum(l[1:5]) == 324
         @test sum(h[1:5]) == 11
+    end
+
+    @testset "get_ice_labels" begin
+        # regular use case applies landmask
+        ref_img = load(falsecolor_test_image_file)
+        tiles = get_tiles(ref_img; rblocks=8, cblocks=6)
+        tile = tiles[1]
+        factor = 255
+        thresholds = [10, 118, 120]
+        @test sum(get_ice_labels(ref_img, tile, 255, thresholds)) == 6515
     end
 end
