@@ -74,7 +74,7 @@ Sharpen `truecolor_image`.
 - `nbins`: number of bins during histogram equalization
 - `rblocks`: number of row blocks to divide input image during equalization
 - `cblocks`: number of column blocks to divide input image during equalization
-- `clip`: Thresholds for clipping histogram bins (0–1); values closer to one minimize contrast enhancement, values closer to zero maximize contrast enhancement 
+- `clip`: Thresholds for clipping histogram bins (0–1); values closer to one minimize contrast enhancement, values closer to zero maximize contrast enhancement
 - `smoothing_param`: pixel radius for gaussian blurring (1–10)
 - `intensity`: amount of sharpening to perform
 """
@@ -85,14 +85,16 @@ function imsharpen(
     kappa::Real=75,
     niters::Int64=3,
     nbins::Int64=255,
-    rblocks::Int64=10,
-    cblocks::Int64=10,
-    clip::Float64=0.86,
+    rblocks::Int64=10, # matlab default is 8 CP
+    cblocks::Int64=10, # matlab default is 8 CP
+    clip::Float64=0.86, # matlab default is 0.01 CP
     smoothing_param::Int64=10,
     intensity::Float64=2.0,
 )::Matrix{Float64}
     input_image = IceFloeTracker.apply_landmask(truecolor_image, landmask_no_dilate)
+
     input_image .= IceFloeTracker.diffusion(input_image, lambda, kappa, niters)
+
     masked_view = Float64.(channelview(input_image))
 
     eq = [
@@ -104,22 +106,80 @@ function imsharpen(
 
     image_equalized_gray = Gray.(image_equalized)
 
-    image_smoothed = imfilter(image_equalized_gray, Kernel.gaussian(smoothing_param))
+    return unsharp_mask(image_equalized_gray, smoothing_param, intensity)
+end
 
-    image_sharpened =
-        image_equalized_gray .* (1 + intensity) .+ image_smoothed .* (-intensity)
-    return min.(max.(image_sharpened, 0.0), 1.0)
+"""
+    unsharp_mask(image_gray, smoothing_param, intensity, clampmax)
+
+Apply unsharp masking on (equalized) grayscale ([0, `clampmax`]) image to enhance its sharpness.
+
+# Arguments
+- `image_gray`: The input grayscale image, typically already equalized.
+- `smoothing_param::Int`: The pixel radius for Gaussian blurring (typically between 1 and 10).
+- `intensity`: The amount of sharpening to apply. Higher values result in more pronounced sharpening.
+- `clampmax`: upper limit of intensity values in the returned image.`
+# Returns
+The sharpened grayscale image with values clipped between 0 and `clapmax`.
+"""
+function unsharp_mask(image_gray, smoothing_param, intensity, clampmax)
+    image_smoothed = imfilter(image_gray, Kernel.gaussian(smoothing_param))
+    clamp!(image_smoothed, 0.0, clampmax)
+    image_sharpened = image_gray * (1 + intensity) .- image_smoothed * intensity
+    clamp!(image_sharpened, 0.0, clampmax)
+    return round.(Int, image_sharpened)
+end
+
+# For old workflow in final2020.m
+"""
+    (Deprecated)
+    unsharp_mask(image_gray, smoothing_param, intensity)
+
+Apply unsharp masking on (equalized) grayscale image to enhance its sharpness.
+
+Does not perform clamping after the smoothing step. Kept for legacy tests of IceFloeTracker.jl.
+
+# Arguments
+- `image_gray`: The input grayscale image, typically already equalized.
+- `smoothing_param::Int`: The pixel radius for Gaussian blurring (typically between 1 and 10).
+- `intensity`: The amount of sharpening to apply. Higher values result in more pronounced sharpening.
+# Returns
+The sharpened grayscale image with values clipped between 0 and `clapmax`.
+"""
+function unsharp_mask(image_gray, smoothing_param, intensity)
+    image_smoothed = imfilter(image_gray, Kernel.gaussian(smoothing_param))
+    image_sharpened = image_gray * (1 + intensity) .- image_smoothed * intensity
+    return clamp.(image_sharpened, 0.0, 1.0)
 end
 
 """
     imsharpen_gray(imgsharpened, landmask)
 
 Apply landmask and return Gray type image in colorview for normalization.
-    
+
 """
 function imsharpen_gray(
     imgsharpened::Matrix{Float64}, landmask::AbstractArray{Bool}
 )::Matrix{Gray{Float64}}
     image_sharpened_landmasked = apply_landmask(imgsharpened, landmask)
     return colorview(Gray, image_sharpened_landmasked)
+end
+
+function adjustgamma(img, gamma=1.5, asuint8=true)
+    if maximum(img) > 1
+        img = img ./ 255
+    end
+
+    adjusted = adjust_histogram(img, GammaCorrection(gamma))
+
+    if asuint8
+        adjusted = Int.(round.(adjusted * 255, RoundNearestTiesAway))
+    end
+
+    return adjusted
+end
+
+function imbinarize(img)
+    f = AdaptiveThreshold(img) # infer the best `window_size` using `img`
+    return binarize(img, f)
 end

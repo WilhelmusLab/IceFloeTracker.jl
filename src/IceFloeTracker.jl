@@ -1,21 +1,23 @@
 module IceFloeTracker
-using Images
-using DelimitedFiles: readdlm, writedlm
+using Clustering
+using DataFrames
 using Dates
+using DelimitedFiles: readdlm, writedlm
+using DSP
+using ImageBinarization
 using ImageContrastAdjustment
 using ImageSegmentation
+using Images
+using Interpolations
+using OffsetArrays: centered
 using Peaks
 using Pkg
-using Random
-using StatsBase
-using Interpolations
-using DataFrames
 using PyCall
-using Clustering
-using DSP
+using Random
+using Serialization: deserialize, serialize
 using StaticArrays
-using OffsetArrays: centered
-using Serialization: serialize, deserialize
+using StatsBase
+using TiledIteration
 using TOML
 
 export readdlm,
@@ -67,8 +69,12 @@ include("hbreak.jl")
 include("bridge.jl")
 include("branch.jl")
 include("special_strels.jl")
+include("tilingutils.jl")
+include("histogram_equalization.jl")
+
 
 const sk_measure = PyNULL()
+const sk_exposure = PyNULL()
 const getlatlon = PyNULL()
 
 function get_version_from_toml(pth=dirname(dirname(pathof(IceFloeTracker))))::VersionNumber
@@ -78,30 +84,13 @@ end
 
 const IFTVERSION = get_version_from_toml()
 
-function parse_requirements(file_path)
-    requirements = Dict{String, String}()
-    open(file_path, "r") do f
-        for line in eachline(f)
-            pkg, version = split(line, "==")
-            requirements[pkg] = version
-        end
-    end
-    return requirements
-end
-
 function __init__()
-
-    deps = parse_requirements(joinpath(dirname(@__DIR__), "requirements.txt"))
-
-    for (pkg, version) in deps
-        if pkg == "scikit-image"
-            sk_measure_module = pyimport_conda("skimage.measure", "$(pkg)=$(version)")
-            copy!(sk_measure, sk_measure_module)
-        else
-            pyimport_conda(pkg, "$(pkg)=$(version)")
-        end
-    end
-
+    copy!(sk_measure, pyimport_conda("skimage.measure", "scikit-image=0.20.0"))
+    copy!(sk_exposure, pyimport_conda("skimage.exposure", "scikit-image=0.20.0"))
+    pyimport_conda("pyproj", "pyproj=3.6.0")
+    pyimport_conda("rasterio", "rasterio=1.3.7")
+    pyimport_conda("jinja2", "jinja2=3.1.2")
+    pyimport_conda("pandas", "pandas=2")
     @pyinclude(joinpath(@__DIR__, "latlon.py"))
     copy!(getlatlon, py"getlatlon")
     return nothing
