@@ -184,84 +184,6 @@ end
 FloeLabelsImage = Union{BitMatrix, Matrix{<:Bool}, Matrix{<:Integer}}
 
 """
-    cropfloe(floesimg, label)
-
-Crops the floe from `floesimg` with the label `label`, adding a one pixel border of zeros and converting to a BitMatrix.
-"""
-function cropfloe(floesimg::Matrix{I}, label::I) where {I<:Integer}
-    #= Remove any pixels not corresponding to that numbered floe 
-    (each segment has a different integer) =#
-    floe_area = floesimg .== label
-    @debug "mask: $floe_area"
-
-    # Crop the floe to the size of the floe.
-    nonzero = x -> x > 0
-    rows = 2
-    cols = 1
-    row_sums = count(floe_area, dims=rows)
-    col_sums = count(floe_area, dims=cols)
-    @debug "row_sums: $row_sums, col_sums: $col_sums"
-
-    min_row = findfirst(nonzero, row_sums)[cols]
-    min_col = findfirst(nonzero, col_sums)[rows]
-    max_row = findlast(nonzero, row_sums)[cols]
-    max_col = findlast(nonzero, col_sums)[rows]
-    @debug "($min_row, $min_col), ($max_row, $max_col)"
-
-    floe_area_cropped = floe_area[min_row:max_row, min_col:max_col]
-    @debug "floe_area_cropped: $floe_area_cropped"
-
-    floe_area_padded = parent(padarray(floe_area_cropped, Fill(0, (1, 1))))
-    @debug "floe_area_padded: $floe_area_padded"
-
-    return BitMatrix(floe_area_padded)
-end
-
-
-"""
-    cropfloe(floesimg, min_row, min_col, max_row, max_col)
-
-Crops the floe delimited by `min_row`, `min_col`, `max_row`, `max_col`, from the floe image `floesimg`.
-"""
-function cropfloe(floesimg::BitMatrix, min_row::I, min_col::I, max_row::I, max_col::I) where {I<:Integer}
-    #= 
-    Crop the floe using bounding box data in props.
-    Note: Using a view of the cropped floe was considered but if there were multiple components in the cropped floe, the source array with the floes would be modified. =#
-    prefloe = floesimg[min_row:max_row, min_col:max_col]
-
-    #= Check if more than one component is present in the cropped image.
-    If so, keep only the largest component by removing all on pixels not in the largest component =#
-    components = label_components(prefloe, trues(3, 3))
-
-    if length(unique(components)) > 2
-        mask = IceFloeTracker.bwareamaxfilt(components .> 0)
-        prefloe[.!mask] .= 0
-    end
-    return prefloe
-end
-
-
-"""
-    cropfloe(floesimg, min_row, min_col, max_row, max_col, label)
-
-Crops the floe from `floesimg` with the label `label`, returning the region bounded by `min_row`, `min_col`, `max_row`, `max_col`, and converting to a BitMatrix.
-"""
-function cropfloe(floesimg::Matrix{I}, min_row::J, min_col::J, max_row::J, max_col::J, label::I)  where {I<:Integer, J<:Integer}
-    #= 
-    Crop the floe using bounding box data in props.
-    Note: Using a view of the cropped floe was considered but if there were multiple components in the cropped floe, the source array with the floes would be modified. =#
-    prefloe = floesimg[min_row:max_row, min_col:max_col]
-    @debug "prefloe: $prefloe"
-
-    #= Remove any pixels not corresponding to that numbered floe 
-    (each segment has a different integer) =#
-    floe_area = prefloe .== label
-    @debug "mask: $floe_area"
-
-    return floe_area
-end
-
-"""
     cropfloe(floesimg, props, i)
 
 Crops the floe delimited by the bounding box data in `props` at index `i` from the floe image `floesimg`.
@@ -300,6 +222,82 @@ function cropfloe(floesimg::FloeLabelsImage, props::DataFrame, i::Integer)
     elseif "label" in colnames
         return cropfloe(floesimg, props_row.label)
     end
+end
+
+"""
+    cropfloe(floesimg, min_row, min_col, max_row, max_col)
+
+Crops the floe delimited by `min_row`, `min_col`, `max_row`, `max_col`, from the floe image `floesimg`.
+"""
+function cropfloe(floesimg::BitMatrix, min_row::I, min_col::I, max_row::I, max_col::I) where {I<:Integer}
+    #= 
+    Crop the floe using bounding box data in props.
+    Note: Using a view of the cropped floe was considered but if there were multiple components in the cropped floe, the source array with the floes would be modified. =#
+    prefloe = floesimg[min_row:max_row, min_col:max_col]
+
+    #= Check if more than one component is present in the cropped image.
+    If so, keep only the largest component by removing all on pixels not in the largest component =#
+    components = label_components(prefloe, trues(3, 3))
+
+    if length(unique(components)) > 2
+        mask = IceFloeTracker.bwareamaxfilt(components .> 0)
+        prefloe[.!mask] .= 0
+    end
+    return prefloe
+end
+
+"""
+    cropfloe(floesimg, min_row, min_col, max_row, max_col, label)
+
+Crops the floe from `floesimg` with the label `label`, returning the region bounded by `min_row`, `min_col`, `max_row`, `max_col`, and converting to a BitMatrix.
+"""
+function cropfloe(floesimg::Matrix{I}, min_row::J, min_col::J, max_row::J, max_col::J, label::I)  where {I<:Integer, J<:Integer}
+    #= 
+    Crop the floe using bounding box data in props.
+    Note: Using a view of the cropped floe was considered but if there were multiple components in the cropped floe, the source array with the floes would be modified. =#
+    prefloe = floesimg[min_row:max_row, min_col:max_col]
+    @debug "prefloe: $prefloe"
+
+    #= Remove any pixels not corresponding to that numbered floe 
+    (each segment has a different integer) =#
+    floe_area = prefloe .== label
+    @debug "mask: $floe_area"
+
+    return floe_area
+end
+
+"""
+    cropfloe(floesimg, label)
+
+Crops the floe from `floesimg` with the label `label`, adding a one pixel border of zeros and converting to a BitMatrix.
+"""
+function cropfloe(floesimg::Matrix{I}, label::I) where {I<:Integer}
+    #= Remove any pixels not corresponding to that numbered floe 
+    (each segment has a different integer) =#
+    floe_area = floesimg .== label
+    @debug "mask: $floe_area"
+
+    # Crop the floe to the size of the floe.
+    nonzero = x -> x > 0
+    rows = 2
+    cols = 1
+    row_sums = count(floe_area, dims=rows)
+    col_sums = count(floe_area, dims=cols)
+    @debug "row_sums: $row_sums, col_sums: $col_sums"
+
+    min_row = findfirst(nonzero, row_sums)[cols]
+    min_col = findfirst(nonzero, col_sums)[rows]
+    max_row = findlast(nonzero, row_sums)[cols]
+    max_col = findlast(nonzero, col_sums)[rows]
+    @debug "($min_row, $min_col), ($max_row, $max_col)"
+
+    floe_area_cropped = floe_area[min_row:max_row, min_col:max_col]
+    @debug "floe_area_cropped: $floe_area_cropped"
+
+    floe_area_padded = parent(padarray(floe_area_cropped, Fill(0, (1, 1))))
+    @debug "floe_area_padded: $floe_area_padded"
+
+    return BitMatrix(floe_area_padded)
 end
 
 
