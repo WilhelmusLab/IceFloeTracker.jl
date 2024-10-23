@@ -181,7 +181,7 @@ function getbboxcolumns(props::DataFrame)
 end
 
 
-FloeLabelsIntOrBool = Union{BitMatrix, Matrix{<:Bool}, Matrix{<:Integer}}
+FloeLabelsImage = Union{BitMatrix, Matrix{<:Bool}, Matrix{<:Integer}}
 
 """
     cropfloe(floesimg, label)
@@ -274,7 +274,7 @@ If the dataframe has only a `label` and no bounding box data, then returns the c
 
 
 """
-function cropfloe(floesimg::FloeLabelsIntOrBool, props::DataFrame, i::Integer)
+function cropfloe(floesimg::FloeLabelsImage, props::DataFrame, i::Integer)
     props_row = props[i, :]
     colnames = names(props_row)
     if "min_row" in colnames && "min_col" in colnames && "max_row" in colnames && "max_col" in colnames
@@ -308,7 +308,7 @@ end
 
 Add a column to `props` called `floearray` containing the cropped floe masks from `floeimg`.
 """
-function addfloemasks!(props::DataFrame, floeimg::FloeLabelsIntOrBool)
+function addfloemasks!(props::DataFrame, floeimg::FloeLabelsImage)
     props.mask = getfloemasks(props, floeimg)
     return nothing
 end
@@ -318,7 +318,7 @@ end
 
 Return a vector of cropped floe masks from `floeimg` using the bounding box data in `props`.
 """
-function getfloemasks(props::DataFrame, floeimg::FloeLabelsIntOrBool)
+function getfloemasks(props::DataFrame, floeimg::FloeLabelsImage)
     return map(i -> cropfloe(floeimg, props, i), 1:nrow(props))
 end
 
