@@ -181,7 +181,7 @@ function getbboxcolumns(props::DataFrame)
 end
 
 
-FloeLabelsIntOrBool = Union{Matrix{T} where {T<:Union{Bool, Integer}}, BitMatrix}
+FloeLabelsIntOrBool = Union{BitMatrix, Matrix{<:Bool}, Matrix{<:Integer}}
 
 """
     cropfloe(floesimg, label)
