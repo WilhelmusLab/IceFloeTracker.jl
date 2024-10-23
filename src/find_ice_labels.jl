@@ -24,7 +24,7 @@ function find_reflectance_peaks(
     reflectance_channel[reflectance_channel .< possible_ice_threshold] .= 0 #75 / 255
     _, counts = ImageContrastAdjustment.build_histogram(reflectance_channel)
     locs, _ = Peaks.findmaxima(counts)
-    Base.sort!(locs, rev=true)
+    sort!(locs; rev=true)
     return locs[2] # second greatest peak
 end
 
