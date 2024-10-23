@@ -492,7 +492,6 @@ function addψs!(props::Vector{DataFrame})
 end
 
 function addfloemasks!(props::Vector{DataFrame}, imgs::Vector{<:FloeLabelsImage})
-    @info "addfloemasks!: props: $props"
     for (img, prop) in zip(imgs, props)
         IceFloeTracker.addfloemasks!(prop, img)
     end
