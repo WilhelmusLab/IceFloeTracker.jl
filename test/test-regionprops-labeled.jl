@@ -123,12 +123,7 @@
 
 
     @info "testing props with only label"
-    props_only_label = DataFrame(label=Int[])
-    push!(props_only_label, (1,))
-    push!(props_only_label, (2,))
-    push!(props_only_label, (3,))
-    push!(props_only_label, (4,))
-    push!(props_only_label, (5,))
+    props_only_label = DataFrame(label=1:5)
 
     @test cropfloe(img1, props_only_label, 1) == [
         0 0 0 0
