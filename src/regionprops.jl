@@ -188,7 +188,7 @@ FloeLabelsIntOrBool = Union{BitMatrix, Matrix{<:Bool}, Matrix{<:Integer}}
 
 Crops the floe from `floesimg` with the label `label`, adding a one pixel border of zeros and converting to a BitMatrix.
 """
-function cropfloe(floesimg::FloeLabelsIntOrBool, label::I) where {I<:Integer}
+function cropfloe(floesimg::Matrix{I}, label::I) where {I<:Integer}
     #= Remove any pixels not corresponding to that numbered floe 
     (each segment has a different integer) =#
     floe_area = floesimg .== label
@@ -246,7 +246,7 @@ end
 
 Crops the floe from `floesimg` with the label `label`, returning the region bounded by `min_row`, `min_col`, `max_row`, `max_col`, and converting to a BitMatrix.
 """
-function cropfloe(floesimg::FloeLabelsIntOrBool, min_row::J, min_col::J, max_row::J, max_col::J, label::I)  where {I<:Union{Bool, Integer}, J<:Integer}
+function cropfloe(floesimg::Matrix{I}, min_row::J, min_col::J, max_row::J, max_col::J, label::I)  where {I<:Integer, J<:Integer}
     #= 
     Crop the floe using bounding box data in props.
     Note: Using a view of the cropped floe was considered but if there were multiple components in the cropped floe, the source array with the floes would be modified. =#
