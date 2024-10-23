@@ -1,7 +1,7 @@
 // See https://github.com/julia-vscode/julia-devcontainer/blob/master/Dockerfile for image contents
 {
 	"name": "Julia (Community)",
-	"image": "mcr.microsoft.com/vscode/devcontainers/base",
+	"image": "ghcr.io/julia-vscode/julia-devcontainer",
 
 	// Configure tool-specific properties.
 	"customizations": {
@@ -13,11 +13,8 @@
 			]
 		}
 	},
-	
-	"features": {
-		"ghcr.io/julialang/devcontainer-features/julia:1": {},
-   	 	"ghcr.io/devcontainers/features/python:1": {}
-	},
+
+	"postCreateCommand": "/julia-devcontainer-scripts/postcreate.jl",
 
 	"remoteUser": "vscode"
 }
