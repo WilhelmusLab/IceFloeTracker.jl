@@ -66,7 +66,6 @@ function _pairfloes(
     tracked = Tracked()
 
     # Crop floes from the images using the bounding box data in `props`.
-    @info "props before addfloemasks!: $props"
     addfloemasks!(props, segmented_imgs)
     addψs!(props)
 
