@@ -45,7 +45,7 @@ function sort_floes_by_area!(props)
 end
 
 function _pairfloes(
-    segmented_imgs::Union{Vector{Matrix{T}} where {T<:Union{Bool, Integer}}, Vector{BitMatrix}},
+    segmented_imgs::Vector{<:FloeLabelsImage},
     props::Vector{DataFrame},
     passtimes::Vector{DateTime},
     condition_thresholds,
