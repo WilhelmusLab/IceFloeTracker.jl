@@ -507,13 +507,13 @@ Convert the centroid coordinates from row and column to latitude and longitude d
 """
 function convertcentroid!(propdf, latlondata, colstodrop)
     latitude, longitude = [
-        [latlondata[c][Integer(round(x)), Integer(round(y))] for
+        [latlondata[c][Int(round(x)), Int(round(y))] for
          (x, y) in zip(propdf.row_centroid, propdf.col_centroid)] for
         c in ["latitude", "longitude"]
     ]
 
     x, y = [
-        [latlondata[c][Integer(round(z))] for z in V] for
+        [latlondata[c][Int(round(z))] for z in V] for
         (c, V) in zip(["Y", "X"], [propdf.row_centroid, propdf.col_centroid])
     ]
 
