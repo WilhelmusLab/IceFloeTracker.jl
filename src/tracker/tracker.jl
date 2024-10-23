@@ -225,7 +225,7 @@ Returns a dataframe containing the following columns:
 - `corr`: psi-s shape correlation between the two floes in row_i and row_i+1
 """
 function pairfloes(
-    segmented_imgs::floesimgvectortype,
+    segmented_imgs::Vector{<:FloeLabelsIntOrBool},
     props::Vector{DataFrame},
     passtimes::Vector{DateTime},
     latlonrefimage::AbstractString,
