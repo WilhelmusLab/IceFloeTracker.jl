@@ -84,6 +84,9 @@ end
 
 const IFTVERSION = get_version_from_toml()
 
+# TODO: currently not used
+# A more rubust way of handling external dependencies
+# is being cosidered
 function parse_requirements(file_path)
     requirements = Dict{String,String}()
     open(file_path, "r") do f
