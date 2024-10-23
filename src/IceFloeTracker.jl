@@ -90,7 +90,7 @@ function parse_requirements(file_path)
 end
 
 function __init__()
-    
+
     deps = parse_requirements(joinpath(dirname(@__DIR__), "requirements.txt"))
 
     for (pkg, version) in deps
