@@ -22,10 +22,15 @@ function find_reflectance_peaks(
     possible_ice_threshold::Float64=Float64(75 / 255),
 )::Int64
     reflectance_channel[reflectance_channel .< possible_ice_threshold] .= 0 #75 / 255
+
     _, counts = ImageContrastAdjustment.build_histogram(reflectance_channel)
+
     locs, _ = Peaks.findmaxima(counts)
-    sort!(locs; rev=true)
-    return locs[2] # second greatest peak
+    Base.sort!(locs; rev=true)
+
+    length(locs) > 2 && return locs[2] # second greatest peak
+
+    return nothing
 end
 
 """
@@ -73,8 +78,12 @@ function find_ice_labels(
         if sum(abs.(ice_labels)) == 0
             ref_image_band_2 = @view(cv[2, :, :])
             ref_image_band_1 = @view(cv[3, :, :])
-            band_2_peak = find_reflectance_peaks(ref_image_band_2, possible_ice_threshold = possible_ice_threshold)
-            band_1_peak = find_reflectance_peaks(ref_image_band_1, possible_ice_threshold = possible_ice_threshold)
+            band_2_peak = find_reflectance_peaks(
+                ref_image_band_2; possible_ice_threshold=possible_ice_threshold
+            )
+            band_1_peak = find_reflectance_peaks(
+                ref_image_band_1; possible_ice_threshold=possible_ice_threshold
+            )
             mask_ice_band_2 = @view(cv[2, :, :]) .> band_2_peak / 255
             mask_ice_band_1 = @view(cv[3, :, :]) .> band_1_peak / 255
             ice = mask_ice_band_7 .* mask_ice_band_2 .* mask_ice_band_1

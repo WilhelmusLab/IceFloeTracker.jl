@@ -1,4 +1,15 @@
-using IceFloeTracker: get_optimal_tile_size, get_tile_meta, bump_tile, get_tiles
+using IceFloeTracker:
+    get_optimal_tile_size,
+    get_tile_meta,
+    bump_tile,
+    get_tiles,
+    to_uint8,
+    get_brighten_mask,
+    imbrighten,
+    get_image_peaks,
+    get_ice_labels,
+    get_nlabel
+using Random
 gots = get_optimal_tile_size
 
 @testset "Tiling utils" begin
@@ -29,12 +40,13 @@ gots = get_optimal_tile_size
     @testset "bump_tile" begin
         extrarows, extracols = rand(1:100, 2)
         bumpby = (extrarows, extracols)
-        @test bump_tile(tile, bumpby) == (1:2+extrarows, 3:4+extracols)
+        @test bump_tile(tile, bumpby) == (1:(2 + extrarows), 3:(4 + extracols))
     end
 
     @testset "get_tiles" begin
         # unadjusted tiles
-        _get_tiles(array, side_length) = TileIterator(axes(array), (side_length, side_length)) |> collect
+        _get_tiles(array, side_length) =
+            collect(TileIterator(axes(array), (side_length, side_length)))
 
         array = rand(40, 20)
 
@@ -56,8 +68,10 @@ gots = get_optimal_tile_size
         @test all(size(tiles) .- size(adjusted_tiles) .== (0, 1))
 
         # general case with both edges adjusted
-        expected_tiles = [(1:5, 1:5) (1:5, 6:10) (1:5, 11:16);
-            (6:12, 1:5) (6:12, 6:10) (6:12, 11:16)]
+        expected_tiles = [
+            (1:5, 1:5) (1:5, 6:10) (1:5, 11:16)
+            (6:12, 1:5) (6:12, 6:10) (6:12, 11:16)
+        ]
 
         array = rand(12, 16)
         side_length = 5
@@ -70,5 +84,49 @@ gots = get_optimal_tile_size
         lowerright_tile = newtiles[end, end]
         _, _, _, d = get_tile_meta(lowerright_tile)
         @test (b, d) == size(array)
+    end
+
+    @testset "get_brighten_mask" begin
+        img = rand(0:255, 5, 5)
+        bumped_img = img .+ 1
+        mask = get_brighten_mask(img, bumped_img)
+        @test all(mask .== 0)
+    end
+
+    @testset "imbrighten tests" begin
+        img = [1 2; 3 4]
+        brighten_mask = [1 0; 1 0]
+
+        test_cases = [(1.25, [1 2; 4 4]), (0.1, [0 2; 0 4]), (0.9, img)]
+
+        for (bright_factor, expected_result) in test_cases
+            result = imbrighten(img, brighten_mask, bright_factor)
+            @test result == expected_result
+        end
+    end
+
+    @testset "get_image_peaks" begin
+        Random.seed!(123)
+        img = rand(0:255, 10, 10)
+        l, h = get_image_peaks(img)
+        @test sum(l[1:5]) == 324
+        @test sum(h[1:5]) == 11
+    end
+
+    ref_img = load(falsecolor_test_image_file)
+    tiles = get_tiles(ref_img; rblocks=8, cblocks=6)
+    tile = tiles[1]
+    factor = 255
+    thresholds = [10, 118, 120]
+    morph_residue = readdlm("test_inputs/morph_residue_tile.csv", ',', Int)
+
+    @testset "get_ice_labels" begin
+        # regular use case applies landmask
+        @test sum(get_ice_labels(ref_img, tile, 255, thresholds)) == 6515
+    end
+
+    @testset "get_nlabel" begin
+        # regular use case applies landmask
+        @test get_nlabel(ref_img, morph_residue, tile, factor, 75, 10, 230) == 1
     end
 end

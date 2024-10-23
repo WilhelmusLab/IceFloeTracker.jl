@@ -23,7 +23,6 @@ function getfit(dims::Tuple{Int,Int}, side_length::Int)::Tuple{Int,Int}
     return dims .÷ side_length
 end
 
-
 """
     get_area_missed(side_length::Int, dims::Tuple{Int,Int})::Float64
 
@@ -49,7 +48,6 @@ function get_area_missed(side_length::Int, dims::Tuple{Int,Int})::Float64
     return 1 - prod(getfit(dims, side_length)) * side_length^2 / area
 end
 
-
 """
     get_optimal_tile_size(l0::Int, dims::Tuple{Int,Int}) -> Int
 
@@ -69,7 +67,7 @@ function get_optimal_tile_size(l0::Int, dims::Tuple{Int,Int})::Int
     any(l0 .> dims) && error("l0 = $l0 is too large for the given dimensions $dims")
 
     minimal_shift = l0 == 2 ? 0 : 1
-    candidates = [l0 + i for i in -minimal_shift:1]
+    candidates = [l0 + i for i in (-minimal_shift):1]
 
     minl, M = 0, Inf
     for side_length in candidates
@@ -149,7 +147,6 @@ function get_tile_dims(tile)
     return (width, height)
 end
 
-
 """
     get_tiles(array, t::Tuple{Int,Int})
 
@@ -157,9 +154,9 @@ Generate a collection of tiles from an array.
 
 The function adjusts the bottom and right edges of the tile matrix if they are smaller than half the tile sizes in `t`.
 """
-function get_tiles(array, t::Tuple{T,T}) where T<:Union{Int,Int64}
+function get_tiles(array, t::Tuple{T,T}) where {T<:Union{Int,Int64}}
     a, b = t
-    tiles = TileIterator(axes(array), (a, b)) |> collect
+    tiles = collect(TileIterator(axes(array), (a, b)))
     _a, _b = size(array)
 
     bottombump = mod(_a, a)
@@ -173,19 +170,19 @@ function get_tiles(array, t::Tuple{T,T}) where T<:Union{Int,Int64}
 
     # Adjust bottom edge if necessary
     if bottombump <= a ÷ 2
-        bottom_edge = tiles[end-1, :]
-        tiles[end-1, :] .= bump_tile.(bottom_edge, Ref((bottombump, 0)))
+        bottom_edge = tiles[end - 1, :]
+        tiles[end - 1, :] .= bump_tile.(bottom_edge, Ref((bottombump, 0)))
         crop_height += 1
     end
 
     # Adjust right edge if necessary
     if rightbump <= b ÷ 2
-        right_edge = tiles[:, end-1]
-        tiles[:, end-1] .= bump_tile.(right_edge, Ref((0, rightbump)))
+        right_edge = tiles[:, end - 1]
+        tiles[:, end - 1] .= bump_tile.(right_edge, Ref((0, rightbump)))
         crop_width += 1
     end
 
-    return tiles[1:end-crop_height, 1:end-crop_width]
+    return tiles[1:(end - crop_height), 1:(end - crop_width)]
 end
 
 """
@@ -199,8 +196,124 @@ function get_tiles(array, side_length::Int)
     return get_tiles(array, (side_length, side_length))
 end
 
+"""
+    get_tiles(array; rblocks, cblocks)
+
+Generate a collection of tiles from an array.
+
+The function divides the array into `rblocks` rows and `cblocks` columns of tiles.
+"""
 function get_tiles(array; rblocks, cblocks)
     rtile, ctile = size(array)
     tile_size = (rtile ÷ rblocks, ctile ÷ cblocks)
     return TileIterator(axes(array), tile_size)
+end
+
+"""
+    get_brighten_mask(equalized_gray_reconstructed_img, gamma_green)
+
+# Arguments
+
+- `equalized_gray_reconstructed_img`: The equalized gray reconstructed image (uint8 in Matlab).
+- `gamma_green`: The gamma value for the green channel (also uint8).
+
+# Returns
+Difference equalized_gray_reconstructed_img - gamma_green clamped between 0 and 255.
+
+"""
+function get_brighten_mask(equalized_gray_reconstructed_img, gamma_green)
+    return to_uint8(equalized_gray_reconstructed_img - gamma_green)
+end
+
+"""
+    imbrighten(img, brighten_mask, bright_factor)
+
+Brighten the image using a mask and a brightening factor.
+
+# Arguments
+- `img`: The input image.
+- `brighten_mask`: A mask indicating the pixels to brighten.
+- `bright_factor`: The factor by which to brighten the pixels.
+
+# Returns
+- The brightened image.
+"""
+function imbrighten(img, brighten_mask, bright_factor)
+    img = Float64.(img)
+    brighten_mask = brighten_mask .> 0
+    img[brighten_mask] .= img[brighten_mask] * bright_factor
+    return img = to_uint8(img)
+end
+
+function imhist(img, imgtype="uint8")
+
+    # TODO: add validation for arr: either uint8 0:255 or grayscale 0:1
+
+    rng = imgtype == "uint8" ? range(0, 255) : range(0; stop=1, length=256)
+    # use range(0, stop=1, length=256) for grayscale images
+
+    # build histogram
+    d = Dict(k => 0 for k in rng)
+    for i in img
+        d[i] = d[i] + 1
+    end
+
+    # sort by key (bins)
+    k, heights = collect.([Base.keys(d), Base.values(d)])
+    order = sortperm(k)
+    k, heights = k[order], heights[order]
+
+    return k, heights
+end
+
+function get_image_peaks(arr, imgtype="uint8")
+    _, heights = imhist(arr, imgtype)
+
+    locs, heights, _ = Peaks.findmaxima(heights)
+
+    # TODO: make this conditional on input args
+    order = sortperm(heights; rev=true)
+    locs, heights = locs[order], heights[order]
+
+    return (locs=locs, heights=heights)
+end
+
+function get_ice_labels(ref_img::Matrix{RGB{N0f8}}, tile, factor, thresholds)
+    cv = channelview(ref_img)
+    cv = [float64.(cv[i, :, :])[tile...] .* factor for i in 1:3]
+    mask_ice_band_7 = cv[1] .< thresholds[1]
+    mask_ice_band_2 = cv[2] .> thresholds[2]
+    mask_ice_band_1 = cv[3] .> thresholds[3]
+    return mask_ice_band_7 .* mask_ice_band_2 .* mask_ice_band_1
+end
+
+function get_nlabel(
+    ref_img,
+    morph_residue,
+    tile,
+    factor,
+    possible_ice_threshold,
+    band_7_threshold_relaxed,
+    band_2_threshold,
+)
+    # filter b/c channels (landmasked channels 2 and 3) and compute peaks
+    b, c = [float64.(channelview(ref_img)[i, :, :])[tile...] .* factor for i in 2:3]
+    morph_residue = morph_residue[tile...]
+
+    b[b .< possible_ice_threshold] .= 0
+    c[c .< possible_ice_threshold] .= 0
+    pksb, pksc = get_image_peaks.([b, c])
+
+    !all(length.([pksb.locs, pksc.locs]) .> 2) && return 1
+
+    relaxed_thresholds = [band_7_threshold_relaxed, pksb.locs[2], pksc.locs[2]]
+    ice_labels = get_ice_labels(ref_img, tile, factor, relaxed_thresholds)
+
+    sum(ice_labels) > 0 && return StatsBase.mode(morph_residue[ice_labels])
+
+    # Final relaxation
+    mask_b = b .> band_2_threshold
+    sum(mask_b) > 0 && return StatsBase.mode(morph_residue[mask_b])
+
+    # TODO: Should a fallback value be added? Return nothing if no ice is found? return 1? throw error?
 end
