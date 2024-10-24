@@ -198,10 +198,10 @@ If the dataframe has only a `label` and no bounding box data, then returns the c
 """
 function cropfloe(floesimg::FloeLabelsImage, props::DataFrame, i::Integer)
     props_row = props[i, :]
-    colnames = names(props_row)
-    if "min_row" in colnames && "min_col" in colnames && "max_row" in colnames && "max_col" in colnames
-        if "label" in colnames
-            return cropfloe(
+    colnames = Set(names(props_row))
+
+    if issubset(["min_row", "min_col", "max_row", "max_col", "label"], colnames)
+        return cropfloe(
                 floesimg,
                 props_row.min_row,
                 props_row.min_col,
@@ -209,18 +209,20 @@ function cropfloe(floesimg::FloeLabelsImage, props::DataFrame, i::Integer)
                 props_row.max_col,
                 props_row.label
             )
-        else
-            floesimg_bitmatrix = floesimg .> 0
-            return cropfloe(
-                floesimg_bitmatrix,
-                props_row.min_row,
-                props_row.min_col,
-                props_row.max_row,
-                props_row.max_col
-            )
-        end
+
+    elseif issubset(["min_row", "min_col", "max_row", "max_col"], colnames)
+        floesimg_bitmatrix = floesimg .> 0
+        return cropfloe(
+            floesimg_bitmatrix,
+            props_row.min_row,
+            props_row.min_col,
+            props_row.max_row,
+            props_row.max_col
+        )
+    
     elseif "label" in colnames
         return cropfloe(floesimg, props_row.label)
+    
     end
 end
 
