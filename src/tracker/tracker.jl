@@ -45,7 +45,7 @@ function sort_floes_by_area!(props)
 end
 
 function _pairfloes(
-    segmented_imgs::Vector{BitMatrix},
+    segmented_imgs::Vector{<:FloeLabelsImage},
     props::Vector{DataFrame},
     passtimes::Vector{DateTime},
     condition_thresholds,
@@ -224,7 +224,7 @@ Returns a dataframe containing the following columns:
 - `corr`: psi-s shape correlation between the two floes in row_i and row_i+1
 """
 function pairfloes(
-    segmented_imgs::Vector{BitMatrix},
+    segmented_imgs::Vector{<:FloeLabelsImage},
     props::Vector{DataFrame},
     passtimes::Vector{DateTime},
     latlonrefimage::AbstractString,
