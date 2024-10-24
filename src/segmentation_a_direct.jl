@@ -129,3 +129,12 @@ function imgradientmag(img)
     Gy = imfilter(img, h, "replicate")
     return hypot.(Gx, Gy)
 end
+
+function impose_minima(I::AbstractArray{T}, BW::AbstractArray{Bool}) where {T<:Integer}
+    marker = 255 .* BW
+    mask = IceFloeTracker.imcomplement(min.(I .+ 1, 255 .- marker))
+    reconstructed = IceFloeTracker.MorphSE.mreconstruct(
+        IceFloeTracker.MorphSE.dilate, marker, mask
+    )
+    return IceFloeTracker.imcomplement(Int.(reconstructed))
+end
