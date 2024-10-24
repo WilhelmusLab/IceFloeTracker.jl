@@ -69,8 +69,8 @@ git push
 
 ### Versioning the registered package
 
-1. Update the major or minor version numbers in the corresponding field at the top of `Project.toml`
-2. Add `@JuliaRegistrator register` in a comment in the commit you wish to use for the release
+1. Start a new branch and update the major or minor version numbers in the corresponding field at the top of `Project.toml`
+2. After pushing the changes and starting a new PR, add `@JuliaRegistrator register` in a comment in the commit you wish to use for the release
     - this bot will open a PR on the [Julia registry](https://github.com/JuliaRegistries/General/tree/master/I/IceFloeTracker) for the package
 3. Wait for feedback from the bot to make sure the new version is accepted and merged to the Julia registry
 4. Create a new version tag
