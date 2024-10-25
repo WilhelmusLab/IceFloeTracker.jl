@@ -307,7 +307,7 @@ function get_nlabel(
     !all(length.([pksb.locs, pksc.locs]) .> 2) && return 1
 
     relaxed_thresholds = [band_7_threshold_relaxed, pksb.locs[2], pksc.locs[2]]
-    ice_labels = get_ice_labels(ref_img, tile, factor, relaxed_thresholds)
+    ice_labels = get_ice_labels_mask(ref_img, tile, factor, relaxed_thresholds)
 
     sum(ice_labels) > 0 && return StatsBase.mode(morph_residue[ice_labels])
 
@@ -316,4 +316,48 @@ function get_nlabel(
     sum(mask_b) > 0 && return StatsBase.mode(morph_residue[mask_b])
 
     # TODO: Should a fallback value be added? Return nothing if no ice is found? return 1? throw error?
+end
+
+function watershed(bw::T) where {T<:Union{BitMatrix,AbstractMatrix{Bool}}}
+    seg = -IceFloeTracker.bwdist(.!bw)
+    mask2 = imextendedmin(seg, 2)
+    seg = impose_minima(seg, mask2)
+    cc = label_components(imregionalmin(seg), trues(3, 3))
+    w = ImageSegmentation.watershed(seg, cc)
+    lmap = labels_map(w)
+    return Images.isboundary(lmap)
+end
+
+function imextendedmin(img, h)
+    return imregionalmin(ImageSegmentation.hmin_transform(img, h))
+end
+
+function imregionalmin(A, conn=2)
+    return ImageMorphology.local_minima(A; connectivity=conn) .> 0
+end
+
+function impose_minima(I::AbstractArray{T}, BW::AbstractArray{Bool}) where {T<:Integer}
+    marker = 255 .* BW
+    mask = IceFloeTracker.imcomplement(min.(I .+ 1, 255 .- marker))
+    reconstructed = IceFloeTracker.MorphSE.mreconstruct(
+        IceFloeTracker.MorphSE.dilate, marker, mask
+    )
+    return IceFloeTracker.imcomplement(Int.(reconstructed))
+end
+
+
+function impose_minima(
+    I::AbstractArray{T}, BW::AbstractMatrix{Bool}
+) where {T<:AbstractFloat}
+    # compute shift
+    b, a = extrema(I)
+    rng = b - a
+    h = rng == 0 ? 0.1 : rng / 1000
+
+    marker = -Inf * BW .+ (Inf * .!BW)
+    mask = min.(I .+ h, marker)
+
+    return 1 .- IceFloeTracker.MorphSE.mreconstruct(
+        IceFloeTracker.MorphSE.dilate, 1 .- marker, 1 .- mask
+    )
 end
