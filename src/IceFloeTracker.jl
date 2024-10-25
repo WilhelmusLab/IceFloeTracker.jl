@@ -72,23 +72,12 @@ include("tilingutils.jl")
 include("histogram_equalization.jl")
 
 
-const sk_measure = PythonCall.pynew()
-const sk_exposure = PythonCall.pynew()
-const getlatlon = PythonCall.pynew()
-
 function get_version_from_toml(pth=dirname(dirname(pathof(IceFloeTracker))))::VersionNumber
     toml = TOML.parsefile(joinpath(pth, "Project.toml"))
     return VersionNumber(toml["version"])
 end
 
 const IFTVERSION = get_version_from_toml()
-
-function __init__()
-    PythonCall.pycopy!(sk_measure, pyimport("skimage.measure"))
-    PythonCall.pycopy!(sk_exposure, pyimport("skimage.exposure"))
-    PythonCall.pycopy!(getlatlon, pyimport("latlon.getlatlon"))
-    return nothing
-end
 
 include("regionprops.jl")
 include("segmentation_a_direct.jl")

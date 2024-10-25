@@ -2,9 +2,9 @@
 name = "latlon"
 version = "1.0.0"
 dependencies = [
-    "numpy==1.26",
-    "pyproj==3.6.0",
-    "rasterio==1.3"
+    "numpy>=1.23",
+    "pyproj>=3",
+    "rasterio>=1.3"
 ]
 
 [build-system]

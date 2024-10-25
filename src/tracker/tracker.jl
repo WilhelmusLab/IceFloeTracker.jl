@@ -8,7 +8,7 @@ Add columns `latitude`, `longitude`, and pixel coordinates `x`, `y` to `pairedfl
 - `refimage`: path to reference image.
 """
 function addlatlon!(pairedfloesdf::DataFrame, refimage::AbstractString)
-    latlondata = getlatlon(refimage)
+    latlondata = pyconvert(Any, pyimport("latlon").getlatlon(refimage))
     colstodrop = [:row_centroid, :col_centroid, :min_row, :min_col, :max_row, :max_col]
     converttounits!(pairedfloesdf, latlondata, colstodrop)
     return nothing
