@@ -31,3 +31,5 @@ Manifest.toml
 !test/test_inputs/pipeline/expected/*.png
 !test/test_inputs/pipeline/input_pipeline/*.tiff
 !notebooks/preprocessing-workflow/imgs/*.png
+
+.CondaPkg
