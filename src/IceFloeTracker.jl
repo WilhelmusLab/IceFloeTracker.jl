@@ -12,7 +12,7 @@ using Interpolations
 using OffsetArrays: centered
 using Peaks
 using Pkg
-using PyCall
+using PythonCall
 using Random
 using Serialization: deserialize, serialize
 using StaticArrays
@@ -46,7 +46,7 @@ export readdlm,
 
 # For IFTPipeline
 using HDF5
-export HDF5, PyCall
+export HDF5, PythonCall
 export DataFrames, DataFrame, nrow, Not, select!
 export Dates, Time, Date, DateTime, @dateformat_str
 export addlatlon!, getlatlon, convertcentroid!, converttounits!, dropcols!
@@ -72,9 +72,9 @@ include("tilingutils.jl")
 include("histogram_equalization.jl")
 
 
-const sk_measure = PyNULL()
-const sk_exposure = PyNULL()
-const getlatlon = PyNULL()
+const sk_measure = PythonCall.pynew()
+const sk_exposure = PythonCall.pynew()
+const getlatlon = PythonCall.pynew()
 
 function get_version_from_toml(pth=dirname(dirname(pathof(IceFloeTracker))))::VersionNumber
     toml = TOML.parsefile(joinpath(pth, "Project.toml"))
@@ -84,14 +84,9 @@ end
 const IFTVERSION = get_version_from_toml()
 
 function __init__()
-    copy!(sk_measure, pyimport_conda("skimage.measure", "scikit-image=0.20.0"))
-    copy!(sk_exposure, pyimport_conda("skimage.exposure", "scikit-image=0.20.0"))
-    pyimport_conda("pyproj", "pyproj=3.6.0")
-    pyimport_conda("rasterio", "rasterio=1.3.7")
-    pyimport_conda("jinja2", "jinja2=3.1.2")
-    pyimport_conda("pandas", "pandas=2")
-    @pyinclude(joinpath(@__DIR__, "latlon.py"))
-    copy!(getlatlon, py"getlatlon")
+    PythonCall.pycopy!(sk_measure, pyimport("skimage.measure"))
+    PythonCall.pycopy!(sk_exposure, pyimport("skimage.exposure"))
+    PythonCall.pycopy!(getlatlon, pyimport("latlon.getlatlon"))
     return nothing
 end
 
