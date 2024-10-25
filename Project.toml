@@ -96,7 +96,7 @@ StatsBase = "0.34"
 TOML = "1"
 TiledIteration = "0.3"
 UpdateJulia = "0.4"
-julia = "1"
+julia = "1.10"
 
 [extras]
 Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
