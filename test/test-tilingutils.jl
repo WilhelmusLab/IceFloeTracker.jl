@@ -7,8 +7,9 @@ using IceFloeTracker:
     get_brighten_mask,
     imbrighten,
     get_image_peaks,
-    get_ice_labels,
-    get_nlabel
+    get_ice_labels_mask,
+    get_nlabel,
+    watershed
 using Random
 gots = get_optimal_tile_size
 
@@ -122,11 +123,30 @@ gots = get_optimal_tile_size
 
     @testset "get_ice_labels" begin
         # regular use case applies landmask
-        @test sum(get_ice_labels(ref_img, tile, 255, thresholds)) == 6515
+        @test sum(get_ice_labels_mask(ref_img, tile, 255, thresholds)) == 6515
     end
 
     @testset "get_nlabel" begin
         # regular use case applies landmask
         @test get_nlabel(ref_img, morph_residue, tile, factor, 75, 10, 230) == 1
+    end
+
+    @testset "watershed" begin
+        function build_test_image()
+            center1, center2 = -40, 40
+            radius = sqrt(8 * center1^2) * 0.7
+            lims = (floor(center1 - 1.2 * radius), ceil(center2 + 1.2 * radius))
+            x = collect(lims[1]:lims[2])
+
+            function in_circle(x, y, center, radius)
+                return sqrt((x - center)^2 + (y - center)^2) <= radius
+            end
+
+            return [
+                in_circle(xi, yi, center1, radius) || in_circle(xi, yi, center2, radius) for
+                yi in x, xi in x
+            ]
+        end
+        @test sum(watershed(build_test_image())) == 1088
     end
 end
