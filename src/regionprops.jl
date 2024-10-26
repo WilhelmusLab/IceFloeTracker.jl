@@ -78,11 +78,11 @@ function regionprops_table(
         extra_properties = nothing
     end
 
-    props = DataFrame(
-        sk_measure.regionprops_table(
-            label_img, intensity_img, properties; extra_properties=extra_properties
-        ),
+    pyprops = pyimport("skimage.measure").regionprops_table(
+        Py(label_img).to_numpy(), PyArray(intensity_img), properties; extra_properties=extra_properties
     )
+
+    props = DataFrame(pyconvert(Any, pyprops),)
 
     if "bbox" in properties
         bbox_cols = getbboxcolumns(props)
@@ -157,9 +157,12 @@ function regionprops(
         extra_properties = nothing
     end
 
-    return sk_measure.regionprops(
-        label_img, intensity_img; extra_properties=extra_properties
+    pyprops = pyimport("skimage.measure").regionprops(
+        Py(label_img).to_numpy(), PyArray(intensity_img); extra_properties=extra_properties
     )
+    props = pyconvert(Any, pyprops)
+
+    return props
 end
 
 """
