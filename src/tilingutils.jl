@@ -345,7 +345,6 @@ function impose_minima(I::AbstractArray{T}, BW::AbstractArray{Bool}) where {T<:I
     return IceFloeTracker.imcomplement(Int.(reconstructed))
 end
 
-
 function impose_minima(
     I::AbstractArray{T}, BW::AbstractMatrix{Bool}
 ) where {T<:AbstractFloat}
@@ -360,4 +359,47 @@ function impose_minima(
     return 1 .- IceFloeTracker.MorphSE.mreconstruct(
         IceFloeTracker.MorphSE.dilate, 1 .- marker, 1 .- mask
     )
+end
+
+# TODO: Add tests for get_new2 and get_new3
+"""
+    getnew2(morph_residue, local_maxima_mask, factor, segment_mask, L0mask)
+
+
+Calculate the new image `new2` from the input image `morph_residue`.
+
+# Arguments
+- `morph_residue`: The morphological residue image.
+- `local_maxima_mask`: The local maxima mask.
+- `factor`: The factor to apply to the local maxima mask.
+- `segment_mask`: The segment mask -- intersection of bw1 and bw2 in first tiled workflow of `master.m`.
+- `L0mask`: zero-labeled pixels from watershed.
+"""
+function get_new2(morph_residue, local_maxima_mask, factor, segment_mask, L0mask)
+    new2 = to_uint8(morph_residue .+ local_maxima_mask .* factor)
+    new2[segment_mask .|| L0mask] .= 0
+    return MorphSE.fill_holes(new2)
+end
+
+"""
+    get_new3(new2, L0mask, radius, amount, local_maxima_mask, factor, segment_mask)
+
+Calculate the new image `new3` from the input image `new2`.
+
+# Arguments
+- `img`: The input image.
+- `L0mask`: zero-labeled pixels from watershed.
+- `radius`: The radius of the unsharp mask.
+- `amount`: The amount of unsharp mask.
+- `local_maxima_mask`: The local maxima mask.
+- `factor`: The factor to apply to the local maxima mask.
+- `segment_mask`: The segment mask -- intersection of bw1 and bw2 in first tiled workflow of `master.m`.
+
+"""
+function get_new3(img, L0mask, radius, amount, local_maxima_mask, factor, segment_mask)
+    new3 = unsharp_mask(img, radius, amount, 255)
+    new3[L0mask] .= 0
+    new3 = reconstruct(new3, se, "dilation", false)
+    new3[segment_mask] .= 0
+    return to_uint8(new3 + local_maxima_mask .* factor)
 end
