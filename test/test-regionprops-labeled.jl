@@ -26,14 +26,13 @@
     ]
 
     @info "testing props with label"
-    props_with_label = DataFrame(label=Int[], min_row=Int[], min_col=Int[], max_row=Int[], max_col=Int[])
-    push!(props_with_label, 
-        (1, 1, 1, 4, 4), 
-        (2, 1, 4, 5, 8), 
-        (3, 1, 8, 6, 13), 
-        (4, 5, 1, 10, 7), 
-        (5, 5, 1, 10, 7)
-    )
+    props_with_label = DataFrame([
+        1 1 1 4 4
+        2 1 4 5 8
+        3 1 8 6 13
+        4 5 1 10 7
+        5 5 1 10 7
+    ], [:label, :min_row, :min_col, :max_row, :max_col])
 
 
     @test cropfloe(img1, props_with_label, 1) == [
@@ -79,14 +78,13 @@
     ]
 
     @info "testing props without label"
-    props_without_label = DataFrame(min_row=Int[], min_col=Int[], max_row=Int[], max_col=Int[])
-    push!(props_without_label, 
-        (1, 1, 4, 4),
-        (1, 4, 5, 8),
-        (1, 8, 6, 13),
-        (5, 1, 10, 7),
-        (5, 1, 10, 7)
-    ) 
+    props_without_label = DataFrame([
+        1 1 4 4
+        1 4 5 8
+        1 8 6 13
+        5 1 10 7
+        5 1 10 7
+    ], [:min_row, :min_col, :max_row, :max_col])
 
     @test cropfloe(img1, props_without_label, 1) == [
         0 0 0 0
