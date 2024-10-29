@@ -1,3 +1,5 @@
+using IceFloeTracker: morph_fill
+
 @testset "morp_fill.jl" begin
     println("------------------------------------------------")
     println("----------- Create Morp Fill Test --------------")
