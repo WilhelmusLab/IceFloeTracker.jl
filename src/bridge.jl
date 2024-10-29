@@ -80,5 +80,5 @@ julia> bridge(bw)
 ```
 """
 function bridge(bw::T)::T where {T<:AbstractArray{Bool}}
-    return _bridge_filter(bw, _bridge_operator_lut)
+    return _filter(bw, _bridge_operator_lut)
 end
