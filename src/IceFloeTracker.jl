@@ -1,9 +1,9 @@
 module IceFloeTracker
 using Clustering
-using DSP
 using DataFrames
 using Dates
 using DelimitedFiles: readdlm, writedlm
+using DSP
 using ImageBinarization
 using ImageContrastAdjustment
 using ImageSegmentation
@@ -15,7 +15,6 @@ using Pkg
 using PyCall
 using Random
 using Serialization: deserialize, serialize
-using StatsBase
 using StaticArrays
 using StatsBase
 using TiledIteration
@@ -71,8 +70,7 @@ include("branch.jl")
 include("special_strels.jl")
 include("tilingutils.jl")
 include("histogram_equalization.jl")
-include("reconstruct.jl")
-include("morph_fill.jl")
+
 
 const sk_measure = PyNULL()
 const sk_exposure = PyNULL()
@@ -85,29 +83,9 @@ end
 
 const IFTVERSION = get_version_from_toml()
 
-# TODO: currently not used
-# A more rubust way of handling external dependencies
-# is being cosidered
-function parse_requirements(file_path)
-    requirements = Dict{String,String}()
-    open(file_path, "r") do f
-        for line in eachline(f)
-            if occursin("==", line)
-                pkg, version = split(line, "==")
-            elseif occursin("=", line)
-                pkg, version = split(line, "=")
-            else
-                pkg, version = line, ""
-            end
-            requirements[pkg] = version
-        end
-    end
-    return requirements
-end
-
 function __init__()
-    copy!(sk_measure, pyimport_conda("skimage.measure", "scikit-image=0.20.0"))
-    copy!(sk_exposure, pyimport_conda("skimage.exposure", "scikit-image=0.20.0"))
+    copy!(sk_measure, pyimport_conda("skimage.measure", "scikit-image=0.24.0"))
+    copy!(sk_exposure, pyimport_conda("skimage.exposure", "scikit-image=0.24.0"))
     pyimport_conda("pyproj", "pyproj=3.6.0")
     pyimport_conda("rasterio", "rasterio=1.3.7")
     pyimport_conda("jinja2", "jinja2=3.1.2")
