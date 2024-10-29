@@ -403,3 +403,41 @@ function get_new3(img, L0mask, radius, amount, local_maxima_mask, factor, segmen
     new3[segment_mask] .= 0
     return to_uint8(new3 + local_maxima_mask .* factor)
 end
+
+"""
+    get_final(img, label, segment_mask, se_erosion, se_dilation)
+
+Final processing following the tiling workflow.
+"""
+function get_final(img, label, segment_mask, se_erosion, se_dilation)
+    img = hbreak(img)
+
+    # doesn't do much/anything
+    if label == 1
+        img[1:1] .= false
+    end
+
+    # slow for big images
+    img = morph_fill(img)
+
+    # only works for label 1, whose value tends to be arbirary
+    if label == 1
+        img[segment_mask] .= false
+    end
+
+    # tends to fill more than matlabs imfill
+    img = IceFloeTracker.MorphSE.fill_holes(img)
+
+    marker = branch(img)
+
+    mask = MorphSE.erode(marker, se_erosion)
+    mask = MorphSE.dilate(mask, se_dilation)
+
+    # doesnt do much
+    if label == 1
+        mask[1] = false
+    end
+
+    final = MorphSE.mreconstruct(MorphSE.dilate, marker, mask)
+    return final
+end
