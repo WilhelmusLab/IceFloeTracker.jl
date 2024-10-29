@@ -9,10 +9,19 @@ using IceFloeTracker: getlatlon
 
     expected_lat = readdlm("test_inputs/latlon/latitude.csv", ',', Float64)
     expected_lon = readdlm("test_inputs/latlon/longitude.csv", ',', Float64)
-    
+
     latlon = getlatlon(imgpth)
-    @test expected_X == latlon["X"]
-    @test expected_Y == latlon["Y"]
-    @test expected_lat == latlon["latitude"]
-    @test expected_lon == latlon["longitude"]
+    X = latlon["X"]
+    Y = latlon["Y"]
+    lat = latlon["latitude"]
+    lon = latlon["longitude"]
+
+    # round to 4 decimal places to avoid weirdness in different arch/os
+    expected_lat, expected_lon, expected_X, expected_Y = [round.(arr, digits=4) for arr in [expected_lat, expected_lon, expected_X, expected_Y]]
+    lat, lon, X, Y = [round.(arr, digits=4) for arr in [lat, lon, X, Y]]
+
+    @test expected_X == X
+    @test expected_Y == Y
+    @test expected_lat == lat
+    @test expected_lon == lon
 end
