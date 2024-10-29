@@ -9,7 +9,7 @@ function _bridge_operator_lut(
     return _operator_lut(I, img, nhood, lutbridge)
 end
 
-function _bridge_filter(img::T, operator::Function)::T where {T<:AbstractArray{Bool}}
+function _filter(img::T, operator::Function)::T where {T<:AbstractArray{Bool}}
     out = zeros(Bool, size(img))
     R = CartesianIndices(img)
     I_first, I_last = first(R), last(R)
