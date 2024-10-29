@@ -72,6 +72,7 @@ include("special_strels.jl")
 include("tilingutils.jl")
 include("histogram_equalization.jl")
 include("reconstruct.jl")
+include("morph_fill.jl")
 
 const sk_measure = PyNULL()
 const sk_exposure = PyNULL()
