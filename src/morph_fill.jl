@@ -2,28 +2,40 @@
 #          1 0 1  to   1 1 1
 #          1 1 1]      1 1 1]
 
-const __FILL_PATTERN__ = Bool[1 1 1; 1 0 1; 1 1 1]
+include("./lut/lutfill.jl")
 
-function fill_operator(
+function _fill_operator_lut(
+    I::CartesianIndex{2},
     img::AbstractArray{Bool},
     nhood::CartesianIndices{2,Tuple{UnitRange{Int64},UnitRange{Int64}}},
-)::Bool
-    size(nhood) == (3, 3) && return img[nhood] == __FILL_PATTERN__
-    return false
+)
+    return _operator_lut(I, img, nhood, make_lutfill())
 end
 
-function morph_fill(img::T)::T where {T<:AbstractArray{Bool}}
-    out = zeros(Bool, size(img))
-    R = CartesianIndices(img)
-    I_first, I_last = first(R), last(R)
-    Δ = CartesianIndex(1, 1)
+"""
+    morph_fill(bw::T)::T where {T<:AbstractArray{Bool}}
 
-    for I in R
-        if !img[I] # Check only zero pixels
-            nhood = max(I_first, I - Δ):min(I_last, I + Δ)
-            out[I] = fill_operator(img, nhood)
-        end
-    end
+Fill holes in binary image `bw` by setting 0-valued pixels to 1 if they are surrounded by 1-valued pixels.
 
-    return out .|| img
+# Examples
+
+```jldoctest; setup = :(using IceFloeTracker)
+julia> bw = Bool[
+        0 0 0 0 0
+        0 1 1 1 0
+        0 1 0 1 0
+        0 1 1 1 0
+        0 0 0 0 0
+    ];
+
+julia> morph_fill(bw)
+5×5 Matrix{Bool}:
+ 0  0  0  0  0
+ 0  1  1  1  0
+ 0  1  1  1  0
+ 0  1  1  1  0
+ 0  0  0  0  0
+"""
+function morph_fill(bw::T)::T where {T<:AbstractArray{Bool}}
+    return _filter(bw, _fill_operator_lut)
 end
