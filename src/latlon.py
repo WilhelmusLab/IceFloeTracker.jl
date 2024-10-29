@@ -18,8 +18,8 @@ def getlatlon(imgpath):
     ys = np.array(ys)
     
     # X and Y are the 1D index vectors
-    X = np.array(xs)[0, :]
-    Y = np.array(ys)[:, 0]
+    X = xs[0, :]
+    Y = ys[:, 0]
     ps_to_ll = Transformer.from_crs(im.crs, "WGS84", always_xy=True)
     lons, lats = ps_to_ll.transform(np.ravel(xs), np.ravel(ys))
     
