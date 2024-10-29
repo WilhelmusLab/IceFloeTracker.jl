@@ -2,6 +2,8 @@
 #          1 0 1  to   1 1 1
 #          1 1 1]      1 1 1]
 
+# TODO: see about doing this in parallel
+
 include("./lut/lutfill.jl")
 
 function _fill_operator_lut(
@@ -37,5 +39,6 @@ julia> morph_fill(bw)
  0  0  0  0  0
 """
 function morph_fill(bw::T)::T where {T<:AbstractArray{Bool}}
+    # TODO: see about implemting _filter using parallelization
     return _filter(bw, _fill_operator_lut)
 end

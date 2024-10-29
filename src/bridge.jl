@@ -9,6 +9,7 @@ function _bridge_operator_lut(
     return _operator_lut(I, img, nhood, lutbridge)
 end
 
+# TODO: see about implemting _filter using parallelization
 function _filter(img::T, operator::Function)::T where {T<:AbstractArray{Bool}}
     out = zeros(Bool, size(img))
     R = CartesianIndices(img)
