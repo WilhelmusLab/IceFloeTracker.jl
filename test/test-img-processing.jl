@@ -1,5 +1,3 @@
-using ZipFile
-using DelimitedFiles: readdlm
 using IceFloeTracker:
     imgradientmag, to_uint8, imbinarize, adjustgamma, get_holes, se_disk4, impose_minima
 

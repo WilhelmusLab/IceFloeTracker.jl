@@ -1,4 +1,3 @@
-
 """
     getfit(dims::Tuple{Int,Int}, side_length::Int)::Tuple{Int,Int}
 
@@ -60,7 +59,7 @@ This function computes the optimal tile size for tiling an area with given dimen
 ```
 julia> get_optimal_tile_size(3, (10, 7))
 2
-```
+B```
 """
 function get_optimal_tile_size(l0::Int, dims::Tuple{Int,Int})::Int
     l0 < 2 && error("l0 must be at least 2")
@@ -338,7 +337,7 @@ end
 
 function impose_minima(I::AbstractArray{T}, BW::AbstractArray{Bool}) where {T<:Integer}
     marker = 255 .* BW
-    mask = IceFloeTracker.imcomplement(min.(I .+ 1, 255 .- marker))
+    mask = imcomplement(min.(I .+ 1, 255 .- marker))
     reconstructed = IceFloeTracker.MorphSE.mreconstruct(
         IceFloeTracker.MorphSE.dilate, marker, mask
     )

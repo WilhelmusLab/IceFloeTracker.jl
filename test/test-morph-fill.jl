@@ -4,7 +4,6 @@ using IceFloeTracker: morph_fill
     println("------------------------------------------------")
     println("----------- Create Morp Fill Test --------------")
 
-    using IceFloeTracker: morph_fill
     img = Bool[
         0 0 0 0 0
         0 1 1 1 0
