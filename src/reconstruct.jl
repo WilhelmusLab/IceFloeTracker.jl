@@ -23,6 +23,6 @@ function reconstruct(img, se, type, invert::Bool=true)
     return IceFloeTracker.MorphSE.mreconstruct(IceFloeTracker.MorphSE.dilate, morphed, img)
 end
 
-function reconstruct_erosion(img, se)
-    return reconstruct(img, se, "dilation")
+function reconstruct_dilation(img, se)
+    return reconstruct(img, se, "dilate", true)
 end
