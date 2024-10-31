@@ -120,7 +120,7 @@ Apply unsharp masking on (equalized) grayscale ([0, `clampmax`]) image to enhanc
 - `intensity`: The amount of sharpening to apply. Higher values result in more pronounced sharpening.
 - `clampmax`: upper limit of intensity values in the returned image.`
 # Returns
-The sharpened grayscale image with values clipped between 0 and `clapmax`.
+The sharpened grayscale image with values clipped between 0 and `clampmax`.
 """
 function unsharp_mask(image_gray, smoothing_param, intensity, clampmax)
     image_smoothed = imfilter(image_gray, Kernel.gaussian(smoothing_param))
@@ -144,7 +144,7 @@ Does not perform clamping after the smoothing step. Kept for legacy tests of Ice
 - `smoothing_param::Int`: The pixel radius for Gaussian blurring (typically between 1 and 10).
 - `intensity`: The amount of sharpening to apply. Higher values result in more pronounced sharpening.
 # Returns
-The sharpened grayscale image with values clipped between 0 and `clapmax`.
+The sharpened grayscale image with values clipped between 0 and 1.
 """
 function unsharp_mask(image_gray, smoothing_param, intensity)
     image_smoothed = imfilter(image_gray, Kernel.gaussian(smoothing_param))
