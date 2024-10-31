@@ -89,7 +89,7 @@ end
 
 function adapthisteq(img::Matrix{T}, nbins=256, clip=0.01) where {T}
     # Step 1: Normalize the image to [0, 1] based on its own min and max
-    image_min, image_max = minimum(img), maximum(img)
+    image_min, image_max = extrema(img)
     normalized_image = (img .- image_min) / (image_max - image_min)
 
     # Step 2: Apply adaptive histogram equalization. equalize_adapthist handles the tiling to 1/8 of the image size (equivalent to 8x8 blocks in MATLAB)
@@ -282,4 +282,17 @@ Convert an RGB image to grayscale in the range [0, 255].
 """
 function rgb2gray(img::Matrix{RGB{Float64}})
     return round.(Int, Gray.(img) * 255)
+end
+
+
+function imadjust(
+    img::AbstractArray{<:Integer}; low::T=0.01, high::T=0.99
+)::Matrix{Int} where {T<:AbstractFloat}
+    imgflat = vec(img)
+    plow = StatsBase.percentile(vec(imgflat), low * 100)
+    phigh = StatsBase.percentile(vec(imgflat), high * 100)
+
+    f = LinearStretching((plow, phigh) ./ 255 => (0.0, 1.0))
+
+    return to_uint8(adjust_histogram(img / 255, f) * 255)
 end
