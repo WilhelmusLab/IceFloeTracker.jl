@@ -81,7 +81,7 @@ function test_imadjust()
     @testset "imadjust" begin
         Random.seed!(123)
         img = rand(0:255, 512, 512)
-        @test sum(imadjust(img); divisor=255) == 33_457_734
+        @test sum(imadjust(img)) == 33_457_734
     end
 end
 
