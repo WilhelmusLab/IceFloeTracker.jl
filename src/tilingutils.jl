@@ -329,7 +329,7 @@ end
 
 function get_nlabel_relaxation(
     ref_img,
-    morph_residue,
+    morph_residue_labels,
     tile,
     factor,
     possible_ice_threshold,
@@ -337,7 +337,7 @@ function get_nlabel_relaxation(
     band_2_threshold,
 )
     ref_img = ref_img[tile...]
-    morph_residue = morph_residue[tile...]
+    morph_residue_labels = morph_residue_labels[tile...]
 
     # filter b/c channels (landmasked channels 2 and 3) and compute peaks
     b, c = [float64.(channelview(ref_img)[i, :, :]) .* factor for i in 2:3]
@@ -351,11 +351,11 @@ function get_nlabel_relaxation(
     relaxed_thresholds = [band_7_threshold_relaxed, pksb.locs[2], pksc.locs[2]]
     ice_labels = get_ice_labels_mask(ref_img, tile, relaxed_thresholds, factor)
 
-    sum(ice_labels) > 0 && return StatsBase.mode(morph_residue[ice_labels])
+    sum(ice_labels) > 0 && return StatsBase.mode(morph_residue_labels[ice_labels])
 
     # Final relaxation
     mask_b = b .> band_2_threshold
-    sum(mask_b) > 0 && return StatsBase.mode(morph_residue[mask_b])
+    sum(mask_b) > 0 && return StatsBase.mode(morph_residue_labels[mask_b])
 
     # TODO: Should a fallback value be added? Return nothing if no ice is found? return 1? throw error?
 end
