@@ -295,14 +295,16 @@ function get_nlabel(
     band_7_threshold_relaxed,
     band_2_threshold,
 )
-    # filter b/c channels (landmasked channels 2 and 3) and compute peaks
-    b, c = [float64.(channelview(ref_img)[i, :, :])[tile...] .* factor for i in 2:3]
+    ref_img = ref_img[tile...]
     morph_residue = morph_residue[tile...]
 
+    # filter b/c channels (landmasked channels 2 and 3) and compute peaks
+    b, c = [float64.(channelview(ref_img)[i, :, :]) .* factor for i in 2:3]
     b[b .< possible_ice_threshold] .= 0
     c[c .< possible_ice_threshold] .= 0
     pksb, pksc = get_image_peaks.([b, c])
 
+    # return early if peaks no peaks are found
     !all(length.([pksb.locs, pksc.locs]) .> 2) && return 1
 
     relaxed_thresholds = [band_7_threshold_relaxed, pksb.locs[2], pksc.locs[2]]
