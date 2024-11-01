@@ -123,7 +123,7 @@ gots = get_optimal_tile_size
 
     @testset "get_ice_labels" begin
         # regular use case applies landmask
-        @test sum(get_ice_labels_mask(ref_img, tile, thresholds, 255)) == 6515
+        @test sum(get_ice_labels_mask(ref_img[tile...], thresholds, 255)) == 6515
     end
 
     @testset "get_nlabel_relaxation" begin
