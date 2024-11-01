@@ -292,7 +292,6 @@ end
 function get_nlabel(
     ref_img,
     morph_residue_labels,
-    tile,
     factor;
     band_7_threshold::T=5,
     band_2_threshold::T=230,
@@ -301,25 +300,22 @@ function get_nlabel(
     band_1_threshold_relaxed::T=190,
     possible_ice_threshold::T=75,
 ) where {T<:Integer}
-    _getnlabel(morphr, tile, mask) = StatsBase.mode(morphr[tile...][mask])
+    _getnlabel(morphr, mask) = StatsBase.mode(morphr[mask])
 
     # Initial attempt to get ice labels
     thresholds = (band_7_threshold, band_2_threshold, band_1_threshold)
-    ice_labels_mask = get_ice_labels_mask(ref_img[tile...], thresholds, 255)
-    sum(ice_labels_mask) > 1 &&
-        return _getnlabel(morph_residue_labels, tile, ice_labels_mask)
+    ice_labels_mask = get_ice_labels_mask(ref_img, thresholds, 255)
+    sum(ice_labels_mask) > 1 && return _getnlabel(morph_residue_labels, ice_labels_mask)
 
     # First relaxation
     thresholds = (band_7_threshold_relaxed, band_2_threshold, band_1_threshold_relaxed)
-    ice_labels_mask = get_ice_labels_mask(ref_img[tile...], thresholds, 255)
-    sum(ice_labels_mask) > 0 &&
-        return _getnlabel(morph_residue_labels, tile, ice_labels_mask)
+    ice_labels_mask = get_ice_labels_mask(ref_img, thresholds, 255)
+    sum(ice_labels_mask) > 0 && return _getnlabel(morph_residue_labels, ice_labels_mask)
 
     # Second/Third relaxation
     return get_nlabel_relaxation(
         ref_img,
         morph_residue_labels,
-        tile,
         factor,
         possible_ice_threshold,
         band_7_threshold_relaxed,
