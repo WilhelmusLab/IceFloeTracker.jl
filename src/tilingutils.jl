@@ -330,15 +330,11 @@ end
 function get_nlabel_relaxation(
     ref_img,
     morph_residue_labels,
-    tile,
     factor,
     possible_ice_threshold,
     band_7_threshold_relaxed,
     band_2_threshold,
 )
-    ref_img = ref_img[tile...]
-    morph_residue_labels = morph_residue_labels[tile...]
-
     # filter b/c channels (landmasked channels 2 and 3) and compute peaks
     b, c = [float64.(channelview(ref_img)[i, :, :]) .* factor for i in 2:3]
     b[b .< possible_ice_threshold] .= 0
@@ -349,7 +345,7 @@ function get_nlabel_relaxation(
     !all(length.([pksb.locs, pksc.locs]) .> 2) && return 1
 
     relaxed_thresholds = [band_7_threshold_relaxed, pksb.locs[2], pksc.locs[2]]
-    ice_labels = get_ice_labels_mask(ref_img[tile...], relaxed_thresholds, factor)
+    ice_labels = get_ice_labels_mask(ref_img, relaxed_thresholds, factor)
 
     sum(ice_labels) > 0 && return StatsBase.mode(morph_residue_labels[ice_labels])
 

@@ -128,7 +128,7 @@ gots = get_optimal_tile_size
 
     @testset "get_nlabel_relaxation" begin
         # regular use case applies landmask
-        @test get_nlabel_relaxation(ref_img, morph_residue, tile, factor, 75, 10, 230) == 1
+        @test get_nlabel_relaxation(ref_img[tile...], morph_residue[tile...], factor, 75, 10, 230) == 1
     end
 
     @testset "watershed" begin
