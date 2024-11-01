@@ -293,7 +293,7 @@ function get_nlabel(
     ref_img,
     morph_residue_labels,
     tile,
-    factor,
+    factor;
     band_7_threshold::T=5,
     band_2_threshold::T=230,
     band_1_threshold::T=240,
