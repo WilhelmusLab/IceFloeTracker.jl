@@ -24,5 +24,5 @@ function reconstruct(img, se, type, invert::Bool=true)
 end
 
 function reconstruct_dilation(img, se)
-    return reconstruct(img, se, "dilate", true)
+    return reconstruct(img, se, "dilation", true)
 end

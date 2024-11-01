@@ -5,7 +5,7 @@ using IceFloeTracker:
     conditional_histeq,
     rgb2gray,
     to_uint8,
-    imadjust
+    adjustgamma
 
 begin
     datadir = joinpath(@__DIR__, "test_inputs/")
@@ -77,11 +77,11 @@ function test_rgb2gray()
     end
 end
 
-function test_imadjust()
-    @testset "imadjust" begin
+function test_adjustgamma()
+    @testset "adjustgamma" begin
         Random.seed!(123)
         img = rand(0:255, 512, 512)
-        @test sum(imadjust(img)) == 33_457_734
+        @test sum(adjustgamma(img)) == 26_802_287
     end
 end
 
@@ -90,5 +90,5 @@ end
     test_adaphisteq()
     test_conditional_adaptivehisteq()
     test_rgb2gray()
-    test_imadjust()
+    test_adjustgamma()
 end
