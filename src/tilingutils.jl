@@ -283,7 +283,9 @@ function get_ice_labels_mask(ref_img::Matrix{RGB{N0f8}}, tile, thresholds, facto
     mask_ice_band_7 = cv[1] .< thresholds[1]
     mask_ice_band_2 = cv[2] .> thresholds[2]
     mask_ice_band_1 = cv[3] .> thresholds[3]
-    return mask_ice_band_7 .* mask_ice_band_2 .* mask_ice_band_1
+    mask = mask_ice_band_7 .* mask_ice_band_2 .* mask_ice_band_1
+    @debug "Found $(sum(mask)) ice pixels"
+    return mask
 end
 
 # TODO: add test
