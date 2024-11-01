@@ -286,7 +286,7 @@ function get_ice_labels_mask(ref_img::Matrix{RGB{N0f8}}, tile, factor, threshold
     return mask_ice_band_7 .* mask_ice_band_2 .* mask_ice_band_1
 end
 
-function get_nlabel(
+function get_nlabel_relaxation(
     ref_img,
     morph_residue,
     tile,
