@@ -244,25 +244,50 @@ function imbrighten(img, brighten_mask, bright_factor)
     return img = to_uint8(img)
 end
 
-function imhist(img, imgtype="uint8")
-
-    # TODO: add validation for arr: either uint8 0:255 or grayscale 0:1
-
-    rng = imgtype == "uint8" ? range(0, 255) : range(0; stop=1, length=256)
-    # use range(0, stop=1, length=256) for grayscale images
-
-    # build histogram
+function _imhist(img, rng)
     d = Dict(k => 0 for k in rng)
     for i in img
         d[i] = d[i] + 1
     end
-
-    # sort by key (bins)
-    k, heights = collect.([Base.keys(d), Base.values(d)])
+    k, heights = collect.([keys(d), values(d)])
     order = sortperm(k)
     k, heights = k[order], heights[order]
-
     return k, heights
+end
+
+function imhist(img, imgtype::AbstractString="uint8")
+
+    # TODO: add validation for arr: either uint8 0:255 or grayscale 0:1
+    rng = imgtype == "uint8" ? range(0, 255) : range(0; stop=1, length=256)
+    # use range(0, stop=1, length=256) for grayscale images
+
+    return _imhist(img, rng)
+end
+
+"""
+    imhistp(img)
+
+Parsimonious version of `imhist` that uses the maximum value of the image to determine the number of bins.
+"""
+function imhistp(img)
+    mx = maximum(img)
+    nbins = 2^Int(ceil(log2(mx)))
+    return _imhist(img, 0:(nbins - 1))
+end
+
+"""
+    histeq(img)
+
+Histogram equalization of `img` according to [1].
+
+[1] R. C. Gonzalez and R. E. Woods. Digital Image Processing (3rd Edition). Upper Saddle River, NJ, USA: Prentice-Hall, 2006.
+
+"""
+function histeq(img::S)::S where {S<:AbstractArray{<:Integer}}
+    k, heights = imhistp(img)
+    s = round.(Int, last(k) * cumsum(heights) / sum(heights), RoundNearestTiesAway)
+    T(r) = Dict(zip(k, s))[r]
+    return T.(img)
 end
 
 function get_image_peaks(arr, imgtype="uint8")
