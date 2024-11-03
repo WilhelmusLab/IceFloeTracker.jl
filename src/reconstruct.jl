@@ -26,3 +26,7 @@ end
 function reconstruct_dilation(img, se)
     return reconstruct(img, se, "dilation", true)
 end
+
+function reconstruct_erosion(img, se)
+    return reconstruct(img, se, "erosion", false)
+end
