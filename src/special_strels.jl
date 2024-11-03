@@ -1,7 +1,7 @@
-function _generate_se(se)
-    se = se .| reverse(se; dims=1)
-    se = se .| reverse(se; dims=2)
-    return .!se
+function _generate_se!(se)
+    se .= se .| reverse(se; dims=1)
+    se .= se .| reverse(se; dims=2)
+    return nothing
 end
 
 make_landmask_se() = begin
