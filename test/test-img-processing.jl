@@ -1,6 +1,13 @@
 using IceFloeTracker:
-    imgradientmag, to_uint8, imbinarize, adjustgamma, get_holes, impose_minima, se_disk4
-se_disk20, se_disk50
+    imgradientmag,
+    to_uint8,
+    imbinarize,
+    adjustgamma,
+    get_holes,
+    impose_minima,
+    se_disk4,
+    se_disk20,
+    se_disk50
 
 @testset "misc. image processing" begin
     r = ZipFile.Reader("test_inputs/coins.zip")
@@ -37,7 +44,7 @@ se_disk20, se_disk50
     end
 
     @testset "se_disk20" begin
-        @test sum(se_disk50()) == 1301
+        @test sum(se_disk20()) == 1301
     end
 
     @testset "se_disk50/se for landmask dilation" begin
