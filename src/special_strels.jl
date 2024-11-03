@@ -4,12 +4,14 @@ function _generate_se!(se)
     return nothing
 end
 
-make_landmask_se() = begin
+se_disk50() = begin
     se = [sum(c.I) <= 29 for c in CartesianIndices((99, 99))]
-    _generate_se(se)
+    _generate_se!(se)
+    se .= .!se
+    se
 end
 
-se_disk20 = make_landmask_se
+make_landmask_se = se_disk50
 
 se_disk4() = begin
     se = zeros(Bool, 7, 7)
@@ -18,6 +20,8 @@ se_disk4() = begin
 end
 
 se_disk20() = begin
-    se = [sum(c.I) < 11 for c in CartesianIndices((39, 39))]
-    return _generate_se(se)
+    se = [sum(c.I) <= 11 for c in CartesianIndices((39, 39))]
+    _generate_se!(se)
+    se .= .!se
+    se
 end
