@@ -9,7 +9,8 @@ using IceFloeTracker:
     get_image_peaks,
     get_ice_labels_mask,
     get_nlabel_relaxation,
-    watershed
+    watershed,
+    histeq
 using Random
 gots = get_optimal_tile_size
 
@@ -128,7 +129,9 @@ gots = get_optimal_tile_size
 
     @testset "get_nlabel_relaxation" begin
         # regular use case applies landmask
-        @test get_nlabel_relaxation(ref_img[tile...], morph_residue[tile...], factor, 75, 10, 230) == 1
+        @test get_nlabel_relaxation(
+            ref_img[tile...], morph_residue[tile...], factor, 75, 10, 230
+        ) == 1
     end
 
     @testset "watershed" begin
@@ -148,5 +151,23 @@ gots = get_optimal_tile_size
             ]
         end
         @test sum(watershed(build_test_image())) == 1088
+    end
+
+    @testset "histeq" begin
+        img = [
+            4 4 4 4 4
+            3 4 5 4 3
+            3 5 5 5 3
+            3 4 5 4 3
+            4 4 4 4 4
+        ]
+        expected = [
+            6 6 6 6 6
+            2 6 7 6 2
+            2 7 7 7 2
+            2 6 7 6 2
+            6 6 6 6 6
+        ]
+        @test histeq(img) == expected
     end
 end
