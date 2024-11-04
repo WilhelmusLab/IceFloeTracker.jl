@@ -271,39 +271,7 @@ function cropfloe(floesimg::Matrix{I}, min_row::J, min_col::J, max_row::J, max_c
     return floe_area
 end
 
-"""
-    cropfloe(floesimg, label)
 
-Crops the floe from `floesimg` with the label `label`, adding a one pixel border of zeros and converting to a BitMatrix.
-"""
-function cropfloe(floesimg::Matrix{I}, label::I) where {I<:Integer}
-    #= Remove any pixels not corresponding to that numbered floe 
-    (each segment has a different integer) =#
-    floe_area = floesimg .== label
-    @debug "mask: $floe_area"
-
-    # Crop the floe to the size of the floe.
-    nonzero = x -> x > 0
-    rows = 2
-    cols = 1
-    row_sums = count(floe_area, dims=rows)
-    col_sums = count(floe_area, dims=cols)
-    @debug "row_sums: $row_sums, col_sums: $col_sums"
-
-    min_row = findfirst(nonzero, row_sums)[cols]
-    min_col = findfirst(nonzero, col_sums)[rows]
-    max_row = findlast(nonzero, row_sums)[cols]
-    max_col = findlast(nonzero, col_sums)[rows]
-    @debug "($min_row, $min_col), ($max_row, $max_col)"
-
-    floe_area_cropped = floe_area[min_row:max_row, min_col:max_col]
-    @debug "floe_area_cropped: $floe_area_cropped"
-
-    floe_area_padded = parent(padarray(floe_area_cropped, Fill(0, (1, 1))))
-    @debug "floe_area_padded: $floe_area_padded"
-
-    return BitMatrix(floe_area_padded)
-end
 
 
 """

@@ -123,52 +123,6 @@
     @test cropfloe(img1, props_without_label, 4) == cropfloe(img1, props_without_label, 5)
 
 
-
-    @info "testing props with only label"
-    props_only_label = DataFrame(label=1:5)
-
-    @test cropfloe(img1, props_only_label, 1) == [
-        0 0 0 0
-        0 1 1 0
-        0 1 1 0
-        0 0 0 0
-    ]
-
-    @test cropfloe(img1, props_only_label, 2) == [
-        0 0 0 0 0
-        0 1 1 1 0
-        0 1 1 1 0
-        0 0 1 1 0
-        0 0 0 0 0
-    ]
-
-    @test cropfloe(img1, props_only_label, 3) == [
-        0 0 0 0 0 0
-        0 1 1 1 1 0
-        0 1 1 1 1 0
-        0 1 1 1 1 0
-        0 1 1 1 0 0
-        0 0 0 0 0 0
-    ]
-
-    @test cropfloe(img1, props_only_label, 4) == [
-        0 0 0 0 0 0 0
-        0 1 1 1 1 0 0
-        0 1 0 0 0 0 0
-        0 1 0 0 0 0 0
-        0 1 1 1 1 1 0
-        0 0 0 0 0 0 0
-    ]
-
-    @test cropfloe(img1, props_only_label, 5) == [
-        0 0 0 0 0 0
-        0 0 0 0 1 0
-        0 1 1 1 1 0
-        0 1 1 0 0 0
-        0 0 0 0 0 0
-    ]
-
-
     @info "testing values with label"
     # cropfloe
     @test cropfloe(img1, 1, 1, 4, 4, 1) == [
@@ -211,47 +165,6 @@
         0 0 1 1 0 0 0
         0 0 0 0 0 0 0
         0 0 0 0 0 0 0
-    ]
-
-    @test cropfloe(img1, 1) == [
-        0 0 0 0
-        0 1 1 0
-        0 1 1 0
-        0 0 0 0
-    ]
-
-    @test cropfloe(img1, 2) == [
-        0 0 0 0 0
-        0 1 1 1 0
-        0 1 1 1 0
-        0 0 1 1 0
-        0 0 0 0 0
-    ]
-
-    @test cropfloe(img1, 3) == [
-        0 0 0 0 0 0
-        0 1 1 1 1 0
-        0 1 1 1 1 0
-        0 1 1 1 1 0
-        0 1 1 1 0 0
-        0 0 0 0 0 0
-    ]
-
-    @test cropfloe(img1, 4) == [
-        0 0 0 0 0 0 0
-        0 1 1 1 1 0 0
-        0 1 0 0 0 0 0
-        0 1 0 0 0 0 0
-        0 1 1 1 1 1 0
-        0 0 0 0 0 0 0
-    ]
-
-    @test cropfloe(img1, 5) == [
-        0 0 0 0 0 0
-        0 0 0 0 1 0
-        0 1 1 1 1 0
-        0 1 1 0 0 0
-        0 0 0 0 0 0
     ]
 
 end
