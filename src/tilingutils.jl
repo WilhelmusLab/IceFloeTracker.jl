@@ -494,7 +494,7 @@ function impose_minima(
     I::AbstractArray{T}, BW::AbstractMatrix{Bool}
 ) where {T<:AbstractFloat}
     # compute shift
-    b, a = extrema(I)
+    a, b = extrema(I)
     rng = b - a
     h = rng == 0 ? 0.1 : rng / 1000
 
