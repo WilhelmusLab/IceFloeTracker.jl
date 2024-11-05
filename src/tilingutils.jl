@@ -285,8 +285,10 @@ Histogram equalization of `img` according to [1].
 """
 function histeq(img::S)::S where {S<:AbstractArray{<:Integer}}
     k, heights = imhistp(img)
-    s = round.(Int, last(k) * cumsum(heights) / sum(heights), RoundNearestTiesAway)
-    T(r) = Dict(zip(k, s))[r]
+    cdf =  last(k) * cumsum(heights) / sum(heights)
+    s = round.(Int, cdf, RoundNearestTiesAway)
+    mapping = Dict(zip(k, s))
+    T(r) = mapping[r]
     return T.(img)
 end
 
