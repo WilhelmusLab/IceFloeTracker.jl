@@ -285,7 +285,7 @@ Histogram equalization of `img` according to [1].
 """
 function histeq(img::S)::S where {S<:AbstractArray{<:Integer}}
     k, heights = imhistp(img)
-    cdf =  last(k) * cumsum(heights) / sum(heights)
+    cdf = last(k) * cumsum(heights) / sum(heights)
     s = round.(Int, cdf, RoundNearestTiesAway)
     mapping = Dict(zip(k, s))
     T(r) = mapping[r]
@@ -486,9 +486,7 @@ end
 function impose_minima(I::AbstractArray{T}, BW::AbstractArray{Bool}) where {T<:Integer}
     marker = 255 .* BW
     mask = imcomplement(min.(I .+ 1, 255 .- marker))
-    reconstructed = IceFloeTracker.MorphSE.mreconstruct(
-        IceFloeTracker.MorphSE.dilate, marker, mask
-    )
+    reconstructed = sk_morphology.reconstruction(marker, mask)
     return IceFloeTracker.imcomplement(Int.(reconstructed))
 end
 
@@ -503,9 +501,7 @@ function impose_minima(
     marker = -Inf * BW .+ (Inf * .!BW)
     mask = min.(I .+ h, marker)
 
-    return 1 .- IceFloeTracker.MorphSE.mreconstruct(
-        IceFloeTracker.MorphSE.dilate, 1 .- marker, 1 .- mask
-    )
+    return 1 .- sk_morphology.reconstruction(1 .- marker, 1 .- mask)
 end
 
 # TODO: Add tests for get_new2 and get_new3
@@ -585,6 +581,6 @@ function get_final(img, label, segment_mask, se_erosion, se_dilation)
         mask[1] = false
     end
 
-    final = MorphSE.mreconstruct(MorphSE.dilate, marker, mask)
+    final = sk_morphology.reconstruction(marker, mask)
     return final
 end
