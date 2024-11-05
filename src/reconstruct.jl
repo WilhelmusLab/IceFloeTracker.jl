@@ -3,7 +3,7 @@ function imcomplement(img::Matrix{T}) where {T<:Union{Unsigned,Int}}
 end
 
 function imcomplement(img::Matrix{Gray{Float64}})
-    return 1 .- img
+    return 1 .- Float64.(img)
 end
 
 function reconstruct(img, se, type, invert::Bool=true)
