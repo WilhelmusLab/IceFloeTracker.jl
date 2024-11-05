@@ -20,7 +20,7 @@ function reconstruct(img, se, type, invert::Bool=true)
         img = imcomplement(img)
     end
 
-    return IceFloeTracker.MorphSE.mreconstruct(IceFloeTracker.MorphSE.dilate, morphed, img)
+    return sk_morphology.reconstruction(morphed, img)
 end
 
 function reconstruct_dilation(img, se)
