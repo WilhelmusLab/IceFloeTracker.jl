@@ -51,6 +51,25 @@ export DataFrames, DataFrame, nrow, Not, select!
 export Dates, Time, Date, DateTime, @dateformat_str
 export addlatlon!, getlatlon, convertcentroid!, converttounits!, dropcols!
 
+const sk_morphology = PyNULL()
+const sk_measure = PyNULL()
+const sk_exposure = PyNULL()
+const getlatlon = PyNULL()
+
+function __init__()
+    skimage = "scikit-image=0.24.0"
+    copy!(sk_measure, pyimport_conda("skimage.measure", skimage))
+    copy!(sk_exposure, pyimport_conda("skimage.exposure", skimage))
+    copy!(sk_morphology, pyimport_conda("skimage.morphology", skimage))
+    pyimport_conda("pyproj", "pyproj=3.6.0")
+    pyimport_conda("rasterio", "rasterio=1.3.7")
+    pyimport_conda("jinja2", "jinja2=3.1.2")
+    pyimport_conda("pandas", "pandas=2")
+    @pyinclude(joinpath(@__DIR__, "latlon.py"))
+    copy!(getlatlon, py"getlatlon")
+    return nothing
+end
+
 include("utils.jl")
 include("persist.jl")
 include("landmask.jl")
@@ -73,10 +92,6 @@ include("histogram_equalization.jl")
 include("morph_fill.jl")
 include("reconstruct.jl")
 
-const sk_morphology = PyNULL()
-const sk_measure = PyNULL()
-const sk_exposure = PyNULL()
-const getlatlon = PyNULL()
 
 function get_version_from_toml(pth=dirname(dirname(pathof(IceFloeTracker))))::VersionNumber
     toml = TOML.parsefile(joinpath(pth, "Project.toml"))
@@ -84,20 +99,6 @@ function get_version_from_toml(pth=dirname(dirname(pathof(IceFloeTracker))))::Ve
 end
 
 const IFTVERSION = get_version_from_toml()
-
-function __init__()
-    skimage = "scikit-image=0.24.0"
-    copy!(sk_measure, pyimport_conda("skimage.measure", skimage))
-    copy!(sk_exposure, pyimport_conda("skimage.exposure", skimage))
-    copy!(sk_morphology, pyimport_conda("skimage.morphology", skimage))
-    pyimport_conda("pyproj", "pyproj=3.6.0")
-    pyimport_conda("rasterio", "rasterio=1.3.7")
-    pyimport_conda("jinja2", "jinja2=3.1.2")
-    pyimport_conda("pandas", "pandas=2")
-    @pyinclude(joinpath(@__DIR__, "latlon.py"))
-    copy!(getlatlon, py"getlatlon")
-    return nothing
-end
 
 include("regionprops.jl")
 include("segmentation_a_direct.jl")
