@@ -17,7 +17,7 @@ function create_landmask(
     fill_value_upper::Int=2000,
 ) where {T<:AbstractMatrix}
     landmask_binary = binarize_landmask(landmask_image)
-    dilated = IceFloeTracker.MorphSE.dilate(landmask_binary, centered(struct_elem))
+    dilated = sk_morphology.dilation(landmask_binary, centered(struct_elem))
     return (
         dilated=ImageMorphology.imfill(.!dilated, (fill_value_lower, fill_value_upper)),
         non_dilated=.!landmask_binary,
@@ -52,7 +52,7 @@ Zero out pixels in land and soft ice regions on truecolor image, return RGB imag
 
 # Arguments
 - `input_image`: truecolor RGB image
-- `landmask_binary`: binary landmask with 1=land, 0=water/ice 
+- `landmask_binary`: binary landmask with 1=land, 0=water/ice
 
 """
 function apply_landmask(input_image::AbstractMatrix, landmask_binary::BitMatrix)
@@ -69,7 +69,7 @@ end
 """
     remove_landmask(landmask, ice_mask)
 
-Find the pixel indexes that are floating ice rather than soft or land ice. Returns an array of pixel indexes. 
+Find the pixel indexes that are floating ice rather than soft or land ice. Returns an array of pixel indexes.
 
 # Arguments
 - `landmask`: bitmatrix landmask for region of interest
