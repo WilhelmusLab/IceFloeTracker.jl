@@ -3,7 +3,7 @@ function imcomplement(img::Matrix{T}) where {T<:Union{Unsigned,Int}}
 end
 
 function imcomplement(img::Matrix{Gray{Float64}})
-    return 1 .- Float64.(img)
+    return 1 .- img
 end
 
 function reconstruct(img, se, type, invert::Bool=true)
@@ -20,13 +20,9 @@ function reconstruct(img, se, type, invert::Bool=true)
         img = imcomplement(img)
     end
 
-    return sk_morphology.reconstruction(morphed, img)
-end
-
-function reconstruct_dilation(img, se)
-    return reconstruct(img, se, "dilation", true)
+    return IceFloeTracker.MorphSE.mreconstruct(IceFloeTracker.MorphSE.dilate, morphed, img)
 end
 
 function reconstruct_erosion(img, se)
-    return reconstruct(img, se, "erosion", false)
+    return reconstruct(img, se, "dilation")
 end
