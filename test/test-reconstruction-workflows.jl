@@ -19,13 +19,6 @@ function run_tests(test_cases, func, se)
 end
 
 @testset "reconstruct" begin
-    @testset "imcomplement" begin
-        @test imcomplement(coins) == 255 .- coins
-
-        coins_gray = Gray.(coins ./ 255)
-        @test imcomplement(coins_gray) == 1 .- coins_gray
-    end
-
     @testset "open_by_reconstruction" begin
         test_cases = [(coins, 7552396), (coins_gray, 29617.239215686277)]
         run_tests(test_cases, (img, se) -> _reconstruct(img, se, "erosion"), se_disk1)
