@@ -71,7 +71,7 @@ include("branch.jl")
 include("special_strels.jl")
 include("tilingutils.jl")
 include("histogram_equalization.jl")
-
+include("reconstruction.jl")
 
 const sk_measure = PyNULL()
 const sk_exposure = PyNULL()
