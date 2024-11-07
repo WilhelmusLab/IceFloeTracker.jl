@@ -1,5 +1,5 @@
 using IceFloeTracker: unsharp_mask, to_uint8, reconstruct, hbreak, to_uint8, morph_fill
-using using IceFloeTracker.MorphSE: dilate, erode, fill_holes
+using IceFloeTracker.MorphSE: dilate, erode, fill_holes
 
 # TODO: choose better names
 
