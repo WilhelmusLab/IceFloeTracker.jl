@@ -72,6 +72,7 @@ include("special_strels.jl")
 include("tilingutils.jl")
 include("histogram_equalization.jl")
 include("watershed.jl")
+include("imcomplement.jl")
 
 
 const sk_measure = PyNULL()
