@@ -69,7 +69,7 @@ end
 Load an image from `dir` with filename `fname` into a matrix of `Float64` values. Returns the loaded image.
 """
 function loadimg(; dir::String, fname::String)
-    return joinpath(dir, fname) |> load |> x-> float64.(x)
+    return (x -> float64.(x))(load(joinpath(dir, fname)))
 end
 
 """
@@ -114,16 +114,18 @@ Mimics MATLAB's imextendedmin function that computes the extended-minima transfo
 - `h`: suppress minima below this depth threshold
 - `conn`: neighborhood connectivity; in 2D 1 = 4-neighborhood and 2 = 8-neighborhood
 """
-function imextendedmin(img::AbstractArray; h::Int=2, conn::Int=2)::BitMatrix
+function imextendedmin(img::AbstractArray, h::Int=2, conn::Int=2)::BitMatrix
     mask = ImageSegmentation.hmin_transform(img, h)
     mask_minima = Images.local_minima(mask; connectivity=conn)
-    return Bool.(mask_minima)
+    return mask_minima .> 0
 end
 
 function impose_minima(I::AbstractArray{T}, BW::AbstractArray{Bool}) where {T<:Integer}
     marker = 255 .* BW
     mask = imcomplement(min.(I .+ 1, 255 .- marker))
-    reconstructed = sk_morphology.reconstruction(marker, mask)
+    reconstructed = IceFloeTracker.MorphSE.mreconstruct(
+        IceFloeTracker.MorphSE.dilate, marker, mask
+    )
     return IceFloeTracker.imcomplement(Int.(reconstructed))
 end
 
@@ -138,7 +140,9 @@ function impose_minima(
     marker = -Inf * BW .+ (Inf * .!BW)
     mask = min.(I .+ h, marker)
 
-    return 1 .- sk_morphology.reconstruction(1 .- marker, 1 .- mask)
+    return 1 .- IceFloeTracker.MorphSE.mreconstruct(
+        IceFloeTracker.MorphSE.dilate, 1 .- marker, 1 .- mask
+    )
 end
 
 function imregionalmin(A, conn=2)

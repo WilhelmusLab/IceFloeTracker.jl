@@ -1,6 +1,6 @@
 function watershed1(bw::T) where {T<:Union{BitMatrix,AbstractMatrix{Bool}}}
     seg = -IceFloeTracker.bwdist(.!bw)
-    mask2 = imextendedmin(seg, 2)
+    mask2 = imextendedmin(seg)
     seg = impose_minima(seg, mask2)
     cc = label_components(imregionalmin(seg), trues(3, 3))
     w = ImageSegmentation.watershed(seg, cc)
