@@ -1,4 +1,5 @@
-using IceFloeTracker: MorphSE, unsharp_mask, to_uint8, reconstruct
+using IceFloeTracker: unsharp_mask, to_uint8, reconstruct, hbreak, to_uint8, morph_fill
+using using IceFloeTracker.MorphSE: dilate, erode, fill_holes
 
 # TODO: choose better names
 
@@ -17,7 +18,7 @@ Calculate the new image `new2` from the input image `morph_residue`.
 function get_new2(morph_residue, local_maxima_mask, factor, segment_mask, L0mask)
     new2 = to_uint8(morph_residue .+ local_maxima_mask .* factor)
     new2[segment_mask .|| L0mask] .= 0
-    return MorphSE.fill_holes(new2)
+    return fill_holes(new2)
 end
 
 """
@@ -58,12 +59,12 @@ function get_final(img, label, segment_mask, se_erosion, se_dilation)
     end
 
     # tends to fill more than matlabs imfill
-    img = IceFloeTracker.MorphSE.fill_holes(img)
+    img = fill_holes(img)
 
     marker = branch(img)
 
-    mask = MorphSE.erode(marker, se_erosion)
-    mask = MorphSE.dilate(mask, se_dilation)
+    mask = erode(marker, se_erosion)
+    mask = dilate(mask, se_dilation)
 
     # Added for consistency with MASTER.m. CP
     if label == 1
