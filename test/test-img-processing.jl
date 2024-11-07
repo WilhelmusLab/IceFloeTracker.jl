@@ -1,6 +1,10 @@
-using ZipFile
-using DelimitedFiles: readdlm
-using IceFloeTracker: imgradientmag, to_uint8, imbinarize, adjustgamma, get_holes, se_disk4
+using IceFloeTracker:
+    imgradientmag,
+    to_uint8,
+    imbinarize,
+    adjustgamma,
+    get_holes,
+    impose_minima
 
 @testset "misc. image processing" begin
     r = ZipFile.Reader("test_inputs/coins.zip")
@@ -23,5 +27,12 @@ using IceFloeTracker: imgradientmag, to_uint8, imbinarize, adjustgamma, get_hole
     @testset "get_holes" begin
         bw = coins .> 100
         @test sum(get_holes(bw)) == 2536
+    end
+
+    @testset "impose_minima" begin
+        img = readdlm("test_inputs/imposemin.csv", ',', Int)
+        marker = falses(size(img))
+        marker[65:70, 65:70] .= true
+        @test sum(impose_minima(img, marker)) == 7675653
     end
 end
