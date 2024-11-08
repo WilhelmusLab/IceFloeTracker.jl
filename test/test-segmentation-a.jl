@@ -21,15 +21,12 @@
     @time segmented_ice_cloudmasked = IceFloeTracker.segmented_ice_cloudmasking(
         ice_water_discriminated_image, cloudmask, ice_labels
     )
-    IceFloeTracker.@persist segmented_ice_cloudmasked "./test_outputs/segmented_a_ice_cloudmasked.png" true
 
     @time segmented_A = IceFloeTracker.segmentation_A(segmented_ice_cloudmasked)
-    IceFloeTracker.@persist segmented_A "./test_outputs/segmented_a.png" true
 
     @time segmented_ice = IceFloeTracker.kmeans_segmentation(
         ice_water_discriminated_image, ice_labels
     )
-    IceFloeTracker.@persist segmented_ice "./test_outputs/segmented_a_ice.png" true
 
     @test typeof(segmented_A) == typeof(matlab_segmented_A_bitmatrix)
     @test test_similarity(matlab_segmented_A_bitmatrix, segmented_A, 0.039)
