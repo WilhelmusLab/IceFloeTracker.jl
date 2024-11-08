@@ -38,6 +38,7 @@ export readdlm,
     imsharpen,
     label_components,
     regionprops_table,
+    cropfloe,
     loadimg,
     matchcorr,
     centered,
@@ -71,6 +72,7 @@ include("special_strels.jl")
 include("tilingutils.jl")
 include("histogram_equalization.jl")
 include("morph_fill.jl")
+include("imcomplement.jl")
 
 const sk_measure = PyNULL()
 const sk_exposure = PyNULL()
