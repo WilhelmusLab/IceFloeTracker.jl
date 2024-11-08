@@ -300,10 +300,10 @@ end
 Parsimonious version of `imhist` that uses the maximum value of the image to determine the number of bins.
 """
 function imhistp(img)
-    mx = maximum(img)
-    nbins = 2^Int(ceil(log2(mx)))
-    return _imhist(img, 0:(nbins - 1))
+    nbins = nextpow(2, maximum(img) + 1)
+    return _imhist(img, 0:(nbins-1))
 end
+
 
 """
     histeq(img)
