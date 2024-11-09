@@ -9,7 +9,8 @@ function _bridge_operator_lut(
     return _operator_lut(I, img, nhood, lutbridge)
 end
 
-function _bridge_filter(img::T, operator::Function)::T where {T<:AbstractArray{Bool}}
+# TODO: see about implemting _filter using parallelization
+function _filter(img::T, operator::Function)::T where {T<:AbstractArray{Bool}}
     out = zeros(Bool, size(img))
     R = CartesianIndices(img)
     I_first, I_last = first(R), last(R)
@@ -79,5 +80,5 @@ julia> bridge(bw)
 ```
 """
 function bridge(bw::T)::T where {T<:AbstractArray{Bool}}
-    return _bridge_filter(bw, _bridge_operator_lut)
+    return _filter(bw, _bridge_operator_lut)
 end
