@@ -79,21 +79,46 @@ end
 
 function test_histeq()
     @testset "histeq" begin
-        img = [
-            4 4 4 4 4
-            3 4 5 4 3
-            3 5 5 5 3
-            3 4 5 4 3
-            4 4 4 4 4
+        imgs = [
+            [
+                4 4 4 4 4
+                3 4 5 4 3
+                3 5 5 5 3
+                3 4 5 4 3
+                4 4 4 4 4
+            ],
+            # Edge cases
+            # maximum a power of 2
+            [
+                0 0 0
+                2 2 2
+            ],
+            # maximum at 255
+            [
+                0 0 0
+                255 255 255
+            ],
         ]
+    
         expected = [
-            6 6 6 6 6
-            2 6 7 6 2
-            2 7 7 7 2
-            2 6 7 6 2
-            6 6 6 6 6
+            [
+                6 6 6 6 6
+                2 6 7 6 2
+                2 7 7 7 2
+                2 6 7 6 2
+                6 6 6 6 6
+            ],
+            [
+                2 2 2
+                3 3 3
+            ],
+            [
+                128 128 128
+                255 255 255
+            ],
         ]
-        @test histeq(img) == expected
+
+        @test all(histeq(imgs[i]) == expected[i] for i in 1:3)
     end
 end
 

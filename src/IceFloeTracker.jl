@@ -71,7 +71,8 @@ include("branch.jl")
 include("special_strels.jl")
 include("tilingutils.jl")
 include("histogram_equalization.jl")
-
+include("morph_fill.jl")
+include("imcomplement.jl")
 
 const sk_measure = PyNULL()
 const sk_exposure = PyNULL()
@@ -153,34 +154,34 @@ julia> IceFloeTracker.MorphSE.dilate(a, se)
 ```
 """
 module MorphSE
-using ImageCore
-using ColorTypes
-using LoopVectorization
-using OffsetArrays
-using TiledIteration: EdgeIterator
-using DataStructures
-include("morphSE/StructuringElements.jl")
-using .StructuringElements
-include("morphSE/extreme_filter.jl")
-include("morphSE/utils.jl")
-include("morphSE/dilate.jl")
-include("morphSE/erode.jl")
-include("morphSE/opening.jl")
-include("morphSE/closing.jl")
-include("morphSE/bothat.jl")
-include("morphSE/mreconstruct.jl")
-include("morphSE/fill_holes.jl")
+    using ImageCore
+    using ColorTypes
+    using LoopVectorization
+    using OffsetArrays
+    using TiledIteration: EdgeIterator
+    using DataStructures
+    include("morphSE/StructuringElements.jl")
+    using .StructuringElements
+    include("morphSE/extreme_filter.jl")
+    include("morphSE/utils.jl")
+    include("morphSE/dilate.jl")
+    include("morphSE/erode.jl")
+    include("morphSE/opening.jl")
+    include("morphSE/closing.jl")
+    include("morphSE/bothat.jl")
+    include("morphSE/mreconstruct.jl")
+    include("morphSE/fill_holes.jl")
 end
 
 module Register
-include("Register/CenterIndexedArrays.jl-0.2.0/CenterIndexedArrays.jl")
-include("Register/RegisterCore.jl-0.2.4/src/RegisterCore.jl")
-include("Register/RegisterMismatchCommon.jl-master/RegisterMismatchCommon.jl")
-include("Register/RegisterUtilities.jl-master/RegisterUtilities.jl")
-include("Register/RFFT.jl-master/RFFT.jl")
-include("Register/RegisterDeformation.jl-0.4.4/RegisterDeformation.jl")
-include("Register/QuadDIRECT.jl-master/QuadDIRECT.jl")
-include("Register/RegisterQD.jl-0.3.1/RegisterQD.jl")
-include("Register/RegisterMismatch.jl-0.4.0/RegisterMismatch.jl")
+    include("Register/CenterIndexedArrays.jl-0.2.0/CenterIndexedArrays.jl")
+    include("Register/RegisterCore.jl-0.2.4/src/RegisterCore.jl")
+    include("Register/RegisterMismatchCommon.jl-master/RegisterMismatchCommon.jl")
+    include("Register/RegisterUtilities.jl-master/RegisterUtilities.jl")
+    include("Register/RFFT.jl-master/RFFT.jl")
+    include("Register/RegisterDeformation.jl-0.4.4/RegisterDeformation.jl")
+    include("Register/QuadDIRECT.jl-master/QuadDIRECT.jl")
+    include("Register/RegisterQD.jl-0.3.1/RegisterQD.jl")
+    include("Register/RegisterMismatch.jl-0.4.0/RegisterMismatch.jl")
 end
 end
