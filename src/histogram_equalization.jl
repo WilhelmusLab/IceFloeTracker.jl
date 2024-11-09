@@ -279,3 +279,47 @@ Convert an RGB image to grayscale in the range [0, 255].
 function rgb2gray(img::Matrix{RGB{Float64}})
     return round.(Int, Gray.(img) * 255)
 end
+
+function _imhist(img, rng)
+    d = Dict(k => 0 for k in rng)
+    for i in img
+        d[i] = d[i] + 1
+    end
+    k, heights = collect.([keys(d), values(d)])
+    order = sortperm(k)
+    k, heights = k[order], heights[order]
+    return k, heights
+end
+
+function imhist(img, imgtype::AbstractString="uint8")
+
+    # TODO: add validation for arr: either uint8 0:255 or grayscale 0:1
+    rng = imgtype == "uint8" ? range(0, 255) : range(0; stop=1, length=256)
+    # use range(0, stop=1, length=256) for grayscale images
+
+    return _imhist(img, rng)
+end
+
+"""
+    imhistp(img)
+Parsimonious version of `imhist` that uses the maximum value of the image to determine the number of bins.
+"""
+function imhistp(img)
+    nbins = nextpow(2, maximum(img) + 1)
+    return _imhist(img, 0:(nbins-1))
+end
+
+
+"""
+    histeq(img)
+Histogram equalization of `img` according to [1].
+[1] R. C. Gonzalez and R. E. Woods. Digital Image Processing (3rd Edition). Upper Saddle River, NJ, USA: Prentice-Hall, 2006.
+"""
+function histeq(img::S)::S where {S<:AbstractArray{<:Integer}}
+    k, heights = imhistp(img)
+    cdf = last(k) * cumsum(heights) / sum(heights)
+    s = round.(Int, cdf, RoundNearestTiesAway)
+    mapping = Dict(zip(k, s))
+    T(r) = mapping[r]
+    return T.(img)
+end
