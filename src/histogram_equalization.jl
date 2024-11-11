@@ -1,7 +1,19 @@
-function to_uint8(arr::AbstractMatrix{T}) where {T<:AbstractFloat}
-    img = Int.(round.(arr, RoundNearestTiesAway))
-    img = clamp.(img, 0, 255)
+function to_uint8(arr::AbstractMatrix{T}) where {T<:Union{AbstractFloat,Int,Signed}}
+    img = to_uint8.(arr)
     return img
+end
+
+"""
+    rgb2gray(rgbchannels::Array{Float64, 3})
+
+Convert an array of RGB channel data to grayscale in the range [0, 255].
+"""
+function rgb2gray(rgbchannels::Array{Float64,3})
+    # Could probably use Gray if image is in right format, but that is the challenge. CP
+    r, g, b = [to_uint8(rgbchannels[:, :, i]) for i in 1:3]
+    # Reusing the r array to store the equalized gray image
+    r .= to_uint8(0.2989 * r .+ 0.5870 * g .+ 0.1140 * b)
+    return r
 end
 
 function anisotropic_diffusion_3D(I)
