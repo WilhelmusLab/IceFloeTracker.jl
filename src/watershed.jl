@@ -32,5 +32,5 @@ function watershed2(morph_residue, se=se_disk20())
     cc = label_components((gmag), trues(3, 3))
     w = ImageSegmentation.watershed(morph_residue, cc)
     lmap = labels_map(w)
-    return isboundary(lmap)
+    return (fgm=mr_reconst, L0mask=isboundary(lmap))
 end
