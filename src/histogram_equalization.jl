@@ -1,7 +1,18 @@
 function to_uint8(arr::AbstractMatrix{T}) where {T<:Union{AbstractFloat,Int,Signed}}
-    img = Int.(round.(arr, RoundNearestTiesAway))
-    img = clamp.(img, 0, 255)
+    img = to_uint8.(arr)
     return img
+end
+
+"""
+    rgb2gray(rgbchannels::Array{Float64, 3})
+
+Convert an array of RGB channel data to grayscale in the range [0, 255].
+"""
+function rgb2gray(rgbchannels::Array{Float64,3})
+    r, g, b = [to_uint8(rgbchannels[:, :, i]) for i in 1:3]
+    # Reusing the r array to store the equalized gray image
+    r .= to_uint8(0.2989 * r .+ 0.5870 * g .+ 0.1140 * b)
+    return r
 end
 
 function to_uint8(num::T) where {T<:Union{AbstractFloat,Int,Signed}}
@@ -143,6 +154,7 @@ function _process_image_tiles(
     # Apply diffuse (anisotropic diffusion) to each channel of true color image
     true_color_diffused = IceFloeTracker.diffusion(float64.(true_color_image), 0.1, 75, 3)
 
+    # Get uint8 channels
     rgbchannels = get_rgb_channels(true_color_diffused)
 
     # For each tile, compute the entropy in the false color tile, and the fraction of white and black pixels
@@ -160,7 +172,7 @@ function _process_image_tiles(
         end
     end
 
-    return rgbchannels
+    return (equalized_gray=rgb2gray(rgbchannels), gammagreen=rgbchannels[:, :, 2])
 end
 
 """
