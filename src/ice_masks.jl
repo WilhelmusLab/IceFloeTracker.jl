@@ -34,6 +34,7 @@ Get the ice masks from the falsecolor image and morphological residue given a pa
 - A named tuple `(icemask, bin)` where:
   - `icemask`: The ice mask.
   - `bin`: The binarized tiling.
+  - `label`: Most frequent label in the ice mask.
 """
 function get_ice_masks(
     falsecolor_image,
@@ -80,5 +81,5 @@ function get_ice_masks(
 
         ice_mask[tile...] .= (morph_residue_seglabels .== floes_label)
     end
-    return (icemask=ice_mask, bin=binarized_tiling)
+    return (icemask=ice_mask, bin=binarized_tiling, label=floes_label)
 end
