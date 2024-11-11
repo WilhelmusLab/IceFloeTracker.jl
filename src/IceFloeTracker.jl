@@ -74,6 +74,7 @@ include("histogram_equalization.jl")
 include("brighten.jl")
 include("morph_fill.jl")
 include("imcomplement.jl")
+include("imadjust.jl")
 
 const sk_measure = PyNULL()
 const sk_exposure = PyNULL()
