@@ -4,6 +4,11 @@ function to_uint8(arr::AbstractMatrix{T}) where {T<:AbstractFloat}
     return img
 end
 
+function to_uint8(arr::AbstractMatrix{T}) where {T<:Integer}
+    img = clamp.(arr, 0, 255)
+    return img
+end
+
 function anisotropic_diffusion_3D(I)
     rgbchannels = get_rgb_channels(I)
 
