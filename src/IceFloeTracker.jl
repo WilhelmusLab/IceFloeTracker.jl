@@ -78,7 +78,7 @@ include("imcomplement.jl")
 const sk_measure = PyNULL()
 const sk_exposure = PyNULL()
 const getlatlon = PyNULL()
-const cv2 = PyNull
+const cv2 = PyNULL()
 
 function __init__()
     try
