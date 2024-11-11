@@ -75,10 +75,6 @@ include("imadjust.jl")
 include("morph_fill.jl")
 include("imcomplement.jl")
 
-const sk_measure = PyNULL()
-const sk_exposure = PyNULL()
-const getlatlon = PyNULL()
-
 function get_version_from_toml(pth=dirname(dirname(pathof(IceFloeTracker))))::VersionNumber
     toml = TOML.parsefile(joinpath(pth, "Project.toml"))
     return VersionNumber(toml["version"])
@@ -86,9 +82,16 @@ end
 
 const IFTVERSION = get_version_from_toml()
 
+const sk_measure = PyNULL()
+const sk_morphology = PyNULL()
+const sk_exposure = PyNULL()
+const getlatlon = PyNULL()
+
 function __init__()
-    copy!(sk_measure, pyimport_conda("skimage.measure", "scikit-image=0.24.0"))
-    copy!(sk_exposure, pyimport_conda("skimage.exposure", "scikit-image=0.24.0"))
+    skimage = "scikit-image=0.24.0"
+    copy!(sk_measure, pyimport_conda("skimage.measure", skimage))
+    copy!(sk_exposure, pyimport_conda("skimage.exposure", skimage))
+    copy!(sk_morphology, pyimport_conda("skimage.morphology", skimage))
     pyimport_conda("pyproj", "pyproj=3.6.0")
     pyimport_conda("rasterio", "rasterio=1.3.7")
     pyimport_conda("jinja2", "jinja2=3.1.2")
