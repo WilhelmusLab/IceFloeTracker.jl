@@ -54,9 +54,20 @@ export addlatlon!, getlatlon, convertcentroid!, converttounits!, dropcols!
 const sk_morphology = PyNULL()
 const sk_measure = PyNULL()
 const sk_exposure = PyNULL()
+const cv2 = PyNULL()
 const getlatlon = PyNULL()
 
 function __init__()
+    try
+        copy!(cv2, pyimport("cv2"))
+    catch e
+        pyimport("subprocess").run([
+            "python", "-m", "pip", "install", "opencv-python==4.10.0.84"
+        ])
+    end
+
+    # Import the installed modules
+
     skimage = "scikit-image=0.24.0"
     copy!(sk_measure, pyimport_conda("skimage.measure", skimage))
     copy!(sk_exposure, pyimport_conda("skimage.exposure", skimage))
