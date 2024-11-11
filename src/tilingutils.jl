@@ -485,6 +485,13 @@ function imregionalmin(A, conn=2)
     return ImageMorphology.local_minima(A; connectivity=conn) .> 0
 end
 
+"""
+    impose_minima(I::AbstractArray{T}, BW::AbstractArray{Bool}) where {T<:Integer}
+
+Use morphological reconstruction to enforce minima on the input image `I` at the positions where the binary mask `BW` is non-zero.
+
+It supports both integer and grayscale images using different implementations.
+"""
 function impose_minima(I::AbstractArray{T}, BW::AbstractArray{Bool}) where {T<:Integer}
     marker = 255 .* BW
     mask = imcomplement(min.(I .+ 1, 255 .- marker))
