@@ -163,7 +163,7 @@ function _process_image_tiles(
         end
     end
 
-    return rgbchannels
+    return (equalized_gray=rgb2gray(rgbchannels), gammagreen=rgbchannels[:, :, 2])
 end
 
 """
