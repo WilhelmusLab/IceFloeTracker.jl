@@ -109,7 +109,6 @@ function get_ice_labels_mask(ref_img::Matrix{RGB{N0f8}}, thresholds, factor=1)
     return mask
 end
 
-# TODO: add test
 function get_nlabel(
     ref_img,
     morph_residue_labels,
@@ -173,7 +172,6 @@ function get_nlabel_relaxation(
     # TODO: Should a fallback value be added? Return nothing if no ice is found? return 1? throw error?
 end
 
-# TODO: Add tests
 """
     get_ice_masks(
     falsecolor_image,
