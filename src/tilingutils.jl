@@ -593,7 +593,7 @@ function get_final(img, label, segment_mask, se_erosion, se_dilation)
     return final
 end
 
-function watershed2(morph_residue, se=se_disk20())
+function watershed2(morph_residue, segment_mask, se=se_disk20())
     # Task 1: Reconstruct morph_residue
     task1 = Threads.@spawn begin
         mr_reconst = reconstruct_erosion(morph_residue, se)
@@ -614,7 +614,7 @@ function watershed2(morph_residue, se=se_disk20())
     minimamarkers = Bool.(mr_reconst) .| segment_mask .| ice_mask
     gmag .= impose_minima(gmag, minimamarkers)
     cc = label_components(imregionalmin(gmag), trues(3, 3))
-    cc = label_components((gmag), trues(3, 3))
+    # cc = label_components((gmag), trues(3, 3))
     w = ImageSegmentation.watershed(morph_residue, cc)
     lmap = labels_map(w)
     return isboundary(lmap)
