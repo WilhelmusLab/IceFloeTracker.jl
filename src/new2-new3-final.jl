@@ -33,7 +33,7 @@ Calculate the new image `new3` from the input image `new2`.
 - `factor`: The factor to apply to the local maxima mask.
 - `segment_mask`: The segment mask -- intersection of bw1 and bw2 in first tiled workflow of `master.m`.
 """
-function get_new3(img, L0mask, radius, amount, local_maxima_mask, factor, segment_mask)
+function get_new3(img, L0mask, radius, amount, local_maxima_mask, factor, segment_mask, se)
     new3 = unsharp_mask(img, radius, amount, 255)
     new3[L0mask] .= 0
     new3 = reconstruct(new3, se, "dilation", false)
