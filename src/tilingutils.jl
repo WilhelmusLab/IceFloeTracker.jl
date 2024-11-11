@@ -430,6 +430,7 @@ Get the ice masks from the falsecolor image and morphological residue given a pa
 - A named tuple `(icemask, bin)` where:
   - `icemask`: The ice mask.
   - `bin`: The binarized tiling.
+  - `label`: Most frequent label in the ice mask.
 """
 function get_ice_masks(
     falsecolor_image,
@@ -454,7 +455,7 @@ function get_ice_masks(
 
     fc_landmasked = apply_landmask(falsecolor_image, landmask)
 
-    for tile in tiles
+    Threads.@threads for tile in tiles
         #  Conditionally update binarized_tiling as its not used in some workflows
         if binarize
             binarized_tiling[tile...] .= imbinarize(morph_residue[tile...])
@@ -476,8 +477,9 @@ function get_ice_masks(
 
         ice_mask[tile...] .= (morph_residue_seglabels .== floes_label)
     end
-    return (icemask=ice_mask, bin=binarized_tiling)
+    return (icemask=ice_mask, bin=binarized_tiling, label=floes_label)
 end
+
 
 function imregionalmin(A, conn=2)
     return ImageMorphology.local_minima(A; connectivity=conn) .> 0
