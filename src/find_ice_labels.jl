@@ -169,7 +169,8 @@ function get_nlabel_relaxation(
     mask_b = b .> band_2_threshold
     sum(mask_b) > 0 && return StatsBase.mode(morph_residue_labels[mask_b])
 
-    # TODO: Should a fallback value be added? Return nothing if no ice is found? return 1? throw error?
+    # No mode found
+    return missing
 end
 
 """
