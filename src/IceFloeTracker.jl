@@ -78,15 +78,16 @@ include("imcomplement.jl")
 const sk_measure = PyNULL()
 const sk_exposure = PyNULL()
 const getlatlon = PyNULL()
-
-function get_version_from_toml(pth=dirname(dirname(pathof(IceFloeTracker))))::VersionNumber
-    toml = TOML.parsefile(joinpath(pth, "Project.toml"))
-    return VersionNumber(toml["version"])
-end
-
-const IFTVERSION = get_version_from_toml()
+const cv2 = PyNull
 
 function __init__()
+    try
+        copy!(cv2, pyimport("cv2"))
+    catch e
+        pyimport("subprocess").run([
+            "python", "-m", "pip", "install", "opencv-python==4.10.0.84"
+        ])
+    end
     copy!(sk_measure, pyimport_conda("skimage.measure", "scikit-image=0.24.0"))
     copy!(sk_exposure, pyimport_conda("skimage.exposure", "scikit-image=0.24.0"))
     pyimport_conda("pyproj", "pyproj=3.6.0")
@@ -97,6 +98,14 @@ function __init__()
     copy!(getlatlon, py"getlatlon")
     return nothing
 end
+
+function get_version_from_toml(pth=dirname(dirname(pathof(IceFloeTracker))))::VersionNumber
+    toml = TOML.parsefile(joinpath(pth, "Project.toml"))
+    return VersionNumber(toml["version"])
+end
+
+const IFTVERSION = get_version_from_toml()
+
 
 include("regionprops.jl")
 include("segmentation_a_direct.jl")
