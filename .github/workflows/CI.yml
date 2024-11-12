@@ -30,6 +30,8 @@ jobs:
           python-version: '3.12'
       - name: update pip
         run: python -m pip install -U pip
+      - name: install setuptools
+        run: python -m pip install setuptools
       - name: install python deps
         run: python -m pip install -U -r requirements.txt
       - uses: julia-actions/setup-julia@v2
