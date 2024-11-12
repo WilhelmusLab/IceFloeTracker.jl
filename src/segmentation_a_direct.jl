@@ -9,22 +9,37 @@ Apply k-means segmentation to a gray image to isolate a cluster group representi
 
 """
 function kmeans_segmentation(
-    gray_image::Matrix{Gray{Float64}}, ice_labels::Vector{Int64}
+    gray_image::Matrix{Gray{Float64}},
+    ice_labels::Vector{Int64},
+    k::Int64=4,
+    maxiter::Int64=50,
 )::BitMatrix
-    Random.seed!(45) # this seed generates consistent clusters for the final output
-    gray_image_height, gray_image_width = size(gray_image)
-    gray_image_1d = vec(gray_image)
-    @info("Done with reshape")
+    segmented = kmeans_segmentation(gray_image; k=k, maxiter=maxiter)
 
-    ## NOTE(tjd): this clusters into 4 classes and solves iteratively with a max of 50 iterations
+    ## Isolate ice floes and contrast from background
+    segmented_ice = get_segmented_ice(segmented, ice_labels)
+    return segmented_ice
+end
+
+function kmeans_segmentation(
+    gray_image::Matrix{Gray{Float64}}; k::Int64=4, maxiter::Int64=50
+)
+    Random.seed!(45)
+
+    ## NOTE(tjd): this clusters into k classes and solves iteratively with a max of maxiter iterations
     feature_classes = Clustering.kmeans(
-        gray_image_1d, 4; maxiter=50, display=:none, init=:kmpp
+        vec(gray_image), k; maxiter=maxiter, display=:none, init=:kmpp
     )
+
     class_assignments = assignments(feature_classes)
 
-    ## NOTE(tjd): this reshapes column major vector of kmeans classes back into original image shape
-    segmented = reshape(class_assignments, gray_image_height, gray_image_width)
+    ## NOTE(tjd): this clusters into 4 classes and solves iteratively with a max of 50 iterations
+    segmented = reshape(class_assignments, size(gray_image))
 
+    return segmented
+end
+
+function get_segmented_ice(segmented::Matrix{Int64}, ice_labels::Vector{Int64})
     ## Isolate ice floes and contrast from background
     nlabel = StatsBase.mode(segmented[ice_labels])
     segmented_ice = segmented .== nlabel
@@ -76,9 +91,7 @@ function segmentation_A(
 
     segmented_bridged = IceFloeTracker.bridge(segmented_opened_branched)
 
-    #segmented_ice_filled = .!bwareamaxfilt(.!segmented_bridged)
     segmented_ice_filled = IceFloeTracker.MorphSE.fill_holes(segmented_bridged)
-    @info "Done filling segmented_ice"
 
     diff_matrix = segmented_ice_opened .!= segmented_ice_filled
 
@@ -96,7 +109,19 @@ function get_holes(img, min_opening_area=20, se=IceFloeTracker.se_disk4())
     out = IceFloeTracker.MorphSE.fill_holes(out)
 
     return out .!= img
+end
 
+function fillholes!(img)
+    img[get_holes(img)] .= true
+    return nothing
+end
+
+function get_segment_mask(ice_mask, tiled_binmask)
+    Threads.@threads for img in (ice_mask, tiled_binmask)
+        fillholes!(img)
+    end
+    segment_mask = ice_mask .&& tiled_binmask
+    return segment_mask
 end
 
 function branchbridge(img)

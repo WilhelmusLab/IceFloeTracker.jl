@@ -54,7 +54,7 @@ julia> boundary[3]
 ```
 """
 function bwtraceboundary(
-    image::Union{Matrix{Int64},Matrix{Float64},T};
+    image::Union{Matrix{UInt8},Matrix{Int64},Matrix{Float64},T};
     P0::Union{Tuple{Int,Int},CartesianIndex{2},Nothing}=nothing,
     closed::Bool=true,
 ) where {T<:AbstractArray{Bool,2}}

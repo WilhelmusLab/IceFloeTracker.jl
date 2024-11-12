@@ -9,6 +9,7 @@ using Random
 using Test
 using TestImages
 using TiledIteration
+using ZipFile
 include("test_error_rate.jl")
 include("config.jl")
 
@@ -22,7 +23,7 @@ testnames = [n[6:(end-3)] for n in alltests]
 
 to_test = alltests # uncomment this line to run all tests or add individual files below
 [
-# "test-create-landmask.jl",
+# "test-latlon.jl",
 # "test-create-cloudmask.jl",
 # "test-normalize-image.jl",
 # "test-persist.jl",
@@ -36,6 +37,7 @@ to_test = alltests # uncomment this line to run all tests or add individual file
 # "test-bwtraceboundary.jl",
 # "test-resample-boundary.jl",
 # "test-regionprops.jl",
+# "test-regionprops-labeled.jl",
 # "test-psi-s.jl",
 # "test-crosscorr.jl"
 # "test-bwperim.jl",
