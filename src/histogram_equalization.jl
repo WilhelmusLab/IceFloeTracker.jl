@@ -154,7 +154,7 @@ function _process_image_tiles(
         end
     end
 
-    return (equalized_gray=rgb2gray(rgbchannels), gammagreen=rgbchannels[:, :, 2])
+    return rgbchannels
 end
 
 """
@@ -201,7 +201,6 @@ function conditional_histeq(
         entropy_threshold,
         white_fraction_threshold,
     )
-
     return rgbchannels_equalized
 end
 
