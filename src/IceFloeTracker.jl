@@ -89,7 +89,7 @@ const sk_exposure = PyNULL()
 const getlatlon = PyNULL()
 
 function __init__()
-    pyimport_conda("pyproj", "pyproj=3.7.0")
+    pyimport_conda("pyproj", "pyproj=3.6.0")
     pyimport_conda("rasterio", "rasterio=1.4.2")
     skimage = "scikit-image=0.24.0"
     copy!(sk_measure, pyimport_conda("skimage.measure", skimage))
