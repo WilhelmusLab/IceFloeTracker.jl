@@ -95,8 +95,6 @@ function __init__()
     copy!(sk_measure, pyimport_conda("skimage.measure", skimage))
     copy!(sk_exposure, pyimport_conda("skimage.exposure", skimage))
     copy!(sk_morphology, pyimport_conda("skimage.morphology", skimage))
-    pyimport_conda("jinja2", "jinja2=3.1.2")
-    pyimport_conda("pandas", "pandas=2")
     @pyinclude(joinpath(@__DIR__, "latlon.py"))
     copy!(getlatlon, py"getlatlon")
     return nothing
