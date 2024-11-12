@@ -9,6 +9,7 @@ using Random
 using Test
 using TestImages
 using TiledIteration
+using ZipFile
 include("test_error_rate.jl")
 include("config.jl")
 

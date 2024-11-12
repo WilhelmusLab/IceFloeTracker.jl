@@ -121,6 +121,38 @@ function imextendedmin(img::AbstractArray; h::Int=2, conn::Int=2)::BitMatrix
 end
 
 """
+    impose_minima(I::AbstractArray{T}, BW::AbstractArray{Bool}) where {T<:Integer}
+
+Use morphological reconstruction to enforce minima on the input image `I` at the positions where the binary mask `BW` is non-zero.
+
+It supports both integer and grayscale images using different implementations for each.
+"""
+function impose_minima(I::AbstractArray{T}, BW::AbstractArray{Bool}) where {T<:Integer}
+    marker = 255 .* BW
+    mask = imcomplement(min.(I .+ 1, 255 .- marker))
+    reconstructed = sk_morphology.reconstruction(marker, mask)
+    return IceFloeTracker.imcomplement(Int.(reconstructed))
+end
+
+function impose_minima(
+    I::AbstractArray{T}, BW::AbstractMatrix{Bool}
+) where {T<:AbstractFloat}
+    # compute shift
+    a, b = extrema(I)
+    rng = b - a
+    h = rng == 0 ? 0.1 : rng / 1000
+
+    marker = -Inf * BW .+ (Inf * .!BW)
+    mask = min.(I .+ h, marker)
+
+    return 1 .- sk_morphology.reconstruction(1 .- marker, 1 .- mask)
+end
+
+function imregionalmin(A, conn=2)
+    return ImageMorphology.local_minima(A; connectivity=conn) .> 0
+end
+
+"""
     bwdist(bwimg)
 
 Distance transform for binary image `bwdist`.
@@ -142,11 +174,11 @@ function padnhood(img, I, nhood)
     tofill = SizedMatrix{3,3}(zeros(Int, 3, 3))
     @views if I == CartesianIndex(1, 1) # top left corner`
         tofill[2:3, 2:3] = img[nhood]
-    elseif I == CartesianIndex(maxr, 1) # bottom left corner 
+    elseif I == CartesianIndex(maxr, 1) # bottom left corner
         tofill[1:2, 2:3] = img[nhood]
-    elseif I == CartesianIndex(1, maxc) # top right corner 
+    elseif I == CartesianIndex(1, maxc) # top right corner
         tofill[2:3, 1:2] = img[nhood]
-    elseif I == CartesianIndex(maxr, maxc) # bottom right corner 
+    elseif I == CartesianIndex(maxr, maxc) # bottom right corner
         tofill[1:2, 1:2] = img[nhood]
     elseif I[1] == 1 # top edge (first row)
         tofill[2:3, 1:3] = img[nhood]
@@ -169,10 +201,10 @@ Get decimal representation of a bit vector `v` with the leading bit at its leftm
 
 Example
 ```
-julia> _bin9todec([0 0 0 0 0 0 0 0 0])    
+julia> _bin9todec([0 0 0 0 0 0 0 0 0])
 0
 
-julia> _bin9todec([1 1 1 1 1 1 1 1 1])    
+julia> _bin9todec([1 1 1 1 1 1 1 1 1])
 511
 ```
 """
