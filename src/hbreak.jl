@@ -61,7 +61,8 @@ hbreak(img) = hbreak!(copy(img))
 Inplace version of `hbreak`. See also [`hbreak`](@ref).
 """
 function hbreak!(img::T)::T where {T<:AbstractArray{Bool}}
-    f = x -> get(make_hbreak_dict(), x, false)
+    hbreak_dict = make_hbreak_dict()
+    f = x -> get(hbreak_dict, x, false)
     R = CartesianIndices(img)
     I_first, I_last = first(R), last(R)
     Δ = CartesianIndex(1, 1)
