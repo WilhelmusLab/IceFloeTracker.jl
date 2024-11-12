@@ -1,19 +1,10 @@
 function to_uint8(arr::AbstractMatrix{T}) where {T<:Union{AbstractFloat,Int,Signed}}
-    img = to_uint8.(arr)
-    return img
+    return to_uint8.(arr)
 end
 
-"""
-    rgb2gray(rgbchannels::Array{Float64, 3})
-
-Convert an array of RGB channel data to grayscale in the range [0, 255].
-"""
-function rgb2gray(rgbchannels::Array{Float64,3})
-    # Could probably use Gray if image is in right format, but that is the challenge. CP
-    r, g, b = [to_uint8(rgbchannels[:, :, i]) for i in 1:3]
-    # Reusing the r array to store the equalized gray image
-    r .= to_uint8(0.2989 * r .+ 0.5870 * g .+ 0.1140 * b)
-    return r
+function to_uint8(num::T) where {T<:Union{AbstractFloat,Int,Signed}}
+    num = Int(round(num, RoundNearestTiesAway))
+    return clamp(num, 0, 255)
 end
 
 function anisotropic_diffusion_3D(I)
@@ -279,6 +270,21 @@ function _get_false_color_cloudmasked(;
 end
 
 """
+    rgb2gray_uint8(rgbchannels::Array{Float64, 3})
+
+Convert an array of RGB channel data to grayscale in the range [0, 255].
+
+For preprocessing_tiling: (equalized_gray=rgb2gray_uint8(rgbchannels), gammagreen=rgbchannels[:, :, 2]))
+"""
+function rgb2gray_uint8(rgbchannels)
+    # Could probably use Gray if image is in right format, but that is the challenge. CP
+    r, g, b = [to_uint8(rgbchannels[:, :, i]) for i in 1:3]
+    # Reusing the r array to store the equalized gray image
+    r .= to_uint8(0.2989 * r .+ 0.5870 * g .+ 0.1140 * b)
+    return r
+end
+
+"""
     rgb2gray(img::Matrix{RGB{Float64}})
 
 Convert an RGB image to grayscale in the range [0, 255].
@@ -313,9 +319,8 @@ Parsimonious version of `imhist` that uses the maximum value of the image to det
 """
 function imhistp(img)
     nbins = nextpow(2, maximum(img) + 1)
-    return _imhist(img, 0:(nbins-1))
+    return _imhist(img, 0:(nbins - 1))
 end
-
 
 """
     histeq(img)
