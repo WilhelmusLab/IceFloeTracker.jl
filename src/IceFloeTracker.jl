@@ -85,7 +85,7 @@ function __init__()
         copy!(cv2, pyimport("cv2"))
     catch e
         pyimport("subprocess").run([
-            "python", "-m", "pip", "install", "opencv-python==4.10.0.84"
+            "python", "-m", "pip", "install", "opencv-python==4.9.0.80"
         ])
     end
     copy!(sk_measure, pyimport_conda("skimage.measure", "scikit-image=0.24.0"))
