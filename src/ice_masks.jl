@@ -80,5 +80,20 @@ function get_ice_masks(
 
         ice_mask[tile...] .= (morph_residue_seglabels .== floes_label)
     end
-    return (icemask=ice_mask, bin=binarized_tiling)
+        
+    last_tile = tiles[end]
+    morph_residue_seglabels = kmeans_segmentation(Gray.(morph_residue[last_tile...] / 255))
+    last_floes_label = get_nlabel(
+        fc_landmasked[last_tile...],
+        morph_residue_seglabels,
+        factor;
+        band_7_threshold=band_7_threshold,
+        band_2_threshold=band_2_threshold,
+        band_1_threshold=band_1_threshold,
+        band_7_threshold_relaxed=band_7_threshold_relaxed,
+        band_1_threshold_relaxed=band_1_threshold_relaxed,
+        possible_ice_threshold=possible_ice_threshold,
+    )
+
+    return (icemask=ice_mask, bin=binarized_tiling .> 0, label=last_floes_label)
 end
