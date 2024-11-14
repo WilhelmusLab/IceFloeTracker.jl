@@ -17,8 +17,7 @@ function kmeans_segmentation(
     segmented = kmeans_segmentation(gray_image; k=k, maxiter=maxiter)
 
     ## Isolate ice floes and contrast from background
-    nlabel = StatsBase.mode(segmented[ice_labels])
-    segmented_ice = segmented .== nlabel
+    segmented_ice = get_segmented_ice(segmented, ice_labels)
     return segmented_ice
 end
 
@@ -40,7 +39,7 @@ function kmeans_segmentation(
     return segmented
 end
 
-function get_segmented_ice(segmented::BitMatrix, ice_labels::Vector{Int64})
+function get_segmented_ice(segmented::Matrix{Int64}, ice_labels::Vector{Int64})
     ## Isolate ice floes and contrast from background
     nlabel = StatsBase.mode(segmented[ice_labels])
     segmented_ice = segmented .== nlabel

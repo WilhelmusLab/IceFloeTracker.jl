@@ -4,7 +4,6 @@ function to_uint8(arr::AbstractMatrix{T}) where {T<:AbstractFloat}
     return img
 end
 
-
 function anisotropic_diffusion_3D(I)
     rgbchannels = get_rgb_channels(I)
 
@@ -13,10 +12,11 @@ function anisotropic_diffusion_3D(I)
     end
 
     return rgbchannels
-
 end
 
-function anisotropic_diffusion_2D(I::AbstractMatrix{T}; gradient_threshold::Union{T,Nothing}=nothing, niter::Int=1) where {T}
+function anisotropic_diffusion_2D(
+    I::AbstractMatrix{T}; gradient_threshold::Union{T,Nothing}=nothing, niter::Int=1
+) where {T}
     if eltype(I) <: Int
         I = Gray.(I ./ 255)
     end
@@ -34,11 +34,13 @@ function anisotropic_diffusion_2D(I::AbstractMatrix{T}; gradient_threshold::Unio
 
     for _ in 1:niter
         # These are zero-indexed offset arrays
-        diff_img_north = padded_img[0:end-1, 1:end-1] .- padded_img[1:end, 1:end-1]
-        diff_img_east = padded_img[1:end-1, 1:end] .- padded_img[1:end-1, 0:end-1]
-        diff_img_nw = padded_img[0:end-2, 0:end-2] .- I
-        diff_img_ne = padded_img[0:end-2, 2:end] .- I
-        diff_img_sw = padded_img[2:end, 0:end-2] .- I
+        diff_img_north =
+            padded_img[0:(end - 1), 1:(end - 1)] .- padded_img[1:end, 1:(end - 1)]
+        diff_img_east =
+            padded_img[1:(end - 1), 1:end] .- padded_img[1:(end - 1), 0:(end - 1)]
+        diff_img_nw = padded_img[0:(end - 2), 0:(end - 2)] .- I
+        diff_img_ne = padded_img[0:(end - 2), 2:end] .- I
+        diff_img_sw = padded_img[2:end, 0:(end - 2)] .- I
         diff_img_se = padded_img[2:end, 2:end] .- I
 
         # Exponential conduction coefficients
@@ -49,7 +51,6 @@ function anisotropic_diffusion_2D(I::AbstractMatrix{T}; gradient_threshold::Unio
         conduct_coeff_sw = exp.(-(abs.(diff_img_sw) ./ gradient_threshold) .^ 2)
         conduct_coeff_se = exp.(-(abs.(diff_img_se) ./ gradient_threshold) .^ 2)
 
-
         # Flux calculations
         flux_north = conduct_coeff_north .* diff_img_north
         flux_east = conduct_coeff_east .* diff_img_east
@@ -59,27 +60,23 @@ function anisotropic_diffusion_2D(I::AbstractMatrix{T}; gradient_threshold::Unio
         flux_se = conduct_coeff_se .* diff_img_se
 
         # Back to regular 1-indexed arrays
-        flux_north_diff = flux_north[1:end-1, :] .- flux_north[2:end, :]
-        flux_east_diff = flux_east[:, 2:end] .- flux_east[:, 1:end-1]
+        flux_north_diff = flux_north[1:(end - 1), :] .- flux_north[2:end, :]
+        flux_east_diff = flux_east[:, 2:end] .- flux_east[:, 1:(end - 1)]
 
         # Discrete PDE solution
         sum_ = (1 / (dd^2)) .* (flux_nw .+ flux_ne .+ flux_sw .+ flux_se)
         I = I .+ diffusion_rate .* (flux_north_diff .- flux_north_diff .+ sum_)
-
     end
 
     return I
 end
 
-
 function imshow(img)
     if typeof(img) <: BitMatrix
         return Gray.(img)
     end
-    Gray.(img ./ 255)
+    return Gray.(img ./ 255)
 end
-
-
 
 function adapthisteq(img::Matrix{T}, nbins=256, clip=0.01) where {T}
     # Step 1: Normalize the image to [0, 1] based on its own min and max
@@ -88,13 +85,15 @@ function adapthisteq(img::Matrix{T}, nbins=256, clip=0.01) where {T}
 
     # Step 2: Apply adaptive histogram equalization. equalize_adapthist handles the tiling to 1/8 of the image size (equivalent to 8x8 blocks in MATLAB)
     equalized_image = sk_exposure.equalize_adapthist(
-        normalized_image,
+        normalized_image;
         clip_limit=clip,  # Equivalent to MATLAB's 'ClipLimit'
-        nbins=nbins         # Number of histogram bins. 255 is used to match the default in MATLAB script
+        nbins=nbins,         # Number of histogram bins. 255 is used to match the default in MATLAB script
     )
 
     # Step 3: Rescale the image back to the original range [image_min, image_max]
-    final_image = sk_exposure.rescale_intensity(equalized_image, in_range="image", out_range=(image_min, image_max))
+    final_image = sk_exposure.rescale_intensity(
+        equalized_image; in_range="image", out_range=(image_min, image_max)
+    )
 
     # Convert back to the original data type if necessary
     final_image = to_uint8(final_image)
@@ -120,9 +119,8 @@ function get_rgb_channels(img)
     greenc = green.(img) * 255
     bluec = blue.(img) * 255
 
-    return cat(redc, greenc, bluec, dims=3)
+    return cat(redc, greenc, bluec; dims=3)
 end
-
 
 function _process_image_tiles(
     true_color_image,
@@ -155,7 +153,6 @@ function _process_image_tiles(
 
     return rgbchannels
 end
-
 
 """
     conditional_histeq(
@@ -192,7 +189,7 @@ function conditional_histeq(
     white_threshold::AbstractFloat=25.5,
     white_fraction_threshold::AbstractFloat=0.4,
 )
-    tiles = get_tiles(true_color_image, rblocks=rblocks, cblocks=cblocks)
+    tiles = get_tiles(true_color_image; rblocks=rblocks, cblocks=cblocks)
     rgbchannels_equalized = _process_image_tiles(
         true_color_image,
         clouds_red,
@@ -203,7 +200,6 @@ function conditional_histeq(
     )
 
     return rgbchannels_equalized
-
 end
 
 """
@@ -227,7 +223,6 @@ function conditional_histeq(
     white_threshold::AbstractFloat=25.5,
     white_fraction_threshold::AbstractFloat=0.4,
 )
-
     side_length = IceFloeTracker.get_optimal_tile_size(side_length, size(true_color_image))
 
     tiles = IceFloeTracker.get_tiles(true_color_image, side_length)
@@ -242,16 +237,16 @@ function conditional_histeq(
     )
 
     return rgbchannels_equalized
-
 end
 
-function _get_false_color_cloudmasked(; false_color_image,
+function _get_false_color_cloudmasked(;
+    false_color_image,
     prelim_threshold=110.0,
     band_7_threshold=200.0,
     band_2_threshold=190.0,
 )
     mask_cloud_ice, clouds_view = IceFloeTracker._get_masks(
-        false_color_image,
+        false_color_image;
         prelim_threshold=prelim_threshold,
         band_7_threshold=band_7_threshold,
         band_2_threshold=band_2_threshold,
@@ -278,4 +273,48 @@ Convert an RGB image to grayscale in the range [0, 255].
 """
 function rgb2gray(img::Matrix{RGB{Float64}})
     return round.(Int, Gray.(img) * 255)
+end
+
+function _imhist(img, rng)
+    d = Dict(k => 0 for k in rng)
+    for i in img
+        d[i] = d[i] + 1
+    end
+    k, heights = collect.([keys(d), values(d)])
+    order = sortperm(k)
+    k, heights = k[order], heights[order]
+    return k, heights
+end
+
+function imhist(img, imgtype::AbstractString="uint8")
+
+    # TODO: add validation for arr: either uint8 0:255 or grayscale 0:1
+    rng = imgtype == "uint8" ? range(0, 255) : range(0; stop=1, length=256)
+    # use range(0, stop=1, length=256) for grayscale images
+
+    return _imhist(img, rng)
+end
+
+"""
+    imhistp(img)
+Parsimonious version of `imhist` that uses the maximum value of the image to determine the number of bins.
+"""
+function imhistp(img)
+    nbins = nextpow(2, maximum(img) + 1)
+    return _imhist(img, 0:(nbins-1))
+end
+
+
+"""
+    histeq(img)
+Histogram equalization of `img` according to [1].
+[1] R. C. Gonzalez and R. E. Woods. Digital Image Processing (3rd Edition). Upper Saddle River, NJ, USA: Prentice-Hall, 2006.
+"""
+function histeq(img::S)::S where {S<:AbstractArray{<:Integer}}
+    k, heights = imhistp(img)
+    cdf = last(k) * cumsum(heights) / sum(heights)
+    s = round.(Int, cdf, RoundNearestTiesAway)
+    mapping = Dict(zip(k, s))
+    T(r) = mapping[r]
+    return T.(img)
 end

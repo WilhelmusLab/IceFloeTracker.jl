@@ -23,7 +23,7 @@ testnames = [n[6:(end-3)] for n in alltests]
 
 to_test = alltests # uncomment this line to run all tests or add individual files below
 [
-# "test-create-landmask.jl",
+# "test-latlon.jl",
 # "test-create-cloudmask.jl",
 # "test-normalize-image.jl",
 # "test-persist.jl",
