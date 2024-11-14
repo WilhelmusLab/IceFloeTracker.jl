@@ -71,7 +71,7 @@ include("branch.jl")
 include("special_strels.jl")
 include("tilingutils.jl")
 include("histogram_equalization.jl")
-include("new2-new3-final.jl")
+include("regularize-final.jl")
 include("morph_fill.jl")
 include("imcomplement.jl")
 
