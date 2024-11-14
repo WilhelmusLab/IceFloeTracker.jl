@@ -31,7 +31,7 @@ function watershed2(morph_residue, segment_mask, ice_mask)
     mr_reconst = fetch(task1)
     gmag = fetch(task2)
 
-    minimamarkers = Bool.(mr_reconst) .| segment_mask .| ice_mask
+    minimamarkers = mr_reconst .| segment_mask .| ice_mask
     gmag .= impose_minima(gmag, minimamarkers)
     cc = label_components(imregionalmin(gmag), trues(3, 3))
     w = ImageSegmentation.watershed(morph_residue, cc)
