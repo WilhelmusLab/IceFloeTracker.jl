@@ -1,11 +1,13 @@
 include("./lut/lutfill.jl")
 
+const LUTFILL = make_lutfill()
+
 function _fill_operator_lut(
     I::CartesianIndex{2},
     img::AbstractArray{Bool},
     nhood::CartesianIndices{2,Tuple{UnitRange{Int64},UnitRange{Int64}}},
 )
-    return _operator_lut(I, img, nhood, make_lutfill())
+    return _operator_lut(I, img, nhood, LUTFILL)
 end
 
 """

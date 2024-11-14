@@ -109,7 +109,19 @@ function get_holes(img, min_opening_area=20, se=IceFloeTracker.se_disk4())
     out = IceFloeTracker.MorphSE.fill_holes(out)
 
     return out .!= img
+end
 
+function fillholes!(img)
+    img[get_holes(img)] .= true
+    return nothing
+end
+
+function get_segment_mask(ice_mask, tiled_binmask)
+    Threads.@threads for img in (ice_mask, tiled_binmask)
+        fillholes!(img)
+    end
+    segment_mask = ice_mask .&& tiled_binmask
+    return segment_mask
 end
 
 function branchbridge(img)
@@ -125,7 +137,9 @@ Compute the gradient magnitude of an image using the Sobel operator.
 """
 function imgradientmag(img)
     h = centered([-1 0 1; -2 0 2; -1 0 1]')
-    Gx = imfilter(img, h', "replicate")
-    Gy = imfilter(img, h, "replicate")
+    Gx_future = Threads.@spawn IceFloeTracker.imfilter(img, h', "replicate")
+    Gy_future = Threads.@spawn IceFloeTracker.imfilter(img, h, "replicate")
+    Gx = fetch(Gx_future)
+    Gy = fetch(Gy_future)
     return hypot.(Gx, Gy)
 end
