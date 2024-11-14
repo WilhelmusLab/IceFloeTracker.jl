@@ -6,24 +6,31 @@ using IceFloeTracker.MorphSE: dilate, erode, fill_holes
 # TODO: Add tests for get_new2, get_new3, get_final
 
 """
-    getnew2(morph_residue, local_maxima_mask, factor, segment_mask, L0mask)
-Calculate the new image `new2` from the input image `morph_residue`.
+    regularize_fill_holes(img, local_maxima_mask, factor, segment_mask, L0mask)
+
+Regularize `img` by:
+    1. increasing the maxima of `img` by a factor of `factor`
+    2. filtering `img` at positions where `segment_mask` and `L0mask` are true
+    3. filling holes
+
 # Arguments
-- `morph_residue`: The morphological residue image.
+- `img`: The morphological residue image.
 - `local_maxima_mask`: The local maxima mask.
 - `factor`: The factor to apply to the local maxima mask.
 - `segment_mask`: The segment mask -- intersection of bw1 and bw2 in first tiled workflow of `master.m`.
 - `L0mask`: zero-labeled pixels from watershed.
 """
-function get_new2(morph_residue, local_maxima_mask, factor, segment_mask, L0mask)
-    new2 = to_uint8(morph_residue .+ local_maxima_mask .* factor)
+function regularize_fill_holes(img, local_maxima_mask, factor, segment_mask, L0mask)
+    new2 = to_uint8(img .+ local_maxima_mask .* factor)
     new2[segment_mask .|| L0mask] .= 0
     return fill_holes(new2)
 end
 
 """
-    get_new3(new2, L0mask, radius, amount, local_maxima_mask, factor, segment_mask)
-Calculate the new image `new3` from the input image `new2`.
+    regularize_sharpening(img, L0mask, radius, amount, local_maxima_mask, factor, segment_mask, se)
+
+Regularize `img` via sharpening, filtering, reconstruction, and maxima elevating.
+
 # Arguments
 - `img`: The input image.
 - `L0mask`: zero-labeled pixels from watershed.
@@ -33,7 +40,7 @@ Calculate the new image `new3` from the input image `new2`.
 - `factor`: The factor to apply to the local maxima mask.
 - `segment_mask`: The segment mask -- intersection of bw1 and bw2 in first tiled workflow of `master.m`.
 """
-function get_new3(img, L0mask, radius, amount, local_maxima_mask, factor, segment_mask, se)
+function regularize_sharpening(img, L0mask, radius, amount, local_maxima_mask, factor, segment_mask, se)
     new3 = unsharp_mask(img, radius, amount, 255)
     new3[L0mask] .= 0
     new3 = reconstruct(new3, se, "dilation", false)
