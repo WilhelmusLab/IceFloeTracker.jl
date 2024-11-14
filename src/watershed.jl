@@ -8,13 +8,18 @@ function watershed1(bw::T) where {T<:Union{BitMatrix,AbstractMatrix{Bool}}}
     return Images.isboundary(lmap)
 end
 
-function watershed2(morph_residue, segment_mask, se=se_disk20())
+function _reconst_watershed(morph_residue::Matrix{<:Integer}, se::Matrix{Bool}=se_disk20())
+    mr_reconst = to_uint8(IceFloeTracker.reconstruct(morph_residue, se, "erosion", false))
+    mr_reconst .= to_uint8(IceFloeTracker.reconstruct(mr_reconst, se, "dilation", true))
+    mr_reconst .= imcomplement(mr_reconst)
+    return mr_reconst
+end
+
+function watershed2(morph_residue, segment_mask, ice_mask)
     # Task 1: Reconstruct morph_residue
     task1 = Threads.@spawn begin
-        mr_reconst = reconstruct_erosion(morph_residue, se)
-        mr_reconst .= reconstruct(mr_reconst, se, "dilation", true)
-        mr_reconst .= imcomplement(mr_reconst)
-        mr_reconst .= ImageMorphology.local_maxima(mr_reconst; connectivity=2) .> 0
+        mr_reconst = _reconst_watershed(morph_residue)
+        mr_reconst = ImageMorphology.local_maxima(mr_reconst; connectivity=2) .> 0
     end
 
     # Task 2: Calculate gradient magnitude
