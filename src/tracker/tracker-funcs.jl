@@ -103,7 +103,7 @@ end
 
 Sort the floes in `tracked` by area in descending order.
 """
-function sort!(tracked::Tracked)
+function Base.sort!(tracked::Tracked)
     for container in tracked.data
         p = sortperm(container.props1, "area"; rev=true)
         for nm in namesof(container)
