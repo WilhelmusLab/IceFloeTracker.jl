@@ -1,4 +1,4 @@
-using IceFloeTracker: imcomplement, reconstruct, reconstruct_erosion
+using IceFloeTracker: imcomplement, reconstruct
 using ZipFile
 
 r = ZipFile.Reader("test_inputs/coins.zip")
@@ -33,10 +33,5 @@ end
     @testset "close_by_reconstruction" begin
         test_cases = [(coins, 7599858)]
         run_tests(test_cases, (img, se) -> _reconstruct(img, se, "dilation"), se_disk1)
-    end
-
-    @testset "reconstruct_erosion" begin
-        test_cases = [(coins, 11179481)]
-        run_tests(test_cases, reconstruct_erosion, se_disk1)
     end
 end
