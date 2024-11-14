@@ -81,7 +81,8 @@ function get_ice_masks(
 
         ice_mask[tile...] .= (morph_residue_seglabels .== floes_label)
     end
-        
+       
+    # TODO: remove this after deciding how to handle missing ice labels
     last_tile = tiles[end]
     morph_residue_seglabels = kmeans_segmentation(Gray.(morph_residue[last_tile...] / 255))
     last_floes_label = get_nlabel(
