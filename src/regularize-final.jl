@@ -52,6 +52,15 @@ end
     get_final(img, label, segment_mask, se_erosion, se_dilation)
 
 Final processing following the tiling workflow.
+
+# Arguments
+- `img`: The input image.
+- `label`: Mode of most common label in the find_ice_labels workflow.
+- `segment_mask`: The segment mask.
+- `se_erosion`: structuring element for erosion.
+- `se_dilation`: structuring element for dilation.
+- `apply_segment_mask=true`: Whether to filter `img` the segment mask.
+
 """
 function get_final(img, label, segment_mask, se_erosion, se_dilation)
     img = hbreak(img)
