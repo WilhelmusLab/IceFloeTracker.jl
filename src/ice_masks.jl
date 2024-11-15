@@ -14,7 +14,7 @@
     factor,
 )
 
-Get the ice masks from the falsecolor image and morphological residue given a particualr tiling configuration.
+Get the ice masks from the falsecolor image and morphological residue given a particular tiling configuration.
 
 # Arguments
 - `falsecolor_image`: The falsecolor image.
