@@ -86,19 +86,16 @@ const IFTVERSION = get_version_from_toml()
 const sk_measure = PyNULL()
 const sk_morphology = PyNULL()
 const sk_exposure = PyNULL()
-const getlatlon = PyNULL()
+const imfill = PyNULL()
 
 function __init__()
     skimage = "scikit-image=0.24.0"
     copy!(sk_measure, pyimport_conda("skimage.measure", skimage))
     copy!(sk_exposure, pyimport_conda("skimage.exposure", skimage))
     copy!(sk_morphology, pyimport_conda("skimage.morphology", skimage))
-    pyimport_conda("pyproj", "pyproj=3.6.0")
-    pyimport_conda("rasterio", "rasterio=1.3.7")
-    pyimport_conda("jinja2", "jinja2=3.1.2")
-    pyimport_conda("pandas", "pandas=2")
-    @pyinclude(joinpath(@__DIR__, "latlon.py"))
-    copy!(getlatlon, py"getlatlon")
+    pyimport_conda("cv2", "opencv=4.10.0")
+    @pyinclude(joinpath(@__DIR__, "imfill.py"))
+    copy!(imfill, py"imfill")
     return nothing
 end
 
