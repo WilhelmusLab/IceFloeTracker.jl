@@ -1,9 +1,7 @@
 using IceFloeTracker: unsharp_mask, to_uint8, reconstruct, hbreak, to_uint8, morph_fill
 using IceFloeTracker.MorphSE: dilate, erode, fill_holes
 
-# TODO: choose better names
-
-# TODO: Add tests for get_new2, get_new3, get_final
+# TODO: Add tests for regularize_fill_holes, regularize_sharpening, get_final
 
 """
     regularize_fill_holes(img, local_maxima_mask, factor, segment_mask, L0mask)
