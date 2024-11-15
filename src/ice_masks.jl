@@ -37,10 +37,10 @@ Get the ice masks from the falsecolor image and morphological residue given a pa
   - `label`: Most frequent label in the ice mask.
 """
 function get_ice_masks(
-    falsecolor_image,
-    morph_residue,
+    falsecolor_image::Matrix{RGB{N0f8}},
+    morph_residue::Matrix{<:Integer},
     landmask::BitMatrix,
-    tiles,
+    tiles::S,
     binarize::Bool=true;
     band_7_threshold::T=5,
     band_2_threshold::T=230,
@@ -49,13 +49,12 @@ function get_ice_masks(
     band_1_threshold_relaxed::T=190,
     possible_ice_threshold::T=75,
     factor::T=255,
-) where {T<:Integer}
+) where {T<:Integer,S<:AbstractMatrix{Tuple{UnitRange{Int64},UnitRange{Int64}}}}
 
     # Make canvases
-    ice_mask = BitMatrix(zeros(Bool, size(falsecolor_image)))
-    if binarize
-        binarized_tiling = zeros(Int, size(falsecolor_image))
-    end
+    sz = size(falsecolor_image)
+    ice_mask = BitMatrix(zeros(Bool, sz))
+    binarized_tiling = zeros(Int, sz)
 
     fc_landmasked = apply_landmask(falsecolor_image, landmask)
 
@@ -67,6 +66,7 @@ function get_ice_masks(
 
         morph_residue_seglabels = kmeans_segmentation(Gray.(morph_residue[tile...] / 255))
 
+        # TODO: handle case where get_nlabel returns missing
         floes_label = get_nlabel(
             fc_landmasked[tile...],
             morph_residue_seglabels,
@@ -82,20 +82,5 @@ function get_ice_masks(
         ice_mask[tile...] .= (morph_residue_seglabels .== floes_label)
     end
        
-    # TODO: remove this after deciding how to handle missing ice labels
-    last_tile = tiles[end]
-    morph_residue_seglabels = kmeans_segmentation(Gray.(morph_residue[last_tile...] / 255))
-    last_floes_label = get_nlabel(
-        fc_landmasked[last_tile...],
-        morph_residue_seglabels,
-        factor;
-        band_7_threshold=band_7_threshold,
-        band_2_threshold=band_2_threshold,
-        band_1_threshold=band_1_threshold,
-        band_7_threshold_relaxed=band_7_threshold_relaxed,
-        band_1_threshold_relaxed=band_1_threshold_relaxed,
-        possible_ice_threshold=possible_ice_threshold,
-    )
-
-    return (icemask=ice_mask, bin=binarized_tiling .> 0, label=last_floes_label)
+    return (icemask=ice_mask, bin=binarized_tiling .> 0)
 end
