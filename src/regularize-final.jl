@@ -60,31 +60,40 @@ Final processing following the tiling workflow.
 - `apply_segment_mask=true`: Whether to filter `img` the segment mask.
 
 """
-function get_final(img, label, segment_mask, se_erosion, se_dilation)
-    img = hbreak(img)
+function get_final(
+    # this function is used in preprocessing_tiling
+    img, segment_mask, se_erosion, se_dilation, apply_segment_mask::Bool=true
+)
+    _img = hbreak(img)
 
     # slow for big images
-    img = morph_fill(img)
+    _img .= morph_fill(_img)
 
-    # only works for label 1, whose value tends to be arbirary.
-    # Added for consistency with MASTER.m. CP
-    if label == 1
-        img[segment_mask] .= false
-    end
+    # TODO: decide on criteria for applying segment mask
+    apply_segment_mask && (_img[segment_mask] .= false)
 
     # tends to fill more than matlabs imfill
-    img = fill_holes(img)
+    _img .= IceFloeTracker.MorphSE.fill_holes(_img)
 
-    marker = branch(img)
+    # marker image
+    _img .= branch(_img)
 
-    mask = erode(marker, se_erosion)
-    mask = dilate(mask, se_dilation)
+    #= opening to remove noise while preserving shape/size
+    Note the different structuring elements for erosion and dilation =#
+    mask = sk_morphology.erosion(_img, se_erosion)
+    mask .= sk_morphology.dilation(mask, se_dilation)
 
-    # Added for consistency with MASTER.m. CP
-    if label == 1
-        mask[1] = false
-    end
-
-    final = sk_morphology.reconstruction(marker, mask)
+    # Restore shape of floes based on the cleaned up `mask`
+    final = IceFloeTracker.MorphSE.mreconstruct(IceFloeTracker.MorphSE.dilate, _img, mask)
     return final
+end
+
+function get_combined_new(
+    morph_residue, local_maxima_mask, segment_mask, L0mask, se; factor, radius, amount
+)
+    _new2 = regularize_fill_holes(morph_residue, local_maxima_mask, factor, segment_mask, L0mask)
+    _new3 = regularize_sharpening(
+        _new2, L0mask, radius, amount, local_maxima_mask, factor, segment_mask, se
+    )
+    return _new3
 end
