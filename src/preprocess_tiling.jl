@@ -1,208 +1,179 @@
+using Images
+using IceFloeTracker:
+    get_tiles,
+    _get_masks,
+    _process_image_tiles,
+    to_uint8,
+    unsharp_mask,
+    imbrighten,
+    imadjust,
+    get_ice_masks,
+    imcomplement,
+    adjustgamma,
+    to_uint8,
+    get_holes,
+    get_segment_mask,
+    se_disk4,
+    se_disk2,
+    branchbridge,
+    fillholes!,
+    get_new2,
+    get_new3,
+    get_final,
+    apply_landmask,
+    kmeans_segmentation,
+    get_nlabel,
+    get_brighten_mask,
+    get_holes,
+    reconstruct,
+    imgradientmag,
+    histeq,
+    impose_minima,
+    label_components,
+    imregionalmin,
+    watershed2,
+    get_ice_masks,
+    imbinarize,
+    get_combined_new
 
-begin
-    using Serialization
-    using Images
-    using IceFloeTracker:
-        get_tiles,
-        _get_masks,
-        _process_image_tiles,
-        to_uint8,
-        unsharp_mask,
-        reconstruct_erosion,
-        imbrighten,
-        imadjust,
-        get_ice_masks,
-        imcomplement,
-        adjustgamma,
-        to_uint8,
-        get_holes,
-        get_segment_mask,
-        se_disk4
-
-    tc_img = load("test/test_inputs/NE_Greenland_truecolor.2020162.aqua.250m.tiff")
-    ref_img = deserialize("ref_image.jls")
-    landmask = deserialize("landmasks.jls")
-    tiles = IceFloeTracker.get_tiles(ref_img; rblocks=8, cblocks=6)
-
-    # ice_labels_thresholds = (
-    prelim_threshold = 110.0
-    band_7_threshold = 200.0
-    band_2_threshold = 190.0
-    ratio_lower = 0.0
-    ratio_upper = 0.75
-    use_uint8 = true
-    # )
-
-    # adapthisteq params
-    white_threshold = 25.5
-    entropy_threshold = 4
-    white_fraction_threshold = 0.4
-
-    # adjustgamma params
-    gamma = 1.5
-    gamma_factor = 1.3
-    gamma_threshold = 220
-end
-
-#= Preprocesing with tiling
-
-Inputs
-
-- ref_img: Reference image
-- tc_img
-- landmask: Landmask
-- tiling
-- ice_labels_thresholds
-function preprocess_tiling(ref_image, true_color_image, landmask, ice_labels_thresholds)
-=#
-#= Get these two masks
-clouds_view is masked with mask_cloud_ice =#
-# Step 1/2
-begin
-    mask_cloud_ice, clouds_view = _get_masks(
-        ref_img;
-        prelim_threshold=prelim_threshold,
-        band_7_threshold=band_7_threshold,
-        band_2_threshold=band_2_threshold,
-        ratio_lower=ratio_lower,
-        ratio_upper=ratio_upper,
-        use_uint8=use_uint8,
-    )
-    clouds_view .= .!mask_cloud_ice .* clouds_view
-    @assert sum(mask_cloud_ice) == 23385158
-    @assert 4177081 == sum(.!mask_cloud_ice .* clouds_view)
-
-    # Step 3: Get clouds_red for adaptive histogram equalization
-    ref_img_cloudmasked = ref_img .* .!clouds_view
-    # channelview(ref_img_cloudmasked)[3, :, :] * 255 |> sum
-end
-
-# Step 4: Tiled adaptive histogram equalization
-clouds_red = to_uint8(float64.(red.(ref_img_cloudmasked) .* 255))
-clouds_red[.!landmask.dilated] .= 0
-
-@time equalized_gray, gammagreen = _process_image_tiles(
-    tc_img, clouds_red, tiles, white_threshold, entropy_threshold, white_fraction_threshold
+# Sample input parameters expected by the main function
+ice_labels_thresholds = (
+    prelim_threshold=110.0,
+    band_7_threshold=200.0,
+    band_2_threshold=190.0,
+    ratio_lower=0.0,
+    ratio_upper=0.75,
+    use_uint8=true,
 )
 
-# Step 5: Remove clouds from equalized_gray
-begin
+adapthisteq_params = (
+    white_threshold=25.5, entropy_threshold=4, white_fraction_threshold=0.4
+)
+
+adjust_gamma_params = (gamma=1.5, gamma_factor=1.3, gamma_threshold=220)
+
+structuring_elements = (
+    se_disk1=collect(IceFloeTracker.MorphSE.StructuringElements.strel_diamond((3, 3))),
+    se_disk2=se_disk2(),
+    se_disk4=se_disk4(),
+)
+
+unsharp_mask_params = (radius=10, amount=2.0, factor=255.0)
+
+brighten_factor = 0.1
+
+ice_masks_params = (
+    band_7_threshold=5,
+    band_2_threshold=230,
+    band_1_threshold=240,
+    band_7_threshold_relaxed=10,
+    band_1_threshold_relaxed=190,
+    possible_ice_threshold=75,
+    factor=255,
+)
+
+prelim_icemask_params = (radius=10, amount=2, factor=0.5)
+
+function preprocess_tiling(
+    ref_image,
+    true_color_image,
+    landmask,
+    tiles,
+    ice_labels_thresholds,
+    adapthisteq_params,
+    adjust_gamma_params,
+    structuring_elements,
+    unsharp_mask_params,
+    ice_masks_params,
+    prelim_icemask_params,
+    brighten_factor,
+)
+    @info "Step 1/2: Get masks"
+    begin
+        mask_cloud_ice, clouds_view = _get_masks(
+            float64.(ref_img); ice_labels_thresholds...
+        )
+        clouds_view .= .!mask_cloud_ice .* clouds_view
+
+        # Get clouds_red for adaptive histogram equalization
+        ref_img_cloudmasked = ref_img .* .!clouds_view
+    end
+
+    @info "Step 3: Tiled adaptive histogram equalization"
+    clouds_red = to_uint8(float64.(red.(ref_img_cloudmasked) .* 255))
+    clouds_red[.!landmask.dilated] .= 0
+    equalized_gray, gammagreen = _process_image_tiles(
+        tc_img, clouds_red, tiles, adapthisteq_params...
+    )
+
+    @info "Step 4: Remove clouds from equalized_gray"
     masks = [f.(ref_img_cloudmasked) .== 0 for f in [red, green, blue]]
     combo_mask = reduce((a, b) -> a .& b, masks)
-    @assert sum(combo_mask) == 5708073
     equalized_gray[combo_mask] .= 0
-    sum(equalized_gray)
-end
 
-# Step 6: unsharp_mask on equalized_gray
-begin
-    equalized_gray_sharpened = to_uint8(
-        IceFloeTracker.unsharp_mask(equalized_gray, 10, 2.0, 255)
-    )
-    Gray.(equalized_gray_sharpened / 255)
-end
-
-# Step 7: Apply reconstruct_erosion on equalized_gray_sharpened and landmask (normalization)
-begin
-    se_disk1 = IceFloeTracker.MorphSE.StructuringElements.strel_diamond((3, 3))
-    se = se_disk1
-    equalized_gray_sharpened_reconstructed = IceFloeTracker.reconstruct_erosion(
-        equalized_gray_sharpened, se_disk1
+    @info "Step 5: unsharp_mask on equalized_gray and reconstruct"
+    sharpened = to_uint8(unsharp_mask(equalized_gray, unsharp_mask_params...))
+    equalized_gray_sharpened_reconstructed = reconstruct(
+        sharpened, structuring_elements.se_disk1, "dilation", true
     )
     equalized_gray_sharpened_reconstructed[.!landmask.dilated] .= 0
-end
 
-# Step 8: Repeat step 7 with equalized_gray
-begin
+    # TODO: Steps 6 and 7 can be done in parallel as they are independent
+    @info "# Step 6: Repeat step 5 with equalized_gray"
     equalized_gray_reconstructed = deepcopy(equalized_gray)
     equalized_gray_reconstructed[.!landmask.dilated] .= 0
-    @time equalized_gray_reconstructed = IceFloeTracker.reconstruct_erosion(
-        equalized_gray_reconstructed, se_disk1
+    equalized_gray_reconstructed = reconstruct(
+        equalized_gray_reconstructed, structuring_elements.se_disk1, "dilation", true
     )
     equalized_gray_reconstructed[.!landmask.dilated] .= 0
-end
 
-# STEP 9: Get brighten
-brighten = equalized_gray_reconstructed - gammagreen
-
-# STEP 10: Get equalized_gray_bright
-begin
+    @info "STEP 7: Brighten equalized_gray"
+    brighten = get_brighten_mask(equalized_gray_reconstructed, gammagreen)
     equalized_gray[.!landmask.dilated] .= 0
-    equalized_gray .= imbrighten(equalized_gray, brighten, 0.1)
-end
+    equalized_gray .= imbrighten(equalized_gray, brighten, brighten_factor)
 
-# STEP 11: Get morphed_residue
-morphed_residue = clamp.(equalized_gray - equalized_gray_reconstructed, 0, 255)
-
-# STEP 12: Adjust gamma on morphed_residue
-begin
+    @info "STEP 8: Get morphed_residue and adjust its gamma"
+    morphed_residue = clamp.(equalized_gray - equalized_gray_reconstructed, 0, 255)
+    agp = adjust_gamma_params
     equalized_gray_sharpened_reconstructed_adjusted = imcomplement(
-        adjustgamma(equalized_gray_sharpened_reconstructed, gamma)
+        adjustgamma(equalized_gray_sharpened_reconstructed, agp.gamma)
     )
-    adjusting_mask = equalized_gray_sharpened_reconstructed .> gamma_threshold
+    adjusting_mask = equalized_gray_sharpened_reconstructed_adjusted .> agp.gamma_threshold
     morphed_residue[adjusting_mask] .=
-        to_uint8.(morphed_residue[adjusting_mask] .* gamma_factor)
-end
+        to_uint8.(morphed_residue[adjusting_mask] .* agp.gamma_factor)
 
-# Step 13: Get ice masks
-begin
-    binarize::Bool = true
-    band_7_threshold = 5
-    band_2_threshold = 230
-    band_1_threshold = 240
-    band_7_threshold_relaxed = 10
-    band_1_threshold_relaxed = 190
-    possible_ice_threshold = 75
-    factor = 255
-
-    @time prelim_icemask, binarized_tiling, _ = get_ice_masks(
-        ref_img,
-        morphed_residue,
-        landmask.dilated,
-        tiles,
-        binarize;
-        band_7_threshold=band_7_threshold,
-        band_2_threshold=band_2_threshold,
-        band_1_threshold=band_1_threshold,
-        band_7_threshold_relaxed=band_7_threshold_relaxed,
-        band_1_threshold_relaxed=band_1_threshold_relaxed,
-        possible_ice_threshold=possible_ice_threshold,
-        factor=factor,
+    @info "# Step 9: Get prelimnary ice masks"
+    prelim_icemask, binarized_tiling = get_ice_masks(
+        ref_img, morphed_residue, landmask.dilated, tiles, true; ice_masks_params...
     )
+
+    @info "Step 10: Get segmentation mask from preliminary icemask"
+    segment_mask = get_segment_mask(prelim_icemask, binarized_tiling)
+
+    @info "Step 11: Get local_maxima_mask and L0mask via watershed"
+    local_maxima_mask, L0mask = watershed2(morphed_residue, segment_mask, prelim_icemask)
+
+    @info "Step 12: Build icemask from all others"
+    local_maxima_mask = to_uint8(local_maxima_mask * 255)
+    prelim_icemask2 = get_combined_new(
+        morphed_residue,
+        local_maxima_mask,
+        segment_mask,
+        L0mask,
+        structuring_elements.se_disk1;
+        prelim_icemask_params...,
+    )
+
+    @info "Step 13: Get improved icemask"
+    icemask, _ = get_ice_masks(
+        ref_img, prelim_icemask2, landmask.dilated, tiles, false; ice_masks_params...
+    )
+
+    @info "Step 14: Get final mask"
+    se = structuring_elements
+    se_erosion = se.se_disk1
+    se_dilation = se.se_disk2
+    final = get_final(icemask, segment_mask, se_erosion, se_dilation)
+
+    return final
 end
-
-# Step 14: Get segment mask
-segment_mask = get_segment_mask(prelim_icemask, binarized_tiling)
-
-# Step 15: watershed
-fgm, L0mask = IceFloeTracker.watershed2(morphed_residue, segment_mask)
-
-# Step 16: Get new3
-radius = 10
-amount = 2
-factor = .5
-
-fgm = to_uint8(fgm * 255)
-new2 = get_new2(morph_residue, fgm, factor, segment_mask, L0mask)
-new3 = get_new3(new2, L0mask, radius, amount, local_maxima_mask, factor, segment_mask, se_disk1)
-
-# Step 17: Get improved icemask
-@time icemask, _, label = get_ice_masks(
-    ref_img,
-    new3,
-    landmask.dilated,
-    tiles,
-    false;
-    band_7_threshold=band_7_threshold,
-    band_2_threshold=band_2_threshold,
-    band_1_threshold=band_1_threshold,
-    band_7_threshold_relaxed=band_7_threshold_relaxed,
-    band_1_threshold_relaxed=band_1_threshold_relaxed,
-    possible_ice_threshold=possible_ice_threshold,
-    factor=factor,
-)
-
-# Step 18: Get final
-se_erosion = se_disk1
-se_dilation = se_disk4()
-final = get_final(icemask, label, segment_mask, se_erosion, se_dilation)
