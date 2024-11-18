@@ -1,4 +1,4 @@
-using IceFloeTracker: unsharp_mask, to_uint8, reconstruct, hbreak, morph_fill
+using IceFloeTracker: unsharp_mask, to_uint8, hbreak, morph_fill
 
 # TODO: Add tests for regularize_fill_holes, regularize_sharpening, get_final
 
@@ -42,7 +42,7 @@ function regularize_sharpening(
 )
     new3 = unsharp_mask(img, radius, amount, 255)
     new3[L0mask] .= 0
-    new3 = reconstruct(new3, se, "dilation", false)
+    new3 = IceFloeTracker.reconstruct(new3, se, "dilation", false)
     new3[segment_mask] .= 0
     return to_uint8(new3 + local_maxima_mask .* factor)
 end
