@@ -1,5 +1,4 @@
-using IceFloeTracker: unsharp_mask, to_uint8, reconstruct, hbreak, to_uint8, morph_fill
-using IceFloeTracker.MorphSE: dilate, erode, fill_holes
+using IceFloeTracker: unsharp_mask, to_uint8, reconstruct, hbreak, morph_fill
 
 # TODO: Add tests for regularize_fill_holes, regularize_sharpening, get_final
 
@@ -21,7 +20,7 @@ Regularize `img` by:
 function regularize_fill_holes(img, local_maxima_mask, factor, segment_mask, L0mask)
     new2 = to_uint8(img .+ local_maxima_mask .* factor)
     new2[segment_mask .|| L0mask] .= 0
-    return fill_holes(new2)
+    return IceFloeTracker.MorphSE.fill_holes(new2)
 end
 
 """
@@ -38,7 +37,9 @@ Regularize `img` via sharpening, filtering, reconstruction, and maxima elevating
 - `factor`: The factor to apply to the local maxima mask.
 - `segment_mask`: The segment mask -- intersection of bw1 and bw2 in first tiled workflow of `master.m`.
 """
-function regularize_sharpening(img, L0mask, radius, amount, local_maxima_mask, factor, segment_mask, se)
+function regularize_sharpening(
+    img, L0mask, radius, amount, local_maxima_mask, factor, segment_mask, se
+)
     new3 = unsharp_mask(img, radius, amount, 255)
     new3[L0mask] .= 0
     new3 = reconstruct(new3, se, "dilation", false)
@@ -91,7 +92,9 @@ end
 function get_combined_new(
     morph_residue, local_maxima_mask, segment_mask, L0mask, se; factor, radius, amount
 )
-    _new2 = regularize_fill_holes(morph_residue, local_maxima_mask, factor, segment_mask, L0mask)
+    _new2 = regularize_fill_holes(
+        morph_residue, local_maxima_mask, factor, segment_mask, L0mask
+    )
     _new3 = regularize_sharpening(
         _new2, L0mask, radius, amount, local_maxima_mask, factor, segment_mask, se
     )
