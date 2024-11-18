@@ -7,7 +7,7 @@ using IceFloeTracker: unsharp_mask, to_uint8, reconstruct, hbreak, morph_fill
 
 Regularize `img` by:
     1. increasing the maxima of `img` by a factor of `factor`
-    2. filtering `img` at positions where `segment_mask` and `L0mask` are true
+    2. filtering `img` at positions where either `segment_mask` or `L0mask` are true
     3. filling holes
 
 # Arguments
