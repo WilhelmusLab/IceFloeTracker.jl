@@ -72,10 +72,19 @@ include("special_strels.jl")
 include("tilingutils.jl")
 include("histogram_equalization.jl")
 include("reconstruction.jl")
+include("watershed.jl")
 include("brighten.jl")
 include("morph_fill.jl")
 include("imcomplement.jl")
 include("imadjust.jl")
+include("ice_masks.jl")
+
+const sk_measure = PyNULL()
+const sk_exposure = PyNULL()
+const getlatlon = PyNULL()
+
+
+
 
 function get_version_from_toml(pth=dirname(dirname(pathof(IceFloeTracker))))::VersionNumber
     toml = TOML.parsefile(joinpath(pth, "Project.toml"))
