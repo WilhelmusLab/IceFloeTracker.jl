@@ -120,35 +120,6 @@ function imextendedmin(img::AbstractArray, h::Int=2, conn::Int=2)::BitMatrix
     return mask_minima .> 0
 end
 
-function impose_minima(I::AbstractArray{T}, BW::AbstractArray{Bool}) where {T<:Integer}
-    marker = 255 .* BW
-    mask = imcomplement(min.(I .+ 1, 255 .- marker))
-    reconstructed = IceFloeTracker.MorphSE.mreconstruct(
-        IceFloeTracker.MorphSE.dilate, marker, mask
-    )
-    return IceFloeTracker.imcomplement(Int.(reconstructed))
-end
-
-function impose_minima(
-    I::AbstractArray{T}, BW::AbstractMatrix{Bool}
-) where {T<:AbstractFloat}
-    # compute shift
-    a, b = extrema(I)
-    rng = b - a
-    h = rng == 0 ? 0.1 : rng / 1000
-
-    marker = -Inf * BW .+ (Inf * .!BW)
-    mask = min.(I .+ h, marker)
-
-    return 1 .- IceFloeTracker.MorphSE.mreconstruct(
-        IceFloeTracker.MorphSE.dilate, 1 .- marker, 1 .- mask
-    )
-end
-
-function imregionalmin(A, conn=2)
-    return ImageMorphology.local_minima(A; connectivity=conn) .> 0
-end
-
 """
     impose_minima(I::AbstractArray{T}, BW::AbstractArray{Bool}) where {T<:Integer}
 
@@ -177,8 +148,19 @@ function impose_minima(
     return 1 .- sk_morphology.reconstruction(1 .- marker, 1 .- mask)
 end
 
-function imregionalmin(A, conn=2)
-    return ImageMorphology.local_minima(A; connectivity=conn) .> 0
+"""
+    imregionalmin(img, conn=2)
+
+Compute the regional minima of the image `img` using the connectivity `conn`.
+
+Returns a bitmatrix of the same size as `img` with the regional minima.
+
+# Arguments
+- `img`: Image object
+- `conn`: Neighborhood connectivity; in 2D, 1 = 4-neighborhood and 2 = 8-neighborhood
+"""
+function imregionalmin(img, conn=2)
+    return ImageMorphology.local_minima(img; connectivity=conn) .> 0
 end
 
 """

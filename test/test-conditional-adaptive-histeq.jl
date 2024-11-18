@@ -99,10 +99,12 @@ function test_histeq()
                 255 255 255
             ],
         ]
+
         _exp = [
             128 128 128
             255 255 255
         ]
+
         expected = [
             [
                 204 204 204 204 204
@@ -115,7 +117,7 @@ function test_histeq()
             _exp,
         ]
 
-        @test all(IceFloeTracker.histeq(imgs[i]) == expected[i] for i in 1:3)
+        @test all(histeq(imgs[i]) == expected[i] for i in 1:3)
     end
 end
 
