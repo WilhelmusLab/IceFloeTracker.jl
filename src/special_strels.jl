@@ -29,3 +29,9 @@ function se_disk20()
     _generate_se!(se)
     return se
 end
+
+function se_disk2()
+    se = [sum(c.I) <= 3 for c in CartesianIndices((5,5))]
+    _generate_se!(se)
+    return se
+end
