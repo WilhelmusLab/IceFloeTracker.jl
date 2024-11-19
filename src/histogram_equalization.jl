@@ -9,6 +9,11 @@ function to_uint8(arr::AbstractMatrix{T}) where {T<:Integer}
     return img
 end
 
+function to_uint8(num::T) where {T<:Union{AbstractFloat,Int,Signed}}
+    num = Int(round(num, RoundNearestTiesAway))
+    return clamp(num, 0, 255)
+end
+
 function anisotropic_diffusion_3D(I)
     rgbchannels = get_rgb_channels(I)
 
