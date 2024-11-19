@@ -17,7 +17,7 @@ Regularize `img` by:
 - `segment_mask`: The segment mask -- intersection of bw1 and bw2 in first tiled workflow of `master.m`.
 - `L0mask`: zero-labeled pixels from watershed.
 """
-function regularize_fill_holes(img, local_maxima_mask, factor, segment_mask, L0mask)
+function regularize_fill_holes(img, local_maxima_mask, segment_mask, L0mask, factor)
     new2 = to_uint8(img .+ local_maxima_mask .* factor)
     new2[segment_mask .|| L0mask] .= 0
     return IceFloeTracker.MorphSE.fill_holes(new2)
@@ -38,13 +38,32 @@ Regularize `img` via sharpening, filtering, reconstruction, and maxima elevating
 - `segment_mask`: The segment mask -- intersection of bw1 and bw2 in first tiled workflow of `master.m`.
 """
 function regularize_sharpening(
-    img, L0mask, radius, amount, local_maxima_mask, factor, segment_mask, se
+    img, L0mask, local_maxima_mask, segment_mask, se, radius, amount, factor
 )
     new3 = unsharp_mask(img, radius, amount, 255)
     new3[L0mask] .= 0
     new3 = IceFloeTracker.reconstruct(new3, se, "dilation", false)
     new3[segment_mask] .= 0
     return to_uint8(new3 + local_maxima_mask .* factor)
+end
+
+function _regularize(
+    morph_residue, local_maxima_mask, segment_mask, L0mask, se; factor, radius, amount
+)
+    reg_fill_holes = regularize_fill_holes(
+        morph_residue, local_maxima_mask, segment_mask, L0mask, factor[1]
+    )
+    reg_sharpened = regularize_sharpening(
+        reg_fill_holes,
+        L0mask,
+        local_maxima_mask,
+        segment_mask,
+        se,
+        radius,
+        amount,
+        factor[end],
+    )
+    return reg_sharpened
 end
 
 """
@@ -63,7 +82,11 @@ Final processing following the tiling workflow.
 """
 function get_final(
     # this function is used in preprocessing_tiling
-    img, segment_mask, se_erosion, se_dilation, apply_segment_mask::Bool=true
+    img,
+    segment_mask,
+    se_erosion,
+    se_dilation,
+    apply_segment_mask::Bool=true,
 )
     _img = hbreak(img)
 
@@ -87,16 +110,4 @@ function get_final(
     # Restore shape of floes based on the cleaned up `mask`
     final = IceFloeTracker.MorphSE.mreconstruct(IceFloeTracker.MorphSE.dilate, _img, mask)
     return final
-end
-
-function get_combined_new(
-    morph_residue, local_maxima_mask, segment_mask, L0mask, se; factor, radius, amount
-)
-    _new2 = regularize_fill_holes(
-        morph_residue, local_maxima_mask, factor, segment_mask, L0mask
-    )
-    _new3 = regularize_sharpening(
-        _new2, L0mask, radius, amount, local_maxima_mask, factor, segment_mask, se
-    )
-    return _new3
 end
