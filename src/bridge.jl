@@ -1,15 +1,15 @@
 include("./lut/lutbridge.jl")
 
+const LUTBRIDGE = make_lutbridge()
+
 function _bridge_operator_lut(
     I::CartesianIndex{2},
     img::AbstractArray{Bool},
     nhood::CartesianIndices{2,Tuple{UnitRange{Int64},UnitRange{Int64}}},
 )
-    lutbridge = make_lutbridge()
-    return _operator_lut(I, img, nhood, lutbridge)
+    return _operator_lut(I, img, nhood, LUTBRIDGE)
 end
 
-# TODO: see about implemting _filter using parallelization
 function _filter(img::T, operator::Function)::T where {T<:AbstractArray{Bool}}
     out = zeros(Bool, size(img))
     R = CartesianIndices(img)
