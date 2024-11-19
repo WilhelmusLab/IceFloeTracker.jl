@@ -127,6 +127,18 @@ function get_rgb_channels(img)
     return cat(redc, greenc, bluec; dims=3)
 end
 
+"""
+    rgb2gray(rgbchannels::Array{Float64, 3})
+
+Convert an array of RGB channel data to grayscale in the range [0, 255].
+"""
+function rgb2gray(rgbchannels::Array{Float64,3})
+    r, g, b = [to_uint8(rgbchannels[:, :, i]) for i in 1:3]
+    # Reusing the r array to store the equalized gray image
+    r .= to_uint8(0.2989 * r .+ 0.5870 * g .+ 0.1140 * b)
+    return r
+end
+
 function _process_image_tiles(
     true_color_image,
     clouds_red,
@@ -287,7 +299,7 @@ end
 Histogram equalization of `img` using `nbins` bins.
 """
 function histeq(img::S; nbins=64)::S where {S<:AbstractArray{<:Integer}}
-    return to_uint8(sk_exposure.equalize_hist(img, nbins=nbins) * 255)
+    return to_uint8(sk_exposure.equalize_hist(img; nbins=nbins) * 255)
 end
 
 function _imhist(img, rng)
