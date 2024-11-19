@@ -79,6 +79,7 @@ include("imcomplement.jl")
 include("imadjust.jl")
 include("ice_masks.jl")
 include("regularize-final.jl")
+include("preprocess_tiling.jl")
 
 function get_version_from_toml(pth=dirname(dirname(pathof(IceFloeTracker))))::VersionNumber
     toml = TOML.parsefile(joinpath(pth, "Project.toml"))
