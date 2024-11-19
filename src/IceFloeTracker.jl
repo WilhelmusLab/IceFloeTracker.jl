@@ -79,7 +79,6 @@ include("imcomplement.jl")
 include("imadjust.jl")
 include("ice_masks.jl")
 include("regularize-final.jl")
-include("preprocess_tiling.jl")
 
 function get_version_from_toml(pth=dirname(dirname(pathof(IceFloeTracker))))::VersionNumber
     toml = TOML.parsefile(joinpath(pth, "Project.toml"))
@@ -182,6 +181,8 @@ module MorphSE
     include("morphSE/mreconstruct.jl")
     include("morphSE/fill_holes.jl")
 end
+
+include("preprocess_tiling.jl")
 
 module Register
     include("Register/CenterIndexedArrays.jl-0.2.0/CenterIndexedArrays.jl")
