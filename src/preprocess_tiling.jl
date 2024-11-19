@@ -91,19 +91,19 @@ function preprocess_tiling(
     @info "Step 1/2: Get masks"
     begin
         mask_cloud_ice, clouds_view = _get_masks(
-            float64.(ref_img); ice_labels_thresholds...
+            float64.(ref_image); ice_labels_thresholds...
         )
         clouds_view .= .!mask_cloud_ice .* clouds_view
 
         # Get clouds_red for adaptive histogram equalization
-        ref_img_cloudmasked = ref_img .* .!clouds_view
+        ref_img_cloudmasked = ref_image .* .!clouds_view
     end
 
     @info "Step 3: Tiled adaptive histogram equalization"
     clouds_red = to_uint8(float64.(red.(ref_img_cloudmasked) .* 255))
     clouds_red[.!landmask.dilated] .= 0
     equalized_gray, gammagreen = _process_image_tiles(
-        tc_img, clouds_red, tiles, adapthisteq_params...
+        true_color_image, clouds_red, tiles, adapthisteq_params...
     )
 
     @info "Step 4: Remove clouds from equalized_gray"
@@ -144,7 +144,7 @@ function preprocess_tiling(
 
     @info "# Step 9: Get prelimnary ice masks"
     prelim_icemask, binarized_tiling = get_ice_masks(
-        ref_img, morphed_residue, landmask.dilated, tiles, true; ice_masks_params...
+        ref_image, morphed_residue, landmask.dilated, tiles, true; ice_masks_params...
     )
 
     @info "Step 10: Get segmentation mask from preliminary icemask"
@@ -166,7 +166,7 @@ function preprocess_tiling(
 
     @info "Step 13: Get improved icemask"
     icemask, _ = get_ice_masks(
-        ref_img, prelim_icemask2, landmask.dilated, tiles, false; ice_masks_params...
+        ref_image, prelim_icemask2, landmask.dilated, tiles, false; ice_masks_params...
     )
 
     @info "Step 14: Get final mask"
