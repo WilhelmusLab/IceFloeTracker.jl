@@ -3,6 +3,9 @@
 ## Overview
 IceFloeTracker.jl is a collection of routines and tools for processing remote sensing imagery, identifying sea ice floes, and tracking the displacement and rotation of ice floes across multiple images. It can be used either standalone to create custom processing pathways or with the [Ice Floe Tracker Pipeline](https://github.com/WilhelmusLab/ice-floe-tracker-pipeline).
 
+```@contents
+```
+
 ## Algorithm components
 The Ice Floe Tracker (IFT) package includes the core functions for the three main steps of the algorithm. These functions can be used independently and can be customized for specific use cases. 
 
@@ -15,17 +18,7 @@ The IFT segmentation functions include functions for semantic segmentation (pixe
 ### Tracking
 Ice floe tracking is carried out by comparing the shapes produced in the segmentation step. Shapes with similar area are rotated until the difference in surface area is minimized, and then the edge shapes are compared using a Ѱ-s curve. If thresholds for correlation and area differences are met, then the floe with the best correlation and smallest area differences are considered matches and the objects are assigned the same label. In the end, trajectories for individual floes are recorded in a dataframe.
 
-```@contents
-```
-## Functions
-```@autodocs
-Modules = [IceFloeTracker]
-Order   = [:function, :macro, :type]
-```
 
-## Index
-```@index
-```
 
 ## Developers
 IceFloeTracker.jl is a product of the [Wilhelmus Lab](https://www.wilhelmuslab.me) at Brown University, led by Monica M. Wilhelmus. The original algorithm was developed by Rosalinda Lopez-Acosta during her PhD work at University of California Riverside, advised by Dr. Wilhelmus. The translation of the original Matlab code into the current modular, open source Julia package has been carried out in conjunction with the Center for Computing and Visualization at Brown University. Contributors include Daniel Watkins, Maria Isabel Restrepo, Carlos Paniagua, Tim DiVoll, John Holland, and Bradford Roarr.
@@ -40,4 +33,14 @@ Lopez-Acosta et al., (2019). Ice Floe Tracker: An algorithm to automatically ret
 1. Manucharyan, Lopez-Acosta, and Wilhelmus (2022)\*. Spinning ice floes reveal intensification of mesoscale eddies in the western Arctic Ocean. _Scientific Reports_, **12(7070)**, doi:[10.1038/s41598-022-10712-z](https://doi.org/10.1038/s41598-022-10712-z)
 2. Watkins, Bliss, Hutchings, and Wilhelmus (2023)\*. Evidence of Abrupt Transitions Between Sea Ice Dynamical Regimes in the East Greenland Marginal Ice Zone. _Geophysical Research Letters_, **50(e2023GL103558)**, pp. 1-10, doi:[10.1029/2023GL103558](https://agupubs.onlinelibrary.wiley.com/doi/10.1029/2023GL103558)
 
-\* Papers using data from the Matlab implementation of Ice Floe Tracker.
+\*Papers using data from the Matlab implementation of Ice Floe Tracker.
+
+## Functions
+```@autodocs
+Modules = [IceFloeTracker]
+Order   = [:function, :macro, :type]
+```
+
+## Index
+```@index
+```
