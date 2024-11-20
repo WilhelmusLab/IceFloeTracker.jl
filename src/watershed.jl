@@ -5,7 +5,7 @@ function watershed1(bw::T) where {T<:Union{BitMatrix,AbstractMatrix{Bool}}}
     cc = label_components(imregionalmin(seg), trues(3, 3))
     w = ImageSegmentation.watershed(seg, cc)
     lmap = labels_map(w)
-    return Images.isboundary(lmap)
+    return Images.isboundary(lmap) .> 0
 end
 
 function _reconst_watershed(morph_residue::Matrix{<:Integer}, se::Matrix{Bool}=se_disk20())
