@@ -17,8 +17,6 @@ using IceFloeTracker:
     se_disk2,
     branchbridge,
     fillholes!,
-    get_new2,
-    get_new3,
     get_final,
     apply_landmask,
     kmeans_segmentation,
@@ -33,8 +31,7 @@ using IceFloeTracker:
     imregionalmin,
     watershed2,
     get_ice_masks,
-    imbinarize,
-    get_combined_new
+    imbinarize
 
 # Sample input parameters expected by the main function
 ice_labels_thresholds = (
