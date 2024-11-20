@@ -79,6 +79,6 @@ ref_image_landmasked = apply_landmask(ref_image, .!landmask)
     end
 
     ice_mask, binarized_tiling = get_ice_masks(ref_image, morph_residue, landmask, tiles)
-    sum(ice_mask) == 1323384
-    sum(binarized_tiling) == 2873080
+    @test sum(ice_mask) == 1323384
+    @test sum(binarized_tiling) == 2873080
 end
