@@ -99,9 +99,11 @@ function preprocess_tiling(
     @info "Step 3: Tiled adaptive histogram equalization"
     clouds_red = to_uint8(float64.(red.(ref_img_cloudmasked) .* 255))
     clouds_red[.!landmask.dilated] .= 0
-    equalized_gray, gammagreen = _process_image_tiles(
+    equalized_rgbchannels = _process_image_tiles(
         true_color_image, clouds_red, tiles, adapthisteq_params...
     )
+    gammagreen = @view equalized_rgbchannels[:, :, 2]
+    equalized_gray = rgb2gray(equalized_rgbchannels)
 
     @info "Step 4: Remove clouds from equalized_gray"
     masks = [f.(ref_img_cloudmasked) .== 0 for f in [red, green, blue]]
