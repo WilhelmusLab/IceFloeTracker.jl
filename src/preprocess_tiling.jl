@@ -30,8 +30,8 @@ using IceFloeTracker:
     label_components,
     imregionalmin,
     watershed2,
-    get_ice_masks,
-    imbinarize
+    imbinarize,
+    _regularize
 
 # Sample input parameters expected by the main function
 ice_labels_thresholds = (
@@ -141,7 +141,7 @@ function preprocess_tiling(
     morphed_residue[adjusting_mask] .=
         to_uint8.(morphed_residue[adjusting_mask] .* agp.gamma_factor)
 
-    @info "# Step 9: Get prelimnary ice masks"
+    @info "# Step 9: Get preliminary ice masks"
     prelim_icemask, binarized_tiling = get_ice_masks(
         ref_image, morphed_residue, landmask.dilated, tiles, true; ice_masks_params...
     )
@@ -154,7 +154,7 @@ function preprocess_tiling(
 
     @info "Step 12: Build icemask from all others"
     local_maxima_mask = to_uint8(local_maxima_mask * 255)
-    prelim_icemask2 = get_combined_new(
+    prelim_icemask2 = _regularize(
         morphed_residue,
         local_maxima_mask,
         segment_mask,
