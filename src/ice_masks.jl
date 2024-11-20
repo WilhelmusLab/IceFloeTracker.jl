@@ -145,12 +145,11 @@ function get_ice_masks(
 
     fc_landmasked = apply_landmask(falsecolor_image, .!landmask)
 
-    Threads.@threads for tile in tiles
-        #  Conditionally update binarized_tiling as its not used in some workflows
+    # Threads.@threads
+    for tile in tiles
         @debug "Processing tile: $tile"
-        binarize && (binarized_tiling[tile...] .= imbinarize(morph_residue[tile...]))
-
-        morph_residue_seglabels = kmeans_segmentation(Gray.(morph_residue[tile...] / 255))
+        mrt = morph_residue[tile...]
+        morph_residue_seglabels = kmeans_segmentation(Gray.(mrt / 255), k=3)
 
         # TODO: handle case where get_nlabel returns missing
         floes_label = get_nlabel(
@@ -163,9 +162,12 @@ function get_ice_masks(
             band_7_threshold_relaxed=band_7_threshold_relaxed,
             band_1_threshold_relaxed=band_1_threshold_relaxed,
             possible_ice_threshold=possible_ice_threshold,
-        )
+            )
 
-        ice_mask[tile...] .= (morph_residue_seglabels .== floes_label)
+            ice_mask[tile...] .= (morph_residue_seglabels .== floes_label)
+
+            #  Conditionally update binarized_tiling as its not used in some workflows
+            binarize && (binarized_tiling[tile...] .= imbinarize(mrt))
     end
 
     return (icemask=ice_mask, bin=binarized_tiling .> 0)
