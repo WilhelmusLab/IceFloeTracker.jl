@@ -10,7 +10,7 @@ function get_image_peaks(arr, imgtype="uint8")
     return (locs=locs, heights=heights)
 end
 
-function get_ice_labels_mask(ref_img::Matrix{RGB{N0f8}}, thresholds, factor=1)
+function get_ice_labels_mask(ref_img::Matrix{RGB{N0f8}}, thresholds, factor=255)
     cv = channelview(ref_img)
     cv = [float64.(cv[i, :, :]) .* factor for i in 1:3]
     mask_ice_band_7 = cv[1] .< thresholds[1]
@@ -36,14 +36,16 @@ function get_nlabel(
 
     # Initial attempt to get ice labels
     thresholds = (band_7_threshold, band_2_threshold, band_1_threshold)
-    ice_labels_mask = get_ice_labels_mask(ref_img, thresholds, 255)
-    sum(ice_labels_mask) > 1 && return _getnlabel(morph_residue_labels, ice_labels_mask)
+    ice_labels_mask = get_ice_labels_mask(ref_img, thresholds)
+    sum(ice_labels_mask) > 0 && return _getnlabel(morph_residue_labels, ice_labels_mask)
+    @debug "Trying first relaxation."
 
     # First relaxation
     thresholds = (band_7_threshold_relaxed, band_2_threshold, band_1_threshold_relaxed)
-    ice_labels_mask = get_ice_labels_mask(ref_img, thresholds, 255)
+    ice_labels_mask = get_ice_labels_mask(ref_img, thresholds)
     sum(ice_labels_mask) > 0 && return _getnlabel(morph_residue_labels, ice_labels_mask)
 
+    @debug "Trying second/third relaxation."
     # Second/Third relaxation
     return get_nlabel_relaxation(
         ref_img,
@@ -141,14 +143,12 @@ function get_ice_masks(
     ice_mask = BitMatrix(zeros(Bool, sz))
     binarized_tiling = zeros(Int, sz)
 
-    fc_landmasked = apply_landmask(falsecolor_image, landmask)
+    fc_landmasked = apply_landmask(falsecolor_image, .!landmask)
 
-    # Threads.@threads
-    for tile in tiles
+    Threads.@threads for tile in tiles
         #  Conditionally update binarized_tiling as its not used in some workflows
-        if binarize
-            binarized_tiling[tile...] .= imbinarize(morph_residue[tile...])
-        end
+        @debug "Processing tile: $tile"
+        binarize && (binarized_tiling[tile...] .= imbinarize(morph_residue[tile...]))
 
         morph_residue_seglabels = kmeans_segmentation(Gray.(morph_residue[tile...] / 255))
 
