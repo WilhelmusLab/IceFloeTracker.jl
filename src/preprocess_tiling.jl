@@ -66,7 +66,8 @@ ice_masks_params = (
     band_7_threshold_relaxed=10,
     band_1_threshold_relaxed=190,
     possible_ice_threshold=75,
-    factor=255,
+    k=3, # number of clusters for kmeans segmentation
+    factor=255, # normalization factor to convert images to uint8
 )
 
 prelim_icemask_params = (radius=10, amount=2, factor=0.5)
