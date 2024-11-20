@@ -135,6 +135,7 @@ function get_ice_masks(
     band_7_threshold_relaxed::T=10,
     band_1_threshold_relaxed::T=190,
     possible_ice_threshold::T=75,
+    k::T=3,
     factor::T=255,
 ) where {T<:Integer,S<:AbstractMatrix{Tuple{UnitRange{Int64},UnitRange{Int64}}}}
 
@@ -149,7 +150,7 @@ function get_ice_masks(
     for tile in tiles
         @debug "Processing tile: $tile"
         mrt = morph_residue[tile...]
-        morph_residue_seglabels = kmeans_segmentation(Gray.(mrt / 255), k=3)
+        morph_residue_seglabels = kmeans_segmentation(Gray.(mrt / 255), k=k)
 
         # TODO: handle case where get_nlabel returns missing
         floes_label = get_nlabel(
