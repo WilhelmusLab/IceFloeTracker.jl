@@ -16,25 +16,26 @@ function _reconst_watershed(morph_residue::Matrix{<:Integer}, se::Matrix{Bool}=s
 end
 
 function watershed2(morph_residue, segment_mask, ice_mask)
+    # TODO: reconfigure to use async tasks or threads
     # Task 1: Reconstruct morph_residue
-    task1 = Threads.@spawn begin
-        mr_reconst = _reconst_watershed(morph_residue)
-        mr_reconst = ImageMorphology.local_maxima(mr_reconst; connectivity=2) .> 0
-    end
+    # task1 = Threads.@spawn begin
+    mr_reconst = _reconst_watershed(morph_residue)
+    mr_reconst = ImageMorphology.local_maxima(mr_reconst; connectivity=2) .> 0
+    # end
 
     # Task 2: Calculate gradient magnitude
-    task2 = Threads.@spawn begin
-        gmag = imgradientmag(histeq(morph_residue))
-    end
+    # task2 = Threads.@spawn begin
+    gmag = imgradientmag(histeq(morph_residue))
+    # end
 
     # Wait for both tasks to complete
-    mr_reconst = fetch(task1)
-    gmag = fetch(task2)
+    # mr_reconst = fetch(task1)
+    # gmag = fetch(task2)
 
     minimamarkers = mr_reconst .| segment_mask .| ice_mask
     gmag .= impose_minima(gmag, minimamarkers)
     cc = label_components(imregionalmin(gmag), trues(3, 3))
     w = ImageSegmentation.watershed(morph_residue, cc)
     lmap = labels_map(w)
-    return (fgm=mr_reconst, L0mask=isboundary(lmap))
+    return (fgm=mr_reconst, L0mask=isboundary(lmap) .> 0)
 end
