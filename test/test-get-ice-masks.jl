@@ -74,11 +74,11 @@ ref_image_landmasked = apply_landmask(ref_image, .!landmask)
     end
 
     begin
-        morph_residue_seglabels = kmeans_segmentation(Gray.(morph_residue[tile...] / 255))
+        morph_residue_seglabels = kmeans_segmentation(Gray.(morph_residue[tile...] / 255), k=3)
         @test get_nlabel(ref_image_landmasked[tile...], morph_residue_seglabels, 255) == 1
     end
 
     ice_mask, binarized_tiling = get_ice_masks(ref_image, morph_residue, landmask, tiles)
-    @test sum(ice_mask) == 1323384
+    @test sum(ice_mask) == 2669451
     @test sum(binarized_tiling) == 2873080
 end
