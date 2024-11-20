@@ -1,7 +1,7 @@
 """
     create_landmask(landmask_image, struct_elem, fill_value_lower, fill_value_upper)
 
-Convert a 3-channel RGB land mask image to a 1-channel binary matrix, including a buffer to extend the land over any soft ice regions; land = 0, water/ice = 1. Returns a named tuple with the dilated and non-dilated landmask.
+Convert a 3-channel RGB land mask image to a 1-channel binary matrix, and use a structuring element to extend a buffer to mask complex coastal features. In the resulting mask, land = 0 and ocean = 1. Returns a named tuple with the dilated and non-dilated landmask.
 
 # Arguments
 - `landmask_image`: RGB land mask image from `fetchdata`
@@ -31,7 +31,7 @@ end
 """
     binarize_landmask(landmask_image)
 
-Convert a 3-channel RGB land mask image to a 1-channel binary matrix; land = 0, water/ice = 1.
+Convert a 3-channel RGB land mask image to a 1-channel binary matrix; land = 0, ocean = 1.
 
 # Arguments
 - `landmask_image`: RGB land mask image from `fetchdata`
@@ -47,7 +47,7 @@ end
 """
     apply_landmask(input_image, landmask_binary)
 
-Zero out pixels in land and soft ice regions on truecolor image, return RGB image with zero for all three channels on land/soft ice.
+Zero out pixels in all channels of the input image using the binary landmask.
 
 
 # Arguments
@@ -69,7 +69,8 @@ end
 """
     remove_landmask(landmask, ice_mask)
 
-Find the pixel indexes that are floating ice rather than soft or land ice. Returns an array of pixel indexes. 
+Apply the landmask to the ice mask to remove labeled ice pixels that overlap with the landmask. Returns
+a list of indices of pixels that are likely containing sea ice.
 
 # Arguments
 - `landmask`: bitmatrix landmask for region of interest
@@ -77,6 +78,7 @@ Find the pixel indexes that are floating ice rather than soft or land ice. Retur
 
 """
 ## NOTE(tjd): This function is called in `find_ice_labels.jl`
+## NOTE(dmw): For consistency, it would make sense to reverse the order of inputs to match landmask
 function remove_landmask(landmask::BitMatrix, ice_mask::BitMatrix)::Array{Int64}
     land = IceFloeTracker.apply_landmask(ice_mask, landmask)
     return [i for i in 1:length(land) if land[i]]
