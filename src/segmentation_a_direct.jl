@@ -117,8 +117,10 @@ function fillholes!(img)
 end
 
 function get_segment_mask(ice_mask, tiled_binmask)
-    Threads.@threads for img in (ice_mask, tiled_binmask)
+    # TODO: Threads.@threads # sometimes crashes (too much memory?)
+    for img in (ice_mask, tiled_binmask)
         fillholes!(img)
+        img .= watershed1(img)
     end
     segment_mask = ice_mask .&& tiled_binmask
     return segment_mask
