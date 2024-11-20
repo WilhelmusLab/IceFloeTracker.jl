@@ -101,14 +101,14 @@ function segmentation_A(
 end
 
 function get_holes(img, min_opening_area=20, se=IceFloeTracker.se_disk4())
-    img .= ImageMorphology.area_opening(img; min_area=min_opening_area)
-    IceFloeTracker.hbreak!(img)
+    _img = ImageMorphology.area_opening(img; min_area=min_opening_area)
+    IceFloeTracker.hbreak!(_img)
 
-    out = branchbridge(img)
+    out = branchbridge(_img)
     out = IceFloeTracker.MorphSE.opening(out, centered(se))
     out = IceFloeTracker.MorphSE.fill_holes(out)
 
-    return out .!= img
+    return out .!= _img
 end
 
 function fillholes!(img)
