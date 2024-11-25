@@ -118,6 +118,7 @@ Get the ice masks from the falsecolor image and morphological residue given a pa
 - `band_1_threshold_relaxed=190`: The relaxed threshold for band 1.
 - `possible_ice_threshold=75`: The threshold for possible ice.
 - `factor=255`: normalization factor to convert images to uint8.
+- `k=3`: The number of clusters to use for k-means segmentation.
 # Returns
 - A named tuple `(icemask, bin)` where:
   - `icemask`: The ice mask.
