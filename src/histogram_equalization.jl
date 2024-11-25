@@ -136,6 +136,8 @@ end
     rgb2gray(rgbchannels::Array{Float64, 3})
 
 Convert an array of RGB channel data to grayscale in the range [0, 255].
+
+Identical to MATLAB `rgb2gray` (https://www.mathworks.com/help/matlab/ref/rgb2gray.html).
 """
 function rgb2gray(rgbchannels::Array{Float64,3})
     r, g, b = [to_uint8(rgbchannels[:, :, i]) for i in 1:3]
