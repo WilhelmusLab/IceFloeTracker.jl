@@ -109,5 +109,5 @@ function get_final(
 
     # Restore shape of floes based on the cleaned up `mask`
     final = IceFloeTracker.MorphSE.mreconstruct(IceFloeTracker.MorphSE.dilate, _img, mask)
-    return final
+    return BitMatrix(final)
 end

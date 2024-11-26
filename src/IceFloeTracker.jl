@@ -182,6 +182,8 @@ module MorphSE
     include("morphSE/fill_holes.jl")
 end
 
+include("preprocess_tiling.jl")
+
 module Register
     include("Register/CenterIndexedArrays.jl-0.2.0/CenterIndexedArrays.jl")
     include("Register/RegisterCore.jl-0.2.4/src/RegisterCore.jl")
