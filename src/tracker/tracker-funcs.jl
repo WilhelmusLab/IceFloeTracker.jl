@@ -163,7 +163,7 @@ end
 """
     makeemptydffrom(df::DataFrame)
 
-Return an object with an empty dataframe with the same column names as `df` and an empty dataframe with column names `area`, `majoraxis`, `minoraxis`, `convex_area`, `area_mismatch`, and `corr` for similarity ratios. 
+Return an object with an empty dataframe with the same column names as `df` and an empty dataframe with column names `area`, `majoraxis`, `minoraxis`, `convex_area`, `area_mismatch`, and `corr` for similarity ratios.
 """
 function makeemptydffrom(df::DataFrame)
     return MatchingProps(
@@ -277,7 +277,7 @@ end
 """
     compute_ratios((props_day1, r), (props_day2,s))
 
-Compute the ratios of the floe properties between the `r`th floe in `props_day1` and the `s`th floe in `props_day2`. Return a tuple of the ratios. 
+Compute the ratios of the floe properties between the `r`th floe in `props_day1` and the `s`th floe in `props_day2`. Return a tuple of the ratios.
 
 # Arguments
 - `props_day1`: floe properties for day 1
@@ -355,7 +355,7 @@ end
 Return the floe properties for day `dayidx` and day `dayidx+1`.
 """
 function getpropsday1day2(properties, dayidx::Int64)
-    return copy(properties[dayidx]), copy(properties[dayidx + 1])
+    return copy(properties[dayidx]), copy(properties[dayidx+1])
 end
 
 """
@@ -404,7 +404,7 @@ Get nonunique rows in `matchedpairs`.
 """
 function getcollisions(matchedpairs)
     collisions = transform(matchedpairs, nonunique)
-    return filter(r -> r.x1 != 0, collisions)[:, 1:(end - 1)]
+    return filter(r -> r.x1 != 0, collisions)[:, 1:(end-1)]
 end
 
 function deletematched!(
@@ -498,6 +498,15 @@ function addfloemasks!(props::Vector{DataFrame}, imgs::Vector{<:FloeLabelsImage}
     return nothing
 end
 
+"""
+    get_unmatched(props, matched)
+
+Return the floes in `props` that are not in `matched`.
+"""
+function get_unmatched(props, matched)
+    return antijoin(props, matched, on=names(props))
+end
+
 ## LatLon functions originally from IFTPipeline.jl
 
 """
@@ -533,7 +542,7 @@ Convert the floe properties from pixels to kilometers and square kilometers wher
 function converttounits!(propdf, latlondata, colstodrop)
     if nrow(propdf) == 0
         dropcols!(propdf, colstodrop)
-        insertcols!(propdf, :latitude=>Float64, :longitude=>Float64, :x=>Float64, :y=>Float64)
+        insertcols!(propdf, :latitude => Float64, :longitude => Float64, :x => Float64, :y => Float64)
         return nothing
     end
     convertcentroid!(propdf, latlondata, colstodrop)
