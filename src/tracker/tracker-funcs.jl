@@ -26,7 +26,24 @@ end
 Return an object of type `MatchedPairs` with an empty dataframe with the same column names as `df`, an empty dataframe with column names `area`, `majoraxis`, `minoraxis`, `convex_area`, `area_mismatch`, and `corr` for similarity ratios, and an empty vector for distances.
 """
 function MatchedPairs(df)
-    emptypropsdf = similar(df, 0)
+    # TODO: revisit this
+    cols = ["area",
+        "min_row",
+        "min_col",
+        "max_row",
+        "max_col",
+        "row_centroid",
+        "col_centroid",
+        "convex_area",
+        "major_axis_length",
+        "minor_axis_length",
+        "orientation",
+        "perimeter",
+        "mask",
+        "uuid",
+        "passtime",
+        "psi"]
+    emptypropsdf = similar(df[:, cols], 0)
     return MatchedPairs(emptypropsdf, copy(emptypropsdf), makeemptyratiosdf(), Float64[])
 end
 
