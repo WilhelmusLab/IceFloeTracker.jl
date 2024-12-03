@@ -504,7 +504,8 @@ end
 Return the floes in `props` that are not in `matched`.
 """
 function get_unmatched(props, matched)
-    return antijoin(props, matched, on=names(props))
+    _on = mapreduce(df -> Set(names(df)), intersect, [props, matched]) |> collect
+    return antijoin(props, matched, on=_on)
 end
 
 ## LatLon functions originally from IFTPipeline.jl
