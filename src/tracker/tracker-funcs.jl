@@ -364,9 +364,11 @@ end
 Collect the data for the best match between the `r`th floe in `props_day1` and the `idx`th floe in `matching_floes`. Return a tuple of the floe properties for day 1 and day 2 and the ratios.
 """
 function getbestmatchdata(idx, r, props_day1, matching_floes)
+    matching_floes_props = matching_floes.props[idx, :]
+    cols = names(matching_floes_props)
     return (
-        props1=props_day1[r, :],
-        props2=matching_floes.props[idx, :],
+        props1=props_day1[r, cols],
+        props2=matching_floes_props,
         ratios=matching_floes.ratios[idx, :],
         dist=matching_floes.dist[idx],
     )
