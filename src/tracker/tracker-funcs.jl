@@ -527,6 +527,18 @@ function get_unmatched(props, matched)
     return antijoin(props, matched, on=_on)
 end
 
+"""
+    get_trajectory_heads(pairs)
+
+Return the last row (most recent member) of each group (trajectory) in `pairs` as a dataframe.
+
+This is used for getting the initial floe properties for the next day in search for new pairs.
+"""
+function get_trajectory_heads(pairs::T) where {T<:AbstractDataFrame}
+    gdf = groupby(pairs, :uuid)
+    return combine(gdf, last)[:, names(pairs)]
+end
+
 ## LatLon functions originally from IFTPipeline.jl
 
 """
