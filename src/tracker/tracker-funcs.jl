@@ -557,6 +557,15 @@ function _swap_last_values!(df)
     return df  # The original DataFrame is modified in-place
 end
 
+"""
+    get_dt(props1, r, props2, s)
+
+Return the time difference between the `r`th floe in `props1` and the `s`th floe in `props2` in minutes.
+"""
+function get_dt(props1, r, props2, s)
+    return (props2.passtime[s] - props1.passtime[r]) / Minute(1)
+end
+
 ## LatLon functions originally from IFTPipeline.jl
 
 """
