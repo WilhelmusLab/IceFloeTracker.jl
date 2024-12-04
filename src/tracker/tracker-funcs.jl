@@ -524,7 +524,13 @@ Return the floes in `props` that are not in `matched`.
 """
 function get_unmatched(props, matched)
     _on = mapreduce(df -> Set(names(df)), intersect, [props, matched]) |> collect
-    return antijoin(props, matched, on=_on)
+    unmatched = antijoin(props, matched, on=_on)
+
+    # Add missing columns for joining
+    add_missing = ["area_mismatch", "corr"]
+    [unmatched[!, n] = [missing for _ in 1:nrow(unmatched)] for n in add_missing]
+
+    return unmatched
 end
 
 """
