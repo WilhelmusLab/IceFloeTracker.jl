@@ -5,7 +5,7 @@ using Pkg
 Pkg.activate(HOME)
 Pkg.precompile()
 
-using IceFloeTracker: pairfloes, deserialize, PaddedView, float64, mosaicview, Gray, sort_floes_by_area!, add_passtimes!, addfloemasks!, addψs!, getpropsday1day2, MatchedPairs, makeemptydffrom, compute_ratios_conditions, callmatchcorr, isfloegoodmatch, appendrows!, getidxmostminimumeverything, isnotnan, getbestmatchdata, addmatch!, resolvecollisions!, deletematched!, update!, Tracked
+using IceFloeTracker: pairfloes, deserialize, PaddedView, float64, mosaicview, Gray, sort_floes_by_area!, add_passtimes!, addfloemasks!, addψs!, getpropsday1day2, MatchedPairs, makeemptydffrom, compute_ratios_conditions, callmatchcorr, isfloegoodmatch, appendrows!, getidxmostminimumeverything, isnotnan, getbestmatchdata, addmatch!, resolvecollisions!, deletematched!, update!, Tracked, get_trajectory_heads, get_unmatched, _pairfloes, _swap_last_values!, get_dt, find_floe_matches
 using DataFrames
 using Dates
 using Random
@@ -13,6 +13,7 @@ using StatsBase
 using Test
 imshow(x) = Gray.(x);
 
+# begin
 
 # Set thresholds
 begin
@@ -53,18 +54,7 @@ for (i, prop) in enumerate(_props)
     sort!(_props[i], :area, rev=true)
 end
 
-pf(p) = pairfloes(_imgs, p, passtimes, latlonimgpth, condition_thresholds, mc_thresholds)
-pf(p, _imgs) = pairfloes(_imgs, p, passtimes, latlonimgpth, condition_thresholds, mc_thresholds)
-
-# Test case 1: New floes after the first day
-# props_test_case1 = deepcopy(_props);
-# delete!(props_test_case1[1], 4); # delete the smallest floe in day 1
-# passtimes = _passtimes
-# pairs_test_case1 = pf(props_test_case1)
-# Four trajectories, three of length 3 and one of length 2
-# Set([3 => 3, 2 => 1])
-# @test countmap(pairs_test_case1[:, :ID]) |> values |> countmap |> Set == Set([3 => 3, 2 => 1])
-
+# Prep data for _pairfloes
 begin
     # Test case 2: No new floes after the first day but some floes are missing
     props_test_case2 = deepcopy(_props)
@@ -74,26 +64,23 @@ begin
     # delete!(props_test_case2[3], 4);
     # Expect four trajectories, three of length 3 and one of length 1
     # Outcome: three trajectories of length 3. Unpaired floe in day 1 left behind
-    pairs_test_case2 = pairfloes(segmented_imgs, (props_test_case2), passtimes, latlonimgpth, condition_thresholds, mc_thresholds)
 end
 
-# begin
-    # Get unmatched floes
-    unmatched = IceFloeTracker.get_unmatched(props_test_case2[1], pairs_test_case2[1].props1)
+pairs_test_case2 = _pairfloes(segmented_imgs, props_test_case2, passtimes, condition_thresholds, mc_thresholds)
 
+begin # Get unmatched floes from day 1
+    unmatched1 = get_unmatched(props_test_case2[1], pairs_test_case2[1].props1)
+end
 
+begin # Consolidation
     # Consolidate (horizontally) props1, props2, and ratios into a single data structure
     _pairs = [hcat(hcat(p.props1, p.props2, makeunique=true), p.ratios[:, ["area_mismatch", "corr"]]) for p in pairs_test_case2]
-    # names(_pairs[1])
-
-
-
     # Reshape _pairs to a long df
     propsvert = vcat(_pairs...) # same as _pairs[1] as _pairs is a vector of DataFrames with one element
     DataFrames.sort!(propsvert, [:passtime])
 
     # Update uuid_1 to uuid to sort later by uuid and then by passtime
-    propsvert.uuid_1 = propsvert.uuid;
+    propsvert.uuid_1 = propsvert.uuid
     rightcolnames = vcat([name for name in names(propsvert) if endswith(name, "_1")])
     leftcolnames = [split(name, "_1")[1] for name in rightcolnames]
     matchcolnames = ["uuid", "passtime", "area_mismatch", "corr"]
@@ -106,28 +93,26 @@ end
     _pairs = DataFrames.sort!(_pairs, [:uuid, :passtime]) |> unique
     _pairs = leftjoin(_pairs, matchdf, on=[:uuid, :passtime])
     DataFrames.sort!(_pairs, [:uuid, :passtime])
+end
 
-    add_missing = ["area_mismatch", "corr"]
-    [unmatched[!, n] = [missing for _ in 1:nrow(unmatched)] for n in add_missing]
+# Update _pairs with unmatched floes from day 1
+_pairs = vcat(_pairs, unmatched1[:, names(_pairs)])
 
-    _pairs = vcat(_pairs, unmatched[:, names(_pairs)])
 
-    gdf = groupby(_pairs, :uuid)
-    baseprops = combine(gdf, last)[:, names(_pairs)]
-    # baseprops[:, [:uuid, :passtime]]
-# end
-# vcat(_pairs, baseprops)
+trajectory_heads = get_trajectory_heads(_pairs)
 
-tracked = Tracked()
-props = props_test_case2
-dt = diff(passtimes) ./ Minute(1)
-dayi = 2
-props1, props2 = getpropsday1day2(props, dayi)
+begin # Set up next i+1 iteration with trajectory heads
+    tracked = Tracked()
+    props = props_test_case2
+    dt = diff(passtimes) ./ Minute(1)
+    dayi = 2
+end
 
-props1 = baseprops
+# TODO: Instead of using props1, use trajectory_heads in getpropsday1day2. Perhaps rename function.
+_, props2 = getpropsday1day2(props, dayi)
+props1 = trajectory_heads
 
 # IceFloeTracker.addfloemasks!(prop, img)
-Δt = dt[dayi]
 
 # Container for matches in dayi which will be used to populate tracked
 match_total = MatchedPairs(props2)
@@ -142,6 +127,7 @@ while true # there are no more floes to match in props1
         matching_floes = makeemptydffrom(props2)
 
         for s in 1:nrow(props2) # TODO: consider using eachrow(props2) to iterate over rows
+            Δt = get_dt(props1, r, props2, s)
             @info "Considering floe $s in day $(dayi+1) for floe $r in day $dayi"
             ratios, conditions, dist = compute_ratios_conditions(
                 (props1, r), (props2, s), Δt, condition_thresholds
@@ -198,46 +184,45 @@ update!(tracked, match_total)
 
 # end
 sort!(tracked)
-foo = tracked.data
-
+_foo = tracked.data
+foo = IceFloeTracker.find_floe_matches(trajectory_heads, props[3], condition_thresholds, mc_thresholds)
+# Apply flattening workflow to the tracked floes and update pairs
 # begin
-    # Get unmatched floes
-    @info baseprops |> names
-    @info foo[1].props1 |> names
-    unmatched = IceFloeTracker.get_unmatched(baseprops, foo[1].props1)
+# 1. Get unmatched floes and add missing columns for join compatibility
+
+# Test adding an unmatched floe in props2
+begin
+    fake_props2 = deepcopy(props[3])
+    newrow = deepcopy(fake_props2[end, :])
+    newrow.area = 5
+    uuidfake = "zfakefloe123"
+    newrow.uuid = uuidfake
+    push!(fake_props2, newrow)
+    unmatched_df = get_unmatched(fake_props2, foo.props2)
+    @assert unmatched_df[1, :uuid] == uuidfake
+    @assert "corr" in names(unmatched_df)
+end
+
+# Consolidate (horizontally) props1, props2, and ratios into a single data structure
+consolidated = [hcat(hcat(p.props1, p.props2, makeunique=true), p.ratios[:, add_missing]) for p in [foo]]
+propsvert = vcat(consolidated...) # same as newpairs[1] as newpairs is a vector of DataFrames with one element
+DataFrames.sort!(propsvert, [:area, :passtime]) # TODO: might not be necessary
 
 
-    # Consolidate (horizontally) props1, props2, and ratios into a single data structure
-    _pairs = [hcat(hcat(p.props1, p.props2, makeunique=true), p.ratios[:, ["area_mismatch", "corr"]]) for p in pairs_test_case2]
-    # names(_pairs[1])
+# Update uuid_1 to uuid to sort later by uuid and then by passtime
+propsvert.uuid_1 = propsvert.uuid
+# Fix column names in rightdf
+leftcolnames = names(propsvert)[1:16]
+rightcolnames = names(propsvert)[17:end]
+rightdf = propsvert[:, vcat(rightcolnames)]
+rename!(rightdf, Dict(zip(rightcolnames, leftcolnames)))
+
+_pairs_rightdf = vcat(_pairs, rightdf)
+DataFrames.sort!(_pairs_rightdf, [:uuid, :passtime])
+_swap_last_values!(_pairs_rightdf)
 
 
+DataFrames.sort!(fkdf, [:uuid, :passtime])
+# Repeat
 
-    # Reshape _pairs to a long df
-    propsvert = vcat(_pairs...) # same as _pairs[1] as _pairs is a vector of DataFrames with one element
-    DataFrames.sort!(propsvert, [:passtime])
-
-    # Update uuid_1 to uuid to sort later by uuid and then by passtime
-    propsvert.uuid_1 = propsvert.uuid;
-    rightcolnames = vcat([name for name in names(propsvert) if endswith(name, "_1")])
-    leftcolnames = [split(name, "_1")[1] for name in rightcolnames]
-    matchcolnames = ["uuid", "passtime", "area_mismatch", "corr"]
-    leftdf = propsvert[:, leftcolnames]
-    rightdf = propsvert[:, rightcolnames]
-    rename!(rightdf, Dict(zip(rightcolnames, leftcolnames)))
-    matchdf = propsvert[:, matchcolnames]
-    _pairs = vcat(leftdf, rightdf)
-    # sort by uuid, passtime and keep unique rows
-    _pairs = DataFrames.sort!(_pairs, [:uuid, :passtime]) |> unique
-    _pairs = leftjoin(_pairs, matchdf, on=[:uuid, :passtime])
-    DataFrames.sort!(_pairs, [:uuid, :passtime])
-
-    add_missing = ["area_mismatch", "corr"]
-    [unmatched[!, n] = [missing for _ in 1:nrow(unmatched)] for n in add_missing]
-
-    _pairs = vcat(_pairs, unmatched[:, names(_pairs)])
-
-    gdf = groupby(_pairs, :uuid)
-    baseprops = combine(gdf, last)[:, names(_pairs)]
-    # baseprops[:, [:uuid, :passtime]]
-# end
+# At the end make :uuid => :ID where ID is a unique identifier for each floe from 1 to length(unique(:uuid))
