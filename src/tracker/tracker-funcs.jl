@@ -572,6 +572,18 @@ function get_dt(props1, r, props2, s)
     return (props2.passtime[s] - props1.passtime[r]) / Minute(1)
 end
 
+"""
+    reset_id!(df, col)
+
+Reset the distinct values in the column `col` of `df` to be consecutive integers starting from 1.
+"""
+function reset_id!(df::AbstractDataFrame, col::Union{Symbol,AbstractString})
+    ids = unique(df[!, col])
+    _map = Dict(ids .=> 1:length(ids))
+    transform!(df, col => ByRow(x -> _map[x]) => col)
+    return nothing
+end
+
 ## LatLon functions originally from IFTPipeline.jl
 
 """
