@@ -1,3 +1,4 @@
+
 HOME = "." # path to the root of the project two levels up
 
 # Activate the environment
@@ -48,33 +49,37 @@ begin
     IceFloeTracker.addfloemasks!(_props, _imgs)
 end
 
-# Filter out floes with area less than 350 pixels
+# Filter out floes with area less than `floe_area_threshold` pixels
+floe_area_threshold = 400
 for (i, prop) in enumerate(_props)
-    _props[i] = prop[prop[:, :area].>=500, :]
+    _props[i] = prop[prop[:, :area].>=floe_area_threshold, :] # 500 working good
     sort!(_props[i], :area, rev=true)
 end
 
-# Prep data for _pairfloes
+# Prep data for _pairfloes. TODO: use as test case
 begin
-    # Test case 2: No new floes after the first day but some floes are missing
+    # Unmatched floe in day 1, unmatched floe in day 2, and matches for every floe starting in day 3
     props_test_case2 = deepcopy(_props)
-    delete!(props_test_case2[2], 4)
+    delete!(props_test_case2[1], 1)
+    delete!(props_test_case2[2], 5)
     segmented_imgs = _imgs
     passtimes = _passtimes
-    # delete!(props_test_case2[3], 4);
-    # Expect four trajectories, three of length 3 and one of length 1
-    # Outcome: three trajectories of length 3. Unpaired floe in day 1 left behind
+    # Expected: 5 trajectories, 3 of which have length 3 and 2 of which have length 2
 end
 
-pairs_test_case2 = _pairfloes(segmented_imgs, props_test_case2, passtimes, condition_thresholds, mc_thresholds)
+begin # 0th iteration: pair floes in day 1 and day 2 and add unmatched floes to _pairs
+    foo = _pairfloes(segmented_imgs, props_test_case2, passtimes, condition_thresholds, mc_thresholds)
 
-begin # Get unmatched floes from day 1
-    unmatched1 = get_unmatched(props_test_case2[1], pairs_test_case2[1].props1)
+    # Get unmatched floes from day 1
+    unmatched1 = get_unmatched(props_test_case2[1], foo[1].props1)
+    unmatched2 = get_unmatched(props_test_case2[2], foo[1].props2)
+    unmatched = vcat(unmatched1, unmatched2)
 end
 
-begin # Consolidation
+begin # Pairs consolidation
     # Consolidate (horizontally) props1, props2, and ratios into a single data structure
-    _pairs = [hcat(hcat(p.props1, p.props2, makeunique=true), p.ratios[:, ["area_mismatch", "corr"]]) for p in pairs_test_case2]
+    missingcols = [:area_mismatch, :corr]
+    _pairs = [hcat(hcat(p.props1, p.props2, makeunique=true), p.ratios[:, missingcols]) for p in foo]
     # Reshape _pairs to a long df
     propsvert = vcat(_pairs...) # same as _pairs[1] as _pairs is a vector of DataFrames with one element
     DataFrames.sort!(propsvert, [:passtime])
@@ -95,10 +100,11 @@ begin # Consolidation
     DataFrames.sort!(_pairs, [:uuid, :passtime])
 end
 
-# Update _pairs with unmatched floes from day 1
-_pairs = vcat(_pairs, unmatched1[:, names(_pairs)])
+# Update _pairs with unmatched floes
+_pairs = vcat(_pairs, unmatched[:, names(_pairs)])
 
 
+# Start 2:end iterations
 trajectory_heads = get_trajectory_heads(_pairs)
 
 begin # Set up next i+1 iteration with trajectory heads
@@ -186,6 +192,12 @@ update!(tracked, match_total)
 sort!(tracked)
 _foo = tracked.data
 foo = IceFloeTracker.find_floe_matches(trajectory_heads, props[3], condition_thresholds, mc_thresholds)
+
+begin # Get unmatched floes in day 2 (iterations > 2)
+    unmatched2 = get_unmatched(props[3], foo.props2)
+    @assert isempty(unmatched2)
+end
+
 # Apply flattening workflow to the tracked floes and update pairs
 # begin
 # 1. Get unmatched floes and add missing columns for join compatibility
@@ -203,26 +215,25 @@ begin
     @assert "corr" in names(unmatched_df)
 end
 
-# Consolidate (horizontally) props1, props2, and ratios into a single data structure
-consolidated = [hcat(hcat(p.props1, p.props2, makeunique=true), p.ratios[:, add_missing]) for p in [foo]]
-propsvert = vcat(consolidated...) # same as newpairs[1] as newpairs is a vector of DataFrames with one element
-DataFrames.sort!(propsvert, [:area, :passtime]) # TODO: might not be necessary
 
+begin # Consolidate (horizontally) props1, props2, and ratios into a single data structure
+    consolidated = [hcat(hcat(p.props1, p.props2, makeunique=true), p.ratios[:, missingcols]) for p in [foo]]
+    propsvert = vcat(consolidated...) # same as newpairs[1] as newpairs is a vector of DataFrames with one element
+    DataFrames.sort!(propsvert, [:area, :passtime]) # TODO: might not be necessary
+    # Update uuid_1 to uuid to sort later by uuid and then by passtime
+    propsvert.uuid_1 = propsvert.uuid
+    # Fix column names in rightdf
+    leftcolnames = names(propsvert)[1:16]
+    rightcolnames = names(propsvert)[17:end]
+    rightdf = propsvert[:, vcat(rightcolnames)]
+    rename!(rightdf, Dict(zip(rightcolnames, leftcolnames)))
 
-# Update uuid_1 to uuid to sort later by uuid and then by passtime
-propsvert.uuid_1 = propsvert.uuid
-# Fix column names in rightdf
-leftcolnames = names(propsvert)[1:16]
-rightcolnames = names(propsvert)[17:end]
-rightdf = propsvert[:, vcat(rightcolnames)]
-rename!(rightdf, Dict(zip(rightcolnames, leftcolnames)))
+    _pairs_rightdf = vcat(_pairs, rightdf, unmatched2)
+    DataFrames.sort!(_pairs_rightdf, [:uuid, :passtime])
+    _swap_last_values!(_pairs_rightdf)
+    # IceFloeTracker.reset_ids!(_pairs_rightdf)
+end
 
-_pairs_rightdf = vcat(_pairs, rightdf)
-DataFrames.sort!(_pairs_rightdf, [:uuid, :passtime])
-_swap_last_values!(_pairs_rightdf)
-
-
-DataFrames.sort!(fkdf, [:uuid, :passtime])
 # Repeat
 
 # At the end make :uuid => :ID where ID is a unique identifier for each floe from 1 to length(unique(:uuid))
