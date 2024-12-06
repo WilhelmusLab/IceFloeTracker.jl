@@ -597,6 +597,23 @@ function reset_id!(df::AbstractDataFrame, col::Union{Symbol,AbstractString})
     return nothing
 end
 
+"""
+    consolidate_matched_pairs(matched_pairs::MatchedPairs)
+
+Consolidate the floe properties and similarity ratios of the matched pairs in `matched_pairs` into a single dataframe. Return the consolidated dataframe.
+"""
+function consolidate_matched_pairs(matched_pairs::MatchedPairs)
+    goodness_cols = [:area_mismatch, :corr]
+    # First horizontally
+    _pairs = [hcat(p.props1, p.props2, p.ratios[:, goodness_cols], makeunique=true) for p in [matched_pairs]]
+    # and then vertically
+    propsvert = vcat(_pairs...) # same as _pairs[1] as _pairs is a vector of DataFrames with one element
+
+    DataFrames.sort!(propsvert, [:passtime])
+
+    return propsvert
+end
+
 ## LatLon functions originally from IFTPipeline.jl
 
 """
