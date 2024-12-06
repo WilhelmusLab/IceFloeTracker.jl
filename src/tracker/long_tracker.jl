@@ -62,7 +62,9 @@ function long_tracker(props::Vector{DataFrame}, condition_thresholds, mc_thresho
         end
     end
     IceFloeTracker.reset_id!(trajectories)
-    return trajectories
+    # list the uuid in the leftmost column
+    cols = [col for col in names(trajectories) if col != "uuid"]
+    return trajectories[!, ["uuid", cols...]]
 end
 
 """
