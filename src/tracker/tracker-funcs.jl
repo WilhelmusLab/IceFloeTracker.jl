@@ -600,7 +600,7 @@ end
 """
     consolidate_matched_pairs(matched_pairs::MatchedPairs)
 
-Consolidate the floe properties and similarity ratios of the matched pairs in `matched_pairs` into a single dataframe. Return the consolidated dataframe.
+Consolidate the floe properties and similarity ratios of the matched pairs in `matched_pairs` into a single dataframe. Return the consolidated dataframe. Used in iteration `0`.
 """
 function consolidate_matched_pairs(matched_pairs::MatchedPairs)
     # Ensure UUIDs are consistent
