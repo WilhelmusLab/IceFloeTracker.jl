@@ -603,15 +603,26 @@ end
 Consolidate the floe properties and similarity ratios of the matched pairs in `matched_pairs` into a single dataframe. Return the consolidated dataframe.
 """
 function consolidate_matched_pairs(matched_pairs::MatchedPairs)
+    # Ensure UUIDs are consistent
+    matched_pairs.props2.uuid = matched_pairs.props1.uuid
+
+    # Define columns for goodness ratios
     goodness_cols = [:area_mismatch, :corr]
-    # First horizontally
-    _pairs = [hcat(p.props1, p.props2, p.ratios[:, goodness_cols], makeunique=true) for p in [matched_pairs]]
-    # and then vertically
-    propsvert = vcat(_pairs...) # same as _pairs[1] as _pairs is a vector of DataFrames with one element
 
-    DataFrames.sort!(propsvert, [:passtime])
+    # Create top DataFrame with properties and goodness ratios
+    top_df = hcat(matched_pairs.props1, matched_pairs.ratios[:, goodness_cols], makeunique=true)
 
-    return propsvert
+    # Create missing ratios DataFrame
+    missing_ratios = DataFrame(missing, size(matched_pairs.props2, 1), length(goodness_cols))
+    rename!(missing_ratios, names(matched_pairs.ratios[:, goodness_cols]))
+
+    bottom_df = hcat(matched_pairs.props2, missing_ratios, makeunique=true)
+
+    combined_df = vcat(top_df, bottom_df)
+
+    DataFrames.sort!(combined_df, [:uuid, :passtime])
+
+    return combined_df
 end
 
 ## LatLon functions originally from IFTPipeline.jl
