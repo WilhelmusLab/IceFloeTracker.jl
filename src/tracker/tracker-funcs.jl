@@ -613,8 +613,8 @@ function consolidate_matched_pairs(matched_pairs::MatchedPairs)
     top_df = hcat(matched_pairs.props1, matched_pairs.ratios[:, goodness_cols], makeunique=true)
 
     # Create missing ratios DataFrame
-    missing_ratios = DataFrame(missing, size(matched_pairs.props2, 1), length(goodness_cols))
-    rename!(missing_ratios, names(matched_pairs.ratios[:, goodness_cols]))
+    missing_ratios = similar(matched_pairs.ratios[:, goodness_cols])
+    missing_ratios[!, :] .= missing
 
     bottom_df = hcat(matched_pairs.props2, missing_ratios, makeunique=true)
 
