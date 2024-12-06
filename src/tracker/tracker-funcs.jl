@@ -625,6 +625,26 @@ function consolidate_matched_pairs(matched_pairs::MatchedPairs)
     return combined_df
 end
 
+"""
+    get_matches(matched_pairs)
+
+Return a dataframe with the properties and goodness ratios of the matched pairs (right-hand matches) in `matched_pairs`. Used in iterations `1:end`.
+"""
+function get_matches(matched_pairs::MatchedPairs)
+    # Ensure UUIDs are consistent
+    matched_pairs.props2.uuid = matched_pairs.props1.uuid
+
+    # Define columns for goodness ratios
+    goodness_cols = [:area_mismatch, :corr]
+
+    # Create DataFrame with properties and goodness ratios
+    combined_df = hcat(matched_pairs.props2, matched_pairs.ratios[:, goodness_cols], makeunique=true)
+
+    DataFrames.sort!(combined_df, [:uuid, :passtime])
+
+    return combined_df
+end
+
 ## LatLon functions originally from IFTPipeline.jl
 
 """
