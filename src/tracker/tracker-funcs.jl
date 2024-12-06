@@ -590,7 +590,7 @@ end
 
 Reset the distinct values in the column `col` of `df` to be consecutive integers starting from 1.
 """
-function reset_id!(df::AbstractDataFrame, col::Union{Symbol,AbstractString})
+function reset_id!(df::AbstractDataFrame, col::Union{Symbol,AbstractString}=:uuid)
     ids = unique(df[!, col])
     _map = Dict(ids .=> 1:length(ids))
     transform!(df, col => ByRow(x -> _map[x]) => col)
