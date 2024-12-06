@@ -573,6 +573,19 @@ function get_dt(props1, r, props2, s)
 end
 
 """
+    adduuid!(props)
+
+Assign a unique ID to each floe in each table of floe properties.
+"""
+function adduuid!(props::Vector{DataFrame})
+    # Assign a unique ID to each floe in each image
+    for (i, prop) in enumerate(props)
+        props[i].uuid = [randstring(12) for _ in 1:nrow(prop)]
+    end
+    return nothing
+end
+
+"""
     reset_id!(df, col)
 
 Reset the distinct values in the column `col` of `df` to be consecutive integers starting from 1.
