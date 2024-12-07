@@ -1,6 +1,4 @@
-@testset "Create Cloudmask" begin
-    println("-------------------------------------------------")
-    println("------------ Create Cloudmask Test --------------")
+@ntestset "$(@__FILE__)" begin
 
     # define constants, maybe move to test config file
     matlab_cloudmask_file = "$(test_data_dir)/matlab_cloudmask.tiff"

@@ -27,7 +27,7 @@ se_erosion = se
 se_dilation = se_disk2()
 get_final_expected = readdlm(joinpath(test_files_dir, "get_final_expected.csv"), ',', Bool)
 
-@testset "regularize/get_final" begin
+@ntestset "$(@__FILE__)" begin
     @testset "regularize_fill_holes/sharpening" begin
         reg_holes_filled = regularize_fill_holes(
             morph_residue, local_maxima_mask, segment_mask, L0mask, 0.3

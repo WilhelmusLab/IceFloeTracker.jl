@@ -1,6 +1,6 @@
 using IceFloeTracker: long_tracker, _imhist
 
-@testset "long tracker" begin
+@ntestset "$(@__FILE__)" begin
 
     begin # Set thresholds
         t1 = (dt=(30.0, 100.0, 1300.0), dist=(200, 250, 300))
@@ -46,7 +46,7 @@ using IceFloeTracker: long_tracker, _imhist
         end
     end
 
-    @testset "Case 1" begin
+    @ntestset "Case 1" begin
         # Every floe is matched in every day
         props_test_case1 = deepcopy(_props)
         trajectories = IceFloeTracker.long_tracker(props_test_case1, condition_thresholds, mc_thresholds)
@@ -61,11 +61,11 @@ using IceFloeTracker: long_tracker, _imhist
         @test counts == [5]
     end
 
-    @testset "Case 2" begin
+    @ntestset "Case 2" begin
         # Unmatched floe in day 1, unmatched floe in day 2, and matches for every floe starting in day 3
         props_test_case2 = deepcopy(_props)
-        delete!(props_test_case2[1], 1)
-        delete!(props_test_case2[2], 5)
+        deleteat!(props_test_case2[1], 1)
+        deleteat!(props_test_case2[2], 5)
         trajectories = IceFloeTracker.long_tracker(props_test_case2, condition_thresholds, mc_thresholds)
 
         # Expected: 5 trajectories, 3 of which have length 3 and 2 of which have length 2

@@ -1,6 +1,4 @@
-@testset "regionprops-labeled.jl" begin
-    println("------------------------------------------------------------")
-    println("-------------- regionprops (labeled) Tests ----------------")
+@ntestset "$(@__FILE__)" begin
 
     img1 = Int[
         0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0   # row  1

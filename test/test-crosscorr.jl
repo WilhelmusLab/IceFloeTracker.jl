@@ -1,6 +1,4 @@
-@testset "crosscorr tests" begin
-    println("-------------------------------------------------")
-    println("----------- cross correlation tests -------------")
+@ntestset "$(@__FILE__)" begin
 
     # Compare against matlab xcorr with normalization (standard use case in IceFloeTracker)
     n = 0:15

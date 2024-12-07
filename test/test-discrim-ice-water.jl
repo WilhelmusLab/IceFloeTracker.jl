@@ -1,6 +1,4 @@
-@testset "Discriminate Ice-Water" begin
-    println("------------------------------------------------")
-    println("------------ Create Ice-Water Discrimination Test --------------")
+@ntestset "$(@__FILE__)" begin
     input_image = float64.(load(truecolor_test_image_file)[test_region...])
     falsecolor_image = float64.(load(falsecolor_test_image_file)[test_region...])
     landmask = convert(BitMatrix, load(current_landmask_file))

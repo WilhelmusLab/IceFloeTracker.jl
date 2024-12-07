@@ -1,7 +1,4 @@
-
-@testset "Segmentation-A" begin
-    println("------------------------------------------------")
-    println("------------ Create Segmentation-A Test --------------")
+@ntestset "$(@__FILE__)" begin
 
     ice_water_discriminated_image =
         float64.(load("$(test_data_dir)/matlab_ice_water_discrim.png"))

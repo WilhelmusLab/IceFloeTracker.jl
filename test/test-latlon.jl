@@ -1,6 +1,6 @@
 using IceFloeTracker: getlatlon
 
-@testset "getlatlon" begin
+@ntestset "$(@__FILE__)" begin
     imgpth = "test_inputs/latlon/latlon_test_image-2020-06-21T00_00_00Z.tif"
 
     # vec needed to convert to vector instead of nx1 matrix

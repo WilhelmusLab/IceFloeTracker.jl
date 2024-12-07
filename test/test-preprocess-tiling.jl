@@ -11,7 +11,7 @@ using IceFloeTracker:
     unsharp_mask_params,
     get_tiles
 
-@testset "preprocess_tiling" begin
+@ntestset "$(@__FILE__)" begin
     region = (1016:3045, 1486:3714)
     data_dir = joinpath(@__DIR__, "test_inputs")
     true_color_image = load(

@@ -1,6 +1,4 @@
-@testset "persist.jl" begin
-    println("-------------------------------------------------")
-    println("---------- Persist Image Tests ------------")
+@ntestset "$(@__FILE__)" begin
 
     outimage_path = "outimage1.tiff"
     img = ones(3, 3)
@@ -13,7 +11,7 @@
     @persist img "outimage2.tiff"
     @test isfile("outimage2.tiff")
 
-    # Test no-filename call. Default filename startswith 'persisted_img-' 
+    # Test no-filename call. Default filename startswith 'persisted_img-'
     # First clear all files that start with this prefix, if any
     prefix = "persisted_img-"
     [rm(f) for f in readdir() if startswith(f, prefix)]
@@ -52,7 +50,7 @@
     @persist img "foo.png" true
     foos = [f for f in readdir() if startswith(f, "foo")]
     @test length(foos) == 1
-    @test length(foos[1]) == 25 # ts adds 19 chars 
+    @test length(foos[1]) == 25 # ts adds 19 chars
 
     # Clean up
     [rm(f) for f in readdir() if endswith(f, "png") || endswith(f, "tiff")]

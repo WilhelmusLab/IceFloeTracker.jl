@@ -1,7 +1,7 @@
 using IceFloeTracker: get_optimal_tile_size, get_tile_meta, bump_tile, get_tiles
 gots = get_optimal_tile_size
 
-@testset "Tiling utils" begin
+@ntestset "$(@__FILE__)" begin
     @testset "get_optimal_tile_size" begin
         @test gots(2, (10, 10)) == 2 # disregard tiles of 1 pixel
         @test gots(3, (15, 15)) == 3

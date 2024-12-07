@@ -1,6 +1,4 @@
-@testset "bwtraceboundary test" begin
-    println("-------------------------------------------------")
-    println("------------ bwtraceboundary Tests --------------")
+@ntestset "$(@__FILE__)" begin
 
     # Create an image with 3 connected components. The test consists of identifying the three closed sequences of border pixels in the image below. We do so using bwtraceboundary.
     A = zeros(Int, 13, 16)
@@ -63,4 +61,4 @@
     # test not closed
     @test length(IceFloeTracker.bwtraceboundary(A; P0=p1, closed=false)) ==
         length(IceFloeTracker.bwtraceboundary(A; P0=p1)) - 1
-end;
+end

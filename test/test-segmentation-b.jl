@@ -1,6 +1,4 @@
-@testset "Segmentation-B" begin
-    println("------------------------------------------------")
-    println("------------ Create Segmentation-B Test --------------")
+@ntestset "$(@__FILE__)" begin
 
     sharpened_image = float64.(load(sharpened_test_image_file))
     segmented_a_ice_mask = convert(BitMatrix, load(segmented_a_ice_mask_file))

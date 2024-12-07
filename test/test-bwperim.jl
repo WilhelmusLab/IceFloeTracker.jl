@@ -1,6 +1,4 @@
-@testset "bwperim" begin
-    println("-------------------------------------------------")
-    println("---------------- bwperim Tests ------------------")
+@ntestset "$(@__FILE__)" begin
 
     # Create image with 3 connected components. The test consists of digging the biggests holes for each blob in the foreground using bwperim, thereby creating 3 additional connected components, 6 in total.
     A = zeros(Bool, 13, 16)
@@ -31,17 +29,17 @@
     interior_relabel = IceFloeTracker.label_components(interior) * 2 # relabel the wholes
     A_relabeled = interior_relabel .+ border_mask
     # 0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0
-    # 0  1  1  1  1  1  0  0  0  0  0  0  0  0  0  0        
-    # 0  1  2  2  2  1  0  0  0  0  0  0  0  0  0  0        
-    # 0  1  2  2  2  2  1  1  1  1  0  0  0  0  0  0        
-    # 0  1  2  2  2  2  2  2  2  1  0  0  0  0  0  0        
-    # 0  1  1  1  1  1  2  2  2  1  0  0  0  0  0  0        
-    # 0  0  0  0  0  0  1  2  2  1  0  0  0  0  0  0        
-    # 0  0  0  0  0  0  1  1  1  1  0  0  0  0  0  0        
-    # 0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0        
+    # 0  1  1  1  1  1  0  0  0  0  0  0  0  0  0  0
+    # 0  1  2  2  2  1  0  0  0  0  0  0  0  0  0  0
+    # 0  1  2  2  2  2  1  1  1  1  0  0  0  0  0  0
+    # 0  1  2  2  2  2  2  2  2  1  0  0  0  0  0  0
+    # 0  1  1  1  1  1  2  2  2  1  0  0  0  0  0  0
+    # 0  0  0  0  0  0  1  2  2  1  0  0  0  0  0  0
+    # 0  0  0  0  0  0  1  1  1  1  0  0  0  0  0  0
+    # 0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0
     # 0  0  1  1  1  1  0  0  0  0  0  0  1  1  1  0
-    # 0  0  1  4  4  1  0  0  0  0  0  0  1  6  1  0        
-    # 0  0  1  1  1  1  0  0  0  0  0  0  1  1  1  0        
+    # 0  0  1  4  4  1  0  0  0  0  0  0  1  6  1  0
+    # 0  0  1  1  1  1  0  0  0  0  0  0  1  1  1  0
     # 0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0
 
     @test numinicomps + 3 ==

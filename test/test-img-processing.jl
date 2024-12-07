@@ -6,7 +6,7 @@ using IceFloeTracker:
     get_holes,
     impose_minima
 
-@testset "misc. image processing" begin
+@ntestset "$(@__FILE__)" begin
     r = ZipFile.Reader("test_inputs/coins.zip")
     coins = readdlm(r.files[1], ',', Int)
     close(r)

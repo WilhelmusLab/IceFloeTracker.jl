@@ -1,4 +1,4 @@
-@testset "register_mismatch tests" begin
+@ntestset "$(@__FILE__)" begin
     # Read in floe from file
     floe = readdlm("./test_inputs/floetorotate.csv", ',', Bool)
 

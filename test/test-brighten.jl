@@ -1,6 +1,6 @@
 using IceFloeTracker: get_brighten_mask, imbrighten
 
-@testset "brighten tests" begin
+@ntestset "$(@__FILE__)" begin
     @testset "get_brighten_mask" begin
         img = rand(0:255, 5, 5)
         bumped_img = img .+ 1

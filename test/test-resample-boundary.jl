@@ -1,6 +1,4 @@
-@testset "resample_boundary test" begin
-    println("-------------------------------------------------")
-    println("------------ resample_boundary Tests --------------")
+@ntestset "$(@__FILE__)" begin
 
     # Create an image with 3 connected components. The test consists of identifying the three closed sequences of border pixels in the image below. We do so using bwtraceboundary.
     A = zeros(Int, 9, 11)

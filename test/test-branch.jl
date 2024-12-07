@@ -1,4 +1,4 @@
-@testset "branch points tests" begin
+@ntestset "$(@__FILE__)" begin
     dir = joinpath(test_data_dir, "branch")
     readcsv(f) = readdlm(joinpath(dir, f), ',', Bool)
 

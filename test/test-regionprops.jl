@@ -1,6 +1,4 @@
-@testset "regionprops.jl" begin
-    println("-------------------------------------------------")
-    println("-------------- regionprops Tests ----------------")
+@ntestset "$(@__FILE__)" begin
 
     Random.seed!(123)
     bw_img = Bool.(rand([0, 1], 5, 10))

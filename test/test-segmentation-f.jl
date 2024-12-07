@@ -1,6 +1,4 @@
-@testset "Segmentation-F" begin
-    println("------------------------------------------------")
-    println("--------- Create Segmentation-F Test -----------")
+@ntestset "$(@__FILE__)" begin
 
     ## Load inputs for comparison
     segmentation_B_not_ice_mask = float64.(load("$(test_data_dir)/matlab_I.png"))

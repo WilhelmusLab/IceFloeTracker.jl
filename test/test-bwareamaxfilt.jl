@@ -1,6 +1,4 @@
-@testset "bwareamaxfilt test" begin
-    println("-------------------------------------------------")
-    println("------------ bwareamaxfilt Tests --------------")
+@ntestset "$(@__FILE__)" begin
 
     # Create a bitmatrix with a big floe and two smaller floes -- 3 connected components in total.
     A = zeros(Bool, 12, 15)

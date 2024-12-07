@@ -18,7 +18,7 @@ end
 tiles = get_tiles(ref_image; rblocks=2, cblocks=3)
 ref_image_landmasked = apply_landmask(ref_image, .!landmask)
 
-@testset "get_ice_labels_mask tests" begin
+@ntestset "$(@__FILE__)" begin
     begin
         tile = tiles[1]
         band_7_threshold = 5

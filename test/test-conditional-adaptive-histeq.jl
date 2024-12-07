@@ -21,7 +21,7 @@ begin
 end
 
 function test_cloud_image_workflow()
-    @testset "Prereq cloud image" begin
+    @ntestset "Prereq cloud image" begin
         false_color_cloudmasked = _get_false_color_cloudmasked(;
             false_color_image=false_color_image,
             prelim_threshold=110.0,
@@ -34,7 +34,7 @@ function test_cloud_image_workflow()
 end
 
 function test_adaphisteq()
-    @testset "Adaptive histogram equalization" begin
+    @ntestset "Adaptive histogram equalization" begin
         img = convert_to_255_matrix(testimage("cameraman"))
         img_eq = adapthisteq(img)
         @test sum(img_eq) == 32_387_397
@@ -42,7 +42,7 @@ function test_adaphisteq()
 end
 
 function test_conditional_adaptivehisteq()
-    @testset "Conditional adaptivehisteq" begin
+    @ntestset "Conditional adaptivehisteq" begin
         clouds = _get_false_color_cloudmasked(;
             false_color_image=false_color_image,
             prelim_threshold=110.0,
@@ -71,14 +71,14 @@ function test_conditional_adaptivehisteq()
 end
 
 function test_rgb2gray()
-    @testset "RGB to grayscale" begin
+    @ntestset "RGB to grayscale" begin
         g = rgb2gray(true_color_image)
         @test g[1000, 1000] == 92 && g[2000, 2000] == 206
     end
 end
 
 function test_histeq()
-    @testset "histeq" begin
+    @ntestset "histeq" begin
         imgs = [
             [
                 4 4 4 4 4
@@ -121,7 +121,7 @@ function test_histeq()
     end
 end
 
-@testset "Conditional adaptivehisteq" begin
+@ntestset "Conditional adaptivehisteq" begin
     test_cloud_image_workflow()
     test_adaphisteq()
     test_conditional_adaptivehisteq()

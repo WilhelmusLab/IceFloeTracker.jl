@@ -1,6 +1,4 @@
-@testset "Find_Ice_Labels" begin
-    println("------------------------------------------------")
-    println("------------ Create Ice Labels Test --------------")
+@ntestset "$(@__FILE__)" begin
 
     falsecolor_image = float64.(load(falsecolor_test_image_file)[test_region...])
     landmask = convert(BitMatrix, load(current_landmask_file))

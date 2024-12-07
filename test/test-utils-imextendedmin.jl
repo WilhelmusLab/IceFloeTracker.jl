@@ -1,12 +1,10 @@
-@testset "imextendedmin and bwdist" begin
-    println("-------------------------------------------------")
-    println("------- imextendedmin bwdist Tests --------------")
+@ntestset "$(@__FILE__)" begin
 
     test_matrix = "$(test_data_dir)/test_extendedmin.csv"
     test_image = DelimitedFiles.readdlm(test_matrix, ',', Bool)
     # Test matrix
     # 10×10 BitMatrix:
-    # 1 1 1 1 1 1 1 1 1 0 
+    # 1 1 1 1 1 1 1 1 1 0
     # 1 1 1 1 1 1 1 0 1 0
     # 1 1 1 0 1 1 1 1 1 1
     # 1 1 0 0 1 1 1 1 1 1

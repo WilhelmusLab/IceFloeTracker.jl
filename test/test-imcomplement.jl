@@ -1,6 +1,6 @@
 using IceFloeTracker: imcomplement
 
-@testset "imcomplement" begin
+@ntestset "$(@__FILE__)" begin
     img = rand(0:255, 10, 10)
     @test imcomplement(img) == 255 .- img
 

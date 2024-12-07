@@ -17,7 +17,7 @@ function run_tests(test_cases, func, se)
     end
 end
 
-@testset "reconstruct" begin
+@ntestset "$(@__FILE__)" begin
     @testset "imcomplement" begin
         @test imcomplement(coins) == 255 .- coins
 
