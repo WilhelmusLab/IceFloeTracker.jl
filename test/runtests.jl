@@ -24,6 +24,19 @@ function pad_string(str::String, total_length::Int=49, padding_char::Char='-')
     return padded_str
 end
 
+divline = "-"^49
+
+macro ntestset(file, testblock)
+    quote
+        testset_name = basename($file)
+        @testset "$testset_name" begin
+            println(divline)
+            println(pad_string(testset_name, length(divline)))
+            $(esc(testblock))
+        end
+    end
+end
+
 # Setting things up (see config.jl)
 
 ## Get all test files filenames "test-*" in test folder and their corresponding names/label
