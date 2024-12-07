@@ -116,6 +116,7 @@ include("segmentation_f.jl")
 include("tracker/tracker-funcs.jl")
 include("tracker/matchcorr.jl")
 include("tracker/tracker.jl")
+include("tracker/long_tracker.jl")
 
 """
     MorphSE
