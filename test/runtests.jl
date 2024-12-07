@@ -13,6 +13,17 @@ using ZipFile
 include("test_error_rate.jl")
 include("config.jl")
 
+function pad_string(str::String, total_length::Int=49, padding_char::Char='-')
+    # Calculate the padding needed on each side
+    left_padding = div(total_length - length(str), 2)
+    right_padding = total_length - length(str) - left_padding
+
+    # Pad the string
+    padded_str = lpad(rpad(str, length(str) + right_padding, padding_char), total_length, padding_char)
+
+    return padded_str
+end
+
 # Setting things up (see config.jl)
 
 ## Get all test files filenames "test-*" in test folder and their corresponding names/label
