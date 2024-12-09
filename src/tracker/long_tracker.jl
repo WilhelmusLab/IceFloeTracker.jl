@@ -22,7 +22,7 @@ Trajectories are built in two steps:
     - "orientation"
     - "perimeter"
     - "mask": 2D array of booleans
-    - "uuid": unique identifier
+    - "ID": unique identifier
     - "passtime": A timestamp for the floe
     - "psi": the psi-s curve for the floe
 - `condition_thresholds`: 3-tuple of thresholds (each a named tuple) for deciding whether to match floe `i` from day `k` to floe j from day `k+1`
@@ -62,9 +62,10 @@ function long_tracker(props::Vector{DataFrame}, condition_thresholds, mc_thresho
         end
     end
     IceFloeTracker.reset_id!(trajectories)
+    trajectories.ID = trajectories.uuid
     # list the uuid in the leftmost column
-    cols = [col for col in names(trajectories) if col != "uuid"]
-    return trajectories[!, ["uuid", cols...]]
+    cols = [col for col in names(trajectories) if col ∉ ["ID", "uuid"]]
+    return trajectories[!, ["ID", cols...]]
 end
 
 """
