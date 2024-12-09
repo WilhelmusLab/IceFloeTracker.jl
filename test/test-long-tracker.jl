@@ -52,8 +52,8 @@ using IceFloeTracker: long_tracker, _imhist
         trajectories = IceFloeTracker.long_tracker(props_test_case1, condition_thresholds, mc_thresholds)
 
         # Expected: 5 trajectories, all of which have length 3
-        uuids = trajectories[!, :uuid]
-        ids, counts = _imhist(uuids, unique(uuids))
+        IDs = trajectories[!, :ID]
+        ids, counts = _imhist(IDs, unique(IDs))
         @test maximum(ids) == 5
 
         ids, counts = _imhist(counts, unique(counts))
@@ -69,8 +69,8 @@ using IceFloeTracker: long_tracker, _imhist
         trajectories = IceFloeTracker.long_tracker(props_test_case2, condition_thresholds, mc_thresholds)
 
         # Expected: 5 trajectories, 3 of which have length 3 and 2 of which have length 2
-        uuids = trajectories[!, :uuid]
-        ids, counts = _imhist(uuids, unique(uuids))
+        IDs = trajectories[!, :ID]
+        ids, counts = _imhist(IDs, unique(IDs))
         @test maximum(ids) == 5
 
         ids, counts = _imhist(counts, unique(counts))
