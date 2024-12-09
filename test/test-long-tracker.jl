@@ -35,6 +35,7 @@ using IceFloeTracker: long_tracker, _imhist
         IceFloeTracker.addfloemasks!(_props, _imgs)
         IceFloeTracker.addψs!(_props)
         IceFloeTracker.add_passtimes!(_props, _passtimes)
+        IceFloeTracker.adduuid!(_props)
     end
 
     begin # Filter out floes with area less than `floe_area_threshold` pixels
