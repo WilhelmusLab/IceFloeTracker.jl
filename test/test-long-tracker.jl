@@ -16,49 +16,49 @@ function addgaps(props)
 end
 
 
-    begin # Set thresholds
-        t1 = (dt=(30.0, 100.0, 1300.0), dist=(200, 250, 300))
-        t2 = (
-            area=1200,
-            arearatio=0.28,
-            majaxisratio=0.10,
-            minaxisratio=0.12,
-            convexarearatio=0.14,
-        )
-        t3 = (
-            area=10_000,
-            arearatio=0.18,
-            majaxisratio=0.1,
-            minaxisratio=0.15,
-            convexarearatio=0.2,
-        )
-        condition_thresholds = (t1, t2, t3)
-        mc_thresholds = (
-            goodness=(area3=0.18, area2=0.236, corr=0.68), comp=(mxrot=10, sz=16)
-        )
+begin # Set thresholds
+    t1 = (dt=(30.0, 100.0, 1300.0), dist=(200, 250, 300))
+    t2 = (
+        area=1200,
+        arearatio=0.28,
+        majaxisratio=0.10,
+        minaxisratio=0.12,
+        convexarearatio=0.14,
+    )
+    t3 = (
+        area=10_000,
+        arearatio=0.18,
+        majaxisratio=0.1,
+        minaxisratio=0.15,
+        convexarearatio=0.2,
+    )
+    condition_thresholds = (t1, t2, t3)
+    mc_thresholds = (
+        goodness=(area3=0.18, area2=0.236, corr=0.68), comp=(mxrot=10, sz=16)
+    )
+end
+
+
+begin # Load data
+    pth = joinpath("test_inputs", "tracker")
+    _floedata = deserialize(joinpath(pth, "tracker_test_data.dat"))
+    _passtimes = deserialize(joinpath(pth, "passtimes.dat"))
+    _props, _imgs = deepcopy.([_floedata.props, _floedata.imgs])
+
+    # This order is important: masks, uuids, passtimes, ψs
+    IceFloeTracker.addfloemasks!(_props, _imgs)
+    IceFloeTracker.addψs!(_props)
+    IceFloeTracker.add_passtimes!(_props, _passtimes)
+    IceFloeTracker.adduuid!(_props)
+end
+
+begin # Filter out floes with area less than `floe_area_threshold` pixels
+    floe_area_threshold = 400
+    for (i, prop) in enumerate(_props)
+        _props[i] = prop[prop[:, :area].>=floe_area_threshold, :] # 500 working good
+        sort!(_props[i], :area, rev=true)
     end
-
-
-    begin # Load data
-        pth = joinpath("test_inputs", "tracker")
-        _floedata = deserialize(joinpath(pth, "tracker_test_data.dat"))
-        _passtimes = deserialize(joinpath(pth, "passtimes.dat"))
-        _props, _imgs = deepcopy.([_floedata.props, _floedata.imgs])
-
-        # This order is important: masks, uuids, passtimes, ψs
-        IceFloeTracker.addfloemasks!(_props, _imgs)
-        IceFloeTracker.addψs!(_props)
-        IceFloeTracker.add_passtimes!(_props, _passtimes)
-        IceFloeTracker.adduuid!(_props)
-    end
-
-    begin # Filter out floes with area less than `floe_area_threshold` pixels
-        floe_area_threshold = 400
-        for (i, prop) in enumerate(_props)
-            _props[i] = prop[prop[:, :area].>=floe_area_threshold, :] # 500 working good
-            sort!(_props[i], :area, rev=true)
-        end
-    end
+end
 
     @testset "Case 1" begin
         # Every floe is matched in every day
