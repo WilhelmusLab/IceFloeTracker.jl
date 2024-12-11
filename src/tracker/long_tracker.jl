@@ -8,7 +8,7 @@ Trajectories are built in two steps:
 1. For each subsequent day, find pairs of floes for the current trajectory heads. Again, any unmatched floe in the new prop table starts a new trajectory.
 
 # Arguments
-- `props::Vector{DataFrame}`: A vector of DataFrames, each containing ice floe properties for a single day. Each DataFrame must have the following columns in the order specified:
+- `props::Vector{DataFrame}`: A vector of DataFrames, each containing ice floe properties for a single day. Each DataFrame must have the following columns:
     - "area"
     - "min_row"
     - "min_col"
