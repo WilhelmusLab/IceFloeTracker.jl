@@ -90,4 +90,40 @@ end
         ids, counts = _imhist(counts, unique(counts))
         @test all(ids .== counts)
     end
+
+    @ntestset "Test gaps" begin
+        @ntestset "Case 3" begin
+            # Every floe is matched in every day for which there is data
+
+            props = addgaps(props_test_case1)
+
+            trajectories = IceFloeTracker.long_tracker(props, condition_thresholds, mc_thresholds)
+
+            # Expected: 5 trajectories, all of which have length 3 as in test case 1
+            IDs = trajectories[!, :ID]
+            ids, counts = _imhist(IDs, unique(IDs))
+            @test maximum(ids) == 5
+
+            ids, counts = _imhist(counts, unique(counts))
+            @test ids == [3]
+            @test counts == [5]
+        end
+
+        @ntestset "Case 4" begin
+            # Every floe is matched in every day for which there is data
+
+            props = addgaps(props_test_case2)
+
+            trajectories = IceFloeTracker.long_tracker(props, condition_thresholds, mc_thresholds)
+
+            # Expected: 5 trajectories, 3 of which have length 3 and 2 of which have length 2 as in test case 2
+            IDs = trajectories[!, :ID]
+            ids, counts = _imhist(IDs, unique(IDs))
+            @test maximum(ids) == 5
+
+            ids, counts = _imhist(counts, unique(counts))
+            @test all(ids .== counts)
+        end
+    end
+
 end
