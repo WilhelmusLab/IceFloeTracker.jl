@@ -76,11 +76,13 @@ end
         @test counts == [5]
     end
 
-    @ntestset "Case 2" begin
-        # Unmatched floe in day 1, unmatched floe in day 2, and matches for every floe starting in day 3
+    begin # Unmatched floe in day 1, unmatched floe in day 2, and matches for every floe starting in day 3
         props_test_case2 = deepcopy(_props)
         delete!(props_test_case2[1], 1)
         delete!(props_test_case2[2], 5)
+    end
+
+    @ntestset "Case 2" begin
         trajectories = IceFloeTracker.long_tracker(props_test_case2, condition_thresholds, mc_thresholds)
 
         # Expected: 5 trajectories, 3 of which have length 3 and 2 of which have length 2
@@ -96,7 +98,7 @@ end
         @ntestset "Case 3" begin
             # Every floe is matched in every day for which there is data
 
-            props = addgaps(props_test_case1)
+            props = addgaps(_props)
 
             trajectories = IceFloeTracker.long_tracker(props, condition_thresholds, mc_thresholds)
 
@@ -111,8 +113,7 @@ end
         end
 
         @ntestset "Case 4" begin
-            # Every floe is matched in every day for which there is data
-
+            # Add gaps to props_test_case2
             props = addgaps(props_test_case2)
 
             trajectories = IceFloeTracker.long_tracker(props, condition_thresholds, mc_thresholds)
