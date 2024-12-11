@@ -1,6 +1,20 @@
 using IceFloeTracker: long_tracker, _imhist
 
-@testset "long tracker" begin
+"""
+addgaps(props)
+
+Add gaps to the props array after the first and before the last day.
+"""
+function addgaps(props)
+    blank_props = fill(similar(props[1], 0), rand(1:5))
+
+    # add gap after first day
+    props = vcat(props[1:1], blank_props, props[2:end])
+    # add gap before last day
+    props = vcat(props[1:end-1], blank_props, [props[end]])
+    return props
+end
+
 
     begin # Set thresholds
         t1 = (dt=(30.0, 100.0, 1300.0), dist=(200, 250, 300))
