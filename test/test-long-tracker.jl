@@ -87,11 +87,7 @@ end
 
         # Expected: 5 trajectories, 3 of which have length 3 and 2 of which have length 2
         IDs = trajectories[!, :ID]
-        ids, counts = _imhist(IDs, unique(IDs))
-        @test maximum(ids) == 5
-
-        ids, counts = _imhist(counts, unique(counts))
-        @test all(ids .== counts)
+        @test IDs == [1, 1, 1, 2, 2, 3, 3, 3, 4, 4, 5, 5, 5]
     end
 
     @ntestset "Test gaps" begin
@@ -104,12 +100,7 @@ end
 
             # Expected: 5 trajectories, all of which have length 3 as in test case 1
             IDs = trajectories[!, :ID]
-            ids, counts = _imhist(IDs, unique(IDs))
-            @test maximum(ids) == 5
-
-            ids, counts = _imhist(counts, unique(counts))
-            @test ids == [3]
-            @test counts == [5]
+            @test IDs == [1, 1, 1, 2, 2, 2, 3, 3, 3, 4, 4, 4, 5, 5, 5]
         end
 
         @ntestset "Case 4" begin
@@ -120,11 +111,7 @@ end
 
             # Expected: 5 trajectories, 3 of which have length 3 and 2 of which have length 2 as in test case 2
             IDs = trajectories[!, :ID]
-            ids, counts = _imhist(IDs, unique(IDs))
-            @test maximum(ids) == 5
-
-            ids, counts = _imhist(counts, unique(counts))
-            @test all(ids .== counts)
+            @test IDs == [1, 1, 1, 2, 2, 3, 3, 3, 4, 4, 5, 5, 5]
         end
     end
 
