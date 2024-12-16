@@ -163,7 +163,7 @@ end
 """
     makeemptydffrom(df::DataFrame)
 
-Return an object with an empty dataframe with the same column names as `df` and an empty dataframe with column names `area`, `majoraxis`, `minoraxis`, `convex_area`, `area_mismatch`, and `corr` for similarity ratios. 
+Return an object with an empty dataframe with the same column names as `df` and an empty dataframe with column names `area`, `majoraxis`, `minoraxis`, `convex_area`, `area_mismatch`, and `corr` for similarity ratios.
 """
 function makeemptydffrom(df::DataFrame)
     return MatchingProps(
@@ -277,7 +277,7 @@ end
 """
     compute_ratios((props_day1, r), (props_day2,s))
 
-Compute the ratios of the floe properties between the `r`th floe in `props_day1` and the `s`th floe in `props_day2`. Return a tuple of the ratios. 
+Compute the ratios of the floe properties between the `r`th floe in `props_day1` and the `s`th floe in `props_day2`. Return a tuple of the ratios.
 
 # Arguments
 - `props_day1`: floe properties for day 1
@@ -355,7 +355,7 @@ end
 Return the floe properties for day `dayidx` and day `dayidx+1`.
 """
 function getpropsday1day2(properties, dayidx::Int64)
-    return copy(properties[dayidx]), copy(properties[dayidx + 1])
+    return copy(properties[dayidx]), copy(properties[dayidx+1])
 end
 
 """
@@ -364,9 +364,11 @@ end
 Collect the data for the best match between the `r`th floe in `props_day1` and the `idx`th floe in `matching_floes`. Return a tuple of the floe properties for day 1 and day 2 and the ratios.
 """
 function getbestmatchdata(idx, r, props_day1, matching_floes)
+    matching_floes_props = matching_floes.props[idx, :]
+    cols = names(matching_floes_props)
     return (
-        props1=props_day1[r, :],
-        props2=matching_floes.props[idx, :],
+        props1=props_day1[r, cols],
+        props2=matching_floes_props,
         ratios=matching_floes.ratios[idx, :],
         dist=matching_floes.dist[idx],
     )
@@ -404,7 +406,7 @@ Get nonunique rows in `matchedpairs`.
 """
 function getcollisions(matchedpairs)
     collisions = transform(matchedpairs, nonunique)
-    return filter(r -> r.x1 != 0, collisions)[:, 1:(end - 1)]
+    return filter(r -> r.x1 != 0, collisions)[:, 1:(end-1)]
 end
 
 function deletematched!(
@@ -498,6 +500,134 @@ function addfloemasks!(props::Vector{DataFrame}, imgs::Vector{<:FloeLabelsImage}
     return nothing
 end
 
+"""
+    get_unmatched(props, matched)
+
+Return the floes in `props` that are not in `matched`.
+"""
+function get_unmatched(props, matched)
+    _on = mapreduce(df -> Set(names(df)), intersect, [props, matched]) |> collect
+    unmatched = antijoin(props, matched, on=_on)
+
+    # Add missing columns for joining
+    add_missing = ["area_mismatch", "corr"]
+    [unmatched[!, n] = [missing for _ in 1:nrow(unmatched)] for n in add_missing]
+
+    return unmatched
+end
+
+"""
+    get_trajectory_heads(pairs)
+
+Return the last row (most recent member) of each group (trajectory) in `pairs` as a dataframe.
+
+This is used for getting the initial floe properties for the next day in search for new pairs.
+"""
+function get_trajectory_heads(pairs::T) where {T<:AbstractDataFrame}
+    gdf = groupby(pairs, :uuid)
+    return combine(gdf, last)[:, names(pairs)]
+end
+
+"""
+    _swap_last_values!(df)
+
+Swap the last two values of the `area_mismatch` and `corr` columns for each group in `df`. For bookkeeping purposes for goodness of fit data during the tracking process.
+"""
+function _swap_last_values!(df)
+    grouped = groupby(df, :uuid)  # Group by uuid
+    for sdf in grouped
+        n = nrow(sdf)
+        if n > 1
+            # Swap last two rows for area_mismatch and corr
+            sdf.area_mismatch[n], sdf.area_mismatch[n-1] = sdf.area_mismatch[n-1], sdf.area_mismatch[n]
+            sdf.corr[n], sdf.corr[n-1] = sdf.corr[n-1], sdf.corr[n]
+        end
+    end
+    return df  # The original DataFrame is modified in-place
+end
+
+"""
+    get_dt(props1, r, props2, s)
+
+Return the time difference between the `r`th floe in `props1` and the `s`th floe in `props2` in minutes.
+"""
+function get_dt(props1, r, props2, s)
+    return (props2.passtime[s] - props1.passtime[r]) / Minute(1)
+end
+
+"""
+    adduuid!(props)
+
+Assign a unique ID to each floe in each table of floe properties.
+"""
+function adduuid!(props::Vector{DataFrame})
+    # Assign a unique ID to each floe in each image
+    for (i, prop) in enumerate(props)
+        props[i].uuid = [randstring(12) for _ in 1:nrow(prop)]
+    end
+    return nothing
+end
+
+"""
+    reset_id!(df, col)
+
+Reset the distinct values in the column `col` of `df` to be consecutive integers starting from 1.
+"""
+function reset_id!(df::AbstractDataFrame, col::Union{Symbol,AbstractString}=:uuid)
+    ids = unique(df[!, col])
+    _map = Dict(ids .=> 1:length(ids))
+    transform!(df, col => ByRow(x -> _map[x]) => col)
+    return nothing
+end
+
+"""
+    consolidate_matched_pairs(matched_pairs::MatchedPairs)
+
+Consolidate the floe properties and similarity ratios of the matched pairs in `matched_pairs` into a single dataframe. Return the consolidated dataframe. Used in iteration `0`.
+"""
+function consolidate_matched_pairs(matched_pairs::MatchedPairs)
+    # Ensure UUIDs are consistent
+    matched_pairs.props2.uuid = matched_pairs.props1.uuid
+
+    # Define columns for goodness ratios
+    goodness_cols = [:area_mismatch, :corr]
+
+    # Create top DataFrame with properties and goodness ratios
+    top_df = hcat(matched_pairs.props1, matched_pairs.ratios[:, goodness_cols], makeunique=true)
+
+    # Create missing ratios DataFrame
+    missing_ratios = similar(matched_pairs.ratios[:, goodness_cols])
+    missing_ratios[!, :] .= missing
+
+    bottom_df = hcat(matched_pairs.props2, missing_ratios, makeunique=true)
+
+    combined_df = vcat(top_df, bottom_df)
+
+    DataFrames.sort!(combined_df, [:uuid, :passtime])
+
+    return combined_df
+end
+
+"""
+    get_matches(matched_pairs)
+
+Return a dataframe with the properties and goodness ratios of the matched pairs (right-hand matches) in `matched_pairs`. Used in iterations `1:end`.
+"""
+function get_matches(matched_pairs::MatchedPairs)
+    # Ensure UUIDs are consistent
+    matched_pairs.props2.uuid = matched_pairs.props1.uuid
+
+    # Define columns for goodness ratios
+    goodness_cols = [:area_mismatch, :corr]
+
+    # Create DataFrame with properties and goodness ratios
+    combined_df = hcat(matched_pairs.props2, matched_pairs.ratios[:, goodness_cols], makeunique=true)
+
+    DataFrames.sort!(combined_df, [:uuid, :passtime])
+
+    return combined_df
+end
+
 ## LatLon functions originally from IFTPipeline.jl
 
 """
@@ -533,7 +663,7 @@ Convert the floe properties from pixels to kilometers and square kilometers wher
 function converttounits!(propdf, latlondata, colstodrop)
     if nrow(propdf) == 0
         dropcols!(propdf, colstodrop)
-        insertcols!(propdf, :latitude=>Float64, :longitude=>Float64, :x=>Float64, :y=>Float64)
+        insertcols!(propdf, :latitude => Float64, :longitude => Float64, :x => Float64, :y => Float64)
         return nothing
     end
     convertcentroid!(propdf, latlondata, colstodrop)
