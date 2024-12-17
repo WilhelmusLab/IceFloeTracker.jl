@@ -49,6 +49,7 @@ begin # Load data
     IceFloeTracker.addfloemasks!(_props, _imgs)
     IceFloeTracker.addψs!(_props)
     IceFloeTracker.add_passtimes!(_props, _passtimes)
+    Random.seed!(123)
     IceFloeTracker.adduuid!(_props)
 end
 
@@ -78,8 +79,8 @@ end
 
     begin # Unmatched floe in day 1, unmatched floe in day 2, and matches for every floe starting in day 3
         props_test_case2 = deepcopy(_props)
-        delete!(props_test_case2[1], 1)
-        delete!(props_test_case2[2], 5)
+        deleteat!(props_test_case2[1], 1)
+        deleteat!(props_test_case2[2], 5)
     end
 
     @ntestset "Case 2" begin
@@ -87,7 +88,7 @@ end
 
         # Expected: 5 trajectories, 3 of which have length 3 and 2 of which have length 2
         IDs = trajectories[!, :ID]
-        @test IDs == [1, 1, 1, 2, 2, 3, 3, 3, 4, 4, 5, 5, 5]
+        @test IDs == [1, 1, 1, 2, 2, 2, 3, 3, 4, 4, 4, 5, 5]
     end
 
     @ntestset "Test gaps" begin
@@ -106,12 +107,11 @@ end
         @ntestset "Case 4" begin
             # Add gaps to props_test_case2
             props = addgaps(props_test_case2)
-
             trajectories = IceFloeTracker.long_tracker(props, condition_thresholds, mc_thresholds)
 
             # Expected: 5 trajectories, 3 of which have length 3 and 2 of which have length 2 as in test case 2
             IDs = trajectories[!, :ID]
-            @test IDs == [1, 1, 1, 2, 2, 3, 3, 3, 4, 4, 5, 5, 5]
+            @test IDs == [1, 1, 1, 2, 2, 2, 3, 3, 4, 4, 4, 5, 5]
         end
     end
 
