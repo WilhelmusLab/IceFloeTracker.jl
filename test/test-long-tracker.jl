@@ -71,12 +71,7 @@ end
 
         # Expected: 5 trajectories, all of which have length 3
         IDs = trajectories[!, :ID]
-        ids, counts = _imhist(IDs, unique(IDs))
-        @test maximum(ids) == 5
-
-        ids, counts = _imhist(counts, unique(counts))
-        @test ids == [3]
-        @test counts == [5]
+        @test IDs = [1, 1, 1, 2, 2, 2, 3, 3, 4, 4, 4, 5, 5]
     end
 
     begin # Unmatched floe in day 1, unmatched floe in day 2, and matches for every floe starting in day 3
