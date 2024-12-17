@@ -92,10 +92,7 @@ end
     @ntestset "Test gaps" begin
         @ntestset "Case 3" begin
             # Every floe is matched in every day for which there is data
-
             props = addgaps(_props)
-            
-
             trajectories = IceFloeTracker.long_tracker(props, condition_thresholds, mc_thresholds)
             
 
