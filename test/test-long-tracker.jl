@@ -79,8 +79,8 @@ end
 
     begin # Unmatched floe in day 1, unmatched floe in day 2, and matches for every floe starting in day 3
         props_test_case2 = deepcopy(_props)
-        delete!(props_test_case2[1], 1)
-        delete!(props_test_case2[2], 5)
+        deleteat!(props_test_case2[1], 1)
+        deleteat!(props_test_case2[2], 5)
     end
 
     @ntestset "Case 2" begin
