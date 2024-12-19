@@ -556,16 +556,25 @@ function get_dt(props1, r, props2, s)
 end
 
 """
-    adduuid!(props)
+    adduuid!(df)
 
-Assign a unique ID to each floe in each table of floe properties.
+Assign a unique ID to each floe in a table of floe properties.
 """
-function adduuid!(props::Vector{DataFrame})
-    # Assign a unique ID to each floe in each image
-    for (i, prop) in enumerate(props)
-        props[i].uuid = [randstring(12) for _ in 1:nrow(prop)]
+function adduuid!(df::DataFrame)
+    df.uuid = [randstring(12) for _ in 1:nrow(df)]
+    return df
+end
+
+"""
+    adduuid!(dfs)
+
+Assign a unique ID to each floe in an vector of tables of floe properties.
+"""
+function adduuid!(dfs::Vector{DataFrame})
+    for (i, df) in enumerate(dfs)
+        adduuid!(dfs[i])
     end
-    return nothing
+    return dfs
 end
 
 """
@@ -682,16 +691,4 @@ end
 function dropcols!(df, colstodrop)
     select!(df, Not(colstodrop))
     return nothing
-end
-
-function adduuid!(df::DataFrame)
-    df.uuid = [randstring(12) for _ in 1:nrow(df)]
-    return df
-end
-
-function adduuid!(dfs::Vector{DataFrame})
-    for (i, df) in enumerate(dfs)
-        adduuid!(dfs[i])
-    end
-    return dfs
 end
