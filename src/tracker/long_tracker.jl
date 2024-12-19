@@ -25,6 +25,7 @@ Trajectories are built in two steps:
     - "ID": unique identifier
     - "passtime": A timestamp for the floe
     - "psi": the psi-s curve for the floe
+    - "uuid": a universally unique identifier for each segmented floe
 - `condition_thresholds`: 3-tuple of thresholds (each a named tuple) for deciding whether to match floe `i` from day `k` to floe j from day `k+1`
 - `mc_thresholds`: thresholds for area mismatch and psi-s shape correlation
 
