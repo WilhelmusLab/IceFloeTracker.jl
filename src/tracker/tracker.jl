@@ -56,9 +56,7 @@ function _pairfloes(
     sort_floes_by_area!(props)
 
     # Assign a unique ID to each floe in each image
-    for (i, prop) in enumerate(props)
-        props[i].uuid = [randstring(12) for _ in 1:nrow(prop)]
-    end
+    adduuid!(props)
 
     add_passtimes!(props, passtimes)
 
