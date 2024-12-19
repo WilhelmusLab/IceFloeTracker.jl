@@ -683,3 +683,15 @@ function dropcols!(df, colstodrop)
     select!(df, Not(colstodrop))
     return nothing
 end
+
+function adduuid!(df::DataFrame)
+    df.uuid = [randstring(12) for _ in 1:nrow(df)]
+    return df
+end
+
+function adduuid!(dfs::Vector{DataFrame})
+    for (i, df) in enumerate(dfs)
+        adduuid!(dfs[i])
+    end
+    return dfs
+end
