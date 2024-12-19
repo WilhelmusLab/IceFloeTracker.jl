@@ -22,7 +22,6 @@ Trajectories are built in two steps:
     - "orientation"
     - "perimeter"
     - "mask": 2D array of booleans
-    - "ID": unique identifier
     - "passtime": A timestamp for the floe
     - "psi": the psi-s curve for the floe
     - "uuid": a universally unique identifier for each segmented floe
