@@ -4,7 +4,7 @@ function convert_to_255_matrix(img)::Matrix{Int}
 end
 
 function _get_masks(
-    false_color_image::Matrix{RGB{Float64}};
+    false_color_image::Union{Matrix{RGB{Float64}}, Matrix{RGBA{N0f8}}};
     prelim_threshold::Float64=Float64(110 / 255),
     band_7_threshold::Float64=Float64(200 / 255),
     band_2_threshold::Float64=Float64(190 / 255),
@@ -61,7 +61,7 @@ Convert a 3-channel false color reflectance image to a 1-channel binary matrix; 
 
 """
 function create_cloudmask(
-    false_color_image::Matrix{RGB{Float64}};
+    false_color_image::Union{Matrix{RGB{Float64}}, Matrix{RGBA{N0f8}}};
     prelim_threshold::Float64=Float64(110 / 255),
     band_7_threshold::Float64=Float64(200 / 255),
     band_2_threshold::Float64=Float64(190 / 255),
