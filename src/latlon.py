@@ -14,8 +14,10 @@ def getlatlon(imgpath):
     nrows, ncols = im.shape
     cols, rows = np.meshgrid(np.arange(ncols), np.arange(nrows))
     xs, ys = rasterio.transform.xy(im.transform, rows, cols)
-    xs = xs.reshape(im.shape) # needed in rasterio 1.4.3
-    ys = ys.reshape(im.shape)
+
+    # rasterio v1.3.7 returns lists; leaving casting to array for backward compatibility
+    xs = np.array(xs).reshape(im.shape) # rasterio>=1.4.3 returns 1D arrays so reshaping is needed
+    ys = np.array(ys).reshape(im.shape)
 
     # X and Y are the 1D index vectors
     X = xs[0, :]
