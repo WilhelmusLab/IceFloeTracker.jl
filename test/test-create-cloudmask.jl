@@ -20,20 +20,10 @@
     @test (@test_approx_eq_sigma_eps (clds_channel) (clouds_channel_expected) [0, 0] 0.005) ===
         nothing
 
-    # Persist output images
-    cloudmask_filename =
-        "$(test_output_dir)/cloudmask_" *
-        Dates.format(Dates.now(), "yyyy-mm-dd-HHMMSS") *
-        ".png"
-    IceFloeTracker.@persist cloudmask cloudmask_filename
-    masked_image_filename =
-        "$(test_output_dir)/cloudmasked_reflectance_test_image_" *
-        Dates.format(Dates.now(), "yyyy-mm-dd-HHMMSS") *
-        ".png"
-    IceFloeTracker.@persist masked_image masked_image_filename
-    clouds_channel_filename =
-        "$(test_output_dir)/clouds_channel_" *
-        Dates.format(Dates.now(), "yyyy-mm-dd-HHMMSS") *
-        ".png"
-    IceFloeTracker.@persist clds_channel clouds_channel_filename
+    @info "Test image that loads as RGBA"
+    pth_RGBA_tiff = "$(test_data_dir)/466-sea_of_okhostk-100km-20040421.terra.truecolor.250m.tiff"
+    ref_image = load(pth_RGBA_tiff)
+    @test typeof(ref_image) <: Matrix{RGBA{N0f8}}
+    cloudmask = IceFloeTracker.create_cloudmask(ref_image)
+    @test sum(cloudmask) === 0 # all pixels are clouds
 end
