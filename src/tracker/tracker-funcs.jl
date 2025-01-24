@@ -36,8 +36,11 @@ end
 Update `match_total` with the data from `matched_pairs`.
 """
 function update!(match_total::MatchedPairs, matched_pairs::MatchedPairs)
-    append!(match_total.props1, matched_pairs.props1)
-    append!(match_total.props2, matched_pairs.props2)
+    @debug "match total: $match_total" 
+    @debug "matched pairs: $matched_pairs"
+    # promote=true allows ":label" to be UInt8 in one dataframe, and UInt16 in the other
+    append!(match_total.props1, matched_pairs.props1; promote=true)
+    append!(match_total.props2, matched_pairs.props2; promote=true)
     append!(match_total.ratios, matched_pairs.ratios)
     append!(match_total.dist, matched_pairs.dist)
     return nothing
@@ -49,8 +52,11 @@ end
 Add `newmatch` to `matched_pairs`.
 """
 function addmatch!(matched_pairs::MatchedPairs, newmatch)
-    push!(matched_pairs.props1, newmatch.props1)
-    push!(matched_pairs.props2, newmatch.props2)
+    @debug "matched pairs: $matched_pairs" 
+    @debug "new match: $newmatch"
+    # promote=true allows ":label" to be UInt8 in one dataframe, and UInt16 in the other
+    push!(matched_pairs.props1, newmatch.props1; promote=true)
+    push!(matched_pairs.props2, newmatch.props2; promote=true)
     push!(matched_pairs.ratios, newmatch.ratios)
     push!(matched_pairs.dist, newmatch.dist)
     return nothing
