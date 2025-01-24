@@ -451,9 +451,14 @@ end
 function resolvecollisions!(matched_pairs)
     collisions = getcollisionslocs(matched_pairs.props2)
     for collision in reverse(collisions)
+        @debug "collision.idxs: ", collision.idxs
+        @debug "matchedpairs.ratios: ", matched_pairs.ratios
         bestentry = getidxmostminimumeverything(matched_pairs.ratios[collision.idxs, :])
+        @debug "bestentry: ", bestentry
         keeper = collision.idxs[bestentry]
+        @debug "keeper: $keeper"
         deleteallbut!(matched_pairs, collision.idxs, keeper)
+        @debug "matched_pairs: $matched_pairs"
     end
 end
 
