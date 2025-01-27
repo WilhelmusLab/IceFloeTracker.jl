@@ -93,14 +93,14 @@ const sk_exposure = PyNULL()
 const getlatlon = PyNULL()
 
 function __init__()
-    skimage = "scikit-image=0.20.0"
+    skimage = "scikit-image=0.24.0"
     copy!(sk_measure, pyimport_conda("skimage.measure", skimage))
     copy!(sk_exposure, pyimport_conda("skimage.exposure", skimage))
     copy!(sk_morphology, pyimport_conda("skimage.morphology", skimage))
     pyimport_conda("pyproj", "pyproj=3.6.0")
-    pyimport_conda("rasterio", "rasterio=1.4.3")
-    pyimport_conda("jinja2", "jinja2=3.1.0")
-    pyimport_conda("pandas", "pandas=2.1.0")
+    pyimport_conda("rasterio", "rasterio=1.3.7")
+    pyimport_conda("jinja2", "jinja2=3.1.2")
+    pyimport_conda("pandas", "pandas=2")
     @pyinclude(joinpath(@__DIR__, "latlon.py"))
     copy!(getlatlon, py"getlatlon")
     return nothing
