@@ -25,14 +25,14 @@ begin # Set thresholds
         minaxisratio=0.12,
         convexarearatio=0.14,
     )
-    t3 = (
+    large_floe_settings = (
         area=10_000,
         arearatio=0.18,
         majaxisratio=0.1,
         minaxisratio=0.15,
         convexarearatio=0.2,
     )
-    condition_thresholds = (search_thresholds, small_floe_settings, t3)
+    condition_thresholds = (search_thresholds, small_floe_settings, large_floe_settings)
     mc_thresholds = (
         goodness=(area3=0.18, area2=0.236, corr=0.68), comp=(mxrot=10, sz=16)
     )
