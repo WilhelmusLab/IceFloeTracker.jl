@@ -18,7 +18,7 @@ end
 
 begin # Set thresholds
     search_thresholds = (dt=(30.0, 100.0, 1300.0), dist=(200, 250, 300))
-    t2 = (
+    small_floe_settings = (
         area=1200,
         arearatio=0.28,
         majaxisratio=0.10,
@@ -32,7 +32,7 @@ begin # Set thresholds
         minaxisratio=0.15,
         convexarearatio=0.2,
     )
-    condition_thresholds = (search_thresholds, t2, t3)
+    condition_thresholds = (search_thresholds, small_floe_settings, t3)
     mc_thresholds = (
         goodness=(area3=0.18, area2=0.236, corr=0.68), comp=(mxrot=10, sz=16)
     )

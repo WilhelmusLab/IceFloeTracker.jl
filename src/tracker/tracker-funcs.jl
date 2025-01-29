@@ -209,20 +209,20 @@ function trackercond1(d, delta_time, search_thresholds=(dt=(30, 100, 1300), dist
 end
 
 """
-    trackercond2(area1, ratios, t2=(area=1200, arearatio=0.28, majaxisratio=0.10, minaxisratio=0.12, convex_area=0.14))
+    trackercond2(area1, ratios, small_floe_settings=(area=1200, arearatio=0.28, majaxisratio=0.10, minaxisratio=0.12, convex_area=0.14))
 
-Set of conditions for "big" floes. Return `true` if the area of the floe is greater than `t2.area` and the similarity ratios are less than the corresponding thresholds in `t2`. Return `false` otherwise.
+Set of conditions for "big" floes. Return `true` if the area of the floe is greater than `small_floe_settings.area` and the similarity ratios are less than the corresponding thresholds in `small_floe_settings`. Return `false` otherwise.
 """
 function trackercond2(
     area1,
     ratios,
-    t2=(area=1200, arearatio=0.28, majaxisratio=0.10, minaxisratio=0.12, convex_area=0.14),
+    small_floe_settings=(area=1200, arearatio=0.28, majaxisratio=0.10, minaxisratio=0.12, convex_area=0.14),
 )
-    return area1 > t2.area &&
-           ratios.area < t2.arearatio &&
-           ratios.majoraxis < t2.majaxisratio &&
-           ratios.minoraxis < t2.minaxisratio &&
-           ratios.convex_area < t2.convexarearatio
+    return area1 > small_floe_settings.area &&
+           ratios.area < small_floe_settings.arearatio &&
+           ratios.majoraxis < small_floe_settings.majaxisratio &&
+           ratios.minoraxis < small_floe_settings.minaxisratio &&
+           ratios.convex_area < small_floe_settings.convexarearatio
 end
 
 """
@@ -316,14 +316,14 @@ Compute the conditions for a match between the `r`th floe in `props_day1` and th
 - `t`: tuple of thresholds for elapsed time and distance. See `pair_floes` for details.
 """
 function compute_ratios_conditions((props_day1, r), (props_day2, s), delta_time, thresh)
-    search_thresholds, t2, t3 = thresh
+    search_thresholds, small_floe_settings, t3 = thresh
     p1 = getcentroid(props_day1, r)
     p2 = getcentroid(props_day2, s)
     d = dist(p1, p2)
     area1 = props_day1.area[r]
     ratios = compute_ratios((props_day1, r), (props_day2, s))
     cond1 = trackercond1(d, delta_time, search_thresholds)
-    cond2 = trackercond2(area1, ratios, t2)
+    cond2 = trackercond2(area1, ratios, small_floe_settings)
     cond3 = trackercond3(area1, ratios, t3)
     return (ratios=ratios, conditions=(cond1=cond1, cond2=cond2, cond3=cond3), dist=d)
 end
