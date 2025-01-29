@@ -17,7 +17,7 @@ end
 
 
 begin # Set thresholds
-    t1 = (dt=(30.0, 100.0, 1300.0), dist=(200, 250, 300))
+    search_thresholds = (dt=(30.0, 100.0, 1300.0), dist=(200, 250, 300))
     t2 = (
         area=1200,
         arearatio=0.28,
@@ -32,7 +32,7 @@ begin # Set thresholds
         minaxisratio=0.15,
         convexarearatio=0.2,
     )
-    condition_thresholds = (t1, t2, t3)
+    condition_thresholds = (search_thresholds, t2, t3)
     mc_thresholds = (
         goodness=(area3=0.18, area2=0.236, corr=0.68), comp=(mxrot=10, sz=16)
     )

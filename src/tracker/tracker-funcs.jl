@@ -191,7 +191,7 @@ end
     Condition 1: displacement time delta =#
 
 """
-    trackercond1(p1, p2, delta_time, t1=(dt = (30, 100, 1300), dist=(15, 30, 120)))
+    trackercond1(p1, p2, delta_time, search_thresholds=(dt = (30, 100, 1300), dist=(15, 30, 120)))
 
 Return `true` if the floe at `p1` and the floe at `p2` are within a certain distance of each other and the displacement time is within a certain range. Return `false` otherwise.
 
@@ -202,10 +202,10 @@ Return `true` if the floe at `p1` and the floe at `p2` are within a certain dist
 - `t`: tuple of thresholds for elapsed time and distance
 
 """
-function trackercond1(d, delta_time, t1=(dt=(30, 100, 1300), dist=(15, 30, 120)))
-    return (delta_time < t1.dt[1] && d < t1.dist[1]) ||
-           (delta_time >= t1.dt[1] && delta_time <= t1.dt[2] && d < t1.dist[2]) ||
-           (delta_time >= t1.dt[3] && d < t1.dist[3])
+function trackercond1(d, delta_time, search_thresholds=(dt=(30, 100, 1300), dist=(15, 30, 120)))
+    return (delta_time < search_thresholds.dt[1] && d < search_thresholds.dist[1]) ||
+           (delta_time >= search_thresholds.dt[1] && delta_time <= search_thresholds.dt[2] && d < search_thresholds.dist[2]) ||
+           (delta_time >= search_thresholds.dt[3] && d < search_thresholds.dist[3])
 end
 
 """
@@ -316,13 +316,13 @@ Compute the conditions for a match between the `r`th floe in `props_day1` and th
 - `t`: tuple of thresholds for elapsed time and distance. See `pair_floes` for details.
 """
 function compute_ratios_conditions((props_day1, r), (props_day2, s), delta_time, thresh)
-    t1, t2, t3 = thresh
+    search_thresholds, t2, t3 = thresh
     p1 = getcentroid(props_day1, r)
     p2 = getcentroid(props_day2, s)
     d = dist(p1, p2)
     area1 = props_day1.area[r]
     ratios = compute_ratios((props_day1, r), (props_day2, s))
-    cond1 = trackercond1(d, delta_time, t1)
+    cond1 = trackercond1(d, delta_time, search_thresholds)
     cond2 = trackercond2(area1, ratios, t2)
     cond3 = trackercond3(area1, ratios, t3)
     return (ratios=ratios, conditions=(cond1=cond1, cond2=cond2, cond3=cond3), dist=d)
