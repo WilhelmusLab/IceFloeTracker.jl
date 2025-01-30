@@ -34,7 +34,7 @@ begin # Set thresholds
     )
     condition_thresholds = (search_thresholds, small_floe_settings, large_floe_settings)
     mc_thresholds = (
-        goodness=(area3=0.18, area2=0.236, corr=0.68), comp=(mxrot=10, sz=16)
+        goodness=(small_floe_area=0.18, large_floe_area=0.236, corr=0.68), comp=(mxrot=10, sz=16)
     )
 end
 
