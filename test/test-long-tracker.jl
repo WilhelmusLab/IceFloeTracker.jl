@@ -18,15 +18,15 @@ end
 
 begin # Set thresholds
     search_thresholds = (dt=(30.0, 100.0, 1300.0), dist=(200, 250, 300))
-    small_floe_settings = (
+    large_floe_settings = (
         area=1200,
         arearatio=0.28,
         majaxisratio=0.10,
         minaxisratio=0.12,
         convexarearatio=0.14,
     )
-    large_floe_settings = (
-        area=10_000,
+    small_floe_settings = (
+        area=1200,
         arearatio=0.18,
         majaxisratio=0.1,
         minaxisratio=0.15,

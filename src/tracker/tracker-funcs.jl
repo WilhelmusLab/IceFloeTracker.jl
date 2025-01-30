@@ -233,7 +233,7 @@ Set of conditions for "small" floes. Return `true` if the area of the floe is le
 function get_small_floe_condition(
     area1,
     ratios,
-    large_floe_settings=(
+    small_floe_settings=(
         area=1200,
         arearatio=0.18,
         majaxisratio=0.07,
@@ -254,7 +254,7 @@ end
 Condition to decide whether match_corr should be called.
 """
 function callmatchcorr(conditions)
-    return conditions.cond1 && (conditions.cond2 || conditions.cond3)
+    return conditions.cond1 && (conditions.large_floe_condition || conditions.small_floe_condition)
 end
 
 """
@@ -269,8 +269,8 @@ Return `true` if the floes are a good match as per the set thresholds. Return `f
 """
 function isfloegoodmatch(conditions, mct, area_mismatch, corr)
     return (
-        (conditions.cond3 && area_mismatch < mct.area3) ||
-        (conditions.cond2 && area_mismatch < mct.area2)
+        (conditions.large_floe_condition && area_mismatch < mct.area3) ||
+        (conditions.small_floe_condition && area_mismatch < mct.area2)
     ) && corr > mct.corr
 end
 
@@ -325,7 +325,7 @@ function compute_ratios_conditions((props_day1, r), (props_day2, s), delta_time,
     cond1 = trackercond1(d, delta_time, search_thresholds)
     large_floe_condition = get_large_floe_condition(area1, ratios, large_floe_settings)
     small_floe_condition= get_small_floe_condition(area1, ratios, small_floe_settings)
-    return (ratios=ratios, conditions=(cond1=cond1, cond2=cond2, cond3=cond3), dist=d)
+    return (ratios=ratios, conditions=(cond1=cond1, large_floe_condition=large_floe_condition, small_floe_condition=small_floe_condition), dist=d)
 end
 
 """
