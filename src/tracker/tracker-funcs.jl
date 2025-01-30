@@ -209,28 +209,28 @@ function trackercond1(d, delta_time, search_thresholds=(dt=(30, 100, 1300), dist
 end
 
 """
-    trackercond2(area1, ratios, small_floe_settings=(area=1200, arearatio=0.28, majaxisratio=0.10, minaxisratio=0.12, convex_area=0.14))
+    get_large_floe_condition(area1, ratios, large_floe_settings=(area=1200, arearatio=0.28, majaxisratio=0.10, minaxisratio=0.12, convex_area=0.14))
 
-Set of conditions for "big" floes. Return `true` if the area of the floe is greater than `small_floe_settings.area` and the similarity ratios are less than the corresponding thresholds in `small_floe_settings`. Return `false` otherwise.
+Set of conditions for "large" floes. Return `true` if the area of the floe is greater than `large_floe_settings.area` and the similarity ratios are less than the corresponding thresholds in `large_floe_settings`. Return `false` otherwise.
 """
-function trackercond2(
+function get_large_floe_condition(
     area1,
     ratios,
-    small_floe_settings=(area=1200, arearatio=0.28, majaxisratio=0.10, minaxisratio=0.12, convex_area=0.14),
+    large_floe_settings=(area=1200, arearatio=0.28, majaxisratio=0.10, minaxisratio=0.12, convex_area=0.14),
 )
-    return area1 > small_floe_settings.area &&
-           ratios.area < small_floe_settings.arearatio &&
-           ratios.majoraxis < small_floe_settings.majaxisratio &&
-           ratios.minoraxis < small_floe_settings.minaxisratio &&
-           ratios.convex_area < small_floe_settings.convexarearatio
+    return area1 > large_floe_settings.area &&
+           ratios.area < large_floe_settings.arearatio &&
+           ratios.majoraxis < large_floe_settings.majaxisratio &&
+           ratios.minoraxis < large_floe_settings.minaxisratio &&
+           ratios.convex_area < large_floe_settings.convexarearatio
 end
 
 """
-    trackercond3(area1, ratios, large_floe_settings=(area=1200, arearatio=0.18, majaxisratio=0.07, minaxisratio=0.08, convex_area=0.09))
+    get_small_floe_condition(area1, ratios, small_floe_settings=(area=1200, arearatio=0.18, majaxisratio=0.07, minaxisratio=0.08, convex_area=0.09))
 
-Set of conditions for "small" floes. Return `true` if the area of the floe is less than `large_floe_settings.area` and the similarity ratios are less than the corresponding thresholds in `large_floe_settings`. Return `false` otherwise
+Set of conditions for "small" floes. Return `true` if the area of the floe is less than `small_floe_settings.area` and the similarity ratios are less than the corresponding thresholds in `small_floe_settings`. Return `false` otherwise
 """
-function trackercond3(
+function get_small_floe_condition(
     area1,
     ratios,
     large_floe_settings=(
@@ -241,11 +241,11 @@ function trackercond3(
         convexarearatio=0.09,
     ),
 )
-    return area1 <= large_floe_settings.area &&
-           ratios.area < large_floe_settings.arearatio &&
-           ratios.majoraxis < large_floe_settings.majaxisratio &&
-           ratios.minoraxis < large_floe_settings.minaxisratio &&
-           ratios.convex_area < large_floe_settings.convexarearatio
+    return area1 <= small_floe_settings.area &&
+           ratios.area < small_floe_settings.arearatio &&
+           ratios.majoraxis < small_floe_settings.majaxisratio &&
+           ratios.minoraxis < small_floe_settings.minaxisratio &&
+           ratios.convex_area < small_floe_settings.convexarearatio
 end
 
 """
@@ -323,8 +323,8 @@ function compute_ratios_conditions((props_day1, r), (props_day2, s), delta_time,
     area1 = props_day1.area[r]
     ratios = compute_ratios((props_day1, r), (props_day2, s))
     cond1 = trackercond1(d, delta_time, search_thresholds)
-    cond2 = trackercond2(area1, ratios, small_floe_settings)
-    cond3 = trackercond3(area1, ratios, large_floe_settings)
+    large_floe_condition = get_large_floe_condition(area1, ratios, large_floe_settings)
+    small_floe_condition= get_small_floe_condition(area1, ratios, small_floe_settings)
     return (ratios=ratios, conditions=(cond1=cond1, cond2=cond2, cond3=cond3), dist=d)
 end
 
