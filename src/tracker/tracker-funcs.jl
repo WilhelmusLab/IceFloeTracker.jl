@@ -269,8 +269,8 @@ Return `true` if the floes are a good match as per the set thresholds. Return `f
 """
 function isfloegoodmatch(conditions, mct, area_mismatch, corr)
     return (
-        (conditions.large_floe_condition && area_mismatch < mct.area3) ||
-        (conditions.small_floe_condition && area_mismatch < mct.area2)
+        (conditions.large_floe_condition && area_mismatch < mct.small_floe_area) ||
+        (conditions.small_floe_condition && area_mismatch < mct.large_floe_area)
     ) && corr > mct.corr
 end
 
