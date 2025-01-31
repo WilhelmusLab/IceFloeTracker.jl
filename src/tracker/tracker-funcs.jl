@@ -191,20 +191,25 @@ end
     Condition 1: displacement time delta =#
 
 """
-    trackercond1(p1, p2, delta_time, search_thresholds=(dt = (30, 100, 1300), dist=(15, 30, 120)))
+    get_time_space_proximity_condition(p1, p2, delta_time, search_thresholds=(dt = (30, 100, 1300), dist=(15, 30, 120)))
 
-Return `true` if the floe at `p1` and the floe at `p2` are within a certain distance of each other and the displacement time is within a certain range. Return `false` otherwise.
+Return `true` distance `d` and time elapsed `delta_time`  between observations are within a certain range. Return `false` otherwise.
 
 # Arguments
-- `p1`: coordinates of floe 1
-- `p2`: coordinates of floe 2
-- `delta_time`: time elapsed from image day 1 to image day 2
-- `t`: tuple of thresholds for elapsed time and distance
+- `d` distance between the centroids of the floes
+- `delta_time`: time elapsed between observations
+- `search_thresholds`: tuple of thresholds for elapsed time `dt` and distance `dist`.
 
 """
-function trackercond1(d, delta_time, search_thresholds=(dt=(30, 100, 1300), dist=(15, 30, 120)))
+function get_time_space_proximity_condition(
+    d, delta_time, search_thresholds=(dt=(30, 100, 1300), dist=(15, 30, 120))
+)
     return (delta_time < search_thresholds.dt[1] && d < search_thresholds.dist[1]) ||
-           (delta_time >= search_thresholds.dt[1] && delta_time <= search_thresholds.dt[2] && d < search_thresholds.dist[2]) ||
+           (
+               delta_time >= search_thresholds.dt[1] &&
+               delta_time <= search_thresholds.dt[2] &&
+               d < search_thresholds.dist[2]
+           ) ||
            (delta_time >= search_thresholds.dt[3] && d < search_thresholds.dist[3])
 end
 
@@ -216,7 +221,9 @@ Set of conditions for "large" floes. Return `true` if the area of the floe is gr
 function get_large_floe_condition(
     area1,
     ratios,
-    large_floe_settings=(area=1200, arearatio=0.28, majaxisratio=0.10, minaxisratio=0.12, convex_area=0.14),
+    large_floe_settings=(
+        area=1200, arearatio=0.28, majaxisratio=0.10, minaxisratio=0.12, convex_area=0.14
+    ),
 )
     return area1 > large_floe_settings.area &&
            ratios.area < large_floe_settings.arearatio &&
@@ -254,7 +261,8 @@ end
 Condition to decide whether match_corr should be called.
 """
 function callmatchcorr(conditions)
-    return conditions.cond1 && (conditions.large_floe_condition || conditions.small_floe_condition)
+    return conditions.time_space_proximity_condition &&
+           (conditions.large_floe_condition || conditions.small_floe_condition)
 end
 
 """
@@ -322,10 +330,18 @@ function compute_ratios_conditions((props_day1, r), (props_day2, s), delta_time,
     d = dist(p1, p2)
     area1 = props_day1.area[r]
     ratios = compute_ratios((props_day1, r), (props_day2, s))
-    cond1 = trackercond1(d, delta_time, search_thresholds)
+    time_space_proximity_condition = get_time_space_proximity_condition(d, delta_time, search_thresholds)
     large_floe_condition = get_large_floe_condition(area1, ratios, large_floe_settings)
-    small_floe_condition= get_small_floe_condition(area1, ratios, small_floe_settings)
-    return (ratios=ratios, conditions=(cond1=cond1, large_floe_condition=large_floe_condition, small_floe_condition=small_floe_condition), dist=d)
+    small_floe_condition = get_small_floe_condition(area1, ratios, small_floe_settings)
+    return (
+        ratios=ratios,
+        conditions=(
+            time_space_proximity_condition=time_space_proximity_condition,
+            large_floe_condition=large_floe_condition,
+            small_floe_condition=small_floe_condition,
+        ),
+        dist=d,
+    )
 end
 
 """
@@ -355,7 +371,7 @@ end
 Return the floe properties for day `dayidx` and day `dayidx+1`.
 """
 function getpropsday1day2(properties, dayidx::Int64)
-    return copy(properties[dayidx]), copy(properties[dayidx+1])
+    return copy(properties[dayidx]), copy(properties[dayidx + 1])
 end
 
 """
@@ -406,7 +422,7 @@ Get nonunique rows in `matchedpairs`.
 """
 function getcollisions(matchedpairs)
     collisions = transform(matchedpairs, nonunique)
-    return filter(r -> r.x1 != 0, collisions)[:, 1:(end-1)]
+    return filter(r -> r.x1 != 0, collisions)[:, 1:(end - 1)]
 end
 
 function deletematched!(
@@ -506,8 +522,8 @@ end
 Return the floes in `props` that are not in `matched`.
 """
 function get_unmatched(props, matched)
-    _on = mapreduce(df -> Set(names(df)), intersect, [props, matched]) |> collect
-    unmatched = antijoin(props, matched, on=_on)
+    _on = collect(mapreduce(df -> Set(names(df)), intersect, [props, matched]))
+    unmatched = antijoin(props, matched; on=_on)
 
     # Add missing columns for joining
     add_missing = ["area_mismatch", "corr"]
@@ -539,8 +555,9 @@ function _swap_last_values!(df)
         n = nrow(sdf)
         if n > 1
             # Swap last two rows for area_mismatch and corr
-            sdf.area_mismatch[n], sdf.area_mismatch[n-1] = sdf.area_mismatch[n-1], sdf.area_mismatch[n]
-            sdf.corr[n], sdf.corr[n-1] = sdf.corr[n-1], sdf.corr[n]
+            sdf.area_mismatch[n], sdf.area_mismatch[n - 1] = sdf.area_mismatch[n - 1],
+            sdf.area_mismatch[n]
+            sdf.corr[n], sdf.corr[n - 1] = sdf.corr[n - 1], sdf.corr[n]
         end
     end
     return df  # The original DataFrame is modified in-place
@@ -602,13 +619,15 @@ function consolidate_matched_pairs(matched_pairs::MatchedPairs)
     goodness_cols = [:area_mismatch, :corr]
 
     # Create top DataFrame with properties and goodness ratios
-    top_df = hcat(matched_pairs.props1, matched_pairs.ratios[:, goodness_cols], makeunique=true)
+    top_df = hcat(
+        matched_pairs.props1, matched_pairs.ratios[:, goodness_cols]; makeunique=true
+    )
 
     # Create missing ratios DataFrame
     missing_ratios = similar(matched_pairs.ratios[:, goodness_cols])
     missing_ratios[!, :] .= missing
 
-    bottom_df = hcat(matched_pairs.props2, missing_ratios, makeunique=true)
+    bottom_df = hcat(matched_pairs.props2, missing_ratios; makeunique=true)
 
     combined_df = vcat(top_df, bottom_df)
 
@@ -630,7 +649,9 @@ function get_matches(matched_pairs::MatchedPairs)
     goodness_cols = [:area_mismatch, :corr]
 
     # Create DataFrame with properties and goodness ratios
-    combined_df = hcat(matched_pairs.props2, matched_pairs.ratios[:, goodness_cols], makeunique=true)
+    combined_df = hcat(
+        matched_pairs.props2, matched_pairs.ratios[:, goodness_cols]; makeunique=true
+    )
 
     DataFrames.sort!(combined_df, [:uuid, :passtime])
 
@@ -646,9 +667,10 @@ Convert the centroid coordinates from row and column to latitude and longitude d
 """
 function convertcentroid!(propdf, latlondata, colstodrop)
     latitude, longitude = [
-        [latlondata[c][Int(round(x)), Int(round(y))] for
-         (x, y) in zip(propdf.row_centroid, propdf.col_centroid)] for
-        c in ["latitude", "longitude"]
+        [
+            latlondata[c][Int(round(x)), Int(round(y))] for
+            (x, y) in zip(propdf.row_centroid, propdf.col_centroid)
+        ] for c in ["latitude", "longitude"]
     ]
 
     x, y = [
@@ -672,7 +694,13 @@ Convert the floe properties from pixels to kilometers and square kilometers wher
 function converttounits!(propdf, latlondata, colstodrop)
     if nrow(propdf) == 0
         dropcols!(propdf, colstodrop)
-        insertcols!(propdf, :latitude => Float64, :longitude => Float64, :x => Float64, :y => Float64)
+        insertcols!(
+            propdf,
+            :latitude => Float64,
+            :longitude => Float64,
+            :x => Float64,
+            :y => Float64,
+        )
         return nothing
     end
     convertcentroid!(propdf, latlondata, colstodrop)
