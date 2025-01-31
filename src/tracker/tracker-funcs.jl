@@ -193,12 +193,12 @@ end
 """
     get_time_space_proximity_condition(p1, p2, delta_time, search_thresholds=(dt = (30, 100, 1300), dist=(15, 30, 120)))
 
-Return `true` distance `d` and time elapsed `delta_time`  between observations are within a certain range. Return `false` otherwise.
+Return `true` distance `d` and time elapsed `delta_time` between observations are within a certain range. Return `false` otherwise.
 
 # Arguments
-- `d` distance between the centroids of the floes
-- `delta_time`: time elapsed between observations
-- `search_thresholds`: tuple of thresholds for elapsed time `dt` and distance `dist`.
+- `d` distance (in pixels) between the centroids of the floes
+- `delta_time`: time (in minutes) elapsed between observations
+- `search_thresholds`: tuple of thresholds for elapsed time `dt` (in minutes) and distance `dist` (in pixels).
 
 """
 function get_time_space_proximity_condition(
@@ -214,9 +214,17 @@ function get_time_space_proximity_condition(
 end
 
 """
-    get_large_floe_condition(area1, ratios, large_floe_settings=(area=1200, arearatio=0.28, majaxisratio=0.10, minaxisratio=0.12, convex_area=0.14))
+    get_large_floe_condition(
+    area1,
+    ratios,
+    large_floe_settings=(
+        area=1200, arearatio=0.28, majaxisratio=0.10, minaxisratio=0.12, convex_area=0.14
+    ),
+)
 
-Set of conditions for "large" floes. Return `true` if the area of the floe is greater than `large_floe_settings.area` and the similarity ratios are less than the corresponding thresholds in `large_floe_settings`. Return `false` otherwise.
+Set of conditions for "large" floes. Return `true` if the area of the floe is greater than `large_floe_settings.area` and the similarity ratios are less than the corresponding thresholds in `large_floe_settings`. Return `false` otherwise. Used to determine whether to call `match_corr`.
+
+See also [`get_small_floe_condition`](@ref).
 """
 function get_large_floe_condition(
     area1,
@@ -233,9 +241,21 @@ function get_large_floe_condition(
 end
 
 """
-    get_small_floe_condition(area1, ratios, small_floe_settings=(area=1200, arearatio=0.18, majaxisratio=0.07, minaxisratio=0.08, convex_area=0.09))
+    get_small_floe_condition(
+    area1,
+    ratios,
+    small_floe_settings=(
+        area=1200,
+        arearatio=0.18,
+        majaxisratio=0.07,
+        minaxisratio=0.08,
+        convexarearatio=0.09,
+    ),
+)
 
-Set of conditions for "small" floes. Return `true` if the area of the floe is less than `small_floe_settings.area` and the similarity ratios are less than the corresponding thresholds in `small_floe_settings`. Return `false` otherwise
+Set of conditions for "small" floes. Return `true` if the area of the floe is less or equal than `small_floe_settings.area` and the similarity ratios are less than the corresponding thresholds in `small_floe_settings`. Return `false` otherwise. Used to determine whether to call `match_corr`.
+
+See also [`get_large_floe_condition`](@ref).
 """
 function get_small_floe_condition(
     area1,
@@ -330,7 +350,9 @@ function compute_ratios_conditions((props_day1, r), (props_day2, s), delta_time,
     d = dist(p1, p2)
     area1 = props_day1.area[r]
     ratios = compute_ratios((props_day1, r), (props_day2, s))
-    time_space_proximity_condition = get_time_space_proximity_condition(d, delta_time, search_thresholds)
+    time_space_proximity_condition = get_time_space_proximity_condition(
+        d, delta_time, search_thresholds
+    )
     large_floe_condition = get_large_floe_condition(area1, ratios, large_floe_settings)
     small_floe_condition = get_small_floe_condition(area1, ratios, small_floe_settings)
     return (
