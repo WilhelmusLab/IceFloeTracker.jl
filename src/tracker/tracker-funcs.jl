@@ -346,7 +346,10 @@ Return the index of the row in `ratiosdf` with the most minima across its column
 """
 function getidxmostminimumeverything(ratiosdf)
     nrow(ratiosdf) == 0 && return NaN
-    return mode([argmin(col) for col in eachcol(ratiosdf)])
+    _ratiosdf = deepcopy(ratiosdf)
+    _ratiosdf.corr = 1 .- _ratiosdf.corr
+    # TODO: #560 handle ties better than what mode does (chooses first mode found)
+    return mode([argmin(col) for col in eachcol(_ratiosdf)])
 end
 
 """
