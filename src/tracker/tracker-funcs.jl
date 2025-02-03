@@ -18,6 +18,10 @@ struct MatchedPairs
     props2::DataFrame
     ratios::DataFrame
     dist::Vector{Float64}
+
+    function MatchedPairs(props1::DataFrame, props2::DataFrame, ratios::DataFrame, dist::Vector{Float64})
+        new(props1, props2, ratios, dist)
+    end
 end
 
 """
@@ -28,6 +32,20 @@ Return an object of type `MatchedPairs` with an empty dataframe with the same co
 function MatchedPairs(df)
     emptypropsdf = similar(df, 0)
     return MatchedPairs(emptypropsdf, copy(emptypropsdf), makeemptyratiosdf(), Float64[])
+end
+
+"""
+    sort_pairs(matched_pairs::MatchedPairs)
+
+Sort the pairs in `matched_pairs` by `:uuid` in `props2`.
+"""
+function sort_pairs(matched_pairs::MatchedPairs)
+    perm = sortperm(matched_pairs.props2.uuid)
+    p2 = matched_pairs.props2[perm, :]
+    p1 = matched_pairs.props1[perm, :]
+    rat = matched_pairs.ratios[perm, :]
+    dist = matched_pairs.dist[perm]
+    return MatchedPairs(p1, p2, rat, dist)
 end
 
 """

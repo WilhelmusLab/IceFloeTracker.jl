@@ -153,6 +153,8 @@ function find_floe_matches(
         #= Resolve collisions:
         Are there floes in day k+1 paired with more than one
         floe in day k? If so, keep the best matching pair and remove all others. =#
+
+        matched_pairs = IceFloeTracker.sort_pairs(matched_pairs)
         resolvecollisions!(matched_pairs)
         deletematched!((props1, props2), matched_pairs)
         update!(match_total, matched_pairs)
