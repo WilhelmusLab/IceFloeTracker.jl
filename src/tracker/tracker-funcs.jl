@@ -402,8 +402,14 @@ Return the index of the row in `ratiosdf` with the most minima across its column
 """
 function getidxmostminimumeverything(ratiosdf)
     nrow(ratiosdf) == 0 && return NaN
+
+    # Get the column name for the correlation ratio
+    corr_col = [n for n in names(ratiosdf) if contains(n, "corr")][1]
+
     _ratiosdf = deepcopy(ratiosdf)
-    _ratiosdf.corr = 1 .- _ratiosdf.corr
+
+    # Invert the correlation ratio for minima computation so high correlation is favored
+    _ratiosdf[!, corr_col] = 1 .- _ratiosdf[!, corr_col]
     # TODO: #560 handle ties better than what mode does (chooses first mode found)
     return mode([argmin(col) for col in eachcol(_ratiosdf)])
 end
@@ -762,4 +768,21 @@ end
 function dropcols!(df, colstodrop)
     select!(df, Not(colstodrop))
     return nothing
+end
+
+function remove_collisions(pairs::T)::T where {T<:MatchedPairs}
+    # column name bookkeeping
+    nm1 = names(pairs.props1)
+    nm2 = ["$(n)_1" for n in nm1]
+    old_nmratios = names(pairs.ratios)
+    nmratios = ["$(n)_ratio" for n in old_nmratios]
+    rename!(pairs.ratios, nmratios)
+
+    pairsdf = hcat(pairs.props1, pairs.props2, pairs.ratios, DataFrame(dist=pairs.dist), makeunique=true)
+    result = combine(groupby(pairsdf, :uuid_1),
+        g -> @view g[getidxmostminimumeverything(g[!, nmratios]), :])
+    p1 = result[:, nm1]
+    p2 = rename(result[:, nm2], nm1)
+    ratios = rename(result[:, nmratios], names(makeemptyratiosdf()))
+    return IceFloeTracker.MatchedPairs(p1, p2, ratios, result.dist)
 end
