@@ -78,6 +78,8 @@ function discriminate_ice_water(
     floes_band_2_keep = floes_band_2[floes_band_2 .> floes_threshold]
     floes_band_1_keep = floes_band_1[floes_band_1 .> floes_threshold]
 
+    length(floes_band_2_keep) > 0 || throw(DomainError(floes_band_2_keep, "No elements in floes_band_2 above floes_threshold"))
+
     _, floes_bin_counts = ImageContrastAdjustment.build_histogram(floes_band_2_keep, nbins)
     _, vals = Peaks.findmaxima(floes_bin_counts)
 
