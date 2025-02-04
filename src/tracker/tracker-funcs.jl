@@ -35,20 +35,6 @@ function MatchedPairs(df)
 end
 
 """
-    sort_pairs(matched_pairs::MatchedPairs)
-
-Sort the pairs in `matched_pairs` by `:uuid` in `props2`.
-"""
-function sort_pairs(matched_pairs::MatchedPairs)
-    perm = sortperm(matched_pairs.props2.uuid)
-    p2 = matched_pairs.props2[perm, :]
-    p1 = matched_pairs.props1[perm, :]
-    rat = matched_pairs.ratios[perm, :]
-    dist = matched_pairs.dist[perm]
-    return MatchedPairs(p1, p2, rat, dist)
-end
-
-"""
     update!(match_total::MatchedPairs, matched_pairs::MatchedPairs)
 
 Update `match_total` with the data from `matched_pairs`.
@@ -420,7 +406,7 @@ end
 Return the floe properties for day `dayidx` and day `dayidx+1`.
 """
 function getpropsday1day2(properties, dayidx::Int64)
-    return copy(properties[dayidx]), copy(properties[dayidx + 1])
+    return copy(properties[dayidx]), copy(properties[dayidx+1])
 end
 
 """
@@ -471,7 +457,7 @@ Get nonunique rows in `matchedpairs`.
 """
 function getcollisions(matchedpairs)
     collisions = transform(matchedpairs, nonunique)
-    return filter(r -> r.x1 != 0, collisions)[:, 1:(end - 1)]
+    return filter(r -> r.x1 != 0, collisions)[:, 1:(end-1)]
 end
 
 function deletematched!(
@@ -604,9 +590,9 @@ function _swap_last_values!(df)
         n = nrow(sdf)
         if n > 1
             # Swap last two rows for area_mismatch and corr
-            sdf.area_mismatch[n], sdf.area_mismatch[n - 1] = sdf.area_mismatch[n - 1],
+            sdf.area_mismatch[n], sdf.area_mismatch[n-1] = sdf.area_mismatch[n-1],
             sdf.area_mismatch[n]
-            sdf.corr[n], sdf.corr[n - 1] = sdf.corr[n - 1], sdf.corr[n]
+            sdf.corr[n], sdf.corr[n-1] = sdf.corr[n-1], sdf.corr[n]
         end
     end
     return df  # The original DataFrame is modified in-place
