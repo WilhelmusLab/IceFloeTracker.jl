@@ -28,16 +28,16 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
-      - name: update pip
-        run: pip install -U pip
-      - name: install setuptools (needed with Python 3.12)
-        run: pip install setuptools
-      - name: install uv for dependency conflict resolution
-        run: pip install uv
-      - name: Get requirements
-        run: uv pip compile requirements.txt > reqs-py-312.txt
-      - name: install python deps
-        run: python -m pip install -U -r reqs-py-312.txt
+      # - name: update pip
+      #   run: pip install -U pip
+      # - name: install setuptools (needed with Python 3.12)
+      #   run: pip install setuptools
+      # - name: install uv for dependency conflict resolution
+      #   run: pip install uv
+      # - name: Get requirements
+      #   run: uv pip compile requirements.txt > reqs-py-312.txt
+      # - name: install python deps
+      #   run: python -m pip install -U -r reqs-py-312.txt
       - uses: julia-actions/setup-julia@v2
         with:
           version: ${{ matrix.version }}
