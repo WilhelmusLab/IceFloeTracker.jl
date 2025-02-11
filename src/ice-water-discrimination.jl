@@ -75,8 +75,8 @@ function discriminate_ice_water(
     floes_band_1 = @view(image_floes_view[3, :, :])
 
     # keep pixels greater than intensity 100 in bands 2 and 1
-    floes_band_2_keep = floes_band_2[floes_band_2 .> floes_threshold]
-    floes_band_1_keep = floes_band_1[floes_band_1 .> floes_threshold]
+    floes_band_2_keep = floes_band_2[floes_band_2.>floes_threshold]
+    floes_band_1_keep = floes_band_1[floes_band_1.>floes_threshold]
 
     length(floes_band_2_keep) > 0 || throw(DomainError(floes_band_2_keep, "No elements in floes_band_2 above floes_threshold"))
 
