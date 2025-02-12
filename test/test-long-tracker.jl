@@ -17,24 +17,24 @@ end
 
 
 begin # Set thresholds
-    t1 = (dt=(30.0, 100.0, 1300.0), dist=(200, 250, 300))
-    t2 = (
+    search_thresholds = (dt=(30.0, 100.0, 1300.0), dist=(200, 250, 300))
+    large_floe_settings = (
         area=1200,
         arearatio=0.28,
         majaxisratio=0.10,
         minaxisratio=0.12,
         convexarearatio=0.14,
     )
-    t3 = (
-        area=10_000,
+    small_floe_settings = (
+        area=1200,
         arearatio=0.18,
         majaxisratio=0.1,
         minaxisratio=0.15,
         convexarearatio=0.2,
     )
-    condition_thresholds = (t1, t2, t3)
+    condition_thresholds = (search_thresholds, small_floe_settings, large_floe_settings)
     mc_thresholds = (
-        goodness=(area3=0.18, area2=0.236, corr=0.68), comp=(mxrot=10, sz=16)
+        goodness=(small_floe_area=0.18, large_floe_area=0.236, corr=0.68), comp=(mxrot=10, sz=16)
     )
 end
 
