@@ -61,6 +61,7 @@ function long_tracker(props::Vector{DataFrame}, condition_thresholds, mc_thresho
             _swap_last_values!(trajectories)
         end
     end
+    trajectories = IceFloeTracker.drop_trajectories_length1(trajectories, :uuid)
     IceFloeTracker.reset_id!(trajectories)
     trajectories.ID = trajectories.uuid
     # list the uuid in the leftmost column
