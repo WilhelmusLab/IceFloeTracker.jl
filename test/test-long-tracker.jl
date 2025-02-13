@@ -121,6 +121,16 @@ end
     @ntestset "Test Case 5: drop_trajectories_length1" begin
         df = DataFrame(; ID=[1, 1, 2, 3, 3, 3, 4], foo=1:7)
         df = IceFloeTracker.drop_trajectories_length1(df, :ID)
-        @test df == DataFrame(; ID=[1, 1, 2, 2, 2], foo=[1, 2, 4, 5, 6])
+        @test df == DataFrame(; ID=[1, 1, 3, 3, 3], foo=[1, 2, 4, 5, 6])
+
+        # Test empty dataframe
+        df = similar(df, 0)
+        df_ = IceFloeTracker.drop_trajectories_length1(df, :ID)
+        @test df_ == df
+
+        # Test no trajectories of length 1
+        df = DataFrame(; ID=[1, 1, 2, 2, 3, 3], foo=1:6)
+        df_ = IceFloeTracker.drop_trajectories_length1(df, :ID)
+        @test df_ == df
     end
 end
