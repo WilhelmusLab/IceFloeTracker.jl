@@ -28,7 +28,7 @@ function add_passtimes!(props, passtimes)
     for (i, passtime) in enumerate(passtimes)
         props[i].passtime .= passtime
     end
-    nothing
+    return nothing
 end
 
 """
@@ -49,7 +49,7 @@ function _pairfloes(
     props::Vector{DataFrame},
     passtimes::Vector{DateTime},
     condition_thresholds,
-    mc_thresholds
+    mc_thresholds,
 )
     dt = diff(passtimes) ./ Minute(1)
 
@@ -134,7 +134,12 @@ function _pairfloes(
     _pairs = tracked.data
 
     # Concatenate horizontally props1, props2, tracked, and add dist as the last column for each item in _pairs
-    _pairs = [hcat(hcat(p.props1, p.props2, makeunique=true), p.ratios[:, ["area_mismatch", "corr"]]) for p in _pairs]
+    _pairs = [
+        hcat(
+            hcat(p.props1, p.props2; makeunique=true),
+            p.ratios[:, ["area_mismatch", "corr"]],
+        ) for p in _pairs
+    ]
 
     # Make a dict with keys in _pairs[i].props2.uuid and values in _pairs[i-1].props1.uuid
     mappings = [Dict(zip(p.uuid_1, p.uuid)) for p in _pairs]
@@ -151,9 +156,15 @@ function _pairfloes(
     # Reshape _pairs to a long df
     propsvert = vcat(_pairs...)
     DataFrames.sort!(propsvert, [:uuid_0, :passtime])
-    rightcolnames = vcat([name for name in names(propsvert) if all([!(name in ["uuid_1", "psi_1", "mask_1"]), endswith(name, "_1")])], ["uuid_0"])
+    rightcolnames = vcat(
+        [
+            name for name in names(propsvert) if
+            all([!(name in ["uuid_1", "psi_1", "mask_1"]), endswith(name, "_1")])
+        ],
+        ["uuid_0"],
+    )
     leftcolnames = [split(name, "_1")[1] for name in rightcolnames]
-    matchcolnames = ["area_mismatch", "corr", "uuid_0", "passtime", "passtime_1",]
+    matchcolnames = ["area_mismatch", "corr", "uuid_0", "passtime", "passtime_1"]
 
     leftdf = propsvert[:, leftcolnames]
     rightdf = propsvert[:, rightcolnames]
@@ -163,10 +174,9 @@ function _pairfloes(
     _pairs = vcat(leftdf, rightdf)
 
     # sort by uuid_0, passtime and keep unique rows
-    _pairs = DataFrames.sort!(_pairs, [:uuid_0, :passtime]) |> unique
+    _pairs = unique(DataFrames.sort!(_pairs, [:uuid_0, :passtime]))
 
-
-    _pairs = leftjoin(_pairs, matchdf, on=[:uuid_0, :passtime])
+    _pairs = leftjoin(_pairs, matchdf; on=[:uuid_0, :passtime])
     DataFrames.sort!(_pairs, [:uuid_0, :passtime])
 
     # create mapping from uuids to index as ID
@@ -197,12 +207,15 @@ The main steps of the algorithm are as follows:
 4. Drop paired floes from `props[k]` and `props[k+1]` and repeat steps 2 and 3 until there are no more floes to match in `props[k]`.
 5. Repeat steps 2-4 for `k=2:length(props)-1`.
 
-# Arguments
+### Arguments
 - `segmented_imgs`: array of images with segmented floes
 - `props`: array of dataframes containing floe properties
 - `passtimes`: array of `DateTime` objects containing the time of the image in which the floes were captured
 - `latlonrefimage`: path to geotiff reference image for getting latitude and longitude of floe centroids
-- `condition_thresholds`: 3-tuple of thresholds (each a named tuple) for deciding whether to match floe `i` from day `k` to floe j from day `k+1`
+- `condition_thresholds`: namedtuple of thresholds (each a named tuple) for deciding whether to match floe `i` from day `k` to floe j from day `k+1`
+   (see sample values `IceFloeTracker.condition_thresholds`)
+
+
 - `mc_thresholds`: thresholds for area mismatch and psi-s shape correlation
 
 Returns a dataframe containing the following columns:
@@ -230,15 +243,26 @@ function pairfloes(
     mc_thresholds,
 )
     _pairs = _pairfloes(
-        segmented_imgs,
-        props,
-        passtimes,
-        condition_thresholds,
-        mc_thresholds,
+        segmented_imgs, props, passtimes, condition_thresholds, mc_thresholds
     )
     addlatlon!(_pairs, latlonrefimage)
-    
-    cols = [:ID, :passtime, :area, :convex_area, :major_axis_length, :minor_axis_length, :orientation, :perimeter, :latitude, :longitude, :x, :y, :area_mismatch, :corr]
+
+    cols = [
+        :ID,
+        :passtime,
+        :area,
+        :convex_area,
+        :major_axis_length,
+        :minor_axis_length,
+        :orientation,
+        :perimeter,
+        :latitude,
+        :longitude,
+        :x,
+        :y,
+        :area_mismatch,
+        :corr,
+    ]
     _pairs = _pairs[:, cols]
     return _pairs
 end
