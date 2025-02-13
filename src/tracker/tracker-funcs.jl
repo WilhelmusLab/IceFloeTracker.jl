@@ -239,7 +239,7 @@ function get_large_floe_condition(
         arearatio=0.28, majaxisratio=0.10, minaxisratio=0.12, convex_area=0.14
     ),
 )
-    return area1 > large_floe_minimum_area &&
+    return area1 >= large_floe_minimum_area &&
            ratios.area < large_floe_settings.arearatio &&
            ratios.majoraxis < large_floe_settings.majaxisratio &&
            ratios.minoraxis < large_floe_settings.minaxisratio &&
