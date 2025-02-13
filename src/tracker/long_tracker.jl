@@ -32,11 +32,16 @@ Trajectories are built in two steps:
 # Returns
 A DataFrame with the above columns, plus two extra columns, "area_mismatch" and "corr", which are the area mismatch and correlation between a floe and the one that follows it in the trajectory. Trajectories are identified by a unique identifier, "uuid".
 """
-function long_tracker(props::Vector{DataFrame}, condition_thresholds, mc_thresholds, small_floe_minimum_area=400)
+function long_tracker(
+    props::Vector{DataFrame},
+    condition_thresholds,
+    mc_thresholds,
+    small_floe_minimum_area=400,
+)
     begin # Filter out floes with area less than `small_floe_minimum_area` pixels
         for (i, prop) in enumerate(props)
-            props[i] = prop[prop[:, :area].>=small_floe_minimum_area, :]
-            sort!(props[i], :area, rev=true)
+            props[i] = prop[prop[:, :area] .>= small_floe_minimum_area, :]
+            sort!(props[i], :area; rev=true)
         end
     end
     begin # 0th iteration: pair floes in day 1 and day 2 and add unmatched floes to _pairs
