@@ -784,7 +784,6 @@ Drop trajectories with only one floe.
 """
 function drop_trajectories_length1(trajectories::DataFrame, col::Symbol=:ID)
     trajectories = filter(:count => x -> x > 1, transform(groupby(trajectories, col), nrow => :count))
-    IceFloeTracker.reset_id!(trajectories, col)
-    cols = [col for col in names(trajectories) if col ∉ ["count"]]
+    cols = [c for c in names(trajectories) if c ∉ ["count"]]
     return trajectories[!, cols]
 end
