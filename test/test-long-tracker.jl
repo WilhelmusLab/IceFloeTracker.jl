@@ -29,14 +29,6 @@ begin # Load data
     IceFloeTracker.adduuid!(_props)
 end
 
-begin # Filter out floes with area less than `floe_area_threshold` pixels
-    floe_area_threshold = 400
-    for (i, prop) in enumerate(_props)
-        _props[i] = prop[prop[:, :area] .>= floe_area_threshold, :] # 500 working good
-        sort!(_props[i], :area; rev=true)
-    end
-end
-
 @ntestset "$(@__FILE__)" begin
     @ntestset "Case 1" begin
         # Every floe is matched in every day
