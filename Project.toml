@@ -1,13 +1,6 @@
 name = "IceFloeTracker"
 uuid = "04643c7a-9ac6-48c5-822f-2704f9e70bd3"
-authors = [
-    "Carlos Paniagua <carlos_paniagua@brown.edu>",
-    "Timothy Divoll <bradford_roarr@brown.edu>",
-    "John Gerrard Holland <john_holland1@brown.edu>",
-    "Bradford Roarr <bradford_roarr@brown.edu>",
-    "Daniel Watkins <daniel_watkins@brown.edu>",
-    "Maria Isabel Restrepo <maria_restrepo@brown.edu>",
-]
+authors = ["Carlos Paniagua <carlos_paniagua@brown.edu>", "Timothy Divoll <bradford_roarr@brown.edu>", "John Gerrard Holland <john_holland1@brown.edu>", "Bradford Roarr <bradford_roarr@brown.edu>", "Daniel Watkins <daniel_watkins@brown.edu>", "Maria Isabel Restrepo <maria_restrepo@brown.edu>"]
 version = "0.6.3"
 
 [deps]
@@ -66,7 +59,7 @@ AxisArrays = "0.4"
 Clustering = "0.15"
 ColorTypes = "0.11"
 CoordinateTransformations = "0.6"
-DSP = "0.7"
+DSP = "0.8"
 DataFrames = "1.5"
 DataStructures = "0.18"
 DelimitedFiles = "1"
