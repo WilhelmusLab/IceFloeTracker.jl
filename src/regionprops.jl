@@ -261,12 +261,10 @@ function cropfloe(floesimg::Matrix{I}, min_row::J, min_col::J, max_row::J, max_c
     Crop the floe using bounding box data in props.
     Note: Using a view of the cropped floe was considered but if there were multiple components in the cropped floe, the source array with the floes would be modified. =#
     prefloe = floesimg[min_row:max_row, min_col:max_col]
-    @debug "prefloe: $prefloe"
 
     #= Remove any pixels not corresponding to that numbered floe 
     (each segment has a different integer) =#
     floe_area = prefloe .== label
-    @debug "mask: $floe_area"
 
     return floe_area
 end
