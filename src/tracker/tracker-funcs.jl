@@ -773,3 +773,18 @@ function remove_collisions(pairs::T)::T where {T<:MatchedPairs}
     ratios = rename(result[:, nmratios], names(makeemptyratiosdf()))
     return IceFloeTracker.MatchedPairs(p1, p2, ratios, result.dist)
 end
+
+"""
+    drop_trajectories_length1(trajectories::DataFrame, col::Symbol=:ID)
+
+Drop trajectories with only one floe.
+
+# Arguments
+- `trajectories`: dataframe containing floe trajectories.
+- `col`: column name for the floe ID.
+"""
+function drop_trajectories_length1(trajectories::DataFrame, col::Symbol=:ID)
+    trajectories = filter(:count => x -> x > 1, transform(groupby(trajectories, col), nrow => :count))
+    cols = [c for c in names(trajectories) if c ∉ ["count"]]
+    return trajectories[!, cols]
+end
