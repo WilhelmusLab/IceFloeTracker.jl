@@ -60,6 +60,7 @@ function long_tracker(props::Vector{DataFrame}, condition_thresholds, mc_thresho
             DataFrames.sort!(trajectories, [:uuid, :passtime])
             _swap_last_values!(trajectories)
         end
+        DataFrames.sort!(trajectories, [:uuid, :passtime])
     end
     trajectories = IceFloeTracker.drop_trajectories_length1(trajectories, :uuid)
     IceFloeTracker.reset_id!(trajectories, :uuid)
