@@ -221,24 +221,20 @@ end
     get_large_floe_condition(
     area1,
     ratios,
-    large_floe_minimum_area,
-    large_floe_settings=(
-        area=1200, arearatio=0.28, majaxisratio=0.10, minaxisratio=0.12, convex_area=0.14
-    ),
+    thresholds
 )
 
-Set of conditions for "large" floes. Return `true` if the area of the floe is greater than or equal to `large_floe_minimum_area` and the similarity ratios are less than the corresponding thresholds in `large_floe_settings`. Return `false` otherwise. Used to determine whether to call `match_corr`.
+Set of conditions for "large" floes. Return `true` if the area of the floe is greater than or equal to `thresholds.large_floe_settings.minimum_area` and the similarity ratios are less than the corresponding thresholds in `thresholds.large_floe_settings`. Return `false` otherwise. Used to determine whether to call `match_corr`.
 
 See also [`get_small_floe_condition`](@ref).
 """
 function get_large_floe_condition(
     area1,
     ratios,
-    large_floe_minimum_area = 1200,
-    large_floe_settings=(
-        arearatio=0.28, majaxisratio=0.10, minaxisratio=0.12, convex_area=0.14
-    ),
+    thresholds
 )
+    large_floe_settings = thresholds.large_floe_settings
+    large_floe_minimum_area = large_floe_settings.minimum_area
     return area1 >= large_floe_minimum_area &&
            ratios.area < large_floe_settings.arearatio &&
            ratios.majoraxis < large_floe_settings.majaxisratio &&
@@ -250,30 +246,20 @@ end
     get_small_floe_condition(
     area1,
     ratios,
-    large_floe_minimum_area,
-    small_floe_settings=(
-        arearatio=0.18,
-        majaxisratio=0.07,
-        minaxisratio=0.08,
-        convexarearatio=0.09,
-    ),
+    thresholds
 )
 
-Set of conditions for "small" floes. Return `true` if the area of the floe is less than `large_floe_minimum_area` and the similarity ratios are less than the corresponding thresholds in `small_floe_settings`. Return `false` otherwise. Used to determine whether to call `match_corr`.
+Set of conditions for "small" floes. Return `true` if the area of the floe is less than `thresholds.large_floe_settings.minimum_area` and the similarity ratios are less than the corresponding thresholds in `thresholds.small_floe_settings`. Return `false` otherwise. Used to determine whether to call `match_corr`.
 
 See also [`get_large_floe_condition`](@ref).
 """
 function get_small_floe_condition(
     area1,
     ratios,
-    large_floe_minimum_area = 1200,
-    small_floe_settings=(
-        arearatio=0.18,
-        majaxisratio=0.07,
-        minaxisratio=0.08,
-        convexarearatio=0.09,
-    ),
+    thresholds
 )
+    small_floe_settings = thresholds.small_floe_settings
+    large_floe_minimum_area = thresholds.large_floe_settings.minimum_area
     return area1 < large_floe_minimum_area &&
            ratios.area < small_floe_settings.arearatio &&
            ratios.majoraxis < small_floe_settings.majaxisratio &&
@@ -358,8 +344,8 @@ function compute_ratios_conditions((props_day1, r), (props_day2, s), delta_time,
     time_space_proximity_condition = get_time_space_proximity_condition(
         d, delta_time, thresholds.search_thresholds
     )
-    large_floe_condition = get_large_floe_condition(area1, ratios, thresholds.large_floe_minimum_area, thresholds.large_floe_settings)
-    small_floe_condition = get_small_floe_condition(area1, ratios, thresholds.large_floe_minimum_area, thresholds.small_floe_settings)
+    large_floe_condition = get_large_floe_condition(area1, ratios, thresholds)
+    small_floe_condition = get_small_floe_condition(area1, ratios, thresholds)
     return (
         ratios=ratios,
         conditions=(
