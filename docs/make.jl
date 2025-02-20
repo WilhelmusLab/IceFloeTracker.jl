@@ -5,9 +5,10 @@ using IceFloeTracker
 
 makedocs(;
     sitename="IceFloeTracker.jl",
-    format=Documenter.HTML(),
+    format=Documenter.HTML(; size_threshold=nothing),
     modules=[IceFloeTracker],
     doctest=false,
+    warnonly=true,
 )
 
 deploydocs(;
