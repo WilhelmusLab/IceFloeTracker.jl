@@ -27,21 +27,16 @@ Trajectories are built in two steps:
     - "uuid": a universally unique identifier for each segmented floe
 - `condition_thresholds`: namedtuple of thresholds for deciding whether to match floe `i` from day `k` to floe j from day `k+1`. See `IceFloeTracker.condition_thresholds` for sample values.
 - `mc_thresholds`: thresholds for area mismatch and psi-s shape correlation. See `IceFloeTracker.mc_thresholds` for sample values.
-- `small_floe_minimum_area`: Minimum area for a floe to be considered in the tracking algorithm. Default is 400 pixels.
 
 # Returns
-A DataFrame with the above columns, plus two extra columns, "area_mismatch" and "corr", which are the area mismatch and correlation between a floe and the one that follows it in the trajectory. Trajectories are identified by a unique identifier, "uuid".
+A DataFrame with the above columns, plus two extra columns, "area_mismatch" and "corr", which are the area mismatch and correlation between a floe and the one that follows it in the trajectory. Trajectories are identified by a unique identifier.
 """
-function long_tracker(
-    props::Vector{DataFrame},
-    condition_thresholds,
-    mc_thresholds,
-    small_floe_minimum_area=400,
-)
+function long_tracker(props::Vector{DataFrame}, condition_thresholds, mc_thresholds)
     begin # Filter out floes with area less than `small_floe_minimum_area` pixels
+        small_floe_minimum_area = condition_thresholds.small_floe_settings.minimum_area
         for (i, prop) in enumerate(props)
             props[i] = prop[prop[:, :area] .>= small_floe_minimum_area, :]
-            sort!(props[i], :area; rev=true)
+            DataFrames.sort!(props[i], :area; rev=true)
         end
     end
     begin # 0th iteration: pair floes in day 1 and day 2 and add unmatched floes to _pairs
