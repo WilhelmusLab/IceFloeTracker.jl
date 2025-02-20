@@ -173,18 +173,28 @@ function find_floe_matches(
 end
 
 # Sample values for condition_thresholds
+small_floe_minimum_area = 400
 large_floe_minimum_area = 1200
 _dt = (30.0, 100.0, 1300.0)
 _dist = (200, 250, 300)
 search_thresholds = (dt=_dt, dist=_dist)
+
 large_floe_settings = (
-    arearatio=0.28, majaxisratio=0.10, minaxisratio=0.12, convexarearatio=0.14
+    minimum_area=large_floe_minimum_area,
+    arearatio=0.28,
+    majaxisratio=0.10,
+    minaxisratio=0.12,
+    convexarearatio=0.14,
 )
+
 small_floe_settings = (
-    arearatio=0.18, majaxisratio=0.1, minaxisratio=0.15, convexarearatio=0.2
+    minimum_area=small_floe_minimum_area,
+    arearatio=0.18,
+    majaxisratio=0.1,
+    minaxisratio=0.15,
+    convexarearatio=0.2,
 )
 condition_thresholds = (
-    large_floe_minimum_area=large_floe_minimum_area,
     search_thresholds=search_thresholds,
     small_floe_settings=small_floe_settings,
     large_floe_settings=large_floe_settings,
