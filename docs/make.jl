@@ -3,7 +3,13 @@ push!(LOAD_PATH, "../src/")
 using Documenter
 using IceFloeTracker
 
-makedocs(; sitename="IceFloeTracker.jl", format=Documenter.HTML(), modules=[IceFloeTracker])
+makedocs(;
+    sitename="IceFloeTracker.jl",
+    format=Documenter.HTML(; size_threshold=nothing),
+    modules=[IceFloeTracker],
+    doctest=false,
+    warnonly=true,
+)
 
 deploydocs(;
     repo="github.com/WilhelmusLab/IceFloeTracker.jl.git",
