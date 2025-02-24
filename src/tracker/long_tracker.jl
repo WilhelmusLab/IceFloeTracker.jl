@@ -29,9 +29,16 @@ Trajectories are built in two steps:
 - `mc_thresholds`: thresholds for area mismatch and psi-s shape correlation. See `IceFloeTracker.mc_thresholds` for sample values.
 
 # Returns
-A DataFrame with the above columns, plus two extra columns, "area_mismatch" and "corr", which are the area mismatch and correlation between a floe and the one that follows it in the trajectory. Trajectories are identified by a unique identifier, "uuid".
+A DataFrame with the above columns, plus two extra columns, "area_mismatch" and "corr", which are the area mismatch and correlation between a floe and the one that follows it in the trajectory. Trajectories are identified by a unique identifier.
 """
 function long_tracker(props::Vector{DataFrame}, condition_thresholds, mc_thresholds)
+    begin # Filter out floes with area less than `small_floe_minimum_area` pixels
+        small_floe_minimum_area = condition_thresholds.small_floe_settings.minimumarea
+        for (i, prop) in enumerate(props)
+            props[i] = prop[prop[:, :area] .>= small_floe_minimum_area, :]
+            DataFrames.sort!(props[i], :area; rev=true)
+        end
+    end
     begin # 0th iteration: pair floes in day 1 and day 2 and add unmatched floes to _pairs
         props1, props2 = props[1:2]
         matched_pairs0 = find_floe_matches(
@@ -162,18 +169,28 @@ function find_floe_matches(
 end
 
 # Sample values for condition_thresholds
+small_floe_minimum_area = 400
 large_floe_minimum_area = 1200
 _dt = (30.0, 100.0, 1300.0)
 _dist = (200, 250, 300)
 search_thresholds = (dt=_dt, dist=_dist)
+
 large_floe_settings = (
-    arearatio=0.28, majaxisratio=0.10, minaxisratio=0.12, convexarearatio=0.14
+    minimumarea=large_floe_minimum_area,
+    arearatio=0.28,
+    majaxisratio=0.10,
+    minaxisratio=0.12,
+    convexarearatio=0.14,
 )
+
 small_floe_settings = (
-    arearatio=0.18, majaxisratio=0.1, minaxisratio=0.15, convexarearatio=0.2
+    minimumarea=small_floe_minimum_area,
+    arearatio=0.18,
+    majaxisratio=0.1,
+    minaxisratio=0.15,
+    convexarearatio=0.2,
 )
 condition_thresholds = (
-    large_floe_minimum_area=large_floe_minimum_area,
     search_thresholds=search_thresholds,
     small_floe_settings=small_floe_settings,
     large_floe_settings=large_floe_settings,
