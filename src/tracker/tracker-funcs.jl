@@ -221,23 +221,20 @@ end
     get_large_floe_condition(
     area1,
     ratios,
-    large_floe_settings=(
-        area=1200, arearatio=0.28, majaxisratio=0.10, minaxisratio=0.12, convex_area=0.14
-    ),
+    thresholds
 )
 
-Set of conditions for "large" floes. Return `true` if the area of the floe is greater than `large_floe_settings.area` and the similarity ratios are less than the corresponding thresholds in `large_floe_settings`. Return `false` otherwise. Used to determine whether to call `match_corr`.
+Set of conditions for "large" floes. Return `true` if the area of the floe is greater than or equal to `thresholds.large_floe_settings.minimumarea` and the similarity ratios are less than the corresponding thresholds in `thresholds.large_floe_settings`. Return `false` otherwise. Used to determine whether to call `match_corr`.
 
 See also [`get_small_floe_condition`](@ref).
 """
 function get_large_floe_condition(
     area1,
     ratios,
-    large_floe_settings=(
-        area=1200, arearatio=0.28, majaxisratio=0.10, minaxisratio=0.12, convex_area=0.14
-    ),
+    thresholds
 )
-    return area1 > large_floe_settings.area &&
+    large_floe_settings = thresholds.large_floe_settings
+    return area1 >= large_floe_settings.minimumarea &&
            ratios.area < large_floe_settings.arearatio &&
            ratios.majoraxis < large_floe_settings.majaxisratio &&
            ratios.minoraxis < large_floe_settings.minaxisratio &&
@@ -248,31 +245,20 @@ end
     get_small_floe_condition(
     area1,
     ratios,
-    small_floe_settings=(
-        area=1200,
-        arearatio=0.18,
-        majaxisratio=0.07,
-        minaxisratio=0.08,
-        convexarearatio=0.09,
-    ),
+    thresholds
 )
 
-Set of conditions for "small" floes. Return `true` if the area of the floe is less or equal than `small_floe_settings.area` and the similarity ratios are less than the corresponding thresholds in `small_floe_settings`. Return `false` otherwise. Used to determine whether to call `match_corr`.
+Set of conditions for "small" floes. Return `true` if the area of the floe is less than `thresholds.large_floe_settings.minimumarea` and the similarity ratios are less than the corresponding thresholds in `thresholds.small_floe_settings`. Return `false` otherwise. Used to determine whether to call `match_corr`.
 
 See also [`get_large_floe_condition`](@ref).
 """
 function get_small_floe_condition(
     area1,
     ratios,
-    small_floe_settings=(
-        area=1200,
-        arearatio=0.18,
-        majaxisratio=0.07,
-        minaxisratio=0.08,
-        convexarearatio=0.09,
-    ),
+    thresholds
 )
-    return area1 <= small_floe_settings.area &&
+    small_floe_settings = thresholds.small_floe_settings
+    return area1 < thresholds.large_floe_settings.minimumarea &&
            ratios.area < small_floe_settings.arearatio &&
            ratios.majoraxis < small_floe_settings.majaxisratio &&
            ratios.minoraxis < small_floe_settings.minaxisratio &&
@@ -345,20 +331,19 @@ Compute the conditions for a match between the `r`th floe in `props_day1` and th
 - `props_day2`: floe properties for day 2
 - `s`: index of floe in `props_day2`
 - `delta_time`: time elapsed from image day 1 to image day 2
-- `t`: tuple of thresholds for elapsed time and distance. See `pair_floes` for details.
+- `thresholds`: namedtuple of thresholds for elapsed time and distance. See `pair_floes` for details.
 """
-function compute_ratios_conditions((props_day1, r), (props_day2, s), delta_time, thresh)
-    search_thresholds, small_floe_settings, large_floe_settings = thresh
+function compute_ratios_conditions((props_day1, r), (props_day2, s), delta_time, thresholds)
     p1 = getcentroid(props_day1, r)
     p2 = getcentroid(props_day2, s)
     d = dist(p1, p2)
     area1 = props_day1.area[r]
     ratios = compute_ratios((props_day1, r), (props_day2, s))
     time_space_proximity_condition = get_time_space_proximity_condition(
-        d, delta_time, search_thresholds
+        d, delta_time, thresholds.search_thresholds
     )
-    large_floe_condition = get_large_floe_condition(area1, ratios, large_floe_settings)
-    small_floe_condition = get_small_floe_condition(area1, ratios, small_floe_settings)
+    large_floe_condition = get_large_floe_condition(area1, ratios, thresholds)
+    small_floe_condition = get_small_floe_condition(area1, ratios, thresholds)
     return (
         ratios=ratios,
         conditions=(

@@ -25,16 +25,25 @@ Trajectories are built in two steps:
     - "passtime": A timestamp for the floe
     - "psi": the psi-s curve for the floe
     - "uuid": a universally unique identifier for each segmented floe
-- `condition_thresholds`: 3-tuple of thresholds (each a named tuple) for deciding whether to match floe `i` from day `k` to floe j from day `k+1`
-- `mc_thresholds`: thresholds for area mismatch and psi-s shape correlation
+- `condition_thresholds`: namedtuple of thresholds for deciding whether to match floe `i` from day `k` to floe j from day `k+1`. See `IceFloeTracker.condition_thresholds` for sample values.
+- `mc_thresholds`: thresholds for area mismatch and psi-s shape correlation. See `IceFloeTracker.mc_thresholds` for sample values.
 
 # Returns
-A DataFrame with the above columns, plus two extra columns, "area_mismatch" and "corr", which are the area mismatch and correlation between a floe and the one that follows it in the trajectory. Trajectories are identified by a unique identifier, "uuid".
+A DataFrame with the above columns, plus two extra columns, "area_mismatch" and "corr", which are the area mismatch and correlation between a floe and the one that follows it in the trajectory. Trajectories are identified by a unique identifier.
 """
 function long_tracker(props::Vector{DataFrame}, condition_thresholds, mc_thresholds)
+    begin # Filter out floes with area less than `small_floe_minimum_area` pixels
+        small_floe_minimum_area = condition_thresholds.small_floe_settings.minimumarea
+        for (i, prop) in enumerate(props)
+            props[i] = prop[prop[:, :area] .>= small_floe_minimum_area, :]
+            DataFrames.sort!(props[i], :area; rev=true)
+        end
+    end
     begin # 0th iteration: pair floes in day 1 and day 2 and add unmatched floes to _pairs
         props1, props2 = props[1:2]
-        matched_pairs0 = find_floe_matches(props1, props2, condition_thresholds, mc_thresholds)
+        matched_pairs0 = find_floe_matches(
+            props1, props2, condition_thresholds, mc_thresholds
+        )
 
         # Get unmatched floes from day 1/2
         unmatched1 = get_unmatched(props1, matched_pairs0.props1)
@@ -50,7 +59,9 @@ function long_tracker(props::Vector{DataFrame}, condition_thresholds, mc_thresho
     begin # Start 3:end iterations
         for i in 3:length(props)
             trajectory_heads = get_trajectory_heads(trajectories)
-            new_pairs = IceFloeTracker.find_floe_matches(trajectory_heads, props[i], condition_thresholds, mc_thresholds)
+            new_pairs = IceFloeTracker.find_floe_matches(
+                trajectory_heads, props[i], condition_thresholds, mc_thresholds
+            )
             # Get unmatched floes in day 2 (iterations > 2)
             unmatched2 = get_unmatched(props[i], new_pairs.props2)
             new_pairs = IceFloeTracker.get_matches(new_pairs)
@@ -86,10 +97,7 @@ Find matches for floes in `tracked` from floes in  `candidate_props`.
 - `mc_thresholds`: thresholds for area mismatch and psi-s shape correlation
 """
 function find_floe_matches(
-    tracked::T,
-    candidate_props::T,
-    condition_thresholds,
-    mc_thresholds
+    tracked::T, candidate_props::T, condition_thresholds, mc_thresholds
 ) where {T<:AbstractDataFrame}
     props1 = deepcopy(tracked)
     props2 = deepcopy(candidate_props)
@@ -139,9 +147,7 @@ function find_floe_matches(
             best_match_idx = getidxmostminimumeverything(matching_floes.ratios)
             @debug "Best match index for floe 1:$r: $best_match_idx"
             if isnotnan(best_match_idx)
-                bestmatchdata = getbestmatchdata(
-                    best_match_idx, r, props1, matching_floes
-                ) # might be copying data unnecessarily
+                bestmatchdata = getbestmatchdata(best_match_idx, r, props1, matching_floes) # might be copying data unnecessarily
                 addmatch!(matched_pairs, bestmatchdata)
                 @debug "Matched pairs" matched_pairs
             end
@@ -161,3 +167,36 @@ function find_floe_matches(
     end # of while loop
     return match_total
 end
+
+# Sample values for condition_thresholds
+small_floe_minimum_area = 400
+large_floe_minimum_area = 1200
+_dt = (30.0, 100.0, 1300.0)
+_dist = (200, 250, 300)
+search_thresholds = (dt=_dt, dist=_dist)
+
+large_floe_settings = (
+    minimumarea=large_floe_minimum_area,
+    arearatio=0.28,
+    majaxisratio=0.10,
+    minaxisratio=0.12,
+    convexarearatio=0.14,
+)
+
+small_floe_settings = (
+    minimumarea=small_floe_minimum_area,
+    arearatio=0.18,
+    majaxisratio=0.1,
+    minaxisratio=0.15,
+    convexarearatio=0.2,
+)
+condition_thresholds = (
+    search_thresholds=search_thresholds,
+    small_floe_settings=small_floe_settings,
+    large_floe_settings=large_floe_settings,
+)
+
+mc_thresholds = (
+    goodness=(small_floe_area=0.18, large_floe_area=0.236, corr=0.68),
+    comp=(mxrot=10, sz=16),
+)

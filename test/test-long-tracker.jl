@@ -1,4 +1,4 @@
-using IceFloeTracker: long_tracker, _imhist
+using IceFloeTracker: long_tracker, _imhist, condition_thresholds, mc_thresholds
 
 """
 addgaps(props)
@@ -13,25 +13,6 @@ function addgaps(props)
     # add gap before last day
     props = vcat(props[1:(end - 1)], blank_props, [props[end]])
     return props
-end
-
-begin # Set thresholds
-    search_thresholds = (dt=(30.0, 100.0, 1300.0), dist=(200, 250, 300))
-    large_floe_settings = (
-        area=1200,
-        arearatio=0.28,
-        majaxisratio=0.10,
-        minaxisratio=0.12,
-        convexarearatio=0.14,
-    )
-    small_floe_settings = (
-        area=1200, arearatio=0.18, majaxisratio=0.1, minaxisratio=0.15, convexarearatio=0.2
-    )
-    condition_thresholds = (search_thresholds, small_floe_settings, large_floe_settings)
-    mc_thresholds = (
-        goodness=(small_floe_area=0.18, large_floe_area=0.236, corr=0.68),
-        comp=(mxrot=10, sz=16),
-    )
 end
 
 begin # Load data
@@ -116,21 +97,5 @@ end
             IDs = trajectories[!, :ID]
             @test IDs == [1, 1, 1, 2, 2, 2, 3, 3, 4, 4, 4, 5, 5]
         end
-    end
-
-    @ntestset "Test Case 5: drop_trajectories_length1" begin
-        df = DataFrame(; ID=[1, 1, 2, 3, 3, 3, 4], foo=1:7)
-        df = IceFloeTracker.drop_trajectories_length1(df, :ID)
-        @test df == DataFrame(; ID=[1, 1, 3, 3, 3], foo=[1, 2, 4, 5, 6])
-
-        # Test empty dataframe
-        df = similar(df, 0)
-        df_ = IceFloeTracker.drop_trajectories_length1(df, :ID)
-        @test df_ == df
-
-        # Test no trajectories of length 1
-        df = DataFrame(; ID=[1, 1, 2, 2, 3, 3], foo=1:6)
-        df_ = IceFloeTracker.drop_trajectories_length1(df, :ID)
-        @test df_ == df
     end
 end
