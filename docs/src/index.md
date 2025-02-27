@@ -21,7 +21,7 @@ Ice floe tracking is carried out by comparing the shapes produced in the segment
 
 
 ## Developers
-IceFloeTracker.jl is a product of the [Wilhelmus Lab](https://www.wilhelmuslab.me) at Brown University, led by Monica M. Wilhelmus. The original algorithm was developed by Rosalinda Lopez-Acosta during her PhD work at University of California Riverside, advised by Dr. Wilhelmus. The translation of the original Matlab code into the current modular, open source Julia package has been carried out in conjunction with the Center for Computing and Visualization at Brown University. Contributors include Daniel Watkins, Maria Isabel Restrepo, Carlos Paniagua, Tim DiVoll, John Holland, and Bradford Roarr.
+IceFloeTracker.jl is a product of the [Wilhelmus Lab](https://www.wilhelmuslab.me) at Brown University, led by Monica M. Wilhelmus. The original algorithm was developed by Rosalinda Lopez-Acosta during her PhD work at University of California Riverside, advised by Dr. Wilhelmus. The translation of the original Matlab code into the current modular, open source Julia package has been carried out in conjunction with the Center for Computing and Visualization at Brown University. Contributors include Daniel Watkins, Maria Isabel Restrepo, Carlos Paniagua, Tim Divoll, John Holland, and Bradford Roarr.
 
 ## Citing
 
