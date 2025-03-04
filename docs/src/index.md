@@ -1,27 +1,38 @@
 # IceFloeTracker.jl
 
-## Overview
-IceFloeTracker.jl is a collection of routines and tools for processing remote sensing imagery, identifying sea ice floes, and tracking the displacement and rotation of ice floes across multiple images. It can be used either standalone to create custom processing pathways or with the [Ice Floe Tracker Pipeline](https://github.com/WilhelmusLab/ice-floe-tracker-pipeline).
+IceFloeTracker.jl is a collection of routines and tools for processing remote sensing imagery, identifying sea ice floes, and tracking the displacement and rotation of ice floes across multiple images. The package includes the core functions for the Ice Floe Tracker (IFT) algorithm introduced by [Lopez-Acosta et al. 2019](https://www.sciencedirect.com/science/article/pii/S0034425719304250). These functions can be used independently and can be customized for specific use cases. It can be used either standalone to create custom processing pathways or with the [Ice Floe Tracker Pipeline](https://github.com/WilhelmusLab/ice-floe-tracker-pipeline).
 
-```@contents
+## Installation
+
+The package can be installed via
+```
+using Pkg
+Pkg.add("IceFloeTracker")
 ```
 
-## Algorithm components
-The Ice Floe Tracker (IFT) package includes the core functions for the three main steps of the algorithm. These functions can be used independently and can be customized for specific use cases. 
+## Overview
+
+The IFT algorithm has three main components: preprocessing, segmentation, and tracking.
+
+```@raw html
+<img align="right" src="assets/ift_flowchart_simple.png" width="600">
+```
 
 ### Preprocessing
+
 IFT operates on optical satellite imagery. The main functions are designed with "true color" and "false color" imagery in mind, and have thus far primarily been tested on imagery from the Moderate Resolution Imaging Spectroradiometer (MODIS) from the NASA _Aqua_ and _Terra_ satellites. The preprocessing routines mask land and cloud features, and aim to adjust and sharpen the remainder of the images to amplify the contrast along the edges of sea ice floes. (TBD: Link to main preprocessing page)
 
 ### Segmentation
+
 The IFT segmentation functions include functions for semantic segmentation (pixel-by-pixel assignment into predefined categories) and object-based segmentation (groupings of pixels into distinct objects). The semantic segmentation steps use $k$-means to group pixels into water and ice regions. A combination of watershed functions, morphological operations, and further applications of $k$-means are used to identify candidate ice floes. (TBD: Link to main segmentation page)
 
 ### Tracking
+
 Ice floe tracking is carried out by comparing the shapes produced in the segmentation step. Shapes with similar area are rotated until the difference in surface area is minimized, and then the edge shapes are compared using a Ѱ-s curve. If thresholds for correlation and area differences are met, then the floe with the best correlation and smallest area differences are considered matches and the objects are assigned the same label. In the end, trajectories for individual floes are recorded in a dataframe.
 
-
-
 ## Developers
-IceFloeTracker.jl is a product of the [Wilhelmus Lab](https://www.wilhelmuslab.me) at Brown University, led by Monica M. Wilhelmus. The original algorithm was developed by Rosalinda Lopez-Acosta during her PhD work at University of California Riverside, advised by Dr. Wilhelmus. The translation of the original Matlab code into the current modular, open source Julia package has been carried out in conjunction with the Center for Computing and Visualization at Brown University. Contributors include Daniel Watkins, Maria Isabel Restrepo, Carlos Paniagua, Tim DiVoll, John Holland, and Bradford Roarr.
+
+IceFloeTracker.jl is a product of the [Wilhelmus Lab](https://www.wilhelmuslab.me) at Brown University, led by Monica M. Wilhelmus. The original algorithm was developed by Rosalinda Lopez-Acosta during her PhD work at University of California Riverside, advised by Dr. Wilhelmus. The translation of the original Matlab code into the current modular, open-source Julia package has been carried out in conjunction with the Center for Computing and Visualization at Brown University. Contributors include Carlos Paniagua, Tim DiVoll, John Holland, and Bradford Roarr, and Daniel Watkins, Maria Isabel Restrepo.
 
 ## Citing
 
