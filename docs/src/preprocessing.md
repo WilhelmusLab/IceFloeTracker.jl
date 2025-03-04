@@ -1,5 +1,4 @@
 # Preprocessing
-
 IFT operates on optical satellite imagery. The main functions are designed with "true color" and "false color" imagery in mind, and have thus far primarily been tested on imagery from the Moderate Resolution Imaging Spectroradiometer (MODIS) from the NASA _Aqua_ and _Terra_ satellites. The preprocessing routines mask land and cloud features, and aim to adjust and sharpen the remainder of the images to amplify the contrast along the edges of sea ice floes. The functions use three different images: a land mask, a true color image, and a false color image. Examples are based on the NASA MODIS dataset. Examples of preprocessing are provided in notebooks in the project [GitHub repository](https://github.com/WilhelmusLab/IceFloeTracker.jl/tree/main/notebooks/preprocessing-workflow).
 
 ## Land masks
