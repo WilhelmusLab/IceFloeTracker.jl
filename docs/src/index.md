@@ -15,7 +15,7 @@ Pkg.add("IceFloeTracker")
 The IFT algorithm has three main components: preprocessing, segmentation, and tracking.
 
 ```@raw html
-<img align="right" src="assets/ift_flowchart_simple.png" width="600">
+<img align="right" src="../assets/ift_flowchart_simple.png" width="600">
 ```
 
 ### Preprocessing
