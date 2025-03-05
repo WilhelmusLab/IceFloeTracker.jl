@@ -410,12 +410,12 @@ end
 
 # Collision handling
 
-"""
-    getcollisionslocs(df)
+# """
+#     _getcollisionslocs(df)
 
-Return a vector of tuples of the row and the index of the row in `df` that has a collision with another row in `df`.
-"""
-function getcollisionslocs(df) #::Vector{Tuple{DataFrameRow{DataFrame, DataFrames.Index}, Vector{Int64}}}
+# Return a vector of tuples of the row and the index of the row in `df` that has a collision with another row in `df`.
+# """
+function _getcollisionslocs(df) #::Vector{Tuple{DataFrameRow{DataFrame, DataFrames.Index}, Vector{Int64}}}
     typeof(df) <: DataFrameRow &&
         return Tuple{DataFrameRow{DataFrame,DataFrames.Index},Vector{Int64}}[]
     collisions = _getcollisions(df)
@@ -468,7 +468,7 @@ function ismember(df1, df2)
 end
 
 function resolvecollisions!(matched_pairs)
-    collisions = getcollisionslocs(matched_pairs.props2)
+    collisions = _getcollisionslocs(matched_pairs.props2)
     for collision in reverse(collisions)
         bestentry = getidxmostminimumeverything(matched_pairs.ratios[collision.idxs, :])
         keeper = collision.idxs[bestentry]
