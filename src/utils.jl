@@ -205,20 +205,20 @@ function _padnhood(img, I, nhood)
     return tofill
 end
 
-"""
-    _bin9todec(v)
+# """
+#     _bin9todec(v)
 
-Get decimal representation of a bit vector `v` with the leading bit at its leftmost posistion.
+# Get decimal representation of a bit vector `v` with the leading bit at its leftmost posistion.
 
-Example
-```
-julia> _bin9todec([0 0 0 0 0 0 0 0 0])
-0
+# Example
+# ```
+# julia> _bin9todec([0 0 0 0 0 0 0 0 0])
+# 0
 
-julia> _bin9todec([1 1 1 1 1 1 1 1 1])
-511
-```
-"""
+# julia> _bin9todec([1 1 1 1 1 1 1 1 1])
+# 511
+# ```
+# """
 function _bin9todec(v::AbstractArray)::Int64
     return sum(vec(v) .* 2 .^ (0:(length(v) - 1)))
 end
