@@ -86,14 +86,14 @@ function regionprops_table(
 
     if "bbox" in properties
         bbox_cols = getbboxcolumns(props)
-        fixzeroindexing!(props, bbox_cols[1:2])
+        _fixzeroindexing!(props, bbox_cols[1:2])
         renamecols!(props, bbox_cols, ["min_row", "min_col", "max_row", "max_col"])
     end
 
     if "centroid" in properties
         centroid_cols = getcentroidcolumns(props)
         roundtoint!(props, centroid_cols)
-        fixzeroindexing!(props, centroid_cols)
+        _fixzeroindexing!(props, centroid_cols)
         renamecols!(props, centroid_cols, ["row_centroid", "col_centroid"])
     end
     return props
@@ -180,8 +180,7 @@ function getbboxcolumns(props::DataFrame)
     return filter(col -> occursin(r"^bbox-\d$", col), names(props))
 end
 
-
-FloeLabelsImage = Union{BitMatrix, Matrix{<:Bool}, Matrix{<:Integer}}
+FloeLabelsImage = Union{BitMatrix,Matrix{<:Bool},Matrix{<:Integer}}
 
 """
     cropfloe(floesimg, props, i)
@@ -205,13 +204,13 @@ function cropfloe(floesimg::FloeLabelsImage, props::DataFrame, i::Integer)
 
     if issubset(bbox_label_column_names, colnames)
         return cropfloe(
-                floesimg,
-                props_row.min_row,
-                props_row.min_col,
-                props_row.max_row,
-                props_row.max_col,
-                props_row.label
-            )
+            floesimg,
+            props_row.min_row,
+            props_row.min_col,
+            props_row.max_row,
+            props_row.max_col,
+            props_row.label,
+        )
 
     elseif issubset(bbox_column_names, colnames)
         floesimg_bitmatrix = floesimg .> 0
@@ -220,12 +219,11 @@ function cropfloe(floesimg::FloeLabelsImage, props::DataFrame, i::Integer)
             props_row.min_row,
             props_row.min_col,
             props_row.max_row,
-            props_row.max_col
+            props_row.max_col,
         )
 
     elseif issubset(label_column_names, colnames)
         return cropfloe(floesimg, props_row.label)
-
     end
 end
 
@@ -235,7 +233,9 @@ end
 
 Crops the floe delimited by `min_row`, `min_col`, `max_row`, `max_col`, from the floe image `floesimg`.
 """
-function cropfloe(floesimg::BitMatrix, min_row::I, min_col::I, max_row::I, max_col::I) where {I<:Integer}
+function cropfloe(
+    floesimg::BitMatrix, min_row::I, min_col::I, max_row::I, max_col::I
+) where {I<:Integer}
     #=
     Crop the floe using bounding box data in props.
     Note: Using a view of the cropped floe was considered but if there were multiple components in the cropped floe, the source array with the floes would be modified. =#
@@ -257,7 +257,9 @@ end
 
 Crops the floe from `floesimg` with the label `label`, returning the region bounded by `min_row`, `min_col`, `max_row`, `max_col`, and converting to a BitMatrix.
 """
-function cropfloe(floesimg::Matrix{I}, min_row::J, min_col::J, max_row::J, max_col::J, label::I)  where {I<:Integer, J<:Integer}
+function cropfloe(
+    floesimg::Matrix{I}, min_row::J, min_col::J, max_row::J, max_col::J, label::I
+) where {I<:Integer,J<:Integer}
     #=
     Crop the floe using bounding box data in props.
     Note: Using a view of the cropped floe was considered but if there were multiple components in the cropped floe, the source array with the floes would be modified. =#
@@ -271,9 +273,6 @@ function cropfloe(floesimg::Matrix{I}, min_row::J, min_col::J, max_row::J, max_c
 
     return floe_area
 end
-
-
-
 
 """
     addfloearrays(props::DataFrame, floeimg::BitMatrix)
@@ -294,12 +293,12 @@ function getfloemasks(props::DataFrame, floeimg::FloeLabelsImage)
     return map(i -> cropfloe(floeimg, props, i), 1:nrow(props))
 end
 
-"""
-    fixzeroindexing!(props::DataFrame, props_to_fix::Vector{T}) where T<:Union{Symbol,String}
+# """
+#     _fixzeroindexing!(props::DataFrame, props_to_fix::Vector{T}) where T<:Union{Symbol,String}
 
-Fix the zero-indexing of the `props_to_fix` columns in `props` by adding 1 to each element.
-"""
-function fixzeroindexing!(
+# Fix the zero-indexing of the `props_to_fix` columns in `props` by adding 1 to each element.
+# """
+function _fixzeroindexing!(
     props::DataFrame, props_to_fix::Vector{T}
 ) where {T<:Union{Symbol,String}}
     props[:, props_to_fix] .+= 1
