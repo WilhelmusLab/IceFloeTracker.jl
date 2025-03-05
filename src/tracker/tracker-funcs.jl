@@ -125,12 +125,12 @@ function modenan(x::AbstractVector{<:Int64})
     return mode(x)
 end
 
-"""
-getcentroid(props_day::DataFrame, r)
+# """
+# _getcentroid(props_day::DataFrame, r)
 
-Get the coordinates of the `r`th floe in `props_day`.
-"""
-function getcentroid(props_day::DataFrame, r)
+# Get the coordinates of the `r`th floe in `props_day`.
+# """
+function _getcentroid(props_day::DataFrame, r)
     return props_day[r, [:row_centroid, :col_centroid]]
 end
 
@@ -323,8 +323,8 @@ end
 # - `thresholds`: namedtuple of thresholds for elapsed time and distance. See `pair_floes` for details.
 # """
 function _compute_ratios_conditions((props_day1, r), (props_day2, s), delta_time, thresholds)
-    p1 = getcentroid(props_day1, r)
-    p2 = getcentroid(props_day2, s)
+    p1 = _getcentroid(props_day1, r)
+    p2 = _getcentroid(props_day2, s)
     d = dist(p1, p2)
     area1 = props_day1.area[r]
     ratios = _compute_ratios((props_day1, r), (props_day2, s))
