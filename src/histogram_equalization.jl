@@ -194,11 +194,11 @@ Performs conditional histogram equalization on a true color image.
 # Arguments
 - `true_color_image`: The true color image to be equalized.
 - `clouds_red`: The land/cloud masked red channel of the false color image.
-- `rblocks`: The number of row-blocks to divide the image into for histogram equalization. Default is 8.
-- `cblocks`: The number of column-blocks to divide the image into for histogram equalization. Default is 6.
-- `entropy_threshold`: The entropy threshold used to determine if a block should be equalized. Default is 4.0.
-- `white_threshold`: The white threshold used to determine if a pixel should be considered white. Default is 25.5.
-- `white_fraction_threshold`: The white fraction threshold used to determine if a block should be equalized. Default is 0.4.
+- `rblocks`: The number of row-blocks to divide the image into for histogram equalization.
+- `cblocks`: The number of column-blocks to divide the image into for histogram equalization.
+- `entropy_threshold`: The entropy threshold used to determine if a block should be equalized.
+- `white_threshold`: The white threshold used to determine if a pixel should be considered white.
+- `white_fraction_threshold`: The white fraction threshold used to determine if a block should be equalized.
 
 # Returns
 The equalized true color image.
