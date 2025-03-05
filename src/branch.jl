@@ -1,11 +1,11 @@
-"""
-    branch_candidates_func(nhood)
+# """
+#     _branch_candidates_func(nhood)
 
-Filter `nhood` as candidate for branch point.
+# Filter `nhood` as candidate for branch point.
 
-To be passed to the `make_lut` function.
-"""
-function branch_candidates_func(nhood::AbstractArray)::Bool
+# To be passed to the `make_lut` function.
+# """
+function _branch_candidates_func(nhood::AbstractArray)::Bool
     nhood[2, 2] == 0 && return false
     sum(nhood) > 3 && return true
 end
@@ -40,14 +40,14 @@ end
 # """
 #     _branch_filter(
 #     img::AbstractArray{Bool},
-#     func1::Function=branch_candidates_func,
+#     func1::Function=_branch_candidates_func,
 #     func2::Function=connected_background_count,)
 
 # Filter `img` with `_operator_lut` using `lut1` and `lut2`.
 # """
 function _branch_filter(
     img::AbstractArray{Bool},
-    func1::Function=branch_candidates_func,
+    func1::Function=_branch_candidates_func,
     func2::Function=connected_background_count,
 )::Tuple{AbstractArray{Bool},AbstractArray{Int64}}
     C = zeros(Bool, size(img))
