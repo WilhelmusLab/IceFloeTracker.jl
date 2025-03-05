@@ -85,7 +85,7 @@ function regionprops_table(
     )
 
     if "bbox" in properties
-        bbox_cols = getbboxcolumns(props)
+        bbox_cols = _getbboxcolumns(props)
         _fixzeroindexing!(props, bbox_cols[1:2])
         renamecols!(props, bbox_cols, ["min_row", "min_col", "max_row", "max_col"])
     end
@@ -171,12 +171,12 @@ function getcentroidcolumns(props::DataFrame)
     return filter(col -> occursin(r"^centroid-\d$", col), names(props))
 end
 
-"""
-    getbboxcolumns(props::DataFrame)
+# """
+#     _getbboxcolumns(props::DataFrame)
 
-Return the column names of the bounding box columns in `props`.
-"""
-function getbboxcolumns(props::DataFrame)
+# Return the column names of the bounding box columns in `props`.
+# """
+function _getbboxcolumns(props::DataFrame)
     return filter(col -> occursin(r"^bbox-\d$", col), names(props))
 end
 
