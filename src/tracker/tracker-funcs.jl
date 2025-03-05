@@ -611,11 +611,11 @@ function reset_id!(df::AbstractDataFrame, col::Union{Symbol,AbstractString}=:uui
 end
 
 """
-    consolidate_matched_pairs(matched_pairs::MatchedPairs)
+    _consolidate_matched_pairs(matched_pairs::MatchedPairs)
 
 Consolidate the floe properties and similarity ratios of the matched pairs in `matched_pairs` into a single dataframe. Return the consolidated dataframe. Used in iteration `0`.
 """
-function consolidate_matched_pairs(matched_pairs::MatchedPairs)
+function _consolidate_matched_pairs(matched_pairs::MatchedPairs)
     # Ensure UUIDs are consistent
     matched_pairs.props2.uuid = matched_pairs.props1.uuid
 

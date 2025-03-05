@@ -49,7 +49,7 @@ function long_tracker(props::Vector{DataFrame}, condition_thresholds, mc_thresho
         unmatched1 = get_unmatched(props1, matched_pairs0.props1)
         unmatched2 = get_unmatched(props2, matched_pairs0.props2)
         unmatched = vcat(unmatched1, unmatched2)
-        consolidated_matched_pairs = consolidate_matched_pairs(matched_pairs0)
+        consolidated_matched_pairs = _consolidate_matched_pairs(matched_pairs0)
 
         # Get _pairs: preliminary matched and unmatched floes
         trajectories = vcat(consolidated_matched_pairs, unmatched)
