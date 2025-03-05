@@ -253,12 +253,12 @@ function get_small_floe_condition(
            ratios.convex_area < small_floe_settings.convexarearatio
 end
 
-"""
-    callmatchcorr(conditions)
+# """
+#     _callmatchcorr(conditions)
 
-Condition to decide whether match_corr should be called.
-"""
-function callmatchcorr(conditions)
+# Condition to decide whether match_corr should be called.
+# """
+function _callmatchcorr(conditions)
     return conditions.time_space_proximity_condition &&
            (conditions.large_floe_condition || conditions.small_floe_condition)
 end

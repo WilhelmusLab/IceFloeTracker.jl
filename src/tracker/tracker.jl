@@ -88,7 +88,7 @@ function _pairfloes(
                         (props1, r), (props2, s), Δt, condition_thresholds
                     )
 
-                    if callmatchcorr(conditions)
+                    if _callmatchcorr(conditions)
                         (area_mismatch, corr) = matchcorr(
                             props1.mask[r], props2.mask[s], Δt; mc_thresholds.comp...
                         )

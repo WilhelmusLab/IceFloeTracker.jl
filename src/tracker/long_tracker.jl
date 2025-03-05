@@ -120,7 +120,7 @@ function find_floe_matches(
                     (props1, r), (props2, s), Δt, condition_thresholds
                 )
 
-                if callmatchcorr(conditions)
+                if _callmatchcorr(conditions)
                     @debug "Getting mismatch and correlation for floe 1:$r and floe 2:$s"
                     (area_mismatch, corr) = matchcorr(
                         props1.mask[r], props2.mask[s], Δt; mc_thresholds.comp...
