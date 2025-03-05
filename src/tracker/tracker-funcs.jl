@@ -400,11 +400,11 @@ function _getbestmatchdata(idx, r, props_day1, matching_floes)
 end
 
 """
-    getidxofrow(rw0, df)
+    _getidxofrow(rw0, df)
 
 Return the indices of the rows in `df` that are equal to `rw0`.
 """
-function getidxofrow(rw0, df)
+function _getidxofrow(rw0, df)
     return findall([rw0 == row for row in eachrow(df)])
 end
 
@@ -419,7 +419,7 @@ function _getcollisionslocs(df) #::Vector{Tuple{DataFrameRow{DataFrame, DataFram
     typeof(df) <: DataFrameRow &&
         return Tuple{DataFrameRow{DataFrame,DataFrames.Index},Vector{Int64}}[]
     collisions = _getcollisions(df)
-    return [(data=rw, idxs=getidxofrow(rw, df)) for rw in eachrow(collisions)]
+    return [(data=rw, idxs=_getidxofrow(rw, df)) for rw in eachrow(collisions)]
 end
 
 namesof(obj::MatchedPairs) = fieldnames(typeof(obj))
