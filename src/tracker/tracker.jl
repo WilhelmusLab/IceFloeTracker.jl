@@ -110,7 +110,7 @@ function _pairfloes(
                 # 2. Find the best match for floe r
                 best_match_idx = getidxmostminimumeverything(matching_floes.ratios)
                 if isnotnan(best_match_idx)
-                    bestmatchdata = getbestmatchdata(
+                    bestmatchdata = _getbestmatchdata(
                         best_match_idx, r, props1, matching_floes
                     ) # might be copying data unnecessarily
 
