@@ -187,14 +187,14 @@ function isincountourlist(
     return (false, 0)
 end
 
-"""
-Get index in Moore neigborhood representing the direction from the `from` pixel coords to the `to` pixel coords (see definition of dir_delta below).
+# """
+# Get index in Moore neigborhood representing the direction from the `from` pixel coords to the `to` pixel coords (see definition of dir_delta below).
 
-# Clockwise Moore neighborhood.
-dir_delta = [CartesianIndex(-1, 0), CartesianIndex(-1, 1), CartesianIndex(0, 1), CartesianIndex(1, 1), CartesianIndex(1, 0), CartesianIndex(1, -1), CartesianIndex(0, -1), CartesianIndex(-1,-1)]
+# ## Clockwise Moore neighborhood.
+# dir_delta = [CartesianIndex(-1, 0), CartesianIndex(-1, 1), CartesianIndex(0, 1), CartesianIndex(1, 1), CartesianIndex(1, 0), CartesianIndex(1, -1), CartesianIndex(0, -1), CartesianIndex(-1,-1)]
 
-"""
-function from_to(
+# """
+function _from_to(
     from::CartesianIndex, to::CartesianIndex, dir_delta::Vector{CartesianIndex{2}}
 )
     delta = to - from
@@ -213,7 +213,7 @@ function _detect_move!(
     done::BitVector,
     dir_delta::Vector{CartesianIndex{2}},
 )
-    dir = from_to(p0, p2, dir_delta)
+    dir = _from_to(p0, p2, dir_delta)
     moved = _clockwise(dir)
     p1 = CartesianIndex(0, 0)
 
@@ -235,7 +235,7 @@ function _detect_move!(
     done .= false
 
     while true
-        dir = from_to(p3, p2, dir_delta)
+        dir = _from_to(p3, p2, dir_delta)
         moved = _counterclockwise(dir)
         p4 = CartesianIndex(0, 0) # initialize p4
         done .= false
