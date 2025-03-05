@@ -66,6 +66,7 @@ function _regularize(
     return reg_sharpened
 end
 
+# TODO: decide whether get_final should be a private function
 """
     get_final(img, label, segment_mask, se_erosion, se_dilation)
 
