@@ -264,17 +264,17 @@ function _callmatchcorr(conditions)
            (conditions.large_floe_condition || conditions.small_floe_condition)
 end
 
-"""
-    isfloegoodmatch(conditions, mct, area_mismatch, corr)
+# """
+#     _isfloegoodmatch(conditions, mct, area_mismatch, corr)
 
-Return `true` if the floes are a good match as per the set thresholds. Return `false` otherwise.
+# Return `true` if the floes are a good match as per the set thresholds. Return `false` otherwise.
 
-# Arguments
-- `conditions`: tuple of booleans for evaluating the conditions
-- `mct`: tuple of thresholds for the match correlation test
-- `area_mismatch` and `corr`: values returned by `match_corr`
-"""
-function isfloegoodmatch(conditions, mct, area_mismatch, corr)
+# # Arguments
+# - `conditions`: tuple of booleans for evaluating the conditions
+# - `mct`: tuple of thresholds for the match correlation test
+# - `area_mismatch` and `corr`: values returned by `match_corr`
+# """
+function _isfloegoodmatch(conditions, mct, area_mismatch, corr)
     return (
         (conditions.large_floe_condition && area_mismatch < mct.small_floe_area) ||
         (conditions.small_floe_condition && area_mismatch < mct.large_floe_area)

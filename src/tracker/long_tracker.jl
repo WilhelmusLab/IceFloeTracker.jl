@@ -126,7 +126,7 @@ function find_floe_matches(
                         props1.mask[r], props2.mask[s], Δt; mc_thresholds.comp...
                     )
 
-                    if isfloegoodmatch(
+                    if _isfloegoodmatch(
                         conditions, mc_thresholds.goodness, area_mismatch, corr
                     )
                         @debug "** Found a good match for floe 1:$r => 2:$s"

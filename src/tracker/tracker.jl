@@ -93,7 +93,7 @@ function _pairfloes(
                             props1.mask[r], props2.mask[s], Δt; mc_thresholds.comp...
                         )
 
-                        if isfloegoodmatch(
+                        if _isfloegoodmatch(
                             conditions, mc_thresholds.goodness, area_mismatch, corr
                         )
                             _appendrows!(
