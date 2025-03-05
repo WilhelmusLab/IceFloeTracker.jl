@@ -14,7 +14,7 @@
 Compute the mismatch `mm` and psi-s-correlation `c` for floes with masks `f1` and `f2`.
 
 The criteria for floes to be considered equivalent is as follows:
-    - `c` greater than `mm` 
+    - `c` greater than `mm`
     - `_mm` is less than `mm`
 
 A pair of `NaN` is returned for cases for which one of their mask dimension is too small or their sizes are not comparable.
@@ -77,7 +77,7 @@ function getsizecomparability(s1::T, s2::T) where {T<:Tuple{Int64,Int64}}
 end
 
 """
-    corr(f1,f2)
+    corr(p1, p2)
 
 Return the normalized cross-correlation between the psi-s curves `p1` and `p2`.
 """
