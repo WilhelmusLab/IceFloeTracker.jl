@@ -3,12 +3,12 @@
     regionprops_table(label_img, intensity_img; properties, connectivity, extra_properties)
 
 A wrapper of the `regionprops_table` function from the skimage python library.
-    
+
 See its full documentation at https://scikit-image.org/docs/stable/api/skimage.measure.html#regionprops-table.
-    
+
 # Arguments
 - `label_img`: Image with the labeled objects of interest
-- `intensity_img`: (Optional) Used for generating `extra_properties`, integer/float array from which (presumably) `label_img` was generated 
+- `intensity_img`: (Optional) Used for generating `extra_properties`, integer/float array from which (presumably) `label_img` was generated
 - `properties`: List (`Vector` or `Tuple`) of properties to be generated for each connected component in `label_img`
 - `extra_properties`: (Optional) not yet implemented. It will be set to `nothing`
 
@@ -49,8 +49,8 @@ julia> properties = ["area", "perimeter"]
 
  julia> IceFloeTracker.regionprops_table(label_img, bw_img, properties = properties)
  4×2 DataFrame
-  Row │ area   perimeter 
-      │ Int32  Float64   
+  Row │ area   perimeter
+      │ Int32  Float64
  ─────┼──────────────────
     1 │    13   11.6213
     2 │     1    0.0
@@ -105,9 +105,9 @@ end
     regionprops(label_img, ; properties, connectivity)
 
 A wrapper of the `regionprops` function from the skimage python library.
-    
+
 See its full documentation at https://scikit-image.org/docs/stable/api/skimage.measure.html#skimage.measure.regionprops.
-    
+
 # Arguments
 - `label_img`: Image with the labeled objects of interest
 - `intensity_img`: (Optional) Used for generating `extra_properties`, integer/float array from which (presumably) `label_img` was generated
@@ -222,20 +222,21 @@ function cropfloe(floesimg::FloeLabelsImage, props::DataFrame, i::Integer)
             props_row.max_row,
             props_row.max_col
         )
-    
+
     elseif issubset(label_column_names, colnames)
         return cropfloe(floesimg, props_row.label)
-    
+
     end
 end
 
+# TODO: decide cropfloe should be a private function
 """
     cropfloe(floesimg, min_row, min_col, max_row, max_col)
 
 Crops the floe delimited by `min_row`, `min_col`, `max_row`, `max_col`, from the floe image `floesimg`.
 """
 function cropfloe(floesimg::BitMatrix, min_row::I, min_col::I, max_row::I, max_col::I) where {I<:Integer}
-    #= 
+    #=
     Crop the floe using bounding box data in props.
     Note: Using a view of the cropped floe was considered but if there were multiple components in the cropped floe, the source array with the floes would be modified. =#
     prefloe = floesimg[min_row:max_row, min_col:max_col]
@@ -257,13 +258,13 @@ end
 Crops the floe from `floesimg` with the label `label`, returning the region bounded by `min_row`, `min_col`, `max_row`, `max_col`, and converting to a BitMatrix.
 """
 function cropfloe(floesimg::Matrix{I}, min_row::J, min_col::J, max_row::J, max_col::J, label::I)  where {I<:Integer, J<:Integer}
-    #= 
+    #=
     Crop the floe using bounding box data in props.
     Note: Using a view of the cropped floe was considered but if there were multiple components in the cropped floe, the source array with the floes would be modified. =#
     prefloe = floesimg[min_row:max_row, min_col:max_col]
     @debug "prefloe: $prefloe"
 
-    #= Remove any pixels not corresponding to that numbered floe 
+    #= Remove any pixels not corresponding to that numbered floe
     (each segment has a different integer) =#
     floe_area = prefloe .== label
     @debug "mask: $floe_area"
