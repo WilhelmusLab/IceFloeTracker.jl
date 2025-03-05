@@ -43,6 +43,7 @@ julia> get_area_missed(5, (10, 20))
 
 julia> get_area_missed(7, (10, 20))
 0.51
+```
 """
 function get_area_missed(side_length::Int, dims::Tuple{Int,Int})::Float64
     area = prod(dims)
