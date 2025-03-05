@@ -441,12 +441,12 @@ function deletematched!(
     return nothing
 end
 
-"""
-    deleteallbut!(matched_pairs, idxs, keeper)
+# """
+#     _deleteallbut!(matched_pairs, idxs, keeper)
 
-Delete all rows in `matched_pairs` except for the row with index `keeper` in `idxs`.
-"""
-function deleteallbut!(matched_pairs, idxs, keeper)
+# Delete all rows in `matched_pairs` except for the row with index `keeper` in `idxs`.
+# """
+function _deleteallbut!(matched_pairs, idxs, keeper)
     for i in sort(idxs; rev=true)
         if i !== keeper
             deleteat!(matched_pairs.ratios, i)
@@ -471,7 +471,7 @@ function resolvecollisions!(matched_pairs)
     for collision in reverse(collisions)
         bestentry = getidxmostminimumeverything(matched_pairs.ratios[collision.idxs, :])
         keeper = collision.idxs[bestentry]
-        deleteallbut!(matched_pairs, collision.idxs, keeper)
+        _deleteallbut!(matched_pairs, collision.idxs, keeper)
     end
 end
 
