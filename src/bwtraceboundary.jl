@@ -101,7 +101,7 @@ function bwtraceboundary(
                 end
 
                 p0 = CartesianIndex(i, j)
-                detect_move!(image, p0, from, nbd, border, done, dir_delta) ## 3
+                _detect_move!(image, p0, from, nbd, border, done, dir_delta) ## 3
 
                 if isempty(border)
                     push!(border, p0)
@@ -201,10 +201,10 @@ function from_to(
     return findfirst(x -> x == delta, dir_delta)
 end
 
-"""
-Workhorse function: Get all pixel coords for detected border.
-"""
-function detect_move!(
+# """
+# Workhorse function: Get all pixel coords for detected border.
+# """
+function _detect_move!(
     image::Matrix{Float64},
     p0::CartesianIndex{2},
     p2::CartesianIndex{2},
