@@ -280,18 +280,18 @@ function isfloegoodmatch(conditions, mct, area_mismatch, corr)
     ) && corr > mct.corr
 end
 
-"""
-    compute_ratios((props_day1, r), (props_day2,s))
+# """
+#     _compute_ratios((props_day1, r), (props_day2,s))
 
-Compute the ratios of the floe properties between the `r`th floe in `props_day1` and the `s`th floe in `props_day2`. Return a tuple of the ratios.
+# Compute the ratios of the floe properties between the `r`th floe in `props_day1` and the `s`th floe in `props_day2`. Return a tuple of the ratios.
 
-# Arguments
-- `props_day1`: floe properties for day 1
-- `r`: index of floe in `props_day1`
-- `props_day2`: floe properties for day 2
-- `s`: index of floe in `props_day2`
-"""
-function compute_ratios((props_day1, r), (props_day2, s))
+# # Arguments
+# - `props_day1`: floe properties for day 1
+# - `r`: index of floe in `props_day1`
+# - `props_day2`: floe properties for day 2
+# - `s`: index of floe in `props_day2`
+# """
+function _compute_ratios((props_day1, r), (props_day2, s))
     arearatio = absdiffmeanratio(props_day1.area[r], props_day2.area[s])
     majoraxisratio = absdiffmeanratio(
         props_day1.major_axis_length[r], props_day2.major_axis_length[s]
@@ -326,7 +326,7 @@ function compute_ratios_conditions((props_day1, r), (props_day2, s), delta_time,
     p2 = getcentroid(props_day2, s)
     d = dist(p1, p2)
     area1 = props_day1.area[r]
-    ratios = compute_ratios((props_day1, r), (props_day2, s))
+    ratios = _compute_ratios((props_day1, r), (props_day2, s))
     time_space_proximity_condition = get_time_space_proximity_condition(
         d, delta_time, thresholds.search_thresholds
     )
