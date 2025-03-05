@@ -630,12 +630,12 @@ function _consolidate_matched_pairs(matched_pairs::MatchedPairs)
     return combined_df
 end
 
-"""
-    get_matches(matched_pairs)
+# """
+#     _get_matches(matched_pairs)
 
-Return a dataframe with the properties and goodness ratios of the matched pairs (right-hand matches) in `matched_pairs`. Used in iterations `1:end`.
-"""
-function get_matches(matched_pairs::MatchedPairs)
+# Return a dataframe with the properties and goodness ratios of the matched pairs (right-hand matches) in `matched_pairs`. Used in iterations `1:end`.
+# """
+function _get_matches(matched_pairs::MatchedPairs)
     # Ensure UUIDs are consistent
     matched_pairs.props2.uuid = matched_pairs.props1.uuid
 

@@ -64,7 +64,7 @@ function long_tracker(props::Vector{DataFrame}, condition_thresholds, mc_thresho
             )
             # Get unmatched floes in day 2 (iterations > 2)
             unmatched2 = get_unmatched(props[i], new_pairs.props2)
-            new_pairs = IceFloeTracker.get_matches(new_pairs)
+            new_pairs = IceFloeTracker._get_matches(new_pairs)
 
             # Attach new matches and unmatched floes to trajectories
             trajectories = vcat(trajectories, new_pairs, unmatched2)
