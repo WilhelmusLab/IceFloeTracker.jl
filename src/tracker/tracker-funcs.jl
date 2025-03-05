@@ -664,6 +664,7 @@ end
 
 ## LatLon functions originally from IFTPipeline.jl
 
+# TODO: Expand on convertcentroid! and converttounits! docstrings
 """
     convertcentroid!(propdf, latlondata, colstodrop)
 
