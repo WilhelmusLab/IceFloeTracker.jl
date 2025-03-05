@@ -552,11 +552,11 @@ function get_trajectory_heads(pairs::T) where {T<:AbstractDataFrame}
     return combine(gdf, last)[:, names(pairs)]
 end
 
-"""
-    _swap_last_values!(df)
+# """
+#     _swap_last_values!(df)
 
-Swap the last two values of the `area_mismatch` and `corr` columns for each group in `df`. For bookkeeping purposes for goodness of fit data during the tracking process.
-"""
+# Swap the last two values of the `area_mismatch` and `corr` columns for each group in `df`. For bookkeeping purposes for goodness of fit data during the tracking process.
+# """
 function _swap_last_values!(df)
     grouped = groupby(df, :uuid)  # Group by uuid
     for sdf in grouped
