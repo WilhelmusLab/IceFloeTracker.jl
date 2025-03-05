@@ -374,12 +374,12 @@ function _getidxmostminimumeverything(ratiosdf)
     return mode([argmin(col) for col in eachcol(_ratiosdf)])
 end
 
-"""
-    getpropsday1day2(properties, dayidx::Int64)
+# """
+#     _getpropsday1day2(properties, dayidx::Int64)
 
-Return the floe properties for day `dayidx` and day `dayidx+1`.
-"""
-function getpropsday1day2(properties, dayidx::Int64)
+# Return the floe properties for day `dayidx` and day `dayidx+1`.
+# """
+function _getpropsday1day2(properties, dayidx::Int64)
     return copy(properties[dayidx]), copy(properties[dayidx+1])
 end
 

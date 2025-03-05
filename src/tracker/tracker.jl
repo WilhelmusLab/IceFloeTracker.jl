@@ -70,7 +70,7 @@ function _pairfloes(
     numdays = length(segmented_imgs) - 1
 
     for dayi in 1:numdays
-        props1, props2 = getpropsday1day2(props, dayi)
+        props1, props2 = _getpropsday1day2(props, dayi)
         Δt = dt[dayi]
 
         # Container for matches in dayi which will be used to populate tracked
