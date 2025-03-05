@@ -1,8 +1,11 @@
 
 """
     dx, dy = grad(x::Vector{<:Number}, y::Vector{<:Number})
+    dx, dy = grad(A::Matrix{<:Number})
 
-Make gradient vector field for the set of points with coordinates in vectors `x` and `y`. Return a tuple with `dx` and `dy` in that order.
+Make gradient vector field for the set of points with coordinates in vectors `x` and `y`, or in the rows of the matrix `A` with x-coordinates down column 1 and y-coordinates down column 2.
+
+Return a tuple with `dx` and `dy` in that order.
 """
 function grad(x::Vector{<:Number}, y::Vector{<:Number})
     dx = x[2:end] - x[1:(end - 1)]
@@ -10,11 +13,6 @@ function grad(x::Vector{<:Number}, y::Vector{<:Number})
     return dx, dy
 end
 
-"""
-    dx, dy = grad(A::Matrix{<:Number})
-
-Make gradient vector field for the set of points with coordinates in the rows of the matrix `A` with x-coordinates down column 1 and y-coordinates down column 2. Return a tuple with `dx` and `dy` in that order.
-"""
 function grad(A::Matrix{<:Number})
     # Grab each col of A
     x, y = A[:, 1], A[:, 2]
