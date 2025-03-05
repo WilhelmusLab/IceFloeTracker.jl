@@ -91,7 +91,7 @@ function regionprops_table(
     end
 
     if "centroid" in properties
-        centroid_cols = getcentroidcolumns(props)
+        centroid_cols = _getcentroidcolumns(props)
         roundtoint!(props, centroid_cols)
         _fixzeroindexing!(props, centroid_cols)
         renamecols!(props, centroid_cols, ["row_centroid", "col_centroid"])
@@ -162,12 +162,12 @@ function regionprops(
     )
 end
 
-"""
-    getcentroidcolumns(props::DataFrame)
+# """
+#     _getcentroidcolumns(props::DataFrame)
 
-Returns the column names of the centroid columns in `props`.
-"""
-function getcentroidcolumns(props::DataFrame)
+# Returns the column names of the centroid columns in `props`.
+# """
+function _getcentroidcolumns(props::DataFrame)
     return filter(col -> occursin(r"^centroid-\d$", col), names(props))
 end
 
