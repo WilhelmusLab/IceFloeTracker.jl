@@ -65,12 +65,12 @@ function isempty(matched_pairs::MatchedPairs)
            isempty(matched_pairs.ratios)
 end
 
-"""
-    appendrows!(df::MatchingProps, props::T, ratios, idx::Int64, dist::Float64) where {T<:DataFrameRow}
+# """
+#     _appendrows!(df::MatchingProps, props::T, ratios, idx::Int64, dist::Float64) where {T<:DataFrameRow}
 
-Append a row to `df.props` and `df.ratios` with the values of `props` and `ratios` respectively.
-"""
-function appendrows!(
+# Append a row to `df.props` and `df.ratios` with the values of `props` and `ratios` respectively.
+# """
+function _appendrows!(
     df::MatchingProps, props::T, ratios, idx::Int64, dist::Float64
 ) where {T<:DataFrameRow}
     push!(df.s, idx)

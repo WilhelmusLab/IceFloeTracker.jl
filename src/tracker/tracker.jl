@@ -96,7 +96,7 @@ function _pairfloes(
                         if isfloegoodmatch(
                             conditions, mc_thresholds.goodness, area_mismatch, corr
                         )
-                            appendrows!(
+                            _appendrows!(
                                 matching_floes,
                                 props2[s, :],
                                 (ratios..., area_mismatch, corr),

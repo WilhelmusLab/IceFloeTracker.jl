@@ -130,7 +130,7 @@ function find_floe_matches(
                         conditions, mc_thresholds.goodness, area_mismatch, corr
                     )
                         @debug "** Found a good match for floe 1:$r => 2:$s"
-                        appendrows!(
+                        _appendrows!(
                             matching_floes,
                             props2[s, :],
                             (ratios..., area_mismatch, corr),
