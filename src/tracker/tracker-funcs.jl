@@ -418,18 +418,18 @@ Return a vector of tuples of the row and the index of the row in `df` that has a
 function getcollisionslocs(df) #::Vector{Tuple{DataFrameRow{DataFrame, DataFrames.Index}, Vector{Int64}}}
     typeof(df) <: DataFrameRow &&
         return Tuple{DataFrameRow{DataFrame,DataFrames.Index},Vector{Int64}}[]
-    collisions = getcollisions(df)
+    collisions = _getcollisions(df)
     return [(data=rw, idxs=getidxofrow(rw, df)) for rw in eachrow(collisions)]
 end
 
 namesof(obj::MatchedPairs) = fieldnames(typeof(obj))
 
-"""
-getcollisions(matchedpairs)
+# """
+# _getcollisions(matchedpairs)
 
-Get nonunique rows in `matchedpairs`.
-"""
-function getcollisions(matchedpairs)
+# Get nonunique rows in `matchedpairs`.
+# """
+function _getcollisions(matchedpairs)
     collisions = transform(matchedpairs, nonunique)
     return filter(r -> r.x1 != 0, collisions)[:, 1:(end-1)]
 end
