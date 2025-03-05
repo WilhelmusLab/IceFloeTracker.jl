@@ -172,14 +172,14 @@ function bwdist(bwimg::AbstractArray{Bool})::AbstractArray{Float64}
     return Images.distance_transform(Images.feature_transform(bwimg))
 end
 
-"""
-    padnhood(img, I, nhood)
+# """
+#     _padnhood(img, I, nhood)
 
-Pad the matrix `img[nhood]` with zeros according to the position of `I` within the edges`img`.
+# Pad the matrix `img[nhood]` with zeros according to the position of `I` within the edges`img`.
 
-Returns `img[nhood]` if `I` is not an edge index.
-"""
-function padnhood(img, I, nhood)
+# Returns `img[nhood]` if `I` is not an edge index.
+# """
+function _padnhood(img, I, nhood)
     # adaptive padding
     maxr, maxc = size(img)
     tofill = SizedMatrix{3,3}(zeros(Int, 3, 3))
@@ -260,6 +260,6 @@ function _operator_lut(
 end
 
 function _pad_handler(I, img, nhood)
-    (length(nhood) == 6) && return padnhood(img, I, nhood) # edge pixels
+    (length(nhood) == 6) && return _padnhood(img, I, nhood) # edge pixels
     return @view img[nhood]
 end

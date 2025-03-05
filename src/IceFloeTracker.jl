@@ -21,7 +21,6 @@ using TiledIteration
 using TOML
 
 export readdlm,
-    padnhood,
     bridge,
     branch,
     @persist,
