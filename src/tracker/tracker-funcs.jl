@@ -515,12 +515,12 @@ function addfloemasks!(props::Vector{DataFrame}, imgs::Vector{<:FloeLabelsImage}
     return nothing
 end
 
-"""
-    get_unmatched(props, matched)
+# """
+#     _get_unmatched(props, matched)
 
-Return the floes in `props` that are not in `matched`.
-"""
-function get_unmatched(props, matched)
+# Return the floes in `props` that are not in `matched`.
+# """
+function _get_unmatched(props, matched)
     _on = collect(mapreduce(df -> Set(names(df)), intersect, [props, matched]))
     unmatched = antijoin(props, matched; on=_on)
 
