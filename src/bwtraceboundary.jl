@@ -118,7 +118,7 @@ function bwtraceboundary(
         P0 = CartesianIndex(P0)
 
         # check P0 is in a contour
-        test_p0, idx = isincountourlist(P0, contour_list)
+        test_p0, idx = _isincountourlist(P0, contour_list)
 
         # if so, make the contour start at P0
         if test_p0
@@ -167,10 +167,10 @@ function makecontourstartatP(P::CartesianIndex{2}, contour::Vector{CartesianInde
     end
 end
 
-"""
-Check `P` is in countour list if so return the index of the contour that contains `P`, otherwise return false.
-"""
-function isincountourlist(
+# """
+# Check `P` is in countour list if so return the index of the contour that contains `P`, otherwise return false.
+# """
+function _isincountourlist(
     P::Union{CartesianIndex{2},Tuple{Int64,Int64}},
     contour_list::Vector{Vector{CartesianIndex}},
 )
