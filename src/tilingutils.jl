@@ -18,6 +18,7 @@ julia> getfit((10, 20), 5)
 
 julia> getfit((15, 25), 5)
 (3, 5)
+```
 """
 function getfit(dims::Tuple{Int,Int}, side_length::Int)::Tuple{Int,Int}
     return dims .÷ side_length
