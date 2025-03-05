@@ -58,7 +58,7 @@ function long_tracker(props::Vector{DataFrame}, condition_thresholds, mc_thresho
 
     begin # Start 3:end iterations
         for i in 3:length(props)
-            trajectory_heads = get_trajectory_heads(trajectories)
+            trajectory_heads = _get_trajectory_heads(trajectories)
             new_pairs = IceFloeTracker.find_floe_matches(
                 trajectory_heads, props[i], condition_thresholds, mc_thresholds
             )

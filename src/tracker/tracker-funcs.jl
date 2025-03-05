@@ -531,14 +531,14 @@ function get_unmatched(props, matched)
     return unmatched
 end
 
-"""
-    get_trajectory_heads(pairs)
+# """
+#     _get_trajectory_heads(pairs)
 
-Return the last row (most recent member) of each group (trajectory) in `pairs` as a dataframe.
+# Return the last row (most recent member) of each group (trajectory) in `pairs` as a dataframe.
 
-This is used for getting the initial floe properties for the next day in search for new pairs.
-"""
-function get_trajectory_heads(pairs::T) where {T<:AbstractDataFrame}
+# This is used for getting the initial floe properties for the next day in search for new pairs.
+# """
+function _get_trajectory_heads(pairs::T) where {T<:AbstractDataFrame}
     gdf = groupby(pairs, :uuid)
     return combine(gdf, last)[:, names(pairs)]
 end
