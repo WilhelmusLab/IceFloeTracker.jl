@@ -148,7 +148,7 @@ function find_floe_matches(
             @debug "Best match index for floe 1:$r: $best_match_idx"
             if isnotnan(best_match_idx)
                 bestmatchdata = getbestmatchdata(best_match_idx, r, props1, matching_floes) # might be copying data unnecessarily
-                addmatch!(matched_pairs, bestmatchdata)
+                _addmatch!(matched_pairs, bestmatchdata)
                 @debug "Matched pairs" matched_pairs
             end
         end # of for r = 1:nrow(props1)

@@ -46,12 +46,12 @@ function update!(match_total::MatchedPairs, matched_pairs::MatchedPairs)
     return nothing
 end
 
-"""
-    addmatch!(matched_pairs, newmatch)
+# """
+#     _addmatch!(matched_pairs, newmatch)
 
-Add `newmatch` to `matched_pairs`.
-"""
-function addmatch!(matched_pairs::MatchedPairs, newmatch)
+# Add `newmatch` to `matched_pairs`.
+# """
+function _addmatch!(matched_pairs::MatchedPairs, newmatch)
     push!(matched_pairs.props1, newmatch.props1)
     push!(matched_pairs.props2, newmatch.props2)
     push!(matched_pairs.ratios, newmatch.ratios)

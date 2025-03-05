@@ -114,7 +114,7 @@ function _pairfloes(
                         best_match_idx, r, props1, matching_floes
                     ) # might be copying data unnecessarily
 
-                    addmatch!(matched_pairs, bestmatchdata)
+                    _addmatch!(matched_pairs, bestmatchdata)
                 end
             end # of for r = 1:nrow(props1)
 
