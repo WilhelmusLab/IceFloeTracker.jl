@@ -1,6 +1,5 @@
 # need this for adding methods to Base functions
 import Base.isempty
-import Base.isequal
 
 # Containers and methods for preliminary matches
 struct MatchingProps
@@ -81,17 +80,6 @@ function appendrows!(
     return nothing
 end
 
-"""
-    isequal(matchedpairs1::MatchedPairs, matchedpairs2::MatchedPairs)
-
-Return `true` if `matchedpairs1` and `matchedpairs2` are equal, `false` otherwise.
-"""
-function isequal(matchedpairs1::MatchedPairs, matchedpairs2::MatchedPairs)
-    return all((
-        isequal(getfield(matchedpairs1, name), getfield(matchedpairs2, name)) for
-        name in namesof(matchedpairs1)
-    ))
-end
 
 # Final pairs container and associated methods
 """
