@@ -223,13 +223,13 @@ function _bin9todec(v::AbstractArray)::Int64
     return sum(vec(v) .* 2 .^ (0:(length(v) - 1)))
 end
 
-"""
-    _operator_lut(I, img, nhood, lut1, lut2)
+# """
+#     _operator_lut(I, img, nhood, lut1, lut2)
 
-Look up the neighborhood `nhood` in lookup tables `lut1` and `lut2`.
+# Look up the neighborhood `nhood` in lookup tables `lut1` and `lut2`.
 
-Handles cases when the center of `nhood` is on the edge of `img` using data in `I`.
-"""
+# Handles cases when the center of `nhood` is on the edge of `img` using data in `I`.
+# """
 function _operator_lut(
     I::CartesianIndex{2},
     img::AbstractArray{Bool},
