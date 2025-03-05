@@ -308,20 +308,20 @@ function _compute_ratios((props_day1, r), (props_day2, s))
     )
 end
 
-"""
-    compute_ratios_conditions((props_day1, r), (props_day2, s), delta_time, t)
+# """
+#     _compute_ratios_conditions((props_day1, r), (props_day2, s), delta_time, t)
 
-Compute the conditions for a match between the `r`th floe in `props_day1` and the `s`th floe in `props_day2`. Return a tuple of the conditions.
+# Compute the conditions for a match between the `r`th floe in `props_day1` and the `s`th floe in `props_day2`. Return a tuple of the conditions.
 
-# Arguments
-- `props_day1`: floe properties for day 1
-- `r`: index of floe in `props_day1`
-- `props_day2`: floe properties for day 2
-- `s`: index of floe in `props_day2`
-- `delta_time`: time elapsed from image day 1 to image day 2
-- `thresholds`: namedtuple of thresholds for elapsed time and distance. See `pair_floes` for details.
-"""
-function compute_ratios_conditions((props_day1, r), (props_day2, s), delta_time, thresholds)
+# # Arguments
+# - `props_day1`: floe properties for day 1
+# - `r`: index of floe in `props_day1`
+# - `props_day2`: floe properties for day 2
+# - `s`: index of floe in `props_day2`
+# - `delta_time`: time elapsed from image day 1 to image day 2
+# - `thresholds`: namedtuple of thresholds for elapsed time and distance. See `pair_floes` for details.
+# """
+function _compute_ratios_conditions((props_day1, r), (props_day2, s), delta_time, thresholds)
     p1 = getcentroid(props_day1, r)
     p2 = getcentroid(props_day2, s)
     d = dist(p1, p2)

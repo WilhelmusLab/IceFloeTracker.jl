@@ -116,7 +116,7 @@ function find_floe_matches(
             for s in 1:nrow(props2) # TODO: consider using eachrow(props2) to iterate over rows
                 Δt = get_dt(props1, r, props2, s)
                 @debug "Considering floe 2:$s for floe 1:$r"
-                ratios, conditions, dist = compute_ratios_conditions(
+                ratios, conditions, dist = _compute_ratios_conditions(
                     (props1, r), (props2, s), Δt, condition_thresholds
                 )
 
