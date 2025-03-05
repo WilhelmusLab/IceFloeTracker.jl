@@ -44,7 +44,7 @@ end
 """
     check_fname(fname)
 
-Checks `fname` does not exist in current directory; throws an assertion if this condition is false.
+Checks `fname` does not exist in current directory; throws an error if this condition is false.
 
 # Arguments
 - `fname`: String object or Symbol to a reference to a String representing a path.
