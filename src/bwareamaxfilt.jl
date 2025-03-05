@@ -15,14 +15,14 @@ function get_max_label(d::Dict{Int,Int})::Int
     return drev[mx]
 end
 
-"""
-    filt_except_label(labeled_arr::Array{Int64, 2}, label::Int64)
+# """
+#     _filt_except_label(labeled_arr::Array{Int64, 2}, label::Int64)
 
-Make 0 all values in `labeled_arr` that are not equal to `label`.
+# Make 0 all values in `labeled_arr` that are not equal to `label`.
 
-See also [`filt_except_label!`](@ref) 
-"""
-function filt_except_label(labeled_arr::Array{Int64,2}, label::Int64)::Array{Int64,2}
+# See also [`_filt_except_label!`](@ref)
+# """
+function _filt_except_label(labeled_arr::Array{Int64,2}, label::Int64)::Array{Int64,2}
     outlabel = similar(labeled_arr)
     for (i, value) in enumerate(labeled_arr)
         value != label ? outlabel[i] = 0 : outlabel[i] = label
@@ -30,14 +30,14 @@ function filt_except_label(labeled_arr::Array{Int64,2}, label::Int64)::Array{Int
     return outlabel
 end
 
-"""
-    filt_except_label!(labeled_arr::Array{Int64, 2}, label::Int64)
+# """
+#     _filt_except_label!(labeled_arr::Array{Int64, 2}, label::Int64)
 
-In-place version of `filt_except_label`.
+# In-place version of `_filt_except_label`.
 
-See also [`filt_except_label`](@ref) 
-"""
-function filt_except_label!(labeled_arr::Array{Int64,2}, label::Int64)::Array{Int64,2}
+# See also [`_filt_except_label`](@ref)
+# """
+function _filt_except_label!(labeled_arr::Array{Int64,2}, label::Int64)::Array{Int64,2}
     for (i, value) in enumerate(labeled_arr)
         value != label ? labeled_arr[i] = 0 : labeled_arr[i] = label
     end
@@ -77,7 +77,7 @@ end
 
 In-place version of bwareamaxfilt.
 
-See also [`bwareamaxfilt`](@ref) 
+See also [`bwareamaxfilt`](@ref)
 """
 function bwareamaxfilt!(bwimg::AbstractArray, conn::Int=8)::BitMatrix
     if conn == 8
@@ -89,7 +89,7 @@ function bwareamaxfilt!(bwimg::AbstractArray, conn::Int=8)::BitMatrix
     end
     d = get_areas(label)
     mx_label = get_max_label(d)
-    label = (0 .!= filt_except_label!(label, mx_label))
+    label = (0 .!= _filt_except_label!(label, mx_label))
     for (i, value) in enumerate(bwimg)
         bwimg[i] = (value && label[i])
     end
