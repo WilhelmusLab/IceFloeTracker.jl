@@ -1,15 +1,15 @@
 # Helper functions
-"""
-    make_filename()
+# """
+#     _make_filename()
 
-Makes default filename with timestamp.
+# Makes default filename with timestamp.
 
-"""
-function make_filename()::String
+# """
+function _make_filename()::String
     return "persisted_img-" * Dates.format(Dates.now(), "yyyy-mm-dd-HHMMSS") * ".png"
 end
 
-function make_filename(fname::T, ext::T=".png")::T where {T<:AbstractString}
+function _make_filename(fname::T, ext::T=".png")::T where {T<:AbstractString}
     return timestamp(fname) * ext
 end
 
@@ -55,7 +55,7 @@ function check_fname(fname::Union{String,Symbol,Nothing}=nothing)::String
     elseif fname isa Symbol
         check_name = eval(fname) # get the object represented by the symbol
     elseif isnothing(fname) # nothing provided so make a filename
-        check_name = make_filename()
+        check_name = _make_filename()
     end
 
     # check name does not exist in wd
