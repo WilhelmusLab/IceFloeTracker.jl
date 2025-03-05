@@ -144,7 +144,7 @@ function find_floe_matches(
 
             # 2. Find the best match for floe r
             @debug "Finding best match for floe 1:$r"
-            best_match_idx = getidxmostminimumeverything(matching_floes.ratios)
+            best_match_idx = _getidxmostminimumeverything(matching_floes.ratios)
             @debug "Best match index for floe 1:$r: $best_match_idx"
             if isnotnan(best_match_idx)
                 bestmatchdata = _getbestmatchdata(best_match_idx, r, props1, matching_floes) # might be copying data unnecessarily

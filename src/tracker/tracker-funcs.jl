@@ -355,12 +355,12 @@ function dist(p1, p2)
     )
 end
 
-"""
-    getidxmostminimumeverything(ratiosdf)
+# """
+#     _getidxmostminimumeverything(ratiosdf)
 
-Return the index of the row in `ratiosdf` with the most minima across its columns. If there are multiple columns with the same minimum value, return the index of the first column with the minimum value. If `ratiosdf` is empty, return `NaN`.
-"""
-function getidxmostminimumeverything(ratiosdf)
+# Return the index of the row in `ratiosdf` with the most minima across its columns. If there are multiple columns with the same minimum value, return the index of the first column with the minimum value. If `ratiosdf` is empty, return `NaN`.
+# """
+function _getidxmostminimumeverything(ratiosdf)
     nrow(ratiosdf) == 0 && return NaN
 
     # Get the column name for the correlation ratio
@@ -470,7 +470,7 @@ end
 function resolvecollisions!(matched_pairs)
     collisions = _getcollisionslocs(matched_pairs.props2)
     for collision in reverse(collisions)
-        bestentry = getidxmostminimumeverything(matched_pairs.ratios[collision.idxs, :])
+        bestentry = _getidxmostminimumeverything(matched_pairs.ratios[collision.idxs, :])
         keeper = collision.idxs[bestentry]
         _deleteallbut!(matched_pairs, collision.idxs, keeper)
     end
@@ -727,7 +727,7 @@ function remove_collisions(pairs::T)::T where {T<:MatchedPairs}
 
     pairsdf = hcat(pairs.props1, pairs.props2, pairs.ratios, DataFrame(dist=pairs.dist), makeunique=true)
     result = combine(groupby(pairsdf, :uuid_1),
-        g -> @view g[getidxmostminimumeverything(g[!, nmratios]), :])
+        g -> @view g[_getidxmostminimumeverything(g[!, nmratios]), :])
     p1 = result[:, nm1]
     p2 = rename(result[:, nm2], nm1)
     ratios = rename(result[:, nmratios], names(makeemptyratiosdf()))
