@@ -214,7 +214,7 @@ end
 
 # Set of conditions for "large" floes. Return `true` if the area of the floe is greater than or equal to `thresholds.large_floe_settings.minimumarea` and the similarity ratios are less than the corresponding thresholds in `thresholds.large_floe_settings`. Return `false` otherwise. Used to determine whether to call `match_corr`.
 
-# See also [`get_small_floe_condition`](@ref).
+# See also [`_get_small_floe_condition`](@ref).
 # """
 function _get_large_floe_condition(
     area1,
@@ -229,18 +229,18 @@ function _get_large_floe_condition(
            ratios.convex_area < large_floe_settings.convexarearatio
 end
 
-"""
-    get_small_floe_condition(
-    area1,
-    ratios,
-    thresholds
-)
+# """
+#     _get_small_floe_condition(
+#     area1,
+#     ratios,
+#     thresholds
+#     )
 
-Set of conditions for "small" floes. Return `true` if the area of the floe is less than `thresholds.large_floe_settings.minimumarea` and the similarity ratios are less than the corresponding thresholds in `thresholds.small_floe_settings`. Return `false` otherwise. Used to determine whether to call `match_corr`.
+# Set of conditions for "small" floes. Return `true` if the area of the floe is less than `thresholds.large_floe_settings.minimumarea` and the similarity ratios are less than the corresponding thresholds in `thresholds.small_floe_settings`. Return `false` otherwise. Used to determine whether to call `match_corr`.
 
-See also [`_get_large_floe_condition`](@ref).
-"""
-function get_small_floe_condition(
+# See also [`_get_large_floe_condition`](@ref).
+# """
+function _get_small_floe_condition(
     area1,
     ratios,
     thresholds
@@ -331,7 +331,7 @@ function _compute_ratios_conditions((props_day1, r), (props_day2, s), delta_time
         d, delta_time, thresholds.search_thresholds
     )
     large_floe_condition = _get_large_floe_condition(area1, ratios, thresholds)
-    small_floe_condition = get_small_floe_condition(area1, ratios, thresholds)
+    small_floe_condition = _get_small_floe_condition(area1, ratios, thresholds)
     return (
         ratios=ratios,
         conditions=(
