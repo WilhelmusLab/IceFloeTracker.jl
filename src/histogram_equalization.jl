@@ -342,7 +342,7 @@ julia> [bins[heights .> 0] heights[heights .>0]] # display only non-zero bins an
  3   6
  4  14
  5   5
-
+```
 """
 function imhist(img, imgtype::AbstractString="uint8")
 
