@@ -2,7 +2,7 @@
     branch_candidates_func(nhood)
 
 Filter `nhood` as candidate for branch point.
-    
+
 To be passed to the `make_lut` function.
 """
 function branch_candidates_func(nhood::AbstractArray)::Bool
@@ -37,14 +37,14 @@ function make_lut(lutfunc::Function)::Vector{Int}
     return lut
 end
 
-"""
-    _branch_filter(
-    img::AbstractArray{Bool},
-    func1::Function=branch_candidates_func,
-    func2::Function=connected_background_count,)
+# """
+#     _branch_filter(
+#     img::AbstractArray{Bool},
+#     func1::Function=branch_candidates_func,
+#     func2::Function=connected_background_count,)
 
-Filter `img` with `_operator_lut` using `lut1` and `lut2`.
-"""
+# Filter `img` with `_operator_lut` using `lut1` and `lut2`.
+# """
 function _branch_filter(
     img::AbstractArray{Bool},
     func1::Function=branch_candidates_func,
