@@ -1,5 +1,5 @@
 """
-    make_hbreak_dict()
+    _make_hbreak_dict()
 
 Build dict with the two versions of an H-connected 3x3 neighboorhood.
 
@@ -11,7 +11,7 @@ h2 =   [1 1 1
         0 1 0
         1 1 1]
 """
-function make_hbreak_dict()::Dict{AbstractArray{Bool},Bool}
+function _make_hbreak_dict()::Dict{AbstractArray{Bool},Bool}
     h1 = trues(3, 3)
     h1[[1 3], 2] .= false
     h2 = trues(3, 3)
@@ -62,7 +62,7 @@ hbreak(img) = hbreak!(copy(img))
 Inplace version of `hbreak`. See also [`hbreak`](@ref).
 """
 function hbreak!(img::T)::T where {T<:AbstractArray{Bool}}
-    hbreak_dict = make_hbreak_dict()
+    hbreak_dict = _make_hbreak_dict()
     f = x -> get(hbreak_dict, x, false)
     R = CartesianIndices(img)
     I_first, I_last = first(R), last(R)
