@@ -10,15 +10,15 @@ function _branch_candidates_func(nhood::AbstractArray)::Bool
     sum(nhood) > 3 && return true
 end
 
-"""
-    connected_background_count(nhood)
+# """
+#     _connected_background_count(nhood)
 
-Second lut generator for neighbor transform with diamond strel (4-neighborhood).
+# Second lut generator for neighbor transform with diamond strel (4-neighborhood).
 
-To be passed to the `make_lut` function.
+# To be passed to the `make_lut` function.
 
-"""
-function connected_background_count(nhood::AbstractArray)::Int64
+# """
+function _connected_background_count(nhood::AbstractArray)::Int64
     nhood[2, 2] != 0 && return maximum(label_components(.!Bool.(nhood)))
     return 0
 end
@@ -41,14 +41,14 @@ end
 #     _branch_filter(
 #     img::AbstractArray{Bool},
 #     func1::Function=_branch_candidates_func,
-#     func2::Function=connected_background_count,)
+#     func2::Function=_connected_background_count,)
 
 # Filter `img` with `_operator_lut` using `lut1` and `lut2`.
 # """
 function _branch_filter(
     img::AbstractArray{Bool},
     func1::Function=_branch_candidates_func,
-    func2::Function=connected_background_count,
+    func2::Function=_connected_background_count,
 )::Tuple{AbstractArray{Bool},AbstractArray{Int64}}
     C = zeros(Bool, size(img))
     B = zeros(Int, size(img))
