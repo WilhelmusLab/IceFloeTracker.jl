@@ -1,8 +1,8 @@
-"""
-    _generate_se!(se)
+# """
+#     _generate_se!(se)
 
-Generate a structuring element by leveraging symmetry (mirroring and inverting) a given initial structuring element.
-"""
+# Generate a structuring element by leveraging symmetry (mirroring and inverting) a given initial structuring element.
+# """
 function _generate_se!(se)
     for d in [1,2]
     se .= se .| reverse(se; dims=d)
