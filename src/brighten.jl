@@ -4,7 +4,7 @@
 - `equalized_gray_reconstructed_img`: The equalized gray reconstructed image (uint8 in Matlab).
 - `gamma_green`: The gamma value for the green channel (also uint8).
 # Returns
-Difference equalized_gray_reconstructed_img - gamma_green clamped between 0 and 255.
+Difference `equalized_gray_reconstructed_img - gamma_green` clamped between 0 and 255.
 """
 function get_brighten_mask(equalized_gray_reconstructed_img, gamma_green)
     return to_uint8(equalized_gray_reconstructed_img - gamma_green)
