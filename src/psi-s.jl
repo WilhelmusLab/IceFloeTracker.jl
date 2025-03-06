@@ -62,14 +62,14 @@ See also [`bwtraceboundary`](@ref), [`resample_boundary`](@ref)
 - `unwrap`: set to `true` to get "unwrapped" phases (default).
 
 # Reference
-[1] McConnell, Ross, et al. "psi-s correlation and dynamic time warping: two methods for tracking ice floes in SAR images." IEEE Transactions on Geoscience and Remote sensing 29.6 (1991): 1004-1012.
+[1] McConnell, Ross, et al. "ψ-s correlation and dynamic time warping: two methods for tracking ice floes in SAR images." IEEE Transactions on Geoscience and Remote sensing 29.6 (1991): 1004-1012.
 
 # Example
 
 The example below builds a cardioid and obtains its ψ-s curve.
 
 ```jldoctest; setup = :(using IceFloeTracker, Plots)
-julia> t = range(0,2pi,201);
+julia> t = range(0, 2π, 201);
 
 julia> x = @. cos(t)*(1-cos(t));
 
@@ -102,7 +102,7 @@ julia> [s psi] # inspect psi-s data
  7.99877     9.35147
  7.99926     9.39336
 
- julia> plot(s, psi) # inspect psi-s curve -- should be a straight line from (0, 0) to (8, 3π)
+julia> plot(s, psi) # inspect  ψ-s curve -- should be a straight line from (0, 0) to (8, 3π)
 ```
 """
 function make_psi_s(
