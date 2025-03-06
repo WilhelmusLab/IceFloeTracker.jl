@@ -218,7 +218,7 @@ function _detect_move!(
     p1 = CartesianIndex(0, 0)
 
     while moved != dir ## 3.1
-        newp = move(p0, image, moved, dir_delta)
+        newp = _move(p0, image, moved, dir_delta)
         if newp[1] != 0
             p1 = newp
             break
@@ -241,7 +241,7 @@ function _detect_move!(
         done .= false
 
         while p4[1] == 0 ## 3.3: "Examine N(p3) for a nonzero pixel, name first nonzero pixel as p4"
-            p4 = move(p3, image, moved, dir_delta)
+            p4 = _move(p3, image, moved, dir_delta)
             done[moved] = true
             moved = _counterclockwise(moved)
         end
@@ -276,10 +276,10 @@ function _counterclockwise(dir::Int)
     return (dir + 6) % 8 + 1
 end
 
-"""
-move from current pixel to the next in given direction
-"""
-function move(
+# """
+# move from current pixel to the next in given direction
+# """
+function _move(
     pixel::CartesianIndex{2},
     image::Matrix{Float64},
     dir::Int,
