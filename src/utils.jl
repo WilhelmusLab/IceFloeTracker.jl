@@ -175,7 +175,7 @@ end
 # """
 #     _padnhood(img, I, nhood)
 
-# Pad the matrix `img[nhood]` with zeros according to the position of `I` within the edges`img`.
+# Pad the matrix `img[nhood]` with zeros according to the position of `I` within the edges `img`.
 
 # Returns `img[nhood]` if `I` is not an edge index.
 # """
