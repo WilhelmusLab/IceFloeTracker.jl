@@ -11,7 +11,7 @@
     )
     where {T<:AbstractArray{Bool,2},S<:Int64,F<:Float64}
 
-Compute the mismatch `mm` and psi-s-correlation `c` for floes with masks `f1` and `f2`.
+Compute the mismatch `mm` and  ψ-s-correlation `c` for floes with masks `f1` and `f2`.
 
 The criteria for floes to be considered equivalent is as follows:
     - `c` greater than `mm`
@@ -23,11 +23,11 @@ A pair of `NaN` is returned for cases for which one of their mask dimension is t
 - `f1`: mask of floe 1
 - `f2`: mask of floe 2
 - `Δt`: time difference between floes
-- `mxrot`: maximum rotation (in degrees) allowed between floesn (default: 10)
-- `psi`: psi-s-correlation threshold (default: 0.95)
-- `sz`: size threshold (default: 16)
-- `comp`: size comparability threshold (default: 0.25)
-- `mm`: mismatch threshold (default: 0.22)
+- `mxrot`: maximum rotation (in degrees) allowed between floes
+- `psi`: psi-s-correlation threshold
+- `sz`: size threshold
+- `comp`: size comparability threshold
+- `mm`: mismatch threshold
 """
 function matchcorr(
     f1::T, f2::T, Δt::F; mxrot::S=10, psi::F=0.95, sz::S=16, comp::F=0.25, mm::F=0.22
