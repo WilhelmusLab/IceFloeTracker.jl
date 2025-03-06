@@ -3,7 +3,7 @@
 
 # Filter `nhood` as candidate for branch point.
 
-# To be passed to the `make_lut` function.
+# To be passed to the `_make_lut` function.
 # """
 function _branch_candidates_func(nhood::AbstractArray)::Bool
     nhood[2, 2] == 0 && return false
@@ -15,7 +15,7 @@ end
 
 # Second lut generator for neighbor transform with diamond strel (4-neighborhood).
 
-# To be passed to the `make_lut` function.
+# To be passed to the `_make_lut` function.
 
 # """
 function _connected_background_count(nhood::AbstractArray)::Int64
@@ -23,12 +23,12 @@ function _connected_background_count(nhood::AbstractArray)::Int64
     return 0
 end
 
-"""
-    make_lut(lutfunc::Function)
+# """
+#     _make_lut(lutfunc::Function)
 
-Generate lookup table (lut) for 3x3 neighborhoods according to `lutfunc`.
-"""
-function make_lut(lutfunc::Function)::Vector{Int}
+# Generate lookup table (lut) for 3x3 neighborhoods according to `lutfunc`.
+# """
+function _make_lut(lutfunc::Function)::Vector{Int}
     lut = vec(zeros(Int, 512))
     @inbounds @simd for i in 1:(2^9)
         v = parse.(Int, reverse(collect(bitstring(UInt16(i - 1))[8:end])))
@@ -52,8 +52,8 @@ function _branch_filter(
 )::Tuple{AbstractArray{Bool},AbstractArray{Int64}}
     C = zeros(Bool, size(img))
     B = zeros(Int, size(img))
-    lutbranchcandidates = make_lut(func1)
-    lutbackcount4 = make_lut(func2)
+    lutbranchcandidates = _make_lut(func1)
+    lutbackcount4 = _make_lut(func2)
 
     R = CartesianIndices(img)
     I_first, I_last = first(R), last(R)
