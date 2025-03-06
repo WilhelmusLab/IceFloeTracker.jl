@@ -82,7 +82,7 @@ function _pairfloes(
             matched_pairs = MatchedPairs(props1)
             for r in 1:nrow(props1) # TODO: consider using eachrow(props1) to iterate over rows
                 # 1. Collect preliminary matches for floe r in matching_floes
-                matching_floes = makeemptydffrom(props1)
+                matching_floes = _makeemptydffrom(props1)
                 for s in 1:nrow(props2) # TODO: consider using eachrow(props2) to iterate over rows
                     ratios, conditions, dist = _compute_ratios_conditions(
                         (props1, r), (props2, s), Δt, condition_thresholds

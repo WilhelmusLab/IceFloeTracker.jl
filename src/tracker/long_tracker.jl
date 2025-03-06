@@ -111,7 +111,7 @@ function find_floe_matches(
         matched_pairs = MatchedPairs(props2)
         for r in 1:nrow(props1) # TODO: consider using eachrow(props1) to iterate over rows
             # 1. Collect preliminary matches for floe r in matching_floes
-            matching_floes = makeemptydffrom(props2)
+            matching_floes = _makeemptydffrom(props2)
 
             for s in 1:nrow(props2) # TODO: consider using eachrow(props2) to iterate over rows
                 Δt = get_dt(props1, r, props2, s)
