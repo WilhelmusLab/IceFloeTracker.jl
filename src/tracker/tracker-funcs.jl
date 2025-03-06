@@ -34,11 +34,11 @@ function MatchedPairs(df)
 end
 
 """
-    update!(match_total::MatchedPairs, matched_pairs::MatchedPairs)
+    _update!(match_total::MatchedPairs, matched_pairs::MatchedPairs)
 
 Update `match_total` with the data from `matched_pairs`.
 """
-function update!(match_total::MatchedPairs, matched_pairs::MatchedPairs)
+function _update!(match_total::MatchedPairs, matched_pairs::MatchedPairs)
     append!(match_total.props1, matched_pairs.props1)
     append!(match_total.props2, matched_pairs.props2)
     append!(match_total.ratios, matched_pairs.ratios)
@@ -109,7 +109,7 @@ function Tracked()
     return Tracked(MatchedPairs[])
 end
 
-function update!(tracked::Tracked, matched_pairs::MatchedPairs)
+function _update!(tracked::Tracked, matched_pairs::MatchedPairs)
     push!(tracked.data, matched_pairs)
     return nothing
 end

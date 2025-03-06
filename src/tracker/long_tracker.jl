@@ -163,7 +163,7 @@ function find_floe_matches(
 
         matched_pairs = remove_collisions(matched_pairs)
         deletematched!((props1, props2), matched_pairs)
-        update!(match_total, matched_pairs)
+        _update!(match_total, matched_pairs)
     end # of while loop
     return match_total
 end

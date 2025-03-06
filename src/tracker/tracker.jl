@@ -126,9 +126,9 @@ function _pairfloes(
             floe in day k? If so, keep the best matching pair and remove all others. =#
             resolvecollisions!(matched_pairs)
             deletematched!((props1, props2), matched_pairs)
-            update!(match_total, matched_pairs)
+            _update!(match_total, matched_pairs)
         end # of while loop
-        update!(tracked, match_total)
+        _update!(tracked, match_total)
     end
     sort!(tracked)
     _pairs = tracked.data
