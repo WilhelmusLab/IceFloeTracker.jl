@@ -30,7 +30,7 @@ Return an object of type `MatchedPairs` with an empty dataframe with the same co
 """
 function MatchedPairs(df)
     emptypropsdf = similar(df, 0)
-    return MatchedPairs(emptypropsdf, copy(emptypropsdf), makeemptyratiosdf(), Float64[])
+    return MatchedPairs(emptypropsdf, copy(emptypropsdf), _makeemptyratiosdf(), Float64[])
 end
 
 """
@@ -159,16 +159,16 @@ end
 # """
 function _makeemptydffrom(df::DataFrame)
     return MatchingProps(
-        Vector{Int64}(), similar(df, 0), makeemptyratiosdf(), Vector{Float64}()
+        Vector{Int64}(), similar(df, 0), _makeemptyratiosdf(), Vector{Float64}()
     )
 end
 
-"""
-    makeemptyratiosdf()
+# """
+#     _makeemptyratiosdf()
 
-Return an empty dataframe with column names `area`, `majoraxis`, `minoraxis`, `convex_area`, `area_mismatch`, and `corr` for similarity ratios.
-"""
-function makeemptyratiosdf()
+# Return an empty dataframe with column names `area`, `majoraxis`, `minoraxis`, `convex_area`, `area_mismatch`, and `corr` for similarity ratios.
+# """
+function _makeemptyratiosdf()
     return DataFrame(;
         area=Float64[],
         majoraxis=Float64[],
@@ -730,7 +730,7 @@ function remove_collisions(pairs::T)::T where {T<:MatchedPairs}
         g -> @view g[_getidxmostminimumeverything(g[!, nmratios]), :])
     p1 = result[:, nm1]
     p2 = rename(result[:, nm2], nm1)
-    ratios = rename(result[:, nmratios], names(makeemptyratiosdf()))
+    ratios = rename(result[:, nmratios], names(_makeemptyratiosdf()))
     return IceFloeTracker.MatchedPairs(p1, p2, ratios, result.dist)
 end
 
