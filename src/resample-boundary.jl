@@ -1,7 +1,7 @@
 # resample pixels on floe boundary for psi-s curve
 
 """
-    resample_boundary(bd_points::Vector{<:CartesianIndex}, reduc_factor::Int64=2, bd::String="natural")
+    resample_boundary(bd_points, reduc_factor, bd)
 
 Get a uniform set of resampled boundary points from `bd_points` using cubic splines with specified boundary conditions
 
@@ -10,7 +10,7 @@ The resampled set of points is obtained using parametric interpolation of the po
 # Arguments
 - `bd_points`: Sequetial set of boundary points for the object of interest
 - `reduc_factor`: Factor by which to reduce the number of points in `bd_points` (2 by default)
--`bd`: Boundary condition, either 'natural' (default) or 'periodic'
+- `bd`: Boundary condition, either `'natural'` (default) or `'periodic'`
 
 See also [`bwtraceboundary`](@ref)
 
@@ -48,12 +48,13 @@ julia> boundary[3]
  CartesianIndex(10, 14)
  CartesianIndex(10, 13)
 
- julia> resample_boundary(boundary[3])
+julia> resample_boundary(boundary[3])
 4×2 Matrix{Float64}:
  10.0     13.0
  12.0357  13.5859
  10.5859  15.0357
  10.0     13.0
+```
 """
 function resample_boundary(
     bd_points::Vector{<:CartesianIndex}, reduc_factor::Int64=2, bd::String="natural"
