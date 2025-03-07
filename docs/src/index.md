@@ -39,6 +39,7 @@ Lopez-Acosta et al., (2019). Ice Floe Tracker: An algorithm to automatically ret
 ```@autodocs
 Modules = [IceFloeTracker]
 Order   = [:function, :macro, :type]
+Private = false
 ```
 
 ## Index
