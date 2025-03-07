@@ -535,12 +535,6 @@ function addψs!(props::Vector{DataFrame})
     end
     return nothing
 end
-function addψs!(props::Vector{DataFrame})
-    for prop in props
-        prop.psi = map(buildψs, prop.mask)
-    end
-    return nothing
-end
 
 function addfloemasks!(props::Vector{DataFrame}, imgs::Vector{<:FloeLabelsImage})
     for (img, prop) in zip(imgs, props)
