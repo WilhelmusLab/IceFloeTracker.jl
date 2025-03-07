@@ -87,6 +87,7 @@ function get_nlabel_relaxation(
     return 1
 end
 
+# TODO: decide whether get_ice_masks should be a private function
 """
     get_ice_masks(
         falsecolor_image,

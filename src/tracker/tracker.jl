@@ -17,7 +17,7 @@ end
 """
     add_passtimes!(props, passtimes)
 
-Add a column `passtime` to each DataFrame in `props` containing the time of the image in which the floes were captured.
+Add a column `passtime` to each DataFrame in `props` containing the time of the image in which the floe images were captured.
 
 # Arguments
 - `props`: array of DataFrames containing floe properties.
@@ -70,7 +70,7 @@ function _pairfloes(
     numdays = length(segmented_imgs) - 1
 
     for dayi in 1:numdays
-        props1, props2 = getpropsday1day2(props, dayi)
+        props1, props2 = _getpropsday1day2(props, dayi)
         Δt = dt[dayi]
 
         # Container for matches in dayi which will be used to populate tracked
@@ -82,21 +82,21 @@ function _pairfloes(
             matched_pairs = MatchedPairs(props1)
             for r in 1:nrow(props1) # TODO: consider using eachrow(props1) to iterate over rows
                 # 1. Collect preliminary matches for floe r in matching_floes
-                matching_floes = makeemptydffrom(props1)
+                matching_floes = _makeemptydffrom(props1)
                 for s in 1:nrow(props2) # TODO: consider using eachrow(props2) to iterate over rows
-                    ratios, conditions, dist = compute_ratios_conditions(
+                    ratios, conditions, dist = _compute_ratios_conditions(
                         (props1, r), (props2, s), Δt, condition_thresholds
                     )
 
-                    if callmatchcorr(conditions)
+                    if _callmatchcorr(conditions)
                         (area_mismatch, corr) = matchcorr(
                             props1.mask[r], props2.mask[s], Δt; mc_thresholds.comp...
                         )
 
-                        if isfloegoodmatch(
+                        if _isfloegoodmatch(
                             conditions, mc_thresholds.goodness, area_mismatch, corr
                         )
-                            appendrows!(
+                            _appendrows!(
                                 matching_floes,
                                 props2[s, :],
                                 (ratios..., area_mismatch, corr),
@@ -108,13 +108,13 @@ function _pairfloes(
                 end # of s for loop
 
                 # 2. Find the best match for floe r
-                best_match_idx = getidxmostminimumeverything(matching_floes.ratios)
+                best_match_idx = _getidxmostminimumeverything(matching_floes.ratios)
                 if isnotnan(best_match_idx)
-                    bestmatchdata = getbestmatchdata(
+                    bestmatchdata = _getbestmatchdata(
                         best_match_idx, r, props1, matching_floes
                     ) # might be copying data unnecessarily
 
-                    addmatch!(matched_pairs, bestmatchdata)
+                    _addmatch!(matched_pairs, bestmatchdata)
                 end
             end # of for r = 1:nrow(props1)
 
@@ -126,9 +126,9 @@ function _pairfloes(
             floe in day k? If so, keep the best matching pair and remove all others. =#
             resolvecollisions!(matched_pairs)
             deletematched!((props1, props2), matched_pairs)
-            update!(match_total, matched_pairs)
+            _update!(match_total, matched_pairs)
         end # of while loop
-        update!(tracked, match_total)
+        _update!(tracked, match_total)
     end
     sort!(tracked)
     _pairs = tracked.data

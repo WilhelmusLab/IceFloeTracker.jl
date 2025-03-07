@@ -1,15 +1,15 @@
 # Helper functions
 """
-    make_filename()
+    _make_filename()
 
 Makes default filename with timestamp.
 
 """
-function make_filename()::String
+function _make_filename()::String
     return "persisted_img-" * Dates.format(Dates.now(), "yyyy-mm-dd-HHMMSS") * ".png"
 end
 
-function make_filename(fname::T, ext::T=".png")::T where {T<:AbstractString}
+function _make_filename(fname::T, ext::T=".png")::T where {T<:AbstractString}
     return timestamp(fname) * ext
 end
 
@@ -44,7 +44,7 @@ end
 """
     check_fname(fname)
 
-Checks `fname` does not exist in current directory; throws an assertion if this condition is false.
+Checks `fname` does not exist in current directory; throws an error if this condition is false.
 
 # Arguments
 - `fname`: String object or Symbol to a reference to a String representing a path.
@@ -55,7 +55,7 @@ function check_fname(fname::Union{String,Symbol,Nothing}=nothing)::String
     elseif fname isa Symbol
         check_name = eval(fname) # get the object represented by the symbol
     elseif isnothing(fname) # nothing provided so make a filename
-        check_name = make_filename()
+        check_name = _make_filename()
     end
 
     # check name does not exist in wd
@@ -173,13 +173,13 @@ function bwdist(bwimg::AbstractArray{Bool})::AbstractArray{Float64}
 end
 
 """
-    padnhood(img, I, nhood)
+    _padnhood(img, I, nhood)
 
-Pad the matrix `img[nhood]` with zeros according to the position of `I` within the edges`img`.
+Pad the matrix `img[nhood]` with zeros according to the position of `I` within the edges `img`.
 
 Returns `img[nhood]` if `I` is not an edge index.
 """
-function padnhood(img, I, nhood)
+function _padnhood(img, I, nhood)
     # adaptive padding
     maxr, maxc = size(img)
     tofill = SizedMatrix{3,3}(zeros(Int, 3, 3))
@@ -260,6 +260,6 @@ function _operator_lut(
 end
 
 function _pad_handler(I, img, nhood)
-    (length(nhood) == 6) && return padnhood(img, I, nhood) # edge pixels
+    (length(nhood) == 6) && return _padnhood(img, I, nhood) # edge pixels
     return @view img[nhood]
 end

@@ -51,7 +51,7 @@
 
     # Test 2: Filter smaller blobs from label matrix
     @test sum(
-        IceFloeTracker.filt_except_label(labels, IceFloeTracker.get_max_label(d)) .!= 0
+        IceFloeTracker._filt_except_label(labels, IceFloeTracker.get_max_label(d)) .!= 0
     ) == 45
 
     # Test 3: Keep largest blob in input matrix a

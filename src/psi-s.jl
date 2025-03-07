@@ -1,8 +1,11 @@
 
 """
     dx, dy = grad(x::Vector{<:Number}, y::Vector{<:Number})
+    dx, dy = grad(A::Matrix{<:Number})
 
-Make gradient vector field for the set of points with coordinates in vectors `x` and `y`. Return a tuple with `dx` and `dy` in that order. 
+Make gradient vector field for the set of points with coordinates in vectors `x` and `y`, or in the rows of the matrix `A` with x-coordinates down column 1 and y-coordinates down column 2.
+
+Return a tuple with `dx` and `dy` in that order.
 """
 function grad(x::Vector{<:Number}, y::Vector{<:Number})
     dx = x[2:end] - x[1:(end - 1)]
@@ -10,11 +13,6 @@ function grad(x::Vector{<:Number}, y::Vector{<:Number})
     return dx, dy
 end
 
-"""
-    dx, dy = grad(A::Matrix{<:Number})
-
-Make gradient vector field for the set of points with coordinates in the rows of the matrix `A` with x-coordinates down column 1 and y-coordinates down column 2. Return a tuple with `dx` and `dy` in that order. 
-"""
 function grad(A::Matrix{<:Number})
     # Grab each col of A
     x, y = A[:, 1], A[:, 2]
@@ -31,9 +29,9 @@ function norm(v::Vector{<:Number})
 end
 
 """
-    atan2(y,x)
+    atan2(y::Number, x::Number)
 
-Wrapper of `Base.atan` that returns the angle of vector (x,y) in the range [0, 2π).
+Wrapper of `Base.atan` that returns the angle of vector `(x, y)` in the range [0, 2π).
 """
 function atan2(y::Number, x::Number)
     ang = atan(y, x)
@@ -51,7 +49,7 @@ end
 
 Builds the ψ-s curve defined by vectors `x` and `y`.
 
-Returns a tuple of vectors with the phases `ψ` in the first component and the traversed arclength in the second component. 
+Returns a tuple of vectors with the phases `ψ` in the first component and the traversed arclength in the second component.
 
 Following the convention in [1], the wrapped ψ-s curve has values in [0, 2π) by default; use `rangeout` to control this behavior.
 
@@ -61,17 +59,17 @@ See also [`bwtraceboundary`](@ref), [`resample_boundary`](@ref)
 - `x`: Vector of x-coordinates
 - `y`: corresponding vector of y-coordinates
 - `rangeout`: `true` (default) for phase values in [0, 2π); `false` for phase values in (-π, π].
-- `unwrap`: set to `true` to get "unwrapped" phases (default). 
+- `unwrap`: set to `true` to get "unwrapped" phases (default).
 
 # Reference
-[1] McConnell, Ross, et al. "psi-s correlation and dynamic time warping: two methods for tracking ice floes in SAR images." IEEE Transactions on Geoscience and Remote sensing 29.6 (1991): 1004-1012.
+[1] McConnell, Ross, et al. "ψ-s correlation and dynamic time warping: two methods for tracking ice floes in SAR images." IEEE Transactions on Geoscience and Remote sensing 29.6 (1991): 1004-1012.
 
 # Example
 
 The example below builds a cardioid and obtains its ψ-s curve.
 
 ```jldoctest; setup = :(using IceFloeTracker, Plots)
-julia> t = range(0,2pi,201);
+julia> t = range(0, 2π, 201);
 
 julia> x = @. cos(t)*(1-cos(t));
 
@@ -104,7 +102,7 @@ julia> [s psi] # inspect psi-s data
  7.99877     9.35147
  7.99926     9.39336
 
- julia> plot(s, psi) # inspect psi-s curve -- should be a straight line from (0, 0) to (8, 3π)
+julia> plot(s, psi) # inspect  ψ-s curve -- should be a straight line from (0, 0) to (8, 3π)
 ```
 """
 function make_psi_s(
