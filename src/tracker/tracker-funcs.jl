@@ -606,22 +606,18 @@ function get_dt(props1, r, props2, s)
 end
 
 """
-    adduuid!(df)
+    adduuid!(df::DataFrame)
+    adduuid!(dfs::Vector{DataFrame})
 
-Assign a unique ID to each floe in a table of floe properties.
+Assign a unique ID to each floe in a (vector of) table(s) of floe properties.
 """
 function adduuid!(df::DataFrame)
     df.uuid = [randstring(12) for _ in 1:nrow(df)]
     return df
 end
 
-"""
-    adduuid!(dfs)
-
-Assign a unique ID to each floe in an vector of tables of floe properties.
-"""
 function adduuid!(dfs::Vector{DataFrame})
-    for (i, df) in enumerate(dfs)
+    for (i, _) in enumerate(dfs)
         adduuid!(dfs[i])
     end
     return dfs
