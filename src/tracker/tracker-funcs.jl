@@ -522,6 +522,19 @@ function buildψs(floe)
     return IceFloeTracker.make_psi_s(bdres)[1]
 end
 
+"""
+    addψs!(props::Vector{DataFrame})
+
+Add the ψ-s curves to each member of `props`. Note: each member of props must have a `mask` column with the boundary of each floe.
+
+To add floe boundaries see [`addfloemasks!`](@ref).
+"""
+function addψs!(props::Vector{DataFrame})
+    for prop in props
+        prop.psi = map(buildψs, prop.mask)
+    end
+    return nothing
+end
 function addψs!(props::Vector{DataFrame})
     for prop in props
         prop.psi = map(buildψs, prop.mask)
