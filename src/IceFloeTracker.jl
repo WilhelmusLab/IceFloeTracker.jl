@@ -45,12 +45,17 @@ export readdlm,
     imrotate,
     IFTVERSION
 
+
 # For IFTPipeline
 using HDF5
 export HDF5, PyCall
 export DataFrames, DataFrame, nrow, Not, select!
 export Dates, Time, Date, DateTime, @dateformat_str
 export addlatlon!, getlatlon, convertcentroid!, converttounits!, dropcols!
+
+# For the tracker
+export addfloemasks!, add_passtimes!, addψs!, long_tracker
+
 
 include("utils.jl")
 include("persist.jl")
