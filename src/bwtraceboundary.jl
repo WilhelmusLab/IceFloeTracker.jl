@@ -167,9 +167,8 @@ function makecontourstartatP(P::CartesianIndex{2}, contour::Vector{CartesianInde
     end
 end
 
-# """
-# Check `P` is in countour list if so return the index of the contour that contains `P`, otherwise return false.
-# """
+"""
+\1"""
 function _isincountourlist(
     P::Union{CartesianIndex{2},Tuple{Int64,Int64}},
     contour_list::Vector{Vector{CartesianIndex}},
@@ -187,13 +186,13 @@ function _isincountourlist(
     return (false, 0)
 end
 
-# """
-# Get index in Moore neigborhood representing the direction from the `from` pixel coords to the `to` pixel coords (see definition of dir_delta below).
+"""
+Get index in Moore neigborhood representing the direction from the `from` pixel coords to the `to` pixel coords (see definition of dir_delta below).
 
-# ## Clockwise Moore neighborhood.
-# dir_delta = [CartesianIndex(-1, 0), CartesianIndex(-1, 1), CartesianIndex(0, 1), CartesianIndex(1, 1), CartesianIndex(1, 0), CartesianIndex(1, -1), CartesianIndex(0, -1), CartesianIndex(-1,-1)]
+## Clockwise Moore neighborhood.
+dir_delta = [CartesianIndex(-1, 0), CartesianIndex(-1, 1), CartesianIndex(0, 1), CartesianIndex(1, 1), CartesianIndex(1, 0), CartesianIndex(1, -1), CartesianIndex(0, -1), CartesianIndex(-1,-1)]
 
-# """
+"""
 function _from_to(
     from::CartesianIndex, to::CartesianIndex, dir_delta::Vector{CartesianIndex{2}}
 )
@@ -201,9 +200,8 @@ function _from_to(
     return findfirst(x -> x == delta, dir_delta)
 end
 
-# """
-# Workhorse function: Get all pixel coords for detected border.
-# """
+"""
+\1"""
 function _detect_move!(
     image::Matrix{Float64},
     p0::CartesianIndex{2},
@@ -262,23 +260,20 @@ function _detect_move!(
     end
 end
 
-# """
-# Make a clockwise turn from the `dir` direction
-# """
+"""
+\1"""
 function _clockwise(dir::Int)
     return (dir) % 8 + 1
 end
 
-# """
-# Make a counterclockwise turn from the `dir` direction
-# """
+"""
+\1"""
 function _counterclockwise(dir::Int)
     return (dir + 6) % 8 + 1
 end
 
-# """
-# move from current pixel to the next in given direction
-# """
+"""
+\1"""
 function _move(
     pixel::CartesianIndex{2},
     image::Matrix{Float64},

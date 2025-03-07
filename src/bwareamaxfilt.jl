@@ -15,13 +15,13 @@ function get_max_label(d::Dict{Int,Int})::Int
     return drev[mx]
 end
 
-# """
-#     _filt_except_label(labeled_arr::Array{Int64, 2}, label::Int64)
+"""
+    _filt_except_label(labeled_arr::Array{Int64, 2}, label::Int64)
 
-# Make 0 all values in `labeled_arr` that are not equal to `label`.
+Make 0 all values in `labeled_arr` that are not equal to `label`.
 
-# See also [`_filt_except_label!`](@ref)
-# """
+See also [`_filt_except_label!`](@ref)
+"""
 function _filt_except_label(labeled_arr::Array{Int64,2}, label::Int64)::Array{Int64,2}
     outlabel = similar(labeled_arr)
     for (i, value) in enumerate(labeled_arr)
@@ -30,13 +30,13 @@ function _filt_except_label(labeled_arr::Array{Int64,2}, label::Int64)::Array{In
     return outlabel
 end
 
-# """
-#     _filt_except_label!(labeled_arr::Array{Int64, 2}, label::Int64)
+"""
+    _filt_except_label!(labeled_arr::Array{Int64, 2}, label::Int64)
 
-# In-place version of `_filt_except_label`.
+In-place version of `_filt_except_label`.
 
-# See also [`_filt_except_label`](@ref)
-# """
+See also [`_filt_except_label`](@ref)
+"""
 function _filt_except_label!(labeled_arr::Array{Int64,2}, label::Int64)::Array{Int64,2}
     for (i, value) in enumerate(labeled_arr)
         value != label ? labeled_arr[i] = 0 : labeled_arr[i] = label

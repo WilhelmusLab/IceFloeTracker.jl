@@ -162,20 +162,20 @@ function regionprops(
     )
 end
 
-# """
-#     _getcentroidcolumns(props::DataFrame)
+"""
+    _getcentroidcolumns(props::DataFrame)
 
-# Returns the column names of the centroid columns in `props`.
-# """
+Returns the column names of the centroid columns in `props`.
+"""
 function _getcentroidcolumns(props::DataFrame)
     return filter(col -> occursin(r"^centroid-\d$", col), names(props))
 end
 
-# """
-#     _getbboxcolumns(props::DataFrame)
+"""
+    _getbboxcolumns(props::DataFrame)
 
-# Return the column names of the bounding box columns in `props`.
-# """
+Return the column names of the bounding box columns in `props`.
+"""
 function _getbboxcolumns(props::DataFrame)
     return filter(col -> occursin(r"^bbox-\d$", col), names(props))
 end
@@ -275,7 +275,7 @@ function cropfloe(
 end
 
 """
-    addfloearrays(props::DataFrame, floeimg::BitMatrix)
+    addfloemasks!(props::DataFrame, floeimg::FloeLabelsImage)
 
 Add a column to `props` called `floearray` containing the cropped floe masks from `floeimg`.
 """
@@ -284,20 +284,20 @@ function addfloemasks!(props::DataFrame, floeimg::FloeLabelsImage)
     return nothing
 end
 
-# """
-#     _getfloemasks(props::DataFrame, floeimg::BitMatrix)
+"""
+    _getfloemasks(props::DataFrame, floeimg::BitMatrix)
 
-# Return a vector of cropped floe masks from `floeimg` using the bounding box data in `props`.
-# """
+Return a vector of cropped floe masks from `floeimg` using the bounding box data in `props`.
+"""
 function _getfloemasks(props::DataFrame, floeimg::FloeLabelsImage)
     return map(i -> cropfloe(floeimg, props, i), 1:nrow(props))
 end
 
-# """
-#     _fixzeroindexing!(props::DataFrame, props_to_fix::Vector{T}) where T<:Union{Symbol,String}
+"""
+    _fixzeroindexing!(props::DataFrame, props_to_fix::Vector{T}) where T<:Union{Symbol,String}
 
-# Fix the zero-indexing of the `props_to_fix` columns in `props` by adding 1 to each element.
-# """
+Fix the zero-indexing of the `props_to_fix` columns in `props` by adding 1 to each element.
+"""
 function _fixzeroindexing!(
     props::DataFrame, props_to_fix::Vector{T}
 ) where {T<:Union{Symbol,String}}

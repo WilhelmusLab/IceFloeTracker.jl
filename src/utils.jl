@@ -1,10 +1,10 @@
 # Helper functions
-# """
-#     _make_filename()
+"""
+    _make_filename()
 
-# Makes default filename with timestamp.
+Makes default filename with timestamp.
 
-# """
+"""
 function _make_filename()::String
     return "persisted_img-" * Dates.format(Dates.now(), "yyyy-mm-dd-HHMMSS") * ".png"
 end
@@ -172,13 +172,13 @@ function bwdist(bwimg::AbstractArray{Bool})::AbstractArray{Float64}
     return Images.distance_transform(Images.feature_transform(bwimg))
 end
 
-# """
-#     _padnhood(img, I, nhood)
+"""
+    _padnhood(img, I, nhood)
 
-# Pad the matrix `img[nhood]` with zeros according to the position of `I` within the edges `img`.
+Pad the matrix `img[nhood]` with zeros according to the position of `I` within the edges `img`.
 
-# Returns `img[nhood]` if `I` is not an edge index.
-# """
+Returns `img[nhood]` if `I` is not an edge index.
+"""
 function _padnhood(img, I, nhood)
     # adaptive padding
     maxr, maxc = size(img)
@@ -205,31 +205,31 @@ function _padnhood(img, I, nhood)
     return tofill
 end
 
-# """
-#     _bin9todec(v)
+"""
+    _bin9todec(v)
 
-# Get decimal representation of a bit vector `v` with the leading bit at its leftmost posistion.
+Get decimal representation of a bit vector `v` with the leading bit at its leftmost posistion.
 
-# Example
-# ```
-# julia> _bin9todec([0 0 0 0 0 0 0 0 0])
-# 0
+Example
+```
+julia> _bin9todec([0 0 0 0 0 0 0 0 0])
+0
 
-# julia> _bin9todec([1 1 1 1 1 1 1 1 1])
-# 511
-# ```
-# """
+julia> _bin9todec([1 1 1 1 1 1 1 1 1])
+511
+```
+"""
 function _bin9todec(v::AbstractArray)::Int64
     return sum(vec(v) .* 2 .^ (0:(length(v) - 1)))
 end
 
-# """
-#     _operator_lut(I, img, nhood, lut1, lut2)
+"""
+    _operator_lut(I, img, nhood, lut1, lut2)
 
-# Look up the neighborhood `nhood` in lookup tables `lut1` and `lut2`.
+Look up the neighborhood `nhood` in lookup tables `lut1` and `lut2`.
 
-# Handles cases when the center of `nhood` is on the edge of `img` using data in `I`.
-# """
+Handles cases when the center of `nhood` is on the edge of `img` using data in `I`.
+"""
 function _operator_lut(
     I::CartesianIndex{2},
     img::AbstractArray{Bool},

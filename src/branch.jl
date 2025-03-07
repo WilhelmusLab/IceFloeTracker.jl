@@ -1,33 +1,33 @@
-# """
-#     _branch_candidates_func(nhood)
+"""
+    _branch_candidates_func(nhood)
 
-# Filter `nhood` as candidate for branch point.
+Filter `nhood` as candidate for branch point.
 
-# To be passed to the `_make_lut` function.
-# """
+To be passed to the `_make_lut` function.
+"""
 function _branch_candidates_func(nhood::AbstractArray)::Bool
     nhood[2, 2] == 0 && return false
     sum(nhood) > 3 && return true
 end
 
-# """
-#     _connected_background_count(nhood)
+"""
+    _connected_background_count(nhood)
 
-# Second lut generator for neighbor transform with diamond strel (4-neighborhood).
+Second lut generator for neighbor transform with diamond strel (4-neighborhood).
 
-# To be passed to the `_make_lut` function.
+To be passed to the `_make_lut` function.
 
-# """
+"""
 function _connected_background_count(nhood::AbstractArray)::Int64
     nhood[2, 2] != 0 && return maximum(label_components(.!Bool.(nhood)))
     return 0
 end
 
-# """
-#     _make_lut(lutfunc::Function)
+"""
+    _make_lut(lutfunc::Function)
 
-# Generate lookup table (lut) for 3x3 neighborhoods according to `lutfunc`.
-# """
+Generate lookup table (lut) for 3x3 neighborhoods according to `lutfunc`.
+"""
 function _make_lut(lutfunc::Function)::Vector{Int}
     lut = vec(zeros(Int, 512))
     @inbounds @simd for i in 1:(2^9)
@@ -37,14 +37,14 @@ function _make_lut(lutfunc::Function)::Vector{Int}
     return lut
 end
 
-# """
-#     _branch_filter(
-#     img::AbstractArray{Bool},
-#     func1::Function=_branch_candidates_func,
-#     func2::Function=_connected_background_count,)
+"""
+    _branch_filter(
+    img::AbstractArray{Bool},
+    func1::Function=_branch_candidates_func,
+    func2::Function=_connected_background_count,)
 
-# Filter `img` with `_operator_lut` using `lut1` and `lut2`.
-# """
+Filter `img` with `_operator_lut` using `lut1` and `lut2`.
+"""
 function _branch_filter(
     img::AbstractArray{Bool},
     func1::Function=_branch_candidates_func,

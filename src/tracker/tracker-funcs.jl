@@ -46,11 +46,11 @@ function _update!(match_total::MatchedPairs, matched_pairs::MatchedPairs)
     return nothing
 end
 
-# """
-#     _addmatch!(matched_pairs, newmatch)
+"""
+    _addmatch!(matched_pairs, newmatch)
 
-# Add `newmatch` to `matched_pairs`.
-# """
+Add `newmatch` to `matched_pairs`.
+"""
 function _addmatch!(matched_pairs::MatchedPairs, newmatch)
     push!(matched_pairs.props1, newmatch.props1)
     push!(matched_pairs.props2, newmatch.props2)
@@ -65,11 +65,11 @@ function isempty(matched_pairs::MatchedPairs)
            isempty(matched_pairs.ratios)
 end
 
-# """
-#     _appendrows!(df::MatchingProps, props::T, ratios, idx::Int64, dist::Float64) where {T<:DataFrameRow}
+"""
+    _appendrows!(df::MatchingProps, props::T, ratios, idx::Int64, dist::Float64) where {T<:DataFrameRow}
 
-# Append a row to `df.props` and `df.ratios` with the values of `props` and `ratios` respectively.
-# """
+Append a row to `df.props` and `df.ratios` with the values of `props` and `ratios` respectively.
+"""
 function _appendrows!(
     df::MatchingProps, props::T, ratios, idx::Int64, dist::Float64
 ) where {T<:DataFrameRow}
@@ -125,11 +125,11 @@ function modenan(x::AbstractVector{<:Int64})
     return mode(x)
 end
 
-# """
-# _getcentroid(props_day::DataFrame, r)
+"""
+_getcentroid(props_day::DataFrame, r)
 
-# Get the coordinates of the `r`th floe in `props_day`.
-# """
+Get the coordinates of the `r`th floe in `props_day`.
+"""
 function _getcentroid(props_day::DataFrame, r)
     return props_day[r, [:row_centroid, :col_centroid]]
 end
@@ -152,22 +152,22 @@ function mean(x::T, y::T)::Float64 where {T<:Real}
     return (x + y) / 2
 end
 
-# """
-#     _makeemptydffrom(df::DataFrame)
+"""
+    _makeemptydffrom(df::DataFrame)
 
-# Return an object with an empty dataframe with the same column names as `df` and an empty dataframe with column names `area`, `majoraxis`, `minoraxis`, `convex_area`, `area_mismatch`, and `corr` for similarity ratios.
-# """
+Return an object with an empty dataframe with the same column names as `df` and an empty dataframe with column names `area`, `majoraxis`, `minoraxis`, `convex_area`, `area_mismatch`, and `corr` for similarity ratios.
+"""
 function _makeemptydffrom(df::DataFrame)
     return MatchingProps(
         Vector{Int64}(), similar(df, 0), _makeemptyratiosdf(), Vector{Float64}()
     )
 end
 
-# """
-#     _makeemptyratiosdf()
+"""
+    _makeemptyratiosdf()
 
-# Return an empty dataframe with column names `area`, `majoraxis`, `minoraxis`, `convex_area`, `area_mismatch`, and `corr` for similarity ratios.
-# """
+Return an empty dataframe with column names `area`, `majoraxis`, `minoraxis`, `convex_area`, `area_mismatch`, and `corr` for similarity ratios.
+"""
 function _makeemptyratiosdf()
     return DataFrame(;
         area=Float64[],
@@ -206,17 +206,17 @@ function get_time_space_proximity_condition(
            (delta_time >= search_thresholds.dt[3] && d < search_thresholds.dist[3])
 end
 
-# """
-#     _get_large_floe_condition(
-#     area1,
-#     ratios,
-#     thresholds
-# )
+"""
+    _get_large_floe_condition(
+    area1,
+    ratios,
+    thresholds
+)
 
-# Set of conditions for "large" floes. Return `true` if the area of the floe is greater than or equal to `thresholds.large_floe_settings.minimumarea` and the similarity ratios are less than the corresponding thresholds in `thresholds.large_floe_settings`. Return `false` otherwise. Used to determine whether to call `match_corr`.
+Set of conditions for "large" floes. Return `true` if the area of the floe is greater than or equal to `thresholds.large_floe_settings.minimumarea` and the similarity ratios are less than the corresponding thresholds in `thresholds.large_floe_settings`. Return `false` otherwise. Used to determine whether to call `match_corr`.
 
-# See also [`_get_small_floe_condition`](@ref).
-# """
+See also [`_get_small_floe_condition`](@ref).
+"""
 function _get_large_floe_condition(
     area1,
     ratios,
@@ -230,17 +230,17 @@ function _get_large_floe_condition(
            ratios.convex_area < large_floe_settings.convexarearatio
 end
 
-# """
-#     _get_small_floe_condition(
-#     area1,
-#     ratios,
-#     thresholds
-#     )
+"""
+    _get_small_floe_condition(
+    area1,
+    ratios,
+    thresholds
+    )
 
-# Set of conditions for "small" floes. Return `true` if the area of the floe is less than `thresholds.large_floe_settings.minimumarea` and the similarity ratios are less than the corresponding thresholds in `thresholds.small_floe_settings`. Return `false` otherwise. Used to determine whether to call `match_corr`.
+Set of conditions for "small" floes. Return `true` if the area of the floe is less than `thresholds.large_floe_settings.minimumarea` and the similarity ratios are less than the corresponding thresholds in `thresholds.small_floe_settings`. Return `false` otherwise. Used to determine whether to call `match_corr`.
 
-# See also [`_get_large_floe_condition`](@ref).
-# """
+See also [`_get_large_floe_condition`](@ref).
+"""
 function _get_small_floe_condition(
     area1,
     ratios,
@@ -254,26 +254,26 @@ function _get_small_floe_condition(
            ratios.convex_area < small_floe_settings.convexarearatio
 end
 
-# """
-#     _callmatchcorr(conditions)
+"""
+    _callmatchcorr(conditions)
 
-# Condition to decide whether match_corr should be called.
-# """
+Condition to decide whether match_corr should be called.
+"""
 function _callmatchcorr(conditions)
     return conditions.time_space_proximity_condition &&
            (conditions.large_floe_condition || conditions.small_floe_condition)
 end
 
-# """
-#     _isfloegoodmatch(conditions, mct, area_mismatch, corr)
+"""
+    _isfloegoodmatch(conditions, mct, area_mismatch, corr)
 
-# Return `true` if the floes are a good match as per the set thresholds. Return `false` otherwise.
+Return `true` if the floes are a good match as per the set thresholds. Return `false` otherwise.
 
-# # Arguments
-# - `conditions`: tuple of booleans for evaluating the conditions
-# - `mct`: tuple of thresholds for the match correlation test
-# - `area_mismatch` and `corr`: values returned by `match_corr`
-# """
+# Arguments
+- `conditions`: tuple of booleans for evaluating the conditions
+- `mct`: tuple of thresholds for the match correlation test
+- `area_mismatch` and `corr`: values returned by `match_corr`
+"""
 function _isfloegoodmatch(conditions, mct, area_mismatch, corr)
     return (
         (conditions.large_floe_condition && area_mismatch < mct.small_floe_area) ||
@@ -281,17 +281,17 @@ function _isfloegoodmatch(conditions, mct, area_mismatch, corr)
     ) && corr > mct.corr
 end
 
-# """
-#     _compute_ratios((props_day1, r), (props_day2,s))
+"""
+    _compute_ratios((props_day1, r), (props_day2,s))
 
-# Compute the ratios of the floe properties between the `r`th floe in `props_day1` and the `s`th floe in `props_day2`. Return a tuple of the ratios.
+Compute the ratios of the floe properties between the `r`th floe in `props_day1` and the `s`th floe in `props_day2`. Return a tuple of the ratios.
 
-# # Arguments
-# - `props_day1`: floe properties for day 1
-# - `r`: index of floe in `props_day1`
-# - `props_day2`: floe properties for day 2
-# - `s`: index of floe in `props_day2`
-# """
+# Arguments
+- `props_day1`: floe properties for day 1
+- `r`: index of floe in `props_day1`
+- `props_day2`: floe properties for day 2
+- `s`: index of floe in `props_day2`
+"""
 function _compute_ratios((props_day1, r), (props_day2, s))
     arearatio = absdiffmeanratio(props_day1.area[r], props_day2.area[s])
     majoraxisratio = absdiffmeanratio(
@@ -309,19 +309,19 @@ function _compute_ratios((props_day1, r), (props_day2, s))
     )
 end
 
-# """
-#     _compute_ratios_conditions((props_day1, r), (props_day2, s), delta_time, t)
+"""
+    _compute_ratios_conditions((props_day1, r), (props_day2, s), delta_time, t)
 
-# Compute the conditions for a match between the `r`th floe in `props_day1` and the `s`th floe in `props_day2`. Return a tuple of the conditions.
+Compute the conditions for a match between the `r`th floe in `props_day1` and the `s`th floe in `props_day2`. Return a tuple of the conditions.
 
-# # Arguments
-# - `props_day1`: floe properties for day 1
-# - `r`: index of floe in `props_day1`
-# - `props_day2`: floe properties for day 2
-# - `s`: index of floe in `props_day2`
-# - `delta_time`: time elapsed from image day 1 to image day 2
-# - `thresholds`: namedtuple of thresholds for elapsed time and distance. See `pair_floes` for details.
-# """
+# Arguments
+- `props_day1`: floe properties for day 1
+- `r`: index of floe in `props_day1`
+- `props_day2`: floe properties for day 2
+- `s`: index of floe in `props_day2`
+- `delta_time`: time elapsed from image day 1 to image day 2
+- `thresholds`: namedtuple of thresholds for elapsed time and distance. See `pair_floes` for details.
+"""
 function _compute_ratios_conditions((props_day1, r), (props_day2, s), delta_time, thresholds)
     p1 = _getcentroid(props_day1, r)
     p2 = _getcentroid(props_day2, s)
@@ -355,11 +355,11 @@ function dist(p1, p2)
     )
 end
 
-# """
-#     _getidxmostminimumeverything(ratiosdf)
+"""
+    _getidxmostminimumeverything(ratiosdf)
 
-# Return the index of the row in `ratiosdf` with the most minima across its columns. If there are multiple columns with the same minimum value, return the index of the first column with the minimum value. If `ratiosdf` is empty, return `NaN`.
-# """
+Return the index of the row in `ratiosdf` with the most minima across its columns. If there are multiple columns with the same minimum value, return the index of the first column with the minimum value. If `ratiosdf` is empty, return `NaN`.
+"""
 function _getidxmostminimumeverything(ratiosdf)
     nrow(ratiosdf) == 0 && return NaN
 
@@ -374,20 +374,20 @@ function _getidxmostminimumeverything(ratiosdf)
     return mode([argmin(col) for col in eachcol(_ratiosdf)])
 end
 
-# """
-#     _getpropsday1day2(properties, dayidx::Int64)
+"""
+    _getpropsday1day2(properties, dayidx::Int64)
 
-# Return the floe properties for day `dayidx` and day `dayidx+1`.
-# """
+Return the floe properties for day `dayidx` and day `dayidx+1`.
+"""
 function _getpropsday1day2(properties, dayidx::Int64)
     return copy(properties[dayidx]), copy(properties[dayidx+1])
 end
 
-# """
-#     _getbestmatchdata(idx, r, props_day1, matching_floes)
+"""
+    _getbestmatchdata(idx, r, props_day1, matching_floes)
 
-# Collect the data for the best match between the `r`th floe in `props_day1` and the `idx`th floe in `matching_floes`. Return a tuple of the floe properties for day 1 and day 2 and the ratios.
-# """
+Collect the data for the best match between the `r`th floe in `props_day1` and the `idx`th floe in `matching_floes`. Return a tuple of the floe properties for day 1 and day 2 and the ratios.
+"""
 function _getbestmatchdata(idx, r, props_day1, matching_floes)
     matching_floes_props = matching_floes.props[idx, :]
     cols = names(matching_floes_props)
@@ -410,11 +410,11 @@ end
 
 # Collision handling
 
-# """
-#     _getcollisionslocs(df)
+"""
+    _getcollisionslocs(df)
 
-# Return a vector of tuples of the row and the index of the row in `df` that has a collision with another row in `df`.
-# """
+Return a vector of tuples of the row and the index of the row in `df` that has a collision with another row in `df`.
+"""
 function _getcollisionslocs(df) #::Vector{Tuple{DataFrameRow{DataFrame, DataFrames.Index}, Vector{Int64}}}
     typeof(df) <: DataFrameRow &&
         return Tuple{DataFrameRow{DataFrame,DataFrames.Index},Vector{Int64}}[]
@@ -424,11 +424,11 @@ end
 
 namesof(obj::MatchedPairs) = fieldnames(typeof(obj))
 
-# """
-# _getcollisions(matchedpairs)
+"""
+_getcollisions(matchedpairs)
 
-# Get nonunique rows in `matchedpairs`.
-# """
+Get nonunique rows in `matchedpairs`.
+"""
 function _getcollisions(matchedpairs)
     collisions = transform(matchedpairs, nonunique)
     return filter(r -> r.x1 != 0, collisions)[:, 1:(end-1)]
@@ -442,11 +442,11 @@ function deletematched!(
     return nothing
 end
 
-# """
-#     _deleteallbut!(matched_pairs, idxs, keeper)
+"""
+    _deleteallbut!(matched_pairs, idxs, keeper)
 
-# Delete all rows in `matched_pairs` except for the row with index `keeper` in `idxs`.
-# """
+Delete all rows in `matched_pairs` except for the row with index `keeper` in `idxs`.
+"""
 function _deleteallbut!(matched_pairs, idxs, keeper)
     for i in sort(idxs; rev=true)
         if i !== keeper
@@ -501,6 +501,11 @@ function buildψs(floe)
     return IceFloeTracker.make_psi_s(bdres)[1]
 end
 
+"""
+    addψs!(props::Vector{DataFrame})
+
+Add the ψ-s curves to each member of `props`. Note: each member of props must have a `mask` column with the boundary of each floe. See See  [`addfloemasks!`](@ref).
+"""
 function addψs!(props::Vector{DataFrame})
     for prop in props
         prop.psi = map(buildψs, prop.mask)
@@ -508,6 +513,13 @@ function addψs!(props::Vector{DataFrame})
     return nothing
 end
 
+"""
+    addfloemasks!(props::Vector{DataFrame}, imgs::Vector{<:FloeLabelsImage})
+
+Add the floe masks to each member of `props` from the corresponding floe labels image in `imgs`.
+
+
+"""
 function addfloemasks!(props::Vector{DataFrame}, imgs::Vector{<:FloeLabelsImage})
     for (img, prop) in zip(imgs, props)
         IceFloeTracker.addfloemasks!(prop, img)
@@ -515,11 +527,11 @@ function addfloemasks!(props::Vector{DataFrame}, imgs::Vector{<:FloeLabelsImage}
     return nothing
 end
 
-# """
-#     _get_unmatched(props, matched)
+"""
+    _get_unmatched(props, matched)
 
-# Return the floes in `props` that are not in `matched`.
-# """
+Return the floes in `props` that are not in `matched`.
+"""
 function _get_unmatched(props, matched)
     _on = collect(mapreduce(df -> Set(names(df)), intersect, [props, matched]))
     unmatched = antijoin(props, matched; on=_on)
@@ -531,23 +543,23 @@ function _get_unmatched(props, matched)
     return unmatched
 end
 
-# """
-#     _get_trajectory_heads(pairs)
+"""
+    _get_trajectory_heads(pairs)
 
-# Return the last row (most recent member) of each group (trajectory) in `pairs` as a dataframe.
+Return the last row (most recent member) of each group (trajectory) in `pairs` as a dataframe.
 
-# This is used for getting the initial floe properties for the next day in search for new pairs.
-# """
+This is used for getting the initial floe properties for the next day in search for new pairs.
+"""
 function _get_trajectory_heads(pairs::T) where {T<:AbstractDataFrame}
     gdf = groupby(pairs, :uuid)
     return combine(gdf, last)[:, names(pairs)]
 end
 
-# """
-#     _swap_last_values!(df)
+"""
+    _swap_last_values!(df)
 
-# Swap the last two values of the `area_mismatch` and `corr` columns for each group in `df`. For bookkeeping purposes for goodness of fit data during the tracking process.
-# """
+Swap the last two values of the `area_mismatch` and `corr` columns for each group in `df`. For bookkeeping purposes for goodness of fit data during the tracking process.
+"""
 function _swap_last_values!(df)
     grouped = groupby(df, :uuid)  # Group by uuid
     for sdf in grouped
@@ -631,11 +643,11 @@ function _consolidate_matched_pairs(matched_pairs::MatchedPairs)
     return combined_df
 end
 
-# """
-#     _get_matches(matched_pairs)
+"""
+    _get_matches(matched_pairs)
 
-# Return a dataframe with the properties and goodness ratios of the matched pairs (right-hand matches) in `matched_pairs`. Used in iterations `1:end`.
-# """
+Return a dataframe with the properties and goodness ratios of the matched pairs (right-hand matches) in `matched_pairs`. Used in iterations `1:end`.
+"""
 function _get_matches(matched_pairs::MatchedPairs)
     # Ensure UUIDs are consistent
     matched_pairs.props2.uuid = matched_pairs.props1.uuid
