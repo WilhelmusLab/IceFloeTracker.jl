@@ -20,5 +20,5 @@
         @test sum(IceFloeTracker.watershed1(build_test_image())) == 1088
     end
 
-    # TODO: add test for watershed2
+    # TODO: #589 add test for watershed2
 end

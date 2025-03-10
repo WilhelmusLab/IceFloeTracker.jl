@@ -1,5 +1,5 @@
 @testset "hbreak tests" begin
-    h1, h2 = keys(IceFloeTracker.make_hbreak_dict())
+    h1, h2 = keys(IceFloeTracker._make_hbreak_dict())
     A = zeros(Bool, 20, 20)
 
     # Make 4 H-connected groups on each corner of A

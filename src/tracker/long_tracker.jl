@@ -46,10 +46,10 @@ function long_tracker(props::Vector{DataFrame}, condition_thresholds, mc_thresho
         )
 
         # Get unmatched floes from day 1/2
-        unmatched1 = get_unmatched(props1, matched_pairs0.props1)
-        unmatched2 = get_unmatched(props2, matched_pairs0.props2)
+        unmatched1 = _get_unmatched(props1, matched_pairs0.props1)
+        unmatched2 = _get_unmatched(props2, matched_pairs0.props2)
         unmatched = vcat(unmatched1, unmatched2)
-        consolidated_matched_pairs = consolidate_matched_pairs(matched_pairs0)
+        consolidated_matched_pairs = _consolidate_matched_pairs(matched_pairs0)
 
         # Get _pairs: preliminary matched and unmatched floes
         trajectories = vcat(consolidated_matched_pairs, unmatched)
@@ -58,13 +58,13 @@ function long_tracker(props::Vector{DataFrame}, condition_thresholds, mc_thresho
 
     begin # Start 3:end iterations
         for i in 3:length(props)
-            trajectory_heads = get_trajectory_heads(trajectories)
+            trajectory_heads = _get_trajectory_heads(trajectories)
             new_pairs = IceFloeTracker.find_floe_matches(
                 trajectory_heads, props[i], condition_thresholds, mc_thresholds
             )
             # Get unmatched floes in day 2 (iterations > 2)
-            unmatched2 = get_unmatched(props[i], new_pairs.props2)
-            new_pairs = IceFloeTracker.get_matches(new_pairs)
+            unmatched2 = _get_unmatched(props[i], new_pairs.props2)
+            new_pairs = IceFloeTracker._get_matches(new_pairs)
 
             # Attach new matches and unmatched floes to trajectories
             trajectories = vcat(trajectories, new_pairs, unmatched2)
@@ -111,26 +111,26 @@ function find_floe_matches(
         matched_pairs = MatchedPairs(props2)
         for r in 1:nrow(props1) # TODO: consider using eachrow(props1) to iterate over rows
             # 1. Collect preliminary matches for floe r in matching_floes
-            matching_floes = makeemptydffrom(props2)
+            matching_floes = _makeemptydffrom(props2)
 
             for s in 1:nrow(props2) # TODO: consider using eachrow(props2) to iterate over rows
                 Δt = get_dt(props1, r, props2, s)
                 @debug "Considering floe 2:$s for floe 1:$r"
-                ratios, conditions, dist = compute_ratios_conditions(
+                ratios, conditions, dist = _compute_ratios_conditions(
                     (props1, r), (props2, s), Δt, condition_thresholds
                 )
 
-                if callmatchcorr(conditions)
+                if _callmatchcorr(conditions)
                     @debug "Getting mismatch and correlation for floe 1:$r and floe 2:$s"
                     (area_mismatch, corr) = matchcorr(
                         props1.mask[r], props2.mask[s], Δt; mc_thresholds.comp...
                     )
 
-                    if isfloegoodmatch(
+                    if _isfloegoodmatch(
                         conditions, mc_thresholds.goodness, area_mismatch, corr
                     )
                         @debug "** Found a good match for floe 1:$r => 2:$s"
-                        appendrows!(
+                        _appendrows!(
                             matching_floes,
                             props2[s, :],
                             (ratios..., area_mismatch, corr),
@@ -144,11 +144,11 @@ function find_floe_matches(
 
             # 2. Find the best match for floe r
             @debug "Finding best match for floe 1:$r"
-            best_match_idx = getidxmostminimumeverything(matching_floes.ratios)
+            best_match_idx = _getidxmostminimumeverything(matching_floes.ratios)
             @debug "Best match index for floe 1:$r: $best_match_idx"
             if isnotnan(best_match_idx)
-                bestmatchdata = getbestmatchdata(best_match_idx, r, props1, matching_floes) # might be copying data unnecessarily
-                addmatch!(matched_pairs, bestmatchdata)
+                bestmatchdata = _getbestmatchdata(best_match_idx, r, props1, matching_floes) # might be copying data unnecessarily
+                _addmatch!(matched_pairs, bestmatchdata)
                 @debug "Matched pairs" matched_pairs
             end
         end # of for r = 1:nrow(props1)
@@ -163,7 +163,7 @@ function find_floe_matches(
 
         matched_pairs = remove_collisions(matched_pairs)
         deletematched!((props1, props2), matched_pairs)
-        update!(match_total, matched_pairs)
+        _update!(match_total, matched_pairs)
     end # of while loop
     return match_total
 end

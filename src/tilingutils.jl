@@ -18,6 +18,7 @@ julia> getfit((10, 20), 5)
 
 julia> getfit((15, 25), 5)
 (3, 5)
+```
 """
 function getfit(dims::Tuple{Int,Int}, side_length::Int)::Tuple{Int,Int}
     return dims .÷ side_length
@@ -43,6 +44,7 @@ julia> get_area_missed(5, (10, 20))
 
 julia> get_area_missed(7, (10, 20))
 0.51
+```
 """
 function get_area_missed(side_length::Int, dims::Tuple{Int,Int})::Float64
     area = prod(dims)

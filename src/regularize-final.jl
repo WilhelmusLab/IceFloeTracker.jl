@@ -6,9 +6,9 @@ using IceFloeTracker: unsharp_mask, to_uint8, hbreak, morph_fill
     regularize_fill_holes(img, local_maxima_mask, factor, segment_mask, L0mask)
 
 Regularize `img` by:
-    1. increasing the maxima of `img` by a factor of `factor`
-    2. filtering `img` at positions where either `segment_mask` or `L0mask` are true
-    3. filling holes
+1. increasing the maxima of `img` by a factor of `factor`
+2. filtering `img` at positions where either `segment_mask` or `L0mask` are true
+3. filling holes
 
 # Arguments
 - `img`: The morphological residue image.
@@ -66,6 +66,7 @@ function _regularize(
     return reg_sharpened
 end
 
+# TODO: #590 decide whether get_final should be a private function
 """
     get_final(img, label, segment_mask, se_erosion, se_dilation)
 
