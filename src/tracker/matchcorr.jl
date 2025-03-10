@@ -14,8 +14,8 @@
 Compute the mismatch `mm` and  ψ-s-correlation `c` for floes with masks `f1` and `f2`.
 
 The criteria for floes to be considered equivalent is as follows:
-    - `c` greater than `mm`
-    - `_mm` is less than `mm`
+    - estimated correlation `c` greater than or equal to `psi`
+    - estimated mismatch `_mm` is less than `mm`
 
 A pair of `NaN` is returned for cases for which one of their mask dimension is too small or their sizes are not comparable.
 
