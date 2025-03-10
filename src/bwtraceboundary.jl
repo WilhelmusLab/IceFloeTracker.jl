@@ -10,7 +10,7 @@
 
 Trace the boundary of objects in `image`
 
-Background pixels are represented as zero. The algorithm traces the boundary _counterclockwise and an initial point `P0` can be specified. If more than one boundary is detected and an initial point is provided, the boundary that contains this point is returned as a vector of CartesianIndex types. Otherwise an array of vectors is returned with all the detected boundaries in `image`.
+Background pixels are represented as zero. The algorithm traces the boundary counterclockwise and an initial point `P0` can be specified. If more than one boundary is detected and an initial point is provided, the boundary that contains this point is returned as a vector of CartesianIndex types. Otherwise an array of vectors is returned with all the detected boundaries in `image`.
 
 # Arguments
 - `image`: image, preferably binary with one single object, whose objects' boundaries are to be traced.
@@ -168,7 +168,8 @@ function makecontourstartatP(P::CartesianIndex{2}, contour::Vector{CartesianInde
 end
 
 """
-\1"""
+Check if `P` is in contour list, if so return the index of the contour that contains `P`, otherwise return false.
+"""
 function _isincountourlist(
     P::Union{CartesianIndex{2},Tuple{Int64,Int64}},
     contour_list::Vector{Vector{CartesianIndex}},
@@ -201,7 +202,8 @@ function _from_to(
 end
 
 """
-\1"""
+Utility function: Get all pixel coords for detected border.
+"""
 function _detect_move!(
     image::Matrix{Float64},
     p0::CartesianIndex{2},
@@ -261,19 +263,22 @@ function _detect_move!(
 end
 
 """
-\1"""
+Make a clockwise turn from the `dir` direction
+"""
 function _clockwise(dir::Int)
     return (dir) % 8 + 1
 end
 
 """
-\1"""
+Make a counterclockwise turn from the `dir` direction
+"""
 function _counterclockwise(dir::Int)
     return (dir + 6) % 8 + 1
 end
 
 """
-\1"""
+move from current pixel to the next in given direction
+"""
 function _move(
     pixel::CartesianIndex{2},
     image::Matrix{Float64},
