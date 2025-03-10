@@ -126,7 +126,7 @@ function preprocess_tiling(
         equalized_gray_sharpened_reconstructed[landmask.dilated] .= 0
     end
 
-    # TODO: Steps 6 and 7 can be done in parallel as they are independent
+    # TODO: #592 Steps 6 and 7 can be done in parallel as they are independent
     begin
         @debug "Step 6: Repeat step 5 with equalized_gray (landmasking, no sharpening)"
         equalized_gray_reconstructed = deepcopy(equalized_gray)

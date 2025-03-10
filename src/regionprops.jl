@@ -227,7 +227,7 @@ function cropfloe(floesimg::FloeLabelsImage, props::DataFrame, i::Integer)
     end
 end
 
-# TODO: decide cropfloe should be a private function
+# TODO: #591 decide cropfloe should be a private function
 """
     cropfloe(floesimg, min_row, min_col, max_row, max_col)
 

@@ -182,7 +182,7 @@ end
 #= Conditions for a match:
     Condition 1: displacement time delta =#
 
-# TODO: decide whether get_time_space_proximity_condition should be private
+# TODO: #588 decide whether get_time_space_proximity_condition should be private
 """
     get_time_space_proximity_condition(p1, p2, delta_time, search_thresholds=(dt = (30, 100, 1300), dist=(15, 30, 120)))
 
@@ -667,7 +667,7 @@ end
 
 ## LatLon functions originally from IFTPipeline.jl
 
-# TODO: Expand on convertcentroid! and converttounits! docstrings
+# TODO: #587 Expand on convertcentroid! and converttounits! docstrings
 """
     convertcentroid!(propdf, latlondata, colstodrop)
 
