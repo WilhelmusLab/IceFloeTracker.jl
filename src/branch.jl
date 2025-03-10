@@ -43,7 +43,7 @@ end
     func1::Function=_branch_candidates_func,
     func2::Function=_connected_background_count,)
 
-Filter `img` with `_operator_lut` using `lut1` and `lut2`.
+Filter `img` with `_operator_lut` using `func1` and `func2`.
 """
 function _branch_filter(
     img::AbstractArray{Bool},
