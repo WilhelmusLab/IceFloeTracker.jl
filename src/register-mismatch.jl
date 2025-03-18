@@ -4,7 +4,7 @@
                   mxshift::Tuple{Int64, Int64}=(10,10),
                   mxrot::Float64=pi/4;
                   kwargs...
-                  )                   
+                  )
 
 Estimate a rigid transformation (translation + rotation) that minimizes the 'mismatch' of aligning `moving` with `fixed` using the [QuadDIRECT algorithm](https://github.com/timholy/QuadDIRECT.jl#readme).
 
@@ -30,5 +30,6 @@ function mismatch(
         centered(fixed), centered(moving), mxshift, mxrot; print_interval=typemax(Int)
     )
 
-    return (mm=mm, rot=acosd(tfm.linear[1]))
+    θ = atand(tfm.linear[3] / tfm.linear[1])
+    return (mm=mm, rot=θ)
 end
