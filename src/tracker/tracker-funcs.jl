@@ -525,9 +525,11 @@ end
 """
     addψs!(props::Vector{DataFrame})
 
-Add the ψ-s curves to each member of `props`. Note: each member of props must have a `mask` column with the boundary of each floe.
+Add the ψ-s curves to each member of `props`.
 
-To add floe boundaries see [`addfloemasks!`](@ref).
+Note: each member of `props` must have a `mask` column with a binary image representing the floe.
+
+To add floe masks see [`addfloemasks!`](@ref).
 """
 function addψs!(props::Vector{DataFrame})
     for prop in props
