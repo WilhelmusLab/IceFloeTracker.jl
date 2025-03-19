@@ -50,7 +50,7 @@ using HDF5
 export HDF5, PyCall
 export DataFrames, DataFrame, nrow, Not, select!
 export Dates, Time, Date, DateTime, @dateformat_str
-export addlatlon!, getlatlon, convertcentroid!, converttounits!, dropcols!
+export addlatlon!, getlatlon, convertcentroid!, converttounits!, dropcols!, latlon
 
 include("utils.jl")
 include("persist.jl")
@@ -79,6 +79,7 @@ include("imcomplement.jl")
 include("imadjust.jl")
 include("ice_masks.jl")
 include("regularize-final.jl")
+include("latlon.jl")
 
 function get_version_from_toml(pth=dirname(dirname(pathof(IceFloeTracker))))::VersionNumber
     toml = TOML.parsefile(joinpath(pth, "Project.toml"))
