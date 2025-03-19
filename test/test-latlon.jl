@@ -31,7 +31,7 @@ end
         @test expected_lon == lon
     end
     @testset "latlon.jl" begin
-        _, lon, lat, X, Y = latlon(img)
+        _, lon, lat, X, Y = latlon(imgpth)
         lat, lon, X, Y = round4.([lat, lon, X, Y])
 
         @test expected_X == X
