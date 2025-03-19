@@ -1,5 +1,4 @@
-import ArchGDAL
-const AG = ArchGDAL
+import ArchGDAL as AG
 using Proj
 
 # px2xy function from creator of ArchGDAL https://github.com/yeesian/ArchGDAL.jl/issues/68
@@ -16,9 +15,8 @@ Reads the GeoTiff located at <imgpath>, extracts the coordinate reference system
 and produces a lookup table with for the column and row values in the same projection
 as the GeoTiff and a 2D array for latitude and longitude.
 """
-
-# rewrite of the latlon.py library with Julia
 function latlon(imgpath)
+# rewrite of the latlon.py library with Julia
     # readraster automatically detects GeoTIFF
     im = AG.readraster(imgpath) 
 
@@ -27,21 +25,20 @@ function latlon(imgpath)
 
     # get the raster projection information and format it
     p = AG.getproj(im); 
-    crs = AG.toPROJ4(AG.importWKT(p));
+    crs = AG.toPROJ4(AG.importWKT(p))
 
-    nrows, ncols, nlayers = size(im)
+    nrows, ncols, _ = size(im)
 
     # Get the X and Y vectors
-    # Probably some way exists to do a broadcast and get X and Y in one fell swoop
     gt = AG.getgeotransform(im)
-    X = [px2xy(geotransform,i-1,0)[1] for i in 1:nrows];
-    Y = [px2xy(geotransform,0,j-1)[2] for j in 1:ncols];
+    X = [px2xy(gt,i-1,0)[1] for i in 1:nrows]
+    Y = [px2xy(gt,0,j-1)[2] for j in 1:ncols]
 
     # Similar to PyProj, going from source (polar stereo) to target (lat/lon)
     trans = Proj.Transformation(crs, ref)
     lonlat = [trans(x, y) for y in Y, x in X]
     lon = first.(lonlat)
-    lat = last.(lonlat);
+    lat = last.(lonlat)
 
     return (crs=AG.toEPSG(AG.importWKT(p)),
             longitude=lon,
