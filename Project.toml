@@ -5,6 +5,7 @@ version = "0.6.4"
 
 [deps]
 AxisArrays = "39de3d68-74b9-583c-8d2d-e117c070f3a9"
+CSV = "336ed68f-0bac-5ca0-87d4-7b16caf5d00b"
 Clustering = "aaaa29a8-35af-508c-8bc3-b662a17a0fe5"
 ColorTypes = "3da002f7-5984-5a60-b8a6-cbb66c0b333f"
 CoordinateTransformations = "150eb455-5306-5404-9cee-2592286d6298"
@@ -56,6 +57,7 @@ UpdateJulia = "770da0de-323d-4d28-9202-0e205c1e0aff"
 
 [compat]
 AxisArrays = "0.4"
+CSV = "0.10.15"
 Clustering = "0.15"
 ColorTypes = "0.11"
 CoordinateTransformations = "0.6"
