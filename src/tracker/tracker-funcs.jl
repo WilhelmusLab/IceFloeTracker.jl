@@ -52,7 +52,15 @@ end
 
 Add `newmatch` to `matched_pairs`.
 """
-function addmatch!(matched_pairs::MatchedPairs, newmatch)
+function addmatch!(matched_pairs::MatchedPairs, newmatch, i, r)
+    if newmatch.props1.uuid in matched_pairs.props1.uuid
+        @warn "Duplicate match found. Not adding to matched pairs."
+        @assert false
+    end
+    # if r > 1
+    # Main.foo = (props1=matched_pairs.props1[!, Main.cols], newmatch=newmatch.props1[Main.cols])
+    # i==3 && @assert false
+    # end
     push!(matched_pairs.props1, newmatch.props1)
     push!(matched_pairs.props2, newmatch.props2)
     push!(matched_pairs.ratios, newmatch.ratios)
@@ -619,6 +627,14 @@ function adduuid!(dfs::Vector{DataFrame})
     return dfs
 end
 
+function adduuid!(dfs::Vector{DataFrame}, col::Symbol=:_label)
+    for (i, df) in enumerate(dfs)
+        df[!, col] = ["day_$(i)_#$(j)" for j in 1:nrow(df)]
+    end
+    return dfs
+end
+
+
 """
     reset_id!(df, col)
 
@@ -664,7 +680,7 @@ end
 """
     get_matches(matched_pairs)
 
-Return a dataframe with the properties and goodness ratios of the matched pairs (right-hand matches) in `matched_pairs`. Used in iterations `1:end`.
+Return a dataframe with the properties and goodness ratios of the matched pairs (right-hand matches) in `matched_pairs`. Used in iterations `3:end`.
 """
 function get_matches(matched_pairs::MatchedPairs)
     # Ensure UUIDs are consistent

@@ -42,34 +42,94 @@ function long_tracker(props::Vector{DataFrame}, condition_thresholds, mc_thresho
     begin # 0th iteration: pair floes in day 1 and day 2 and add unmatched floes to _pairs
         props1, props2 = props[1:2]
         matched_pairs0 = find_floe_matches(
-            props1, props2, condition_thresholds, mc_thresholds
+            props1, props2, condition_thresholds, mc_thresholds, 2
         )
+        @show props1[!, Main.cols]
+        @show props2[!, Main.cols]
+        @show matched_pairs0
+        # @assert false
+        Main.foo = (p1=matched_pairs0.props1[!, Main.cols], p2=matched_pairs0.props2[!, Main.cols])
 
         # Get unmatched floes from day 1/2
         unmatched1 = get_unmatched(props1, matched_pairs0.props1)
+        @info "Unmatched floes in day 1:"
+        @show unmatched1[!, Main.cols]
         unmatched2 = get_unmatched(props2, matched_pairs0.props2)
+        @info "Unmatched floes in day 2:"
+        @show unmatched2[!, Main.cols]
         unmatched = vcat(unmatched1, unmatched2)
+        @info "Unmatched floes in day 1 and 2:"
+        @show unmatched[!, Main.cols]
         consolidated_matched_pairs = consolidate_matched_pairs(matched_pairs0)
 
         # Get _pairs: preliminary matched and unmatched floes
         trajectories = vcat(consolidated_matched_pairs, unmatched)
         trajectories[:, [:uuid, :passtime, :area_mismatch, :corr]]
     end
+    Main.tafter2 = trajectories
 
     begin # Start 3:end iterations
         for i in 3:length(props)
+            @info "Processing Day $i"
             trajectory_heads = get_trajectory_heads(trajectories)
-            new_pairs = IceFloeTracker.find_floe_matches(
-                trajectory_heads, props[i], condition_thresholds, mc_thresholds
+            candidate_props = props[i]
+            Main.foo = (t=trajectories, h=trajectory_heads)
+            # @assert false
+            begin # Check trajectories heads
+                tg = groupby(trajectory_heads, :uuid)
+                tcounts = [nrow(g) for g in tg]
+                mxcounts = maximum(tcounts)
+                @assert mxcounts == 1
+                @info "Trajectory heads"
+                @show sort(trajectory_heads[!, Main.cols], "uuid")
+            end
+
+            floes_in_day_i = nrow(candidate_props)
+            new_matches = IceFloeTracker.find_floe_matches(
+                trajectory_heads, candidate_props, condition_thresholds, mc_thresholds, i
             )
-            # Get unmatched floes in day 2 (iterations > 2)
-            unmatched2 = get_unmatched(props[i], new_pairs.props2)
-            new_pairs = IceFloeTracker.get_matches(new_pairs)
+
+            # Get unmatched floes in "day-2" (props[i]) (iterations > 2)
+            unmatched2 = get_unmatched(props[i], new_matches.props2)
+            @info "Unmatched floes in day $i:"
+            @show unmatched2[!, Main.cols]
+            new_pairs = IceFloeTracker.get_matches(new_matches)
+            @show new_pairs[!, Main.cols]
+            @assert nrow(new_pairs) + nrow(unmatched2) == floes_in_day_i
 
             # Attach new matches and unmatched floes to trajectories
+            Main.foo = (
+                trajectories=trajectories[!, Main.cols],
+                new_pairs=new_pairs[!, Main.cols],
+                unmatched2=unmatched2[!, Main.cols],
+                new_matches=new_matches,
+            )
+
             trajectories = vcat(trajectories, new_pairs, unmatched2)
+
             DataFrames.sort!(trajectories, [:uuid, :passtime])
             _swap_last_values!(trajectories)
+
+            # Check trajectories counts
+            tg = groupby(trajectories, :uuid)
+            tcounts = [nrow(g) for g in tg]
+            @show tcounts
+            mxcounts = maximum(tcounts)
+            argmaxcounts = argmax(tcounts)
+            @show mxcounts argmaxcounts
+            @show tg[argmaxcounts][!, Main.cols]
+            @assert mxcounts <= i
+
+            if i == 4
+                @info "Terminating after Day $i"
+                # @assert false
+                break
+            end
+
+            # @show groupby(new_pairs[!, Main.cols], :uuid)
+            # if i == 4
+            #     @assert false
+            # end
         end
     end
     trajectories = IceFloeTracker.drop_trajectories_length1(trajectories, :uuid)
@@ -97,11 +157,17 @@ Find matches for floes in `tracked` from floes in  `candidate_props`.
 - `mc_thresholds`: thresholds for area mismatch and psi-s shape correlation
 """
 function find_floe_matches(
-    tracked::T, candidate_props::T, condition_thresholds, mc_thresholds
+    heads::T, candidate_props, condition_thresholds, mc_thresholds, i
 ) where {T<:AbstractDataFrame}
-    props1 = deepcopy(tracked)
+    props1 = deepcopy(heads)
     props2 = deepcopy(candidate_props)
+    # Main.foo = (props1=props1[!, Main.cols], props2=props2[!, Main.cols])
+    # i == 4 && @assert false
+    i == 4 && @show heads[!, Main.cols]
+    # @assert false
     match_total = MatchedPairs(props2)
+
+    while_rounds = 1
     while true # there are no more floes to match in props1
 
         # This routine mutates both props1 and props2.
@@ -147,9 +213,32 @@ function find_floe_matches(
             best_match_idx = getidxmostminimumeverything(matching_floes.ratios)
             @debug "Best match index for floe 1:$r: $best_match_idx"
             if isnotnan(best_match_idx)
+                # @assert false
                 bestmatchdata = getbestmatchdata(best_match_idx, r, props1, matching_floes) # might be copying data unnecessarily
-                addmatch!(matched_pairs, bestmatchdata)
+                i == 4 && @info "Processing day $i"
+                # @assert false
+                if i == 4 && r > 2
+                    @info "From find_floe_matches, bestmatchdata"
+                    p1 = matched_pairs.props1[!, Main.cols]
+                    p2 = matched_pairs.props2[!, Main.cols]
+                    @show p1
+                    @show p2
+                    @show bestmatchdata
+                    Main.foo = (p1=p1, p2=p2, bestmatchdata=bestmatchdata)
+                    # @assert false
+                end
+                addmatch!(matched_pairs, bestmatchdata, i, r)
                 @debug "Matched pairs" matched_pairs
+
+                # @show matched_pairs.props1[!, Main.cols]
+                # @show matched_pairs.props2[!, Main.cols]
+                Main.foo = (
+                    props1=bestmatchdata.props1[Main.cols],
+                    props2=bestmatchdata.props2[Main.cols],
+                )
+                # @assert false
+                # @show matched_pairs.ratios[!, Main.cols]
+                # @show matched_pairs.dist[!, Main.cols]
             end
         end # of for r = 1:nrow(props1)
 
@@ -160,11 +249,51 @@ function find_floe_matches(
         #= Resolve collisions:
         Are there floes in day k+1 paired with more than one
         floe in day k? If so, keep the best matching pair and remove all others. =#
+        if i == 4 && while_rounds == 1
+            @info "Matched pairs before removing collisions"
+            @info "while round: $while_rounds day: $i"
+            bar = sort(
+                hcat(matched_pairs.props1, matched_pairs.props2; makeunique=true), :uuid
+            )
+            Main.mp_prior_collision_removal = bar
+            println(sort(bar[!, [:uuid, :_label, :uuid_1, :_label_1]], :uuid))
+            # @assert false
+        end
 
         matched_pairs = remove_collisions(matched_pairs)
+        # if i == 4
+        #     Main.mp_post_collision_removal = matched_pairs
+        Main.check_matched_pairs(matched_pairs)
+        # @assert false
+        # end
+        @info "Getting ready to delete matched pairs from props1 and props2"
+        countofmatches = nrow(matched_pairs.props1)
+        @info "There are $countofmatches matched pairs"
+        # @assert false
+        @show nrow(heads)
+        @show nrow(props1)
+        @show nrow(props2)
+        # @assert false
+
         deletematched!((props1, props2), matched_pairs)
-        update!(match_total, matched_pairs)
+
+        if i == 4 && while_rounds == 1
+            @info "After deleting matched pairs from props1 and props2"
+            @show nrow(props1)
+            @show nrow(props2)
+            @info "Unmatched floes in day $i so far:"
+            @show props1[!, Main.cols]
+            @show matched_pairs.props1[!, Main.cols]
+            @show matched_pairs.props2[!, Main.cols]
+            # @assert false
+            update!(match_total, matched_pairs)
+        end
+        while_rounds += 1
     end # of while loop
+    Main.foo = (match_total=match_total,)
+    # i == 4 && @assert false
+    @info "total while rounds: $while_rounds"
+    # @assert false
     return match_total
 end
 
