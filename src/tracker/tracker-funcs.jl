@@ -695,12 +695,12 @@ function convertcentroid!(propdf, latlondata, colstodrop)
         [
             latlondata[c][Int(round(x)), Int(round(y))] for
             (x, y) in zip(propdf.row_centroid, propdf.col_centroid)
-        ] for c in ["latitude", "longitude"]
+        ] for c in [:latitude, :longitude]
     ]
 
     x, y = [
         [latlondata[c][Int(round(z))] for z in V] for
-        (c, V) in zip(["Y", "X"], [propdf.row_centroid, propdf.col_centroid])
+        (c, V) in zip([:Y, :X], [propdf.row_centroid, propdf.col_centroid])
     ]
 
     propdf.latitude = latitude
@@ -729,7 +729,7 @@ function converttounits!(propdf, latlondata, colstodrop)
         return nothing
     end
     convertcentroid!(propdf, latlondata, colstodrop)
-    x = latlondata["X"]
+    x = latlondata[:X]
     dx = abs(x[2] - x[1])
     convertarea(area) = area * dx^2 / 1e6
     convertlength(length) = length * dx / 1e3
