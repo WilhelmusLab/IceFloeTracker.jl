@@ -50,7 +50,7 @@ using HDF5
 export HDF5, PyCall
 export DataFrames, DataFrame, nrow, Not, select!
 export Dates, Time, Date, DateTime, @dateformat_str
-export addlatlon!, getlatlon, convertcentroid!, converttounits!, dropcols!, latlon
+export addlatlon!, convertcentroid!, converttounits!, dropcols!, latlon
 
 # For the tracker
 export addfloemasks!, add_passtimes!, addψs!, long_tracker
@@ -94,7 +94,6 @@ const IFTVERSION = get_version_from_toml()
 const sk_measure = PyNULL()
 const sk_morphology = PyNULL()
 const sk_exposure = PyNULL()
-const getlatlon = PyNULL()
 
 function __init__()
     skimage = "scikit-image=0.25.1"
