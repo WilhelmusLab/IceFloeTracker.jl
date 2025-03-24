@@ -1,4 +1,4 @@
-using IceFloeTracker: getlatlon
+using IceFloeTracker: latlon
 
 function round4(v)
     # round to 4 decimal places to avoid weirdness in different arch/os
@@ -17,19 +17,6 @@ end
     expected_lat, expected_lon, expected_X, expected_Y =
         round4.([expected_lat, expected_lon, expected_X, expected_Y])
 
-    @testset "getlatlon.py" begin
-        latlon = getlatlon(imgpth)
-        X = latlon["X"]
-        Y = latlon["Y"]
-        lat = latlon["latitude"]
-        lon = latlon["longitude"]
-        lat, lon, X, Y = round4.([lat, lon, X, Y])
-
-        @test expected_X == X
-        @test expected_Y == Y
-        @test expected_lat == lat
-        @test expected_lon == lon
-    end
     @testset "latlon.jl" begin
         _, lon, lat, X, Y = latlon(imgpth)
         lat, lon, X, Y = round4.([lat, lon, X, Y])
