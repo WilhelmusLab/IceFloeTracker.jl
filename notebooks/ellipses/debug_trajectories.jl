@@ -74,7 +74,9 @@ begin
     )
 end
 
-foo.trajectories[foo.trajectories.uuid .== "loVjHZ7UHVGv", :] |> println
+foo
+
+foo[foo.uuid .== "loVjHZ7UHVGv", cols] |> println
 foo.new_pairs[foo.new_pairs.uuid .== "loVjHZ7UHVGv", :] |> println
 sort!(foo.new_matches.props1[!, cols], :uuid) |> println
 foo.new_matches.props1[!, cols] |> println

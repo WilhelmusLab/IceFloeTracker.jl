@@ -389,8 +389,10 @@ function getidxmostminimumeverything(ratiosdf)
 
     # Invert the correlation ratio for minima computation so high correlation is favored
     _ratiosdf[!, corr_col] = 1 .- _ratiosdf[!, corr_col]
+    _mode = mode([argmin(col) for col in eachcol(_ratiosdf)])
+    @assert length(_mode) == 1
     # TODO: #560 handle ties better than what mode does (chooses first mode found)
-    return mode([argmin(col) for col in eachcol(_ratiosdf)])
+    return _mode
 end
 
 """
@@ -771,9 +773,15 @@ function remove_collisions(pairs::T)::T where {T<:MatchedPairs}
     rename!(pairs.ratios, nmratios)
 
     pairsdf = hcat(pairs.props1, pairs.props2, pairs.ratios, DataFrame(dist=pairs.dist), makeunique=true)
+
     result = combine(groupby(pairsdf, :uuid_1),
         g -> @view g[getidxmostminimumeverything(g[!, nmratios]), :])
-    p1 = result[:, nm1]
+    _groups = groupby(result, :uuid_1)
+    Main.foo = result
+    [@assert nrow(g) == 1 for g in _groups]
+
+    # @assert false
+        p1 = result[:, nm1]
     p2 = rename(result[:, nm2], nm1)
     ratios = rename(result[:, nmratios], names(makeemptyratiosdf()))
     return IceFloeTracker.MatchedPairs(p1, p2, ratios, result.dist)
