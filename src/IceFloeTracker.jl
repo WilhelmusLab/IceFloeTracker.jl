@@ -50,7 +50,7 @@ using HDF5
 export HDF5, PyCall
 export DataFrames, DataFrame, nrow, Not, select!
 export Dates, Time, Date, DateTime, @dateformat_str
-export addlatlon!, getlatlon, convertcentroid!, converttounits!, dropcols!, latlon
+export addlatlon!, convertcentroid!, converttounits!, dropcols!, latlon
 
 # For the tracker
 export addfloemasks!, add_passtimes!, addψs!, long_tracker
@@ -94,17 +94,12 @@ const IFTVERSION = get_version_from_toml()
 const sk_measure = PyNULL()
 const sk_morphology = PyNULL()
 const sk_exposure = PyNULL()
-const getlatlon = PyNULL()
 
 function __init__()
     skimage = "scikit-image=0.25.1"
     copy!(sk_measure, pyimport_conda("skimage.measure", skimage))
     copy!(sk_exposure, pyimport_conda("skimage.exposure", skimage))
     copy!(sk_morphology, pyimport_conda("skimage.morphology", skimage))
-    pyimport_conda("pyproj", "pyproj=3.7.0")
-    pyimport_conda("rasterio", "rasterio=1.4.3")
-    @pyinclude(joinpath(@__DIR__, "latlon.py"))
-    copy!(getlatlon, py"getlatlon")
     return nothing
 end
 
@@ -166,36 +161,36 @@ julia> IceFloeTracker.MorphSE.dilate(a, se)
 ```
 """
 module MorphSE
-    using ImageCore
-    using ColorTypes
-    using LoopVectorization
-    using OffsetArrays
-    using TiledIteration: EdgeIterator
-    using DataStructures
-    include("morphSE/StructuringElements.jl")
-    using .StructuringElements
-    include("morphSE/extreme_filter.jl")
-    include("morphSE/utils.jl")
-    include("morphSE/dilate.jl")
-    include("morphSE/erode.jl")
-    include("morphSE/opening.jl")
-    include("morphSE/closing.jl")
-    include("morphSE/bothat.jl")
-    include("morphSE/mreconstruct.jl")
-    include("morphSE/fill_holes.jl")
+using ImageCore
+using ColorTypes
+using LoopVectorization
+using OffsetArrays
+using TiledIteration: EdgeIterator
+using DataStructures
+include("morphSE/StructuringElements.jl")
+using .StructuringElements
+include("morphSE/extreme_filter.jl")
+include("morphSE/utils.jl")
+include("morphSE/dilate.jl")
+include("morphSE/erode.jl")
+include("morphSE/opening.jl")
+include("morphSE/closing.jl")
+include("morphSE/bothat.jl")
+include("morphSE/mreconstruct.jl")
+include("morphSE/fill_holes.jl")
 end
 
 include("preprocess_tiling.jl")
 
 module Register
-    include("Register/CenterIndexedArrays.jl-0.2.0/CenterIndexedArrays.jl")
-    include("Register/RegisterCore.jl-0.2.4/src/RegisterCore.jl")
-    include("Register/RegisterMismatchCommon.jl-master/RegisterMismatchCommon.jl")
-    include("Register/RegisterUtilities.jl-master/RegisterUtilities.jl")
-    include("Register/RFFT.jl-master/RFFT.jl")
-    include("Register/RegisterDeformation.jl-0.4.4/RegisterDeformation.jl")
-    include("Register/QuadDIRECT.jl-master/QuadDIRECT.jl")
-    include("Register/RegisterQD.jl-0.3.1/RegisterQD.jl")
-    include("Register/RegisterMismatch.jl-0.4.0/RegisterMismatch.jl")
+include("Register/CenterIndexedArrays.jl-0.2.0/CenterIndexedArrays.jl")
+include("Register/RegisterCore.jl-0.2.4/src/RegisterCore.jl")
+include("Register/RegisterMismatchCommon.jl-master/RegisterMismatchCommon.jl")
+include("Register/RegisterUtilities.jl-master/RegisterUtilities.jl")
+include("Register/RFFT.jl-master/RFFT.jl")
+include("Register/RegisterDeformation.jl-0.4.4/RegisterDeformation.jl")
+include("Register/QuadDIRECT.jl-master/QuadDIRECT.jl")
+include("Register/RegisterQD.jl-0.3.1/RegisterQD.jl")
+include("Register/RegisterMismatch.jl-0.4.0/RegisterMismatch.jl")
 end
 end
