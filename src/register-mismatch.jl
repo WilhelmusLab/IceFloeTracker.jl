@@ -1,34 +1,29 @@
-"""
-    mismatch(fixed::AbstractArray,
-                  moving::AbstractArray,
-                  mxshift::Tuple{Int64, Int64}=(10,10),
-                  mxrot::Float64=pi/4;
-                  kwargs...
-                  )                   
 
-Estimate a rigid transformation (translation + rotation) that minimizes the 'mismatch' of aligning `moving` with `fixed` using the [QuadDIRECT algorithm](https://github.com/timholy/QuadDIRECT.jl#readme).
+"""
+    mismatch(
+        fixed::AbstractArray,
+        moving::AbstractArray,
+        test_angles::AbstractArray,
+    )                   
+
+Estimate a rotation that minimizes the 'mismatch' of aligning `moving` with `fixed`.
 
 Returns a pair with the mismatch score `mm` and the associated registration angle `rot`.
 
 # Arguments
 - `fixed`,`moving`: images to align via a rigid transformation
-- `mxshift`: maximum allowed translation in units of array indices (default set to `(10,10)`)
-- `mxrot`: maximum allowed rotation in radians (default set to `π/4`)
-- `thresh`: minimum sum-of-squared-intensity overlap between the images (default is 10% of the sum-of-squared-intensity of `fixed`)
-- `kwargs`: other arguments such as `tol`, `ftol`, and `fvalue` (see [QuadDIRECT.analyze](https://github.com/timholy/QuadDIRECT.jl/blob/d6170f14a49f57552c59c9b4533a4b75a3ab3c45/src/algorithm.jl#L459) for details)
-
+- `test_angles`: candidate angles to check for rotations by, in degrees
 ```
 """
 function mismatch(
     fixed::AbstractArray,
-    moving::AbstractArray,
-    mxshift::Tuple{Int64,Int64}=(100, 100),
-    mxrot::Float64=pi / 4;
-    kwargs...,
+    moving::AbstractArray;
+    test_angles=sort(reverse(range(; start=-180, stop=180, step=5)[1:(end-1)]); by=abs),
 )
-    tfm, mm = IceFloeTracker.Register.RegisterQD.qd_rigid(
-        centered(fixed), centered(moving), mxshift, mxrot; print_interval=typemax(Int)
-    )
-
-    return (mm=mm, rot=acosd(tfm.linear[1]))
+    shape_differences = shape_difference_rotation(fixed, moving, deg2rad.(test_angles))
+    best_match = argmin((x) -> x.shape_difference, shape_differences)
+    rotation_degrees = rad2deg(best_match.angle)
+    normalized_area = (sum(fixed) + sum(moving)) / 2
+    normalized_mismatch = best_match.shape_difference / normalized_area
+    return (mm=normalized_mismatch, rot=rotation_degrees)
 end
