@@ -13,14 +13,13 @@ using IceFloeTracker: get_rotation_shape_difference
             masks;
             precision_goal_degrees::Float64=10.0,
             target_fraction_ok::Float64=0.99, # TODO: Ideally this would be 1.0
-            rotation_function=get_rotation_shape_difference,
             angle_aliases=[0.0],
         )
             results = []
             for (θ1, mask1) in masks
                 for (θ2, mask2) in masks
                     Δθ = oriented_angle_between_angles(deg2rad(θ1), deg2rad(θ2))
-                    Δθ_measured = rotation_function(mask1, mask2)
+                    Δθ_measured = get_rotation_shape_difference(mask1, mask2; mode=:counterclockwise)
                     absolute_error_wrt_all_aliased_angles = [
                         abs(oriented_angle_between_angles(Δθ + offset, Δθ_measured)) for
                         offset in angle_aliases

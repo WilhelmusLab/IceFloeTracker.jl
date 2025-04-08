@@ -76,9 +76,9 @@ Computes the shape difference between im_reference and im_target for each angle 
 The reference image is held constant, while the target image is rotated. The test_angles are interpreted
 as the angle of rotation from target to reference, so to find the best match, we rotate the reverse
 direction. A perfect match at angle A would imply im_target is the same shape as if im_reference was
-rotated by A degrees.
+rotated by A degrees. Use `mode=:counterclockwise` to get counterclockwise angles.
 """
-function shape_difference_rotation(im_reference, im_target, test_angles)
+function shape_difference_rotation(im_reference, im_target, test_angles; mode=:clockwise)
     imref_padded, imtarget_padded = pad_images(im_reference, im_target)
     shape_differences = Array{
         NamedTuple{(:angle, :shape_difference),Tuple{Float64,Float64}}
@@ -90,8 +90,15 @@ function shape_difference_rotation(im_reference, im_target, test_angles)
     idx = 1
     # r_init, c_init = compute_centroid(imref_padded, rounded=true)
     for angle in test_angles
+
+        if mode === :clockwise
+            angle = angle  # no-op
+        elseif mode === :counterclockwise
+            angle = -angle  # image rotation algorithm works clockwise by default
+        end
+
         # try rotating image back by angle
-        imtarget_rotated = imrotate_bin(imtarget_padded, -(-angle))
+        imtarget_rotated = imrotate_bin(imtarget_padded, -angle)
 
         im1, im2 = crop_to_shared_centroid(imref_padded, imtarget_rotated)
 
