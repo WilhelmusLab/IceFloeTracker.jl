@@ -120,13 +120,13 @@ function shape_difference_rotation(im_reference, im_target, test_angles; mode=:c
     return shape_differences
 end
 
-function get_rotation_shape_difference(
+function register(
     mask1,
     mask2;
     test_angles=sort(reverse(range(; start=-π, stop=π, step=π / 36)[1:(end-1)]); by=abs),
     mode=:clockwise,
 )
-    shape_differences = shape_difference_rotation(mask1, mask2, test_angles; mode=mode)
+    shape_differences = shape_difference_rotation(mask1, mask2, test_angles; mode)
     best_match = argmin((x) -> x.shape_difference, shape_differences)
     return best_match.angle
 end
