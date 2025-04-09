@@ -1,4 +1,3 @@
-
 """
     mismatch(
         fixed::AbstractArray,
@@ -20,9 +19,9 @@ function mismatch(
     moving::AbstractArray;
     test_angles=sort(reverse(range(; start=-180, stop=180, step=5)[1:(end-1)]); by=abs),
 )
-    shape_differences = shape_difference_rotation(fixed, moving, deg2rad.(test_angles))
+    shape_differences = shape_difference_rotation(fixed, moving, test_angles; imrotate_function=imrotate_bin_clockwise_degrees)
     best_match = argmin((x) -> x.shape_difference, shape_differences)
-    rotation_degrees = rad2deg(best_match.angle)
+    rotation_degrees = best_match.angle
     normalized_area = (sum(fixed) + sum(moving)) / 2
     normalized_mismatch = best_match.shape_difference / normalized_area
     return (mm=normalized_mismatch, rot=rotation_degrees)

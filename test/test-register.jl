@@ -1,6 +1,6 @@
 using Dates
 using LinearAlgebra: dot, det, norm
-using IceFloeTracker: register
+using IceFloeTracker: register, imrotate_bin_counterclockwise_radians
 
 @testset "rotation" begin
     @testset "individual rotations" begin
@@ -19,7 +19,11 @@ using IceFloeTracker: register
             for (θ1, mask1) in masks
                 for (θ2, mask2) in masks
                     Δθ = oriented_angle_between_angles(deg2rad(θ1), deg2rad(θ2))
-                    Δθ_measured = register(mask1, mask2; mode=:counterclockwise)
+                    Δθ_measured = register(
+                        mask1,
+                        mask2;
+                        imrotate_function=imrotate_bin_counterclockwise_radians
+                    )
                     absolute_error_wrt_all_aliased_angles = [
                         abs(oriented_angle_between_angles(Δθ + offset, Δθ_measured)) for
                         offset in angle_aliases
