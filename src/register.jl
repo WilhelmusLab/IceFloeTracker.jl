@@ -78,11 +78,15 @@ function crop_to_shared_centroid(im1, im2)
 end
 
 """
-Computes the shape difference between im_reference and im_target for each angle (degrees) in test_angles.
+Computes the shape difference between im_reference and im_target for each angle in test_angles.
 The reference image is held constant, while the target image is rotated. The test_angles are interpreted
 as the angle of rotation from target to reference, so to find the best match, we rotate the reverse
-direction. A perfect match at angle A would imply im_target is the same shape as if im_reference was
-rotated by A degrees. Use `mode=:counterclockwise` to get counterclockwise angles.
+direction. A perfect match at angle `A` would imply im_target is the same shape as if im_reference was
+rotated by `A`. 
+Use `imrotate_function=imrotate_bin_clockwise_radians` to get angles clockwise in radians.
+Use `imrotate_function=imrotate_bin_counterclockwise_radians` to get angles counterclockwise in radians.
+Use `imrotate_function=imrotate_bin_clockwise_degrees` to get angles clockwise in radians.
+Use `imrotate_function=imrotate_bin_counterclockwise_degrees` to get angles counterclockwise in degrees.
 """
 function shape_difference_rotation(im_reference, im_target, test_angles; imrotate_function=imrotate_bin_clockwise_radians)
     imref_padded, imtarget_padded = pad_images(im_reference, im_target)
