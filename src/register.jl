@@ -5,6 +5,12 @@ end
 function imrotate_bin_nocrop(x, r)
     return greaterthan05(collect(imrotate(x, r; method=BSpline(Constant()))))
 end
+imrotate_bin_clockwise_radians(x, r) = imrotate_bin(x, r)
+imrotate_bin_counterclockwise_radians(x, r) = imrotate_bin(x, -r)
+imrotate_bin_clockwise_degrees(x, r) = imrotate_bin_clockwise_radians(x, deg2rad(r))
+imrotate_bin_counterclockwise_degrees(x, r) = imrotate_bin_counterclockwise_radians(x, deg2rad(r))
+
+
 
 # Functions used for the SD minimization
 """
@@ -78,7 +84,7 @@ as the angle of rotation from target to reference, so to find the best match, we
 direction. A perfect match at angle A would imply im_target is the same shape as if im_reference was
 rotated by A degrees. Use `mode=:counterclockwise` to get counterclockwise angles.
 """
-function shape_difference_rotation(im_reference, im_target, test_angles; mode=:clockwise)
+function shape_difference_rotation(im_reference, im_target, test_angles; imrotate_function=imrotate_bin_clockwise_radians)
     imref_padded, imtarget_padded = pad_images(im_reference, im_target)
     shape_differences = Array{
         NamedTuple{(:angle, :shape_difference),Tuple{Float64,Float64}}
@@ -91,22 +97,12 @@ function shape_difference_rotation(im_reference, im_target, test_angles; mode=:c
     # r_init, c_init = compute_centroid(imref_padded, rounded=true)
     for angle in test_angles
 
-        if mode === :clockwise
-            _angle = angle  # no-op
-        elseif mode === :counterclockwise
-            _angle = -angle  # image rotation algorithm works clockwise by default
-        else
-            throw("mode $(mode) not recognized")
-        end
-
-        # try rotating image back by angle
-        imtarget_rotated = imrotate_bin(imtarget_padded, -_angle)
+        # rotate image back by angle
+        imtarget_rotated = imrotate_function(imtarget_padded, -angle)
 
         im1, im2 = crop_to_shared_centroid(imref_padded, imtarget_rotated)
 
         # Check here that im1 and im2 sizes are the same
-        # Could also add check that the images are nonempty
-        # These checks could go inside the crop_to_shared_ccentroid function
         if isequal.(prod(size(im1)), prod(size(im2)))
             a_not_b = im1 .> 0 .&& isequal.(im2, 0)
             b_not_a = im2 .> 0 .&& isequal.(im1, 0)
@@ -126,9 +122,11 @@ function register(
     mask1,
     mask2;
     test_angles=sort(reverse(range(; start=-π, stop=π, step=π / 36)[1:(end-1)]); by=abs),
-    mode=:clockwise,
+    imrotate_function=imrotate_bin_clockwise_radians,
 )
-    shape_differences = shape_difference_rotation(mask1, mask2, test_angles; mode)
+    shape_differences = shape_difference_rotation(mask1, mask2, test_angles; imrotate_function)
     best_match = argmin((x) -> x.shape_difference, shape_differences)
     return best_match.angle
 end
+
+
