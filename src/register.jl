@@ -92,13 +92,15 @@ function shape_difference_rotation(im_reference, im_target, test_angles; mode=:c
     for angle in test_angles
 
         if mode === :clockwise
-            angle = angle  # no-op
+            _angle = angle  # no-op
         elseif mode === :counterclockwise
-            angle = -angle  # image rotation algorithm works clockwise by default
+            _angle = -angle  # image rotation algorithm works clockwise by default
+        else
+            throw("mode $(mode) not recognized")
         end
 
         # try rotating image back by angle
-        imtarget_rotated = imrotate_bin(imtarget_padded, -angle)
+        imtarget_rotated = imrotate_bin(imtarget_padded, -_angle)
 
         im1, im2 = crop_to_shared_centroid(imref_padded, imtarget_rotated)
 
