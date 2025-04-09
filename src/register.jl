@@ -121,7 +121,7 @@ end
 
 
 """
-Finds the image rotation angle in `test_angles` which minimizes the shape difference between `image1` and `image2`.
+Finds the image rotation angle in `test_angles` which minimizes the shape difference between `im_reference` and `im_target`.
 The default test angles are evenly distributed in steps of π/36 rad (5º) around a full rotation,
 ensuring that no angles are repeated (since -π rad == π rad),
 and ordered so that smaller absolute angles which are positive will be returned in the event of a tie in the shape difference.
@@ -129,12 +129,12 @@ Use `imrotate_function=imrotate_bin_<clockwise|counterclockwise>_<radians|degree
 """
 
 function register(
-    mask1,
-    mask2;
+    im_reference,
+    im_target;
     test_angles=sort(reverse(range(; start=-π, stop=π, step=π / 36)[1:(end-1)]); by=abs),
     imrotate_function=imrotate_bin_clockwise_radians,
 )
-    shape_differences = shape_difference_rotation(mask1, mask2, test_angles; imrotate_function)
+    shape_differences = shape_difference_rotation(im_reference, im_target, test_angles; imrotate_function)
     best_match = argmin((x) -> x.shape_difference, shape_differences)
     return best_match.angle
 end
