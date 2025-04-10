@@ -2,7 +2,7 @@ using Dates
 using LinearAlgebra: dot, det, norm
 using IceFloeTracker: register, imrotate_bin_counterclockwise_radians
 
-@testset "rotation" begin
+@testset "register" begin
     @testset "individual rotations" begin
         unit_vector(θ) = [cos(θ); sin(θ)]
         oriented_angle_between_vectors(a, b) = atan(det(hcat(a, b)), dot(a, b))
