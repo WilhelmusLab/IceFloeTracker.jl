@@ -435,7 +435,7 @@ using IceFloeTracker: get_rotation_measurements, add_suffix
             (time=DateTime("2020-01-12T12:00:00"), mask=masks[15]),
             (time=DateTime("2020-01-13T12:00:00"), mask=masks[30])
         ])
-        df_suffix1 = add_suffix(df, "1")
+        df_suffix1 = add_suffix("1", df)
         @test "time1" ∈ names(df_suffix1)
         @test "mask1" ∈ names(df_suffix1)
 
@@ -534,7 +534,6 @@ using IceFloeTracker: get_rotation_measurements, add_suffix
 
             result = get_rotation_measurements(df; id_column=:id, image_column=:mask, time_column=:time)
             println(result)
-
 
             @test "satellite1" ∈ names(result)
             @test "satellite2" ∈ names(result)
