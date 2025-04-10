@@ -539,6 +539,26 @@ using IceFloeTracker: get_rotation_measurements, add_suffix
             @test "mask2" ∈ names(result)
 
         end
+        @testset "rotation rates for an unambiguous angle" begin
+
+            time = DateTime("2020-01-12T12:00:00")
+            df = DataFrame([
+                (id=1, time=time, mask=masks[0], satellite="aqua"),
+                (id=1, time=time + Day(1), mask=masks[90], satellite="terra"),
+            ])
+
+            result = get_rotation_measurements(df; id_column=:id, image_column=:mask, time_column=:time)
+            @test result[1, :theta_deg] ≈ 90
+            @test result[1, :theta_rad] ≈ π / 2
+            @test result[1, :omega_deg_per_day] ≈ 90
+            @test result[1, :omega_rad_per_day] ≈ π / 2
+            @test result[1, :omega_deg_per_hour] ≈ 90 / 24
+            @test result[1, :omega_rad_per_hour] ≈ π / 2 / 24
+            @test result[1, :omega_deg_per_sec] ≈ 90 / 24 / 3600
+            @test result[1, :omega_rad_per_sec] ≈ π / 2 / 24 / 3600
+
+
+        end
         @testset "include additional measurement columns" begin
 
             df = DataFrame([
