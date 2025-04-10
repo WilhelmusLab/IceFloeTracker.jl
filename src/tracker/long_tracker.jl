@@ -53,7 +53,6 @@ function long_tracker(props::Vector{DataFrame}, condition_thresholds, mc_thresho
 
         # Get _pairs: preliminary matched and unmatched floes
         trajectories = vcat(consolidated_matched_pairs, unmatched)
-        trajectories[:, [:uuid, :passtime, :area_mismatch, :corr]]
     end
 
     begin # Start 3:end iterations
