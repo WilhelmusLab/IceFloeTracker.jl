@@ -557,5 +557,20 @@ using IceFloeTracker: get_rotation_measurements, add_suffix
             @test all(result[!, :omega_deg_per_day] .≈ result[!, :omega_deg_per_hour] / 24.0)
 
         end
+
+        @testset "longer sequence" begin
+
+            df = DataFrame([
+                (id=1, time=DateTime("2020-01-12T12:00:00"), mask=masks[0], satellite="aqua"),
+                (id=1, time=DateTime("2020-01-12T13:00:00"), mask=masks[15], satellite="terra"),
+                (id=1, time=DateTime("2020-01-13T12:10:00"), mask=masks[30], satellite="aqua"),
+                (id=1, time=DateTime("2020-01-13T13:00:00"), mask=masks[30], satellite="terra"),
+                (id=1, time=DateTime("2020-01-14T11:50:00"), mask=masks[45], satellite="aqua"),
+                (id=1, time=DateTime("2020-01-14T13:01:00"), mask=masks[90], satellite="terra"),
+            ])
+            result = get_rotation_measurements(df; id_column=:id, image_column=:mask, time_column=:time)
+
+
+        end
     end
 end
