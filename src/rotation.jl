@@ -1,3 +1,5 @@
+add_suffix(s, df) = rename((x) -> String(x) * s, df)
+
 function get_rotation_measurements(
     df::DataFrame; id_column, image_column, time_column
 )
@@ -12,8 +14,8 @@ function get_rotation_measurements(
     end
 
     measurement_result_df = select(DataFrame(results), Not([:row1, :row2]))
-    row1_df = add_suffix(DataFrame([r.row1 for r in results]), "1")
-    row2_df = add_suffix(DataFrame([r.row2 for r in results]), "2")
+    row1_df = add_suffix("1", DataFrame([r.row1 for r in results]))
+    row2_df = add_suffix("2", DataFrame([r.row2 for r in results]))
     results_df = hcat(measurement_result_df, row1_df, row2_df)
     return results_df
 
@@ -60,7 +62,3 @@ function get_rotation_measurements(
     return result
 end
 
-function add_suffix(df::DataFrame, suffix::String)
-    df_renamed = rename((x) -> String(x) * suffix, df)
-    return df_renamed
-end
