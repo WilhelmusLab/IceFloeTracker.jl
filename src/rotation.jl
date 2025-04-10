@@ -1,35 +1,39 @@
 using OrderedCollections: OrderedDict
 
 function get_rotation_measurements(
-    df::DataFrame; mask_column, time_column, additional_columns
+    df::DataFrame; id_column, image_column, time_column
 )
     results = []
     for row in eachrow(df)
         append!( # adds the 0 – n measurements from `get_rotation_measurements` to the results array
             results,
             get_rotation_measurements(
-                row, df; mask_column, time_column, additional_columns
+                row, df; id_column, image_column, time_column
             ),
         )
     end
-    results_df = DataFrame(results)
 
+    measurement_result_df = select(DataFrame(results), Not([:row1, :row2]))
+    row1_df = add_suffix(DataFrame([r.row1 for r in results]), "1")
+    row2_df = add_suffix(DataFrame([r.row2 for r in results]), "2")
+    results_df = hcat(measurement_result_df, row1_df, row2_df)
     return results_df
+
 end
 
 function get_rotation_measurements(
-    measurement::DataFrameRow, df::DataFrame; mask_column, time_column, additional_columns
+    measurement::DataFrameRow, df::DataFrame; id_column, image_column, time_column
 )
     filtered_df = subset(
         df,
-        :ID => ByRow(==(measurement[:ID])),
+        id_column => ByRow(==(measurement[id_column])),
         time_column => ByRow((t) -> t < (measurement[time_column])), # only look at earlier images
         time_column => ByRow((t) -> Date((measurement[time_column]) - Day(1)) <= Date(t)), # only look at floes from the previous day or later
     )
 
     results = [
         get_rotation_measurements(
-            earlier_measurement, measurement; mask_column, time_column, additional_columns
+            earlier_measurement, measurement; image_column, time_column
         ) for earlier_measurement in eachrow(filtered_df)
     ]
 
@@ -39,53 +43,26 @@ end
 function get_rotation_measurements(
     row1::DataFrameRow,
     row2::DataFrameRow;
-    mask_column,
+    image_column,
     time_column,
     registration_function=register,
 )
-    result = OrderedDict()
+    image1::AbstractArray = row1[image_column]
+    image2::AbstractArray = row2[image_column]
+    theta_rad::Float64 = registration_function(image1, image2)
 
-    theta_rad = registration_function(row1[mask_column], row2[mask_column])
-    theta_deg = rad2deg(theta_rad)
+    datetime1 = row1[time_column]
+    datetime2 = row2[time_column]
+    dt = datetime2 - datetime1
+    dt_sec::Float64 = dt / Dates.Second(1)
 
-    dt = row2[time_column] - row1[time_column]
-    dt_sec = dt / Dates.Second(1)
-    dt_hour = dt / Dates.Hour(1)
-    dt_day = dt / Dates.Day(1)
+    omega_rad_per_sec = theta_rad / dt_sec
 
-    omega_deg_per_sec = (theta_deg) / (dt_sec)
-    omega_deg_per_hour = (theta_deg) / (dt_hour)
-    omega_deg_per_day = (theta_deg) / (dt_day)
-
-    omega_rad_per_sec = (theta_rad) / (dt_sec)
-    omega_rad_per_hour = (theta_rad) / (dt_hour)
-    omega_rad_per_day = (theta_rad) / (dt_day)
-
-    additional_columns = setdiff(names(row1), [mask_column, time_column])
-
-
-
-    for colname in additional_columns
-        result[String(colname)*"1"] = row1[colname]
-        result[String(colname)*"2"] = row2[colname]
-    end
-
-    result["theta_deg"] = theta_deg
-    result["theta_rad"] = theta_rad
-    result[String(time_column)*"1"] = row1[time_column]
-    result[String(time_column)*"2"] = row2[time_column]
-    result["delta_time_sec"] = dt_sec
-    result["omega_deg_per_sec"] = omega_deg_per_sec
-    result["omega_deg_per_hour"] = omega_deg_per_hour
-    result["omega_deg_per_day"] = omega_deg_per_day
-    result["omega_rad_per_sec"] = omega_rad_per_sec
-    result["omega_rad_per_hour"] = omega_rad_per_hour
-    result["omega_rad_per_day"] = omega_rad_per_day
-
-    for colname in [mask_column]
-        result[String(colname)*"1"] = row1[colname]
-        result[String(colname)*"2"] = row2[colname]
-    end
-
+    result = (; theta_rad, dt_sec, omega_rad_per_sec, row1, row2)
     return result
+end
+
+function add_suffix(df::DataFrame, suffix::String)
+    df_renamed = rename((x) -> String(x) * suffix, df)
+    return df_renamed
 end
