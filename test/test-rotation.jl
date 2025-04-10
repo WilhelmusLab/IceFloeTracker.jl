@@ -532,7 +532,6 @@ using IceFloeTracker: get_rotation_measurements, add_suffix
             ])
 
             result = get_rotation_measurements(df; id_column=:id, image_column=:mask, time_column=:time)
-            println(result)
 
             @test "satellite1" ∈ names(result)
             @test "satellite2" ∈ names(result)
@@ -558,17 +557,49 @@ using IceFloeTracker: get_rotation_measurements, add_suffix
 
         end
 
-        @testset "longer sequence" begin
+        @testset "longer sequences" begin
 
-            df = DataFrame([
-                (id=1, time=DateTime("2020-01-12T12:00:00"), mask=masks[0], satellite="aqua"),
-                (id=1, time=DateTime("2020-01-12T13:00:00"), mask=masks[15], satellite="terra"),
-                (id=1, time=DateTime("2020-01-13T12:10:00"), mask=masks[30], satellite="aqua"),
-                (id=1, time=DateTime("2020-01-13T13:00:00"), mask=masks[30], satellite="terra"),
-                (id=1, time=DateTime("2020-01-14T11:50:00"), mask=masks[45], satellite="aqua"),
-                (id=1, time=DateTime("2020-01-14T13:01:00"), mask=masks[90], satellite="terra"),
-            ])
-            result = get_rotation_measurements(df; id_column=:id, image_column=:mask, time_column=:time)
+            kwargs = (id_column=:id, image_column=:mask, time_column=:time)
+            results = get_rotation_measurements(
+                DataFrame([
+                    (id=1, time=DateTime("2020-01-12T12:00:00"), mask=masks[0], satellite="aqua"),
+                    (id=1, time=DateTime("2020-01-12T13:00:00"), mask=masks[15], satellite="terra")]); kwargs...)
+            @test nrow(results) == 1
+
+            results = get_rotation_measurements(DataFrame([
+                    (id=1, time=DateTime("2020-01-12T12:00:00"), mask=masks[0], satellite="aqua"),
+                    (id=1, time=DateTime("2020-01-12T13:00:00"), mask=masks[15], satellite="terra"),
+                    (id=1, time=DateTime("2020-01-13T12:10:00"), mask=masks[30], satellite="aqua"),
+                ]); kwargs...)
+            @test nrow(results) == 3
+
+
+            results = get_rotation_measurements(DataFrame([
+                    (id=1, time=DateTime("2020-01-12T12:00:00"), mask=masks[0], satellite="aqua"),
+                    (id=1, time=DateTime("2020-01-12T13:00:00"), mask=masks[15], satellite="terra"),
+                    (id=1, time=DateTime("2020-01-13T12:10:00"), mask=masks[30], satellite="aqua"),
+                    (id=1, time=DateTime("2020-01-13T13:00:00"), mask=masks[30], satellite="terra"),
+                ]); kwargs...)
+            @test nrow(results) == 6
+
+            results = get_rotation_measurements(DataFrame([
+                    (id=1, obsid=1, time=DateTime("2020-01-12T12:00:00"), mask=masks[0], satellite="aqua"),
+                    (id=1, obsid=2, time=DateTime("2020-01-12T13:00:00"), mask=masks[15], satellite="terra"),
+                    (id=1, obsid=3, time=DateTime("2020-01-13T12:10:00"), mask=masks[30], satellite="aqua"),
+                    (id=1, obsid=4, time=DateTime("2020-01-13T13:00:00"), mask=masks[30], satellite="terra"),
+                    (id=1, obsid=5, time=DateTime("2020-01-14T11:50:00"), mask=masks[45], satellite="aqua"),
+                    (id=1, obsid=6, time=DateTime("2020-01-14T13:01:00"), mask=masks[90], satellite="terra"),
+                ]); kwargs...)
+            @test nrow(results) == 11
+
+            @test nrow(subset(results, :obsid1 => ByRow(==(1)))) == 3  # obsid=1 is the starting position for three comparisons
+            @test nrow(subset(results, :obsid2 => ByRow(==(1)))) == 0  # obsid=1 is never the "starting" position
+
+            @test nrow(subset(results, :obsid1 => ByRow(==(6)))) == 0  # obsid=6 is never the "starting" position
+            @test nrow(subset(results, :obsid2 => ByRow(==(6)))) == 3  # obsid=6 has 3 comparisons
+
+            @test subset(results, :obsid1 => ByRow(==(5)))[1, :mask1] == masks[45]
+            @test subset(results, :obsid2 => ByRow(==(6)))[1, :mask2] == masks[90]
 
 
         end
