@@ -530,5 +530,18 @@ using IceFloeTracker: get_rotation_measurements
                 30
             )
         end
+        @testset "include additional columns" begin
+
+            df = DataFrame([
+                (time=DateTime("2020-01-12T12:00:00"), mask=masks[0], satellite="aqua"),
+                (time=DateTime("2020-01-12T13:00:00"), mask=masks[15], satellite="terra"),
+            ])
+
+            result = get_rotation_measurements(df[1, :], df[2, :];
+                mask_column=:mask, time_column=:time)
+
+            @test "satellite1" ∈ keys(result)
+            @test "satellite2" ∈ keys(result)
+        end
     end
 end

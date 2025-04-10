@@ -42,8 +42,9 @@ function get_rotation_measurements(
     mask_column,
     time_column,
     registration_function=register,
-    # additional_columns=[],
 )
+    result = OrderedDict()
+
     theta_rad = registration_function(row1[mask_column], row2[mask_column])
     theta_deg = rad2deg(theta_rad)
 
@@ -62,26 +63,24 @@ function get_rotation_measurements(
 
     additional_columns = setdiff(names(row1), [mask_column, time_column])
 
-    result = OrderedDict()
+
 
     for colname in additional_columns
         result[String(colname)*"1"] = row1[colname]
         result[String(colname)*"2"] = row2[colname]
     end
 
-    result = OrderedDict([
-        "theta_deg" => theta_deg,
-        "theta_rad" => theta_rad,
-        String(time_column) * "1" => row1[time_column],
-        String(time_column) * "2" => row2[time_column],
-        "delta_time_sec" => dt_sec,
-        "omega_deg_per_sec" => omega_deg_per_sec,
-        "omega_deg_per_hour" => omega_deg_per_hour,
-        "omega_deg_per_day" => omega_deg_per_day,
-        "omega_rad_per_sec" => omega_rad_per_sec,
-        "omega_rad_per_hour" => omega_rad_per_hour,
-        "omega_rad_per_day" => omega_rad_per_day,
-    ])
+    result["theta_deg"] = theta_deg
+    result["theta_rad"] = theta_rad
+    result[String(time_column)*"1"] = row1[time_column]
+    result[String(time_column)*"2"] = row2[time_column]
+    result["delta_time_sec"] = dt_sec
+    result["omega_deg_per_sec"] = omega_deg_per_sec
+    result["omega_deg_per_hour"] = omega_deg_per_hour
+    result["omega_deg_per_day"] = omega_deg_per_day
+    result["omega_rad_per_sec"] = omega_rad_per_sec
+    result["omega_rad_per_hour"] = omega_rad_per_hour
+    result["omega_rad_per_day"] = omega_rad_per_day
 
     for colname in [mask_column]
         result[String(colname)*"1"] = row1[colname]
