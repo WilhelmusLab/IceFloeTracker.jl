@@ -43,7 +43,8 @@ export readdlm,
     matchcorr,
     centered,
     imrotate,
-    IFTVERSION
+    IFTVERSION,
+    get_rotation_measurements
 
 # For IFTPipeline
 using HDF5
