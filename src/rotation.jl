@@ -22,13 +22,13 @@ function get_rotation_measurements(
     # Add some columns
     sec_per_hour = 3600.0
     sec_per_day = 86400.0
-    results_df[!, "omega_rad_per_hour"] = results_df[!, "omega_rad_per_sec"] / sec_per_hour
-    results_df[!, "omega_rad_per_day"] = results_df[!, "omega_rad_per_sec"] / sec_per_day
+    results_df[!, :omega_rad_per_hour] .= results_df[!, :omega_rad_per_sec] / sec_per_hour
+    results_df[!, :omega_rad_per_day] .= results_df[!, :omega_rad_per_sec] / sec_per_day
 
-    results_df[!, "theta_deg"] = rad2deg.(results_df[!, "theta_rad"])
-    results_df[!, "omega_deg_per_sec"] = rad2deg.(results_df[!, "omega_rad_per_sec"])
-    results_df[!, "omega_deg_per_hour"] = results_df[!, "omega_deg_per_sec"] / sec_per_hour
-    results_df[!, "omega_deg_per_day"] = results_df[!, "omega_deg_per_sec"] / sec_per_day
+    results_df[!, :theta_deg] .= rad2deg.(results_df[!, :theta_rad])
+    results_df[!, :omega_deg_per_sec] .= rad2deg.(results_df[!, :omega_rad_per_sec])
+    results_df[!, :omega_deg_per_hour] .= results_df[!, :omega_deg_per_sec] / sec_per_hour
+    results_df[!, :omega_deg_per_day] .= results_df[!, :omega_deg_per_sec] / sec_per_day
 
     return results_df
 
