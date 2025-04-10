@@ -548,12 +548,12 @@ using IceFloeTracker: get_rotation_measurements, add_suffix
 
             result = get_rotation_measurements(df; id_column=:id, image_column=:mask, time_column=:time)
 
-            @test all(result[!, :omega_rad_per_hour] .≈ result[!, :omega_rad_per_sec] / 3600.0)
-            @test all(result[!, :omega_rad_per_day] .≈ result[!, :omega_rad_per_hour] / 24.0)
+            @test all(result[!, :omega_rad_per_hour] .≈ result[!, :omega_rad_per_sec] * 3600.0)
+            @test all(result[!, :omega_rad_per_day] .≈ result[!, :omega_rad_per_hour] * 24.0)
             @test all(result[!, :theta_deg] .≈ rad2deg.(result[!, :theta_rad]))
             @test all(result[!, :omega_deg_per_sec] .≈ rad2deg.(result[!, :omega_rad_per_sec]))
-            @test all(result[!, :omega_deg_per_hour] .≈ result[!, :omega_deg_per_sec] / 3600.0)
-            @test all(result[!, :omega_deg_per_day] .≈ result[!, :omega_deg_per_hour] / 24.0)
+            @test all(result[!, :omega_deg_per_hour] .≈ result[!, :omega_deg_per_sec] * 3600.0)
+            @test all(result[!, :omega_deg_per_day] .≈ result[!, :omega_deg_per_hour] * 24.0)
 
         end
 
