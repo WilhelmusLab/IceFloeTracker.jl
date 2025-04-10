@@ -467,7 +467,6 @@ using IceFloeTracker: get_rotation_measurements, add_suffix
 
                 result = get_rotation_measurements(df[1, :], df[2, :];
                     image_column=:mask, time_column=:time)
-                println(result)
 
                 @test deg2rad(Δθ_deg - 5.1) <= result.theta_rad <= deg2rad(Δθ_deg + 5.1)
 
@@ -525,7 +524,7 @@ using IceFloeTracker: get_rotation_measurements, add_suffix
         end
     end
     @testset "full dataframe" begin
-        @testset "include additional columns" begin
+        @testset "include additional source columns" begin
 
             df = DataFrame([
                 (id=1, time=DateTime("2020-01-12T12:00:00"), mask=masks[0], satellite="aqua"),
@@ -539,6 +538,23 @@ using IceFloeTracker: get_rotation_measurements, add_suffix
             @test "satellite2" ∈ names(result)
             @test "mask1" ∈ names(result)
             @test "mask2" ∈ names(result)
+
+        end
+        @testset "include additional measurement columns" begin
+
+            df = DataFrame([
+                (id=1, time=DateTime("2020-01-12T12:00:00"), mask=masks[0], satellite="aqua"),
+                (id=1, time=DateTime("2020-01-12T13:00:00"), mask=masks[15], satellite="terra"),
+            ])
+
+            result = get_rotation_measurements(df; id_column=:id, image_column=:mask, time_column=:time)
+
+            @test all(result[!, :omega_rad_per_hour] .≈ result[!, :omega_rad_per_sec] / 3600.0)
+            @test all(result[!, :omega_rad_per_day] .≈ result[!, :omega_rad_per_hour] / 24.0)
+            @test all(result[!, :theta_deg] .≈ rad2deg.(result[!, :theta_rad]))
+            @test all(result[!, :omega_deg_per_sec] .≈ rad2deg.(result[!, :omega_rad_per_sec]))
+            @test all(result[!, :omega_deg_per_hour] .≈ result[!, :omega_deg_per_sec] / 3600.0)
+            @test all(result[!, :omega_deg_per_day] .≈ result[!, :omega_deg_per_hour] / 24.0)
 
         end
     end
