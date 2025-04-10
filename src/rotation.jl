@@ -1,14 +1,14 @@
 add_suffix(s::String, df::DataFrame) = rename((x) -> String(x) * s, df)
 
 function get_rotation_measurements(
-    df::DataFrame; id_column, image_column, time_column
+    df::DataFrame; id_column, image_column, time_column, registration_function=register,
 )
     results = []
     for row in eachrow(df)
         append!( # adds the 0 – n measurements from `get_rotation_measurements` to the results array
             results,
             get_rotation_measurements(
-                row, df; id_column, image_column, time_column
+                row, df; id_column, image_column, time_column, registration_function
             ),
         )
     end
@@ -35,7 +35,7 @@ function get_rotation_measurements(
 end
 
 function get_rotation_measurements(
-    measurement::DataFrameRow, df::DataFrame; id_column, image_column, time_column
+    measurement::DataFrameRow, df::DataFrame; id_column, image_column, time_column, registration_function=register,
 )
     filtered_df = subset(
         df,
@@ -46,7 +46,7 @@ function get_rotation_measurements(
 
     results = [
         get_rotation_measurements(
-            earlier_measurement, measurement; image_column, time_column
+            earlier_measurement, measurement; image_column, time_column, registration_function,
         ) for earlier_measurement in eachrow(filtered_df)
     ]
 
