@@ -1,5 +1,3 @@
-using OrderedCollections: OrderedDict
-
 function get_rotation_measurements(
     df::DataFrame; id_column, image_column, time_column
 )
