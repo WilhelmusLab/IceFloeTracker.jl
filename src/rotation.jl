@@ -128,7 +128,7 @@ function get_rotation_measurements(
     image1::AbstractArray,
     image2::AbstractArray,
     time1::T,
-    time2::T,
+    time2::T;
     registration_function=register,
 ) where {T<:Union{ZonedDateTime,DateTime}}
     theta_rad::Float64 = registration_function(image1, image2)
