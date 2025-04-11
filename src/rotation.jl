@@ -48,6 +48,23 @@ function get_rotation_measurements(
 
 end
 
+"""
+Calculate the angle and rotation rate between an image in a DataFrameRow `measurement`,
+and other images from a DataFrame `df`.
+
+- `id_column` is the column with the ID of the image over several observations, e.g. the floe ID.
+- `image_column` is the column with the image to compare, 
+- `time_column` is the column with the timepoint of each observation,
+
+`measurement` is compared to each row in the subset of `df` which are:
+  - for the same object ID,
+  - strictly older,
+  - not older than the previous day.
+
+Returns a vector of `NamedTuple`s with one entry for each comparison,
+with the angle `theta_rad`, time difference `dt_sec` and rotation rate `omega_rad_per_sec`,
+and the two input rows for each comparison `row1` and `row2`.
+"""
 function get_rotation_measurements(
     measurement::DataFrameRow, df::DataFrame; id_column, image_column, time_column, registration_function=register,
 )
