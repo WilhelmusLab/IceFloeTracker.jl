@@ -1,6 +1,6 @@
 using DataFrames
 using Dates
-using IceFloeTracker: get_rotation_measurements, add_suffix
+using IceFloeTracker: get_rotation_measurements, _add_suffix
 
 @testset "rotation" begin
     masks = Dict(
@@ -435,7 +435,7 @@ using IceFloeTracker: get_rotation_measurements, add_suffix
             (time=DateTime("2020-01-12T12:00:00"), mask=masks[15]),
             (time=DateTime("2020-01-13T12:00:00"), mask=masks[30])
         ])
-        df_suffix1 = add_suffix("1", df)
+        df_suffix1 = _add_suffix("1", df)
         @test "time1" ∈ names(df_suffix1)
         @test "mask1" ∈ names(df_suffix1)
 

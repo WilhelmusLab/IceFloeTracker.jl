@@ -1,6 +1,6 @@
 using ZonedDateTime
 
-add_suffix(s::String, df::DataFrame) = rename((x) -> String(x) * s, df)
+_add_suffix(s::String, df::DataFrame) = rename((x) -> String(x) * s, df)
 
 """
 Calculate the angle and rotation rate between observations in DataFrame `df`.
@@ -38,8 +38,8 @@ function get_rotation_measurements(
 
     # Flatten the results into a single dataframe
     measurement_result_df = select(DataFrame(results), Not([:row1, :row2]))
-    row1_df = add_suffix("1", DataFrame([r.row1 for r in results]))
-    row2_df = add_suffix("2", DataFrame([r.row2 for r in results]))
+    row1_df = _add_suffix("1", DataFrame([r.row1 for r in results]))
+    row2_df = _add_suffix("2", DataFrame([r.row2 for r in results]))
 
     # Add some columns
     sec_per_day = 86400.0
