@@ -18,7 +18,11 @@ and all the other values from `df`
 with the column name suffix `1` for the first observation and `2` for the second.
 """
 function get_rotation_measurements(
-    df::DataFrame; id_column, image_column, time_column, registration_function=register,
+    df::DataFrame;
+    id_column::Symbol,
+    image_column::Symbol,
+    time_column::Symbol,
+    registration_function=register,
 )
     results = []
     for row in eachrow(df)
@@ -66,7 +70,12 @@ with the angle `theta_rad`, time difference `dt_sec` and rotation rate `omega_ra
 and the two input rows for each comparison `row1` and `row2`.
 """
 function get_rotation_measurements(
-    measurement::DataFrameRow, df::DataFrame; id_column, image_column, time_column, registration_function=register,
+    measurement::DataFrameRow,
+    df::DataFrame;
+    id_column::Symbol,
+    image_column::Symbol,
+    time_column::Symbol,
+    registration_function=register,
 )
     filtered_df = subset(
         df,
@@ -93,8 +102,8 @@ and the two input rows.
 function get_rotation_measurements(
     row1::DataFrameRow,
     row2::DataFrameRow;
-    image_column,
-    time_column,
+    image_column::Symbol,
+    time_column::Symbol,
     registration_function=register,
 )
     image1::AbstractArray = row1[image_column]
