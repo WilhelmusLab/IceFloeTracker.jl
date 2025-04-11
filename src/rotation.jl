@@ -1,5 +1,22 @@
 add_suffix(s::String, df::DataFrame) = rename((x) -> String(x) * s, df)
 
+"""
+Calculate the angle and rotation rate between observations in DataFrame `df`.
+
+- `id_column` is the column with the ID of the image over several observations, e.g. the floe ID.
+- `image_column` is the column with the image to compare, 
+- `time_column` is the column with the timepoint of each observation,
+
+Each row is compared to each other row in `df` which are:
+  - for the same object ID,
+  - strictly older,
+  - not older than the previous day.
+
+Returns a DataFrame with one row for each comparison,
+with the angle `theta_rad`, time difference `dt_sec` and rotation rate `omega_rad_per_sec`,
+and all the other values from `df`
+with the column name suffix `1` for the first observation and `2` for the second.
+"""
 function get_rotation_measurements(
     df::DataFrame; id_column, image_column, time_column, registration_function=register,
 )
