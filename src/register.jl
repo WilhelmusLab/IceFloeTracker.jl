@@ -17,7 +17,7 @@ imrotate_bin_counterclockwise_degrees(x, r) = imrotate_bin_counterclockwise_radi
 Pad images by zeros based on the size of the larger of the two images.
 """
 function pad_images(im1, im2)
-    n = maximum((maximum(size(im1)), maximum(size(im2))))
+    n = max(size(im1)..., size(im2)...)
     im_padded = [collect(padarray(im, Fill(0, (n, n), (n, n)))) for im in [im1, im2]]
     return im_padded[1], im_padded[2]
 end
