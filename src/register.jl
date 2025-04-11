@@ -78,11 +78,12 @@ function crop_to_shared_centroid(im1, im2)
 end
 
 """
-Computes the shape difference between im_reference and im_target for each angle (degrees) in test_angles.
+Computes the shape difference between im_reference and im_target for each angle in test_angles.
 The reference image is held constant, while the target image is rotated. The test_angles are interpreted
 as the angle of rotation from target to reference, so to find the best match, we rotate the reverse
-direction. A perfect match at angle A would imply im_target is the same shape as if im_reference was
-rotated by A degrees. Use `mode=:counterclockwise` to get counterclockwise angles.
+direction. A perfect match at angle `A` would imply im_target is the same shape as if im_reference was
+rotated by `A`. 
+Use `imrotate_function=imrotate_bin_<clockwise|counterclockwise>_<radians|degrees>` to get angles <clockwise|counterclockwise> in <radians|degrees>.
 """
 function shape_difference_rotation(im_reference, im_target, test_angles; imrotate_function=imrotate_bin_clockwise_radians)
     imref_padded, imtarget_padded = pad_images(im_reference, im_target)
@@ -118,13 +119,22 @@ function shape_difference_rotation(im_reference, im_target, test_angles; imrotat
     return shape_differences
 end
 
+
+"""
+Finds the image rotation angle in `test_angles` which minimizes the shape difference between `im_reference` and `im_target`.
+The default test angles are evenly distributed in steps of π/36 rad (5º) around a full rotation,
+ensuring that no angles are repeated (since -π rad == π rad),
+and ordered so that smaller absolute angles which are positive will be returned in the event of a tie in the shape difference.
+Use `imrotate_function=imrotate_bin_<clockwise|counterclockwise>_<radians|degrees>` to get angles <clockwise|counterclockwise> in <radians|degrees>.
+"""
+
 function register(
-    mask1,
-    mask2;
+    im_reference,
+    im_target;
     test_angles=sort(reverse(range(; start=-π, stop=π, step=π / 36)[1:(end-1)]); by=abs),
     imrotate_function=imrotate_bin_clockwise_radians,
 )
-    shape_differences = shape_difference_rotation(mask1, mask2, test_angles; imrotate_function)
+    shape_differences = shape_difference_rotation(im_reference, im_target, test_angles; imrotate_function)
     best_match = argmin((x) -> x.shape_difference, shape_differences)
     return best_match.angle
 end
