@@ -24,7 +24,7 @@ function get_rotation_measurements(
     id_column::Symbol,
     image_column::Symbol,
     time_column::Symbol,
-    registration_function=register,
+    registration_function::Function=register,
 )
     results = []
     for row in eachrow(df)
@@ -77,7 +77,7 @@ function get_rotation_measurements(
     id_column::Symbol,
     image_column::Symbol,
     time_column::Symbol,
-    registration_function=register,
+    registration_function::Function=register,
 )
     filtered_df = subset(
         df,
@@ -106,7 +106,7 @@ function get_rotation_measurements(
     row2::DataFrameRow;
     image_column::Symbol,
     time_column::Symbol,
-    registration_function=register,
+    registration_function::Function=register,
 )
     result = get_rotation_measurements(
         row1[image_column],
@@ -129,7 +129,7 @@ function get_rotation_measurements(
     image2::AbstractArray,
     time1::T,
     time2::T;
-    registration_function=register,
+    registration_function::Function=register,
 ) where {T<:Union{ZonedDateTime,DateTime}}
     theta_rad::Float64 = registration_function(image1, image2)
     dt = time2 - time1
