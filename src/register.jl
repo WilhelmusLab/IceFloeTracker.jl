@@ -21,9 +21,8 @@ function pad_images(im1, im2)
     max2 = maximum(size(im2))
 
     n = Int64(ceil(maximum([max1, max2])))
-    im1_padded = collect(padarray(im1, Fill(0, (n, n), (n, n))))
-    im2_padded = collect(padarray(im2, Fill(0, (n, n), (n, n))))
-    return im1_padded, im2_padded
+    im_padded = [collect(padarray(im, Fill(0, (n, n), (n, n)))) for im in [im1, im2]]
+    return im_padded[1], im_padded[2]
 end
 
 """
