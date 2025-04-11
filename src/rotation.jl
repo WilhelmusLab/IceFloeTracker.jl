@@ -84,6 +84,12 @@ function get_rotation_measurements(
     return results
 end
 
+"""
+Calculate the angle and rotation rate between two observations in DataFrameRows `row1` and `row2`.
+`image_column` and `time_column` specify which columns to use from the DataFrameRows.
+Returns a NamedTuple with the angle `theta_rad`, time difference `dt_sec` and rotation rate `omega_rad_per_sec`,
+and the two input rows.
+"""
 function get_rotation_measurements(
     row1::DataFrameRow,
     row2::DataFrameRow;
