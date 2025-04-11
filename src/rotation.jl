@@ -106,18 +106,33 @@ function get_rotation_measurements(
     time_column::Symbol,
     registration_function=register,
 )
-    image1::AbstractArray = row1[image_column]
-    image2::AbstractArray = row2[image_column]
-    theta_rad::Float64 = registration_function(image1, image2)
+    result = get_rotation_measurements(
+        row1[image_column],
+        row2[image_column],
+        row1[time_column],
+        row2[time_column];
+        registration_function
+    )
 
-    datetime1 = row1[time_column]
-    datetime2 = row2[time_column]
-    dt = datetime2 - datetime1
-    dt_sec::Float64 = dt / Dates.Second(1)
-
-    omega_rad_per_sec = theta_rad / dt_sec
-
-    result = (; theta_rad, dt_sec, omega_rad_per_sec, row1, row2)
-    return result
+    combined_result = merge(result, (; row1, row2))
+    return combined_result
 end
 
+"""
+Calculate the angle and rotation rate between two images `image1` and `image2` at times `time1` and `time2`.
+Returns a NamedTuple with the angle `theta_rad`, time difference `dt_sec` and rotation rate `omega_rad_per_sec`.
+"""
+function get_rotation_measurements(
+    image1::AbstractArray,
+    image2::AbstractArray,
+    time1::T,
+    time2::T,
+    registration_function=register,
+) where {T<:Union{ZonedDateTime,DateTime}}
+    theta_rad::Float64 = registration_function(image1, image2)
+    dt = time2 - time1
+    dt_sec::Float64 = dt / Dates.Second(1)
+    omega_rad_per_sec = theta_rad / dt_sec
+    result = (; theta_rad, dt_sec, omega_rad_per_sec)
+    return result
+end
