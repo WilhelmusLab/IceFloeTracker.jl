@@ -17,18 +17,15 @@ function get_rotation_measurements(
     measurement_result_df = select(DataFrame(results), Not([:row1, :row2]))
     row1_df = add_suffix("1", DataFrame([r.row1 for r in results]))
     row2_df = add_suffix("2", DataFrame([r.row2 for r in results]))
-    results_df = hcat(measurement_result_df, row1_df, row2_df)
 
     # Add some columns
-    sec_per_hour = 3600.0
     sec_per_day = 86400.0
-    results_df[!, :omega_rad_per_hour] .= results_df[!, :omega_rad_per_sec] * sec_per_hour
-    results_df[!, :omega_rad_per_day] .= results_df[!, :omega_rad_per_sec] * sec_per_day
+    measurement_result_df[!, :omega_rad_per_day] .= measurement_result_df[!, :omega_rad_per_sec] * sec_per_day
+    measurement_result_df[!, :theta_deg] .= rad2deg.(measurement_result_df[!, :theta_rad])
+    omega_deg_per_sec = rad2deg.(measurement_result_df[!, :omega_rad_per_sec])
+    measurement_result_df[!, :omega_deg_per_day] .= omega_deg_per_sec * sec_per_day
 
-    results_df[!, :theta_deg] .= rad2deg.(results_df[!, :theta_rad])
-    results_df[!, :omega_deg_per_sec] .= rad2deg.(results_df[!, :omega_rad_per_sec])
-    results_df[!, :omega_deg_per_hour] .= results_df[!, :omega_deg_per_sec] * sec_per_hour
-    results_df[!, :omega_deg_per_day] .= results_df[!, :omega_deg_per_sec] * sec_per_day
+    results_df = hcat(measurement_result_df, row1_df, row2_df)
 
     return results_df
 
