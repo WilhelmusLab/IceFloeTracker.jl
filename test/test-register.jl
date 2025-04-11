@@ -16,22 +16,20 @@ using IceFloeTracker: register, imrotate_bin_counterclockwise_radians
             angle_aliases=[0.0],
         )
             results = []
-            for (θ1, mask1) in masks
-                for (θ2, mask2) in masks
-                    Δθ = oriented_angle_between_angles(deg2rad(θ1), deg2rad(θ2))
-                    Δθ_measured = register(
-                        mask1,
-                        mask2;
-                        imrotate_function=imrotate_bin_counterclockwise_radians
-                    )
-                    absolute_error_wrt_all_aliased_angles = [
-                        abs(oriented_angle_between_angles(Δθ + offset, Δθ_measured)) for
-                        offset in angle_aliases
-                    ]
-                    minimum_absolute_error = minimum(absolute_error_wrt_all_aliased_angles)
-                    ok = minimum_absolute_error < deg2rad(precision_goal_degrees)
-                    push!(results, (; θ1, θ2, Δθ, Δθ_measured, minimum_absolute_error, ok))
-                end
+            for (θ1, mask1) in masks, (θ2, mask2) in masks
+                Δθ = oriented_angle_between_angles(deg2rad(θ1), deg2rad(θ2))
+                Δθ_measured = register(
+                    mask1,
+                    mask2;
+                    imrotate_function=imrotate_bin_counterclockwise_radians
+                )
+                absolute_error_wrt_all_aliased_angles = [
+                    abs(oriented_angle_between_angles(Δθ + offset, Δθ_measured)) for
+                    offset in angle_aliases
+                ]
+                minimum_absolute_error = minimum(absolute_error_wrt_all_aliased_angles)
+                ok = minimum_absolute_error < deg2rad(precision_goal_degrees)
+                push!(results, (; θ1, θ2, Δθ, Δθ_measured, minimum_absolute_error, ok))
             end
             df = DataFrame(results)
             @info sort(df)
