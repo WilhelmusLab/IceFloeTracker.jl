@@ -34,10 +34,12 @@ function get_rotation_measurements(
             time_column => ByRow((t) -> t < (measurement[time_column])), # only look at earlier images
             time_column => ByRow((t) -> Date((measurement[time_column]) - Day(1)) <= Date(t)), # only look at floes from the previous day or later
         )
-        new_result = get_rotation_measurements(
-            measurement, filtered_df; image_column, time_column, registration_function
-        )
-        push!(results, new_result)
+        new_results = [
+            get_rotation_measurements(
+                other_measurement, measurement; image_column, time_column, registration_function,
+            ) for other_measurement in eachrow(filtered_df)
+        ]
+        push!(results, new_results)
     end
     flat_results = Iterators.flatten(results)
 
