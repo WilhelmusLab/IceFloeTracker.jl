@@ -63,7 +63,6 @@ end
 Calculate the angle and rotation rate between an image in a DataFrameRow `measurement`,
 and other images from a DataFrame `df`.
 
-- `id_column` is the column with the ID of the image over several observations, e.g. the floe ID.
 - `image_column` is the column with the image to compare, 
 - `time_column` is the column with the timepoint of each observation,
 
