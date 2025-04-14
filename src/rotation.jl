@@ -38,9 +38,8 @@ function get_rotation_measurements(
         new_results = get_rotation_measurements(
             measurement, filtered_df; image_column, time_column, registration_function,
         )
-        push!(results, new_results)
+        append!(results, new_results)
     end
-    flat_results = Iterators.flatten(results)
 
     # Flatten the results into a single dataframe
     measurement_result_df = select(DataFrame(flat_results), Not([:row1, :row2]))
