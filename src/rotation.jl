@@ -8,6 +8,7 @@ Calculate the angle and rotation rate between observations in DataFrame `df`.
 - `id_column` is the column with the ID of the image over several observations, e.g. the floe ID.
 - `image_column` is the column with the image to compare, 
 - `time_column` is the column with the timepoint of each observation,
+- `registration_function` is used to compare the two images and should return an angle.
 
 Each row is compared to each other row in `df` which are:
   - for the same object ID,
@@ -65,7 +66,7 @@ and all the other rows in DataFrame `df`.
 
 - `image_column` is the column with the image to compare, 
 - `time_column` is the column with the timepoint of each observation,
-
+- `registration_function` is used to compare the two images and should return an angle.
 Returns a vector of `NamedTuple`s with one entry for each comparison,
 with the angle `theta_rad`, time difference `dt_sec` and rotation rate `omega_rad_per_sec`,
 and the two input rows for each comparison `row1` and `row2`.
@@ -88,6 +89,7 @@ end
 """
 Calculate the angle and rotation rate between two observations in DataFrameRows `row1` and `row2`.
 `image_column` and `time_column` specify which columns to use from the DataFrameRows.
+`registration_function` is used to compare the two images and should return an angle.
 Returns a NamedTuple with the angle `theta_rad`, time difference `dt_sec` and rotation rate `omega_rad_per_sec`,
 and the two input rows.
 """
@@ -113,7 +115,7 @@ end
 """
 Calculate the angle and rotation rate between two images `image1` and `image2` at times `time1` and `time2`.
 Returns a NamedTuple with the angle `theta_rad`, time difference `dt_sec` and rotation rate `omega_rad_per_sec`.
-`registration_function`
+`registration_function` is used to compare the two images and should return an angle.
 """
 function get_rotation_measurements(
     image1::AbstractArray,
