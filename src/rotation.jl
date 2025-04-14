@@ -30,7 +30,7 @@ function get_rotation_measurements(
     for measurement in eachrow(df)
         filtered_df = subset(
             df,
-            id_column => ByRow(==(measurement[id_column])),
+            id_column => ByRow(==(measurement[id_column])), # only look at matching floes
             time_column => ByRow((t) -> t < (measurement[time_column])), # only look at earlier images
             time_column => ByRow((t) -> Date((measurement[time_column]) - Day(1)) <= Date(t)), # only look at floes from the previous day or later
         )
