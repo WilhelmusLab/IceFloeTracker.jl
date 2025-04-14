@@ -523,6 +523,45 @@ using IceFloeTracker: get_rotation_measurements, _add_suffix
             )
         end
     end
+
+    @testset "subsets" begin
+        @testset "simple case" begin
+
+            df = DataFrame([
+                (time=DateTime("2020-01-12T12:00:00"), mask=masks[0]),
+                (time=DateTime("2020-01-12T13:00:00"), mask=masks[45]),
+            ])
+
+            result = DataFrame(get_rotation_measurements(df[1, :], df; image_column=:mask, time_column=:time))
+
+            @test nrow(result) == nrow(df)
+        end
+
+        @testset "measurements match the input dataframe ordering" begin
+
+            time = DateTime("1990-01-12T12:00:00")
+            df = DataFrame([
+                (time=time, mask=masks[0]),
+                (time=time + Day(1), mask=masks[90]),
+            ])
+
+            result = DataFrame(get_rotation_measurements(df[2, :], df; image_column=:mask, time_column=:time))
+
+            @test nrow(result) == nrow(df)
+            @test result[1, :dt_sec] ≈ 86400.0
+            @test result[1, :theta_rad] ≈ π / 2
+            @test result[1, :omega_rad_per_sec] ≈ π / 2 / 24 / 3600
+
+            @test result[2, :dt_sec] ≈ 0
+            @test result[2, :theta_rad] ≈ 0
+            @test isnan(result[2, :omega_rad_per_sec])  # because dt_sec == 0
+
+            @test result[2, :row1] == result[2, :row2]
+        end
+
+    end
+
+
     @testset "full dataframe" begin
         @testset "include additional source columns" begin
 
