@@ -27,9 +27,15 @@ function get_rotation_measurements(
     registration_function::Function=register,
 )
     results = []
-    for row in eachrow(df)
+    for measurement in eachrow(df)
+        filtered_df = subset(
+            df,
+            id_column => ByRow(==(measurement[id_column])),
+            time_column => ByRow((t) -> t < (measurement[time_column])), # only look at earlier images
+            time_column => ByRow((t) -> Date((measurement[time_column]) - Day(1)) <= Date(t)), # only look at floes from the previous day or later
+        )
         new_result = get_rotation_measurements(
-            row, df; id_column, image_column, time_column, registration_function
+            measurement, filtered_df; image_column, time_column, registration_function
         )
         push!(results, new_result)
     end
@@ -61,11 +67,6 @@ and other images from a DataFrame `df`.
 - `image_column` is the column with the image to compare, 
 - `time_column` is the column with the timepoint of each observation,
 
-`measurement` is compared to each row in the subset of `df` which are:
-  - for the same object ID,
-  - strictly older,
-  - not older than the previous day.
-
 Returns a vector of `NamedTuple`s with one entry for each comparison,
 with the angle `theta_rad`, time difference `dt_sec` and rotation rate `omega_rad_per_sec`,
 and the two input rows for each comparison `row1` and `row2`.
@@ -73,24 +74,15 @@ and the two input rows for each comparison `row1` and `row2`.
 function get_rotation_measurements(
     measurement::DataFrameRow,
     df::DataFrame;
-    id_column::Symbol,
     image_column::Symbol,
     time_column::Symbol,
     registration_function::Function=register,
 )
-    filtered_df = subset(
-        df,
-        id_column => ByRow(==(measurement[id_column])),
-        time_column => ByRow((t) -> t < (measurement[time_column])), # only look at earlier images
-        time_column => ByRow((t) -> Date((measurement[time_column]) - Day(1)) <= Date(t)), # only look at floes from the previous day or later
-    )
-
     results = [
         get_rotation_measurements(
-            earlier_measurement, measurement; image_column, time_column, registration_function,
-        ) for earlier_measurement in eachrow(filtered_df)
+            other_measurement, measurement; image_column, time_column, registration_function,
+        ) for other_measurement in eachrow(df)
     ]
-
     return results
 end
 
