@@ -28,18 +28,17 @@ function get_rotation_measurements(
 )
     results = []
     for row in eachrow(df)
-        append!( # adds the 0 – n measurements from `get_rotation_measurements` to the results array
-            results,
-            get_rotation_measurements(
-                row, df; id_column, image_column, time_column, registration_function
-            ),
+        new_result = get_rotation_measurements(
+            row, df; id_column, image_column, time_column, registration_function
         )
+        push!(results, new_result)
     end
+    flat_results = Iterators.flatten(results)
 
     # Flatten the results into a single dataframe
-    measurement_result_df = select(DataFrame(results), Not([:row1, :row2]))
-    row1_df = _add_suffix("1", DataFrame([r.row1 for r in results]))
-    row2_df = _add_suffix("2", DataFrame([r.row2 for r in results]))
+    measurement_result_df = select(DataFrame(flat_results), Not([:row1, :row2]))
+    row1_df = _add_suffix("1", DataFrame([r.row1 for r in flat_results]))
+    row2_df = _add_suffix("2", DataFrame([r.row2 for r in flat_results]))
 
     # Add some columns
     sec_per_day = 86400.0
