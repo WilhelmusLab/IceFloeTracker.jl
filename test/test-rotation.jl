@@ -461,14 +461,14 @@ using IceFloeTracker: get_rotation_measurements, _add_suffix
         end
         @testset "sampled cases" begin
             function check_single_rotation_measurements(
-                time1, Δt_sec::Int64, mask1, mask2, Δθ_deg,
+                time1, Δt_sec::Int64, mask1, mask2, Δθ_deg; Δθ_deg_tolerance=0.1
             )
                 df = DataFrame([(time=time1, mask=mask1), (time=time1 + Second(Δt_sec), mask=mask2)])
 
                 result = get_rotation_measurements(df[1, :], df[2, :];
                     image_column=:mask, time_column=:time)
 
-                @test deg2rad(Δθ_deg - 5.1) <= result.theta_rad <= deg2rad(Δθ_deg + 5.1)
+                @test deg2rad(Δθ_deg - Δθ_deg_tolerance) <= result.theta_rad <= deg2rad(Δθ_deg + Δθ_deg_tolerance)
 
                 @test result.dt_sec ≈ Δt_sec
 
@@ -491,35 +491,40 @@ using IceFloeTracker: get_rotation_measurements, _add_suffix
                 3600,
                 masks[15],
                 masks[0],
-                -15
+                -15;
+                Δθ_deg_tolerance=5.1
             )
             check_single_rotation_measurements(
                 DateTime("2003-01-12T12:00:00"),
                 7200,
                 masks[0],
                 masks[15],
-                15
+                15;
+                Δθ_deg_tolerance=5.1,
             )
             check_single_rotation_measurements(
                 DateTime("2003-01-12T12:00:00"),
                 86400,
                 masks[0],
                 masks[30],
-                30
+                30.0;
+                Δθ_deg_tolerance=5.1
             )
             check_single_rotation_measurements(
                 DateTime("2003-01-12T12:00:00"),
                 864_000,
                 masks[0],
                 masks[30],
-                30
+                30;
+                Δθ_deg_tolerance=5.1
             )
             check_single_rotation_measurements(
                 DateTime("2003-01-12T12:00:00"),
                 86_400 + 3600,
                 masks[0],
                 masks[30],
-                30
+                30;
+                Δθ_deg_tolerance=5.1
             )
         end
     end
