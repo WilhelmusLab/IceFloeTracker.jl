@@ -62,10 +62,10 @@ function crop_to_shared_centroid(im1, im2)
 
     # check notation: how does julia interpret start and end of array index?
     im1_cropped = im1[
-        (1+r1-new_halfn):(r1+new_halfn), (1+c1-new_halfm):(c1+new_halfm)
+        (r1-new_halfn):(r1+new_halfn), (c1-new_halfm):(c1+new_halfm)
     ]
     im2_cropped = im2[
-        (1+r2-new_halfn):(r2+new_halfn), (1+c2-new_halfm):(c2+new_halfm)
+        (r2-new_halfn):(r2+new_halfn), (c2-new_halfm):(c2+new_halfm)
     ]
 
     return im1_cropped, im2_cropped
