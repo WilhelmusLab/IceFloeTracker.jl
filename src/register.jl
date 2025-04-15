@@ -125,7 +125,7 @@ function shape_difference_rotation(im_reference, im_target, test_angles; imrotat
     }(
         undef, length(test_angles)
     )
-     
+    for (idx, angle) in enumerate(test_angles)
 
         # rotate image back by angle
         imtarget_rotated = imrotate_function(imtarget_padded, -angle)
@@ -141,7 +141,7 @@ function shape_difference_rotation(im_reference, im_target, test_angles; imrotat
         b_not_a = im2 .> 0 .&& isequal.(im1, 0)
         shape_difference = sum(a_not_b .|| b_not_a)
         shape_differences[idx] = (; angle, shape_difference)
-        idx += 1
+
     end
     return shape_differences
 end
