@@ -2,8 +2,9 @@ using Dates
 using LinearAlgebra: dot, det, norm
 using IceFloeTracker: register, imrotate_bin_counterclockwise_radians
 
-@testset "rotation" begin
-    @testset "individual rotations" begin
+@testset "register" begin
+
+    @testset "individual registration" begin
         unit_vector(θ) = [cos(θ); sin(θ)]
         oriented_angle_between_vectors(u, v) = atan(det(hcat(u, v)), dot(u, v))
         oriented_angle_between_angles(θ1, θ2) =
