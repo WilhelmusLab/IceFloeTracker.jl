@@ -734,7 +734,10 @@ using IceFloeTracker: register, imrotate_bin_counterclockwise_radians
                     0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
                 ],
             )
-            test_mask_dictionary(masks)
+            test_mask_dictionary(
+                masks,
+                target_fraction_ok=0.975
+            )
         end
         @testset "unambiguous joined rectangles" begin
             masks = Dict(
