@@ -133,7 +133,7 @@ function shape_difference_rotation(im_reference, im_target, test_angles; imrotat
         im1, im2 = align_centroids(im_reference, im_target_rotated)
 
         # Check here that im1 and im2 sizes are the same
-        # should be guaranteed by "align_centroids"
+        # This should be guaranteed by "align_centroids"
         @assert size(im1) == size(im2)
 
         a_not_b = im1 .> 0 .&& isequal.(im2, 0)
