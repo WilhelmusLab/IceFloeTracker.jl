@@ -119,7 +119,6 @@ rotated by `A`.
 Use `imrotate_function=imrotate_bin_<clockwise|counterclockwise>_<radians|degrees>` to get angles <clockwise|counterclockwise> in <radians|degrees>.
 """
 function shape_difference_rotation(im_reference, im_target, test_angles; imrotate_function=imrotate_bin_clockwise_radians)
-    imref_padded, imtarget_padded = pad_images(im_reference, im_target)
     shape_differences = Array{
         NamedTuple{(:angle, :shape_difference),Tuple{Float64,Float64}}
     }(
@@ -129,9 +128,9 @@ function shape_difference_rotation(im_reference, im_target, test_angles; imrotat
     for (idx, angle) in enumerate(test_angles)
 
         # rotate image back by angle
-        imtarget_rotated = imrotate_function(imtarget_padded, -angle)
+        im_target_rotated = imrotate_function(im_target, -angle)
 
-        im1, im2 = align_centroids(imref_padded, imtarget_rotated)
+        im1, im2 = align_centroids(im_reference, im_target_rotated)
 
         # Check here that im1 and im2 sizes are the same
         # should be guaranteed by "align_centroids"
