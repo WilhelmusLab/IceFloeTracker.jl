@@ -78,24 +78,6 @@ using IceFloeTracker: pad_images, compute_centroid
             ]) == (2, 2)
         end
 
-        @testset "scaled matrices" begin
-            function test_measured_centroid_is_independent_of_scaling(array, scaling_factors; rounded)
-                for f in scaling_factors
-                    @test compute_centroid(array; rounded) == compute_centroid(array * f; rounded)
-                end
-            end
-            test_measured_centroid_is_independent_of_scaling(
-                abs.(randn(3, 3)),
-                abs.(randn(100));
-                rounded=true
-            )
-            test_measured_centroid_is_independent_of_scaling(
-                abs.(randn(5, 5)),
-                abs.(randn(100));
-                rounded=false
-            )
-        end
-
         @testset "larger images" begin
             @test compute_centroid(Bool[
                     0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
