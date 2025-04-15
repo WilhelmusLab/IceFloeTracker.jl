@@ -30,13 +30,11 @@ function compute_centroid(im::AbstractArray{Bool}; rounded=false)
     xi = 0
     yi = 0
     R = sum(im .> 0)
-    n, m = size(im)
-    for ii in range(1, n)
-        for jj in range(1, m)
-            if im[ii, jj] > 0
-                xi += ii
-                yi += jj
-            end
+    for idx in CartesianIndices(im)
+        if im[idx] > 0
+            ii, jj = Tuple(idx)
+            xi += ii
+            yi += jj
         end
     end
 
