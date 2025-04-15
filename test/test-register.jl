@@ -2,41 +2,43 @@ using Dates
 using LinearAlgebra: dot, det, norm
 using IceFloeTracker: register, imrotate_bin_counterclockwise_radians
 
-@testset "register" begin
+unit_vector(θ) = [cos(θ); sin(θ)]
+oriented_angle_between_vectors(u, v) = atan(det(hcat(u, v)), dot(u, v))
+oriented_angle_between_angles(θ1, θ2) =
+    oriented_angle_between_vectors(unit_vector(θ1), unit_vector(θ2))
 
-    @testset "individual registration" begin
-        unit_vector(θ) = [cos(θ); sin(θ)]
-        oriented_angle_between_vectors(u, v) = atan(det(hcat(u, v)), dot(u, v))
-        oriented_angle_between_angles(θ1, θ2) =
-            oriented_angle_between_vectors(unit_vector(θ1), unit_vector(θ2))
-
-        function test_mask_dictionary(
-            masks;
-            precision_goal_degrees::Float64=10.0,
-            target_fraction_ok::Float64=0.99, # TODO: Ideally this would be 1.0
-            angle_aliases=[0.0],
+function test_mask_dictionary(
+    masks;
+    precision_goal_degrees::Float64=10.0,
+    target_fraction_ok::Float64=0.99, # TODO: Ideally this would be 1.0
+    angle_aliases=[0.0],
+)
+    results = []
+    for (θ1, mask1) in masks, (θ2, mask2) in masks
+        Δθ = oriented_angle_between_angles(deg2rad(θ1), deg2rad(θ2))
+        Δθ_measured = register(
+            mask1,
+            mask2;
+            imrotate_function=imrotate_bin_counterclockwise_radians
         )
-            results = []
-            for (θ1, mask1) in masks, (θ2, mask2) in masks
-                Δθ = oriented_angle_between_angles(deg2rad(θ1), deg2rad(θ2))
-                Δθ_measured = register(
-                    mask1,
-                    mask2;
-                    imrotate_function=imrotate_bin_counterclockwise_radians
-                )
-                absolute_error_wrt_all_aliased_angles = [
-                    abs(oriented_angle_between_angles(Δθ + offset, Δθ_measured)) for
-                    offset in angle_aliases
-                ]
-                minimum_absolute_error = minimum(absolute_error_wrt_all_aliased_angles)
-                ok = minimum_absolute_error < deg2rad(precision_goal_degrees)
-                push!(results, (; θ1, θ2, Δθ, Δθ_measured, minimum_absolute_error, ok))
-            end
-            df = DataFrame(results)
-            @info sort(df)
-            fraction_ok = sum(df[:, :ok]) / length(df[:, :ok])
-            @test target_fraction_ok <= fraction_ok
-        end
+        absolute_error_wrt_all_aliased_angles = [
+            abs(oriented_angle_between_angles(Δθ + offset, Δθ_measured)) for
+            offset in angle_aliases
+        ]
+        minimum_absolute_error = minimum(absolute_error_wrt_all_aliased_angles)
+        ok = minimum_absolute_error < deg2rad(precision_goal_degrees)
+        push!(results, (; θ1, θ2, Δθ, Δθ_measured, minimum_absolute_error, ok))
+    end
+    df = DataFrame(results)
+    @info sort(df)
+    fraction_ok = sum(df[:, :ok]) / length(df[:, :ok])
+    @info "fraction_ok $fraction_ok >= $target_fraction_ok?"
+    @test target_fraction_ok <= fraction_ok
+end
+
+@testset "register" begin
+    @testset "individual registration" begin
+
         @testset "rectangles" begin
             masks = Dict(
                 90 => Bool[
