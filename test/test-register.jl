@@ -5,7 +5,7 @@ using IceFloeTracker: register, imrotate_bin_counterclockwise_radians
 @testset "rotation" begin
     @testset "individual rotations" begin
         unit_vector(θ) = [cos(θ); sin(θ)]
-        oriented_angle_between_vectors(a, b) = atan(det(hcat(a, b)), dot(a, b))
+        oriented_angle_between_vectors(u, v) = atan(det(hcat(u, v)), dot(u, v))
         oriented_angle_between_angles(θ1, θ2) =
             oriented_angle_between_vectors(unit_vector(θ1), unit_vector(θ2))
 
