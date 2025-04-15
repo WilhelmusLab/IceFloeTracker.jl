@@ -88,7 +88,6 @@ function shape_difference_rotation(im_reference, im_target, test_angles; imrotat
     }(
         undef, length(test_angles)
     )
-    # shape_differences = zeros((length(test_angles), 2))
     init_props = regionprops_table(label_components(im_reference))[1, :] # assumption only one object in image!
     idx = 1
     # r_init, c_init = compute_centroid(imref_padded, rounded=true)
