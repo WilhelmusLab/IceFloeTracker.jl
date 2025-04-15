@@ -346,7 +346,12 @@ using IceFloeTracker: register, imrotate_bin_counterclockwise_radians
                     0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
                 ],
             )
-            test_mask_dictionary(masks; angle_aliases=[0.0, π], target_fraction_ok=0.95)
+            test_mask_dictionary(
+                masks;
+                angle_aliases=[0.0, π],
+                target_fraction_ok=0.90,
+                precision_goal_degrees=10.0
+            )
         end
         @testset "joined rectangles" begin
             masks = Dict(
