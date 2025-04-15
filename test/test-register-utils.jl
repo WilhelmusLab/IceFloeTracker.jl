@@ -1,4 +1,4 @@
-using IceFloeTracker: pad_images, compute_centroid, crop_to_shared_centroid
+using IceFloeTracker: pad_images, compute_centroid, crop_to_shared_centroid, shape_difference_rotation
 
 @testset "registration utilities" begin
     @testset "centroid" begin
@@ -342,10 +342,10 @@ using IceFloeTracker: pad_images, compute_centroid, crop_to_shared_centroid
                 actual_result = crop_to_shared_centroid(image, image)
                 expected_result = (image, image)
 
-                println("expected:")
-                display(expected_result)
-                println("actual:")
-                display(actual_result)
+                # println("expected:")
+                # display(expected_result)
+                # println("actual:")
+                # display(actual_result)
 
                 @test actual_result == expected_result
             end
@@ -536,6 +536,122 @@ using IceFloeTracker: pad_images, compute_centroid, crop_to_shared_centroid
                     0 0 0 0])
 
         end
+
+    end
+
+    @testset "shape difference" begin
+        no_rotation = [0.0]
+        @test shape_difference_rotation(
+            Bool[1;;],
+            Bool[1;;],
+            no_rotation,
+        ) == [(; angle=0.0, shape_difference=0)]
+        @test shape_difference_rotation(Bool[
+                1 1;
+            ],
+            Bool[1;;],
+            no_rotation,
+        ) == [(; angle=0.0, shape_difference=1)]
+        @test shape_difference_rotation(Bool[
+                1 1
+                1 0
+            ],
+            Bool[1;;],
+            no_rotation,
+        ) == [(; angle=0.0, shape_difference=2)]
+
+        @test shape_difference_rotation(Bool[
+                1 1
+                1 0
+            ],
+            Bool[
+                1 1
+                1 0
+            ],
+            no_rotation,
+        ) == [(; angle=0.0, shape_difference=0)]
+        @test shape_difference_rotation(Bool[
+                1 1
+                1 0
+            ],
+            Bool[
+                1 1
+                1 1
+            ],
+            no_rotation,
+        ) == [(; angle=0.0, shape_difference=1)]
+        @test shape_difference_rotation(Bool[
+                0 1
+                1 1
+            ],
+            Bool[
+                1 1
+                1 0
+            ],
+            [0.0, π],
+        ) == [
+            (; angle=0.0, shape_difference=2),
+            (; angle=Float64(π), shape_difference=0)
+        ]
+        @test shape_difference_rotation(Bool[
+                1 1 1
+                1 1 0
+                1 0 0
+            ],
+            Bool[
+                1 1
+                1 1
+            ],
+            no_rotation,
+        ) == [(; angle=0.0, shape_difference=2)]
+        @test shape_difference_rotation(Bool[
+                1 1 1
+                1 1 0
+                1 0 0
+            ],
+            Bool[1;;],
+            no_rotation,
+        ) == [(; angle=0.0, shape_difference=5)]
+        @test shape_difference_rotation(Bool[
+                0 0 0 0 0
+                0 1 1 1 0
+                0 1 1 0 0
+                0 1 0 0 0
+                0 0 0 0 0],
+            Bool[
+                0 0 0 0 0
+                0 0 0 0 0
+                0 0 1 1 0
+                0 0 1 1 0
+                0 0 0 0 0],
+            no_rotation,
+        ) == [(; angle=0.0, shape_difference=2)]
+        @test shape_difference_rotation(Bool[
+                1 1 1
+                1 0 1
+                1 1 1
+            ],
+            Bool[
+                0 0 0
+                0 1 0
+                0 0 0
+            ],
+            no_rotation,
+        ) == [(; angle=0.0, shape_difference=9)]
+        @test shape_difference_rotation(Bool[
+                0 0 0 0 0
+                0 1 1 1 0
+                0 1 0 1 0
+                0 1 1 1 0
+                0 0 0 0 0],
+            Bool[
+                0 0 0 0 0
+                0 0 0 0 0
+                0 0 1 0 0
+                0 0 0 0 0
+                0 0 0 0 0],
+            no_rotation,
+        ) == [(; angle=0.0, shape_difference=9)]
 
     end
 end
