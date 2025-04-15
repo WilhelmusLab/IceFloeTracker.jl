@@ -1,4 +1,4 @@
-using IceFloeTracker: compute_centroid, crop_to_shared_centroid, shape_difference_rotation, align_centroids
+using IceFloeTracker: align_centroids, compute_centroid, shape_difference_rotation
 
 @testset "registration utilities" begin
     @testset "centroid" begin
