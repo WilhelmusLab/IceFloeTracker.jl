@@ -125,18 +125,18 @@ function shape_difference_rotation(im_reference, im_target, test_angles; imrotat
     }(
         undef, length(test_angles)
     )
+
     for (idx, angle) in enumerate(test_angles)
 
         # rotate image back by angle
         imtarget_rotated = imrotate_function(imtarget_padded, -angle)
 
         im1, im2 = align_centroids(imref_padded, imtarget_rotated)
-        
+
         # Check here that im1 and im2 sizes are the same
         # should be guaranteed by "align_centroids"
         @assert size(im1) == size(im2)
 
-        if isequal(size(im1), size(im2))
         a_not_b = im1 .> 0 .&& isequal.(im2, 0)
         b_not_a = im2 .> 0 .&& isequal.(im1, 0)
         shape_difference = sum(a_not_b .|| b_not_a)
