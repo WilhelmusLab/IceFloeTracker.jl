@@ -351,10 +351,12 @@ using IceFloeTracker: pad_images, compute_centroid, crop_to_shared_centroid
             end
 
             test_already_centered_image_is_unchanged(Bool[1;;])
+            test_already_centered_image_is_unchanged(Bool[1 1;])
             test_already_centered_image_is_unchanged(Bool[0 1 0;])
+            test_already_centered_image_is_unchanged(Bool[1 1 1 1;])
             test_already_centered_image_is_unchanged(Bool[
                 1;
-                1;;])  # broken
+                1;;])
             test_already_centered_image_is_unchanged(Bool[
                 0;
                 1;
@@ -365,7 +367,7 @@ using IceFloeTracker: pad_images, compute_centroid, crop_to_shared_centroid
             test_already_centered_image_is_unchanged(Bool[
                 0 0 1 1 1 0 0
                 0 0 1 1 1 0 0
-            ])  # broken
+            ])
             test_already_centered_image_is_unchanged(Bool[
                 0 0 1 1 1 0 0
                 0 0 1 1 1 0 0
