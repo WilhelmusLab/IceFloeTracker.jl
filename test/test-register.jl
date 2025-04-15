@@ -737,8 +737,9 @@ end
                 ],
             )
             test_mask_dictionary(
-                masks,
-                target_fraction_ok=0.975
+                masks;
+                target_fraction_ok=0.975,
+                precision_goal_degrees=10.0
             )
         end
         @testset "unambiguous joined rectangles" begin
@@ -1194,7 +1195,11 @@ end
                     0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
                 ],
             )
-            test_mask_dictionary(masks; target_fraction_ok=0.975)
+            test_mask_dictionary(
+                masks;
+                target_fraction_ok=0.99,
+                precision_goal_degrees=10.0
+            )
         end
         @testset "larger images" begin
             masks = Dict(
@@ -2049,7 +2054,11 @@ end
                     0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
                 ],
             )
-            test_mask_dictionary(masks)
+            test_mask_dictionary(
+                masks;
+                target_fraction_ok=0.98,
+                precision_goal_degrees=5.0
+            )
         end
     end
 end
