@@ -26,7 +26,7 @@ end
 Calculate the centroid of a binary image. If 'rounded', return the
 nearest integer.
 """
-function compute_centroid(im; rounded=false)
+function compute_centroid(im::AbstractArray{Bool}; rounded=false)
     xi = 0
     yi = 0
     R = sum(im .> 0)
