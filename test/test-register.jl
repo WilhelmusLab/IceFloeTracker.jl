@@ -36,7 +36,7 @@ function test_mask_dictionary(
     @test target_fraction_ok <= fraction_ok
 end
 
-@testset "register" begin
+@testset "registration" begin
     @testset "individual registration" begin
 
         @testset "rectangles" begin
