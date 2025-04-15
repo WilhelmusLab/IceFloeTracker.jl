@@ -133,7 +133,7 @@ function shape_difference_rotation(im_reference, im_target, test_angles; imrotat
         # rotate image back by angle
         imtarget_rotated = imrotate_function(imtarget_padded, -angle)
 
-        im1, im2 = crop_to_shared_centroid(imref_padded, imtarget_rotated)
+        im1, im2 = align_centroids(imref_padded, imtarget_rotated)
 
         # Check here that im1 and im2 sizes are the same
         if isequal(size(im1), size(im2))
