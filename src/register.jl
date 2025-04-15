@@ -125,10 +125,7 @@ function shape_difference_rotation(im_reference, im_target, test_angles; imrotat
     }(
         undef, length(test_angles)
     )
-    init_props = regionprops_table(label_components(im_reference))[1, :] # assumption only one object in image!
-    idx = 1
-    # r_init, c_init = compute_centroid(imref_padded, rounded=true)
-    for angle in test_angles
+     
 
         # rotate image back by angle
         imtarget_rotated = imrotate_function(imtarget_padded, -angle)
