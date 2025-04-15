@@ -57,8 +57,8 @@ function crop_to_shared_centroid(im1, im2)
 
     n1, m1 = size(im1)
     n2, m2 = size(im2)
-    new_halfn = minimum([minimum([r1, n1 - r1]), minimum([r2, n2 - r2])])
-    new_halfm = minimum([minimum([c1, m1 - c1]), minimum([c2, m2 - c2])])
+    new_halfn = minimum([r1, n1 - r1, r2, n2 - r2])
+    new_halfm = minimum([c1, m1 - c1, c2, m2 - c2])
 
     _round(x) = round(Int32, x)
     im1_cropped = im1[
