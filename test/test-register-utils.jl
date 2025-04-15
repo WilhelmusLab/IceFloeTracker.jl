@@ -338,7 +338,7 @@ using IceFloeTracker: pad_images, compute_centroid, crop_to_shared_centroid
 
     @testset "cropping" begin
         @testset "already centered image stays unchanged" begin
-            function test_already_centered_image_is_unchanged(image)
+            function test_same_already_centered_image_is_unchanged(image)
                 actual_result = crop_to_shared_centroid(image, image)
                 expected_result = (image, image)
 
@@ -350,36 +350,36 @@ using IceFloeTracker: pad_images, compute_centroid, crop_to_shared_centroid
                 @test actual_result == expected_result
             end
 
-            test_already_centered_image_is_unchanged(Bool[1;;])
-            test_already_centered_image_is_unchanged(Bool[1 1;])
-            test_already_centered_image_is_unchanged(Bool[0 1 0;])
-            test_already_centered_image_is_unchanged(Bool[1 1 1 1;])
-            test_already_centered_image_is_unchanged(Bool[
+            test_same_already_centered_image_is_unchanged(Bool[1;;])
+            test_same_already_centered_image_is_unchanged(Bool[1 1;])
+            test_same_already_centered_image_is_unchanged(Bool[0 1 0;])
+            test_same_already_centered_image_is_unchanged(Bool[1 1 1 1;])
+            test_same_already_centered_image_is_unchanged(Bool[
                 1;
                 1;;])
-            test_already_centered_image_is_unchanged(Bool[
+            test_same_already_centered_image_is_unchanged(Bool[
                 0;
                 1;
                 0;;
             ])
-            test_already_centered_image_is_unchanged(Bool[0 1 1 1 0;])
-            test_already_centered_image_is_unchanged(Bool[0 0 1 1 1 0 0;])
-            test_already_centered_image_is_unchanged(Bool[
+            test_same_already_centered_image_is_unchanged(Bool[0 1 1 1 0;])
+            test_same_already_centered_image_is_unchanged(Bool[0 0 1 1 1 0 0;])
+            test_same_already_centered_image_is_unchanged(Bool[
                 0 0 1 1 1 0 0
                 0 0 1 1 1 0 0
             ])
-            test_already_centered_image_is_unchanged(Bool[
+            test_same_already_centered_image_is_unchanged(Bool[
                 0 0 1 1 1 0 0
                 0 0 1 1 1 0 0
                 0 0 1 1 1 0 0])
-            test_already_centered_image_is_unchanged(Bool[
+            test_same_already_centered_image_is_unchanged(Bool[
                 0 0 0 0 0 0 0
                 0 0 1 1 1 0 0
                 0 0 1 1 1 0 0
                 0 0 1 1 1 0 0
                 0 0 0 0 0 0 0
             ])
-            test_already_centered_image_is_unchanged(Bool[
+            test_same_already_centered_image_is_unchanged(Bool[
                 0 0 0 0 0 0 0
                 0 0 0 0 0 0 0
                 0 0 1 1 1 0 0
@@ -388,7 +388,7 @@ using IceFloeTracker: pad_images, compute_centroid, crop_to_shared_centroid
                 0 0 0 0 0 0 0
                 0 0 0 0 0 0 0
             ])
-            test_already_centered_image_is_unchanged(Bool[
+            test_same_already_centered_image_is_unchanged(Bool[
                 0 0 0 0 0 0 0 0 0
                 0 0 0 0 0 0 0 0 0
                 0 0 0 0 0 0 0 0 0
@@ -399,7 +399,143 @@ using IceFloeTracker: pad_images, compute_centroid, crop_to_shared_centroid
                 0 0 0 0 0 0 0 0 0
                 0 0 0 0 0 0 0 0 0
             ])
+        end
+        @testset "offset image" begin
+            @test crop_to_shared_centroid(Bool[
+                    0 0 0 0 0 0 0 0 0
+                    0 0 0 0 0 0 0 0 0
+                    0 0 0 0 0 0 0 0 0
+                    0 0 0 1 1 1 0 0 0
+                    0 0 0 1 1 1 0 0 0
+                    0 0 0 1 1 1 0 0 0
+                    0 0 0 0 0 0 0 0 0
+                    0 0 0 0 0 0 0 0 0
+                    0 0 0 0 0 0 0 0 0
+                ], Bool[
+                    0 0 0 0 0 0 0 0 0
+                    0 0 0 0 0 0 0 0 0
+                    0 0 0 0 0 0 0 0 0
+                    0 0 0 0 0 0 0 0 0
+                    0 0 0 0 1 0 0 0 0
+                    0 0 0 0 0 0 0 0 0
+                    0 0 0 0 0 0 0 0 0
+                    0 0 0 0 0 0 0 0 0
+                    0 0 0 0 0 0 0 0 0
+                ]) == (
+                Bool[
+                    0 0 0 0 0 0 0 0 0
+                    0 0 0 0 0 0 0 0 0
+                    0 0 0 0 0 0 0 0 0
+                    0 0 0 1 1 1 0 0 0
+                    0 0 0 1 1 1 0 0 0
+                    0 0 0 1 1 1 0 0 0
+                    0 0 0 0 0 0 0 0 0
+                    0 0 0 0 0 0 0 0 0
+                    0 0 0 0 0 0 0 0 0
+                ], Bool[
+                    0 0 0 0 0 0 0 0 0
+                    0 0 0 0 0 0 0 0 0
+                    0 0 0 0 0 0 0 0 0
+                    0 0 0 0 0 0 0 0 0
+                    0 0 0 0 1 0 0 0 0
+                    0 0 0 0 0 0 0 0 0
+                    0 0 0 0 0 0 0 0 0
+                    0 0 0 0 0 0 0 0 0
+                    0 0 0 0 0 0 0 0 0
+                ])
+
+            @test crop_to_shared_centroid(Bool[
+                    0 0 0 0 0 0 0 0 0
+                    0 0 0 0 0 0 0 0 0
+                    0 0 0 0 0 0 0 0 0
+                    0 0 0 1 1 1 0 0 0
+                    0 0 0 1 1 1 0 0 0
+                    0 0 0 1 1 1 0 0 0
+                    0 0 0 0 0 0 0 0 0
+                    0 0 0 0 0 0 0 0 0
+                    0 0 0 0 0 0 0 0 0
+                ], Bool[
+                    0 0 0 0 0 0 0 0 0
+                    0 0 0 0 0 0 0 0 0
+                    0 0 0 0 0 0 0 0 0
+                    0 0 0 1 0 0 0 0 0
+                    0 0 0 0 0 0 0 0 0
+                    0 0 0 0 0 1 0 0 0
+                    0 0 0 0 0 0 0 0 0
+                    0 0 0 0 0 0 0 0 0
+                    0 0 0 0 0 0 0 0 0
+                ]) == (
+                Bool[
+                    0 0 0 0 0 0 0 0 0
+                    0 0 0 0 0 0 0 0 0
+                    0 0 0 0 0 0 0 0 0
+                    0 0 0 1 1 1 0 0 0
+                    0 0 0 1 1 1 0 0 0
+                    0 0 0 1 1 1 0 0 0
+                    0 0 0 0 0 0 0 0 0
+                    0 0 0 0 0 0 0 0 0
+                    0 0 0 0 0 0 0 0 0
+                ], Bool[
+                    0 0 0 0 0 0 0 0 0
+                    0 0 0 0 0 0 0 0 0
+                    0 0 0 0 0 0 0 0 0
+                    0 0 0 1 0 0 0 0 0
+                    0 0 0 0 0 0 0 0 0
+                    0 0 0 0 0 1 0 0 0
+                    0 0 0 0 0 0 0 0 0
+                    0 0 0 0 0 0 0 0 0
+                    0 0 0 0 0 0 0 0 0
+                ])
+            @test crop_to_shared_centroid(
+                Bool[
+                    0 0 0 0 0
+                    0 1 1 1 0
+                    0 1 1 1 0
+                    0 1 1 1 0
+                    0 0 0 0 0],
+                Bool[
+                    0 0 0 0 0
+                    0 0 0 0 0
+                    0 0 1 0 0
+                    0 0 0 0 0
+                    0 0 0 0 0]) == (
+                Bool[
+                    0 0 0 0 0
+                    0 1 1 1 0
+                    0 1 1 1 0
+                    0 1 1 1 0
+                    0 0 0 0 0],
+                Bool[
+                    0 0 0 0 0
+                    0 0 0 0 0
+                    0 0 1 0 0
+                    0 0 0 0 0
+                    0 0 0 0 0])
+            @test crop_to_shared_centroid(
+                Bool[
+                    0 0 0 0 0
+                    0 1 1 1 0
+                    0 1 1 0 0
+                    0 1 0 0 0
+                    0 0 0 0 0],
+                Bool[
+                    0 0 0 0 0
+                    0 0 0 0 0
+                    0 0 1 1 0
+                    0 0 1 1 0
+                    0 0 0 0 0]) == (
+                Bool[
+                    0 0 0 0;
+                    0 1 1 1;
+                    0 1 1 0;
+                    0 1 0 0],
+                Bool[
+                    0 0 0 0;
+                    0 1 1 0;
+                    0 1 1 0;
+                    0 0 0 0])
 
         end
+
     end
 end
