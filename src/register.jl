@@ -10,18 +10,6 @@ imrotate_bin_counterclockwise_radians(x, r) = imrotate_bin(x, -r)
 imrotate_bin_clockwise_degrees(x, r) = imrotate_bin_clockwise_radians(x, deg2rad(r))
 imrotate_bin_counterclockwise_degrees(x, r) = imrotate_bin_counterclockwise_radians(x, deg2rad(r))
 
-
-
-# Functions used for the SD minimization
-"""
-Pad images by zeros based on the size of the larger of the two images.
-"""
-function pad_images(im1, im2)
-    n = max(size(im1)..., size(im2)...)
-    im_padded = [collect(padarray(im, Fill(0, (n, n), (n, n)))) for im in [im1, im2]]
-    return im_padded[1], im_padded[2]
-end
-
 """
 Calculate the centroid of a binary image. If 'rounded', return the
 nearest integer.
