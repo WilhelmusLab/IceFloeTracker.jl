@@ -35,33 +35,6 @@ function compute_centroid(im::AbstractArray{Bool}; rounded=false)
 end
 
 """
-Align images by selecting and cropping so that r1, c1 and r2, c2 are the center.
-These values are expected to be the (integer) centroid of the image. These images
-should already be padded so that there is no danger of cutting into the floe shape.
-"""
-function crop_to_shared_centroid(im1, im2)
-    r1, c1 = compute_centroid(im1; rounded=false)
-    r2, c2 = compute_centroid(im2; rounded=false)
-
-    n1, m1 = size(im1)
-    n2, m2 = size(im2)
-    new_halfn = minimum([r1, n1 - r1, r2, n2 - r2])
-    new_halfm = minimum([c1, m1 - c1, c2, m2 - c2])
-
-    _round(x) = round(Int32, x)
-    im1_cropped = im1[
-        _round(r1 - new_halfn):_round(r1 + new_halfn),
-        _round(c1 - new_halfm):_round(c1 + new_halfm)
-    ]
-    im2_cropped = im2[
-        _round(r2 - new_halfn):_round(r2 + new_halfn),
-        _round(c2 - new_halfm):_round(c2 + new_halfm)
-    ]
-
-    return im1_cropped, im2_cropped
-end
-
-"""
 Align images by padding so that the centroids of each image are on the edge of or within the same pixel.
 """
 function align_centroids(im1::AbstractArray{Bool}, im2::AbstractArray{Bool})
