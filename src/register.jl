@@ -74,6 +74,43 @@ function crop_to_shared_centroid(im1, im2)
 end
 
 """
+Align images by padding so that the centroids of each image are on the edge of or within the same pixel.
+"""
+function align_centroids(im1::AbstractArray{Bool}, im2::AbstractArray{Bool})
+    # Get the location of the pixel containing the centroids of im1 and im2 
+    # in their current coordinate systems
+    r1, c1 = Int64.(floor.(compute_centroid(im1; rounded=false)))
+    r2, c2 = Int64.(floor.(compute_centroid(im2; rounded=false)))
+
+    # Calculate the same centroid, but measured from the bottom right of each image
+    s1, d1 = size(im1) .- (r1, c1) .+ 1
+    s2, d2 = size(im2) .- (r2, c2) .+ 1
+
+    # Calculate the new "common centroid" position in image coordinates
+    rn, cn = (
+        maximum([r1, r2]),
+        maximum([c1, c2]),
+    )
+    # Calculate the new "reverse common centroid" position in image coordinates from the bottom right
+    sn, dn = (
+        maximum([s1, s2]),
+        maximum([d1, d2]),
+    )
+
+    # For each image, we shift the pixel containing its centroid to the new centroid
+    # by adding rn-ri rows padding at the top, and cn-ci columns at the left.
+    # We ensure that the centroid is the same distance from the right border
+    # by adding sn-si rows padding at the bottom and dn-di columns padding at the right
+    # These need to be `collect`
+    im1_padded = collect(padarray(im1, Fill(0, (rn - r1, cn - c1), (sn - s1, dn - d1))))
+    im2_padded = collect(padarray(im2, Fill(0, (rn - r2, cn - c2), (sn - s2, dn - d2))))
+
+    @assert floor.(compute_centroid(im1_padded; rounded=false)) == floor.(compute_centroid(im2_padded; rounded=false))
+
+    return im1_padded, im2_padded
+end
+
+"""
 Computes the shape difference between im_reference and im_target for each angle in test_angles.
 The reference image is held constant, while the target image is rotated. The test_angles are interpreted
 as the angle of rotation from target to reference, so to find the best match, we rotate the reverse

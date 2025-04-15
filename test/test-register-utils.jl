@@ -646,6 +646,71 @@ using IceFloeTracker: pad_images, compute_centroid, crop_to_shared_centroid, sha
 
     end
 
+
+    @testset "pad to center" begin
+        @test align_centroids(
+            Bool[
+                1 0
+                0 0],
+            Bool[
+                0 0
+                0 1]
+        ) == (
+            Bool[
+                0 0 0
+                0 1 0
+                0 0 0],
+            Bool[
+                0 0 0
+                0 1 0
+                0 0 0]
+        )
+        @test align_centroids(
+            Bool[1;;],
+            Bool[
+                0 0
+                0 1]
+        ) == (
+            Bool[
+                0 0
+                0 1
+            ],
+            Bool[
+                0 0
+                0 1
+            ]
+        )
+        @test align_centroids(
+            Bool[1 1;],
+            Bool[
+                0 0
+                0 1
+            ]
+        ) == (
+            Bool[
+                0 0 0
+                0 1 1
+            ],
+            Bool[
+                0 0 0
+                0 1 0
+            ])
+        @test align_centroids(
+            Bool[
+                0 0 0 0 0 1 1 1;
+            ],
+            Bool[
+                1 0 0;
+            ]
+        ) == (
+            Bool[
+                0 0 0 0 0 1 1 1 0;
+            ],
+            Bool[
+                0 0 0 0 0 0 1 0 0;
+            ],)
+    end
+
     @testset "shape difference" begin
         no_rotation = [0.0]
         @test shape_difference_rotation(
