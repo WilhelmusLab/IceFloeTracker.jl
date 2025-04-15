@@ -1,4 +1,4 @@
-using IceFloeTracker: pad_images, compute_centroid
+using IceFloeTracker: pad_images, compute_centroid, crop_to_shared_centroid
 
 @testset "registration utilities" begin
     @testset "centroid" begin
@@ -334,7 +334,45 @@ using IceFloeTracker: pad_images, compute_centroid
                 )
             end
         end
+    end
 
+    @testset "cropping" begin
+        @testset "already centered image stays unchanged" begin
+            img = Bool[
+                0 0 0 0 0 0 0 0 0
+                0 0 0 0 0 0 0 0 0
+                0 0 0 0 0 0 0 0 0
+                0 0 0 1 1 1 0 0 0
+                0 0 0 1 1 1 0 0 0
+                0 0 0 1 1 1 0 0 0
+                0 0 0 0 0 0 0 0 0
+                0 0 0 0 0 0 0 0 0
+                0 0 0 0 0 0 0 0 0
+            ]
+            @test crop_to_shared_centroid(img, img) == (img, img)
+        end
+
+
+        # @test crop_to_shared_centroid(img, img) == (
+        #     Bool[
+        #         0 0 0 0 0 0 0 0;
+        #         0 0 0 0 0 0 0 0;
+        #         0 0 1 1 1 0 0 0;
+        #         0 0 1 1 1 0 0 0;
+        #         0 0 1 1 1 0 0 0;
+        #         0 0 0 0 0 0 0 0;
+        #         0 0 0 0 0 0 0 0;
+        #         0 0 0 0 0 0 0 0],
+        #     Bool[
+        #         0 0 0 0 0 0 0 0;
+        #         0 0 0 0 0 0 0 0;
+        #         0 0 1 1 1 0 0 0;
+        #         0 0 1 1 1 0 0 0;
+        #         0 0 1 1 1 0 0 0;
+        #         0 0 0 0 0 0 0 0;
+        #         0 0 0 0 0 0 0 0;
+        #         0 0 0 0 0 0 0 0])
 
     end
+
 end
