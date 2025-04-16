@@ -26,14 +26,16 @@ function get_rotation_measurements(
     image_column::Symbol,
     time_column::Symbol,
     registration_function::Function=register,
+    lookback_days::Integer=1,
 )
     results = []
     for measurement in eachrow(df)
         filtered_df = subset(
             df,
+            # TODO: look into passing this filtering as an argument
             id_column => ByRow(==(measurement[id_column])), # only look at matching floes
             time_column => ByRow((t) -> t < (measurement[time_column])), # only look at earlier images
-            time_column => ByRow((t) -> Date((measurement[time_column]) - Day(1)) <= Date(t)), # only look at floes from the previous day or later
+            time_column => ByRow((t) -> Date((measurement[time_column]) - Day(lookback_days)) <= Date(t)), # only look at floes from the previous day or later
         )
         new_results = get_rotation_measurements(
             measurement, filtered_df; image_column, time_column, registration_function,
