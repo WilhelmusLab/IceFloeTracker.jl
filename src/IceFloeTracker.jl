@@ -43,7 +43,8 @@ export readdlm,
     matchcorr,
     centered,
     imrotate,
-    IFTVERSION
+    IFTVERSION,
+    get_rotation_measurements
 
 # For IFTPipeline
 using HDF5
@@ -83,6 +84,7 @@ include("imadjust.jl")
 include("ice_masks.jl")
 include("regularize-final.jl")
 include("latlon.jl")
+include("rotation.jl")
 
 function get_version_from_toml(pth=dirname(dirname(pathof(IceFloeTracker))))::VersionNumber
     toml = TOML.parsefile(joinpath(pth, "Project.toml"))
