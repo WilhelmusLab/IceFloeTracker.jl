@@ -1,0 +1,2 @@
+[deps]
+scikit-image = "==0.25.1"

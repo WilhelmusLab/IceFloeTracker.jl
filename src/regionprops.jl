@@ -78,11 +78,11 @@ function regionprops_table(
         extra_properties = nothing
     end
 
-    props = DataFrame(
+    props = DataFrame(PyTable(
         sk_measure.regionprops_table(
             label_img, intensity_img, properties; extra_properties=extra_properties
-        ),
-    )
+        )
+    ))
 
     if "bbox" in properties
         bbox_cols = getbboxcolumns(props)
@@ -157,9 +157,9 @@ function regionprops(
         extra_properties = nothing
     end
 
-    return sk_measure.regionprops(
+    return DataFrame(PyTable(sk_measure.regionprops(
         label_img, intensity_img; extra_properties=extra_properties
-    )
+    )))
 end
 
 """
@@ -181,7 +181,7 @@ function getbboxcolumns(props::DataFrame)
 end
 
 
-FloeLabelsImage = Union{BitMatrix, Matrix{<:Bool}, Matrix{<:Integer}}
+FloeLabelsImage = Union{BitMatrix,Matrix{<:Bool},Matrix{<:Integer}}
 
 """
     cropfloe(floesimg, props, i)
@@ -205,13 +205,13 @@ function cropfloe(floesimg::FloeLabelsImage, props::DataFrame, i::Integer)
 
     if issubset(bbox_label_column_names, colnames)
         return cropfloe(
-                floesimg,
-                props_row.min_row,
-                props_row.min_col,
-                props_row.max_row,
-                props_row.max_col,
-                props_row.label
-            )
+            floesimg,
+            props_row.min_row,
+            props_row.min_col,
+            props_row.max_row,
+            props_row.max_col,
+            props_row.label
+        )
 
     elseif issubset(bbox_column_names, colnames)
         floesimg_bitmatrix = floesimg .> 0
@@ -222,10 +222,10 @@ function cropfloe(floesimg::FloeLabelsImage, props::DataFrame, i::Integer)
             props_row.max_row,
             props_row.max_col
         )
-    
+
     elseif issubset(label_column_names, colnames)
         return cropfloe(floesimg, props_row.label)
-    
+
     end
 end
 
@@ -256,7 +256,7 @@ end
 
 Crops the floe from `floesimg` with the label `label`, returning the region bounded by `min_row`, `min_col`, `max_row`, `max_col`, and converting to a BitMatrix.
 """
-function cropfloe(floesimg::Matrix{I}, min_row::J, min_col::J, max_row::J, max_col::J, label::I)  where {I<:Integer, J<:Integer}
+function cropfloe(floesimg::Matrix{I}, min_row::J, min_col::J, max_row::J, max_col::J, label::I) where {I<:Integer,J<:Integer}
     #= 
     Crop the floe using bounding box data in props.
     Note: Using a view of the cropped floe was considered but if there were multiple components in the cropped floe, the source array with the floes would be modified. =#

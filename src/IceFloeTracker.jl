@@ -12,7 +12,7 @@ using Interpolations
 using OffsetArrays: centered
 using Peaks
 using Pkg
-using PyCall
+using PythonCall
 using Random
 using Serialization: deserialize, serialize
 using StaticArrays
@@ -93,17 +93,13 @@ end
 
 const IFTVERSION = get_version_from_toml()
 
-const sk_measure = PyNULL()
-const sk_morphology = PyNULL()
-const sk_exposure = PyNULL()
+sk_measure = pyimport("skimage.measure")
+sk_exposure = pyimport("skimage.exposure")
+sk_morphology = pyimport("skimage.morphology")
 
-function __init__()
-    skimage = "scikit-image=0.25.1"
-    copy!(sk_measure, pyimport_conda("skimage.measure", skimage))
-    copy!(sk_exposure, pyimport_conda("skimage.exposure", skimage))
-    copy!(sk_morphology, pyimport_conda("skimage.morphology", skimage))
-    return nothing
-end
+# function __init__()
+#     return nothing
+# end
 
 include("regionprops.jl")
 include("segmentation_a_direct.jl")
