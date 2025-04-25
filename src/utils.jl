@@ -101,7 +101,7 @@ See also [`add_padding`](@ref)
 function remove_padding(paddedimg, border_spec::Union{Pad,Fill})::Matrix
     top, left = border_spec.lo
     bottom, right = border_spec.hi
-    return paddedimg[(top + 1):(end - bottom), (left + 1):(end - right)]
+    return paddedimg[(top+1):(end-bottom), (left+1):(end-right)]
 end
 
 """
@@ -130,7 +130,7 @@ It supports both integer and grayscale images using different implementations fo
 function impose_minima(I::AbstractArray{T}, BW::AbstractArray{Bool}) where {T<:Integer}
     marker = 255 .* BW
     mask = imcomplement(min.(I .+ 1, 255 .- marker))
-    reconstructed = sk_morphology.reconstruction(marker, mask)
+    reconstructed = @pyconst(pyimport("skimage.morphology")).reconstruction(marker, mask)
     return IceFloeTracker.imcomplement(Int.(reconstructed))
 end
 
@@ -145,7 +145,7 @@ function impose_minima(
     marker = -Inf * BW .+ (Inf * .!BW)
     mask = min.(I .+ h, marker)
 
-    return 1 .- sk_morphology.reconstruction(1 .- marker, 1 .- mask)
+    return 1 .- @pyconst(pyimport("skimage.morphology")).reconstruction(1 .- marker, 1 .- mask)
 end
 
 """

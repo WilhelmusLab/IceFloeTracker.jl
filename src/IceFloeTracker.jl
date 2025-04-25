@@ -93,14 +93,6 @@ end
 
 const IFTVERSION = get_version_from_toml()
 
-sk_measure = pyimport("skimage.measure")
-sk_exposure = pyimport("skimage.exposure")
-sk_morphology = pyimport("skimage.morphology")
-
-# function __init__()
-#     return nothing
-# end
-
 include("regionprops.jl")
 include("segmentation_a_direct.jl")
 include("segmentation_b.jl")

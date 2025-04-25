@@ -15,11 +15,11 @@ function reconstruct(img, se, type, invert::Bool=true)
 
     type == "dilation" && (
         morphed = to_uint8(
-            IceFloeTracker.sk_morphology.dilation(img; footprint=collect(se))
+            @pyconst(pyimport("skimage.morphology")).dilation(img; footprint=collect(se))
         )
     )
     type == "erosion" && (
-        morphed = to_uint8(IceFloeTracker.sk_morphology.erosion(img; footprint=collect(se)))
+        morphed = to_uint8(@pyconst(pyimport("skimage.morphology")).erosion(img; footprint=collect(se)))
     )
 
     invert && (morphed = imcomplement(to_uint8(morphed)); img = imcomplement(img))
@@ -28,5 +28,5 @@ function reconstruct(img, se, type, invert::Bool=true)
         IceFloeTracker.MorphSE.dilate, morphed, img
     )
 
-    return IceFloeTracker.sk_morphology.reconstruction(morphed, img)
+    return @pyconst(pyimport("skimage.morphology")).reconstruction(morphed, img)
 end

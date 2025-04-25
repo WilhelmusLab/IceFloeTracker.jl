@@ -79,7 +79,7 @@ function regionprops_table(
     end
 
     props = DataFrame(PyTable(
-        sk_measure.regionprops_table(
+        @pyconst(pyimport("skimage.measure")).regionprops_table(
             label_img, intensity_img, properties; extra_properties=extra_properties
         )
     ))
@@ -157,7 +157,7 @@ function regionprops(
         extra_properties = nothing
     end
 
-    return DataFrame(PyTable(sk_measure.regionprops(
+    return DataFrame(PyTable(@pyconst(pyimport("skimage.measure")).regionprops(
         label_img, intensity_img; extra_properties=extra_properties
     )))
 end

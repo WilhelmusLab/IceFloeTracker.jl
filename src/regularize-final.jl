@@ -104,8 +104,8 @@ function get_final(
 
     #= opening to remove noise while preserving shape/size
     Note the different structuring elements for erosion and dilation =#
-    mask = sk_morphology.erosion(_img, se_erosion)
-    mask .= sk_morphology.dilation(mask, se_dilation)
+    mask = @pyconst(pyimport("skimage.morphology")).erosion(_img, se_erosion)
+    mask .= @pyconst(pyimport("skimage.morphology")).dilation(mask, se_dilation)
 
     # Restore shape of floes based on the cleaned up `mask`
     final = IceFloeTracker.MorphSE.mreconstruct(IceFloeTracker.MorphSE.dilate, _img, mask)
