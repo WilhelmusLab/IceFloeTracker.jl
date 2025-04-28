@@ -30,4 +30,3 @@ landmask_imgs.dilated
 Setting thresholds for cloud mask
 
 ## Image regularization
-
