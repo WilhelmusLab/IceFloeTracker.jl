@@ -31,7 +31,11 @@ The IFT segmentation functions include functions for semantic segmentation (pixe
 Ice floe tracking is carried out by comparing the shapes produced in the segmentation step. Shapes with similar area are rotated until the difference in surface area is minimized, and then the edge shapes are compared using a Ѱ-s curve. If thresholds for correlation and area differences are met, then the floe with the best correlation and smallest area differences are considered matches and the objects are assigned the same label. In the end, trajectories for individual floes are recorded in a dataframe.
 
 ## Developers
-IceFloeTracker.jl is a product of the [Wilhelmus Lab](https://www.wilhelmuslab.me) at Brown University, led by Monica M. Wilhelmus. The original algorithm was developed by Rosalinda Lopez-Acosta during her PhD work at University of California Riverside, advised by Dr. Wilhelmus. The translation of the original Matlab code into the current modular, open source Julia package has been carried out in conjunction with the Center for Computing and Visualization at Brown University. Contributors include Daniel Watkins, Maria Isabel Restrepo, Carlos Paniagua, Tim Divoll, John Holland, and Bradford Roarr.
+IceFloeTracker.jl is a product of the [Wilhelmus Lab](https://www.wilhelmuslab.me) at Brown University, led by Monica M. Wilhelmus. The original algorithm was developed by
+Rosalinda Lopez-Acosta during her PhD work at University of California Riverside, advised by Dr. Wilhelmus. 
+The translation of the original Matlab code into the current modular, open-source Julia package has been
+carried out in conjunction with the Center for Computing and Visualization at Brown University.
+Contributors include Carlos Paniagua, Tim DiVoll, John Holland, and Bradford Roarr, and Daniel Watkins, Maria Isabel Restrepo.
 
 ## Citing
 
