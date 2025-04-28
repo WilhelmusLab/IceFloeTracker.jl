@@ -1,6 +1,8 @@
 # IceFloeTracker.jl
 
-IceFloeTracker.jl is a collection of routines and tools for processing remote sensing imagery, identifying sea ice floes, and tracking the displacement and rotation of ice floes across multiple images. The package includes the core functions for the Ice Floe Tracker (IFT) algorithm introduced by [Lopez-Acosta et al. 2019](https://www.sciencedirect.com/science/article/pii/S0034425719304250). These functions can be used independently and can be customized for specific use cases. It can be used either standalone to create custom processing pathways or with the [Ice Floe Tracker Pipeline](https://github.com/WilhelmusLab/ice-floe-tracker-pipeline).
+Welcome to the documentation for IceFloeTracker.jl!
+
+IceFloeTracker.jl is a collection of routines and tools for processing remote sensing imagery, identifying sea ice floes, and tracking the displacement and rotation of ice floes across multiple images. The package includes the core functions for the Ice Floe Tracker (IFT) algorithm introduced by [Lopez-Acosta et al. 2019](https://www.sciencedirect.com/science/article/pii/S0034425719304250) along with updates and alternative processing routines. These functions can be used independently and can be customized for specific use cases. The package can be used either standalone to create custom processing pathways or with the [Ice Floe Tracker Pipeline](https://github.com/WilhelmusLab/ice-floe-tracker-pipeline).
 
 ## Installation
 
@@ -20,7 +22,7 @@ The IFT algorithm has three main components: preprocessing, segmentation, and tr
 
 ### Preprocessing
 
-IFT operates on optical satellite imagery. The main functions are designed with "true color" and "false color" imagery in mind, and have thus far primarily been tested on imagery from the Moderate Resolution Imaging Spectroradiometer (MODIS) from the NASA _Aqua_ and _Terra_ satellites. The preprocessing routines mask land and cloud features, and aim to adjust and sharpen the remainder of the images to amplify the contrast along the edges of sea ice floes. (TBD: Link to main preprocessing page)
+IFT operates on optical satellite imagery. The main functions are designed with "true color" and "false color" imagery in mind, and have thus far primarily been tested on imagery from the Moderate Resolution Imaging Spectroradiometer (MODIS) from the NASA _Aqua_ and _Terra_ satellites. The preprocessing routines mask land and cloud features, and aim to adjust and sharpen the remainder of the images to amplify the contrast along the edges of sea ice floes. 
 
 ### Segmentation
 
