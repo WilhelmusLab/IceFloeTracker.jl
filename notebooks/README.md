@@ -27,7 +27,7 @@
 5. Activate a Julia environment
    ```@julia
    using Pkg
-   Pkg.activate("ift-demo")
+   Pkg.activate("ift-notebooks")
    ```
 6. Install `IJulia` and `IceFloeTracker`
    ```@julia

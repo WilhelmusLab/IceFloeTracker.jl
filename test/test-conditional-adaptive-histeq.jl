@@ -10,10 +10,10 @@ using IceFloeTracker:
 begin
     datadir = joinpath(@__DIR__, "test_inputs/")
     path_true_color_image = joinpath(
-        datadir, "NE_Greenland_truecolor.2020162.aqua.250m.tiff"
+        datadir, "beaufort-chukchi-seas_truecolor.2020162.aqua.250m.tiff"
     )
     path_false_color_image = joinpath(
-        datadir, "NE_Greenland_reflectance.2020162.aqua.250m.tiff"
+        datadir, "beaufort-chukchi-seas_falsecolor.2020162.aqua.250m.tiff"
     )
     true_color_image = float64.(load(path_true_color_image))
     false_color_image = float64.(load(path_false_color_image))

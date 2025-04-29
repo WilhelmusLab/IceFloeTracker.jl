@@ -15,9 +15,9 @@ using IceFloeTracker:
     region = (1016:3045, 1486:3714)
     data_dir = joinpath(@__DIR__, "test_inputs")
     true_color_image = load(
-        joinpath(data_dir, "NE_Greenland_truecolor.2020162.aqua.250m.tiff")
+        joinpath(data_dir, "beaufort-chukchi-seas_truecolor.2020162.aqua.250m.tiff")
     )
-    ref_image = load(joinpath(data_dir, "NE_Greenland_reflectance.2020162.aqua.250m.tiff"))
+    ref_image = load(joinpath(data_dir, "beaufort-chukchi-seas_falsecolor.2020162.aqua.250m.tiff"))
     landmask = float64.(load(joinpath(data_dir, "matlab_landmask.png"))) .> 0
 
     # Crop images to region of interest
