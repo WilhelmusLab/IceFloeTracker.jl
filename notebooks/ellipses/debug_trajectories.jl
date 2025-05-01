@@ -54,6 +54,6 @@ function check_tracker(
 end
 
 begin # Load the data / set config
-    check_tracker("notebooks/ellipses/example1")
+    check_tracker("notebooks/ellipses/example-31-25")
 end
 
