@@ -51,6 +51,12 @@ function check_tracker(
     trajectories_ = long_tracker(props, ct, thresholds)
     @show trajectories_
 
+    counts = combine(groupby(trajectories_, :ID), nrow)
+
+    counts[!, :broken] .= counts.nrow .> length(props)
+    @show counts
+
+
 end
 
 begin # Load the data / set config
