@@ -47,13 +47,13 @@ function check_tracker(
     ct=(search_thresholds=(dt=(30.0, 100.0, 1300.0), dist=(200, 250, 300)), small_floe_settings=(minimumarea=100, arearatio=0.18, majaxisratio=0.1, minaxisratio=0.15, convexarearatio=0.2), large_floe_settings=(minimumarea=1200, arearatio=0.28, majaxisratio=0.1, minaxisratio=0.12, convexarearatio=0.14)),
     thresholds=(goodness=(small_floe_area=0.18, large_floe_area=0.236, corr=0.68), comp=(mxrot=10, sz=16))
 )
-    props = [load_props_from_csv(p) for p in readdir(path, join=true)]
+    props = [load_props_from_csv(p) for p in readdir(path, join=true) if endswith(p, ".csv")]
     trajectories_ = long_tracker(props, ct, thresholds)
     @show trajectories_
 
 end
 
 begin # Load the data / set config
-    check_tracker("notebooks/ellipses/example-31-25")
+    check_tracker("notebooks/ellipses/example-31-25-obs5-7")
 end
 
