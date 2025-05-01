@@ -3,8 +3,6 @@ using Serialization
 using DataFrames
 using CSV
 
-
-
 tracker_data = deserialize("notebooks/ellipses/tracker-trajectories-bug.jls")
 
 for (i, df) in enumerate(tracker_data.props)
