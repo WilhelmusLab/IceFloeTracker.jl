@@ -56,10 +56,12 @@ function check_tracker(
     counts[!, :broken] .= counts.nrow .> length(props)
     @show counts
 
-
 end
 
 begin # Load the data / set config
+    @info "obs 1–3"
+    check_tracker("notebooks/ellipses/example-31-25-obs1-3")
+    @info "obs 5–7"
     check_tracker("notebooks/ellipses/example-31-25-obs5-7")
 end
 
