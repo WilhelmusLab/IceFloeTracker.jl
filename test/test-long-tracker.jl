@@ -118,13 +118,19 @@ using CSV
             ]
             trajectories_ = long_tracker(props, condition_thresholds, mc_thresholds)
 
+            trajectory_lengths = combine(groupby(trajectories_, :head_uuid), nrow)
+
             # Each trajectory is at most the legnth of the dataset
             # Weak test for a regression where a trajectory would have more than one element for a particular day
-            trajectory_lengths = combine(groupby(trajectories_, :head_uuid), nrow)
-            trajectory_lengths[!, :fine] .= trajectory_lengths.nrow .<= length(props)
-            @test all(trajectory_lengths.fine)
+            trajectory_lengths[!, :not_longer_than_dataset] .=
+                trajectory_lengths.nrow .<= length(props)
+            @test all(trajectory_lengths.not_longer_than_dataset)
 
-            # Each UUID appars at most once
+            # Each trajectory is at least two rows long – all single-match trajectories are removed.
+            trajectory_lengths[!, :longer_than_one] .= trajectory_lengths.nrow .>= 2
+            @test all(trajectory_lengths.longer_than_one)
+
+            # Each UUID appears at most once
             # Weak test for a regression where a trajectory would have more than one element for a particular day, 
             # and one floe might be matched multiple times
             uuid_counts = combine(groupby(trajectories_, :uuid), nrow)
@@ -136,6 +142,9 @@ using CSV
         )
         check_tracker_results(
             joinpath("test_inputs", "tracker", "ellipses", "example-40floes-10obs")
+        )
+        check_tracker_results(
+            joinpath("test_inputs", "tracker", "ellipses", "example-floes-missing-10obs")
         )
     end
 end
