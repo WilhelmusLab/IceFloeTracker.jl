@@ -570,7 +570,8 @@ This is used for getting the initial floe properties for the next day in search 
 """
 function get_trajectory_heads(pairs::T) where {T<:AbstractDataFrame}
     gdf = groupby(pairs, :uuid)
-    return combine(gdf, last)[:, names(pairs)]
+    heads = combine(gdf, last)[:, names(pairs)]
+    return heads
 end
 
 """
