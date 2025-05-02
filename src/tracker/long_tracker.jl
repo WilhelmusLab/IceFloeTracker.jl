@@ -39,26 +39,33 @@ function long_tracker(props::Vector{DataFrame}, condition_thresholds, mc_thresho
             DataFrames.sort!(props[i], :area; rev=true)
         end
     end
-    begin # 0th iteration: pair floes in day 1 and day 2 and add unmatched floes to _pairs
-        props1, props2 = props[1:2]
-        matched_pairs0 = find_floe_matches(
-            props1, props2, condition_thresholds, mc_thresholds
-        )
 
-        # Get unmatched floes from day 1/2
-        unmatched1 = get_unmatched(props1, matched_pairs0.props1)
-        unmatched2 = get_unmatched(props2, matched_pairs0.props2)
-        unmatched = vcat(unmatched1, unmatched2)
-        consolidated_matched_pairs = consolidate_matched_pairs(matched_pairs0)
+    # The starting trajectories are just the floes visible on day 1.
+    trajectories = props[1]
+    trajectories[!, :area_mismatch] .= missing
+    trajectories[!, :corr] .= missing
+    @show trajectories
 
-        # Get _pairs: preliminary matched and unmatched floes
-        trajectories = vcat(consolidated_matched_pairs, unmatched)
-    end
+    # begin # 0th iteration: pair floes in day 1 and day 2 and add unmatched floes to _pairs
+    #     props1, props2 = props[1:2]
+    #     matched_pairs0 = find_floe_matches(
+    #         props1, props2, condition_thresholds, mc_thresholds
+    #     )
 
-    begin # Start 3:end iterations
-        for i in 3:length(props)
+    #     # Get unmatched floes from day 1/2
+    #     unmatched1 = get_unmatched(props1, matched_pairs0.props1)
+    #     unmatched2 = get_unmatched(props2, matched_pairs0.props2)
+    #     unmatched = vcat(unmatched1, unmatched2)
+    #     consolidated_matched_pairs = consolidate_matched_pairs(matched_pairs0)
+
+    #     # Get _pairs: preliminary matched and unmatched floes
+    #     trajectories = vcat(consolidated_matched_pairs, unmatched)
+    # end
+
+    begin # Start 2:end iterations
+        for i in 2:length(props)
+            println("----------\n")
             @show i
-            @show trajectories
 
             trajectory_heads = get_trajectory_heads(trajectories)
             @show trajectory_heads
@@ -67,6 +74,10 @@ function long_tracker(props::Vector{DataFrame}, condition_thresholds, mc_thresho
                 trajectory_heads, props[i], condition_thresholds, mc_thresholds
             )
             @show new_pairs
+            @show new_pairs.props1
+            @show new_pairs.props2
+            @show new_pairs.ratios
+            @show new_pairs.dist
 
             new_pairs_matches = IceFloeTracker.get_matches(new_pairs)
             @show new_pairs_matches
@@ -79,7 +90,9 @@ function long_tracker(props::Vector{DataFrame}, condition_thresholds, mc_thresho
             trajectories = vcat(trajectories, new_pairs_matches, unmatched2)
             DataFrames.sort!(trajectories, [:uuid, :passtime])
 
-            _swap_last_values!(trajectories) # This is insane. It's doing something really weird with the results.
+            @show trajectories
+
+            # _swap_last_values!(trajectories) # This is insane. It's doing something really weird with the results.
         end
     end
     trajectories = IceFloeTracker.drop_trajectories_length1(trajectories, :uuid)
