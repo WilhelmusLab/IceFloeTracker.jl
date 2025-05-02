@@ -54,7 +54,7 @@ function long_tracker(props::Vector{DataFrame}, condition_thresholds, mc_thresho
         trajectory_heads = get_trajectory_heads(trajectories)
         @show trajectory_heads
 
-        new_matches = IceFloeTracker.find_floe_matches_alt(
+        new_matches = IceFloeTracker.find_floe_matches(
             trajectory_heads, prop, condition_thresholds, mc_thresholds
         )
 
@@ -79,7 +79,7 @@ function long_tracker(props::Vector{DataFrame}, condition_thresholds, mc_thresho
 end
 
 """
-    find_floe_matches_alt(
+    find_floe_matches(
     tracked,
     candidate_props,
     condition_thresholds,
@@ -94,7 +94,7 @@ Find matches for floes in `tracked` from floes in  `candidate_props`.
 - `condition_thresholds`: thresholds for deciding whether to match floe `i` from tracked to floe j from `candidate_props`
 - `mc_thresholds`: thresholds for area mismatch and psi-s shape correlation
 """
-function find_floe_matches_alt(
+function find_floe_matches(
     tracked::T, candidate_props::T, condition_thresholds, mc_thresholds
 ) where {T<:AbstractDataFrame}
     matches = []
@@ -171,94 +171,6 @@ function find_floe_matches_alt(
     append!(best_matches_df, best_matches; promote=true)
     @show best_matches_df
     return best_matches_df
-end
-
-"""
-    find_floe_matches(
-    tracked,
-    candidate_props,
-    condition_thresholds,
-    mc_thresholds
-)
-
-Find matches for floes in `tracked` from floes in  `candidate_props`.
-
-# Arguments
-- `tracked`: dataframe containing floe trajectories.
-- `candidate_props`: dataframe containing floe candidate properties.
-- `condition_thresholds`: thresholds for deciding whether to match floe `i` from tracked to floe j from `candidate_props`
-- `mc_thresholds`: thresholds for area mismatch and psi-s shape correlation
-"""
-function find_floe_matches(
-    tracked::T, candidate_props::T, condition_thresholds, mc_thresholds
-) where {T<:AbstractDataFrame}
-    props1 = deepcopy(tracked)
-    props2 = deepcopy(candidate_props)
-    match_total = MatchedPairs(props2)
-    while true # there are no more floes to match in props1
-
-        # This routine mutates both props1 and props2.
-        # Get preliminary matches for floe r in props1 from floes in props2
-
-        # Container for props of matched floe pairs and their similarity ratios. Matches will be updated and added to match_total
-        matched_pairs = MatchedPairs(props2)
-        for r in 1:nrow(props1) # TODO: consider using eachrow(props1) to iterate over rows
-            # 1. Collect preliminary matches for floe r in matching_floes
-            matching_floes = makeemptydffrom(props2)
-
-            for s in 1:nrow(props2) # TODO: consider using eachrow(props2) to iterate over rows
-                Δt = get_dt(props1, r, props2, s)
-                @debug "Considering floe 2:$s for floe 1:$r"
-                ratios, conditions, dist = compute_ratios_conditions(
-                    (props1, r), (props2, s), Δt, condition_thresholds
-                )
-
-                if callmatchcorr(conditions)
-                    @debug "Getting mismatch and correlation for floe 1:$r and floe 2:$s"
-                    (area_mismatch, corr) = matchcorr(
-                        props1.mask[r], props2.mask[s], Δt; mc_thresholds.comp...
-                    )
-
-                    if isfloegoodmatch(
-                        conditions, mc_thresholds.goodness, area_mismatch, corr
-                    )
-                        @debug "** Found a good match for floe 1:$r => 2:$s"
-                        appendrows!(
-                            matching_floes,
-                            props2[s, :],
-                            (ratios..., area_mismatch, corr),
-                            s,
-                            dist,
-                        )
-                        @debug "Matching floes" matching_floes
-                    end
-                end
-            end # of s for loop
-
-            # 2. Find the best match for floe r
-            @debug "Finding best match for floe 1:$r"
-            best_match_idx = getidxmostminimumeverything(matching_floes.ratios)
-            @debug "Best match index for floe 1:$r: $best_match_idx"
-            if isnotnan(best_match_idx)
-                bestmatchdata = getbestmatchdata(best_match_idx, r, props1, matching_floes) # might be copying data unnecessarily
-                addmatch!(matched_pairs, bestmatchdata)
-                @debug "Matched pairs" matched_pairs
-            end
-        end # of for r = 1:nrow(props1)
-
-        # exit while loop if there are no more floes to match
-        @debug "Matched pairs" matched_pairs
-        isempty(matched_pairs) && break
-
-        #= Resolve collisions:
-        Are there floes in day k+1 paired with more than one
-        floe in day k? If so, keep the best matching pair and remove all others. =#
-
-        matched_pairs = remove_collisions(matched_pairs)
-        deletematched!((props1, props2), matched_pairs)
-        update!(match_total, matched_pairs)
-    end # of while loop
-    return match_total
 end
 
 # Sample values for condition_thresholds
