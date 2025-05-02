@@ -1,5 +1,4 @@
 begin
-
     using Test
     using IceFloeTracker
     using Serialization
@@ -27,7 +26,7 @@ begin
 
     function check_matched_pairs(mp)
         @assert sort(collect(Main.Counter(mp.props1.uuid)); by=x -> x[2], rev=true)[1][2] ==
-                1
+            1
     end
 
     wait_for_key(prompt=nothing) = (print(stdout, prompt); read(stdin, 1); nothing)
@@ -44,10 +43,31 @@ end
 
 function check_tracker(
     path;
-    ct=(search_thresholds=(dt=(30.0, 100.0, 1300.0), dist=(200, 250, 300)), small_floe_settings=(minimumarea=100, arearatio=0.18, majaxisratio=0.1, minaxisratio=0.15, convexarearatio=0.2), large_floe_settings=(minimumarea=1200, arearatio=0.28, majaxisratio=0.1, minaxisratio=0.12, convexarearatio=0.14)),
-    thresholds=(goodness=(small_floe_area=0.18, large_floe_area=0.236, corr=0.68), comp=(mxrot=10, sz=16))
+    ct=(
+        search_thresholds=(dt=(30.0, 100.0, 1300.0), dist=(200, 250, 300)),
+        small_floe_settings=(
+            minimumarea=100,
+            arearatio=0.18,
+            majaxisratio=0.1,
+            minaxisratio=0.15,
+            convexarearatio=0.2,
+        ),
+        large_floe_settings=(
+            minimumarea=1200,
+            arearatio=0.28,
+            majaxisratio=0.1,
+            minaxisratio=0.12,
+            convexarearatio=0.14,
+        ),
+    ),
+    thresholds=(
+        goodness=(small_floe_area=0.18, large_floe_area=0.236, corr=0.68),
+        comp=(mxrot=10, sz=16),
+    ),
 )
-    props = [load_props_from_csv(p) for p in readdir(path, join=true) if endswith(p, ".csv")]
+    props = [
+        load_props_from_csv(p) for p in readdir(path; join=true) if endswith(p, ".csv")
+    ]
     trajectories_ = long_tracker(props, ct, thresholds)
     @show trajectories_
 
@@ -55,13 +75,11 @@ function check_tracker(
 
     counts[!, :broken] .= counts.nrow .> length(props)
     @show counts
-
 end
 
 begin # Load the data / set config
-    @info "obs 1–3"
-    check_tracker("notebooks/ellipses/example-31-25-obs1-3")
-    @info "obs 5–7"
-    check_tracker("notebooks/ellipses/example-31-25-obs5-7")
+    @info "obs 1–2"
+    check_tracker("notebooks/ellipses/example-31-25-obs1-2")
+    # @info "obs 5–7"
+    # check_tracker("notebooks/ellipses/example-31-25-obs5-7")
 end
-
