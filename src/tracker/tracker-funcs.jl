@@ -633,18 +633,6 @@ function add_id!(df::AbstractDataFrame, col::Union{Symbol,AbstractString}, new::
 end
 
 """
-    reset_id!(df, col)
-
-Reset the distinct values in the column `col` of `df` to be consecutive integers starting from 1.
-"""
-function reset_id!(df::AbstractDataFrame, col::Union{Symbol,AbstractString}=:uuid)
-    ids = unique(df[!, col])
-    _map = Dict(ids .=> 1:length(ids))
-    transform!(df, col => ByRow(x -> _map[x]) => col)
-    return nothing
-end
-
-"""
     consolidate_matched_pairs(matched_pairs::MatchedPairs)
 
 Consolidate the floe properties and similarity ratios of the matched pairs in `matched_pairs` into a single dataframe. Return the consolidated dataframe. Used in iteration `0`.
