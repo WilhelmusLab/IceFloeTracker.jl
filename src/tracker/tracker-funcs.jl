@@ -293,35 +293,7 @@ function isfloegoodmatch(conditions, mct, area_mismatch, corr)
 end
 
 """
-    compute_ratios((props_day1, r), (props_day2,s))
-
-Compute the ratios of the floe properties between the `r`th floe in `props_day1` and the `s`th floe in `props_day2`. Return a tuple of the ratios.
-
-# Arguments
-- `props_day1`: floe properties for day 1
-- `r`: index of floe in `props_day1`
-- `props_day2`: floe properties for day 2
-- `s`: index of floe in `props_day2`
-"""
-function compute_ratios((props_day1, r), (props_day2, s))
-    arearatio = absdiffmeanratio(props_day1.area[r], props_day2.area[s])
-    majoraxisratio = absdiffmeanratio(
-        props_day1.major_axis_length[r], props_day2.major_axis_length[s]
-    )
-    minoraxisratio = absdiffmeanratio(
-        props_day1.minor_axis_length[r], props_day2.minor_axis_length[s]
-    )
-    convex_area = absdiffmeanratio(props_day1.convex_area[r], props_day2.convex_area[s])
-    return (
-        area=arearatio,
-        majoraxis=majoraxisratio,
-        minoraxis=minoraxisratio,
-        convex_area=convex_area,
-    )
-end
-
-"""
-    compute_ratios((props_day1, r), (props_day2,s))
+    compute_ratios(floe_day1, floe_day2)
 
 Compute the ratios of the floe properties between the `r`th floe in `props_day1` and the `s`th floe in `props_day2`. Return a tuple of the ratios.
 
