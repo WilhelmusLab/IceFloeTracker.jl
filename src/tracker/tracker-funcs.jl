@@ -700,6 +700,18 @@ function adduuid!(dfs::Vector{DataFrame})
 end
 
 """
+    add_id!(df, col)
+
+For distinct values in the column `col` of `df`, add a new column `new` to be consecutive integers starting from 1.
+"""
+function add_id!(df::AbstractDataFrame, col::Union{Symbol,AbstractString}, new::Union{Symbol,AbstractString})
+    ids = unique(df[!, col])
+    _map = Dict(ids .=> 1:length(ids))
+    transform!(df, col => ByRow(x -> _map[x]) => new)
+    return nothing
+end
+
+"""
     reset_id!(df, col)
 
 Reset the distinct values in the column `col` of `df` to be consecutive integers starting from 1.
