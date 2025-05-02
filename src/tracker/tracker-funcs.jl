@@ -147,6 +147,15 @@ function getcentroid(props_day::DataFrame, r)
 end
 
 """
+getcentroid(props_day::DataFrame, r)
+
+Get the coordinates of the `r`th floe in `props_day`.
+"""
+function getcentroid(floe_day::DataFrameRow)
+    return floe_day[[:row_centroid, :col_centroid]]
+end
+
+"""
 absdiffmeanratio(x, y)
 
 Calculate the absolute difference between `x` and `y` divided by the mean of `x` and `y`.
@@ -321,6 +330,32 @@ function compute_ratios((props_day1, r), (props_day2, s))
 end
 
 """
+    compute_ratios((props_day1, r), (props_day2,s))
+
+Compute the ratios of the floe properties between the `r`th floe in `props_day1` and the `s`th floe in `props_day2`. Return a tuple of the ratios.
+
+# Arguments
+- `floe_day1`: floe properties for day 1
+- `floe_day2`: floe properties for day 2
+"""
+function compute_ratios(floe_day1::DataFrameRow, floe_day2::DataFrameRow)
+    arearatio = absdiffmeanratio(floe_day1.area, floe_day2.area)
+    majoraxisratio = absdiffmeanratio(
+        floe_day1.major_axis_length, floe_day2.major_axis_length
+    )
+    minoraxisratio = absdiffmeanratio(
+        floe_day1.minor_axis_length, floe_day2.minor_axis_length
+    )
+    convex_area = absdiffmeanratio(floe_day1.convex_area, floe_day2.convex_area)
+    return (
+        area=arearatio,
+        majoraxis=majoraxisratio,
+        minoraxis=minoraxisratio,
+        convex_area=convex_area,
+    )
+end
+
+"""
     compute_ratios_conditions((props_day1, r), (props_day2, s), delta_time, t)
 
 Compute the conditions for a match between the `r`th floe in `props_day1` and the `s`th floe in `props_day2`. Return a tuple of the conditions.
@@ -339,6 +374,41 @@ function compute_ratios_conditions((props_day1, r), (props_day2, s), delta_time,
     d = dist(p1, p2)
     area1 = props_day1.area[r]
     ratios = compute_ratios((props_day1, r), (props_day2, s))
+    time_space_proximity_condition = get_time_space_proximity_condition(
+        d, delta_time, thresholds.search_thresholds
+    )
+    large_floe_condition = get_large_floe_condition(area1, ratios, thresholds)
+    small_floe_condition = get_small_floe_condition(area1, ratios, thresholds)
+    return (
+        ratios=ratios,
+        conditions=(
+            time_space_proximity_condition=time_space_proximity_condition,
+            large_floe_condition=large_floe_condition,
+            small_floe_condition=small_floe_condition,
+        ),
+        dist=d,
+    )
+end
+
+"""
+    compute_ratios_conditions((props_day1, r), (props_day2, s), delta_time, t)
+
+Compute the conditions for a match between the `r`th floe in `props_day1` and the `s`th floe in `props_day2`. Return a tuple of the conditions.
+
+# Arguments
+- `props_day1`: floe properties for day 1
+- `props_day2`: floe properties for day 2
+- `delta_time`: time elapsed from image day 1 to image day 2
+- `thresholds`: namedtuple of thresholds for elapsed time and distance. See `pair_floes` for details.
+"""
+function compute_ratios_conditions(floe_day1, floe_day2, delta_time, thresholds)
+    p1 = getcentroid(floe_day1)
+    p2 = getcentroid(floe_day2)
+    d = dist(p1, p2)
+    @show d
+    area1 = floe_day1.area
+    @show area1
+    ratios = compute_ratios(floe_day1, floe_day2)
     time_space_proximity_condition = get_time_space_proximity_condition(
         d, delta_time, thresholds.search_thresholds
     )
@@ -603,6 +673,15 @@ function get_dt(props1, r, props2, s)
 end
 
 """
+    get_dt(props1, props2)
+
+Return the time difference between the `r`th floe in `props1` and the `s`th floe in `props2` in minutes.
+"""
+function get_dt(floe1, floe2)
+    return (floe2.passtime - floe1.passtime) / Minute(1)
+end
+
+"""
     adduuid!(df::DataFrame)
     adduuid!(dfs::Vector{DataFrame})
 
@@ -669,7 +748,7 @@ Return a dataframe with the properties and goodness ratios of the matched pairs 
 """
 function get_matches(matched_pairs::MatchedPairs)
     # Ensure UUIDs are consistent
-    matched_pairs.props2[!,:head_uuid] = matched_pairs.props1.uuid
+    matched_pairs.props2[!,:head_uuid] = matched_pairs.props1.head_uuid
 
     # Define columns for goodness ratios
     goodness_cols = [:area_mismatch, :corr]
@@ -679,7 +758,7 @@ function get_matches(matched_pairs::MatchedPairs)
         matched_pairs.props2, matched_pairs.ratios[:, goodness_cols]; makeunique=true
     )
 
-    DataFrames.sort!(combined_df, [:uuid, :passtime])
+    DataFrames.sort!(combined_df, [:head_uuid, :passtime])
 
     return combined_df
 end

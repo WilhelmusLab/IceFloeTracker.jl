@@ -55,7 +55,7 @@ function long_tracker(props::Vector{DataFrame}, condition_thresholds, mc_thresho
             trajectory_heads = get_trajectory_heads(trajectories)
             @show trajectory_heads
 
-            new_pairs = IceFloeTracker.find_floe_matches(
+            new_pairs = IceFloeTracker.find_floe_matches_alt(
                 trajectory_heads, props[i], condition_thresholds, mc_thresholds
             )
             @show new_pairs.props1
@@ -86,6 +86,88 @@ function long_tracker(props::Vector{DataFrame}, condition_thresholds, mc_thresho
     # list the uuid in the leftmost column
     cols = [col for col in names(trajectories) if col ∉ ["head_uuid", "uuid"]]
     return trajectories[!, ["head_uuid", "uuid", cols...]]
+end
+
+"""
+    find_floe_matches_alt(
+    tracked,
+    candidate_props,
+    condition_thresholds,
+    mc_thresholds
+)
+
+Find matches for floes in `tracked` from floes in  `candidate_props`.
+
+# Arguments
+- `tracked`: dataframe containing floe trajectories.
+- `candidate_props`: dataframe containing floe candidate properties.
+- `condition_thresholds`: thresholds for deciding whether to match floe `i` from tracked to floe j from `candidate_props`
+- `mc_thresholds`: thresholds for area mismatch and psi-s shape correlation
+"""
+function find_floe_matches_alt(
+    tracked::T, candidate_props::T, condition_thresholds, mc_thresholds
+) where {T<:AbstractDataFrame}
+    matches = []
+    for floe1 in eachrow(tracked), floe2 in eachrow(candidate_props)
+        Δt = get_dt(floe1, floe2)
+        @show Δt
+        ratios, conditions, dist = compute_ratios_conditions(
+            floe1, floe2, Δt, condition_thresholds
+        )
+        @show ratios
+        @show conditions
+        @show dist
+
+        if callmatchcorr(conditions)
+            (area_mismatch, corr) = matchcorr(
+                floe1.mask, floe2.mask, Δt; mc_thresholds.comp...
+            )
+            if isfloegoodmatch(conditions, mc_thresholds.goodness, area_mismatch, corr)
+                @debug "** Found a good match for ", floe1.uuid, "<=", floe2.uuid
+                push!(
+                    matches,
+                    (;
+                        Δt,
+                        measures=(; ratios..., area_mismatch, corr),
+                        conditions,
+                        dist,
+                        floe1,
+                        floe2,
+                    ),
+                )
+            end
+        end
+    end
+
+    matches_df = DataFrame(matches)
+    remaining_matches_df = copy(matches_df)
+    @show remaining_matches_df
+    best_matches = []
+
+    for floe2 in eachrow(candidate_props)  # leave at most one match for each 
+        matches_involving_floe2_df = filter((r) -> r.floe2 == floe2, remaining_matches_df)
+        if nrow(matches_involving_floe2_df) == 0
+            continue
+        end
+        best_match = matches_involving_floe2_df[1, :]
+        measures_df = DataFrame(matches_involving_floe2_df.measures)
+        @show measures_df
+        best_match_idx = getidxmostminimumeverything(measures_df)
+        @show best_match_idx
+        best_match = matches_involving_floe2_df[best_match_idx, :]
+        @show best_match
+        push!(best_matches, best_match)
+        remaining_matches_df = filter(
+            (r) -> !(r.floe1 === best_match.floe1), remaining_matches_df
+        )
+        remaining_matches_df = filter(
+            (r) -> !(r.floe2 === best_match.floe2), remaining_matches_df
+        )
+        @show remaining_matches_df
+    end
+
+    @show matches
+    return nothing
 end
 
 """
