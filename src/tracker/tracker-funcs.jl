@@ -334,9 +334,7 @@ function compute_ratios_conditions(floe_day1, floe_day2, delta_time, thresholds)
     p1 = getcentroid(floe_day1)
     p2 = getcentroid(floe_day2)
     d = dist(p1, p2)
-    @show d
     area1 = floe_day1.area
-    @show area1
     ratios = compute_ratios(floe_day1, floe_day2)
     time_space_proximity_condition = get_time_space_proximity_condition(
         d, delta_time, thresholds.search_thresholds
