@@ -57,18 +57,29 @@ function long_tracker(props::Vector{DataFrame}, condition_thresholds, mc_thresho
 
     begin # Start 3:end iterations
         for i in 3:length(props)
+            @show i
+            @show trajectories
+
             trajectory_heads = get_trajectory_heads(trajectories)
+            @show trajectory_heads
+
             new_pairs = IceFloeTracker.find_floe_matches(
                 trajectory_heads, props[i], condition_thresholds, mc_thresholds
             )
+            @show new_pairs
+
+            new_pairs_matches = IceFloeTracker.get_matches(new_pairs)
+            @show new_pairs_matches
+
             # Get unmatched floes in day 2 (iterations > 2)
             unmatched2 = get_unmatched(props[i], new_pairs.props2)
-            new_pairs = IceFloeTracker.get_matches(new_pairs)
+            @show unmatched2
 
             # Attach new matches and unmatched floes to trajectories
-            trajectories = vcat(trajectories, new_pairs, unmatched2)
+            trajectories = vcat(trajectories, new_pairs_matches, unmatched2)
             DataFrames.sort!(trajectories, [:uuid, :passtime])
-            _swap_last_values!(trajectories)
+
+            _swap_last_values!(trajectories) # This is insane. It's doing something really weird with the results.
         end
     end
     trajectories = IceFloeTracker.drop_trajectories_length1(trajectories, :uuid)
