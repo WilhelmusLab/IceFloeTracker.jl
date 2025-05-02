@@ -355,49 +355,15 @@ function compute_ratios(floe_day1::DataFrameRow, floe_day2::DataFrameRow)
     )
 end
 
-"""
-    compute_ratios_conditions((props_day1, r), (props_day2, s), delta_time, t)
 
-Compute the conditions for a match between the `r`th floe in `props_day1` and the `s`th floe in `props_day2`. Return a tuple of the conditions.
+"""
+    compute_ratios_conditions(floe_day1, floe_day2, delta_time, t)
+
+Compute the conditions for a match between the floe in `floe_day1` and the floe in `floe_day2`. Return a tuple of the conditions.
 
 # Arguments
-- `props_day1`: floe properties for day 1
-- `r`: index of floe in `props_day1`
-- `props_day2`: floe properties for day 2
-- `s`: index of floe in `props_day2`
-- `delta_time`: time elapsed from image day 1 to image day 2
-- `thresholds`: namedtuple of thresholds for elapsed time and distance. See `pair_floes` for details.
-"""
-function compute_ratios_conditions((props_day1, r), (props_day2, s), delta_time, thresholds)
-    p1 = getcentroid(props_day1, r)
-    p2 = getcentroid(props_day2, s)
-    d = dist(p1, p2)
-    area1 = props_day1.area[r]
-    ratios = compute_ratios((props_day1, r), (props_day2, s))
-    time_space_proximity_condition = get_time_space_proximity_condition(
-        d, delta_time, thresholds.search_thresholds
-    )
-    large_floe_condition = get_large_floe_condition(area1, ratios, thresholds)
-    small_floe_condition = get_small_floe_condition(area1, ratios, thresholds)
-    return (
-        ratios=ratios,
-        conditions=(
-            time_space_proximity_condition=time_space_proximity_condition,
-            large_floe_condition=large_floe_condition,
-            small_floe_condition=small_floe_condition,
-        ),
-        dist=d,
-    )
-end
-
-"""
-    compute_ratios_conditions((props_day1, r), (props_day2, s), delta_time, t)
-
-Compute the conditions for a match between the `r`th floe in `props_day1` and the `s`th floe in `props_day2`. Return a tuple of the conditions.
-
-# Arguments
-- `props_day1`: floe properties for day 1
-- `props_day2`: floe properties for day 2
+- `floe_day1`: floe properties for day 1
+- `floe_day2`: floe properties for day 2
 - `delta_time`: time elapsed from image day 1 to image day 2
 - `thresholds`: namedtuple of thresholds for elapsed time and distance. See `pair_floes` for details.
 """
