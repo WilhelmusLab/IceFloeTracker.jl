@@ -55,29 +55,23 @@ function long_tracker(props::Vector{DataFrame}, condition_thresholds, mc_thresho
             trajectory_heads = get_trajectory_heads(trajectories)
             @show trajectory_heads
 
-            new_pairs = IceFloeTracker.find_floe_matches_alt(
+            new_matches = IceFloeTracker.find_floe_matches_alt(
                 trajectory_heads, props[i], condition_thresholds, mc_thresholds
             )
-            @show new_pairs.props1
-            @show new_pairs.props2
-            @show new_pairs.ratios
-            @show new_pairs.dist
-
-            new_pairs_matches = IceFloeTracker.get_matches(new_pairs)
-            @show new_pairs_matches
 
             # Get unmatched floes in day 2 (iterations > 2)
-            unmatched2 = get_unmatched(props[i], new_pairs.props2)
-            unmatched2[!, :head_uuid] = unmatched2[:, :uuid]  # unmatched floes start new trajectories
-            @show unmatched2
+            matched_uuids = new_matches.uuid
+            unmatched = filter((f) -> !(f.uuid in matched_uuids), props[i])
+            unmatched[!, :head_uuid] = unmatched[:, :uuid]  # unmatched floes start new trajectories
+            unmatched[!, :area_mismatch] .= missing
+            unmatched[!, :corr] .= missing
+            @show unmatched
 
             # Attach new matches and unmatched floes to trajectories
-            trajectories = vcat(trajectories, new_pairs_matches, unmatched2)
+            trajectories = vcat(trajectories, new_matches, unmatched)
             DataFrames.sort!(trajectories, [:head_uuid, :passtime])
 
             @show trajectories
-
-            # _swap_last_values!(trajectories) # This is insane. It's doing something really weird with the results.
         end
     end
     # trajectories = IceFloeTracker.drop_trajectories_length1(trajectories, :head_uuid)
@@ -138,6 +132,7 @@ function find_floe_matches_alt(
             end
         end
     end
+    @show matches
 
     matches_df = DataFrame(matches)
     remaining_matches_df = copy(matches_df)
@@ -156,7 +151,15 @@ function find_floe_matches_alt(
         @show best_match_idx
         best_match = matches_involving_floe2_df[best_match_idx, :]
         @show best_match
-        push!(best_matches, best_match)
+        push!(
+            best_matches,
+            (;
+                best_match.floe2...,
+                area_mismatch=best_match.measures.area_mismatch,
+                corr=best_match.measures.corr,
+                head_uuid=best_match.floe1.head_uuid,
+            ),
+        )
         remaining_matches_df = filter(
             (r) -> !(r.floe1 === best_match.floe1), remaining_matches_df
         )
@@ -166,8 +169,10 @@ function find_floe_matches_alt(
         @show remaining_matches_df
     end
 
-    @show matches
-    return nothing
+    @show best_matches
+    best_matches_df = DataFrame(best_matches)
+    @show best_matches_df
+    return best_matches_df
 end
 
 """
