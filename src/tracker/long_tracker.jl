@@ -166,7 +166,9 @@ function find_floe_matches_alt(
     end
 
     @show best_matches
-    best_matches_df = DataFrame(best_matches)
+    best_matches_df = similar(tracked, 0)
+    @show best_matches_df
+    append!(best_matches_df, best_matches; promote=true)
     @show best_matches_df
     return best_matches_df
 end
