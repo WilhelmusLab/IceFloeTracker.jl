@@ -47,32 +47,30 @@ function long_tracker(props::Vector{DataFrame}, condition_thresholds, mc_thresho
     trajectories[!, :corr] .= missing
     @show trajectories
 
-    begin # Start 2:end iterations
-        for i in 2:length(props)
-            println("----------\n")
-            @show i
+    for prop in props[2:end]
+        println("----------\n")
+        @show prop
 
-            trajectory_heads = get_trajectory_heads(trajectories)
-            @show trajectory_heads
+        trajectory_heads = get_trajectory_heads(trajectories)
+        @show trajectory_heads
 
-            new_matches = IceFloeTracker.find_floe_matches_alt(
-                trajectory_heads, props[i], condition_thresholds, mc_thresholds
-            )
+        new_matches = IceFloeTracker.find_floe_matches_alt(
+            trajectory_heads, prop, condition_thresholds, mc_thresholds
+        )
 
-            # Get unmatched floes in day 2 (iterations > 2)
-            matched_uuids = new_matches.uuid
-            unmatched = filter((f) -> !(f.uuid in matched_uuids), props[i])
-            unmatched[!, :head_uuid] = unmatched[:, :uuid]  # unmatched floes start new trajectories
-            unmatched[!, :area_mismatch] .= missing
-            unmatched[!, :corr] .= missing
-            @show unmatched
+        # Get unmatched floes in day 2 (iterations > 2)
+        matched_uuids = new_matches.uuid
+        unmatched = filter((f) -> !(f.uuid in matched_uuids), prop)
+        unmatched[!, :head_uuid] = unmatched[:, :uuid]  # unmatched floes start new trajectories
+        unmatched[!, :area_mismatch] .= missing
+        unmatched[!, :corr] .= missing
+        @show unmatched
 
-            # Attach new matches and unmatched floes to trajectories
-            trajectories = vcat(trajectories, new_matches, unmatched)
-            DataFrames.sort!(trajectories, [:head_uuid, :passtime])
+        # Attach new matches and unmatched floes to trajectories
+        trajectories = vcat(trajectories, new_matches, unmatched)
+        DataFrames.sort!(trajectories, [:head_uuid, :passtime])
 
-            @show trajectories
-        end
+        @show trajectories
     end
     # trajectories = IceFloeTracker.drop_trajectories_length1(trajectories, :head_uuid)
     # IceFloeTracker.reset_id!(trajectories, :uuid)
