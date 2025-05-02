@@ -42,25 +42,10 @@ function long_tracker(props::Vector{DataFrame}, condition_thresholds, mc_thresho
 
     # The starting trajectories are just the floes visible on day 1.
     trajectories = props[1]
+    trajectories[!, :head_uuid] .= trajectories[:, :uuid]
     trajectories[!, :area_mismatch] .= missing
     trajectories[!, :corr] .= missing
     @show trajectories
-
-    # begin # 0th iteration: pair floes in day 1 and day 2 and add unmatched floes to _pairs
-    #     props1, props2 = props[1:2]
-    #     matched_pairs0 = find_floe_matches(
-    #         props1, props2, condition_thresholds, mc_thresholds
-    #     )
-
-    #     # Get unmatched floes from day 1/2
-    #     unmatched1 = get_unmatched(props1, matched_pairs0.props1)
-    #     unmatched2 = get_unmatched(props2, matched_pairs0.props2)
-    #     unmatched = vcat(unmatched1, unmatched2)
-    #     consolidated_matched_pairs = consolidate_matched_pairs(matched_pairs0)
-
-    #     # Get _pairs: preliminary matched and unmatched floes
-    #     trajectories = vcat(consolidated_matched_pairs, unmatched)
-    # end
 
     begin # Start 2:end iterations
         for i in 2:length(props)
@@ -73,7 +58,6 @@ function long_tracker(props::Vector{DataFrame}, condition_thresholds, mc_thresho
             new_pairs = IceFloeTracker.find_floe_matches(
                 trajectory_heads, props[i], condition_thresholds, mc_thresholds
             )
-            @show new_pairs
             @show new_pairs.props1
             @show new_pairs.props2
             @show new_pairs.ratios
@@ -84,23 +68,24 @@ function long_tracker(props::Vector{DataFrame}, condition_thresholds, mc_thresho
 
             # Get unmatched floes in day 2 (iterations > 2)
             unmatched2 = get_unmatched(props[i], new_pairs.props2)
+            unmatched2[!, :head_uuid] = unmatched2[:, :uuid]  # unmatched floes start new trajectories
             @show unmatched2
 
             # Attach new matches and unmatched floes to trajectories
             trajectories = vcat(trajectories, new_pairs_matches, unmatched2)
-            DataFrames.sort!(trajectories, [:uuid, :passtime])
+            DataFrames.sort!(trajectories, [:head_uuid, :passtime])
 
             @show trajectories
 
             # _swap_last_values!(trajectories) # This is insane. It's doing something really weird with the results.
         end
     end
-    trajectories = IceFloeTracker.drop_trajectories_length1(trajectories, :uuid)
-    IceFloeTracker.reset_id!(trajectories, :uuid)
-    trajectories.ID = trajectories.uuid
+    # trajectories = IceFloeTracker.drop_trajectories_length1(trajectories, :head_uuid)
+    # IceFloeTracker.reset_id!(trajectories, :uuid)
+    # trajectories.ID = trajectories.uuid
     # list the uuid in the leftmost column
-    cols = [col for col in names(trajectories) if col ∉ ["ID", "uuid"]]
-    return trajectories[!, ["ID", cols...]]
+    cols = [col for col in names(trajectories) if col ∉ ["head_uuid", "uuid"]]
+    return trajectories[!, ["head_uuid", "uuid", cols...]]
 end
 
 """

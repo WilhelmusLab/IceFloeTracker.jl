@@ -569,7 +569,7 @@ Return the last row (most recent member) of each group (trajectory) in `pairs` a
 This is used for getting the initial floe properties for the next day in search for new pairs.
 """
 function get_trajectory_heads(pairs::T) where {T<:AbstractDataFrame}
-    gdf = groupby(pairs, :uuid)
+    gdf = groupby(pairs, :head_uuid)
     heads = combine(gdf, last)[:, names(pairs)]
     return heads
 end
@@ -669,7 +669,7 @@ Return a dataframe with the properties and goodness ratios of the matched pairs 
 """
 function get_matches(matched_pairs::MatchedPairs)
     # Ensure UUIDs are consistent
-    matched_pairs.props2.uuid = matched_pairs.props1.uuid
+    matched_pairs.props2[!,:head_uuid] = matched_pairs.props1.uuid
 
     # Define columns for goodness ratios
     goodness_cols = [:area_mismatch, :corr]

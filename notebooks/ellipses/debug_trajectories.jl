@@ -71,10 +71,12 @@ function check_tracker(
     trajectories_ = long_tracker(props, ct, thresholds)
     @show trajectories_
 
-    counts = combine(groupby(trajectories_, :ID), nrow)
+    counts = combine(groupby(trajectories_, :head_uuid), nrow)
 
-    counts[!, :broken] .= counts.nrow .> length(props)
+    counts[!, :fine] .= counts.nrow .<= length(props)
     @show counts
+    @test all(counts.fine)
+    return println("\n\n\n-----\n\n\n")
 end
 
 begin # Load the data / set config
