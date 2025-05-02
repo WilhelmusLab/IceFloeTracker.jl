@@ -100,13 +100,9 @@ function find_floe_matches(
     matches = []
     for floe1 in eachrow(tracked), floe2 in eachrow(candidate_props)
         Δt = get_dt(floe1, floe2)
-        @show Δt
         ratios, conditions, dist = compute_ratios_conditions(
             floe1, floe2, Δt, condition_thresholds
         )
-        @show ratios
-        @show conditions
-        @show dist
 
         if callmatchcorr(conditions)
             (area_mismatch, corr) = matchcorr(
@@ -128,11 +124,9 @@ function find_floe_matches(
             end
         end
     end
-    @show matches
 
     matches_df = DataFrame(matches)
     remaining_matches_df = copy(matches_df)
-    @show remaining_matches_df
     best_matches = []
 
     for floe2 in eachrow(candidate_props)  # leave at most one match for each 
@@ -142,11 +136,8 @@ function find_floe_matches(
         end
         best_match = matches_involving_floe2_df[1, :]
         measures_df = DataFrame(matches_involving_floe2_df.measures)
-        @show measures_df
         best_match_idx = getidxmostminimumeverything(measures_df)
-        @show best_match_idx
         best_match = matches_involving_floe2_df[best_match_idx, :]
-        @show best_match
         push!(
             best_matches,
             (;
@@ -162,14 +153,10 @@ function find_floe_matches(
         remaining_matches_df = filter(
             (r) -> !(r.floe2 === best_match.floe2), remaining_matches_df
         )
-        @show remaining_matches_df
     end
 
-    @show best_matches
     best_matches_df = similar(tracked, 0)
-    @show best_matches_df
     append!(best_matches_df, best_matches; promote=true)
-    @show best_matches_df
     return best_matches_df
 end
 
