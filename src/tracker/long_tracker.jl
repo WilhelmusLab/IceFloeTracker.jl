@@ -73,7 +73,6 @@ function long_tracker(props::Vector{DataFrame}, condition_thresholds, mc_thresho
         @show trajectories
     end
     # trajectories = IceFloeTracker.drop_trajectories_length1(trajectories, :head_uuid)
-    # list the uuid in the leftmost column
     add_id!(trajectories, :head_uuid, :ID)
     cols = [col for col in names(trajectories) if col ∉ ["ID", "head_uuid", "uuid"]]
     return trajectories[!, ["ID", "head_uuid", "uuid", cols...]]
