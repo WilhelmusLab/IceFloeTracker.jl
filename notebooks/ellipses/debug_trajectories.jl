@@ -80,10 +80,14 @@ function check_tracker(
 end
 
 begin # Load the data / set config
-    @info "obs 1–2"
-    check_tracker("notebooks/ellipses/example-31-25-obs1-2")
+    # @info "obs 1–2"
+    # check_tracker("notebooks/ellipses/example-31-25-obs1-2")
     # @info "obs 1–3"
     # check_tracker("notebooks/ellipses/example-31-25-obs1-3")
     # @info "obs 5–7"
     # check_tracker("notebooks/ellipses/example-31-25-obs5-7")
+    # @info "obs 1–10"
+    # check_tracker("notebooks/ellipses/example-31-25-obs1-10")
+    @info "big example"
+    check_tracker("notebooks/ellipses/example1")
 end
