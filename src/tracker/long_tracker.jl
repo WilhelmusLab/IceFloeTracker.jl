@@ -138,9 +138,11 @@ function find_floe_matches(
                 head_uuid=best_match.floe1.head_uuid,
             ),
         )
+        # Filter out from the remaining matches any cases involving the matched floe1
         remaining_matches_df = filter(
             (r) -> !(r.floe1 === best_match.floe1), remaining_matches_df
         )
+        # Filter out from the remaining matches any cases involving the matched floe2
         remaining_matches_df = filter(
             (r) -> !(r.floe2 === best_match.floe2), remaining_matches_df
         )
