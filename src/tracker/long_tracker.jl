@@ -64,7 +64,8 @@ function long_tracker(props::Vector{DataFrame}, condition_thresholds, mc_thresho
     end
     trajectories = IceFloeTracker.drop_trajectories_length1(trajectories, :head_uuid)
     DataFrames.sort!(trajectories, [:head_uuid, :passtime])
-    add_id!(trajectories, :head_uuid, :ID)
+    _add_integer_id!(trajectories, :head_uuid, :ID)
+    # Move ID columns to the front
     select!(trajectories, :ID, :head_uuid, :uuid, :)
     return trajectories
 end
