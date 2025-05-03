@@ -611,36 +611,6 @@ function add_id!(df::AbstractDataFrame, col::Union{Symbol,AbstractString}, new::
 end
 
 """
-    consolidate_matched_pairs(matched_pairs::MatchedPairs)
-
-Consolidate the floe properties and similarity ratios of the matched pairs in `matched_pairs` into a single dataframe. Return the consolidated dataframe. Used in iteration `0`.
-"""
-function consolidate_matched_pairs(matched_pairs::MatchedPairs)
-    # Ensure UUIDs are consistent
-    matched_pairs.props2.uuid = matched_pairs.props1.uuid
-
-    # Define columns for goodness ratios
-    goodness_cols = [:area_mismatch, :corr]
-
-    # Create top DataFrame with properties and goodness ratios
-    top_df = hcat(
-        matched_pairs.props1, matched_pairs.ratios[:, goodness_cols]; makeunique=true
-    )
-
-    # Create missing ratios DataFrame
-    missing_ratios = similar(matched_pairs.ratios[:, goodness_cols])
-    missing_ratios[!, :] .= missing
-
-    bottom_df = hcat(matched_pairs.props2, missing_ratios; makeunique=true)
-
-    combined_df = vcat(top_df, bottom_df)
-
-    DataFrames.sort!(combined_df, [:uuid, :passtime])
-
-    return combined_df
-end
-
-"""
     get_matches(matched_pairs)
 
 Return a dataframe with the properties and goodness ratios of the matched pairs (right-hand matches) in `matched_pairs`. Used in iterations `1:end`.
