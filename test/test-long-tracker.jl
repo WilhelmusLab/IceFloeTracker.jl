@@ -5,25 +5,48 @@ using CSV
 @ntestset "$(@__FILE__)" begin
     @ntestset "Utilities" begin
         @ntestset "get_trajectory_heads" begin
-            df = DataFrame([
-                (; uuid=12, head_uuid=11, passtime=1),
-                (; uuid=27, head_uuid=16, passtime=5),  # this is the newest entry of the head_uuid=16 trajectory
-                (; uuid=13, head_uuid=11, passtime=2),
-                (; uuid=14, head_uuid=11, passtime=3),  # this is the newest entry of the head_uuid=11 trajectory
-                (; uuid=17, head_uuid=16, passtime=2),
-                (; uuid=11, head_uuid=11, passtime=0),
-                (; uuid=15, head_uuid=16, passtime=1),
-                (; uuid=16, head_uuid=16, passtime=0),
-            ])
-            # Check that we only get two heads
-            heads = get_trajectory_heads(df)
-            @test nrow(heads) == 2
+            @ntestset "basic case" begin
+                df = DataFrame([
+                    (; uuid=12, head_uuid=11, passtime=1),
+                    (; uuid=27, head_uuid=16, passtime=5),  # this is the newest entry of the head_uuid=16 trajectory
+                    (; uuid=13, head_uuid=11, passtime=2),
+                    (; uuid=14, head_uuid=11, passtime=3),  # this is the newest entry of the head_uuid=11 trajectory
+                    (; uuid=17, head_uuid=16, passtime=2),
+                    (; uuid=11, head_uuid=11, passtime=0),
+                    (; uuid=15, head_uuid=16, passtime=1),
+                    (; uuid=16, head_uuid=16, passtime=0),
+                ])
+                # Check that we only get two heads
+                heads = get_trajectory_heads(df)
+                @test nrow(heads) == 2
 
-            # Check that the heads we get are the ones we want, 
-            # despite the fact that the dataframe is unsorted
-            sorted_heads = sort(heads, :head_uuid)
-            @test copy(sorted_heads[1, :]) == (; head_uuid=11, uuid=14, passtime=3)
-            @test copy(sorted_heads[2, :]) == (; head_uuid=16, uuid=27, passtime=5)
+                # Check that the heads we get are the ones we want, 
+                # despite the fact that the dataframe is unsorted
+                sorted_heads = sort(heads, :head_uuid)
+                @test copy(sorted_heads[1, :]) == (; head_uuid=11, uuid=14, passtime=3)
+                @test copy(sorted_heads[2, :]) == (; head_uuid=16, uuid=27, passtime=5)
+            end
+            @ntestset "no existing trajectories" begin
+                df = DataFrame([
+                    (; uuid=12, head_uuid=12, passtime=1),
+                    (; uuid=27, head_uuid=27, passtime=1),
+                    (; uuid=13, head_uuid=13, passtime=1),
+                    (; uuid=14, head_uuid=14, passtime=1),
+                    (; uuid=17, head_uuid=17, passtime=1),
+                    (; uuid=11, head_uuid=11, passtime=1),
+                    (; uuid=15, head_uuid=15, passtime=1),
+                    (; uuid=16, head_uuid=16, passtime=1),
+                ])
+                # Check that we only get two heads
+                heads = get_trajectory_heads(df)
+                @test nrow(heads) == 8
+
+                # Check that each head appears once
+                @test length(Set(heads.head_uuid)) == 8
+
+                # Check that the data don't get mangled
+                @test all(heads.head_uuid .== heads.uuid)
+            end
         end
     end
 
