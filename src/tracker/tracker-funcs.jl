@@ -19,8 +19,10 @@ struct MatchedPairs
     ratios::DataFrame
     dist::Vector{Float64}
 
-    function MatchedPairs(props1::DataFrame, props2::DataFrame, ratios::DataFrame, dist::Vector{Float64})
-        new(props1, props2, ratios, dist)
+    function MatchedPairs(
+        props1::DataFrame, props2::DataFrame, ratios::DataFrame, dist::Vector{Float64}
+    )
+        return new(props1, props2, ratios, dist)
     end
 end
 
@@ -228,11 +230,7 @@ Set of conditions for "large" floes. Return `true` if the area of the floe is gr
 
 See also [`get_small_floe_condition`](@ref).
 """
-function get_large_floe_condition(
-    area1,
-    ratios,
-    thresholds
-)
+function get_large_floe_condition(area1, ratios, thresholds)
     large_floe_settings = thresholds.large_floe_settings
     return area1 >= large_floe_settings.minimumarea &&
            ratios.area < large_floe_settings.arearatio &&
@@ -252,11 +250,7 @@ Set of conditions for "small" floes. Return `true` if the area of the floe is le
 
 See also [`get_large_floe_condition`](@ref).
 """
-function get_small_floe_condition(
-    area1,
-    ratios,
-    thresholds
-)
+function get_small_floe_condition(area1, ratios, thresholds)
     small_floe_settings = thresholds.small_floe_settings
     return area1 < thresholds.large_floe_settings.minimumarea &&
            ratios.area < small_floe_settings.arearatio &&
@@ -317,7 +311,6 @@ function compute_ratios(floe_day1::DataFrameRow, floe_day2::DataFrameRow)
         convex_area=convex_area,
     )
 end
-
 
 """
     compute_ratios_conditions(floe_day1, floe_day2, delta_time, t)
@@ -388,7 +381,7 @@ end
 Return the floe properties for day `dayidx` and day `dayidx+1`.
 """
 function getpropsday1day2(properties, dayidx::Int64)
-    return copy(properties[dayidx]), copy(properties[dayidx+1])
+    return copy(properties[dayidx]), copy(properties[dayidx + 1])
 end
 
 """
@@ -439,7 +432,7 @@ Get nonunique rows in `matchedpairs`.
 """
 function getcollisions(matchedpairs)
     collisions = transform(matchedpairs, nonunique)
-    return filter(r -> r.x1 != 0, collisions)[:, 1:(end-1)]
+    return filter(r -> r.x1 != 0, collisions)[:, 1:(end - 1)]
 end
 
 function deletematched!(
@@ -567,7 +560,7 @@ This is used for getting the initial floe properties for the next day in search 
 """
 function get_trajectory_heads(pairs::T) where {T<:AbstractDataFrame}
     gdf = groupby(pairs, :head_uuid)
-    heads = combine(gdf, x->last(sort(x, :passtime)))
+    heads = combine(gdf, x -> last(sort(x, :passtime)))
     return heads
 end
 
@@ -603,7 +596,11 @@ end
 
 For distinct values in the column `col` of `df`, add a new column `new` to be consecutive integers starting from 1.
 """
-function add_id!(df::AbstractDataFrame, col::Union{Symbol,AbstractString}, new::Union{Symbol,AbstractString})
+function add_id!(
+    df::AbstractDataFrame,
+    col::Union{Symbol,AbstractString},
+    new::Union{Symbol,AbstractString},
+)
     ids = unique(df[!, col])
     _map = Dict(ids .=> 1:length(ids))
     transform!(df, col => ByRow(x -> _map[x]) => new)
@@ -617,7 +614,7 @@ Return a dataframe with the properties and goodness ratios of the matched pairs 
 """
 function get_matches(matched_pairs::MatchedPairs)
     # Ensure UUIDs are consistent
-    matched_pairs.props2[!,:head_uuid] = matched_pairs.props1.head_uuid
+    matched_pairs.props2[!, :head_uuid] = matched_pairs.props1.head_uuid
 
     # Define columns for goodness ratios
     goodness_cols = [:area_mismatch, :corr]
@@ -695,23 +692,6 @@ function dropcols!(df, colstodrop)
     return nothing
 end
 
-function remove_collisions(pairs::T)::T where {T<:MatchedPairs}
-    # column name bookkeeping
-    nm1 = names(pairs.props1)
-    nm2 = ["$(n)_1" for n in nm1]
-    old_nmratios = names(pairs.ratios)
-    nmratios = ["$(n)_ratio" for n in old_nmratios]
-    rename!(pairs.ratios, nmratios)
-
-    pairsdf = hcat(pairs.props1, pairs.props2, pairs.ratios, DataFrame(dist=pairs.dist), makeunique=true)
-    result = combine(groupby(pairsdf, :uuid_1),
-        g -> @view g[getidxmostminimumeverything(g[!, nmratios]), :])
-    p1 = result[:, nm1]
-    p2 = rename(result[:, nm2], nm1)
-    ratios = rename(result[:, nmratios], names(makeemptyratiosdf()))
-    return IceFloeTracker.MatchedPairs(p1, p2, ratios, result.dist)
-end
-
 """
     drop_trajectories_length1(trajectories::DataFrame, col::Symbol=:ID)
 
@@ -722,7 +702,9 @@ Drop trajectories with only one floe.
 - `col`: column name for the floe ID.
 """
 function drop_trajectories_length1(trajectories::DataFrame, col::Symbol=:ID)
-    trajectories = filter(:count => x -> x > 1, transform(groupby(trajectories, col), nrow => :count))
+    trajectories = filter(
+        :count => x -> x > 1, transform(groupby(trajectories, col), nrow => :count)
+    )
     cols = [c for c in names(trajectories) if c ∉ ["count"]]
     return trajectories[!, cols]
 end
