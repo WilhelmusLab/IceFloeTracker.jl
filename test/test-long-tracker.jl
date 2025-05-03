@@ -37,7 +37,7 @@ using CSV
                     (; uuid=15, head_uuid=15, passtime=1),
                     (; uuid=16, head_uuid=16, passtime=1),
                 ])
-                # Check that we only get two heads
+                # Check that we get a head for every row
                 heads = get_trajectory_heads(df)
                 @test nrow(heads) == 8
 
@@ -46,6 +46,30 @@ using CSV
 
                 # Check that the data don't get mangled
                 @test all(heads.head_uuid .== heads.uuid)
+            end
+            @ntestset "wider range of numbers for ranking" begin
+                df = DataFrame([
+                    (; id=13, rank=1),
+                    (; id=13, rank=2),
+                    (; id=24, rank=300),
+                    (; id=24, rank=4),
+                    (; id=24, rank=0),
+                    (; id=32, rank=1),
+                    (; id=32, rank=-1),
+                    (; id=32, rank=-100),
+                ])
+                # Check that we only get three heads
+                heads = get_trajectory_heads(df; group_col=:id, order_col=:rank)
+                @test nrow(heads) == 3
+
+                # Check that each head appears once
+                @test length(Set(heads.id)) == 3
+
+                # Check that the heads are the ones we care about
+                sorted_heads = sort(heads, :id)
+                @test copy(sorted_heads[1, :]) == (; id=13, rank=2)
+                @test copy(sorted_heads[2, :]) == (; id=24, rank=300)
+                @test copy(sorted_heads[3, :]) == (; id=32, rank=1)
             end
         end
     end

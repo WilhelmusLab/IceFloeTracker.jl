@@ -558,9 +558,11 @@ Return the last row (most recent member) of each group (trajectory) in `pairs` a
 
 This is used for getting the initial floe properties for the next day in search for new pairs.
 """
-function get_trajectory_heads(pairs::T) where {T<:AbstractDataFrame}
-    gdf = groupby(pairs, :head_uuid)
-    heads = combine(gdf, x -> last(sort(x, :passtime)))
+function get_trajectory_heads(
+    pairs::T; group_col=:head_uuid, order_col=:passtime
+) where {T<:AbstractDataFrame}
+    gdf = groupby(pairs, group_col)
+    heads = combine(gdf, x -> last(sort(x, order_col)))
     return heads
 end
 
