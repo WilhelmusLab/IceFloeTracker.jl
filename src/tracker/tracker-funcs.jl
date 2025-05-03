@@ -572,26 +572,6 @@ function get_trajectory_heads(pairs::T) where {T<:AbstractDataFrame}
 end
 
 """
-    _swap_last_values!(df)
-
-Swap the last two values of the `area_mismatch` and `corr` columns for each group in `df`. For bookkeeping purposes for goodness of fit data during the tracking process.
-"""
-function _swap_last_values!(df)
-    grouped = groupby(df, :uuid)  # Group by uuid
-    for sdf in grouped
-        n = nrow(sdf)
-        if n > 1
-            # Swap last two rows for area_mismatch and corr
-            sdf.area_mismatch[n], sdf.area_mismatch[n-1] = sdf.area_mismatch[n-1],
-            sdf.area_mismatch[n]
-            sdf.corr[n], sdf.corr[n-1] = sdf.corr[n-1], sdf.corr[n]
-        end
-    end
-    return df  # The original DataFrame is modified in-place
-end
-
-
-"""
     get_dt(props1, props2)
 
 Return the time difference between the `floe1` and `floe2` in minutes.
