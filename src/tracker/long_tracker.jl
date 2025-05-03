@@ -117,8 +117,7 @@ function find_floe_matches(
         end
     end
 
-    matches_df = DataFrame(matches)
-    remaining_matches_df = copy(matches_df)
+    remaining_matches_df = DataFrame(matches)
     best_matches = []
 
     for floe2 in eachrow(candidate_props)  # leave at most one match for each 
