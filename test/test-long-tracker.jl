@@ -1,7 +1,32 @@
-using IceFloeTracker: long_tracker, _imhist, condition_thresholds, mc_thresholds
+using IceFloeTracker:
+    long_tracker, _imhist, condition_thresholds, mc_thresholds, get_trajectory_heads
 using CSV
 
 @ntestset "$(@__FILE__)" begin
+    @ntestset "Utilities" begin
+        @ntestset "get_trajectory_heads" begin
+            df = DataFrame([
+                (; uuid=12, head_uuid=11, passtime=1),
+                (; uuid=27, head_uuid=16, passtime=5),  # this is the newest entry of the head_uuid=16 trajectory
+                (; uuid=13, head_uuid=11, passtime=2),
+                (; uuid=14, head_uuid=11, passtime=3),  # this is the newest entry of the head_uuid=11 trajectory
+                (; uuid=17, head_uuid=16, passtime=2),
+                (; uuid=11, head_uuid=11, passtime=0),
+                (; uuid=15, head_uuid=16, passtime=1),
+                (; uuid=16, head_uuid=16, passtime=0),
+            ])
+            # Check that we only get two heads
+            heads = get_trajectory_heads(df)
+            @test nrow(heads) == 2
+
+            # Check that the heads we get are the ones we want, 
+            # despite the fact that the dataframe is unsorted
+            sorted_heads = sort(heads, :head_uuid)
+            @test copy(sorted_heads[1, :]) == (; head_uuid=11, uuid=14, passtime=3)
+            @test copy(sorted_heads[2, :]) == (; head_uuid=16, uuid=27, passtime=5)
+        end
+    end
+
     @ntestset "Basic cases" begin
         """
         addgaps(props)
