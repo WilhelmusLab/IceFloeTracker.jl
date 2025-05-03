@@ -1,11 +1,14 @@
 """
     long_tracker(props, condition_thresholds, mc_thresholds)
 
-Track ice floes over multiple days.
+Track ice floes over multiple observations.
 
-Trajectories are built in two steps:
-0. Get pairs of floes in day 1 and day 2. Any unmatched floes, in both day 1 and day 2, become the "heads" of their respective trajectories.
-1. For each subsequent day, find pairs of floes for the current trajectory heads. Again, any unmatched floe in the new prop table starts a new trajectory.
+Trajectories are built as follows:
+- Assume the floes detected in observation 1 are trajectories of length 1.
+- For each subsequent observation:
+  - Determine the newest observation for each trajectory – these are the "current trajectory heads".
+  - Find matches between the the current trajectory heads and the new observed floes, extending those trajectories.
+  - Any unmatched floe in an observation is added as a new trajectory starting point.
 
 # Arguments
 - `props::Vector{DataFrame}`: A vector of DataFrames, each containing ice floe properties for a single day. Each DataFrame must have the following columns:
@@ -29,7 +32,11 @@ Trajectories are built in two steps:
 - `mc_thresholds`: thresholds for area mismatch and psi-s shape correlation. See `IceFloeTracker.mc_thresholds` for sample values.
 
 # Returns
-A DataFrame with the above columns, plus two extra columns, "area_mismatch" and "corr", which are the area mismatch and correlation between a floe and the one that follows it in the trajectory. Trajectories are identified by a unique identifier.
+A DataFrame with the above columns, plus extra columns:
+- "area_mismatch" and "corr", which are the area mismatch and correlation between a floe and the one that preceeds it in the trajectory. 
+- Trajectories are identified by: 
+  - a unique identifier `ID` and the 
+  - UUID of the starting point of the trajectory, `head_uuid`.
 """
 function long_tracker(props::Vector{DataFrame}, condition_thresholds, mc_thresholds)
     begin # Filter out floes with area less than `small_floe_minimum_area` pixels
