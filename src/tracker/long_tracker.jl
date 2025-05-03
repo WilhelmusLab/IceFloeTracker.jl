@@ -48,7 +48,7 @@ function long_tracker(props::Vector{DataFrame}, condition_thresholds, mc_thresho
 
     for prop in props[2:end]
         trajectory_heads = get_trajectory_heads(trajectories)
-        new_matches = IceFloeTracker.find_floe_matches(
+        new_matches = find_floe_matches(
             trajectory_heads, prop, condition_thresholds, mc_thresholds
         )
 
@@ -62,7 +62,7 @@ function long_tracker(props::Vector{DataFrame}, condition_thresholds, mc_thresho
         # Attach new matches and unmatched floes to trajectories
         trajectories = vcat(trajectories, new_matches, unmatched)
     end
-    trajectories = IceFloeTracker.drop_trajectories_length1(trajectories, :head_uuid)
+    trajectories = drop_trajectories_length1(trajectories, :head_uuid)
     DataFrames.sort!(trajectories, [:head_uuid, :passtime])
     _add_integer_id!(trajectories, :head_uuid, :ID)
     # Move ID columns to the front
