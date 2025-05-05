@@ -50,10 +50,7 @@ function long_tracker(props::Vector{DataFrame}, condition_thresholds, mc_thresho
     # Order by largest first
     sort!(trajectories, :area; rev=true)
 
-    trajectories[!, :head_uuid] .= missing
-    trajectories[!, :trajectory_uuid] .= [_uuid() for _ in eachrow(trajectories)]
-    trajectories[!, :area_mismatch] .= missing
-    trajectories[!, :corr] .= missing
+    _new_trajectory!(trajectories)
 
     for prop in props[2:end]
         trajectory_heads = get_trajectory_heads(trajectories)
@@ -68,10 +65,7 @@ function long_tracker(props::Vector{DataFrame}, condition_thresholds, mc_thresho
         # Get unmatched floes in day 2 (iterations > 2)
         matched_uuids = new_matches.uuid
         unmatched = filter((f) -> !(f.uuid in matched_uuids), prop)
-        unmatched[!, :head_uuid] .= missing
-        unmatched[!, :trajectory_uuid] .= [_uuid() for _ in eachrow(unmatched)]
-        unmatched[!, :area_mismatch] .= missing
-        unmatched[!, :corr] .= missing
+        _new_trajectory!(unmatched)
 
         # Attach new matches and unmatched floes to trajectories
         trajectories = vcat(trajectories, new_matches, unmatched)
@@ -82,6 +76,14 @@ function long_tracker(props::Vector{DataFrame}, condition_thresholds, mc_thresho
     # Move ID columns to the front
     select!(trajectories, :ID, :trajectory_uuid, :head_uuid, :uuid, :)
     return trajectories
+end
+
+function _new_trajectory!(floes::DataFrame)
+    floes[!, :head_uuid] .= missing
+    floes[!, :trajectory_uuid] .= [_uuid() for _ in eachrow(floes)]
+    floes[!, :area_mismatch] .= missing
+    floes[!, :corr] .= missing
+    return floes
 end
 
 """
