@@ -207,15 +207,45 @@ using CSV
             uuid_counts = combine(groupby(trajectories_, :uuid), nrow)
             @test all(uuid_counts.nrow .== 1)
         end
+        @ntestset "10 observations of 2 floes" begin
+            check_tracker_results(
+                joinpath("test_inputs", "tracker", "ellipses", "example-2floes-10obs")
+            )
+        end
+        @ntestset "10 observations of 40 floes" begin
+            check_tracker_results(
+                joinpath("test_inputs", "tracker", "ellipses", "example-40floes-10obs")
+            )
+        end
+        @ntestset "some observations missing" begin
+            check_tracker_results(
+                joinpath(
+                    "test_inputs", "tracker", "ellipses", "example-floes-missing-10obs"
+                ),
+            )
+        end
+        @ntestset "exclude small floes" begin
+            path = joinpath("test_inputs", "tracker", "ellipses", "example-40floes-10obs")
+            props = [
+                load_props_from_csv(p) for
+                p in readdir(path; join=true) if endswith(p, ".csv")
+            ]
 
-        check_tracker_results(
-            joinpath("test_inputs", "tracker", "ellipses", "example-2floes-10obs")
-        )
-        check_tracker_results(
-            joinpath("test_inputs", "tracker", "ellipses", "example-40floes-10obs")
-        )
-        check_tracker_results(
-            joinpath("test_inputs", "tracker", "ellipses", "example-floes-missing-10obs")
-        )
+            modified_condition_thresholds = (
+                search_thresholds=condition_thresholds.search_thresholds,
+                small_floe_settings=(;
+                    condition_thresholds.small_floe_settings..., minimumarea=1200
+                ),
+                large_floe_settings=condition_thresholds.large_floe_settings,
+            )
+            trajectories_ = long_tracker(
+                props, modified_condition_thresholds, mc_thresholds
+            )
+            @show trajectories_
+            @test all(
+                modified_condition_thresholds.small_floe_settings.minimumarea .<=
+                trajectories_.area,
+            )
+        end
     end
 end

@@ -45,9 +45,11 @@ function long_tracker(props::Vector{DataFrame}, condition_thresholds, mc_thresho
     )
 
     # The starting trajectories are just the floes visible and large enough on day 1.
-    trajectories = filter_out_small_floes(props[1])
-    # We match largest floes first
+    trajectories = props[1]
+    trajectories = filter_out_small_floes(trajectories)
+    # Order by largest first
     sort!(trajectories, :area; rev=true)
+
     trajectories[!, :head_uuid] .= missing
     trajectories[!, :trajectory_uuid] .= [_uuid() for _ in eachrow(trajectories)]
     trajectories[!, :area_mismatch] .= missing
@@ -55,6 +57,7 @@ function long_tracker(props::Vector{DataFrame}, condition_thresholds, mc_thresho
 
     for prop in props[2:end]
         trajectory_heads = get_trajectory_heads(trajectories)
+
         prop = filter_out_small_floes(prop)
         sort!(prop, :area; rev=true)
 
