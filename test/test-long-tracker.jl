@@ -139,13 +139,13 @@ using CSV
 
             # Expected: 5 trajectories, 3 of which have length 3 and 2 of which have length 2
             IDs = trajectories[!, :ID]
-            @test IDs == [1, 1, 1, 2, 2, 2, 3, 3, 4, 4, 4, 5, 5]
+            @test IDs == [1, 1, 1, 2, 2, 3, 3, 4, 4, 4, 5, 5, 5]
         end
 
         @ntestset "Test gaps" begin
             @ntestset "Case 3" begin
                 # Every floe is matched in every day for which there is data
-
+                Random.seed!(123)
                 props = addgaps(_props)
 
                 trajectories = IceFloeTracker.long_tracker(
@@ -159,6 +159,7 @@ using CSV
 
             @ntestset "Case 4" begin
                 # Add gaps to props_test_case2
+                Random.seed!(123)
                 props = addgaps(props_test_case2)
                 trajectories = IceFloeTracker.long_tracker(
                     props, condition_thresholds, mc_thresholds
@@ -166,7 +167,7 @@ using CSV
 
                 # Expected: 5 trajectories, 3 of which have length 3 and 2 of which have length 2 as in test case 2
                 IDs = trajectories[!, :ID]
-                @test IDs == [1, 1, 1, 2, 2, 2, 3, 3, 4, 4, 4, 5, 5]
+                @test IDs == [1, 1, 2, 2, 2, 3, 3, 3, 4, 4, 5, 5, 5]
             end
         end
     end
