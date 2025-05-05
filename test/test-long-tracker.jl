@@ -241,7 +241,7 @@ using CSV
             trajectories_ = long_tracker(
                 props, modified_condition_thresholds, mc_thresholds
             )
-            @show trajectories_
+
             @test all(
                 modified_condition_thresholds.small_floe_settings.minimumarea .<=
                 trajectories_.area,
