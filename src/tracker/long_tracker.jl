@@ -33,23 +33,15 @@ Trajectories are built as follows:
 
 # Returns
 A DataFrame with the above columns, plus extra columns:
-- "area_mismatch" and "corr", which are the area mismatch and correlation between a floe and the one that preceeds it in the trajectory. 
+- `area_mismatch` and `corr`, which are the area mismatch and correlation between a floe and the one that preceeds it in the trajectory. 
+- `head_uuid`, the floe which was best matched by this floe.
 - Trajectories are identified by: 
   - a unique identifier `ID` and the 
-  - UUID of the starting point of the trajectory, `head_uuid`.
+  - UUID of the trajectory, `trajectory_uuid`.
 """
 function long_tracker(props::Vector{DataFrame}, condition_thresholds, mc_thresholds)
-    begin # Filter out floes with area less than `small_floe_minimum_area` pixels
-        small_floe_minimum_area = condition_thresholds.small_floe_settings.minimumarea
-        for (i, prop) in enumerate(props)
-            props[i] = prop[prop[:, :area] .>= small_floe_minimum_area, :]
-            DataFrames.sort!(props[i], :area; rev=true)
-        end
-    end
-
-    # The starting trajectories are just the floes visible on day 1.
-    trajectories = props[1]
-    trajectories[!, :head_uuid] .= trajectories[:, :uuid]
+    trajectories[!, :head_uuid] .= missing
+    trajectories[!, :trajectory_uuid] .= [_uuid() for _ in eachrow(trajectories)]
     trajectories[!, :area_mismatch] .= missing
     trajectories[!, :corr] .= missing
 
@@ -62,18 +54,19 @@ function long_tracker(props::Vector{DataFrame}, condition_thresholds, mc_thresho
         # Get unmatched floes in day 2 (iterations > 2)
         matched_uuids = new_matches.uuid
         unmatched = filter((f) -> !(f.uuid in matched_uuids), prop)
-        unmatched[!, :head_uuid] = unmatched[:, :uuid]  # unmatched floes start new trajectories
+        unmatched[!, :head_uuid] .= missing
+        unmatched[!, :trajectory_uuid] .= [_uuid() for _ in eachrow(unmatched)]
         unmatched[!, :area_mismatch] .= missing
         unmatched[!, :corr] .= missing
 
         # Attach new matches and unmatched floes to trajectories
         trajectories = vcat(trajectories, new_matches, unmatched)
     end
-    trajectories = drop_trajectories_length1(trajectories, :head_uuid)
-    DataFrames.sort!(trajectories, [:head_uuid, :passtime])
-    _add_integer_id!(trajectories, :head_uuid, :ID)
+    trajectories = drop_trajectories_length1(trajectories, :trajectory_uuid)
+    DataFrames.sort!(trajectories, [:trajectory_uuid, :passtime])
+    _add_integer_id!(trajectories, :trajectory_uuid, :ID)
     # Move ID columns to the front
-    select!(trajectories, :ID, :head_uuid, :uuid, :)
+    select!(trajectories, :ID, :trajectory_uuid, :head_uuid, :uuid, :)
     return trajectories
 end
 
@@ -142,7 +135,8 @@ function find_floe_matches(
                 best_match.floe2...,
                 area_mismatch=best_match.measures.area_mismatch,
                 corr=best_match.measures.corr,
-                head_uuid=best_match.floe1.head_uuid,
+                trajectory_uuid=best_match.floe1.trajectory_uuid,
+                head_uuid=best_match.floe1.uuid,
             ),
         )
         # Filter out from the remaining matches any cases involving the matched floe1

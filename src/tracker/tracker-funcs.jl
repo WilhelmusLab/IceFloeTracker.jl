@@ -559,7 +559,7 @@ Return the last row (most recent member) of each group (trajectory) in `pairs` a
 This is used for getting the initial floe properties for the next day in search for new pairs.
 """
 function get_trajectory_heads(
-    pairs::T; group_col=:head_uuid, order_col=:passtime
+    pairs::T; group_col=:trajectory_uuid, order_col=:passtime
 ) where {T<:AbstractDataFrame}
     gdf = groupby(pairs, group_col)
     heads = combine(gdf, x -> last(sort(x, order_col)))
@@ -575,6 +575,8 @@ function get_dt(floe1, floe2)
     return (floe2.passtime - floe1.passtime) / Minute(1)
 end
 
+_uuid() = randstring(12)
+
 """
     adduuid!(df::DataFrame)
     adduuid!(dfs::Vector{DataFrame})
@@ -582,7 +584,7 @@ end
 Assign a unique ID to each floe in a (vector of) table(s) of floe properties.
 """
 function adduuid!(df::DataFrame)
-    df.uuid = [randstring(12) for _ in 1:nrow(df)]
+    df.uuid = [_uuid() for _ in 1:nrow(df)]
     return df
 end
 

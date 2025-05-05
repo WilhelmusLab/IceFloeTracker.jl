@@ -7,45 +7,42 @@ using CSV
         @ntestset "get_trajectory_heads" begin
             @ntestset "basic case" begin
                 df = DataFrame([
-                    (; uuid=12, head_uuid=11, passtime=1),
-                    (; uuid=27, head_uuid=16, passtime=5),  # this is the newest entry of the head_uuid=16 trajectory
-                    (; uuid=13, head_uuid=11, passtime=2),
-                    (; uuid=14, head_uuid=11, passtime=3),  # this is the newest entry of the head_uuid=11 trajectory
-                    (; uuid=17, head_uuid=16, passtime=2),
-                    (; uuid=11, head_uuid=11, passtime=0),
-                    (; uuid=15, head_uuid=16, passtime=1),
-                    (; uuid=16, head_uuid=16, passtime=0),
+                    (; floe_id=12, group_id=11, passtime=1),
+                    (; floe_id=27, group_id=16, passtime=5),  # this is the newest entry of the head_uuid=16 trajectory
+                    (; floe_id=13, group_id=11, passtime=2),
+                    (; floe_id=14, group_id=11, passtime=3),  # this is the newest entry of the head_uuid=11 trajectory
+                    (; floe_id=17, group_id=16, passtime=2),
+                    (; floe_id=11, group_id=11, passtime=0),
+                    (; floe_id=15, group_id=16, passtime=1),
+                    (; floe_id=16, group_id=16, passtime=0),
                 ])
                 # Check that we only get two heads
-                heads = get_trajectory_heads(df)
+                heads = get_trajectory_heads(df; group_col=:group_id)
                 @test nrow(heads) == 2
 
                 # Check that the heads we get are the ones we want, 
                 # despite the fact that the dataframe is unsorted
-                sorted_heads = sort(heads, :head_uuid)
-                @test copy(sorted_heads[1, :]) == (; head_uuid=11, uuid=14, passtime=3)
-                @test copy(sorted_heads[2, :]) == (; head_uuid=16, uuid=27, passtime=5)
+                sorted_heads = sort(heads, :group_id)
+                @test copy(sorted_heads[1, :]) == (; group_id=11, floe_id=14, passtime=3)
+                @test copy(sorted_heads[2, :]) == (; group_id=16, floe_id=27, passtime=5)
             end
             @ntestset "no existing trajectories" begin
                 df = DataFrame([
-                    (; uuid=12, head_uuid=12, passtime=1),
-                    (; uuid=27, head_uuid=27, passtime=1),
-                    (; uuid=13, head_uuid=13, passtime=1),
-                    (; uuid=14, head_uuid=14, passtime=1),
-                    (; uuid=17, head_uuid=17, passtime=1),
-                    (; uuid=11, head_uuid=11, passtime=1),
-                    (; uuid=15, head_uuid=15, passtime=1),
-                    (; uuid=16, head_uuid=16, passtime=1),
+                    (; floe_id=12, group_id=12, passtime=1),
+                    (; floe_id=27, group_id=27, passtime=1),
+                    (; floe_id=13, group_id=13, passtime=1),
+                    (; floe_id=14, group_id=14, passtime=1),
+                    (; floe_id=17, group_id=17, passtime=1),
+                    (; floe_id=11, group_id=11, passtime=1),
+                    (; floe_id=15, group_id=15, passtime=1),
+                    (; floe_id=16, group_id=16, passtime=1),
                 ])
                 # Check that we get a head for every row
-                heads = get_trajectory_heads(df)
+                heads = get_trajectory_heads(df; group_col=:group_id)
                 @test nrow(heads) == 8
 
                 # Check that each head appears once
-                @test length(Set(heads.head_uuid)) == 8
-
-                # Check that the data don't get mangled
-                @test all(heads.head_uuid .== heads.uuid)
+                @test length(Set(heads.group_id)) == 8
             end
             @ntestset "wider range of numbers for ranking" begin
                 df = DataFrame([
@@ -190,7 +187,7 @@ using CSV
             ]
             trajectories_ = long_tracker(props, condition_thresholds, mc_thresholds)
 
-            trajectory_lengths = combine(groupby(trajectories_, :head_uuid), nrow)
+            trajectory_lengths = combine(groupby(trajectories_, :trajectory_uuid), nrow)
 
             # Each trajectory is at most the legnth of the dataset
             # Weak test for a regression where a trajectory would have more than one element for a particular day
