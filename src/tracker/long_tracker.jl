@@ -132,7 +132,9 @@ function find_floe_matches(
     remaining_matches_df = DataFrame(matches)
     best_matches = []
 
-    for floe2 in eachrow(sort(candidate_props, :area; rev=true))
+    for floe2 in eachrow(
+        sort(candidate_props, :area; rev=true),  # prioritize larger floes
+    )
         matches_involving_floe2_df = filter((r) -> r.floe2 == floe2, remaining_matches_df)
         if nrow(matches_involving_floe2_df) == 0
             continue
