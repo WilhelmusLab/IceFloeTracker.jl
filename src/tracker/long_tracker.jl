@@ -6,7 +6,7 @@ Track ice floes over multiple observations.
 Trajectories are built as follows:
 - Assume the floes detected in observation 1 are trajectories of length 1.
 - For each subsequent observation:
-  - Determine the newest observation for each trajectory – these are the "current trajectory heads".
+  - Determine the latest observation for each trajectory – these are the "current trajectory heads".
   - Find matches between the the current trajectory heads and the new observed floes, extending those trajectories.
   - Any unmatched floe in an observation is added as a new trajectory starting point.
 
@@ -50,7 +50,7 @@ function long_tracker(props::Vector{DataFrame}, condition_thresholds, mc_thresho
     # Order by largest first
     sort!(trajectories, :area; rev=true)
 
-    _new_trajectory!(trajectories)
+    _start_new_trajectory!(trajectories)
 
     for prop in props[2:end]
         trajectory_heads = get_trajectory_heads(trajectories)
