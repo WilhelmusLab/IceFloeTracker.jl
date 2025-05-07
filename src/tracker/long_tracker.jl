@@ -47,16 +47,12 @@ function long_tracker(props::Vector{DataFrame}, condition_thresholds, mc_thresho
     # The starting trajectories are just the floes visible and large enough on day 1.
     trajectories = props[1]
     trajectories = filter_out_small_floes(trajectories)
-    # Order by largest first
-    sort!(trajectories, :area; rev=true)
-
     _start_new_trajectory!(trajectories)
 
     for prop in props[2:end]
         trajectory_heads = get_trajectory_heads(trajectories)
 
         prop = filter_out_small_floes(prop)
-        sort!(prop, :area; rev=true)
 
         new_matches = find_floe_matches(
             trajectory_heads, prop, condition_thresholds, mc_thresholds
@@ -136,7 +132,7 @@ function find_floe_matches(
     remaining_matches_df = DataFrame(matches)
     best_matches = []
 
-    for floe2 in eachrow(candidate_props)  # leave at most one match for each 
+    for floe2 in eachrow(sort(candidate_props, :area; rev=true))
         matches_involving_floe2_df = filter((r) -> r.floe2 == floe2, remaining_matches_df)
         if nrow(matches_involving_floe2_df) == 0
             continue
