@@ -596,7 +596,7 @@ function adduuid!(dfs::Vector{DataFrame})
 end
 
 """
-    _add_integer_id!(df, col)
+    _add_integer_id!(df, col, new)
 
 For distinct values in the column `col` of `df`, add a new column `new` to be consecutive integers starting from 1.
 """
