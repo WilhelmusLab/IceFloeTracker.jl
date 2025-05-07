@@ -23,8 +23,8 @@ using CSV
                 # Check that the heads we get are the ones we want, 
                 # despite the fact that the dataframe is unsorted
                 sorted_heads = sort(heads, :group_id)
-                @test copy(sorted_heads[1, :]) == (; group_id=11, floe_id=14, passtime=3)
-                @test copy(sorted_heads[2, :]) == (; group_id=16, floe_id=27, passtime=5)
+                @test sorted_heads[1, :] == (; group_id=11, floe_id=14, passtime=3)
+                @test sorted_heads[2, :] == (; group_id=16, floe_id=27, passtime=5)
             end
             @ntestset "no existing trajectories" begin
                 df = DataFrame([
@@ -64,9 +64,9 @@ using CSV
 
                 # Check that the heads are the ones we care about
                 sorted_heads = sort(heads, :id)
-                @test copy(sorted_heads[1, :]) == (; id=13, rank=2)
-                @test copy(sorted_heads[2, :]) == (; id=24, rank=300)
-                @test copy(sorted_heads[3, :]) == (; id=32, rank=1)
+                @test sorted_heads[1, :] == (; id=13, rank=2)
+                @test sorted_heads[2, :] == (; id=24, rank=300)
+                @test sorted_heads[3, :] == (; id=32, rank=1)
             end
         end
     end
