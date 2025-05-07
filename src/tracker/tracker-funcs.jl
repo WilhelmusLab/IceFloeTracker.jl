@@ -600,11 +600,7 @@ end
 
 For distinct values in the column `col` of `df`, add a new column `new` to be consecutive integers starting from 1.
 """
-function _add_integer_id!(
-    df::AbstractDataFrame,
-    col::Union{Symbol,AbstractString},
-    new::Union{Symbol,AbstractString},
-)
+function _add_integer_id!(df::AbstractDataFrame, col::Symbol, new::Symbol)
     ids = unique(df[!, col])
     _map = Dict(ids .=> 1:length(ids))
     transform!(df, col => ByRow(x -> _map[x]) => new)
