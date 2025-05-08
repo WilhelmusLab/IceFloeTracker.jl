@@ -43,16 +43,15 @@ function long_tracker(props::Vector{DataFrame}, condition_thresholds, mc_thresho
     filter_out_small_floes = filter(
         r -> r.area >= condition_thresholds.small_floe_settings.minimumarea
     )
+    props .= filter_out_small_floes.(props)
 
     # The starting trajectories are just the floes visible and large enough on day 1.
     trajectories = props[1]
-    trajectories = filter_out_small_floes(trajectories)
     _start_new_trajectory!(trajectories)
 
     for prop in props[2:end]
         trajectory_heads = get_trajectory_heads(trajectories)
 
-        prop = filter_out_small_floes(prop)
 
         new_matches = find_floe_matches(
             trajectory_heads, prop, condition_thresholds, mc_thresholds
