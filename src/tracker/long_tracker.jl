@@ -135,9 +135,7 @@ function find_floe_matches(
         sort(candidate_props, :area; rev=true),  # prioritize larger floes
     )
         matches_involving_floe2_df = filter((r) -> r.floe2 == floe2, remaining_matches_df)
-        if nrow(matches_involving_floe2_df) == 0
-            continue
-        end
+        nrow(matches_involving_floe2_df) == 0 && continue
         best_match = matches_involving_floe2_df[1, :]
         measures_df = DataFrame(matches_involving_floe2_df.measures)
         best_match_idx = getidxmostminimumeverything(measures_df)
