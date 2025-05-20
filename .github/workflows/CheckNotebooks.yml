@@ -50,6 +50,14 @@ jobs:
         env:
           PYTHON: python
 
+      - name: Develop root project in notebooks environment
+        run: |
+          julia --project=notebooks -e 'using Pkg; Pkg.develop(path="."); Pkg.instantiate()'
+
+      - name: Log workflow environment
+        run: |
+          julia --project=notebooks -e 'using Pkg; Pkg.status()'
+
       # Convert notebooks to .jl files using nbconvert
       - name: Convert Notebooks to Julia Scripts
         run: |
@@ -57,10 +65,6 @@ jobs:
             echo "Converting $notebook to Julia script"
             jupyter nbconvert --to script "$notebook" --output-dir=.
           done
-
-      - name: Develop root project in notebooks environment
-        run: |
-          julia --project=notebooks -e 'using Pkg; Pkg.develop(path=".")'
 
       # Update HOME variable in nb => .jl scripts
       # HOME = "../.." => "."
