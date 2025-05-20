@@ -46,9 +46,9 @@ jobs:
 
       - uses: julia-actions/cache@v2
 
-      - uses: julia-actions/julia-buildpkg@v1
-        env:
-          PYTHON: python
+      # - uses: julia-actions/julia-buildpkg@v1
+      #   env:
+      #     PYTHON: python
 
       - name: Develop root project in notebooks environment
         run: |
