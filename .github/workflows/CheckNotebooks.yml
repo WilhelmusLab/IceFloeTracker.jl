@@ -73,7 +73,7 @@ jobs:
           for script in $(find . -maxdepth 1 -name "*.jl"); do
             echo "Updating paths in $script"
             sed -i 's|\.\./\.\.|.|g' "$script" # replace HOME to .
-            sed -i '/Pkg\.activate("\.\.\/")/d' "$script" # delete Pkg.activate
+            sed -i '/Pkg\.activate/d' "$script" # delete lines with 'Pkg.activate'
           done
 
       # Run converted .jl files using Julia
