@@ -64,7 +64,8 @@ jobs:
         run: |
           for script in $(find . -maxdepth 1 -name "*.jl"); do
             echo "Updating paths in $script"
-            sed -i 's|\.\./\.\.|.|g' "$script"
+            sed -i 's|\.\./\.\.|.|g' "$script" # replace HOME to .
+            sed -i '/Pkg\.activate("\.\.\/")/d' "$script" # delete Pkg.activate
           done
 
       # Run converted .jl files using Julia
@@ -73,6 +74,6 @@ jobs:
           EXIT_CODE=0
           for script in $(find . -maxdepth 1 -name "*.jl"); do
             echo "Running Julia script: $script"
-            julia --project=. "$script" || EXIT_CODE=$?
+            julia --project=notebooks "$script" || EXIT_CODE=$?
           done
           exit $EXIT_CODE
