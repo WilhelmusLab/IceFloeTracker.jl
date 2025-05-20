@@ -58,6 +58,10 @@ jobs:
             jupyter nbconvert --to script "$notebook" --output-dir=.
           done
 
+      - name: Develop root project in notebooks environment
+        run: |
+          julia --project=notebooks -e 'using Pkg; Pkg.develop(path=".")'
+
       # Update HOME variable in nb => .jl scripts
       # HOME = "../.." => "."
       - name: Update Paths in Converted Julia Scripts
