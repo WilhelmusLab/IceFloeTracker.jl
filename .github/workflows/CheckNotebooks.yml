@@ -54,9 +54,6 @@ jobs:
         run: |
           julia --project=. scripts/update_env_for_notebooks.jl
 
-      - name: Log workflow environment
-        run: |
-          julia --project=notebooks -e 'using Pkg; Pkg.status()'
 
       # Convert notebooks to .jl files using nbconvert
       - name: Convert Notebooks to Julia Scripts
@@ -82,6 +79,6 @@ jobs:
           EXIT_CODE=0
           for script in $(find . -maxdepth 1 -name "*.jl"); do
             echo "Running Julia script: $script"
-            julia --project=notebooks "$script" || EXIT_CODE=$?
+            julia --project=. "$script" || EXIT_CODE=$?
           done
           exit $EXIT_CODE
