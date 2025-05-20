@@ -3,8 +3,8 @@
 ## locate some files for the tests
 test_data_dir = "./test_inputs"
 test_output_dir = "./test_outputs"
-truecolor_test_image_file = "$(test_data_dir)/NE_Greenland_truecolor.2020162.aqua.250m.tiff"
-falsecolor_test_image_file = "$(test_data_dir)/NE_Greenland_reflectance.2020162.aqua.250m.tiff"
+truecolor_test_image_file = "$(test_data_dir)/beaufort-chukchi-seas_truecolor.2020162.aqua.250m.tiff"
+falsecolor_test_image_file = "$(test_data_dir)/beaufort-chukchi-seas_falsecolor.2020162.aqua.250m.tiff"
 falsecolor_b7_test_file = "$(test_data_dir)/ref_image_b7.png"
 landmask_file = "$(test_data_dir)/landmask.tiff"
 landmask_no_dilate_file = "$(test_data_dir)/landmask_no_dilate.png"

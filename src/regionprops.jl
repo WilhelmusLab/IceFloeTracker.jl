@@ -275,7 +275,7 @@ end
 
 
 """
-    addfloearrays(props::DataFrame, floeimg::BitMatrix)
+    addfloemasks!(props::DataFrame, floeimg::FloeLabelsImage)
 
 Add a column to `props` called `floearray` containing the cropped floe masks from `floeimg`.
 """

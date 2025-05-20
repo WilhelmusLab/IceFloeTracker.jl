@@ -1,0 +1,6 @@
+Example case with forty known floes labeled like `day_<obs>-#<floe id>`, e.g., `day_1-#31` 
+This case exhibited a bug fixed in PR #616 where 
+- some trajectories would have two entries for a particular day, and 
+- some floes would be duplicated in the trajectory list.
+
+This larger dataset is useful as a performance test.

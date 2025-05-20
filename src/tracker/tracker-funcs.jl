@@ -19,8 +19,10 @@ struct MatchedPairs
     ratios::DataFrame
     dist::Vector{Float64}
 
-    function MatchedPairs(props1::DataFrame, props2::DataFrame, ratios::DataFrame, dist::Vector{Float64})
-        new(props1, props2, ratios, dist)
+    function MatchedPairs(
+        props1::DataFrame, props2::DataFrame, ratios::DataFrame, dist::Vector{Float64}
+    )
+        return new(props1, props2, ratios, dist)
     end
 end
 
@@ -142,8 +144,8 @@ getcentroid(props_day::DataFrame, r)
 
 Get the coordinates of the `r`th floe in `props_day`.
 """
-function getcentroid(props_day::DataFrame, r)
-    return props_day[r, [:row_centroid, :col_centroid]]
+function getcentroid(floe_day::DataFrameRow)
+    return floe_day[[:row_centroid, :col_centroid]]
 end
 
 """
@@ -228,11 +230,7 @@ Set of conditions for "large" floes. Return `true` if the area of the floe is gr
 
 See also [`get_small_floe_condition`](@ref).
 """
-function get_large_floe_condition(
-    area1,
-    ratios,
-    thresholds
-)
+function get_large_floe_condition(area1, ratios, thresholds)
     large_floe_settings = thresholds.large_floe_settings
     return area1 >= large_floe_settings.minimumarea &&
            ratios.area < large_floe_settings.arearatio &&
@@ -252,11 +250,7 @@ Set of conditions for "small" floes. Return `true` if the area of the floe is le
 
 See also [`get_large_floe_condition`](@ref).
 """
-function get_small_floe_condition(
-    area1,
-    ratios,
-    thresholds
-)
+function get_small_floe_condition(area1, ratios, thresholds)
     small_floe_settings = thresholds.small_floe_settings
     return area1 < thresholds.large_floe_settings.minimumarea &&
            ratios.area < small_floe_settings.arearatio &&
@@ -293,25 +287,23 @@ function isfloegoodmatch(conditions, mct, area_mismatch, corr)
 end
 
 """
-    compute_ratios((props_day1, r), (props_day2,s))
+    compute_ratios(floe_day1, floe_day2)
 
 Compute the ratios of the floe properties between the `r`th floe in `props_day1` and the `s`th floe in `props_day2`. Return a tuple of the ratios.
 
 # Arguments
-- `props_day1`: floe properties for day 1
-- `r`: index of floe in `props_day1`
-- `props_day2`: floe properties for day 2
-- `s`: index of floe in `props_day2`
+- `floe_day1`: floe properties for day 1
+- `floe_day2`: floe properties for day 2
 """
-function compute_ratios((props_day1, r), (props_day2, s))
-    arearatio = absdiffmeanratio(props_day1.area[r], props_day2.area[s])
+function compute_ratios(floe_day1::DataFrameRow, floe_day2::DataFrameRow)
+    arearatio = absdiffmeanratio(floe_day1.area, floe_day2.area)
     majoraxisratio = absdiffmeanratio(
-        props_day1.major_axis_length[r], props_day2.major_axis_length[s]
+        floe_day1.major_axis_length, floe_day2.major_axis_length
     )
     minoraxisratio = absdiffmeanratio(
-        props_day1.minor_axis_length[r], props_day2.minor_axis_length[s]
+        floe_day1.minor_axis_length, floe_day2.minor_axis_length
     )
-    convex_area = absdiffmeanratio(props_day1.convex_area[r], props_day2.convex_area[s])
+    convex_area = absdiffmeanratio(floe_day1.convex_area, floe_day2.convex_area)
     return (
         area=arearatio,
         majoraxis=majoraxisratio,
@@ -321,24 +313,22 @@ function compute_ratios((props_day1, r), (props_day2, s))
 end
 
 """
-    compute_ratios_conditions((props_day1, r), (props_day2, s), delta_time, t)
+    compute_ratios_conditions(floe_day1, floe_day2, delta_time, t)
 
-Compute the conditions for a match between the `r`th floe in `props_day1` and the `s`th floe in `props_day2`. Return a tuple of the conditions.
+Compute the conditions for a match between the floe in `floe_day1` and the floe in `floe_day2`. Return a tuple of the conditions.
 
 # Arguments
-- `props_day1`: floe properties for day 1
-- `r`: index of floe in `props_day1`
-- `props_day2`: floe properties for day 2
-- `s`: index of floe in `props_day2`
+- `floe_day1`: floe properties for day 1
+- `floe_day2`: floe properties for day 2
 - `delta_time`: time elapsed from image day 1 to image day 2
 - `thresholds`: namedtuple of thresholds for elapsed time and distance. See `pair_floes` for details.
 """
-function compute_ratios_conditions((props_day1, r), (props_day2, s), delta_time, thresholds)
-    p1 = getcentroid(props_day1, r)
-    p2 = getcentroid(props_day2, s)
+function compute_ratios_conditions(floe_day1, floe_day2, delta_time, thresholds)
+    p1 = getcentroid(floe_day1)
+    p2 = getcentroid(floe_day2)
     d = dist(p1, p2)
-    area1 = props_day1.area[r]
-    ratios = compute_ratios((props_day1, r), (props_day2, s))
+    area1 = floe_day1.area
+    ratios = compute_ratios(floe_day1, floe_day2)
     time_space_proximity_condition = get_time_space_proximity_condition(
         d, delta_time, thresholds.search_thresholds
     )
@@ -391,7 +381,7 @@ end
 Return the floe properties for day `dayidx` and day `dayidx+1`.
 """
 function getpropsday1day2(properties, dayidx::Int64)
-    return copy(properties[dayidx]), copy(properties[dayidx+1])
+    return copy(properties[dayidx]), copy(properties[dayidx + 1])
 end
 
 """
@@ -442,7 +432,7 @@ Get nonunique rows in `matchedpairs`.
 """
 function getcollisions(matchedpairs)
     collisions = transform(matchedpairs, nonunique)
-    return filter(r -> r.x1 != 0, collisions)[:, 1:(end-1)]
+    return filter(r -> r.x1 != 0, collisions)[:, 1:(end - 1)]
 end
 
 function deletematched!(
@@ -522,6 +512,15 @@ function buildψs(floe)
     return IceFloeTracker.make_psi_s(bdres)[1]
 end
 
+"""
+    addψs!(props::Vector{DataFrame})
+
+Add the ψ-s curves to each member of `props`.
+
+Note: each member of `props` must have a `mask` column with a binary image representing the floe.
+
+To add floe masks see [`addfloemasks!`](@ref).
+"""
 function addψs!(props::Vector{DataFrame})
     for prop in props
         prop.psi = map(buildψs, prop.mask)
@@ -559,101 +558,53 @@ Return the last row (most recent member) of each group (trajectory) in `pairs` a
 
 This is used for getting the initial floe properties for the next day in search for new pairs.
 """
-function get_trajectory_heads(pairs::T) where {T<:AbstractDataFrame}
-    gdf = groupby(pairs, :uuid)
-    return combine(gdf, last)[:, names(pairs)]
+function get_trajectory_heads(
+    pairs::T; group_col=:trajectory_uuid, order_col=:passtime
+) where {T<:AbstractDataFrame}
+    gdf = groupby(pairs, group_col)
+    heads = combine(gdf, x -> last(sort(x, order_col)))
+    return heads
 end
 
 """
-    _swap_last_values!(df)
+    get_dt(props1, props2)
 
-Swap the last two values of the `area_mismatch` and `corr` columns for each group in `df`. For bookkeeping purposes for goodness of fit data during the tracking process.
+Return the time difference between the `floe1` and `floe2` in minutes.
 """
-function _swap_last_values!(df)
-    grouped = groupby(df, :uuid)  # Group by uuid
-    for sdf in grouped
-        n = nrow(sdf)
-        if n > 1
-            # Swap last two rows for area_mismatch and corr
-            sdf.area_mismatch[n], sdf.area_mismatch[n-1] = sdf.area_mismatch[n-1],
-            sdf.area_mismatch[n]
-            sdf.corr[n], sdf.corr[n-1] = sdf.corr[n-1], sdf.corr[n]
-        end
-    end
-    return df  # The original DataFrame is modified in-place
+function get_dt(floe1, floe2)
+    return (floe2.passtime - floe1.passtime) / Minute(1)
 end
 
-"""
-    get_dt(props1, r, props2, s)
-
-Return the time difference between the `r`th floe in `props1` and the `s`th floe in `props2` in minutes.
-"""
-function get_dt(props1, r, props2, s)
-    return (props2.passtime[s] - props1.passtime[r]) / Minute(1)
-end
+_uuid() = randstring(12)
 
 """
-    adduuid!(df)
+    adduuid!(df::DataFrame)
+    adduuid!(dfs::Vector{DataFrame})
 
-Assign a unique ID to each floe in a table of floe properties.
+Assign a unique ID to each floe in a (vector of) table(s) of floe properties.
 """
 function adduuid!(df::DataFrame)
-    df.uuid = [randstring(12) for _ in 1:nrow(df)]
+    df.uuid = [_uuid() for _ in 1:nrow(df)]
     return df
 end
 
-"""
-    adduuid!(dfs)
-
-Assign a unique ID to each floe in an vector of tables of floe properties.
-"""
 function adduuid!(dfs::Vector{DataFrame})
-    for (i, df) in enumerate(dfs)
+    for (i, _) in enumerate(dfs)
         adduuid!(dfs[i])
     end
     return dfs
 end
 
 """
-    reset_id!(df, col)
+    _add_integer_id!(df, col, new)
 
-Reset the distinct values in the column `col` of `df` to be consecutive integers starting from 1.
+For distinct values in the column `col` of `df`, add a new column `new` to be consecutive integers starting from 1.
 """
-function reset_id!(df::AbstractDataFrame, col::Union{Symbol,AbstractString}=:uuid)
+function _add_integer_id!(df::AbstractDataFrame, col::Symbol, new::Symbol)
     ids = unique(df[!, col])
     _map = Dict(ids .=> 1:length(ids))
-    transform!(df, col => ByRow(x -> _map[x]) => col)
+    transform!(df, col => ByRow(x -> _map[x]) => new)
     return nothing
-end
-
-"""
-    consolidate_matched_pairs(matched_pairs::MatchedPairs)
-
-Consolidate the floe properties and similarity ratios of the matched pairs in `matched_pairs` into a single dataframe. Return the consolidated dataframe. Used in iteration `0`.
-"""
-function consolidate_matched_pairs(matched_pairs::MatchedPairs)
-    # Ensure UUIDs are consistent
-    matched_pairs.props2.uuid = matched_pairs.props1.uuid
-
-    # Define columns for goodness ratios
-    goodness_cols = [:area_mismatch, :corr]
-
-    # Create top DataFrame with properties and goodness ratios
-    top_df = hcat(
-        matched_pairs.props1, matched_pairs.ratios[:, goodness_cols]; makeunique=true
-    )
-
-    # Create missing ratios DataFrame
-    missing_ratios = similar(matched_pairs.ratios[:, goodness_cols])
-    missing_ratios[!, :] .= missing
-
-    bottom_df = hcat(matched_pairs.props2, missing_ratios; makeunique=true)
-
-    combined_df = vcat(top_df, bottom_df)
-
-    DataFrames.sort!(combined_df, [:uuid, :passtime])
-
-    return combined_df
 end
 
 """
@@ -663,7 +614,7 @@ Return a dataframe with the properties and goodness ratios of the matched pairs 
 """
 function get_matches(matched_pairs::MatchedPairs)
     # Ensure UUIDs are consistent
-    matched_pairs.props2.uuid = matched_pairs.props1.uuid
+    matched_pairs.props2[!, :head_uuid] = matched_pairs.props1.head_uuid
 
     # Define columns for goodness ratios
     goodness_cols = [:area_mismatch, :corr]
@@ -673,7 +624,7 @@ function get_matches(matched_pairs::MatchedPairs)
         matched_pairs.props2, matched_pairs.ratios[:, goodness_cols]; makeunique=true
     )
 
-    DataFrames.sort!(combined_df, [:uuid, :passtime])
+    DataFrames.sort!(combined_df, [:head_uuid, :passtime])
 
     return combined_df
 end
@@ -690,12 +641,12 @@ function convertcentroid!(propdf, latlondata, colstodrop)
         [
             latlondata[c][Int(round(x)), Int(round(y))] for
             (x, y) in zip(propdf.row_centroid, propdf.col_centroid)
-        ] for c in ["latitude", "longitude"]
+        ] for c in [:latitude, :longitude]
     ]
 
     x, y = [
         [latlondata[c][Int(round(z))] for z in V] for
-        (c, V) in zip(["Y", "X"], [propdf.row_centroid, propdf.col_centroid])
+        (c, V) in zip([:Y, :X], [propdf.row_centroid, propdf.col_centroid])
     ]
 
     propdf.latitude = latitude
@@ -724,7 +675,7 @@ function converttounits!(propdf, latlondata, colstodrop)
         return nothing
     end
     convertcentroid!(propdf, latlondata, colstodrop)
-    x = latlondata["X"]
+    x = latlondata[:X]
     dx = abs(x[2] - x[1])
     convertarea(area) = area * dx^2 / 1e6
     convertlength(length) = length * dx / 1e3
@@ -741,23 +692,6 @@ function dropcols!(df, colstodrop)
     return nothing
 end
 
-function remove_collisions(pairs::T)::T where {T<:MatchedPairs}
-    # column name bookkeeping
-    nm1 = names(pairs.props1)
-    nm2 = ["$(n)_1" for n in nm1]
-    old_nmratios = names(pairs.ratios)
-    nmratios = ["$(n)_ratio" for n in old_nmratios]
-    rename!(pairs.ratios, nmratios)
-
-    pairsdf = hcat(pairs.props1, pairs.props2, pairs.ratios, DataFrame(dist=pairs.dist), makeunique=true)
-    result = combine(groupby(pairsdf, :uuid_1),
-        g -> @view g[getidxmostminimumeverything(g[!, nmratios]), :])
-    p1 = result[:, nm1]
-    p2 = rename(result[:, nm2], nm1)
-    ratios = rename(result[:, nmratios], names(makeemptyratiosdf()))
-    return IceFloeTracker.MatchedPairs(p1, p2, ratios, result.dist)
-end
-
 """
     drop_trajectories_length1(trajectories::DataFrame, col::Symbol=:ID)
 
@@ -768,7 +702,9 @@ Drop trajectories with only one floe.
 - `col`: column name for the floe ID.
 """
 function drop_trajectories_length1(trajectories::DataFrame, col::Symbol=:ID)
-    trajectories = filter(:count => x -> x > 1, transform(groupby(trajectories, col), nrow => :count))
+    trajectories = filter(
+        :count => x -> x > 1, transform(groupby(trajectories, col), nrow => :count)
+    )
     cols = [c for c in names(trajectories) if c ∉ ["count"]]
     return trajectories[!, cols]
 end
