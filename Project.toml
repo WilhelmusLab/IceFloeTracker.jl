@@ -1,7 +1,7 @@
 name = "IceFloeTracker"
 uuid = "04643c7a-9ac6-48c5-822f-2704f9e70bd3"
 authors = ["Carlos Paniagua <carlos_paniagua@brown.edu>", "Timothy Divoll <bradford_roarr@brown.edu>", "John Gerrard Holland <john_holland1@brown.edu>", "Bradford Roarr <bradford_roarr@brown.edu>", "Daniel Watkins <daniel_watkins@brown.edu>", "Maria Isabel Restrepo <maria_restrepo@brown.edu>"]
-version = "0.8.0"
+version = "0.8.1"
 
 [deps]
 ArchGDAL = "c9ce4bd3-c3d5-55b8-8973-c0e20141b8c3"
