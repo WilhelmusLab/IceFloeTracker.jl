@@ -56,7 +56,7 @@ ImageMorphology = "0.3, 0.4"
 ImageSegmentation = "1.8"
 ImageTransformations = "0.9, 0.10"
 Images = "0.25"
-Interpolations = "0.14, 0.15"
+Interpolations = "0.16"
 LoopVectorization = "0.12"
 OffsetArrays = "1.12"
 Peaks = "0.5"
@@ -75,5 +75,5 @@ Plots = "91a5bcdd-55d7-5caf-9e0b-520d859cae80"
 Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
 
 [targets]
-test = ["Test"]
 notebooks = ["CSV", "Plots"]
+test = ["Test"]
