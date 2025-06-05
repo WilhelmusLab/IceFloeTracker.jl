@@ -77,7 +77,9 @@ function apply_cloudmask(
 end
 
 function create_clouds_channel(
-    cloudmask::AbstractArray{Bool}, false_color_image::Matrix{RGB{Float64}}
-)::Matrix{Gray{Float64}}
-    return Gray.(@view(channelview(cloudmask .* false_color_image)[1, :, :]))
+    cloud::AbstractArray{Bool},
+    false_color_image::AbstractArray{<:Union{AbstractRGB,TransparentRGB}},
+)
+    red_channel_with_non_clouds_zeroed = red.(false_color_image) .* cloud
+    return colorview(Gray, red_channel_with_non_clouds_zeroed)
 end

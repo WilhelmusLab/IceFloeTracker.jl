@@ -13,24 +13,26 @@ Does reconstruction and landmasking to `image_sharpened`.
 
 """
 function normalize_image(
-    image_sharpened::Matrix{Float64},
-    image_sharpened_gray::T,
+    image_sharpened::AbstractMatrix{<:Gray},
+    image_sharpened_gray::AbstractMatrix{<:Gray},
     landmask::BitMatrix,
     struct_elem::ImageMorphology.MorphologySEArray{2};
-)::Matrix{Gray{Float64}} where {T<:AbstractMatrix{Gray{Float64}}}
+)
     image_dilated = MorphSE.dilate(image_sharpened_gray, struct_elem)
-
     image_reconstructed = MorphSE.mreconstruct(
         MorphSE.dilate, complement.(image_dilated), complement.(image_sharpened)
     )
-    return IceFloeTracker.apply_landmask(image_reconstructed, landmask)
+    image_reconstructed_masked = IceFloeTracker.apply_landmask(
+        image_reconstructed, landmask
+    )
+    return image_reconstructed_masked
 end
 
 function normalize_image(
-    image_sharpened::Matrix{Float64},
-    image_sharpened_gray::Matrix{Gray{Float64}},
+    image_sharpened::AbstractMatrix{<:Gray},
+    image_sharpened_gray::AbstractMatrix{<:Gray},
     landmask::BitMatrix,
-)::Matrix{Gray{Float64}}
+)
     return normalize_image(
         image_sharpened, image_sharpened_gray, landmask, strel_diamond((5, 5))
     )
@@ -90,23 +92,18 @@ function imsharpen(
     clip::Float64=0.86, # matlab default is 0.01 CP
     smoothing_param::Int64=10,
     intensity::Float64=2.0,
-)::Matrix{Float64} where {T<:Union{AbstractRGB,TransparentRGB}}
+)::Matrix{Gray} where {T<:Union{AbstractRGB,TransparentRGB}}
     input_image = IceFloeTracker.apply_landmask(truecolor_image, landmask_no_dilate)
-
     input_image .= IceFloeTracker.diffusion(input_image, lambda, kappa, niters)
-
     masked_view = Float64.(channelview(input_image))
-
     eq = [
         _adjust_histogram(@view(masked_view[i, :, :]), nbins, rblocks, cblocks, clip) for
         i in 1:3
     ]
-
     image_equalized = colorview(RGB, eq...)
-
     image_equalized_gray = Gray.(image_equalized)
-
-    return unsharp_mask(image_equalized_gray, smoothing_param, intensity)
+    unsharpened = unsharp_mask(image_equalized_gray, smoothing_param, intensity)
+    return unsharpened
 end
 
 """
@@ -149,7 +146,8 @@ The sharpened grayscale image with values clipped between 0 and `clapmax`.
 function unsharp_mask(image_gray, smoothing_param, intensity)
     image_smoothed = imfilter(image_gray, Kernel.gaussian(smoothing_param))
     image_sharpened = image_gray * (1 + intensity) .- image_smoothed * intensity
-    return clamp.(image_sharpened, 0.0, 1.0)
+    image_sharpened_cast = colorview(Gray, clamp.(image_sharpened, 0.0, 1.0))
+    return image_sharpened_cast
 end
 
 """
@@ -158,8 +156,9 @@ end
 Apply landmask and return Gray type image in colorview for normalization.
 
 """
-function imsharpen_gray(
-    imgsharpened::Matrix{Float64}, landmask::AbstractArray{Bool}
+function imsharpen_gray(  # this should be replaced everywhere by apply_landmask
+    imgsharpened::Matrix{Float64},
+    landmask::AbstractArray{Bool},
 )::Matrix{Gray{Float64}}
     image_sharpened_landmasked = apply_landmask(imgsharpened, landmask)
     return colorview(Gray, image_sharpened_landmasked)
