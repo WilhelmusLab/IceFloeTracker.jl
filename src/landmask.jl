@@ -18,9 +18,10 @@ function create_landmask(
 ) where {T<:AbstractMatrix}
     landmask_binary = binarize_landmask(landmask_image)
     dilated = IceFloeTracker.MorphSE.dilate(landmask_binary, centered(struct_elem))
-    dilated = ImageMorphology.imfill(.!dilated, (fill_value_lower, fill_value_upper))
-    non_dilated = .!landmask_binary
-    return (; dilated, non_dilated)
+    return (
+        dilated=ImageMorphology.imfill(.!dilated, (fill_value_lower, fill_value_upper)),
+        non_dilated=.!landmask_binary,
+    )
 end
 
 function create_landmask(landmask_image)
@@ -44,24 +45,6 @@ function binarize_landmask(landmask_image::T)::BitMatrix where {T<:AbstractMatri
 end
 
 """
-    apply_mask(image, mask)
-
-Zero out pixels in all channels of the input image where mask is zero.
-
-
-# Arguments
-- `image`: truecolor RGB image
-- `mask`: binary landmask with 1=retain, 0=zero 
-
-"""
-function apply_mask(
-    image::{T}, mask::Union{BitMatrix,AbstractArray{<:Gray}}
-)::{T} where {T<:AbstractArray}
-    image_masked = image .* mask
-    return image_masked
-end
-
-"""
     apply_landmask(input_image, landmask_binary)
 
 Zero out pixels in all channels of the input image using the binary landmask.
@@ -72,17 +55,14 @@ Zero out pixels in all channels of the input image using the binary landmask.
 - `landmask_binary`: binary landmask with 1=land, 0=water/ice 
 
 """
-function apply_landmask(
-    input_image::{<:AbstractArray}, landmask_binary::Union{BitMatrix,AbstractArray{<:Gray}}
-)
-    return apply_mask(input_image, landmask_binary)
+function apply_landmask(input_image::AbstractMatrix, landmask_binary::BitMatrix)
+    image_masked = landmask_binary .* input_image
+    return image_masked
 end
 
 # in-place version
-function apply_landmask!(
-    input_image::T, landmask_binary::BitMatrix
-)::T where {T<:AbstractArray}
-    input_image .= apply_mask(input_image, landmask_binary)
+function apply_landmask!(input_image::AbstractMatrix, landmask_binary::BitMatrix)
+    input_image .= landmask_binary .* input_image
     return nothing
 end
 
