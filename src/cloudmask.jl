@@ -24,7 +24,7 @@ function create_cloudmask(
     band_2_threshold::Real=(190 / 255),
     ratio_lower::Real=0.0,
     ratio_upper::Real=0.75,
-)::BitMatrix where {T<:Union{AbstractRGB,TransparentRGB}}
+) where {T<:Union{AbstractRGB,TransparentRGB}}
     modis_band02 = green.(modis_721)
     modis_band07 = red.(modis_721)
 
@@ -45,7 +45,7 @@ function create_cloudmask(
     not_cloud = mask_cloud_ice .|| .!clouds_view
     cloud = .!not_cloud
 
-    return cloud
+    return colorview(Gray, cloud)
 end
 
 """

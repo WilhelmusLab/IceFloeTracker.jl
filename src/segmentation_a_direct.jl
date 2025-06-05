@@ -46,6 +46,10 @@ function get_segmented_ice(segmented::Matrix{Int64}, ice_labels::Vector{Int64})
     return segmented_ice
 end
 
+function get_truthy_indices(img::AbstractMatrix{<:Colorant})
+    return [i for i in 1:length(img) if img[i]]
+end
+
 """
     segmented_ice_cloudmasking(gray_image, cloudmask, ice_labels;)
 
@@ -59,11 +63,21 @@ Apply cloudmask to a bitmatrix of segmented ice after kmeans clustering. Returns
 
 """
 function segmented_ice_cloudmasking(
-    gray_image::Matrix{Gray{Float64}}, cloudmask::BitMatrix, ice_labels::Vector{Int64}
+    gray_image::AbstractArray{<:Gray},
+    cloudmask::AbstractArray{<:Gray},
+    ice_labels::Vector{Int64},
 )::BitMatrix
     segmented_ice = IceFloeTracker.kmeans_segmentation(gray_image, ice_labels)
     segmented_ice_cloudmasked = segmented_ice .* cloudmask
     return segmented_ice_cloudmasked
+end
+
+function segmented_ice_cloudmasking(
+    gray_image::AbstractArray{<:Gray},
+    cloudmask::AbstractArray{<:Gray},
+    ice::AbstractArray{<:Gray},
+)
+    return segmented_ice_cloudmasking(gray_image, cloudmask, get_truthy_indices(ice))
 end
 
 """
