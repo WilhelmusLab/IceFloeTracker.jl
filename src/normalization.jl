@@ -79,8 +79,8 @@ Sharpen `truecolor_image`.
 - `intensity`: amount of sharpening to perform
 """
 function imsharpen(
-    truecolor_image::Matrix{RGB{Float64}},
-    landmask_no_dilate::BitMatrix,
+    truecolor_image::AbstractArray{T},
+    landmask_no_dilate::BitMatrix;
     lambda::Real=0.1,
     kappa::Real=75,
     niters::Int64=3,
@@ -90,7 +90,7 @@ function imsharpen(
     clip::Float64=0.86, # matlab default is 0.01 CP
     smoothing_param::Int64=10,
     intensity::Float64=2.0,
-)::Matrix{Float64}
+)::Matrix{Float64} where {T<:Union{AbstractRGB,TransparentRGB}}
     input_image = IceFloeTracker.apply_landmask(truecolor_image, landmask_no_dilate)
 
     input_image .= IceFloeTracker.diffusion(input_image, lambda, kappa, niters)
