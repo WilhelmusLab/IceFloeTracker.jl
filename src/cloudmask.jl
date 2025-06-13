@@ -36,6 +36,8 @@ LopezAcostaCloudMask(;
                 ratio_upper)
 
 # set default parameters
+# I get a warning that this overwrites the type; perhaps we need a "nothing" in the arguments to 
+# do this right? Does it need to come after the function on line 49?
 LopezAcostaCloudMask() = LopezAcostaCloudMask(;
     prelim_threshold=110/255,
     band_7_threshold=200/255,
