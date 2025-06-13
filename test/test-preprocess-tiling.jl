@@ -42,6 +42,7 @@ using IceFloeTracker:
         prelim_icemask_params,
         brighten_factor,
     )
-
+    
+    # dwm: will need to revise if it is no longer Int8
     @test sum(foo) == 1735472
 end
