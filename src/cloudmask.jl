@@ -151,6 +151,7 @@ function apply_cloudmask(
     cloudmask::AbstractArray{Bool};
     modify_channel_1::Bool=false
     )
+    masked_image = deepcopy(img)
     masked_image[cloudmask] .= 0.
     modify_channel_1 && begin
         # Specialty application where Band 7 is set to 0          
