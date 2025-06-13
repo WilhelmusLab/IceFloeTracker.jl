@@ -168,6 +168,7 @@ function apply_cloudmask(
     img::AbstractArray{<:Union{AbstractRGB,TransparentRGB,Gray}},
     cloudmask::AbstractArray{Bool}
     )
+    masked_image = deepcopy(img)
     masked_image[cloudmask] .= 0.
     return masked_image
 end
