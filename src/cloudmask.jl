@@ -98,39 +98,36 @@ end
 """
     create_cloudmask(img; f=AbstractCloudMaskAlgorithm)
 
-    Cloud masks in the IFT are BitMatrix objects such that for an image I and cloudmask C, cloudy pixels can be selected by I[C], and clear-sky pixels can be
-    selected with I[.!C]. Construction of a cloud mask uses the syntax
+Cloud masks in the IFT are BitMatrix objects such that for an image I and cloudmask C, cloudy pixels can be selected by I[C], and clear-sky pixels can be selected with I[.!C]. Construction of a cloud mask uses the syntax
 
-    ```julia
-    f = CloudMaskAlgorithm(parameters)
-    C = create_cloudmask(img; CloudMaskAlgorithm)
-    ```
+```julia
+f = CloudMaskAlgorithm(parameters)
+C = create_cloudmask(img; CloudMaskAlgorithm)
+```
 
-    By default, `create_cloudmask` uses the algorithm found in [1]. This algorithm converts a 3-channel MODIS 7-2-1 false color image into a 1-channel binary matrix
-    in which clouds = 1 and anything else = 0. The algorithm aims to identify patches of opaque cloud while allowing thin and transparent cloud to remain. This algorithm
-    is instantiated using
+By default, `create_cloudmask` uses the algorithm found in [1]. This algorithm converts a 3-channel MODIS 7-2-1 false color image into a 1-channel binary matrix in which clouds = 1 and anything else = 0. The algorithm aims to identify patches of opaque cloud while allowing thin and transparent cloud to remain. This algorithm is instantiated using
 
-    ```julia
-    f = LopezAcostaCloudMask()
-    ```
+```julia
+f = LopezAcostaCloudMask()
+```
 
-    In this case, the default values are applied. It can also called using a set of customized parameters. These values must be real numbers between 0 and 1. To reproduce the default parameters, you may call
+In this case, the default values are applied. It can also called using a set of customized parameters. These values must be real numbers between 0 and 1. To reproduce the default parameters, you may call
 
-    ```julia
-    f = LopezAcostaCloudMask(prelim_threshold=110/255, band_7_threshold=200/255, band_2_threshold=190/255, ratio_lower=0.0, ratio_upper=0.75).
-    ```
+```julia
+f = LopezAcostaCloudMask(prelim_threshold=110/255, band_7_threshold=200/255, band_2_threshold=190/255, ratio_lower=0.0, ratio_upper=0.75).
+```
 
-    A stricter cloud mask was defined in [2], covering more cloudy pixels while minimally impacting the masking of cloud-covered ice pixels.
+A stricter cloud mask was defined in [2], covering more cloudy pixels while minimally impacting the masking of cloud-covered ice pixels.
 
-    ```julia
-    f = LopezAcostaCloudMask(prelim_threshold=53/255, band_7_threshold=130/255, band_2_threshold=169/255, ratio_lower=0.0, ratio_upper=0.53).
-    ```
+```julia
+f = LopezAcostaCloudMask(prelim_threshold=53/255, band_7_threshold=130/255, band_2_threshold=169/255, ratio_lower=0.0, ratio_upper=0.53).
+```
 
-    These parameters together define a piecewise linear partition of pixels based on their Band 7 and Band 2 callibrated reflectance. Pixels with intensity above `prelim_threshold` are considered as potential cloudy pixels. Then, pixels with Band 7 reflectance less than `band_7_threshold`, Band 2 reflectance greater than `band_2_threshold`, and Band 7 to Band 2 ratios between `ratio_lower` and `ratio_upper` are removed from the cloud mask (i.e., set to cloud-free).
+These parameters together define a piecewise linear partition of pixels based on their Band 7 and Band 2 callibrated reflectance. Pixels with intensity above `prelim_threshold` are considered as potential cloudy pixels. Then, pixels with Band 7 reflectance less than `band_7_threshold`, Band 2 reflectance greater than `band_2_threshold`, and Band 7 to Band 2 ratios between `ratio_lower` and `ratio_upper` are removed from the cloud mask (i.e., set to cloud-free).
 
 
-    1. Lopez-Acosta, R., Schodlok, M. P., & Wilhelmus, M. M. (2019). Ice Floe Tracker: An algorithm to automatically retrieve Lagrangian trajectories via feature matching from moderate-resolution visual imagery. Remote Sensing of Environment, 234(111406), 1–15. (https://doi.org/10.1016/j.rse.2019.111406)[https://doi.org/10.1016/j.rse.2019.111406]
-    2. Watkins, D.M., Kim, M., Paniagua, C., Divoll, T., Holland, J.G., Hatcher, S., Hutchings, J.K., and Wilhelmus, M.M. (in prep). Calibration and validation of the Ice Floe Tracker algorithm. 
+1. Lopez-Acosta, R., Schodlok, M. P., & Wilhelmus, M. M. (2019). Ice Floe Tracker: An algorithm to automatically retrieve Lagrangian trajectories via feature matching from moderate-resolution visual imagery. Remote Sensing of Environment, 234(111406), 1–15. (https://doi.org/10.1016/j.rse.2019.111406)[https://doi.org/10.1016/j.rse.2019.111406]
+2. Watkins, D.M., Kim, M., Paniagua, C., Divoll, T., Holland, J.G., Hatcher, S., Hutchings, J.K., and Wilhelmus, M.M. (in prep). Calibration and validation of the Ice Floe Tracker algorithm. 
 """
 function create_cloudmask(
     false_color_image::AbstractArray{<:Union{AbstractRGB,TransparentRGB}},
