@@ -25,5 +25,5 @@
     ref_image = load(pth_RGBA_tiff)
     @test typeof(ref_image) <: Matrix{RGBA{N0f8}}
     cloudmask = IceFloeTracker.create_cloudmask(ref_image)
-    @test sum(cloudmask) === 1 # all pixels are clouds
+    @test sum(.!cloudmask) === 0 # all pixels are clouds
 end
