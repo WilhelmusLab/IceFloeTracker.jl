@@ -2,53 +2,53 @@ using Images # I think this can be taken out, I have it here for the RGB types
 abstract type AbstractCloudMaskAlgorithm end
 
 struct LopezAcostaCloudMask <: AbstractCloudMaskAlgorithm
-    
     prelim_threshold::Float64
     band_7_threshold::Float64
     band_2_threshold::Float64
     ratio_lower::Float64
     ratio_upper::Float64
-    
+
     # enforce all are between 0 and 1 inclusive
-    function LopezAcostaCloudMask(prelim_threshold, band_7_threshold, band_2_threshold, ratio_lower, ratio_upper)
+    function LopezAcostaCloudMask(
+        prelim_threshold, band_7_threshold, band_2_threshold, ratio_lower, ratio_upper
+    )
         0 ≤ prelim_threshold ≤ 1 || error("$prelim_threshold must be between 0 and 1")
         0 ≤ band_7_threshold ≤ 1 || error("$band_7_threshold must be between 0 and 1")
         0 ≤ band_2_threshold ≤ 1 || error("$band_2_threshold must be between 0 and 1")
         0 ≤ ratio_lower ≤ 1 || error("$ratio_lower must be between 0 and 1")
         0 ≤ ratio_upper ≤ 1 || error("$ratio_upper must be between 0 and 1")
-        return new(prelim_threshold, band_7_threshold, band_2_threshold, ratio_lower, ratio_upper)
+        return new(
+            prelim_threshold, band_7_threshold, band_2_threshold, ratio_lower, ratio_upper
+        )
     end
-    
 end
 
 # allow the settings to be either all keyword or all ordered
-LopezAcostaCloudMask(; 
-    prelim_threshold,
-    band_7_threshold,
-    band_2_threshold,
-    ratio_lower,
-    ratio_upper
-    ) = LopezAcostaCloudMask(
-                prelim_threshold,
-                band_7_threshold,
-                band_2_threshold,
-                ratio_lower,
-                ratio_upper)
+function LopezAcostaCloudMask(;
+    prelim_threshold, band_7_threshold, band_2_threshold, ratio_lower, ratio_upper
+)
+    return LopezAcostaCloudMask(
+        prelim_threshold, band_7_threshold, band_2_threshold, ratio_lower, ratio_upper
+    )
+end
 
 # set default parameters
 # I get a warning that this overwrites the type; perhaps we need a "nothing" in the arguments to 
 # do this right? Does it need to come after the function on line 49?
-LopezAcostaCloudMask() = LopezAcostaCloudMask(;
-    prelim_threshold=110/255,
-    band_7_threshold=200/255,
-    band_2_threshold=190/255,
-    ratio_lower=0.0,
-    ratio_upper=0.75)
+function LopezAcostaCloudMask()
+    return LopezAcostaCloudMask(;
+        prelim_threshold=110 / 255,
+        band_7_threshold=200 / 255,
+        band_2_threshold=190 / 255,
+        ratio_lower=0.0,
+        ratio_upper=0.75,
+    )
+end
 
 # use functor notation to define a function using the parameter struct
 function (f::LopezAcostaCloudMask)(img::AbstractArray{<:Union{AbstractRGB,TransparentRGB}})
     mask_cloud_ice, clouds_view = _get_masks(
-        img,
+        img;
         prelim_threshold=f.prelim_threshold,
         band_7_threshold=f.band_7_threshold,
         band_2_threshold=f.band_2_threshold,
@@ -59,12 +59,14 @@ function (f::LopezAcostaCloudMask)(img::AbstractArray{<:Union{AbstractRGB,Transp
 end
 
 # define internal function to apply the LopezAcosta et al. mask
-function _get_masks(false_color_image::AbstractArray{<:Union{AbstractRGB,TransparentRGB}};
+function _get_masks(
+    false_color_image::AbstractArray{<:Union{AbstractRGB,TransparentRGB}};
     prelim_threshold::Float64,
     band_7_threshold::Float64,
     band_2_threshold::Float64,
     ratio_lower::Float64,
-    ratio_upper::Float64)
+    ratio_upper::Float64,
+)
 
     # this method assumes the images are MODIS 7-2-1 false color images
     false_color_image_b7 = red.(false_color_image)
@@ -79,11 +81,11 @@ function _get_masks(false_color_image::AbstractArray{<:Union{AbstractRGB,Transpa
 
     # finally unmask only the pixels where b2 and b7 are inside the "box"
     # and between the two ratios
-    
+
     b2_masked = false_color_image_b2 .* (mask_b2 .&& mask_b7)
-    b7_masked = false_color_image_b7 .* (mask_b2 .&& mask_b7)    
+    b7_masked = false_color_image_b7 .* (mask_b2 .&& mask_b7)
     mask_cloud_ice = b2_masked .* ratio_lower .<= b7_masked .< b2_masked * ratio_upper
-    
+
     return mask_cloud_ice, clouds_view
 end
 
@@ -94,7 +96,6 @@ function convert_to_255_matrix(img)::Matrix{Int}
     img_clamped = clamp.(img, 0.0, 1.0)
     return round.(Int, img_clamped * 255)
 end
-
 
 # Potential upgrade: add method to create a sequence of cloud masks
 """
@@ -133,8 +134,8 @@ These parameters together define a piecewise linear partition of pixels based on
 """
 function create_cloudmask(
     false_color_image::AbstractArray{<:Union{AbstractRGB,TransparentRGB}},
-    f::AbstractCloudMaskAlgorithm=LopezAcostaCloudMask()
-    )
+    f::AbstractCloudMaskAlgorithm=LopezAcostaCloudMask(),
+)
     return f(false_color_image)
 end
 
@@ -151,10 +152,10 @@ Zero out pixels containing clouds where clouds and ice are not discernable. Argu
 function apply_cloudmask(
     img::AbstractArray{<:Union{AbstractRGB,TransparentRGB}},
     cloudmask::AbstractArray{Bool};
-    modify_channel_1::Bool=false
-    )
+    modify_channel_1::Bool=false,
+)
     masked_image = deepcopy(img)
-    masked_image[cloudmask] .= 0.
+    masked_image[cloudmask] .= 0.0
     modify_channel_1 && begin
         # Specialty application where Band 7 is set to 0          
         image_view = channelview(masked_image)
@@ -169,10 +170,10 @@ end
 
 function apply_cloudmask(
     img::AbstractArray{<:Union{AbstractRGB,TransparentRGB,Gray}},
-    cloudmask::AbstractArray{Bool}
-    )
+    cloudmask::AbstractArray{Bool},
+)
     masked_image = deepcopy(img)
-    masked_image[cloudmask] .= 0.
+    masked_image[cloudmask] .= 0.0
     return masked_image
 end
 
