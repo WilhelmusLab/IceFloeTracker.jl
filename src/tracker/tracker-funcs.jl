@@ -140,21 +140,12 @@ function modenan(x::AbstractVector{<:Int64})
 end
 
 """
-getcentroid(floe_day::DataFrameRow)
-
-Get the coordinates of the floe in `floe_day`.
-"""
-function getcentroid(floe_day::DataFrameRow)
-    return floe_day[[:row_centroid, :col_centroid]]
-end
-
-"""
 getcentroid(props_day::DataFrame, r)
 
 Get the coordinates of the `r`th floe in `props_day`.
 """
-function getcentroid(props_day::DataFrame, r)
-    return props_day[r, [:row_centroid, :col_centroid]]
+function getcentroid(floe_day::DataFrameRow)
+    return floe_day[[:row_centroid, :col_centroid]]
 end
 
 """
