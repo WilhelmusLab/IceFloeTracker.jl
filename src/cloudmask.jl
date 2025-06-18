@@ -52,7 +52,15 @@ function _get_masks(
 end
 
 """
-    create_cloudmask(false_color_image; prelim_threshold, band_7_threshold, band_2_threshold, ratio_lower, ratio_upper)
+    create_cloudmask(
+    false_color_image::Union{Matrix{RGB{Float64}},Matrix{RGBA{N0f8}},Matrix{RGB{N0f8}}};
+    prelim_threshold::Float64=Float64(110 / 255),
+    band_7_threshold::Float64=Float64(200 / 255),
+    band_2_threshold::Float64=Float64(190 / 255),
+    ratio_lower::Float64=0.0,
+    ratio_upper::Float64=0.75,
+    r_offset::Float64=0.0,
+)::BitMatrix
 
 Convert a 3-channel false color reflectance image to a 1-channel binary matrix; clouds = 0, else = 1. Default thresholds are defined in the published Ice Floe Tracker article: Remote Sensing of the Environment 234 (2019) 111406.
 
@@ -63,6 +71,7 @@ Convert a 3-channel false color reflectance image to a 1-channel binary matrix; 
 - `band_2_threshold`: threshold value used to identify cloud-ice in band 2, N0f8(RGB intensity/255)
 - `ratio_lower`: threshold value used to set lower ratio of cloud-ice in bands 7 and 2
 - `ratio_upper`: threshold value used to set upper ratio of cloud-ice in bands 7 and 2
+- `r_offset`: offset value used to adjust the upper ratio of cloud-ice in bands 7 and 2
 
 """
 function create_cloudmask(
