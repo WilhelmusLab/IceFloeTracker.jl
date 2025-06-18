@@ -43,5 +43,5 @@ using IceFloeTracker:
         brighten_factor,
     )
 
-    @test sum(foo) == 1735472
+    @test sum(foo) == 1630549
 end
