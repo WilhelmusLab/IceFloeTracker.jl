@@ -85,7 +85,7 @@ function _pairfloes(
                 matching_floes = makeemptydffrom(props1)
                 for s in 1:nrow(props2) # TODO: consider using eachrow(props2) to iterate over rows
                     ratios, conditions, dist = compute_ratios_conditions(
-                        (props1, r), (props2, s), Δt, condition_thresholds
+                        props1[r, :], props2[s, :], Δt, condition_thresholds
                     )
 
                     if callmatchcorr(conditions)
