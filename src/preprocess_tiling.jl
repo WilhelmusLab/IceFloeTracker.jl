@@ -40,7 +40,6 @@ ice_labels_thresholds = (
     band_2_threshold=190.0,
     ratio_lower=0.0,
     ratio_upper=0.75,
-    use_uint8=true,
     r_offset=0.0,
 )
 
