@@ -47,7 +47,7 @@ function _get_masks(
         (b2_masked_float * ratio_upper - r_offset)
     mask_cloud_ice = b7_greater_than_adjusted_b2_lower .&& b7_less_than_adjusted_b2_upper
 
-    # Returning the two masks for facillitating testing other related workflows such as conditional adaptive histogram equalization
+    # Returning the two masks for facilitating testing other related workflows such as conditional adaptive histogram equalization
     return mask_cloud_ice, clouds_view
 end
 
