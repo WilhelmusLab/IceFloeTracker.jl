@@ -1,3 +1,4 @@
+# dmw: look for ways to avoid using these functions
 function to_uint8(arr::AbstractMatrix{T}) where {T<:AbstractFloat}
     img = Int.(round.(arr, RoundNearestTiesAway))
     img = clamp.(img, 0, 255)
@@ -14,6 +15,8 @@ function to_uint8(num::T) where {T<:Union{AbstractFloat,Int,Signed}}
     return clamp(num, 0, 255)
 end
 
+# dmw: use multiple dispatch, so that if the 2d function is called 
+# with a 3D image we do this automatically
 function anisotropic_diffusion_3D(I)
     rgbchannels = get_rgb_channels(I)
 
@@ -24,7 +27,10 @@ function anisotropic_diffusion_3D(I)
     return rgbchannels
 end
 
+# dmw: Move this to the image diffusion file
 function anisotropic_diffusion_2D(
+    # Implementation of the matlab 2D anisotropic diffusion filter default mode
+    # by Carlos Paniagua
     I::AbstractMatrix{T}; gradient_threshold::Union{T,Nothing}=nothing, niter::Int=1
 ) where {T}
     if eltype(I) <: Int
@@ -81,6 +87,7 @@ function anisotropic_diffusion_2D(
     return I
 end
 
+# dmw: This function doesn't belong here
 function imshow(img)
     if typeof(img) <: BitMatrix
         return Gray.(img)
@@ -125,6 +132,7 @@ An m x n x 3 array the Red, Blue, and Green channels of the input image.
 """
 function get_rgb_channels(img)
     # TODO: might be able to use channelview instead
+    # dmw: find ways to avoid casting to Int
     redc = red.(img) * 255
     greenc = green.(img) * 255
     bluec = blue.(img) * 255
@@ -139,13 +147,14 @@ Convert an array of RGB channel data to grayscale in the range [0, 255].
 
 Identical to MATLAB `rgb2gray` (https://www.mathworks.com/help/matlab/ref/rgb2gray.html).
 """
-function rgb2gray(rgbchannels::Array{Float64,3})
+function rgb2gray(rgbchannels::Array{Float64,3}) # dmw: Can we set this up to return a Gray image instead of an int matrix?
     r, g, b = [to_uint8(rgbchannels[:, :, i]) for i in 1:3]
     # Reusing the r array to store the equalized gray image
     r .= to_uint8(0.2989 * r .+ 0.5870 * g .+ 0.1140 * b)
     return r
 end
 
+# dmw: let's figure out the difference between the three versions of this function
 function _process_image_tiles(
     true_color_image,
     clouds_red,
@@ -271,10 +280,11 @@ function _get_false_color_cloudmasked(;
 )
     mask_cloud_ice, clouds_view = IceFloeTracker._get_masks(
         false_color_image;
-        prelim_threshold=prelim_threshold,
-        band_7_threshold=band_7_threshold,
-        band_2_threshold=band_2_threshold,
-        use_uint8=true,
+        prelim_threshold=prelim_threshold/255.,
+        band_7_threshold=band_7_threshold/255.,
+        band_2_threshold=band_2_threshold/255.,
+        ratio_lower=0.0,
+        ratio_upper=0.75
     )
 
     clouds_view[mask_cloud_ice] .= 0

@@ -39,8 +39,7 @@ ice_labels_thresholds = (
     band_7_threshold=200.0,
     band_2_threshold=190.0,
     ratio_lower=0.0,
-    ratio_upper=0.75,
-    use_uint8=true,
+    ratio_upper=0.75
 )
 
 adapthisteq_params = (
@@ -88,13 +87,14 @@ function preprocess_tiling(
 )
     begin
         @debug "Step 1/2: Get masks"
-        mask_cloud_ice, clouds_view = _get_masks(
-            float64.(ref_image); ice_labels_thresholds...
-        )
-        clouds_view .= .!mask_cloud_ice .* clouds_view
-
+        # mask_cloud_ice, clouds_view = _get_masks(
+        #     float64.(ref_image); ice_labels_thresholds...
+        # )
+        # clouds_view .= .!mask_cloud_ice .* clouds_view
+        cloudmask = create_cloudmask(ref_image, LopezAcostaCloudMask(ice_labels_thresholds...))
         # Get clouds_red for adaptive histogram equalization
-        ref_img_cloudmasked = ref_image .* .!clouds_view
+        # ref_img_cloudmasked = ref_image .* .!clouds_view
+        ref_img_cloudmasked = apply_cloudmask(ref_image, cloudmask)
     end
 
     begin
