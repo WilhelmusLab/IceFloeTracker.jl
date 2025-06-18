@@ -109,7 +109,7 @@ Zero out pixels containing clouds where clouds and ice are not discernable. Argu
 
 """
 function apply_cloudmask(
-    false_color_image::Union{Matrix{RGB{Float64}},Matrix{RGB{N0f8}}},
+    false_color_image::AbstractArray{<:Union{AbstractRGB,TransparentRGB}},
     cloudmask::AbstractArray{Bool},
 )::Matrix{RGB{Float64}}
     masked_image = cloudmask .* false_color_image
