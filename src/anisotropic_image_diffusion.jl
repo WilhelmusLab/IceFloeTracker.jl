@@ -37,8 +37,25 @@ function invert_color(color::Gray{T}) where {T<:AbstractFloat}
 end
 
 function diffusion(
-    image::Matrix{T}, λ::Float64, K::Int, niters::Int
-) where {T<:Color{Float64}}
+    image::AbstractArray{T}, λ::Float64, K::Int, niters::Int
+) where {T<:TransparentColor}
+    result = diffusion(color.(image), λ, K, niters)
+    output = T.(red.(result), green.(result), blue.(result), alpha.(image))
+    return T.(output)
+end
+
+function diffusion(
+    image::AbstractArray{T}, λ::Float64, K::Int, niters::Int
+) where {T<:Color{U}} where {U<:FixedPoint}
+    output = diffusion(float.(image), λ, K, niters) # have to cast to Float because diffusion as implemented doesn't support fixed-point
+    return RGB.(
+        convert.(U, red.(output)), convert.(U, green.(output)), convert.(U, blue.(output))
+    )
+end
+
+function diffusion(
+    image::AbstractArray{T}, λ::Float64, K::Int, niters::Int
+) where {T<:Color{<:AbstractFloat}}
     #=
         Perona, Pietro, and Jitendra Malik.
         "Scale-space and edge detection using anisotropic diffusion."

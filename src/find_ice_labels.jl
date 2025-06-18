@@ -34,7 +34,7 @@ end
 Locate the pixels of likely ice from false color reflectance image. Returns a binary mask with ice floes contrasted from background. Default thresholds are defined in the published Ice Floe Tracker article: Remote Sensing of the Environment 234 (2019) 111406.
 
 # Arguments
-- `falsecolor_image`: corrected reflectance false color image - bands [7,2,1]
+- `modis_721`: corrected reflectance false color image - bands [7,2,1]
 - `landmask`: bitmatrix landmask for region of interest
 - `band_7_threshold`: threshold value used to identify ice in band 7, N0f8(RGB intensity/255)
 - `band_2_threshold`: threshold value used to identify ice in band 2, N0f8(RGB intensity/255)
@@ -44,43 +44,43 @@ Locate the pixels of likely ice from false color reflectance image. Returns a bi
 
 """
 function find_ice_labels(
-    falsecolor_image::Matrix{RGB{Float64}},
-    landmask::BitMatrix;
-    band_7_threshold::Float64=Float64(5 / 255),
-    band_2_threshold::Float64=Float64(230 / 255),
-    band_1_threshold::Float64=Float64(240 / 255),
-    band_7_threshold_relaxed::Float64=Float64(10 / 255),
-    band_1_threshold_relaxed::Float64=Float64(190 / 255),
-    possible_ice_threshold::Float64=Float64(75 / 255),
-)::Vector{Int64}
+    modis_721::AbstractArray{T},
+    not_land::BitMatrix;
+    band_7_threshold::Real=(5 / 255),
+    band_2_threshold::Real=(230 / 255),
+    band_1_threshold::Real=(240 / 255),
+    band_7_threshold_relaxed::Real=(10 / 255),
+    band_1_threshold_relaxed::Real=(190 / 255),
+    possible_ice_threshold::Real=(75 / 255),
+)::Vector{Int64} where {T<:Union{AbstractRGB,TransparentRGB}}
+    modis_band07 = red.(modis_721)
+    modis_band02 = green.(modis_721)
+    modis_band01 = blue.(modis_721)
 
-    ## Make ice masks
-    cv = channelview(falsecolor_image)
-
-    mask_ice_band_7 = @view(cv[1, :, :]) .< band_7_threshold #5 / 255
-    mask_ice_band_2 = @view(cv[2, :, :]) .> band_2_threshold #230 / 255
-    mask_ice_band_1 = @view(cv[3, :, :]) .> band_1_threshold #240 / 255
+    mask_ice_band_7 = modis_band07 .< band_7_threshold
+    mask_ice_band_2 = modis_band02 .> band_2_threshold
+    mask_ice_band_1 = modis_band01 .> band_1_threshold
     ice = mask_ice_band_7 .* mask_ice_band_2 .* mask_ice_band_1
-    ice_labels = remove_landmask(landmask, ice)
-    # @info "Done with masks" # to uncomment when logger is added
+    ice_labels = remove_landmask(not_land, ice)
 
     ## Find likely ice floes
     if sum(abs.(ice_labels)) == 0
-        mask_ice_band_7 = @view(cv[1, :, :]) .< band_7_threshold_relaxed #10 / 255
-        mask_ice_band_1 = @view(cv[3, :, :]) .> band_1_threshold_relaxed #190 / 255
+        mask_ice_band_7 = modis_band07 .< band_7_threshold_relaxed #10 / 255
+        mask_ice_band_1 = modis_band02 .> band_1_threshold_relaxed #190 / 255
         ice = mask_ice_band_7 .* mask_ice_band_2 .* mask_ice_band_1
-        ice_labels = remove_landmask(landmask, ice)
+        ice_labels = remove_landmask(not_land, ice)
         if sum(abs.(ice_labels)) == 0
-            ref_image_band_2 = @view(cv[2, :, :])
-            ref_image_band_1 = @view(cv[3, :, :])
-            band_2_peak = find_reflectance_peaks(ref_image_band_2, possible_ice_threshold = possible_ice_threshold)
-            band_1_peak = find_reflectance_peaks(ref_image_band_1, possible_ice_threshold = possible_ice_threshold)
-            mask_ice_band_2 = @view(cv[2, :, :]) .> band_2_peak / 255
-            mask_ice_band_1 = @view(cv[3, :, :]) .> band_1_peak / 255
+            band_2_peak = find_reflectance_peaks(
+                modis_band02; possible_ice_threshold=possible_ice_threshold
+            )
+            band_1_peak = find_reflectance_peaks(
+                modis_band01; possible_ice_threshold=possible_ice_threshold
+            )
+            mask_ice_band_2 = modis_band02 .> band_2_peak / 255
+            mask_ice_band_1 = modis_band01 .> band_1_peak / 255
             ice = mask_ice_band_7 .* mask_ice_band_2 .* mask_ice_band_1
-            ice_labels = remove_landmask(landmask, ice)
+            ice_labels = remove_landmask(not_land, ice)
         end
     end
-    # @info "Done with ice labels" # to uncomment when logger is added
     return ice_labels
 end

@@ -42,26 +42,26 @@ Note: This function mutates the landmask object to avoid unnecessary memory allo
 
 """
 function discriminate_ice_water(
-    falsecolor_image::Matrix{RGB{Float64}},
-    normalized_image::Matrix{Gray{Float64}},
+    falsecolor_image::AbstractMatrix{<:Union{AbstractRGB,TransparentRGB}},
+    normalized_image::AbstractMatrix{<:Gray},
     landmask_bitmatrix::T,
-    cloudmask_bitmatrix::T,
-    floes_threshold::Float64=Float64(100 / 255),
-    mask_clouds_lower::Float64=Float64(17 / 255),
-    mask_clouds_upper::Float64=Float64(30 / 255),
+    cloudmask_bitmatrix::T;
+    floes_threshold::Real=(100 / 255),
+    mask_clouds_lower::Real=(17 / 255),
+    mask_clouds_upper::Real=(30 / 255),
     kurt_thresh_lower::Real=2,
     kurt_thresh_upper::Real=8,
     skew_thresh::Real=4,
-    st_dev_thresh_lower::Float64=Float64(84 / 255),
-    st_dev_thresh_upper::Float64=Float64(98.9 / 255),
-    clouds_ratio_threshold::Float64=0.02,
-    differ_threshold::Float64=0.6,
+    st_dev_thresh_lower::Real=(84 / 255),
+    st_dev_thresh_upper::Real=(98.9 / 255),
+    clouds_ratio_threshold::Real=0.02,
+    differ_threshold::Real=0.6,
     nbins::Real=155,
 )::AbstractMatrix where {T<:AbstractArray{Bool}}
     clouds_channel = IceFloeTracker.create_clouds_channel(
         cloudmask_bitmatrix, falsecolor_image
     )
-    falsecolor_image_band7 = @view(channelview(falsecolor_image)[1, :, :])
+    falsecolor_image_band7 = red.(falsecolor_image)
 
     # first define all of the image variations
     image_clouds = IceFloeTracker.apply_landmask(clouds_channel, landmask_bitmatrix) # output during cloudmask apply, landmasked
@@ -69,10 +69,9 @@ function discriminate_ice_water(
         falsecolor_image_band7, landmask_bitmatrix
     ) # channel 1 (band 7) from source falsecolor image, landmasked
     image_floes = IceFloeTracker.apply_landmask(falsecolor_image, landmask_bitmatrix) # source false color reflectance, landmasked
-    image_floes_view = channelview(image_floes)
 
-    floes_band_2 = @view(image_floes_view[2, :, :])
-    floes_band_1 = @view(image_floes_view[3, :, :])
+    floes_band_2 = green.(image_floes)
+    floes_band_1 = blue.(image_floes)
 
     # keep pixels greater than intensity 100 in bands 2 and 1
     floes_band_2_keep = floes_band_2[floes_band_2 .> floes_threshold]
@@ -126,19 +125,16 @@ function discriminate_ice_water(
     normalized_image_copy[normalized_image_copy .> THRESH] .= 0
     @. normalized_image_copy = normalized_image - (normalized_image_copy * 3)
 
-    # reusing memory allocated in landmask_bitmatrix
-    # used to be mask_image_clouds
-    @. landmask_bitmatrix = (
-        image_clouds < mask_clouds_lower || image_clouds > mask_clouds_upper
+    mask_image_clouds = (
+        image_clouds .< mask_clouds_lower .|| image_clouds .> mask_clouds_upper
     )
 
-    # reusing image_cloudless - used to be band7_masked
-    @. image_cloudless = image_cloudless * !landmask_bitmatrix
+    band7_masked = image_cloudless .* mask_image_clouds
 
-    # reusing normalized_image_copy - used to be ice_water_discriminated_image
-    @. normalized_image_copy = clamp01nan(normalized_image_copy - (image_cloudless * 3))
+    ice_water_discriminated_image =
+        clamp01nan.(normalized_image_copy .- (band7_masked .* 3))
 
-    return normalized_image_copy
+    return ice_water_discriminated_image
 end
 
 function _check_threshold_50(
