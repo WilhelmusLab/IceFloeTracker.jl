@@ -4,15 +4,15 @@ function convert_to_255_matrix(img)::Matrix{Int}
 end
 
 function _get_masks(
-    false_color_image::Union{Matrix{RGB{Float64}}, Matrix{RGBA{N0f8}}};
+    false_color_image::Union{Matrix{RGB{Float64}},Matrix{RGBA{N0f8}},Matrix{RGB{N0f8}}};
     prelim_threshold::Float64=Float64(110 / 255),
     band_7_threshold::Float64=Float64(200 / 255),
     band_2_threshold::Float64=Float64(190 / 255),
     ratio_lower::Float64=0.0,
     ratio_upper::Float64=0.75,
     use_uint8::Bool=false,
+    r_offset::Float64=0.0,
 )::Tuple{BitMatrix,BitMatrix}
-
     ref_view = channelview(false_color_image)
     false_color_image_b7 = @view ref_view[1, :, :]
     if use_uint8
@@ -20,6 +20,7 @@ function _get_masks(
     end
 
     clouds_view = false_color_image_b7 .> prelim_threshold
+
     mask_b7 = false_color_image_b7 .< band_7_threshold
     mask_b2 = @view(ref_view[2, :, :])
     if use_uint8
@@ -39,12 +40,16 @@ function _get_masks(
     b2_masked = use_uint8 ? convert_to_255_matrix(_b2) : _b2
     b2_masked = mask_b7b2 .* b2_masked
 
-    cloud_ice = Float64.(b7_masked) ./ Float64.(b2_masked)
-    mask_cloud_ice = @. (cloud_ice >= ratio_lower) && (cloud_ice < ratio_upper)
+    b7_masked_float, b2_masked_float = [Float64.(m) for m in [b7_masked, b2_masked]]
+    b7_greater_than_adjusted_b2_lower = @. b7_masked_float >=
+        (b2_masked_float * ratio_lower)
+    b7_less_than_adjusted_b2_upper = @. b7_masked_float <
+        (b2_masked_float * ratio_upper - r_offset)
+    mask_cloud_ice = b7_greater_than_adjusted_b2_lower .&& b7_less_than_adjusted_b2_upper
 
+    # Returning the two masks for facillitating testing other related workflows such as conditional adaptive histogram equalization
     return mask_cloud_ice, clouds_view
 end
-
 
 """
     create_cloudmask(false_color_image; prelim_threshold, band_7_threshold, band_2_threshold, ratio_lower, ratio_upper)
@@ -61,20 +66,22 @@ Convert a 3-channel false color reflectance image to a 1-channel binary matrix; 
 
 """
 function create_cloudmask(
-    false_color_image::Union{Matrix{RGB{Float64}}, Matrix{RGBA{N0f8}}};
+    false_color_image::Union{Matrix{RGB{Float64}},Matrix{RGBA{N0f8}},Matrix{RGB{N0f8}}};
     prelim_threshold::Float64=Float64(110 / 255),
     band_7_threshold::Float64=Float64(200 / 255),
     band_2_threshold::Float64=Float64(190 / 255),
     ratio_lower::Float64=0.0,
     ratio_upper::Float64=0.75,
+    r_offset::Float64=0.0,
 )::BitMatrix
     mask_cloud_ice, clouds_view = _get_masks(
-        false_color_image,
+        false_color_image;
         prelim_threshold=prelim_threshold,
         band_7_threshold=band_7_threshold,
         band_2_threshold=band_2_threshold,
         ratio_lower=ratio_lower,
         ratio_upper=ratio_upper,
+        r_offset=r_offset,
     )
 
     # Creating final cloudmask
@@ -93,7 +100,8 @@ Zero out pixels containing clouds where clouds and ice are not discernable. Argu
 
 """
 function apply_cloudmask(
-    false_color_image::Matrix{RGB{Float64}}, cloudmask::AbstractArray{Bool}
+    false_color_image::Union{Matrix{RGB{Float64}},Matrix{RGB{N0f8}}},
+    cloudmask::AbstractArray{Bool},
 )::Matrix{RGB{Float64}}
     masked_image = cloudmask .* false_color_image
     image_view = channelview(masked_image)
@@ -115,4 +123,3 @@ function create_clouds_channel(
 )::Matrix{Gray{Float64}}
     return Gray.(@view(channelview(cloudmask .* false_color_image)[1, :, :]))
 end
-
