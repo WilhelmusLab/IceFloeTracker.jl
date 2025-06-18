@@ -149,21 +149,12 @@ function getcentroid(floe_day::DataFrameRow)
 end
 
 """
-getcentroid(props_day::DataFrame, r::Int)
+getcentroid(props_day::DataFrame, r)
 
 Get the coordinates of the `r`th floe in `props_day`.
 """
-function getcentroid(props_day::DataFrame, r::Int)
-    return getcentroid(props_day[r, :])
-end
-
-"""
-getcentroid((props_day, r)::Tuple{DataFrame,Int})
-
-Get the coordinates of the `r`th floe in `props_day`.
-"""
-function getcentroid((props_day, r)::Tuple{DataFrame,Int})
-    return getcentroid(props_day, r)
+function getcentroid(props_day::DataFrame, r)
+    return props_day[r, [:row_centroid, :col_centroid]]
 end
 
 """
