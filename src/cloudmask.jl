@@ -4,12 +4,16 @@ function convert_to_255_matrix(img)::Matrix{Int}
 end
 
 function _get_masks(
-    false_color_image::Union{Matrix{RGB{Float64}}, Matrix{RGBA{N0f8}}};
+    false_color_image::Union{Matrix{RGB{Float64}},
+                             Matrix{RGB1{Float64}},
+                             Matrix{RGB{N0f8}},
+                             Matrix{RGBA{N0f8}}};
     prelim_threshold::Float64=Float64(110 / 255),
     band_7_threshold::Float64=Float64(200 / 255),
     band_2_threshold::Float64=Float64(190 / 255),
     ratio_lower::Float64=0.0,
     ratio_upper::Float64=0.75,
+    ratio_offset::Float64=0,
     use_uint8::Bool=false,
 )::Tuple{BitMatrix,BitMatrix}
 
@@ -61,7 +65,10 @@ Convert a 3-channel false color reflectance image to a 1-channel binary matrix; 
 
 """
 function create_cloudmask(
-    false_color_image::Union{Matrix{RGB{Float64}}, Matrix{RGBA{N0f8}}};
+    false_color_image::Union{Matrix{RGB{Float64}},
+                             Matrix{RGB1{Float64}},
+                             Matrix{RGB{N0f8}},
+                             Matrix{RGBA{N0f8}}};
     prelim_threshold::Float64=Float64(110 / 255),
     band_7_threshold::Float64=Float64(200 / 255),
     band_2_threshold::Float64=Float64(190 / 255),
@@ -82,6 +89,7 @@ function create_cloudmask(
     return cloudmask
 end
 
+
 """
     apply_cloudmask(false_color_image, cloudmask)
 
@@ -93,7 +101,8 @@ Zero out pixels containing clouds where clouds and ice are not discernable. Argu
 
 """
 function apply_cloudmask(
-    false_color_image::Matrix{RGB{Float64}}, cloudmask::AbstractArray{Bool}
+    false_color_image::Matrix{RGB{Float64}},
+    cloudmask::AbstractArray{Bool}
 )::Matrix{RGB{Float64}}
     masked_image = cloudmask .* false_color_image
     image_view = channelview(masked_image)
@@ -116,3 +125,4 @@ function create_clouds_channel(
     return Gray.(@view(channelview(cloudmask .* false_color_image)[1, :, :]))
 end
 
+    
