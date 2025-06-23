@@ -52,7 +52,7 @@ Zero out pixels in all channels of the input image using the binary landmask.
 
 # Arguments
 - `input_image`: truecolor RGB image
-- `landmask_binary`: binary landmask with 1=land, 0=water/ice 
+- `landmask_binary`: binary landmask with 1=land, 0=water/ice
 
 """
 function apply_landmask(input_image::AbstractMatrix, landmask_binary::BitMatrix)
@@ -77,9 +77,9 @@ a list of indices of pixels that are likely containing sea ice.
 - `ice_mask`: bitmatrix with ones equal to ice, zeros otherwise
 
 """
-function remove_landmask(landmask::BitMatrix, ice_mask::BitMatrix)::Array{Int64}
+function _remove_landmask(landmask::BitMatrix, ice_mask::BitMatrix)::Array{Int64}
     ## NOTE(tjd): This function is called in `find_ice_labels.jl`
     ## NOTE(dmw): For consistency, it would make sense to reverse the order of inputs to match landmask
     land = IceFloeTracker.apply_landmask(ice_mask, landmask)
-    return [i for i in 1:length(land) if land[i]]
+    return findall(vec(land))
 end
