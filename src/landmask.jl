@@ -67,7 +67,7 @@ function apply_landmask!(input_image::AbstractMatrix, landmask_binary::BitMatrix
 end
 
 """
-    remove_landmask(landmask, ice_mask)
+    _remove_landmask(landmask, ice_mask)
 
 Apply the landmask to the ice mask to remove labeled ice pixels that overlap with the landmask. Returns
 a list of indices of pixels that are likely containing sea ice.

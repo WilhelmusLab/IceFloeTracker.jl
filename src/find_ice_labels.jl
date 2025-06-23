@@ -21,7 +21,7 @@ function find_reflectance_peaks(
     reflectance_channel::Union{__T__,Matrix{Float64}};
     possible_ice_threshold::Float64=Float64(75 / 255),
 )::Int64
-    reflectance_channel[reflectance_channel .< possible_ice_threshold] .= 0 #75 / 255
+    reflectance_channel[reflectance_channel.<possible_ice_threshold] .= 0 #75 / 255
     _, counts = ImageContrastAdjustment.build_histogram(reflectance_channel)
     locs, _ = Peaks.findmaxima(counts)
     sort!(locs; rev=true)
@@ -61,7 +61,7 @@ function find_ice_labels(
     mask_ice_band_2 = @view(cv[2, :, :]) .> band_2_threshold #230 / 255
     mask_ice_band_1 = @view(cv[3, :, :]) .> band_1_threshold #240 / 255
     ice = mask_ice_band_7 .* mask_ice_band_2 .* mask_ice_band_1
-    ice_labels = remove_landmask(landmask, ice)
+    ice_labels = _remove_landmask(landmask, ice)
     # @info "Done with masks" # to uncomment when logger is added
 
     ## Find likely ice floes
@@ -69,16 +69,16 @@ function find_ice_labels(
         mask_ice_band_7 = @view(cv[1, :, :]) .< band_7_threshold_relaxed #10 / 255
         mask_ice_band_1 = @view(cv[3, :, :]) .> band_1_threshold_relaxed #190 / 255
         ice = mask_ice_band_7 .* mask_ice_band_2 .* mask_ice_band_1
-        ice_labels = remove_landmask(landmask, ice)
+        ice_labels = _remove_landmask(landmask, ice)
         if sum(abs.(ice_labels)) == 0
             ref_image_band_2 = @view(cv[2, :, :])
             ref_image_band_1 = @view(cv[3, :, :])
-            band_2_peak = find_reflectance_peaks(ref_image_band_2, possible_ice_threshold = possible_ice_threshold)
-            band_1_peak = find_reflectance_peaks(ref_image_band_1, possible_ice_threshold = possible_ice_threshold)
+            band_2_peak = find_reflectance_peaks(ref_image_band_2, possible_ice_threshold=possible_ice_threshold)
+            band_1_peak = find_reflectance_peaks(ref_image_band_1, possible_ice_threshold=possible_ice_threshold)
             mask_ice_band_2 = @view(cv[2, :, :]) .> band_2_peak / 255
             mask_ice_band_1 = @view(cv[3, :, :]) .> band_1_peak / 255
             ice = mask_ice_band_7 .* mask_ice_band_2 .* mask_ice_band_1
-            ice_labels = remove_landmask(landmask, ice)
+            ice_labels = _remove_landmask(landmask, ice)
         end
     end
     # @info "Done with ice labels" # to uncomment when logger is added
