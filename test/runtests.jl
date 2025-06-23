@@ -41,7 +41,6 @@ end
 
 ## Get all test files filenames "test-*" in test folder and their corresponding names/label
 alltests = [f for f in readdir() if startswith(f, "test-")]
-testnames = [n[6:(end-3)] for n in alltests]
 
 ## Put the filenames to test below
 

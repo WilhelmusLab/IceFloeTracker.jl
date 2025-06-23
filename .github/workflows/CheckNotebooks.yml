@@ -50,6 +50,11 @@ jobs:
         env:
           PYTHON: python
 
+      - name: Update env for notebook workflows
+        run: |
+          julia --project=. scripts/update_env_for_notebooks.jl
+
+
       # Convert notebooks to .jl files using nbconvert
       - name: Convert Notebooks to Julia Scripts
         run: |
@@ -64,7 +69,8 @@ jobs:
         run: |
           for script in $(find . -maxdepth 1 -name "*.jl"); do
             echo "Updating paths in $script"
-            sed -i 's|\.\./\.\.|.|g' "$script"
+            sed -i 's|\.\./\.\.|.|g' "$script" # replace HOME to .
+            sed -i '/Pkg\.activate/d' "$script" # delete lines with 'Pkg.activate'
           done
 
       # Run converted .jl files using Julia

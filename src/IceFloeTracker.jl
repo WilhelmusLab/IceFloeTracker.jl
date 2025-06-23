@@ -43,7 +43,8 @@ export readdlm,
     matchcorr,
     centered,
     imrotate,
-    IFTVERSION
+    IFTVERSION,
+    get_rotation_measurements
 
 # For IFTPipeline
 using HDF5
@@ -66,7 +67,7 @@ include("bwtraceboundary.jl")
 include("resample-boundary.jl")
 include("psi-s.jl")
 include("crosscorr.jl")
-include("register-mismatch.jl")
+include("register.jl")
 include("bwareamaxfilt.jl")
 include("hbreak.jl")
 include("bridge.jl")
@@ -83,6 +84,7 @@ include("imadjust.jl")
 include("ice_masks.jl")
 include("regularize-final.jl")
 include("latlon.jl")
+include("rotation.jl")
 
 function get_version_from_toml(pth=dirname(dirname(pathof(IceFloeTracker))))::VersionNumber
     toml = TOML.parsefile(joinpath(pth, "Project.toml"))
@@ -182,15 +184,4 @@ end
 
 include("preprocess_tiling.jl")
 
-module Register
-include("Register/CenterIndexedArrays.jl-0.2.0/CenterIndexedArrays.jl")
-include("Register/RegisterCore.jl-0.2.4/src/RegisterCore.jl")
-include("Register/RegisterMismatchCommon.jl-master/RegisterMismatchCommon.jl")
-include("Register/RegisterUtilities.jl-master/RegisterUtilities.jl")
-include("Register/RFFT.jl-master/RFFT.jl")
-include("Register/RegisterDeformation.jl-0.4.4/RegisterDeformation.jl")
-include("Register/QuadDIRECT.jl-master/QuadDIRECT.jl")
-include("Register/RegisterQD.jl-0.3.1/RegisterQD.jl")
-include("Register/RegisterMismatch.jl-0.4.0/RegisterMismatch.jl")
-end
 end
