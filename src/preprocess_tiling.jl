@@ -40,7 +40,7 @@ ice_labels_thresholds = (
     band_2_threshold=190.0,
     ratio_lower=0.0,
     ratio_upper=0.75,
-    use_uint8=true,
+    r_offset=0.0,
 )
 
 adapthisteq_params = (
@@ -87,14 +87,9 @@ function preprocess_tiling(
     brighten_factor,
 )
     begin
-        @debug "Step 1/2: Get masks"
-        mask_cloud_ice, clouds_view = _get_masks(
-            float64.(ref_image); ice_labels_thresholds...
-        )
-        clouds_view .= .!mask_cloud_ice .* clouds_view
-
-        # Get clouds_red for adaptive histogram equalization
-        ref_img_cloudmasked = ref_image .* .!clouds_view
+        @debug "Step 1/2: Create and apply cloudmask to reference image"
+        cloudmask = IceFloeTracker.create_cloudmask(ref_image; ice_labels_thresholds...)
+        ref_img_cloudmasked = IceFloeTracker.apply_cloudmask(ref_image, cloudmask)
     end
 
     begin

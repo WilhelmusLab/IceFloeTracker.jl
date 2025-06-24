@@ -263,6 +263,9 @@ function conditional_histeq(
     return rgbchannels_equalized
 end
 
+"""
+Private function for testing the conditional adaptive histogram equalization workflow.
+"""
 function _get_false_color_cloudmasked(;
     false_color_image,
     prelim_threshold=110.0,
