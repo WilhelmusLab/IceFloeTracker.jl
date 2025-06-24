@@ -16,7 +16,7 @@ function normalize_image(
     image_sharpened::Matrix{Float64},
     image_sharpened_gray::T,
     landmask::BitMatrix,
-    struct_elem::ImageMorphology.MorphologySEArray{2};
+    struct_elem;
 )::Matrix{Gray{Float64}} where {T<:AbstractMatrix{Gray{Float64}}}
     image_dilated = MorphSE.dilate(image_sharpened_gray, struct_elem)
 

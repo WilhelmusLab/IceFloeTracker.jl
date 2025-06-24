@@ -4,9 +4,6 @@ using DataFrames
 using Dates
 using DelimitedFiles: readdlm, writedlm
 using DSP
-using ImageBinarization
-using ImageContrastAdjustment
-using ImageSegmentation
 using Images
 using Interpolations
 using OffsetArrays: centered

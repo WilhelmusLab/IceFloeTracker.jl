@@ -19,7 +19,7 @@ function segmentation_B(
     sharpened_image::Matrix{Gray{Float64}},
     cloudmask::BitMatrix,
     segmented_a_ice_mask::BitMatrix,
-    struct_elem::ImageMorphology.MorphologySEArray{2}=strel_diamond((3, 3));
+    struct_elem=strel_diamond((3, 3));
     fill_range::Tuple=(0, 1),
     isolation_threshold::Float64=0.4,
     alpha_level::Float64=0.5,
