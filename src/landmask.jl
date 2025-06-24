@@ -52,7 +52,7 @@ Zero out pixels in all channels of the input image using the binary landmask.
 
 # Arguments
 - `input_image`: truecolor RGB image
-- `landmask_binary`: binary landmask with 1=land, 0=water/ice 
+- `landmask_binary`: binary landmask with 1=land, 0=water/ice
 
 """
 function apply_landmask(input_image::AbstractMatrix, landmask_binary::BitMatrix)
@@ -67,19 +67,16 @@ function apply_landmask!(input_image::AbstractMatrix, landmask_binary::BitMatrix
 end
 
 """
-    remove_landmask(landmask, ice_mask)
+    apply_landmask(img, landmask; as_indices::Bool=false)
 
-Apply the landmask to the ice mask to remove labeled ice pixels that overlap with the landmask. Returns
-a list of indices of pixels that are likely containing sea ice.
+Apply the landmask to the input image, optionally returning the indices of non-masked (ocean/ice) pixels.
 
 # Arguments
-- `landmask`: bitmatrix landmask for region of interest
-- `ice_mask`: bitmatrix with ones equal to ice, zeros otherwise
-
+- `img`: input image (e.g., ice mask or RGB image)
+- `landmask`: binary landmask (1=ocean/ice, 0=land)
+- `as_indices`: if true, return indices of non-masked pixels; otherwise, return masked image
 """
-## NOTE(tjd): This function is called in `find_ice_labels.jl`
-## NOTE(dmw): For consistency, it would make sense to reverse the order of inputs to match landmask
-function remove_landmask(landmask::BitMatrix, ice_mask::BitMatrix)::Array{Int64}
-    land = IceFloeTracker.apply_landmask(ice_mask, landmask)
-    return [i for i in 1:length(land) if land[i]]
+function apply_landmask(img, landmask; as_indices::Bool)
+    landmasked = apply_landmask(img, landmask)
+    return as_indices ? findall(vec(landmasked)) : landmasked
 end
