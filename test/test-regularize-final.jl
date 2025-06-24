@@ -7,7 +7,7 @@ using IceFloeTracker:
     get_final
 using DelimitedFiles: readdlm
 
-se = collect(IceFloeTracker.MorphSE.strel_diamond((3, 3)))
+se = collect(IceFloeTracker.strel_diamond((3, 3)))
 
 test_files_dir = joinpath(@__DIR__, "test_inputs/regularize")
 

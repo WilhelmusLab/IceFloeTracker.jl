@@ -91,7 +91,7 @@ function segmentation_A(
 
     segmented_bridged = IceFloeTracker.bridge(segmented_opened_branched)
 
-    segmented_ice_filled = IceFloeTracker.MorphSE.fill_holes(segmented_bridged)
+    segmented_ice_filled = IceFloeTracker.fill_holes(segmented_bridged)
 
     diff_matrix = segmented_ice_opened .!= segmented_ice_filled
 
@@ -105,8 +105,8 @@ function get_holes(img, min_opening_area=20, se=IceFloeTracker.se_disk4())
     IceFloeTracker.hbreak!(_img)
 
     out = branchbridge(_img)
-    out = IceFloeTracker.MorphSE.opening(out, centered(se))
-    out = IceFloeTracker.MorphSE.fill_holes(out)
+    out = IceFloeTracker.opening(out, centered(se))
+    out = IceFloeTracker.fill_holes(out)
 
     return out .!= _img
 end

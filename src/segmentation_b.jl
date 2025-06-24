@@ -47,7 +47,7 @@ function segmentation_B(
         )
 
     ## Process ice mask
-    segb_ice = MorphSE.closing(segmented_a_ice_mask, struct_elem) .* segb_filled
+    segb_ice = closing(segmented_a_ice_mask, struct_elem) .* segb_filled
 
     ice_intersect = (segb_filled .* segb_ice)
 
