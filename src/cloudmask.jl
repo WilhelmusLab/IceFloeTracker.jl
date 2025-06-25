@@ -178,7 +178,6 @@ function apply_cloudmask(
 end
 
 # dmw: in the future, we may want the option to use "missing".
-
 # dmw: used only in ice-water-discrimination. could be generalized. compare to similar method in the conditional adaptive histogram
 # is this not equivalent to something like apply_cloudmask(red.(img), cloudmask)? also note that this function still has the clouds=0 
 # sense for the mask.
