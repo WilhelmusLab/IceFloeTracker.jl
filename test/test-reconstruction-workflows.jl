@@ -5,7 +5,7 @@ r = ZipFile.Reader("test_inputs/coins.zip")
 coins = readdlm(r.files[1], ',', Int)
 close(r)
 
-se_disk1 = IceFloeTracker.MorphSE.StructuringElements.strel_diamond((3, 3))
+se_disk1 = strel_diamond((3, 3))
 
 _round(x) = Int(round(x, RoundNearestTiesAway))
 _reconstruct(img, se, type) = reconstruct(img, se, type, false)
