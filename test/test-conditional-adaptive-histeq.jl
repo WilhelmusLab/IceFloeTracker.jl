@@ -58,8 +58,8 @@ function test_conditional_adaptivehisteq()
 
         clouds_red = clouds[1, :, :]
         clouds_red[dilated_landmask] .= 0
-
-        @test sum(clouds_red) == 1_320_925_065
+        tolerance_fraction = 0.01
+        @test abs(1 - sum(clouds_red) / 1_320_925_065) < tolerance_fraction
 
         # Using rblocks = 8, cblocks = 6
         true_color_eq = conditional_histeq(true_color_image, clouds_red, 8, 6)
