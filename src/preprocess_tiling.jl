@@ -39,7 +39,8 @@ ice_labels_thresholds = (
     band_7_threshold=200.0,
     band_2_threshold=190.0,
     ratio_lower=0.0,
-    ratio_upper=0.75
+    ratio_upper=0.75,
+    r_offset=0.0
 )
 
 adapthisteq_params = (
@@ -49,9 +50,7 @@ adapthisteq_params = (
 adjust_gamma_params = (gamma=1.5, gamma_factor=1.3, gamma_threshold=220)
 
 structuring_elements = (
-    se_disk1=collect(IceFloeTracker.MorphSE.StructuringElements.strel_diamond((3, 3))),
-    se_disk2=se_disk2(),
-    se_disk4=se_disk4(),
+    se_disk1=collect(strel_diamond((3, 3))), se_disk2=se_disk2(), se_disk4=se_disk4()
 )
 
 unsharp_mask_params = (radius=10, amount=2.0, factor=255.0)
@@ -86,15 +85,9 @@ function preprocess_tiling(
     brighten_factor,
 )
     begin
-        @debug "Step 1/2: Get masks"
-        # mask_cloud_ice, clouds_view = _get_masks(
-        #     float64.(ref_image); ice_labels_thresholds...
-        # )
-        # clouds_view .= .!mask_cloud_ice .* clouds_view
-        cloudmask = create_cloudmask(ref_image, LopezAcostaCloudMask(ice_labels_thresholds...))
-        # Get clouds_red for adaptive histogram equalization
-        # ref_img_cloudmasked = ref_image .* .!clouds_view
-        ref_img_cloudmasked = apply_cloudmask(ref_image, cloudmask)
+        @debug "Step 1/2: Create and apply cloudmask to reference image"
+        cloudmask = IceFloeTracker.create_cloudmask(ref_image; ice_labels_thresholds...)
+        ref_img_cloudmasked = IceFloeTracker.apply_cloudmask(ref_image, cloudmask)
     end
 
     begin

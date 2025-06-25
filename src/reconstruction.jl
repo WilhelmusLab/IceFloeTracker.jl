@@ -24,9 +24,8 @@ function reconstruct(img, se, type, invert::Bool=true)
 
     invert && (morphed = imcomplement(to_uint8(morphed)); img = imcomplement(img))
 
-    type == "dilation" && return IceFloeTracker.MorphSE.mreconstruct(
-        IceFloeTracker.MorphSE.dilate, morphed, img
-    )
+    type == "dilation" &&
+        return IceFloeTracker.mreconstruct(IceFloeTracker.dilate, morphed, img)
 
     return IceFloeTracker.sk_morphology.reconstruction(morphed, img)
 end

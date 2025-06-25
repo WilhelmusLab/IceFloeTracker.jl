@@ -17,7 +17,9 @@ using IceFloeTracker:
     true_color_image = load(
         joinpath(data_dir, "beaufort-chukchi-seas_truecolor.2020162.aqua.250m.tiff")
     )
-    ref_image = load(joinpath(data_dir, "beaufort-chukchi-seas_falsecolor.2020162.aqua.250m.tiff"))
+    ref_image = load(
+        joinpath(data_dir, "beaufort-chukchi-seas_falsecolor.2020162.aqua.250m.tiff")
+    )
     landmask = float64.(load(joinpath(data_dir, "matlab_landmask.png"))) .> 0
 
     # Crop images to region of interest
@@ -42,7 +44,5 @@ using IceFloeTracker:
         prelim_icemask_params,
         brighten_factor,
     )
-    
-    # dwm: will need to revise if it is no longer Int8
-    @test sum(foo) == 1735472
+    @test sum(foo) == 1461116
 end

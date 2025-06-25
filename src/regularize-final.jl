@@ -20,7 +20,7 @@ Regularize `img` by:
 function regularize_fill_holes(img, local_maxima_mask, segment_mask, L0mask, factor)
     new2 = to_uint8(img .+ local_maxima_mask .* factor)
     new2[segment_mask .|| L0mask] .= 0
-    return IceFloeTracker.MorphSE.fill_holes(new2)
+    return IceFloeTracker.fill_holes(new2)
 end
 
 """
@@ -97,7 +97,7 @@ function get_final(
     apply_segment_mask && (_img[segment_mask] .= false)
 
     # tends to fill more than matlabs imfill
-    _img .= IceFloeTracker.MorphSE.fill_holes(_img)
+    _img .= IceFloeTracker.fill_holes(_img)
 
     # marker image
     _img .= branch(_img)
@@ -108,6 +108,6 @@ function get_final(
     mask .= sk_morphology.dilation(mask, se_dilation)
 
     # Restore shape of floes based on the cleaned up `mask`
-    final = IceFloeTracker.MorphSE.mreconstruct(IceFloeTracker.MorphSE.dilate, _img, mask)
+    final = IceFloeTracker.mreconstruct(IceFloeTracker.dilate, _img, mask)
     return BitMatrix(final)
 end

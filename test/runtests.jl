@@ -3,7 +3,6 @@ using DataFrames
 using Dates
 using DelimitedFiles
 using IceFloeTracker
-using ImageTransformations: imrotate
 using Images
 using Random
 using Test
