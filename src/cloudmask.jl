@@ -6,12 +6,13 @@ struct LopezAcostaCloudMask <: AbstractCloudMaskAlgorithm
     band_7_threshold::Float64
     band_2_threshold::Float64
     ratio_lower::Float64
-    ratio_upper::Float64
     ratio_offset::Float64
-
+    ratio_upper::Float64
+    
     # enforce all are between 0 and 1 inclusive
     function LopezAcostaCloudMask(
-        prelim_threshold, band_7_threshold, band_2_threshold, ratio_lower, ratio_upper
+        prelim_threshold, band_7_threshold, band_2_threshold,
+        ratio_lower, ratio_offset, ratio_upper
     )
         0 ≤ prelim_threshold ≤ 1 || error("$prelim_threshold must be between 0 and 1")
         0 ≤ band_7_threshold ≤ 1 || error("$band_7_threshold must be between 0 and 1")
@@ -24,6 +25,25 @@ struct LopezAcostaCloudMask <: AbstractCloudMaskAlgorithm
         )
     end
 end
+
+# set defaults to match LSW2019
+# and enable named arguments
+function LopezAcostaCloudMask(;
+        prelim_threshold::Float64=110/255.,
+        band_7_threshold::Float64=200/255.,
+        band_2_threshold::Float64=190/255.,
+        ratio_lower::Float64=0.0
+        ratio_offset::Float64=0.0,
+        ratio_upper::Float64=0.75
+)
+    LopezAcostaCloudMask(prelim_threshold,
+                         band_7_threshold,
+                         band_2_threshold,
+                         ratio_lower,
+                         ratio_offset,
+                         ratio_upper)
+end
+
 
 # use functor notation to define a function using the parameter struct
 function (f::LopezAcostaCloudMask)(img::AbstractArray{<:Union{AbstractRGB,TransparentRGB}})
