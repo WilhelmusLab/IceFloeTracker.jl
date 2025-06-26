@@ -209,5 +209,5 @@ function create_clouds_channel(
     cloudmask::AbstractArray{Bool}, false_color_image::Matrix{RGB{Float64}}
 )::Matrix{Gray{Float64}}
     # dmw: trying out a simpler approach
-    return apply_cloudmask(Gray.(red.(false_color_image)), cloudmask))
+    return apply_cloudmask(Gray.(red.(false_color_image)), cloudmask)
 end
