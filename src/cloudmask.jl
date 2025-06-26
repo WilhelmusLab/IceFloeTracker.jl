@@ -209,5 +209,6 @@ end
 function create_clouds_channel(
     cloudmask::AbstractArray{Bool}, false_color_image::Matrix{RGB{Float64}}
 )::Matrix{Gray{Float64}}
-    return Gray.(@view(channelview(cloudmask .* false_color_image)[1, :, :]))
+    # dmw: trying out a simpler approach
+    return Gray.(apply_cloudmask(red.(false_color_image), cloudmask))
 end
