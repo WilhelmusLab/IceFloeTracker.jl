@@ -21,7 +21,7 @@ struct LopezAcostaCloudMask <: AbstractCloudMaskAlgorithm
         0 ≤ ratio_upper ≤ 1 || error("$ratio_upper must be between 0 and 1")
         return new(
             prelim_threshold, band_7_threshold, band_2_threshold,
-            ratio_lower, ratio_upper, ratio_offset
+            ratio_lower, ratio_offset, ratio_upper
         )
     end
 end
@@ -201,7 +201,6 @@ function apply_cloudmask!(
 end
 
 
-
 # dmw: in the future, we may want the option to use "missing".
 # dmw: used only in ice-water-discrimination. could be generalized. compare to similar method in the conditional adaptive histogram
 # is this not equivalent to something like apply_cloudmask(red.(img), cloudmask)? also note that this function still has the clouds=0 
@@ -210,5 +209,5 @@ function create_clouds_channel(
     cloudmask::AbstractArray{Bool}, false_color_image::Matrix{RGB{Float64}}
 )::Matrix{Gray{Float64}}
     # dmw: trying out a simpler approach
-    return Gray.(apply_cloudmask(red.(false_color_image), cloudmask))
+    return apply_cloudmask(Gray.(red.(false_color_image)), cloudmask))
 end
