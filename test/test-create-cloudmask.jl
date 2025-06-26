@@ -8,7 +8,7 @@
     ref_image = float64.(load(falsecolor_test_image_file)[test_region...])
 
     matlab_cloudmask = float64.(load(matlab_cloudmask_file))
-    @time cloudmask = IceFloeTracker.create_cloudmask(ref_image)
+    @time cloudmask = .!IceFloeTracker.create_cloudmask(ref_image)
     @time masked_image = IceFloeTracker.apply_cloudmask(ref_image, cloudmask, modify_channel_1=true)
 
     # test for percent difference in cloudmask images

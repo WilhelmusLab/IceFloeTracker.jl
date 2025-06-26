@@ -35,7 +35,7 @@ function test_cloud_image_workflow()
         
         tolerance_fraction = 0.01
         checksums = [1_736_661_355, 5_997_708_807, 6_083_703_526]
-        @test all([abs(1 - sum(false_color_cloudmasked_new[i, :, :])/checksums[i]) for i in 1:3] .< tolerance_fraction)
+        @test all([abs(1 - sum(false_color_cloudmasked[i, :, :])/checksums[i]) for i in 1:3] .< tolerance_fraction)
     end
 end
 
