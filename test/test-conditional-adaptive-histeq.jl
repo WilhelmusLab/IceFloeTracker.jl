@@ -53,7 +53,7 @@ function test_conditional_adaptivehisteq()
             false_color_image=false_color_image,
             prelim_threshold=110.0,
             band_7_threshold=200.0,
-            band_2_threshold=190.0,
+            band_2_threshold=190.0
         )
 
         clouds_red = clouds[1, :, :]

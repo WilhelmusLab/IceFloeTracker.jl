@@ -147,7 +147,9 @@ Convert an array of RGB channel data to grayscale in the range [0, 255].
 
 Identical to MATLAB `rgb2gray` (https://www.mathworks.com/help/matlab/ref/rgb2gray.html).
 """
-function rgb2gray(rgbchannels::Array{Float64,3}) # dmw: Can we set this up to return a Gray image instead of an int matrix?
+function rgb2gray(rgbchannels::Array{Float64,3}) 
+# dmw: Can we set this up to return a Gray image instead of an int matrix?
+# dmw: Check whether the coefficients differ substantially -- we can make it an alternative to the Gray function, like GrayMLB and apply it like Gray.()
     r, g, b = [to_uint8(rgbchannels[:, :, i]) for i in 1:3]
     # Reusing the r array to store the equalized gray image
     r .= to_uint8(0.2989 * r .+ 0.5870 * g .+ 0.1140 * b)
@@ -287,6 +289,7 @@ function _get_false_color_cloudmasked(;
         band_7_threshold=band_7_threshold/255.,
         band_2_threshold=band_2_threshold/255.,
         ratio_lower=0.0,
+        ratio_offset=0.0,
         ratio_upper=0.75
     )
 
