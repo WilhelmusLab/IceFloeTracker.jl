@@ -89,7 +89,7 @@ function _get_masks(
     b7_greater_than_adjusted_b2_lower = @. b7_masked_float >=
         (b2_masked_float * ratio_lower)
     b7_less_than_adjusted_b2_upper = @. b7_masked_float <
-        (b2_masked_float * (ratio_upper - r_offset))
+        (b2_masked_float * (ratio_upper - ratio_offset))
     mask_cloud_ice = b7_greater_than_adjusted_b2_lower .&& b7_less_than_adjusted_b2_upper
 
     # Returning the two masks for facilitating testing other related workflows such as conditional adaptive histogram equalization
@@ -142,7 +142,7 @@ These parameters together define a piecewise linear partition of pixels based on
 - `band_2_threshold`: threshold value used to identify cloud-ice in band 2, N0f8(RGB intensity/255)
 - `ratio_lower`: threshold value used to set lower ratio of cloud-ice in bands 7 and 2
 - `ratio_upper`: threshold value used to set upper ratio of cloud-ice in bands 7 and 2
-- `r_offset`: offset value used to adjust the upper ratio of cloud-ice in bands 7 and 2
+- `ratio_offset`: offset value used to adjust the upper ratio of cloud-ice in bands 7 and 2
 
 1. Lopez-Acosta, R., Schodlok, M. P., & Wilhelmus, M. M. (2019). Ice Floe Tracker: An algorithm to automatically retrieve Lagrangian trajectories via feature matching from moderate-resolution visual imagery. Remote Sensing of Environment, 234(111406), 1–15. (https://doi.org/10.1016/j.rse.2019.111406)[https://doi.org/10.1016/j.rse.2019.111406]
 2. Watkins, D.M., Kim, M., Paniagua, C., Divoll, T., Holland, J.G., Hatcher, S., Hutchings, J.K., and Wilhelmus, M.M. (in prep). Calibration and validation of the Ice Floe Tracker algorithm. 

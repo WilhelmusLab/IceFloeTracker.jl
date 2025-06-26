@@ -34,7 +34,7 @@ using IceFloeTracker:
     _regularize
 
 # Sample input parameters expected by the main function
-ice_labels_thresholds = (
+cloud_mask_thresholds = (
     prelim_threshold=110.0,
     band_7_threshold=200.0,
     band_2_threshold=190.0,
@@ -75,7 +75,7 @@ function preprocess_tiling(
     true_color_image,
     landmask,
     tiles,
-    ice_labels_thresholds,
+    cloud_mask_thresholds,
     adapthisteq_params,
     adjust_gamma_params,
     structuring_elements,
@@ -86,7 +86,9 @@ function preprocess_tiling(
 )
     begin
         @debug "Step 1/2: Create and apply cloudmask to reference image"
-        cloudmask = IceFloeTracker.create_cloudmask(ref_image; ice_labels_thresholds...)
+        
+        cloudmask = IceFloeTracker.create_cloudmask(ref_image,
+                                LopezAcostaCloudMask(cloud_mask_thresholds...))
         ref_img_cloudmasked = IceFloeTracker.apply_cloudmask(ref_image, cloudmask)
     end
 
