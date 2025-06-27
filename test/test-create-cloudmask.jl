@@ -9,7 +9,7 @@
 
     matlab_cloudmask = float64.(load(matlab_cloudmask_file))
     @time cloudmask = IceFloeTracker.create_cloudmask(ref_image)
-    @time masked_image = IceFloeTracker.apply_cloudmask(ref_image, cloudmask)
+    @time masked_image = IceFloeTracker.apply_cloudmask(ref_image, cloudmask, modify_channel_1=true)
 
     # test for percent difference in cloudmask images
     @test (@test_approx_eq_sigma_eps masked_image matlab_cloudmask [0, 0] 0.005) === nothing
@@ -25,5 +25,5 @@
     ref_image = load(pth_RGBA_tiff)
     @test typeof(ref_image) <: Matrix{RGBA{N0f8}}
     cloudmask = IceFloeTracker.create_cloudmask(ref_image)
-    @test sum(cloudmask) === 0 # all pixels are clouds
+    @test sum(.!cloudmask) === 0 # all pixels are clouds
 end
