@@ -9,7 +9,7 @@
 .snakemake
 *.snakemake_timestamp
 *.tar
-*.ipynb-checkpoints
+*.ipynb-checkpoints/
 
 input/
 explorations/
