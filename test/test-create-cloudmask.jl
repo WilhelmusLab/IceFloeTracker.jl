@@ -8,7 +8,7 @@
     ref_image = float64.(load(falsecolor_test_image_file)[test_region...])
 
     matlab_cloudmask = float64.(load(matlab_cloudmask_file))
-    @time cloudmask = .!IceFloeTracker.create_cloudmask(ref_image)
+    @time cloudmask = IceFloeTracker.create_cloudmask(ref_image)
     @time masked_image = IceFloeTracker.apply_cloudmask(ref_image, cloudmask, modify_channel_1=true)
 
     # test for percent difference in cloudmask images
@@ -16,7 +16,7 @@
 
     # test for create_clouds_channel
     clouds_channel_expected = load(clouds_channel_test_file)
-    clds_channel = IceFloeTracker.create_clouds_channel(.!cloudmask, ref_image) # reversed cloud mask here
+    clds_channel = IceFloeTracker.create_clouds_channel(cloudmask, ref_image)
     @test (@test_approx_eq_sigma_eps (clds_channel) (clouds_channel_expected) [0, 0] 0.005) ===
         nothing
 

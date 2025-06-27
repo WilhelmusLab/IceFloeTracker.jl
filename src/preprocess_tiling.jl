@@ -35,9 +35,9 @@ using IceFloeTracker:
 
 # Sample input parameters expected by the main function
 cloud_mask_thresholds = (
-    prelim_threshold=110.0,
-    band_7_threshold=200.0,
-    band_2_threshold=190.0,
+    prelim_threshold=110.0/255.,
+    band_7_threshold=200.0/255.,
+    band_2_threshold=190.0/255.,
     ratio_lower=0.0,
     ratio_upper=0.75,
     r_offset=0.0
@@ -57,6 +57,7 @@ unsharp_mask_params = (radius=10, amount=2.0, factor=255.0)
 
 brighten_factor = 0.1
 
+# dmw: these will need to be normalized as well
 ice_masks_params = (
     band_7_threshold=5,
     band_2_threshold=230,
