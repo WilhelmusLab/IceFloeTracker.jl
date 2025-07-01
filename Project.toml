@@ -1,13 +1,6 @@
 name = "IceFloeTracker"
 uuid = "04643c7a-9ac6-48c5-822f-2704f9e70bd3"
-authors = [
-    "Carlos Paniagua <carlos_paniagua@brown.edu>",
-    "Timothy Divoll <bradford_roarr@brown.edu>",
-    "John Gerrard Holland <john_holland1@brown.edu>",
-    "Bradford Roarr <bradford_roarr@brown.edu>",
-    "Daniel Watkins <daniel_watkins@brown.edu>",
-    "Maria Isabel Restrepo <maria_restrepo@brown.edu>",
-]
+authors = ["Carlos Paniagua <carlos_paniagua@brown.edu>", "Timothy Divoll <bradford_roarr@brown.edu>", "John Gerrard Holland <john_holland1@brown.edu>", "Bradford Roarr <bradford_roarr@brown.edu>", "Daniel Watkins <daniel_watkins@brown.edu>", "Maria Isabel Restrepo <maria_restrepo@brown.edu>"]
 version = "0.8.2"
 
 [deps]
@@ -53,7 +46,7 @@ Git = "1.3"
 HDF5 = "0.17"
 ImageCore = "0.9, 0.10"
 Images = "0.26.1"
-Interpolations = "0.14, 0.15"
+Interpolations = "0.16"
 LoopVectorization = "0.12"
 OffsetArrays = "1.12"
 Peaks = "0.5"
