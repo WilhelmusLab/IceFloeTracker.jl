@@ -128,7 +128,7 @@ end
     icemask_n_clusters::Int = 3
 end
 
-function (p:LopezAcosta2019Tiling)(;
+function (p::LopezAcosta2019Tiling)(;
     truecolor_image::T, falsecolor_image::T, landmask_image::U
 ) where {T<:Matrix{RGB{Float64}},U<:AbstractMatrix}
 
