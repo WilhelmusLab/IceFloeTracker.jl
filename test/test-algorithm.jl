@@ -15,7 +15,7 @@
         landmask = loadimg("./test_inputs/pipeline/input_pipeline/landmask.tiff")
 
         results = LopezAcosta2019()(truecolor, falsecolor, landmask)
-        @info results
+        # TODO: Add a check of the results
     end
     @testset "Lopez-Acosta 2019 with Tiling" begin
         truecolor = load(
@@ -29,6 +29,6 @@
         landmask = load("./test_inputs/pipeline/input_pipeline/landmask.tiff")
 
         results = LopezAcosta2019Tiling()(truecolor, falsecolor, landmask)
-        @info results
+        # TODO: Add a check of the results
     end
 end
