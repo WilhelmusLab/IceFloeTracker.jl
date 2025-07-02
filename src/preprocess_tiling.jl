@@ -79,11 +79,6 @@ function (p::LopezAcosta2019Tiling)(
     rgb_truecolor_img = RGB.(truecolor_image)
     rgb_falsecolor_img = RGB.(falsecolor_image)
 
-    # TODO: fix this – the images should come in in thie format by default
-    @info "convert images to floating point"
-    ref_image = n0f8.(rgb_falsecolor_img)
-    true_color_image = n0f8.(rgb_truecolor_img)
-
     # Invert the landmasks – in the tiling version of the code, 
     # the landmask is expected to be the other polarity compared with
     # the non-tiling version.
@@ -162,8 +157,10 @@ function (p::LopezAcosta2019Tiling)(
     @info "Segment floes"
     begin
         @debug "Step 1/2: Create and apply cloudmask to reference image"
-        cloudmask = IceFloeTracker.create_cloudmask(ref_image; ice_labels_thresholds...)
-        ref_img_cloudmasked = IceFloeTracker.apply_cloudmask(ref_image, cloudmask)
+        cloudmask = IceFloeTracker.create_cloudmask(
+            rgb_falsecolor_img; ice_labels_thresholds...
+        )
+        ref_img_cloudmasked = IceFloeTracker.apply_cloudmask(rgb_falsecolor_img, cloudmask)
     end
 
     begin
@@ -172,7 +169,7 @@ function (p::LopezAcosta2019Tiling)(
         clouds_red[landmask.dilated] .= 0
 
         rgbchannels = _process_image_tiles(
-            true_color_image, clouds_red, tiles, adapthisteq_params...
+            rgb_truecolor_img, clouds_red, tiles, adapthisteq_params...
         )
 
         gammagreen = @view rgbchannels[:, :, 2]
@@ -230,7 +227,12 @@ function (p::LopezAcosta2019Tiling)(
     begin
         @debug "Step 9: Get preliminary ice masks"
         prelim_icemask, binarized_tiling = get_ice_masks(
-            ref_image, morphed_residue, landmask.dilated, tiles, true; ice_masks_params...
+            rgb_falsecolor_img,
+            morphed_residue,
+            landmask.dilated,
+            tiles,
+            true;
+            ice_masks_params...,
         )
     end
 
@@ -263,7 +265,12 @@ function (p::LopezAcosta2019Tiling)(
     begin
         @debug "Step 13: Get improved icemask"
         icemask, _ = get_ice_masks(
-            ref_image, prelim_icemask2, landmask.dilated, tiles, false; ice_masks_params...
+            rgb_falsecolor_img,
+            prelim_icemask2,
+            landmask.dilated,
+            tiles,
+            false;
+            ice_masks_params...,
         )
     end
 
