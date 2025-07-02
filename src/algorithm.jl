@@ -128,7 +128,7 @@ end
     icemask_n_clusters::Int = 3
 end
 
-function (p::LopezAcosta2019Tiling)(;
+function (p::LopezAcosta2019Tiling)(
     truecolor_image::T, falsecolor_image::T, landmask_image::U
 ) where {T<:Matrix{RGB{Float64}},U<:AbstractMatrix}
 
@@ -156,7 +156,6 @@ function (p::LopezAcosta2019Tiling)(;
         band_2_threshold=p.ice_labels_band_2_threshold,
         ratio_lower=p.ice_labels_ratio_lower,
         ratio_upper=p.ice_labels_ratio_upper,
-        use_uint8=true,
     )
     @debug ice_labels_thresholds
 
