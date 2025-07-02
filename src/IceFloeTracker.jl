@@ -42,7 +42,8 @@ export readdlm,
     imrotate,
     IFTVERSION,
     get_rotation_measurements,
-    LopezAcosta2019
+    LopezAcosta2019,
+    LopezAcosta2019Tiling
 
 # For IFTPipeline
 using HDF5
