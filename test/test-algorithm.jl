@@ -1,9 +1,9 @@
-loadimg(s::String) = (x -> float64.(x))(load(s))
 
 @testset "algorithm tests" begin
     println("-------------------------------------------------")
     println("----------- high-level algorithm tests ----------")
     @testset "Lopez-Acosta 2019" begin
+        loadimg(s::String) = (x -> float64.(x))(load(s))
         truecolor = loadimg(
             "./test_inputs/pipeline/input_pipeline/20220914.aqua.reflectance.250m.tiff"
         )
@@ -18,15 +18,15 @@ loadimg(s::String) = (x -> float64.(x))(load(s))
         @info results
     end
     @testset "Lopez-Acosta 2019 with Tiling" begin
-        truecolor = loadimg(
+        truecolor = load(
             "./test_inputs/pipeline/input_pipeline/20220914.aqua.reflectance.250m.tiff"
         )
 
-        falsecolor = loadimg(
+        falsecolor = load(
             "./test_inputs/pipeline/input_pipeline/20220914.aqua.reflectance.250m.tiff"
         )
 
-        landmask = loadimg("./test_inputs/pipeline/input_pipeline/landmask.tiff")
+        landmask = load("./test_inputs/pipeline/input_pipeline/landmask.tiff")
 
         results = LopezAcosta2019Tiling()(truecolor, falsecolor, landmask)
         @info results
