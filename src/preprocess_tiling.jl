@@ -33,46 +33,13 @@ using IceFloeTracker:
     imbinarize,
     _regularize
 
-# Sample input parameters expected by the main function
-ice_labels_thresholds = (
-    prelim_threshold=110.0,
-    band_7_threshold=200.0,
-    band_2_threshold=190.0,
-    ratio_lower=0.0,
-    ratio_upper=0.75,
-    r_offset=0.0,
-)
-
-adapthisteq_params = (
-    white_threshold=25.5, entropy_threshold=4, white_fraction_threshold=0.4
-)
-
-adjust_gamma_params = (gamma=1.5, gamma_factor=1.3, gamma_threshold=220)
-
-structuring_elements = (
-    se_disk1=collect(strel_diamond((3, 3))), se_disk2=se_disk2(), se_disk4=se_disk4()
-)
-
-unsharp_mask_params = (radius=10, amount=2.0, factor=255.0)
-
-brighten_factor = 0.1
-
-ice_masks_params = (
-    band_7_threshold=5,
-    band_2_threshold=230,
-    band_1_threshold=240,
-    band_7_threshold_relaxed=10,
-    band_1_threshold_relaxed=190,
-    possible_ice_threshold=75,
-    k=3, # number of clusters for kmeans segmentation
-    factor=255, # normalization factor to convert images to uint8
-)
-
-prelim_icemask_params = (radius=10, amount=2, factor=0.5)
-
 @kwdef struct LopezAcosta2019Tiling <: IceFloeSegmentationAlgorithm
     # Landmask parameters
     landmask_structuring_element::AbstractMatrix{Bool} = make_landmask_se()
+
+    structuring_elements = (
+        se_disk1=collect(strel_diamond((3, 3))), se_disk2=se_disk2(), se_disk4=se_disk4()
+    )
 
     # Tiling parameters
     tile_rblocks::Integer = 8
@@ -84,6 +51,7 @@ prelim_icemask_params = (radius=10, amount=2, factor=0.5)
     ice_labels_band_2_threshold::Float64 = 190.0
     ice_labels_ratio_lower::Float64 = 0.0
     ice_labels_ratio_upper::Float64 = 0.75
+    r_offset::Float64 = 0.0
 
     # Adaptive histogram equalization parameters
     adapthisteq_white_threshold::Float64 = 25.5
@@ -120,7 +88,7 @@ end
 
 function (p::LopezAcosta2019Tiling)(
     truecolor_image::T, falsecolor_image::T, landmask_image::U
-) where {T<:Matrix{RGB{Float64}},U<:AbstractMatrix}
+) where {T<:Matrix{RGB{N0f8}},U<:AbstractMatrix}
     @info "Remove alpha channel if it exists"
     rgb_truecolor_img = RGB.(truecolor_image)
     rgb_falsecolor_img = RGB.(falsecolor_image)
@@ -150,6 +118,7 @@ function (p::LopezAcosta2019Tiling)(
         band_2_threshold=p.ice_labels_band_2_threshold,
         ratio_lower=p.ice_labels_ratio_lower,
         ratio_upper=p.ice_labels_ratio_upper,
+        r_offset=p.r_offset,
     )
     @debug ice_labels_thresholds
 
@@ -168,9 +137,7 @@ function (p::LopezAcosta2019Tiling)(
     @debug adjust_gamma_params
 
     @info "Set structuring elements"
-    # This isn't tunable in the underlying code right now, 
-    # so just use the defaults
-    structuring_elements = IceFloeTracker.structuring_elements
+    structuring_elements = p.structuring_elements
     @debug structuring_elements
 
     @info "Set unsharp mask params"
@@ -326,5 +293,5 @@ function (p::LopezAcosta2019Tiling)(
     labeled_floes = label_components(segmented_floes)
 
     # TODO: return ImageSegmentation.jl-style results
-    return labeled_floes
+    return (; labeled_floes, segmented_floes)
 end
