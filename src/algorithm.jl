@@ -1,16 +1,16 @@
 abstract type IceFloeSegmentationAlgorithm end
 
-struct LopezAcosta <: IceFloeSegmentationAlgorithm
+struct LopezAcosta2019 <: IceFloeSegmentationAlgorithm
     landmask_structuring_element::AbstractMatrix{Bool}
 end
 
-function LopezAcosta(; landmask_structuring_element=make_landmask_se())
-    return LopezAcosta(landmask_structuring_element)
+function LopezAcosta2019(; landmask_structuring_element=make_landmask_se())
+    return LopezAcosta2019(landmask_structuring_element)
 end
 
-function (p::LopezAcosta)(
-    truecolor_image::T, falsecolor_image::T, landmask_image::{<:AbstractMatrix}
-) where {T<:Matrix{RGB{Float64}}}
+function (p::LopezAcosta2019)(
+    truecolor_image::T, falsecolor_image::T, landmask_image::U
+) where {T<:Matrix{RGB{Float64}},U<:AbstractMatrix}
     @info "building landmask"
     landmask_imgs = create_landmask(landmask_image, p.landmask_structuring_element)
 
@@ -55,9 +55,11 @@ function (p::LopezAcosta)(
     # Process watershed in parallel using Folds
     @info "Building watersheds"
     # container_for_watersheds = [landmask_imgs.non_dilated, similar(landmask_imgs.non_dilated)]
-    watersheds_segB = Folds.map(
-        IceFloeTracker.watershed_ice_floes, [segB.not_ice_bit, segB.ice_intersect]
-    )
+
+    watersheds_segB = [
+        IceFloeTracker.watershed_ice_floes(segB.not_ice_bit),
+        IceFloeTracker.watershed_ice_floes(segB.ice_intersect),
+    ]
     # reuse the memory allocated for the first watershed
     watersheds_segB[1] .= IceFloeTracker.watershed_product(watersheds_segB...)
 
