@@ -204,8 +204,8 @@ function (p::LopezAcosta2019Tiling)(;
         band_7_threshold=p.icemask_band_7_threshold,
         band_2_threshold=p.icemask_band_2_threshold,
         band_1_threshold=p.icemask_band_1_threshold,
-        band_7_threshold_p.relaxed=icemask_band_7_threshold_relaxed,
-        band_1_threshold_p.relaxed=icemask_band_1_threshold_relaxed,
+        band_7_threshold_relaxed=p.icemask_band_7_threshold_relaxed,
+        band_1_threshold_relaxed=p.icemask_band_1_threshold_relaxed,
         possible_ice_threshold=p.icemask_possible_ice_threshold,
         k=p.icemask_n_clusters, # number of clusters for kmeans segmentation
         factor=255, # normalization factor to convert images to uint8
