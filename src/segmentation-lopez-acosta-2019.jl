@@ -60,15 +60,14 @@ function (p::LopezAcosta2019)(
         IceFloeTracker.watershed_ice_floes(segB.not_ice_bit),
         IceFloeTracker.watershed_ice_floes(segB.ice_intersect),
     ]
-    # reuse the memory allocated for the first watershed
-    watersheds_segB[1] .= IceFloeTracker.watershed_product(watersheds_segB...)
+    watersheds_segB_product = IceFloeTracker.watershed_product(watersheds_segB...)
 
     # segmentation_F
     @info "Segmenting floes part 3/3"
     segF = IceFloeTracker.segmentation_F(
         segB.not_ice,
         segB.ice_intersect,
-        watersheds_segB[1],
+        watersheds_segB_product,
         ice_labels,
         cloudmask,
         landmask_imgs.dilated,
