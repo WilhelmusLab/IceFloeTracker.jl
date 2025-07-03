@@ -74,8 +74,9 @@ function (p::LopezAcosta2019)(
     )
 
     @info "Labeling floes"
-    labeled_floes = label_components(segF)
+    labels_map = label_components(segF)
 
-    # TODO: return ImageSegmentation.jl-style results
-    return labeled_floes
+    segmentation = ImageSegmentation.SegmentedImage(truecolor_image, labels_map)
+
+    return segmentation
 end
