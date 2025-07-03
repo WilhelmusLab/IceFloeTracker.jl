@@ -3,7 +3,7 @@
         loadimg(s::String) = float64.(load(s))
 
         truecolor = loadimg(
-            "./test_inputs/pipeline/input_pipeline/20220914.aqua.reflectance.250m.tiff"
+            "./test_inputs/pipeline/input_pipeline/20220914.aqua.truecolor.250m.tiff"
         )
 
         falsecolor = loadimg(
