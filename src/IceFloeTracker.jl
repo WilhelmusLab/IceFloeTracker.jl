@@ -83,7 +83,7 @@ include("ice_masks.jl")
 include("regularize-final.jl")
 include("latlon.jl")
 include("rotation.jl")
-include("algorithm.jl")
+include("segmentation-lopez-acosta-2019.jl")
 
 function get_version_from_toml(pth=dirname(dirname(pathof(IceFloeTracker))))::VersionNumber
     toml = TOML.parsefile(joinpath(pth, "Project.toml"))
