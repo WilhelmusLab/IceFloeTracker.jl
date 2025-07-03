@@ -72,6 +72,14 @@ using IceFloeTracker:
     icemask_n_clusters::Int = 3
 end
 
+function Base.show(io::IO, p::LopezAcosta2019Tiling)
+    fields = [
+        string(fieldname) * "=" * string(getfield(p, fieldname)) for
+        fieldname in fieldnames(typeof(p))
+    ]
+    return print(io, string(typeof(p)) * "(" * join(fields, ", ") * ")")
+end
+
 function (p::LopezAcosta2019Tiling)(
     truecolor_image::T, falsecolor_image::T, landmask_image::U
 ) where {T<:Matrix{RGB{N0f8}},U<:AbstractMatrix}
