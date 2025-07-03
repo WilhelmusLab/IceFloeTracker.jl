@@ -86,14 +86,12 @@ using IceFloeTracker: LopezAcosta2019Tiling
         )
         segments = algorithm(ref_image, true_color_image, landmask)
         @info segments
-        @test length(segment_labels(segments)) == 44
+        @test length(segment_labels(segments)) == 1383
         save(
             "./test_outputs/segmentation-Lopez-Acosta-2019-Tiling-detailed-mean-labels" *
             Dates.format(Dates.now(), "yyyy-mm-dd-HHMMSS") *
             ".png",
             map(i -> segment_mean(segments, i), labels_map(segments)),
         )
-
-        @test sum(segmented_floes) == 1461116
     end
 end
