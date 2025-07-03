@@ -283,8 +283,8 @@ function (p::LopezAcosta2019Tiling)(
     end
 
     @info "Label floes"
-    labeled_floes = label_components(segmented_floes)
+    labels = label_components(segmented_floes)
+    segments = ImageSegmentation.SegmentedImage(truecolor_image, labels)
 
-    # TODO: return ImageSegmentation.jl-style results
-    return (; labeled_floes, segmented_floes)
+    return segments
 end
