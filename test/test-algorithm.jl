@@ -12,7 +12,7 @@
 
         landmask = loadimg("./test_inputs/pipeline/input_pipeline/landmask.tiff")
 
-        results = LopezAcosta2019()(truecolor, falsecolor, landmask)
-        @show results
+        segments = LopezAcosta2019()(truecolor, falsecolor, landmask)
+        @show segments
     end
 end
