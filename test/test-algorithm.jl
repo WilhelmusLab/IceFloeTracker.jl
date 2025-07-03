@@ -1,7 +1,8 @@
 
 @ntestset "$(@__FILE__)" begin
     @ntestset "Lopez-Acosta 2019" begin
-        loadimg(s::String) = (x -> float64.(x))(load(s))
+        loadimg(s::String) = float64.(load(s))
+
         truecolor = loadimg(
             "./test_inputs/pipeline/input_pipeline/20220914.aqua.reflectance.250m.tiff"
         )
