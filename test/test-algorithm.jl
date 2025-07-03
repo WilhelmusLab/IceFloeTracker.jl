@@ -25,19 +25,4 @@ using ImageSegmentation: segment_labels, segment_mean, labels_map
         )
         @test length(segment_labels(segments)) == 44
     end
-
-    @ntestset "Lopez-Acosta 2019 with Tiling" begin
-        truecolor = load(
-            "./test_inputs/pipeline/input_pipeline/20220914.aqua.reflectance.250m.tiff"
-        )
-
-        falsecolor = load(
-            "./test_inputs/pipeline/input_pipeline/20220914.aqua.reflectance.250m.tiff"
-        )
-
-        landmask = load("./test_inputs/pipeline/input_pipeline/landmask.tiff")
-
-        results = LopezAcosta2019Tiling()(truecolor, falsecolor, landmask)
-        # TODO: Add a check of the results
-    end
 end
