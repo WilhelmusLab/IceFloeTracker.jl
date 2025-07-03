@@ -18,7 +18,7 @@ using ImageSegmentation: segment_labels, segment_mean, labels_map
 
         @show segments
         save(
-            "./test_outputs/Lopez-Acosta-2019-mean-labels" *
+            "./test_outputs/segmentation-Lopez-Acosta-2019-mean-labels" *
             Dates.format(Dates.now(), "yyyy-mm-dd-HHMMSS") *
             ".png",
             map(i -> segment_mean(segments, i), labels_map(segments)),
