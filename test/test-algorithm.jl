@@ -1,4 +1,3 @@
-
 @ntestset "$(@__FILE__)" begin
     @ntestset "Lopez-Acosta 2019" begin
         loadimg(s::String) = float64.(load(s))
