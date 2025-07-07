@@ -82,7 +82,9 @@ function (p::LopezAcosta2019)(
 
     @info "Labeling floes"
     labels_map = label_components(segF)
-    segments = ImageSegmentation.SegmentedImage(truecolor_image, labels_map)
+
+    # Return the original truecolor image, segmented
+    segments = ImageSegmentation.SegmentedImage(truecolor, labels_map)
 
     return segments
 end
