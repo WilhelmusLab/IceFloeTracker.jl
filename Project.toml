@@ -60,9 +60,7 @@ julia = "1"
 CSV = "336ed68f-0bac-5ca0-87d4-7b16caf5d00b"
 Plots = "91a5bcdd-55d7-5caf-9e0b-520d859cae80"
 Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
-Git = "d7ba0133-e1db-5d97-8f8c-041e4b3a1eb2"
 
 [targets]
 notebooks = ["CSV", "Plots"]
 test = ["Test"]
-scripts = ["Git"]
