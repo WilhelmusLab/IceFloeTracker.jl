@@ -10,9 +10,10 @@ using ImageSegmentation: segment_labels, segment_mean, labels_map
         )
         landmask = load("./test_inputs/pipeline/input_pipeline/landmask.tiff")
         @ntestset "Smoke test" begin
-            types = [n0f8, n6f10, n4f12, n2f14, n0f16, float32, float64]
             region = (200:400, 500:700)
-            for target_type in [n0f8, n6f10, n4f12, n2f14, n0f16, float32, float64]
+            supported_types = [n0f8, n6f10, n4f12, n2f14, n0f16, float32, float64]
+            for target_type in supported_types
+                @info target_type
                 segments = LopezAcosta2019()(
                     target_type.(truecolor[region...]),
                     target_type.(falsecolor[region...]),
