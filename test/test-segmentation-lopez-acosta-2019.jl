@@ -39,7 +39,7 @@ using ImageSegmentation: segment_labels, segment_mean, labels_map
                     ".png",
                     map(i -> segment_mean(segments, i), labels_map(segments)),
                 )
-                @test length(segment_labels(segments)) == 9
+                @test length(segment_labels(segments)) == 10
             end
         end
     end
