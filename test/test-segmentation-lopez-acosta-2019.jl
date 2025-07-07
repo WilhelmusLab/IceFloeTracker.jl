@@ -2,27 +2,45 @@ using ImageSegmentation: segment_labels, segment_mean, labels_map
 
 @ntestset "$(@__FILE__)" begin
     @ntestset "Lopez-Acosta 2019" begin
-        loadimg(s::String) = float64.(load(s))
-
-        truecolor = loadimg(
+        truecolor = load(
             "./test_inputs/pipeline/input_pipeline/20220914.aqua.truecolor.250m.tiff"
         )
-
-        falsecolor = loadimg(
+        falsecolor = load(
             "./test_inputs/pipeline/input_pipeline/20220914.aqua.reflectance.250m.tiff"
         )
+        landmask = load("./test_inputs/pipeline/input_pipeline/landmask.tiff")
 
-        landmask = loadimg("./test_inputs/pipeline/input_pipeline/landmask.tiff")
-
-        segments = LopezAcosta2019()(truecolor, falsecolor, landmask)
-
-        @show segments
-        save(
-            "./test_outputs/segmentation-Lopez-Acosta-2019-mean-labels" *
-            Dates.format(Dates.now(), "yyyy-mm-dd-HHMMSS") *
-            ".png",
-            map(i -> segment_mean(segments, i), labels_map(segments)),
-        )
-        @test length(segment_labels(segments)) == 44
+        @ntestset "Full size" begin
+            segments = LopezAcosta2019()(truecolor, falsecolor, landmask)
+            @show segments
+            save(
+                "./test_outputs/segmentation-Lopez-Acosta-2019-mean-labels" *
+                Dates.format(Dates.now(), "yyyy-mm-dd-HHMMSS") *
+                ".png",
+                map(i -> segment_mean(segments, i), labels_map(segments)),
+            )
+            @test length(segment_labels(segments)) == 44
+        end
+        @ntestset "Smoke test" begin
+            types = [n0f8, n6f10, n4f12, n2f14, n0f16, float32, float64]
+            region = (200:400, 500:700)
+            for target_type in [n0f8, n6f10, n4f12, n2f14, n0f16, float32, float64]
+                segments = LopezAcosta2019()(
+                    target_type.(truecolor[region...]),
+                    target_type.(falsecolor[region...]),
+                    target_type.(landmask[region...]),
+                )
+                @show segments
+                save(
+                    "./test_outputs/segmentation-Lopez-Acosta-2019-mean-labels" *
+                    string(target_type) *
+                    "_" *
+                    Dates.format(Dates.now(), "yyyy-mm-dd-HHMMSS") *
+                    ".png",
+                    map(i -> segment_mean(segments, i), labels_map(segments)),
+                )
+                @test length(segment_labels(segments)) == 9
+            end
+        end
     end
 end
