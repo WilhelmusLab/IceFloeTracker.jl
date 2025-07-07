@@ -13,7 +13,7 @@ using ImageSegmentation: segment_labels, segment_mean, labels_map
             region = (200:400, 500:700)
             supported_types = [n0f8, n6f10, n4f12, n2f14, n0f16, float32, float64]
             for target_type in supported_types
-                @info target_type
+                @info "Image type: $target_type"
                 segments = LopezAcosta2019()(
                     target_type.(truecolor[region...]),
                     target_type.(falsecolor[region...]),
