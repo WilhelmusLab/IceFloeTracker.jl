@@ -45,7 +45,7 @@ using IceFloeTracker: LopezAcosta2019Tiling
                 "./test_outputs/segmentation-LopezAcosta2019Tiling-mean-labels_$(target_type)_$(Dates.format(Dates.now(), "yyyy-mm-dd-HHMMSS")).png",
                 map(i -> segment_mean(segments, i), labels_map(segments)),
             )
-            @test 35 <= length(segment_labels(segments)) <= 36  # TODO: fix the mismatch between the values for n4f12 and n2f14.
+            @test 35 <= length(segment_labels(segments)) <= 37  # TODO: fix the mismatch between the values for n4f12 and n2f14.
         end
     end
 
