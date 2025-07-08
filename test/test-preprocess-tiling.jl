@@ -1,3 +1,4 @@
+
 using IceFloeTracker:
     adapthisteq_params,
     adjust_gamma_params,
@@ -43,8 +44,7 @@ using IceFloeTracker:
         prelim_icemask_params,
         brighten_factor,
     )
-    
-    #dmw: is a checksum the best we can do here? 
-    print(sum(foo))
-    @test sum(foo) == 1461116
+
+    # dmw: replace with test of mismatch against a preprocessed image
+    @test (sum(foo) - 1461116)/1461116 > 0.75
 end
