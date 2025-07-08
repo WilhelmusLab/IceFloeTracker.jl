@@ -200,6 +200,13 @@ function apply_cloudmask!(
     img[cloudmask] .= 0.0
 end
 
+function apply_cloudmask(
+    img::AbstractArray,
+    cloudmask::AbstractArray{Bool},
+)
+    img[cloudmask] .= 0.0
+end
+
 
 # dmw: in the future, we may want the option to use "missing".
 # dmw: used only in ice-water-discrimination. could be generalized. compare to similar method in the conditional adaptive histogram
