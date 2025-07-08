@@ -1,4 +1,4 @@
-using ImageSegmentation: segment_labels, segment_mean, labels_map
+using Images: segment_labels, segment_mean, labels_map
 
 @ntestset "$(@__FILE__)" begin
     @ntestset "Lopez-Acosta 2019" begin
