@@ -46,7 +46,7 @@ alltests = [f for f in readdir() if startswith(f, "test-")]
 ## Put the filenames to test below
 
 to_test = alltests # uncomment this line to run all tests or add individual files below
-to_test = [
+# to_test = [
 # "test-branch.jl",
 # "test-bridge.jl",
 # "test-brighten.jl",
@@ -93,7 +93,7 @@ to_test = [
 # "test-utils-imextendedmin.jl",
 # "test-utils-padding.jl",
 # "test-watershed-workflows.jl",
-]
+# ]
 
 # Run the tests
 @testset verbose = true "IceFloeTracker.jl" begin
