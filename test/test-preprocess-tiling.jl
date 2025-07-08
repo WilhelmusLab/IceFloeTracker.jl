@@ -46,5 +46,5 @@ using IceFloeTracker:
     )
 
     # dmw: replace with test of mismatch against a preprocessed image
-    @test (sum(foo) - 1461116)/1461116 > 0.75
+    @test abs(sum(foo) - 1461116)/1461116 < 0.1
 end
