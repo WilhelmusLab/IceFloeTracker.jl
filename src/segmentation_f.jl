@@ -74,8 +74,8 @@ function segmentation_F(
     ImageMorphology.area_opening!(leads, leads; min_area=min_area_opening, connectivity=2)
 
     # dmw: replace multiplication with apply_cloudmask
-    # leads_bothat_filled = (IceFloeTracker.fill_holes(leads) .* .!cloudmask)
-    leads_bothat_filled = apply_cloudmask(IceFloeTracker.fill_holes(leads), cloudmask)
+    leads_bothat_filled = (IceFloeTracker.fill_holes(leads) .* .!cloudmask)
+    # leads_bothat_filled = apply_cloudmask(IceFloeTracker.fill_holes(leads), cloudmask)
     floes = IceFloeTracker.branch(leads_bothat_filled)
 
     floes_opened = IceFloeTracker.opening(floes, centered(IceFloeTracker.se_disk4()))
