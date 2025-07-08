@@ -20,13 +20,10 @@ using Images: segment_labels, segment_mean, labels_map
                     target_type.(landmask[region...]),
                 )
                 @show segments
-                save(
-                    "./test_outputs/segmentation-Lopez-Acosta-2019-mean-labels" *
-                    string(target_type) *
-                    "_" *
-                    Dates.format(Dates.now(), "yyyy-mm-dd-HHMMSS") *
-                    ".png",
+                IceFloeTracker.@persist(
                     map(i -> segment_mean(segments, i), labels_map(segments)),
+                    "./test_outputs/segmentation-Lopez-Acosta-2019-mean-labels_$target_type.png",
+                    true
                 )
                 @test length(segment_labels(segments)) == 10
             end
