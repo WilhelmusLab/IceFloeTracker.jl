@@ -20,10 +20,9 @@ using Images: segment_labels, segment_mean, labels_map
                     target_type.(landmask[region...]),
                 )
                 @show segments
-                IceFloeTracker.@persist(
+                save(
+                    "./test_outputs/segmentation-Lopez-Acosta-2019-mean-labels_$(target_type)_$(Dates.format(Dates.now(), "yyyy-mm-dd-HHMMSS")).png",
                     map(i -> segment_mean(segments, i), labels_map(segments)),
-                    "./test_outputs/segmentation-Lopez-Acosta-2019-mean-labels_$target_type.png",
-                    true
                 )
                 @test length(segment_labels(segments)) == 10
             end
@@ -31,10 +30,9 @@ using Images: segment_labels, segment_mean, labels_map
         @ntestset "Full size" begin
             segments = LopezAcosta2019()(truecolor, falsecolor, landmask)
             @show segments
-            IceFloeTracker.@persist(
+            save(
+                "./test_outputs/segmentation-Lopez-Acosta-2019-mean-labels_$(Dates.format(Dates.now(), "yyyy-mm-dd-HHMMSS")).png",
                 map(i -> segment_mean(segments, i), labels_map(segments)),
-                "./test_outputs/segmentation-Lopez-Acosta-2019-mean-labels.png",
-                true
             )
             @test length(segment_labels(segments)) == 44
         end
