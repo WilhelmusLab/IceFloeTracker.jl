@@ -26,23 +26,6 @@ abstract type AbstractCloudMaskAlgorithm end
     end
 end
 
-# set defaults to match LSW2019
-# and enable named arguments
-function LopezAcostaCloudMask(;
-        prelim_threshold::Float64=110/255.,
-        band_7_threshold::Float64=200/255.,
-        band_2_threshold::Float64=190/255.,
-        ratio_lower::Float64=0.0,
-        ratio_offset::Float64=0.0,
-        ratio_upper::Float64=0.75
-)
-    LopezAcostaCloudMask(prelim_threshold,
-                         band_7_threshold,
-                         band_2_threshold,
-                         ratio_lower,
-                         ratio_offset,
-                         ratio_upper)
-end
 
 
 # use functor notation to define a function using the parameter struct
