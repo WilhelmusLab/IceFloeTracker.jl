@@ -11,6 +11,8 @@ using IceFloeTracker:
     unsharp_mask_params,
     get_tiles
 
+using Images: labels_map, segment_mean
+
 @testset "preprocess_tiling" begin
     region = (1016:3045, 1486:3714)
     data_dir = joinpath(@__DIR__, "test_inputs")
@@ -44,12 +46,19 @@ using IceFloeTracker:
         prelim_icemask_params,
         brighten_factor,
     )
+    @info segments
     save(
         "./test_outputs/segmentation-Lopez-Acosta-2019-Tiling-detailed-segments-bitmatrix" *
         Dates.format(Dates.now(), "yyyy-mm-dd-HHMMSS") *
         ".png",
-        segments,
+        labels_map(segments) .> 0,
+    )
+    save(
+        "./test_outputs/segmentation-Lopez-Acosta-2019-Tiling-detailed-segments-mean" *
+        Dates.format(Dates.now(), "yyyy-mm-dd-HHMMSS") *
+        ".png",
+        map(i -> segment_mean(segments, i), labels_map(segments)),
     )
     # dmw: replace with test of mismatch against a preprocessed image
-    @test abs(sum(segments) - 1461116) / 1461116 < 0.1
+    @test abs(sum(labels_map(segments) .> 0) - 1461116) / 1461116 < 0.1
 end

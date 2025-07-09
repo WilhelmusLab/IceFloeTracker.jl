@@ -195,12 +195,18 @@ function preprocess_tiling(
     end
 
     begin
-        @debug "Step 14: Get final mask"
+        @debug "Step 14: Get segments"
         se = structuring_elements
         se_erosion = se.se_disk1
         se_dilation = se.se_disk2
-        final = get_final(icemask, segment_mask, se_erosion, se_dilation)
+        segmented_floes = get_final(icemask, segment_mask, se_erosion, se_dilation)
     end
 
-    return final
+    begin
+        @debug "Step 15: Label floes"
+        labels = label_components(segmented_floes)
+        segments = ImageSegmentation.SegmentedImage(ref_image, labels)
+    end
+
+    return segments
 end
