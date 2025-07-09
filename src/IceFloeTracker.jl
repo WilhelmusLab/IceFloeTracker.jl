@@ -42,7 +42,8 @@ export readdlm,
     imrotate,
     IFTVERSION,
     get_rotation_measurements,
-    LopezAcosta2019
+    LopezAcosta2019,
+    LopezAcosta2019Tiling
 
 # For IFTPipeline
 using HDF5
@@ -115,6 +116,6 @@ include("tracker/tracker-funcs.jl")
 include("tracker/matchcorr.jl")
 include("tracker/tracker.jl")
 include("tracker/long_tracker.jl")
-include("preprocess_tiling.jl")
+include("segmentation-lopez-acosta-2019-tiling.jl")
 include("fill_holes.jl")
 end
