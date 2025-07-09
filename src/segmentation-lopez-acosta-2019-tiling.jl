@@ -87,9 +87,10 @@ function preprocess_tiling(
 )
     begin
         @debug "Step 1/2: Create and apply cloudmask to reference image"
-        
-        cloudmask = IceFloeTracker.create_cloudmask(ref_image,
-                                LopezAcostaCloudMask(cloud_mask_thresholds...))
+
+        cloudmask = IceFloeTracker.create_cloudmask(
+            ref_image, LopezAcostaCloudMask(cloud_mask_thresholds...)
+        )
         ref_img_cloudmasked = IceFloeTracker.apply_cloudmask(ref_image, cloudmask)
     end
 
