@@ -9,8 +9,15 @@ function LopezAcosta2019(; landmask_structuring_element=make_landmask_se())
 end
 
 function (p::LopezAcosta2019)(
-    truecolor_image::T, falsecolor_image::T, landmask_image::U
-) where {T<:Matrix{RGB{Float64}},U<:AbstractMatrix}
+    truecolor::T, falsecolor::T, landmask::U
+) where {T<:AbstractMatrix{<:AbstractRGB},U<:AbstractMatrix}
+
+    # Move these conversions down through the function as each step gets support for 
+    # the full range of image formats
+    truecolor_image = float64.(truecolor)
+    falsecolor_image = float64.(falsecolor)
+    landmask_image = float64.(landmask)
+
     @info "building landmask"
     landmask_imgs = create_landmask(landmask_image, p.landmask_structuring_element)
 
@@ -72,7 +79,9 @@ function (p::LopezAcosta2019)(
 
     @info "Labeling floes"
     labels_map = label_components(segF)
-    segments = SegmentedImage(truecolor_image, labels_map)
+
+  # Return the original truecolor image, segmented
+    segments = SegmentedImage(truecolor, labels_map)
 
     return segments
 end
