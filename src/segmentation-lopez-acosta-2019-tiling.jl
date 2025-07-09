@@ -35,12 +35,12 @@ using IceFloeTracker:
 
 # Sample input parameters expected by the main function
 cloud_mask_thresholds = (
-    prelim_threshold=110.0/255.,
-    band_7_threshold=200.0/255.,
-    band_2_threshold=190.0/255.,
+    prelim_threshold=110.0 / 255.0,
+    band_7_threshold=200.0 / 255.0,
+    band_2_threshold=190.0 / 255.0,
     ratio_lower=0.0,
     ratio_upper=0.75,
-    r_offset=0.0
+    r_offset=0.0,
 )
 
 adapthisteq_params = (
