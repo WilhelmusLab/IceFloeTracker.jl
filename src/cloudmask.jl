@@ -1,13 +1,13 @@
 using Images # I think this can be taken out, I have it here for the RGB types
 abstract type AbstractCloudMaskAlgorithm end
 
-struct LopezAcostaCloudMask <: AbstractCloudMaskAlgorithm
-    prelim_threshold::Float64
-    band_7_threshold::Float64
-    band_2_threshold::Float64
-    ratio_lower::Float64
-    ratio_offset::Float64
-    ratio_upper::Float64
+@kwdef struct LopezAcostaCloudMask <: AbstractCloudMaskAlgorithm
+    prelim_threshold::Float64 = 110/255.
+    band_7_threshold::Float64 = 200/255.
+    band_2_threshold::Float64 =190/255.
+    ratio_lower::Float64 = 0.0
+    ratio_offset::Float64 = 0.0
+    ratio_upper::Float64 = 0.75
     
     # enforce all are between 0 and 1 inclusive
     function LopezAcostaCloudMask(
