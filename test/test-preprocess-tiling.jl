@@ -3,7 +3,7 @@ using IceFloeTracker:
     adapthisteq_params,
     adjust_gamma_params,
     brighten_factor,
-    ice_labels_thresholds,
+    cloud_mask_thresholds,
     ice_masks_params,
     prelim_icemask_params,
     preprocess_tiling,
@@ -35,7 +35,7 @@ using IceFloeTracker:
         true_color_image,
         landmask,
         tiles,
-        ice_labels_thresholds,
+        cloud_mask_thresholds,
         adapthisteq_params,
         adjust_gamma_params,
         structuring_elements,
@@ -46,5 +46,5 @@ using IceFloeTracker:
     )
 
     # dmw: replace with test of mismatch against a preprocessed image
-    @test (sum(foo) - 1461116)/1461116 > 0.75
+    @test abs(sum(foo) - 1461116)/1461116 < 0.1
 end
