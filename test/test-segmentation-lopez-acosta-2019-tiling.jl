@@ -1,5 +1,5 @@
 
-using IceFloeTracker: LopezAcosta2019Tiling
+using IceFloeTracker: LopezAcosta2019Tiling, PixelCountTilingAlgorithm
 
 @ntestset "$(@__FILE__)" begin
     @ntestset "smoke test" begin
@@ -35,7 +35,9 @@ using IceFloeTracker: LopezAcosta2019Tiling
         region = (200:400, 500:900)
         for target_type in [n0f8, n6f10, n4f12, n2f14, n0f16, float32, float64]
             @info "Image type: $target_type"
-            segments = LopezAcosta2019Tiling(; tile_rblocks=1, tile_cblocks=2)(
+            segments = LopezAcosta2019Tiling(;
+                tiling=PixelCountTilingAlgorithm(; side_length=200)
+            )(
                 target_type.(truecolor[region...]),
                 target_type.(falsecolor[region...]),
                 target_type.(landmask[region...]),
@@ -66,8 +68,7 @@ using IceFloeTracker: LopezAcosta2019Tiling
         ]
 
         algorithm = LopezAcosta2019Tiling(;
-            tile_rblocks=2,
-            tile_cblocks=3,
+            tiling=PixelCountTilingAlgorithm(; side_length=200),
 
             # Ice labels thresholds
             ice_labels_prelim_threshold=110.0,
