@@ -207,15 +207,15 @@ end
 
 abstract type AbstractTilingAlgorithm end
 
-struct PixelCountTilingAlgorithm <: AbstractTilingAlgorithm
+@kwdef struct PixelCountTilingAlgorithm <: AbstractTilingAlgorithm
     side_length::Int
 end
 
 function (a::PixelCountTilingAlgorithm)(array)
-    return get_tiles(array; side_length=a.side_length)
+    return get_tiles(array, a.side_length)
 end
 
-struct BlockCountTilingAlgorithm <: AbstractTilingAlgorithm
+@kwdef struct BlockCountTilingAlgorithm <: AbstractTilingAlgorithm
     rblocks::Int
     cblocks::Int
 end
