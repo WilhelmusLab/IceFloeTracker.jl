@@ -87,7 +87,7 @@ function (p::LopezAcosta2019Tiling)(
     landmask = (dilated=.!landmask_imgs.dilated,)
 
     @info "Get tile coordinates"
-    tiles = IceFloeTracker.get_tiles(
+    tiles = get_tiles(
         rgb_truecolor_img; rblocks=p.tile_rblocks, cblocks=p.tile_cblocks
     )
     @debug tiles
@@ -157,10 +157,10 @@ function (p::LopezAcosta2019Tiling)(
     @info "Segment floes"
     begin
         @debug "Step 1/2: Create and apply cloudmask to reference image"
-        cloudmask = IceFloeTracker.create_cloudmask(
+        cloudmask = create_cloudmask(
             n0f8.(rgb_falsecolor_img); ice_labels_thresholds...
         )
-        ref_img_cloudmasked = IceFloeTracker.apply_cloudmask(rgb_falsecolor_img, cloudmask)
+        ref_img_cloudmasked = apply_cloudmask(rgb_falsecolor_img, cloudmask)
     end
 
     begin
