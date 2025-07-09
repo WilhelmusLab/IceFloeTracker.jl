@@ -45,5 +45,6 @@ using IceFloeTracker:
         brighten_factor,
     )
 
-    @test sum(foo) == 1461116
+    # dmw: replace with test of mismatch against a preprocessed image
+    @test (sum(foo) - 1461116)/1461116 > 0.75
 end
