@@ -141,7 +141,7 @@ function (p::LopezAcosta2019Tiling)(
     @info "Segment floes"
     begin
         @debug "Step 1/2: Create and apply cloudmask to reference image"
-        cloudmask = p.cloud_mask_algorithm(rgb_falsecolor_img)
+        cloudmask = create_cloudmask(rgb_falsecolor_img, p.cloud_mask_algorithm)
         ref_img_cloudmasked = IceFloeTracker.apply_cloudmask(rgb_falsecolor_img, cloudmask)
     end
 
