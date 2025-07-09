@@ -30,7 +30,7 @@ using IceFloeTracker:
     landmask = (dilated=landmask,)
     tiles = get_tiles(true_color_image; rblocks=2, cblocks=3)
 
-    foo = preprocess_tiling(
+    segments = preprocess_tiling(
         ref_image,
         true_color_image,
         landmask,
@@ -44,7 +44,12 @@ using IceFloeTracker:
         prelim_icemask_params,
         brighten_factor,
     )
-
+    save(
+        "./test_outputs/segmentation-Lopez-Acosta-2019-Tiling-detailed-segments-bitmatrix" *
+        Dates.format(Dates.now(), "yyyy-mm-dd-HHMMSS") *
+        ".png",
+        segments,
+    )
     # dmw: replace with test of mismatch against a preprocessed image
-    @test abs(sum(foo) - 1461116)/1461116 < 0.1
+    @test abs(sum(segments) - 1461116) / 1461116 < 0.1
 end
