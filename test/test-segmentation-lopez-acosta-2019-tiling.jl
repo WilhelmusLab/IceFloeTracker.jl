@@ -118,5 +118,8 @@ using IceFloeTracker: LopezAcosta2019Tiling
             ".png",
             map(i -> segment_mean(segments, i), labels_map(segments)),
         )
+
+        foreground::BitMatrix = labels_map(segments) .> 0  # equivalent to the old segmentation
+        @test abs(sum(foreground) - 1461116) / 1461116 < 0.1
     end
 end
