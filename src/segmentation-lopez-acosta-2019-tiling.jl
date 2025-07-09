@@ -31,13 +31,7 @@ using IceFloeTracker:
     tile_rblocks::Integer = 8
     tile_cblocks::Integer = 8
 
-    # Ice labels thresholds
-    cloud_mask_prelim_threshold::Float64 = 110.0 / 255.0
-    cloud_mask_band_7_threshold::Float64 = 200.0 / 255.0
-    cloud_mask_band_2_threshold::Float64 = 190.0 / 255.0
-    cloud_mask_ratio_lower::Float64 = 0.0
-    cloud_mask_ratio_upper::Float64 = 0.75
-    r_offset::Float64 = 0.0
+    cloud_mask_algorithm::AbstractCloudMaskAlgorithm = LopezAcostaCloudMask()
 
     # Adaptive histogram equalization parameters
     adapthisteq_white_threshold::Float64 = 25.5
@@ -93,17 +87,6 @@ function (p::LopezAcosta2019Tiling)(
     )
     @debug tiles
 
-    @info "Set ice labels thresholds"
-    cloud_mask_thresholds = (
-        prelim_threshold=p.cloud_mask_prelim_threshold,
-        band_7_threshold=p.cloud_mask_band_7_threshold,
-        band_2_threshold=p.cloud_mask_band_2_threshold,
-        ratio_lower=p.cloud_mask_ratio_lower,
-        ratio_upper=p.cloud_mask_ratio_upper,
-        ratio_offset=p.r_offset,
-    )
-    @debug cloud_mask_thresholds
-
     @info "Set adaptive histogram parameters"
     adapthisteq_params = (
         white_threshold=p.adapthisteq_white_threshold,
@@ -158,9 +141,7 @@ function (p::LopezAcosta2019Tiling)(
     @info "Segment floes"
     begin
         @debug "Step 1/2: Create and apply cloudmask to reference image"
-        cloudmask = IceFloeTracker.create_cloudmask(
-            rgb_falsecolor_img, LopezAcostaCloudMask(cloud_mask_thresholds...)
-        )
+        cloudmask = p.cloud_mask_algorithm(rgb_falsecolor_img)
         ref_img_cloudmasked = IceFloeTracker.apply_cloudmask(rgb_falsecolor_img, cloudmask)
     end
 
