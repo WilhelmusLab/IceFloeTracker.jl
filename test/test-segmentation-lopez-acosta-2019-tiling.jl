@@ -45,12 +45,14 @@ using IceFloeTracker: LopezAcosta2019Tiling
             tile_cblocks=3,
 
             # Ice labels thresholds
-            cloud_mask_prelim_threshold=110.0 / 255.0,
-            cloud_mask_band_7_threshold=200.0 / 255.0,
-            cloud_mask_band_2_threshold=190.0 / 255.0,
-            cloud_mask_ratio_lower=0.0,
-            r_offset=0.0,
-            cloud_mask_ratio_upper=0.75,
+            cloud_mask_algorithm=LopezAcostaCloudMask(;
+                prelim_threshold=110.0 / 255.0,
+                band_7_threshold=200.0 / 255.0,
+                band_2_threshold=190.0 / 255.0,
+                ratio_lower=0.0,
+                ratio_offset=0.0,
+                ratio_upper=0.75,
+            ),
 
             # Adaptive histogram equalization parameters
             adapthisteq_white_threshold=25.5,
