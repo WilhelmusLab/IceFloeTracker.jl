@@ -28,7 +28,7 @@ using IceFloeTracker:
     )
 
     # Tiling parameters
-    tiling::AbstractTilingAlgorithm = BlockCountTilingAlgorithm(8, 8)
+    tiling::AbstractTilingAlgorithm = BlockCountTilingAlgorithm(rblocks=8, cblocks=8)
 
     # Ice labels thresholds
     ice_labels_prelim_threshold::Float64 = 110.0
