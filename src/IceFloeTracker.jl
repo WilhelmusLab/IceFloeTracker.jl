@@ -42,7 +42,9 @@ export readdlm,
     centered,
     imrotate,
     IFTVERSION,
-    get_rotation_measurements
+    get_rotation_measurements,
+    LopezAcosta2019,
+    LopezAcosta2019Tiling
 
 # For IFTPipeline
 using HDF5
@@ -83,6 +85,7 @@ include("ice_masks.jl")
 include("regularize-final.jl")
 include("latlon.jl")
 include("rotation.jl")
+include("segmentation-lopez-acosta-2019.jl")
 
 function get_version_from_toml(pth=dirname(dirname(pathof(IceFloeTracker))))::VersionNumber
     toml = TOML.parsefile(joinpath(pth, "Project.toml"))
@@ -114,6 +117,6 @@ include("tracker/tracker-funcs.jl")
 include("tracker/matchcorr.jl")
 include("tracker/tracker.jl")
 include("tracker/long_tracker.jl")
-include("preprocess_tiling.jl")
+include("segmentation-lopez-acosta-2019-tiling.jl")
 include("fill_holes.jl")
 end
