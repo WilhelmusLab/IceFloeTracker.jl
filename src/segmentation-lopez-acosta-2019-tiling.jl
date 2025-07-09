@@ -74,10 +74,10 @@ end
 
 function (p::LopezAcosta2019Tiling)(
     truecolor_image::T, falsecolor_image::T, landmask_image::U
-) where {T<:Matrix{RGB{N0f8}},U<:AbstractMatrix}
+) where {T<:AbstractMatrix{<:Union{AbstractRGB,TransparentRGB}},U<:AbstractMatrix}
     @info "Remove alpha channel if it exists"
-    rgb_truecolor_img = RGB.(truecolor_image)
-    rgb_falsecolor_img = RGB.(falsecolor_image)
+    rgb_truecolor_img = RGB.(truecolor_image)   # TODO: eliminate this cast to RGB once functions have support for RGBA images
+    rgb_falsecolor_img = RGB.(falsecolor_image) # TODO: eliminate this cast to RGB once functions have support for RGBA images
 
     # Invert the landmasks – in the tiling version of the code, 
     # the landmask is expected to be the other polarity compared with
@@ -158,7 +158,7 @@ function (p::LopezAcosta2019Tiling)(
     begin
         @debug "Step 1/2: Create and apply cloudmask to reference image"
         cloudmask = IceFloeTracker.create_cloudmask(
-            rgb_falsecolor_img; ice_labels_thresholds...
+            n0f8.(rgb_falsecolor_img); ice_labels_thresholds...
         )
         ref_img_cloudmasked = IceFloeTracker.apply_cloudmask(rgb_falsecolor_img, cloudmask)
     end
@@ -227,7 +227,7 @@ function (p::LopezAcosta2019Tiling)(
     begin
         @debug "Step 9: Get preliminary ice masks"
         prelim_icemask, binarized_tiling = get_ice_masks(
-            rgb_falsecolor_img,
+            n0f8.(rgb_falsecolor_img), # TODO: eliminate this cast to n0f8 once get_ice_masks has support for all image types
             morphed_residue,
             landmask.dilated,
             tiles,
@@ -265,7 +265,7 @@ function (p::LopezAcosta2019Tiling)(
     begin
         @debug "Step 13: Get improved icemask"
         icemask, _ = get_ice_masks(
-            rgb_falsecolor_img,
+            n0f8.(rgb_falsecolor_img),  # TODO: eliminate this cast to n0f8 once get_ice_masks has support for all image types
             prelim_icemask2,
             landmask.dilated,
             tiles,

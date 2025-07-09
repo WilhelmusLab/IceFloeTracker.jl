@@ -24,6 +24,31 @@ using IceFloeTracker: LopezAcosta2019Tiling
         @test length(segment_labels(segments)) == 92
     end
 
+    @ntestset "image types" begin
+        truecolor = load(
+            "./test_inputs/pipeline/input_pipeline/20220914.aqua.reflectance.250m.tiff"
+        )
+        falsecolor = load(
+            "./test_inputs/pipeline/input_pipeline/20220914.aqua.reflectance.250m.tiff"
+        )
+        landmask = load("./test_inputs/pipeline/input_pipeline/landmask.tiff")
+        region = (200:400, 500:900)
+        for target_type in [n0f8, n6f10, n4f12, n2f14, n0f16, float32, float64]
+            @info "Image type: $target_type"
+            segments = LopezAcosta2019Tiling(; tile_rblocks=1, tile_cblocks=2)(
+                target_type.(truecolor[region...]),
+                target_type.(falsecolor[region...]),
+                target_type.(landmask[region...]),
+            )
+            @show segments
+            save(
+                "./test_outputs/segmentation-LopezAcosta2019Tiling-mean-labels_$(target_type)_$(Dates.format(Dates.now(), "yyyy-mm-dd-HHMMSS")).png",
+                map(i -> segment_mean(segments, i), labels_map(segments)),
+            )
+            @test 35 <= length(segment_labels(segments)) <= 37  # TODO: fix the mismatch between the values for n4f12 and n2f14.
+        end
+    end
+
     @ntestset "detailed test" begin
         region = (1016:3045, 1486:3714)
         data_dir = joinpath(@__DIR__, "test_inputs")
