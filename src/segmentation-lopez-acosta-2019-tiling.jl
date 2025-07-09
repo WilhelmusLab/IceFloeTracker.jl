@@ -19,6 +19,22 @@ using IceFloeTracker:
     watershed2,
     _regularize
 
+abstract type AbstractTileSetting end
+
+struct TileSetting <: AbstractTileSetting
+    rblocks::Integer
+    cblocks::Integer
+end
+
+@kwdef struct LopezAcosta2019TileSetting <: AbstractTileSetting
+    rblocks::Integer = 8
+    cblocks::Integer = 8
+end
+
+function convert(T::AbstractTileSetting, v::@NamedTuple{rblocks::Integer, cblocks::Integer})
+    return T(; v.rblocks, v.cblocks)
+end
+
 @kwdef struct LopezAcosta2019Tiling <: IceFloeSegmentationAlgorithm
     # Landmask parameters
     landmask_structuring_element::AbstractMatrix{Bool} = make_landmask_se()
@@ -28,8 +44,7 @@ using IceFloeTracker:
     )
 
     # Tiling parameters
-    tile_rblocks::Integer = 8
-    tile_cblocks::Integer = 8
+    tile::TileSetting = LopezAcosta2019TileSetting()
 
     # Ice labels thresholds
     ice_labels_prelim_threshold::Float64 = 110.0
@@ -87,9 +102,7 @@ function (p::LopezAcosta2019Tiling)(
     landmask = (dilated=.!landmask_imgs.dilated,)
 
     @info "Get tile coordinates"
-    tiles = IceFloeTracker.get_tiles(
-        rgb_truecolor_img; rblocks=p.tile_rblocks, cblocks=p.tile_cblocks
-    )
+    tiles = IceFloeTracker.get_tiles(rgb_truecolor_img; _unpack_struct(p.tile)...)
     @debug tiles
 
     @info "Set ice labels thresholds"
