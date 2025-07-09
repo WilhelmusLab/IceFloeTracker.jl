@@ -1,5 +1,6 @@
 
-using IceFloeTracker: LopezAcosta2019Tiling, PixelCountTilingAlgorithm
+using IceFloeTracker:
+    LopezAcosta2019Tiling, PixelCountTilingAlgorithm, BlockCountTilingAlgorithm
 
 @ntestset "$(@__FILE__)" begin
     @ntestset "smoke test" begin
@@ -68,7 +69,7 @@ using IceFloeTracker: LopezAcosta2019Tiling, PixelCountTilingAlgorithm
         ]
 
         algorithm = LopezAcosta2019Tiling(;
-            tiling=PixelCountTilingAlgorithm(; side_length=200),
+            tiling=BlockCountTilingAlgorithm(; rblocks=2, cblocks=3),
 
             # Ice labels thresholds
             ice_labels_prelim_threshold=110.0,
