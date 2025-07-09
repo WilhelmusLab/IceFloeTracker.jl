@@ -45,12 +45,12 @@ using IceFloeTracker: LopezAcosta2019Tiling
             tile_cblocks=3,
 
             # Ice labels thresholds
-            ice_labels_prelim_threshold=110.0,
-            ice_labels_band_7_threshold=200.0,
-            ice_labels_band_2_threshold=190.0,
-            ice_labels_ratio_lower=0.0,
-            ice_labels_ratio_upper=0.75,
+            cloud_mask_prelim_threshold=110.0 / 255.0,
+            cloud_mask_band_7_threshold=200.0 / 255.0,
+            cloud_mask_band_2_threshold=190.0 / 255.0,
+            cloud_mask_ratio_lower=0.0,
             r_offset=0.0,
+            cloud_mask_ratio_upper=0.75,
 
             # Adaptive histogram equalization parameters
             adapthisteq_white_threshold=25.5,
@@ -93,5 +93,9 @@ using IceFloeTracker: LopezAcosta2019Tiling
             ".png",
             map(i -> segment_mean(segments, i), labels_map(segments)),
         )
+
+        # dmw: replace with test of mismatch against a preprocessed image
+        non_background_segments = labels_map(segments) .> 0
+        @test abs(sum(non_background_segments) - 1461116) / 1461116 < 0.1
     end
 end

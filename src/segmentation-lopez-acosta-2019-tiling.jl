@@ -32,11 +32,11 @@ using IceFloeTracker:
     tile_cblocks::Integer = 8
 
     # Ice labels thresholds
-    ice_labels_prelim_threshold::Float64 = 110.0
-    ice_labels_band_7_threshold::Float64 = 200.0
-    ice_labels_band_2_threshold::Float64 = 190.0
-    ice_labels_ratio_lower::Float64 = 0.0
-    ice_labels_ratio_upper::Float64 = 0.75
+    cloud_mask_prelim_threshold::Float64 = 110.0 / 255.0
+    cloud_mask_band_7_threshold::Float64 = 200.0 / 255.0
+    cloud_mask_band_2_threshold::Float64 = 190.0 / 255.0
+    cloud_mask_ratio_lower::Float64 = 0.0
+    cloud_mask_ratio_upper::Float64 = 0.75
     r_offset::Float64 = 0.0
 
     # Adaptive histogram equalization parameters
@@ -63,6 +63,7 @@ using IceFloeTracker:
     prelim_icemask_factor::Float64 = 0.5
 
     # Main ice mask parameters
+    # dmw: these will need to be normalized as well
     icemask_band_7_threshold::Int = 5
     icemask_band_2_threshold::Int = 230
     icemask_band_1_threshold::Int = 240
@@ -93,15 +94,15 @@ function (p::LopezAcosta2019Tiling)(
     @debug tiles
 
     @info "Set ice labels thresholds"
-    ice_labels_thresholds = (
-        prelim_threshold=p.ice_labels_prelim_threshold,
-        band_7_threshold=p.ice_labels_band_7_threshold,
-        band_2_threshold=p.ice_labels_band_2_threshold,
-        ratio_lower=p.ice_labels_ratio_lower,
-        ratio_upper=p.ice_labels_ratio_upper,
-        r_offset=p.r_offset,
+    cloud_mask_thresholds = (
+        prelim_threshold=p.cloud_mask_prelim_threshold,
+        band_7_threshold=p.cloud_mask_band_7_threshold,
+        band_2_threshold=p.cloud_mask_band_2_threshold,
+        ratio_lower=p.cloud_mask_ratio_lower,
+        ratio_upper=p.cloud_mask_ratio_upper,
+        ratio_offset=p.r_offset,
     )
-    @debug ice_labels_thresholds
+    @debug cloud_mask_thresholds
 
     @info "Set adaptive histogram parameters"
     adapthisteq_params = (
@@ -158,7 +159,7 @@ function (p::LopezAcosta2019Tiling)(
     begin
         @debug "Step 1/2: Create and apply cloudmask to reference image"
         cloudmask = IceFloeTracker.create_cloudmask(
-            rgb_falsecolor_img; ice_labels_thresholds...
+            rgb_falsecolor_img, LopezAcostaCloudMask(cloud_mask_thresholds...)
         )
         ref_img_cloudmasked = IceFloeTracker.apply_cloudmask(rgb_falsecolor_img, cloudmask)
     end
