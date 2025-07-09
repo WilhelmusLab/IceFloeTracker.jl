@@ -37,7 +37,7 @@ using Images: labels_map, segment_mean
         true_color_image,
         landmask,
         tiles,
-        cloud_mask_thresholds,
+        LopezAcostaCloudMask(cloud_mask_thresholds...),
         adapthisteq_params,
         adjust_gamma_params,
         structuring_elements,
