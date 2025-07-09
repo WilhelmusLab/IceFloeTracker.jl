@@ -28,8 +28,7 @@ using IceFloeTracker:
     )
 
     # Tiling parameters
-    tile_rblocks::Integer = 8
-    tile_cblocks::Integer = 8
+    tiling::AbstractTilingAlgorithm = BlockCountTilingAlgorithm(8, 8)
 
     # Ice labels thresholds
     ice_labels_prelim_threshold::Float64 = 110.0
@@ -87,9 +86,7 @@ function (p::LopezAcosta2019Tiling)(
     landmask = (dilated=.!landmask_imgs.dilated,)
 
     @info "Get tile coordinates"
-    tiles = get_tiles(
-        rgb_truecolor_img; rblocks=p.tile_rblocks, cblocks=p.tile_cblocks
-    )
+    tiles = p.tiling(rgb_truecolor_img)
     @debug tiles
 
     @info "Set ice labels thresholds"
