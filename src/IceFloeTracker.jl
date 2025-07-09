@@ -43,7 +43,9 @@ export readdlm,
     IFTVERSION,
     get_rotation_measurements,
     LopezAcosta2019,
-    LopezAcosta2019Tiling
+    LopezAcosta2019Tiling,
+    BlockCountTilingAlgorithm,
+    PixelCountTilingAlgorithm
 
 # For IFTPipeline
 using HDF5
