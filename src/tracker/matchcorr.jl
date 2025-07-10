@@ -48,17 +48,16 @@ function matchcorr(
     end
 
     _psi = buildψs.([f1, f2])
-    r = corr(_psi...)
+    r = round(corr(_psi...), digits=3)
     
     # confidence interval for Pearson correlation coefficient
     z = 0.5*ln((1 + r)/(1 - r))
-    n = length(_psi)
+    n = minimum(length.(_psi))
     sigma_z = sqrt(1/(n - 3))
     zlow = z - cn*sigma_z
     zhigh = z + cn*sigma_z
     rlow = (zlow - 1)/(zlow + 1)
     rhigh = (zhigh - 1)/(zhigh + 1)
-    
     
     if r < psi
         @warn "correlation too low, r: $r"
