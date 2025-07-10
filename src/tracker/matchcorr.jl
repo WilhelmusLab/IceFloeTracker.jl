@@ -56,8 +56,8 @@ function matchcorr(
     sigma_z = sqrt(1/(n - 3))
     zlow = z - cn*sigma_z
     zhigh = z + cn*sigma_z
-    rlow = (zlow - 1)/(zlow + 1)
-    rhigh = (zhigh - 1)/(zhigh + 1)
+    rlow = (exp(2*zlow) - 1)/(exp(2*zlow) + 1)
+    rhigh = (exp(2*zhigh) - 1)/(exp(2*zhigh) + 1)
     
     if r < psi
         @warn "correlation too low, r: $r"
