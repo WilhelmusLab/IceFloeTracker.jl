@@ -51,7 +51,7 @@ function matchcorr(
     r = round(corr(_psi...), digits=3)
     
     # confidence interval for Pearson correlation coefficient
-    z = 0.5*ln((1 + r)/(1 - r))
+    z = 0.5*log((1 + r)/(1 - r))
     n = minimum(length.(_psi))
     sigma_z = sqrt(1/(n - 3))
     zlow = z - cn*sigma_z
