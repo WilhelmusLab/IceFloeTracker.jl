@@ -219,6 +219,11 @@ function get_time_space_proximity_condition(
            (delta_time >= search_thresholds.dt[3] && d < search_thresholds.dist[3])
 end
 
+### dmw: add new function here
+# question: how to handle docs for multiple versions of function?
+# get_time_space_proximity_condition(d, delta_time, max_velocity)
+
+
 """
     get_large_floe_condition(
     area1,
