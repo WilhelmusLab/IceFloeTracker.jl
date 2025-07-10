@@ -79,7 +79,7 @@ function matchcorr(
     #     mm = 0.0
     # end
     
-    return (mm=mm, c=r, ci=(rlow, rhigh))
+    return (mm=mm, c=r, corr_ci=(rlow, rhigh), mm_ci=(NaN, NaN))
 end
 
 """
