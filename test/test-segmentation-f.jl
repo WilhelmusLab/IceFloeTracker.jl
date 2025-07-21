@@ -24,7 +24,7 @@
         segmentation_B_ice_intersect[ice_floe_test_region...],
         watershed_intersect[ice_floe_test_region...],
         ice_labels,
-        cloudmask[ice_floe_test_region...],
+        .!cloudmask[ice_floe_test_region...],
         landmask[ice_floe_test_region...],
     )
 
