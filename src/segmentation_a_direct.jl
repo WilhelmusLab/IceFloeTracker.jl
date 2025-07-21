@@ -62,7 +62,8 @@ function segmented_ice_cloudmasking(
     gray_image::Matrix{Gray{Float64}}, cloudmask::BitMatrix, ice_labels::Vector{Int64}
 )::BitMatrix
     segmented_ice = IceFloeTracker.kmeans_segmentation(gray_image, ice_labels)
-    segmented_ice_cloudmasked = segmented_ice .* cloudmask
+    segmented_ice_cloudmasked = deepcopy(segmented_ice) 
+    segmented_ice_cloudmasked[cloudmask] .= 0
     return segmented_ice_cloudmasked
 end
 
