@@ -204,3 +204,22 @@ function get_tiles(array; rblocks, cblocks)
     tile_size = (rtile ÷ rblocks, ctile ÷ cblocks)
     return TileIterator(axes(array), tile_size)
 end
+
+abstract type AbstractTilingAlgorithm end
+
+@kwdef struct PixelCountTilingAlgorithm <: AbstractTilingAlgorithm
+    side_length::Int
+end
+
+function (a::PixelCountTilingAlgorithm)(array)
+    return get_tiles(array, a.side_length)
+end
+
+@kwdef struct BlockCountTilingAlgorithm <: AbstractTilingAlgorithm
+    rblocks::Int
+    cblocks::Int
+end
+
+function (a::BlockCountTilingAlgorithm)(array)
+    return get_tiles(array; rblocks=a.rblocks, cblocks=a.cblocks)
+end
