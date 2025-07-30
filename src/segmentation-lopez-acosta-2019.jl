@@ -22,6 +22,7 @@ function (p::LopezAcosta2019)(
     landmask_imgs = create_landmask(landmask_image, p.landmask_structuring_element)
 
     @info "Building cloudmask"
+    # TODO: @hollandjg track down why the cloudmask is different for float32 vs float64 input images
     cloudmask = create_cloudmask(falsecolor_image)
 
     # 2. Intermediate images
@@ -67,6 +68,7 @@ function (p::LopezAcosta2019)(
     watersheds_segB_product = watershed_product(watersheds_segB...)
 
     # segmentation_F
+    # TODO: @hollandjg find out why segF is more dilated
     @info "Segmenting floes part 3/3"
     segF = segmentation_F(
         segB.not_ice,
