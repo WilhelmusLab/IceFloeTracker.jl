@@ -14,14 +14,20 @@ using Images: segment_labels, segment_mean, labels_map
             supported_types = [n0f8, n6f10, n4f12, n2f14, n0f16, float32, float64]
             for target_type in supported_types
                 @info "Image type: $target_type"
-                segments = LopezAcosta2019()(
+                segments, intermediate_results = LopezAcosta2019()(
                     target_type.(truecolor[region...]),
                     target_type.(falsecolor[region...]),
-                    target_type.(landmask[region...]),
+                    target_type.(landmask[region...]);
+                    return_intermediate_results=true,
+                )
+                datestamp = Dates.format(Dates.now(), "yyyy-mm-dd-HHMMSS")
+                save_intermediate_images(
+                    "./test_outputs/segmentation-Lopez-Acosta-2019-$(target_type)-$(datestamp)-intermediate-results/",
+                    intermediate_results,
                 )
                 @show segments
                 save(
-                    "./test_outputs/segmentation-Lopez-Acosta-2019-mean-labels_$(target_type)_$(Dates.format(Dates.now(), "yyyy-mm-dd-HHMMSS")).png",
+                    "./test_outputs/segmentation-Lopez-Acosta-2019-$(target_type)-$(datestamp)-mean-labels.png",
                     map(i -> segment_mean(segments, i), labels_map(segments)),
                 )
                 @test length(segment_labels(segments)) == 10
