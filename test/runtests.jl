@@ -11,6 +11,7 @@ using TiledIteration
 using ZipFile
 include("test_error_rate.jl")
 include("config.jl")
+include("utils.jl")
 
 function pad_string(str::String, total_length::Int=49, padding_char::Char='-')
     # Calculate the padding needed on each side
