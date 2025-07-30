@@ -49,11 +49,19 @@ using Images: segment_labels, segment_mean, labels_map
                 @test length(segment_labels(segments)) == 10
             end
         end
-        @ntestset "Full size" begin
-            segments = LopezAcosta2019()(truecolor, falsecolor, landmask)
+        @ntestset "Medium size" begin
+            segments, intermediate_results = LopezAcosta2019()(
+                truecolor, falsecolor, landmask; return_intermediate_results=true
+            )
             @show segments
+            datestamp = Dates.format(Dates.now(), "yyyy-mm-dd-HHMMSS")
+            save_intermediate_images(
+                "./test_outputs/segmentation-LopezAcosta2019-medium-size-$(datestamp)-intermediate-results/",
+                intermediate_results;
+                names=intermediate_result_image_names,
+            )
             save(
-                "./test_outputs/segmentation-Lopez-Acosta-2019-mean-labels_$(Dates.format(Dates.now(), "yyyy-mm-dd-HHMMSS")).png",
+                "./test_outputs/segmentation-LopezAcosta2019-medium-size-$(datestamp)-mean-labels.png",
                 map(i -> segment_mean(segments, i), labels_map(segments)),
             )
             @test length(segment_labels(segments)) == 44
