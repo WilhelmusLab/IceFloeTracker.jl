@@ -2063,7 +2063,7 @@ end
     end
 end
 
-@testset "registration mismatch tests" begin
+@ntestset "registration mismatch tests" begin
     # Read in floe from file
     floe = readdlm("./test_inputs/floetorotate.csv", ',', Bool)
 
@@ -2072,13 +2072,27 @@ end
 
     # Rotate floe
     rotated_floe = imrotate(floe, deg2rad(rot_angle))
+    @ntestset "defaults" begin
 
-    # Estimate rigid transformation and mismatch
-    mm, rot = IceFloeTracker.mismatch(floe, rotated_floe)
+        # Estimate rigid transformation and mismatch
+        mm, rot = IceFloeTracker.mismatch(floe, rotated_floe)
 
-    # Test 1: mismatch accuracy
-    @test mm < 0.0055
+        # Test 1: mismatch accuracy
+        @test mm < 0.0055
 
-    # Test 2: angle estimate
-    @test abs(rot - rot_angle) < 0.5
+        # Test 2: angle estimate
+        @test abs(rot - rot_angle) < 0.5
+    end
+
+    @ntestset "test_angles" begin
+        test_angles = [0, 5, -5, 10, -10, 15, -15, 20, -20, 25, -25]
+        mm, rot = IceFloeTracker.mismatch(floe, rotated_floe, test_angles)
+        @test mm < 0.0055
+        @test abs(rot - rot_angle) < 0.5
+    end
+    @ntestset "mxrot, step" begin
+        mm, rot = IceFloeTracker.mismatch(floe, rotated_floe, 25, 5)
+        @test mm < 0.0055
+        @test abs(rot - rot_angle) < 0.5
+    end
 end
