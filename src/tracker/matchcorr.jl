@@ -50,8 +50,9 @@ function matchcorr(
     end
 
     # check if the time difference is too large or the rotation is too large
-    _mm, rot = mismatch(f1, f2; mxrot=deg2rad(mxrot))
-    if all([Δt < 300, rot > mxrot]) || _mm > mm
+    step_deg = 1
+    _mm, rot = mismatch(f1, f2, mxrot, step_deg)
+    if all([Δt < max_dt_minutes, rot > mxrot]) || _mm > mm
         @warn "time difference too small for a large rotation or mismatch too large\nmm: $mm, rot: $rot"
         return (mm=NaN, c=NaN)
     end
