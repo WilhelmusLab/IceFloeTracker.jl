@@ -9,10 +9,7 @@ function LopezAcosta2019(; landmask_structuring_element=make_landmask_se())
 end
 
 function (p::LopezAcosta2019)(
-    truecolor::T,
-    falsecolor::T,
-    landmask::U;
-    return_intermediate_results::Bool=False,
+    truecolor::T, falsecolor::T, landmask::U; return_intermediate_results::Bool=false
 ) where {T<:AbstractMatrix{<:AbstractRGB},U<:AbstractMatrix}
 
     # Move these conversions down through the function as each step gets support for 
