@@ -1,4 +1,16 @@
+"""
+function save_intermediate_images(
+    directory::AbstractString,
+    results::Dict;
+    extension::AbstractString=".png",
+    names::Union{AbstractArray{Symbol},Nothing}=nothing,
+)
 
+Save images from a `results` Dict to a `directory` using the names in the dictionary as file names.
+Optional arguments:
+- `names` – only dictionary entries with these keys will be saved; others will be ignored
+- `extension` – the file extension to use (implies the image type)
+"""
 function save_intermediate_images(
     directory::AbstractString,
     results::Dict;
