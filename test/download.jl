@@ -1,22 +1,23 @@
-using Downloads: download
+using Downloads: download, RequestError
 using CSV
 using Dates
 
 abstract type ValidationData end
 
 @kwdef struct Watkins2025GitHub <: ValidationData
-    url::AbstractString = "https://raw.githubusercontent.com/danielmwatkins/ice_floe_validation_dataset/refs/heads/main/"
+    url::AbstractString = "https://raw.githubusercontent.com/danielmwatkins/ice_floe_validation_dataset/refs/heads/"
+    branch::AbstractString = "main"
     dataset_metadata_path::AbstractString = "data/validation_dataset/validation_dataset.csv"
     target_directory::AbstractString = "./Watkins2025GitHub"
 end
 
 function (p::ValidationData)(; kwargs...)
-    mkpath(p.target_directory)
-
-    # TODO: cache this and use the commit SHA to invalidate caches
-    metadata_url = joinpath(p.url, p.dataset_metadata_path)
-    metadata_path = joinpath(p.target_directory, splitpath(p.dataset_metadata_path)[end])
-    download(metadata_url, metadata_path)
+    metadata_url = joinpath(p.url, p.branch, p.dataset_metadata_path)
+    metadata_path = joinpath(
+        p.target_directory, p.branch, splitpath(p.dataset_metadata_path)[end]
+    )
+    mkpath(dirname(metadata_path))
+    isfile(metadata_path) || download(metadata_url, metadata_path) # Only download if the file doesn't already exist
     metadata = CSV.File(metadata_path)
     @show metadata
 
@@ -31,6 +32,16 @@ function load_case(case::CSV.Row, p::Watkins2025GitHub)
     pixel_scale = "250m"
     image_side_length = "100km"
     ext = "tiff"
+
+    output_directory = joinpath(
+        p.target_directory,
+        p.branch,
+        "$(case_number)-$(region)-$(image_side_length)-$(date)-$(satellite)-$(pixel_scale)",
+    )
+    mkpath(output_directory)
+
+    metadata_path = joinpath(output_directory, "case_metadata.csv")
+    isfile(metadata_path) || CSV.write(metadata_path, [case])
 
     modis_truecolor = (;
         source="data/modis/truecolor/$(case_number)-$(region)-$(image_side_length)-$(date).$(satellite).truecolor.$(pixel_scale).$(ext)",
@@ -69,11 +80,6 @@ function load_case(case::CSV.Row, p::Watkins2025GitHub)
         target="validated_floe_properties.csv",
     )
 
-    output_directory = joinpath(
-        p.target_directory,
-        "$(case_number)-$(region)-$(image_side_length)-$(date)-$(satellite)-$(pixel_scale)",
-    )
-
     for image in [
         modis_truecolor,
         modis_falsecolor,
@@ -85,12 +91,19 @@ function load_case(case::CSV.Row, p::Watkins2025GitHub)
         validated_labeled_floes,
         validated_floe_properties,
     ]
-        image_url = joinpath(p.url, image.source)
+        image_url = joinpath(p.url, p.branch, image.source)
         image_path = joinpath(output_directory, image.target)
         isfile(image_path) && continue  # don't download a second time if we already have the file
-        mkpath(dirname(image_path))
         @debug "downloading $(image_url) to $(image_path)"
-        download(image_url, image_path)
+        try
+            download(image_url, image_path)
+        catch e
+            if isa(e, RequestError)
+                @show "$(image_url) missing"
+            else
+                rethrow(e)
+            end
+        end
     end
 
     return nothing
