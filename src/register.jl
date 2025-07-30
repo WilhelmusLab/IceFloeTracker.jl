@@ -109,7 +109,9 @@ The default registration angles are evenly distributed in steps of π/36 rad (5�
 ensuring that no angles are repeated (since -π rad == π rad),
 and ordered so that smaller absolute angles which are positive will be returned in the event of a tie in the shape difference.
 """
-register_default_angles_rad = sort(reverse(range(; start=-π, stop=π, step=π / 36)[1:(end-1)]); by=abs)
+register_default_angles_rad = sort(
+    reverse(range(; start=-π, stop=π, step=π / 36)[1:(end - 1)]); by=abs
+)
 
 """
 Finds the image rotation angle in `test_angles` which minimizes the shape difference between `im_reference` and `im_target`.
@@ -122,7 +124,9 @@ function register(
     test_angles=register_default_angles_rad,
     imrotate_function=imrotate_bin_clockwise_radians,
 )
-    shape_differences = shape_difference_rotation(im_reference, im_target, test_angles; imrotate_function)
+    shape_differences = shape_difference_rotation(
+        im_reference, im_target, test_angles; imrotate_function
+    )
     best_match = argmin((x) -> x.shape_difference, shape_differences)
     return best_match.angle
 end
