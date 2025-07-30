@@ -35,12 +35,12 @@ using IceFloeTracker:
 
 # Sample input parameters expected by the main function
 cloud_mask_thresholds = (
-    prelim_threshold=110.0/255.,
-    band_7_threshold=200.0/255.,
-    band_2_threshold=190.0/255.,
+    prelim_threshold=110.0 / 255.0,
+    band_7_threshold=200.0 / 255.0,
+    band_2_threshold=190.0 / 255.0,
     ratio_lower=0.0,
     ratio_upper=0.75,
-    r_offset=0.0
+    r_offset=0.0,
 )
 
 adapthisteq_params = (
@@ -76,7 +76,7 @@ function preprocess_tiling(
     true_color_image,
     landmask,
     tiles,
-    cloud_mask_thresholds,
+    cloud_mask_algorithm::AbstractCloudMaskAlgorithm,
     adapthisteq_params,
     adjust_gamma_params,
     structuring_elements,
@@ -87,9 +87,7 @@ function preprocess_tiling(
 )
     begin
         @debug "Step 1/2: Create and apply cloudmask to reference image"
-        
-        cloudmask = IceFloeTracker.create_cloudmask(ref_image,
-                                LopezAcostaCloudMask(cloud_mask_thresholds...))
+        cloudmask = cloud_mask_algorithm(ref_image)
         ref_img_cloudmasked = IceFloeTracker.apply_cloudmask(ref_image, cloudmask)
     end
 
@@ -195,12 +193,18 @@ function preprocess_tiling(
     end
 
     begin
-        @debug "Step 14: Get final mask"
+        @debug "Step 14: Get segments"
         se = structuring_elements
         se_erosion = se.se_disk1
         se_dilation = se.se_disk2
-        final = get_final(icemask, segment_mask, se_erosion, se_dilation)
+        segmented_floes = get_final(icemask, segment_mask, se_erosion, se_dilation)
     end
 
-    return final
+    begin
+        @debug "Step 15: Label floes"
+        labels = label_components(segmented_floes)
+        segments = ImageSegmentation.SegmentedImage(ref_image, labels)
+    end
+
+    return segments
 end
