@@ -128,19 +128,11 @@ function register(
 end
 
 """
-The default registration angles are evenly distributed in steps of 5º around a full rotation,
-ensuring that no angles are repeated (since -180º == -180º),
-and ordered so that smaller absolute angles which are positive will be returned in the event of a tie in the shape difference.
-"""
-register_default_angles_deg = sort(reverse(range(; start=-180, stop=180, step=5)[1:(end-1)]); by=abs)
-
-
-"""
     mismatch(
         fixed::AbstractArray,
         moving::AbstractArray,
         test_angles::AbstractArray,
-    )                   
+    )
 
 Estimate a rotation that minimizes the 'mismatch' of aligning `moving` with `fixed`.
 
@@ -148,15 +140,14 @@ Returns a pair with the mismatch score `mm` and the associated registration angl
 
 # Arguments
 - `fixed`,`moving`: images to align via a rigid transformation
-- `test_angles`: candidate angles to check for rotations by, in degrees
+- `test_angles`: candidate angles to check for rotations by, in degrees. 
+  In the case of a tie in the shape difference, the earlier angle from this array will be returned.
 ```
 """
-function mismatch(
-    fixed::AbstractArray,
-    moving::AbstractArray;
-    test_angles=register_default_angles_deg,
-)
-    shape_differences = shape_difference_rotation(fixed, moving, test_angles; imrotate_function=imrotate_bin_clockwise_degrees)
+function mismatch(fixed::AbstractArray, moving::AbstractArray, test_angles::AbstractArray)
+    shape_differences = shape_difference_rotation(
+        fixed, moving, test_angles; imrotate_function=imrotate_bin_clockwise_degrees
+    )
     best_match = argmin((x) -> x.shape_difference, shape_differences)
     rotation_degrees = best_match.angle
     normalized_area = (sum(fixed) + sum(moving)) / 2
@@ -164,3 +155,34 @@ function mismatch(
     return (mm=normalized_mismatch, rot=rotation_degrees)
 end
 
+"""
+    mismatch(
+        fixed::AbstractArray,
+        moving::AbstractArray,
+        mxrot::Real,
+        step::Real,
+    )
+
+Estimate a rotation that minimizes the 'mismatch' of aligning `moving` with `fixed`.
+
+Returns a pair with the mismatch score `mm` and the associated registration angle `rot`.
+
+# Arguments
+- `fixed`,`moving`: images to align via a rigid transformation
+- `mxrot`: maximum rotation angle in degrees
+- `step`: rotation angle step size in degrees
+
+The default registration angles are evenly distributed in steps of 5º around a full rotation,
+ensuring that no angles are repeated (since -180º == +180º).
+
+Angles are ordered so that smaller absolute angles which are positive will be returned in the event of a tie in the shape difference.
+```
+"""
+function mismatch(
+    fixed::AbstractArray, moving::AbstractArray, mxrot::Real=180, step::Real=5
+)
+    test_angles = sort(
+        reverse(range(; start=-mxrot, stop=mxrot, step=step)[1:(end - 1)]); by=abs
+    )
+    return mismatch(fixed, moving, test_angles)
+end
