@@ -26,15 +26,15 @@ abstract type ValidationDataLoader end
 
 @kwdef struct Watkins2025GitHub <: ValidationDataLoader
     url::AbstractString = "https://raw.githubusercontent.com/danielmwatkins/ice_floe_validation_dataset/refs/heads/"
-    branch::AbstractString = "main"
+    ref::AbstractString = "main"
     dataset_metadata_path::AbstractString = "data/validation_dataset/validation_dataset.csv"
     target_directory::AbstractString = "./Watkins2025GitHub"
 end
 
 function (p::ValidationDataLoader)(; kwargs...)
-    metadata_url = joinpath(p.url, p.branch, p.dataset_metadata_path)
+    metadata_url = joinpath(p.url, p.ref, p.dataset_metadata_path)
     metadata_path = joinpath(
-        p.target_directory, p.branch, splitpath(p.dataset_metadata_path)[end]
+        p.target_directory, p.ref, splitpath(p.dataset_metadata_path)[end]
     )
     mkpath(dirname(metadata_path))
     isfile(metadata_path) || download(metadata_url, metadata_path) # Only download if the file doesn't already exist
@@ -60,7 +60,7 @@ function load_case(case::CSV.Row, p::Watkins2025GitHub)
 
     output_directory = joinpath(
         p.target_directory,
-        p.branch,
+        p.ref,
         "$(case_number)-$(region)-$(image_side_length)-$(date)-$(satellite)-$(pixel_scale)",
     )
     mkpath(output_directory)
@@ -126,7 +126,7 @@ function load_case(case::CSV.Row, p::Watkins2025GitHub)
         validated_floe_properties,
     ]
         try
-            file_url = joinpath(p.url, p.branch, file_information.source)
+            file_url = joinpath(p.url, p.ref, file_information.source)
             file_path = joinpath(output_directory, file_information.target)
             validation_data_dict[file_information.name] = get_file(file_url, file_path)
         catch e
