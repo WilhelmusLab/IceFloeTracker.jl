@@ -38,8 +38,8 @@ function (p::ValidationDataLoader)(; kwargs...)
     mkpath(dirname(metadata_path))
     isfile(metadata_path) || download(metadata_url, metadata_path) # Only download if the file doesn't already exist
     metadata = CSV.File(metadata_path)
-    generator = (load_case(case, p) for case in metadata)
-    return (;data, metadata)
+    data = (load_case(case, p) for case in metadata)
+    return (; data, metadata)
 end
 
 function case_name(case::CSV.Row)
@@ -54,10 +54,8 @@ function case_name(case::CSV.Row)
 end
 
 function load_case(case::CSV.Row, p::Watkins2025GitHub)
-    validation_data_dict = Dict()
-    validation_data_dict[:metadata] = Dict(
-        symbol => case[symbol] for symbol in propertynames(case)
-    )
+    data_dict = Dict()
+    data_dict[:metadata] = Dict(symbol => case[symbol] for symbol in propertynames(case))
 
     case_number = lpad(case.case_number, 3, "0")
     region = case.region
@@ -68,7 +66,7 @@ function load_case(case::CSV.Row, p::Watkins2025GitHub)
     ext = "tiff"
 
     name = case_name(case)
-    validation_data_dict[:name] = name
+    data_dict[:name] = name
 
     output_directory = joinpath(p.cache_dir, p.ref, name)
     mkpath(output_directory)
@@ -135,23 +133,23 @@ function load_case(case::CSV.Row, p::Watkins2025GitHub)
     ]
         file_url = joinpath(p.url, p.ref, file_information.source)
         file_path = joinpath(output_directory, file_information.target)
-        validation_data_dict[file_information.name] = get_file(file_url, file_path)
+        data_dict[file_information.name] = get_file(file_url, file_path)
     end
 
     # Conversions
-    if !isnothing(validation_data_dict[:validated_labeled_floes])
-        validation_data_dict[:validated_labeled_floes] = SegmentedImage(
-            validation_data_dict[:modis_truecolor],
-            Int.(validation_data_dict[:validated_labeled_floes]),
+    if !isnothing(data_dict[:validated_labeled_floes]) &&
+        !isnothing(data_dict[:modis_truecolor])
+        data_dict[:validated_labeled_floes] = SegmentedImage(
+            data_dict[:modis_truecolor], Int.(data_dict[:validated_labeled_floes])
         )
     end
-    if !isnothing(validation_data_dict[:validated_binary_floes])
-        validation_data_dict[:validated_binary_floes] =
-            Gray.(Gray.(validation_data_dict[:validated_binary_floes]) .> 0.5)
+    if !isnothing(data_dict[:validated_binary_floes])
+        data_dict[:validated_binary_floes] =
+            Gray.(Gray.(data_dict[:validated_binary_floes]) .> 0.5)
     end
 
-    validation_data = ValidationDataCase(; validation_data_dict...)
-    return validation_data
+    data_struct = ValidationDataCase(; data_dict...)
+    return data_struct
 end
 
 function get_file(file_url, file_path)
