@@ -42,16 +42,6 @@ function (p::ValidationDataLoader)(; kwargs...)
     return (; data, metadata)
 end
 
-function case_name(case::CSV.Row)
-    case_number = lpad(case.case_number, 3, "0")
-    region = case.region
-    date = Dates.format(case.start_date, "yyyymmdd")
-    satellite = case.satellite
-    pixel_scale = "250m"
-    image_side_length = "100km"
-    name = "$(case_number)-$(region)-$(image_side_length)-$(date)-$(satellite)-$(pixel_scale)"
-    return name
-end
 
 function load_case(case::CSV.Row, p::Watkins2025GitHub)
     data_dict = Dict()
@@ -65,7 +55,7 @@ function load_case(case::CSV.Row, p::Watkins2025GitHub)
     image_side_length = "100km"
     ext = "tiff"
 
-    name = case_name(case)
+    name = "$(case_number)-$(region)-$(image_side_length)-$(date)-$(satellite)-$(pixel_scale)"
     data_dict[:name] = name
 
     output_directory = joinpath(p.cache_dir, p.ref, name)
