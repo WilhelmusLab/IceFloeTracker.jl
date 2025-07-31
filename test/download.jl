@@ -29,14 +29,12 @@ abstract type ValidationDataLoader end
     url::AbstractString = "https://github.com/danielmwatkins/ice_floe_validation_dataset/raw/"
     ref::AbstractString = "main"
     dataset_metadata_path::AbstractString = "data/validation_dataset/validation_dataset.csv"
-    target_directory::AbstractString = "./Watkins2025GitHub"
+    cache_dir::AbstractString = "./Watkins2025GitHub"
 end
 
 function (p::ValidationDataLoader)(; kwargs...)
     metadata_url = joinpath(p.url, p.ref, p.dataset_metadata_path)
-    metadata_path = joinpath(
-        p.target_directory, p.ref, splitpath(p.dataset_metadata_path)[end]
-    )
+    metadata_path = joinpath(p.cache_dir, p.ref, splitpath(p.dataset_metadata_path)[end])
     mkpath(dirname(metadata_path))
     isfile(metadata_path) || download(metadata_url, metadata_path) # Only download if the file doesn't already exist
     metadata = CSV.File(metadata_path)
@@ -72,7 +70,7 @@ function load_case(case::CSV.Row, p::Watkins2025GitHub)
     name = case_name(case)
     validation_data_dict[:name] = name
 
-    output_directory = joinpath(p.target_directory, p.ref, name)
+    output_directory = joinpath(p.cache_dir, p.ref, name)
     mkpath(output_directory)
 
     metadata_path = joinpath(output_directory, "case_metadata.csv")

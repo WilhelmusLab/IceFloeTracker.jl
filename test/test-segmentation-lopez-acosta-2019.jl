@@ -29,7 +29,7 @@ using Images: segment_labels, segment_mean, labels_map
         end
         @ntestset "Validated data" begin
             data_loader = Watkins2025GitHub(;
-                target_directory="./__temp__/Watkins2025GitHub",
+                cache_dir="./__temp__/Watkins2025GitHub",
                 ref="a451cd5e62a10309a9640fbbe6b32a236fcebc70",
             )
             dataset = data_loader()
