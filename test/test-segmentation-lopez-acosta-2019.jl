@@ -27,6 +27,37 @@ using Images: segment_labels, segment_mean, labels_map
                 @test length(segment_labels(segments)) == 10
             end
         end
+        @ntestset "Validated data" begin
+            data_loader = Watkins2025GitHub(;
+                target_directory="./__temp__/Watkins2025GitHub",
+                ref="a451cd5e62a10309a9640fbbe6b32a236fcebc70",
+            )
+            dataset = data_loader()
+            results = []
+            for case in dataset
+                name = case_name(case)
+                try
+                    validation_data = load_case(case, data_loader)
+                    segments = LopezAcosta2019()(
+                        RGB.(validation_data.modis_truecolor),
+                        RGB.(validation_data.modis_falsecolor),
+                        validation_data.modis_landmask,
+                    )
+                    @show segments
+                    save(
+                        "./test_outputs/segmentation-LopezAcosta2019-$(name)_$(Dates.format(Dates.now(), "yyyy-mm-dd-HHMMSS"))-mean-labels.png",
+                        map(i -> segment_mean(segments, i), labels_map(segments)),
+                    )
+                    push!(results, (; name, success=true, error=nothing))
+                catch e
+                    @warn "$(name) failed, $(e)"
+                    push!(results, (; name, success=false, error=e))
+                end
+            end
+            results_df = DataFrame(results)
+            @info "Validated dataset processing run"
+            @info sort(results_df)
+        end
         @ntestset "Full size" begin
             segments = LopezAcosta2019()(truecolor, falsecolor, landmask)
             @show segments
