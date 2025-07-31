@@ -34,10 +34,9 @@ using Images: segment_labels, segment_mean, labels_map
             )
             dataset = data_loader()
             results = []
-            for case in dataset
-                name = case_name(case)
+            for validation_data in dataset.data
+                name = validation_data.name
                 try
-                    validation_data = load_case(case, data_loader)
                     segments = LopezAcosta2019()(
                         RGB.(validation_data.modis_truecolor),
                         RGB.(validation_data.modis_falsecolor),
@@ -53,10 +52,9 @@ using Images: segment_labels, segment_mean, labels_map
                     @warn "$(name) failed, $(e)"
                     push!(results, (; name, success=false, error=e))
                 end
+                results_df = DataFrame(results)
+                @info sort(results_df)
             end
-            results_df = DataFrame(results)
-            @info "Validated dataset processing run"
-            @info sort(results_df)
         end
         @ntestset "Full size" begin
             segments = LopezAcosta2019()(truecolor, falsecolor, landmask)

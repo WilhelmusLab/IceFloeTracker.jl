@@ -38,8 +38,8 @@ function (p::ValidationDataLoader)(; kwargs...)
     mkpath(dirname(metadata_path))
     isfile(metadata_path) || download(metadata_url, metadata_path) # Only download if the file doesn't already exist
     metadata = CSV.File(metadata_path)
-
-    return metadata
+    generator = (load_case(case, p) for case in metadata)
+    return (;data, metadata)
 end
 
 function case_name(case::CSV.Row)
@@ -155,7 +155,7 @@ function load_case(case::CSV.Row, p::Watkins2025GitHub)
 end
 
 function get_file(file_url, file_path)
-    @info "looking for file at $(file_path). File exists: $(isfile(file_path))"
+    @debug "looking for file at $(file_path). File exists: $(isfile(file_path))"
     if !isfile(file_path)
         try
             download(file_url, file_path)
