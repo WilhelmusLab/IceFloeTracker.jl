@@ -7,25 +7,26 @@ using CSVFiles
 using DataFrames
 
 @kwdef struct ValidationDataCase
-    metadata::Union{AbstractDict,Missing} = missing
+    name::AbstractString = nothing
+    metadata::Union{AbstractDict,Nothing} = nothing
 
     # TODO: add types
-    modis_truecolor::Union{AbstractArray,Missing} = missing
-    modis_falsecolor::Union{AbstractArray,Missing} = missing
-    modis_landmask::Union{AbstractArray,Missing} = missing
-    modis_cloudfraction::Union{AbstractArray,Missing} = missing
-    maisie_landmask::Union{AbstractArray,Missing} = missing
-    maisie_seaice::Union{AbstractArray,Missing} = missing
+    modis_truecolor::Union{AbstractArray,Nothing} = nothing
+    modis_falsecolor::Union{AbstractArray,Nothing} = nothing
+    modis_landmask::Union{AbstractArray,Nothing} = nothing
+    modis_cloudfraction::Union{AbstractArray,Nothing} = nothing
+    maisie_landmask::Union{AbstractArray,Nothing} = nothing
+    maisie_seaice::Union{AbstractArray,Nothing} = nothing
 
-    validated_binary_floes::Union{AbstractArray{Gray{Bool}},Missing} = missing
-    validated_labeled_floes::Union{SegmentedImage,Missing} = missing
-    validated_floe_properties::Union{CSVFiles.CSVFile,Missing} = missing
+    validated_binary_floes::Union{AbstractArray{Gray{Bool}},Nothing} = nothing
+    validated_labeled_floes::Union{SegmentedImage,Nothing} = nothing
+    validated_floe_properties::Union{CSVFiles.CSVFile,Nothing} = nothing
 end
 
 abstract type ValidationDataLoader end
 
 @kwdef struct Watkins2025GitHub <: ValidationDataLoader
-    url::AbstractString = "https://raw.githubusercontent.com/danielmwatkins/ice_floe_validation_dataset/refs/heads/"
+    url::AbstractString = "https://github.com/danielmwatkins/ice_floe_validation_dataset/raw/"
     ref::AbstractString = "main"
     dataset_metadata_path::AbstractString = "data/validation_dataset/validation_dataset.csv"
     target_directory::AbstractString = "./Watkins2025GitHub"
@@ -39,9 +40,19 @@ function (p::ValidationDataLoader)(; kwargs...)
     mkpath(dirname(metadata_path))
     isfile(metadata_path) || download(metadata_url, metadata_path) # Only download if the file doesn't already exist
     metadata = CSV.File(metadata_path)
-    @show metadata
 
     return metadata
+end
+
+function case_name(case::CSV.Row)
+    case_number = lpad(case.case_number, 3, "0")
+    region = case.region
+    date = Dates.format(case.start_date, "yyyymmdd")
+    satellite = case.satellite
+    pixel_scale = "250m"
+    image_side_length = "100km"
+    name = "$(case_number)-$(region)-$(image_side_length)-$(date)-$(satellite)-$(pixel_scale)"
+    return name
 end
 
 function load_case(case::CSV.Row, p::Watkins2025GitHub)
@@ -58,11 +69,10 @@ function load_case(case::CSV.Row, p::Watkins2025GitHub)
     image_side_length = "100km"
     ext = "tiff"
 
-    output_directory = joinpath(
-        p.target_directory,
-        p.ref,
-        "$(case_number)-$(region)-$(image_side_length)-$(date)-$(satellite)-$(pixel_scale)",
-    )
+    name = case_name(case)
+    validation_data_dict[:name] = name
+
+    output_directory = joinpath(p.target_directory, p.ref, name)
     mkpath(output_directory)
 
     metadata_path = joinpath(output_directory, "case_metadata.csv")
@@ -125,42 +135,41 @@ function load_case(case::CSV.Row, p::Watkins2025GitHub)
         validated_labeled_floes,
         validated_floe_properties,
     ]
-        try
-            file_url = joinpath(p.url, p.ref, file_information.source)
-            file_path = joinpath(output_directory, file_information.target)
-            validation_data_dict[file_information.name] = get_file(file_url, file_path)
-        catch e
-            if isa(e, RequestError)
-                @show "$(file_url) missing"
-            else
-                rethrow(e)
-            end
-        end
+        file_url = joinpath(p.url, p.ref, file_information.source)
+        file_path = joinpath(output_directory, file_information.target)
+        validation_data_dict[file_information.name] = get_file(file_url, file_path)
     end
 
     # Conversions
-    validation_data_dict[:validated_labeled_floes] = SegmentedImage(
-        validation_data_dict[:modis_truecolor],
-        Int.(validation_data_dict[:validated_labeled_floes]),
-    )
-    validation_data_dict[:validated_binary_floes] =
-        Gray.(Gray.(validation_data_dict[:validated_binary_floes]) .> 0.5)
+    if !isnothing(validation_data_dict[:validated_labeled_floes])
+        validation_data_dict[:validated_labeled_floes] = SegmentedImage(
+            validation_data_dict[:modis_truecolor],
+            Int.(validation_data_dict[:validated_labeled_floes]),
+        )
+    end
+    if !isnothing(validation_data_dict[:validated_binary_floes])
+        validation_data_dict[:validated_binary_floes] =
+            Gray.(Gray.(validation_data_dict[:validated_binary_floes]) .> 0.5)
+    end
 
     validation_data = ValidationDataCase(; validation_data_dict...)
     return validation_data
 end
 
 function get_file(file_url, file_path)
-    try
-        isfile(file_path) || download(file_url, file_path)
-        file = load(file_path)
-        return file
-    catch e
-        if isa(e, RequestError)
-            @show "$(file_url) missing"
-            return nothing
-        else
-            rethrow(e)
+    @info "looking for file at $(file_path). File exists: $(isfile(file_path))"
+    if !isfile(file_path)
+        try
+            download(file_url, file_path)
+        catch e
+            if isa(e, RequestError)
+                @warn "nothing at $(file_url)"
+                return nothing
+            else
+                rethrow(e)
+            end
         end
     end
+    file = load(file_path)
+    return file
 end
