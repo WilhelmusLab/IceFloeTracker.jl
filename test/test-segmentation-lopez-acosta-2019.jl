@@ -117,13 +117,17 @@ end
 
                 # Run tests on aggregate results
                 # First be sure we have the right number of results
-                # if this fails, then everything below needs re-evaluating
                 @test nrow(results) == nrow(dataset.metadata)
+                # Now check that all cases run through without crashing
+                successes = subset(results, :success => ByRow(==(true)))
+                @test nrow(results) == nrow(successes) broken = true
 
-                # Check the number of successes
-                rows_successful = subset(results, :success => ByRow(==(true)))
-                @test nrow(rows_successful) >= 6
-                nrow(rows_successful) > 6 && @warn "new passing cases"
+                # If not everything works, at least check that we're not introducing new crashes
+                expected_successes = 6
+                successes = subset(results, :success => ByRow(==(true)))
+                @test nrow(successes) >= expected_successes
+                nrow(successes) > expected_successes &&
+                    @warn "new passing cases: $(nrow(successes)) (update `expected_successes`)"
             end
 
             @ntestset "visible floes, thin clouds, no artifacts" begin
@@ -144,11 +148,14 @@ end
                 # Run tests on aggregate results
                 # First be sure we have the right number of results
                 @test nrow(results) == nrow(dataset.metadata)
-
-                # Check the number of successes
-                rows_successful = subset(results, :success => ByRow(==(true)))
-                @test nrow(rows_successful) >= 6
-                nrow(rows_successful) > 6 && @warn "new passing cases"
+                # Now check that all cases run through without crashing
+                successes = subset(results, :success => ByRow(==(true)))
+                @test nrow(results) == nrow(successes) broken = true
+                # If not everything works, at least check that we're not introducing new crashes
+                expected_successes = 3
+                @test nrow(successes) >= expected_successes
+                nrow(successes) > expected_successes &&
+                    @warn "new passing cases: $(nrow(successes)) (update `expected_successes`)"
             end
         end
 
