@@ -29,6 +29,72 @@ function segmentation_comparison(;
     return (; measured_area, validated_area, fractional_intersection)
 end
 
+function run_segmentation_over_multiple_cases(
+    cases,
+    algorithm::IceFloeSegmentationAlgorithm;
+    output_path::AbstractString="./test_outputs",
+    save_outputs::Bool=true,
+)
+    results = []
+    for case::ValidationDataCase in cases
+        validated = case.validated_labeled_floes
+        name = case.name
+        let measured, success, error
+            @info "starting $(name)"
+            try
+                measured = algorithm(
+                    RGB.(case.modis_truecolor),
+                    RGB.(case.modis_falsecolor),
+                    case.modis_landmask,
+                )
+                @info "$(name) succeeded"
+                success = true
+                error = nothing
+            catch error
+                @warn "$(name) failed: $(error)"
+                success = false
+                measured = nothing
+            end
+            datestamp = Dates.format(Dates.now(), "yyyy-mm-dd-HHMMSS")
+            save_outputs &&
+                !isnothing(measured) &&
+                save(
+                    joinpath(
+                        output_path,
+                        "segmentation-$(typeof(algorithm))-$(name)-$(datestamp)-mean-labels.png",
+                    ),
+                    map(i -> segment_mean(measured, i), labels_map(measured)),
+                )
+            save_outputs &&
+                !isnothing(validated) &&
+                save(
+                    joinpath(
+                        output_path,
+                        "segmentation-$(typeof(algorithm))-$(name)-$(datestamp)-validated-mean-labels.png",
+                    ),
+                    map(i -> segment_mean(validated, i), labels_map(validated)),
+                )
+            save_outputs &&
+                !isnothing(case.modis_truecolor) &&
+                save(
+                    joinpath(
+                        output_path,
+                        "segmentation-$(typeof(algorithm))-$(name)-$(datestamp)-truecolor.png",
+                    ),
+                    case.modis_truecolor,
+                )
+            push!(
+                results,
+                merge(
+                    (; name, success, error), segmentation_comparison(; validated, measured)
+                ),
+            )
+        end
+    end
+    results_df = DataFrame(results)
+    return results_df
+end
+
 @ntestset "$(@__FILE__)" begin
     @ntestset "Lopez-Acosta 2019" begin
         @ntestset "Validated data" begin
@@ -44,50 +110,9 @@ end
                     ),
                 )
                 results = []
-                for validation_data in happy_path_dataset.data
-                    name = validation_data.name
-                    validated = validation_data.validated_labeled_floes
-                    try
-                        measured = LopezAcosta2019()(
-                            RGB.(validation_data.modis_truecolor),
-                            RGB.(validation_data.modis_falsecolor),
-                            validation_data.modis_landmask,
-                        )
-                        @show measured
-                        datestamp = Dates.format(Dates.now(), "yyyy-mm-dd-HHMMSS")
-                        save(
-                            "./test_outputs/segmentation-LopezAcosta2019-$(name)-$(datestamp)-mean-labels.png",
-                            map(i -> segment_mean(measured, i), labels_map(measured)),
-                        )
-                        save(
-                            "./test_outputs/segmentation-LopezAcosta2019-$(name)-$(datestamp)-validated-mean-labels.png",
-                            map(i -> segment_mean(validated, i), labels_map(validated)),
-                        )
-                        save(
-                            "./test_outputs/segmentation-LopezAcosta2019-$(name)-$(datestamp)-truecolor.png",
-                            validation_data.modis_truecolor,
-                        )
-                        push!(
-                            results,
-                            merge(
-                                (; name, success=true, error=nothing),
-                                segmentation_comparison(; validated, measured),
-                            ),
-                        )
-                    catch e
-                        @warn "$(name) failed, $(e)"
-                        push!(
-                            results,
-                            merge(
-                                (; name, success=false, error=e),
-                                segmentation_comparison(;
-                                    validated=validated, measured=nothing
-                                ),
-                            ),
-                        )
-                    end
-                end
-                results_df = DataFrame(results)
+                results_df = run_segmentation_over_multiple_cases(
+                    happy_path_dataset.data, LopezAcosta2019()
+                )
                 @info results_df
             end
         end

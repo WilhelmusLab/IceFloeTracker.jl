@@ -43,6 +43,7 @@ export readdlm,
     imrotate,
     IFTVERSION,
     get_rotation_measurements,
+    IceFloeSegmentationAlgorithm,
     LopezAcosta2019
 
 # For IFTPipeline
