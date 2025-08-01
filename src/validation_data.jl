@@ -127,7 +127,7 @@ function _load_case(case, p::Watkins2025GitHub)::ValidationDataCase
     mkpath(output_directory)
 
     metadata_path = joinpath(output_directory, "case_metadata.csv")
-    isfile(metadata_path) || save(metadata_path, [case])
+    isfile(metadata_path) || save(metadata_path, DataFrame(case))
 
     modis_truecolor = (;
         source="data/modis/truecolor/$(case_number)-$(region)-$(image_side_length)-$(date).$(satellite).truecolor.$(pixel_scale).$(ext)",
