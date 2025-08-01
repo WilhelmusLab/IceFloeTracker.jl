@@ -29,7 +29,7 @@ abstract type ValidationDataLoader end
     url::AbstractString = "https://github.com/danielmwatkins/ice_floe_validation_dataset/raw/"
     ref::AbstractString = "main"
     dataset_metadata_path::AbstractString = "data/validation_dataset/validation_dataset.csv"
-    cache_dir::AbstractString = "./Watkins2025GitHub"
+    cache_dir::AbstractString = "/tmp/Watkins2025GitHub"
 end
 
 function (p::ValidationDataLoader)(; kwargs...)
