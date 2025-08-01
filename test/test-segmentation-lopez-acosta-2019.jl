@@ -66,6 +66,27 @@ using Images: segment_labels, segment_mean, labels_map
                 nrow(successes) > expected_successes &&
                     @warn "new passing cases: $(nrow(successes)) (update `expected_successes`)"
             end
+            @ntestset "random sample" begin
+                dataset = data_loader(; case_filter=c -> (c.case_number % 17 == 0))
+                @info dataset.metadata
+                results = run_segmentation_over_multiple_cases(
+                    dataset.data, LopezAcosta2019(); output_directory="./test_outputs/"
+                )
+                @info results
+
+                # Run tests on aggregate results
+                # First be sure we have the right number of results
+                @test nrow(results) == nrow(dataset.metadata)
+
+                # Now check that all cases run through without crashing
+                successes = subset(results, :success => ByRow(==(true)))
+                @test nrow(results) == nrow(successes) broken = true
+                # If not everything works, at least check that we're not introducing new crashes
+                expected_successes = 3
+                @test nrow(successes) >= expected_successes
+                nrow(successes) > expected_successes &&
+                    @warn "new passing cases: $(nrow(successes)) (update `expected_successes`)"
+            end
         end
 
         truecolor = load(
