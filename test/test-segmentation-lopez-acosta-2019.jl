@@ -40,12 +40,16 @@ function segmentation_comparison(;
     return (; normalized_validated_area, normalized_measured_area, fractional_intersection)
 end
 
+"""
+Run the `algorithm::IceFloeSegmentationAlgorithm` over each of the `cases` and return a DataFrame of the results.
+- Each `case` should be a ValidationDataCase.
+- If `output_directory` is defined, then save the output segmentations and images to the directory. 
+"""
 function run_segmentation_over_multiple_cases(
     cases,
     algorithm::IceFloeSegmentationAlgorithm;
-    output_path::AbstractString="./test_outputs",
-    save_outputs::Bool=true,
-)
+    output_directory::Union{AbstractString,Nothing}=nothing,
+)::DataFrame
     results = []
     for case::ValidationDataCase in cases
         validated = case.validated_labeled_floes
@@ -75,25 +79,26 @@ function run_segmentation_over_multiple_cases(
                 ),
             )
 
-            if save_outputs
+            if !isnothing(output_directory)
+                mkpath(output_directory)
                 datestamp = Dates.format(Dates.now(), "yyyy-mm-dd-HHMMSS")
                 !isnothing(measured) && save(
                     joinpath(
-                        output_path,
+                        output_directory,
                         "segmentation-$(typeof(algorithm))-$(name)-$(datestamp)-mean-labels.png",
                     ),
                     map(i -> segment_mean(measured, i), labels_map(measured)),
                 )
                 !isnothing(validated) && save(
                     joinpath(
-                        output_path,
+                        output_directory,
                         "segmentation-$(typeof(algorithm))-$(name)-$(datestamp)-validated-mean-labels.png",
                     ),
                     map(i -> segment_mean(validated, i), labels_map(validated)),
                 )
                 !isnothing(case.modis_truecolor) && save(
                     joinpath(
-                        output_path,
+                        output_directory,
                         "segmentation-$(typeof(algorithm))-$(name)-$(datestamp)-truecolor.png",
                     ),
                     case.modis_truecolor,
@@ -122,7 +127,7 @@ end
                 @info dataset.metadata
 
                 results = run_segmentation_over_multiple_cases(
-                    dataset.data, LopezAcosta2019()
+                    dataset.data, LopezAcosta2019(); output_directory="./test_outputs/"
                 )
                 @info results
 
@@ -153,7 +158,7 @@ end
                 )
                 @info dataset.metadata
                 results = run_segmentation_over_multiple_cases(
-                    dataset.data, LopezAcosta2019()
+                    dataset.data, LopezAcosta2019(); output_directory="./test_outputs/"
                 )
                 @info results
 
