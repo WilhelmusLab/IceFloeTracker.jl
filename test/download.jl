@@ -32,13 +32,13 @@ abstract type ValidationDataLoader end
     cache_dir::AbstractString = "/tmp/Watkins2025"
 end
 
-function (p::ValidationDataLoader)(; kwargs...)
+function (p::ValidationDataLoader)(; case_filter=(case) -> true)
     metadata_url = joinpath(p.url, p.ref, p.dataset_metadata_path)
     metadata_path = joinpath(p.cache_dir, p.ref, splitpath(p.dataset_metadata_path)[end])
     mkpath(dirname(metadata_path))
     isfile(metadata_path) || download(metadata_url, metadata_path) # Only download if the file doesn't already exist
     metadata = CSV.File(metadata_path)
-    data = (load_case(case, p) for case in metadata)
+    data = (load_case(case, p) for case in metadata if case_filter(case))
     return (; data, metadata)
 end
 
