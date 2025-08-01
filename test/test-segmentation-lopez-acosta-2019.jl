@@ -202,7 +202,6 @@ end
                 @test length(segment_labels(segments)) == 10
             end
         end
-
         @ntestset "Full size" begin
             segments = LopezAcosta2019()(truecolor, falsecolor, landmask)
             @show segments
