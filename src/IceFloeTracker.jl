@@ -44,7 +44,10 @@ export readdlm,
     IFTVERSION,
     get_rotation_measurements,
     IceFloeSegmentationAlgorithm,
-    LopezAcosta2019
+    LopezAcosta2019,
+    ValidationDataCase,
+    ValidationDataLoader,
+    Watkins2025GitHub
 
 # For IFTPipeline
 using HDF5
@@ -86,6 +89,7 @@ include("regularize-final.jl")
 include("latlon.jl")
 include("rotation.jl")
 include("segmentation-lopez-acosta-2019.jl")
+include("validation_data.jl")
 
 function get_version_from_toml(pth=dirname(dirname(pathof(IceFloeTracker))))::VersionNumber
     toml = TOML.parsefile(joinpath(pth, "Project.toml"))
