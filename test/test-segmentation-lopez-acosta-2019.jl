@@ -118,6 +118,7 @@ end
                 # Run tests on aggregate results
                 # First be sure we have the right number of results
                 @test nrow(results) == nrow(dataset.metadata)
+
                 # Now check that all cases run through without crashing
                 successes = subset(results, :success => ByRow(==(true)))
                 @test nrow(results) == nrow(successes) broken = true
@@ -148,6 +149,7 @@ end
                 # Run tests on aggregate results
                 # First be sure we have the right number of results
                 @test nrow(results) == nrow(dataset.metadata)
+
                 # Now check that all cases run through without crashing
                 successes = subset(results, :success => ByRow(==(true)))
                 @test nrow(results) == nrow(successes) broken = true
