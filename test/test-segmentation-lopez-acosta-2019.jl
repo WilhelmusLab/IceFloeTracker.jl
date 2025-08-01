@@ -1,6 +1,6 @@
 using Images: segment_labels, segment_mean, labels_map
 
-function segment_comparison(;
+function segmentation_comparison(;
     validated::Union{SegmentedImage,Nothing}=nothing,
     measured::Union{SegmentedImage,Nothing}=nothing,
 )::NamedTuple
@@ -71,7 +71,7 @@ end
                             results,
                             merge(
                                 (; name, success=true, error=nothing),
-                                segment_comparison(; validated, measured),
+                                segmentation_comparison(; validated, measured),
                             ),
                         )
                     catch e
@@ -80,7 +80,9 @@ end
                             results,
                             merge(
                                 (; name, success=false, error=e),
-                                segment_comparison(; validated=validated, measured=nothing),
+                                segmentation_comparison(;
+                                    validated=validated, measured=nothing
+                                ),
                             ),
                         )
                     end
