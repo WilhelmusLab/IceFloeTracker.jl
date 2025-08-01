@@ -86,8 +86,8 @@ Loader for validated ice floe data structured like https://github.com/danielmwat
     ```
 """
 @kwdef struct Watkins2025GitHub <: ValidationDataLoader
+    ref::AbstractString
     url::AbstractString = "https://github.com/danielmwatkins/ice_floe_validation_dataset/"
-    ref::AbstractString = "main" # TODO: replace with a tagged version
     dataset_metadata_path::AbstractString = "data/validation_dataset/validation_dataset.csv"
     cache_dir::AbstractString = "/tmp/Watkins2025"
 end
