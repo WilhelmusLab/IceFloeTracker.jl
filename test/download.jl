@@ -183,7 +183,7 @@ function _load_case(case::CSV.Row, p::Watkins2025GitHub)::ValidationDataCase
         validated_labeled_floes,
         validated_floe_properties,
     ]
-        file_url = joinpath(p.url, p.ref, file_information.source)
+        file_url = joinpath(p.url, "raw", p.ref, file_information.source)
         file_path = joinpath(output_directory, file_information.target)
         data_dict[file_information.name] = get_file(file_url, file_path)
     end
