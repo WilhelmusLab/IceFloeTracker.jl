@@ -42,7 +42,6 @@ function (p::ValidationDataLoader)(; kwargs...)
     return (; data, metadata)
 end
 
-
 function load_case(case::CSV.Row, p::Watkins2025GitHub)
     data_dict = Dict()
     data_dict[:metadata] = Dict(symbol => case[symbol] for symbol in propertynames(case))
@@ -149,7 +148,7 @@ function get_file(file_url, file_path)
             download(file_url, file_path)
         catch e
             if isa(e, RequestError)
-                @warn "nothing at $(file_url)"
+                @debug "nothing at $(file_url)"
                 return nothing
             else
                 rethrow(e)
