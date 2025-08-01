@@ -55,40 +55,39 @@ function run_segmentation_over_multiple_cases(
                 success = false
                 measured = nothing
             end
-            datestamp = Dates.format(Dates.now(), "yyyy-mm-dd-HHMMSS")
-            save_outputs &&
-                !isnothing(measured) &&
-                save(
-                    joinpath(
-                        output_path,
-                        "segmentation-$(typeof(algorithm))-$(name)-$(datestamp)-mean-labels.png",
-                    ),
-                    map(i -> segment_mean(measured, i), labels_map(measured)),
-                )
-            save_outputs &&
-                !isnothing(validated) &&
-                save(
-                    joinpath(
-                        output_path,
-                        "segmentation-$(typeof(algorithm))-$(name)-$(datestamp)-validated-mean-labels.png",
-                    ),
-                    map(i -> segment_mean(validated, i), labels_map(validated)),
-                )
-            save_outputs &&
-                !isnothing(case.modis_truecolor) &&
-                save(
-                    joinpath(
-                        output_path,
-                        "segmentation-$(typeof(algorithm))-$(name)-$(datestamp)-truecolor.png",
-                    ),
-                    case.modis_truecolor,
-                )
+
+            # Store the aggregate results
             push!(
                 results,
                 merge(
                     (; name, success, error), segmentation_comparison(; validated, measured)
                 ),
             )
+
+            if save_outputs
+                datestamp = Dates.format(Dates.now(), "yyyy-mm-dd-HHMMSS")
+                !isnothing(measured) && save(
+                    joinpath(
+                        output_path,
+                        "segmentation-$(typeof(algorithm))-$(name)-$(datestamp)-mean-labels.png",
+                    ),
+                    map(i -> segment_mean(measured, i), labels_map(measured)),
+                )
+                !isnothing(validated) && save(
+                    joinpath(
+                        output_path,
+                        "segmentation-$(typeof(algorithm))-$(name)-$(datestamp)-validated-mean-labels.png",
+                    ),
+                    map(i -> segment_mean(validated, i), labels_map(validated)),
+                )
+                !isnothing(case.modis_truecolor) && save(
+                    joinpath(
+                        output_path,
+                        "segmentation-$(typeof(algorithm))-$(name)-$(datestamp)-truecolor.png",
+                    ),
+                    case.modis_truecolor,
+                )
+            end
         end
     end
     results_df = DataFrame(results)
@@ -102,18 +101,53 @@ end
                 ref="a451cd5e62a10309a9640fbbe6b32a236fcebc70"
             )
             @ntestset "visible floes, no clouds, no artifacts" begin
-                happy_path_dataset = data_loader(;
+                dataset = data_loader(;
                     case_filter=c -> (
                         c.visible_floes == "yes" &&
                         c.cloud_category_manual == "none" &&
                         c.artifacts == "no"
                     ),
                 )
-                results = []
-                results_df = run_segmentation_over_multiple_cases(
-                    happy_path_dataset.data, LopezAcosta2019()
+                @info dataset.metadata
+
+                results = run_segmentation_over_multiple_cases(
+                    dataset.data, LopezAcosta2019()
                 )
-                @info results_df
+                @info results
+
+                # Run tests on aggregate results
+                # First be sure we have the right number of results
+                # if this fails, then everything below needs re-evaluating
+                @test nrow(results) == nrow(dataset.metadata)
+
+                # Check the number of successes
+                rows_successful = subset(results, :success => ByRow(==(true)))
+                @test nrow(rows_successful) >= 6
+                nrow(rows_successful) > 6 && @warn "new passing cases"
+            end
+
+            @ntestset "visible floes, thin clouds, no artifacts" begin
+                dataset = data_loader(;
+                    case_filter=c -> (
+                        c.visible_floes == "yes" &&
+                        c.cloud_category_manual == "thin" &&
+                        c.artifacts == "no"
+                    ),
+                )
+                @info dataset.metadata
+                results = run_segmentation_over_multiple_cases(
+                    dataset.data, LopezAcosta2019()
+                )
+                @info results
+
+                # Run tests on aggregate results
+                # First be sure we have the right number of results
+                @test nrow(results) == nrow(dataset.metadata)
+
+                # Check the number of successes
+                rows_successful = subset(results, :success => ByRow(==(true)))
+                @test nrow(rows_successful) >= 6
+                nrow(rows_successful) > 6 && @warn "new passing cases"
             end
         end
 
