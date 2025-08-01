@@ -1,5 +1,4 @@
 using Downloads: download, RequestError
-using CSV
 using Dates
 using Images: SegmentedImage, Colorant, Gray
 using FileIO: load
@@ -95,16 +94,21 @@ function (p::ValidationDataLoader)(; case_filter::Function=(case) -> true)
     metadata_url = joinpath(p.url, "raw", p.ref, p.dataset_metadata_path)
     metadata_path = joinpath(p.cache_dir, p.ref, splitpath(p.dataset_metadata_path)[end])
     mkpath(dirname(metadata_path))
+
+    # Load the metadata file
     isfile(metadata_path) || download(metadata_url, metadata_path) # Only download if the file doesn't already exist
-    metadata_file = CSV.File(metadata_path)
+    all_metadata = DataFrame(load(metadata_path))
 
-    metadata = DataFrame(case for case in metadata_file if case_filter(case))
-    data = (_load_case(case, p) for case in metadata_file if case_filter(case))
+    # Filter the metadata
+    filtered_metadata = filter(case_filter, all_metadata)
 
-    return (; data, metadata)
+    # Load the data for the filtered metadata
+    filtered_data = (_load_case(case, p) for case in eachrow(filtered_metadata))
+
+    return (; data=filtered_data, metadata=filtered_metadata)
 end
 
-function _load_case(case::CSV.Row, p::Watkins2025GitHub)::ValidationDataCase
+function _load_case(case, p::Watkins2025GitHub)::ValidationDataCase
     data_dict = Dict()
     data_dict[:metadata] = Dict(symbol => case[symbol] for symbol in propertynames(case))
 
@@ -123,7 +127,7 @@ function _load_case(case::CSV.Row, p::Watkins2025GitHub)::ValidationDataCase
     mkpath(output_directory)
 
     metadata_path = joinpath(output_directory, "case_metadata.csv")
-    isfile(metadata_path) || CSV.write(metadata_path, [case])
+    isfile(metadata_path) || save(metadata_path, [case])
 
     modis_truecolor = (;
         source="data/modis/truecolor/$(case_number)-$(region)-$(image_side_length)-$(date).$(satellite).truecolor.$(pixel_scale).$(ext)",
