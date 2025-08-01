@@ -131,7 +131,8 @@ end
                     case_filter=c -> (
                         c.visible_floes == "yes" &&
                         c.cloud_category_manual == "thin" &&
-                        c.artifacts == "no"
+                        c.artifacts == "no" &&
+                        c.case_number % 5 == 0
                     ),
                 )
                 @info dataset.metadata
