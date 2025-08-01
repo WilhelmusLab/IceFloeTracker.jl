@@ -1,7 +1,6 @@
 using Images: segment_labels, segment_mean, labels_map
 
 function segment_comparison(;
-    name::Union{AbstractString,Nothing}=nothing,
     validated::Union{SegmentedImage,Nothing}=nothing,
     measured::Union{SegmentedImage,Nothing}=nothing,
 )::NamedTuple
@@ -27,14 +26,7 @@ function segment_comparison(;
         fractional_intersection = missing
     end
 
-    return (;
-        name,
-        success=true,
-        measured_area,
-        validated_area,
-        fractional_intersection,
-        error=nothing,
-    )
+    return (; measured_area, validated_area, fractional_intersection)
 end
 
 @ntestset "$(@__FILE__)" begin
@@ -75,21 +67,26 @@ end
                             "./test_outputs/segmentation-LopezAcosta2019-$(name)-$(datestamp)-truecolor.png",
                             validation_data.modis_truecolor,
                         )
-                        push!(results, segment_comparison(; name, validated, measured))
+                        push!(
+                            results,
+                            merge(
+                                (; name, success=true, error=nothing),
+                                segment_comparison(; validated, measured),
+                            ),
+                        )
                     catch e
                         @warn "$(name) failed, $(e)"
                         push!(
                             results,
-                            segment_comparison(;
-                                name,
-                                validated=validation_data.validated_labeled_floes,
-                                measured=nothing,
+                            merge(
+                                (; name, success=false, error=e),
+                                segment_comparison(; validated=validated, measured=nothing),
                             ),
                         )
                     end
                 end
                 results_df = DataFrame(results)
-                @info sort(results_df)
+                @info results_df
             end
         end
 
