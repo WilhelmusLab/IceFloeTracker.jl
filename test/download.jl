@@ -10,7 +10,6 @@ using DataFrames
     name::AbstractString = nothing
     metadata::Union{AbstractDict,Nothing} = nothing
 
-    # TODO: add types
     modis_truecolor::Union{AbstractArray,Nothing} = nothing
     modis_falsecolor::Union{AbstractArray,Nothing} = nothing
     modis_landmask::Union{AbstractArray,Nothing} = nothing
