@@ -18,7 +18,7 @@ function segmentation_comparison(;
         validated_area = sum(channelview(validated_binary))
         normalized_validated_area = validated_area / length(channelview(validated_binary))
     else
-        validated_area = missing
+        normalized_validated_area = missing
     end
 
     if !isnothing(measured)
@@ -26,7 +26,7 @@ function segmentation_comparison(;
         measured_area = sum(channelview(measured_binary))
         normalized_measured_area = measured_area / length(channelview(measured_binary))
     else
-        measured_area = missing
+        normalized_measured_area = missing
     end
 
     if !isnothing(validated) && !isnothing(measured)
