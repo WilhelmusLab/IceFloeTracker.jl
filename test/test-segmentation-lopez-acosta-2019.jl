@@ -4,7 +4,7 @@ function segment_comparison(;
     name::Union{AbstractString,Nothing}=nothing,
     validated::Union{SegmentedImage,Nothing}=nothing,
     measured::Union{SegmentedImage,Nothing}=nothing,
-)
+)::NamedTuple
     if !isnothing(validated)
         validated_binary = Gray.(labels_map(validated) .> 0)
         validated_area = sum(channelview(validated_binary))
