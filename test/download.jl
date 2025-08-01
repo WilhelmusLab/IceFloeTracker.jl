@@ -100,12 +100,12 @@ function (p::ValidationDataLoader)(; case_filter::Function=(case) -> true)
     metadata_file = CSV.File(metadata_path)
 
     metadata = DataFrame(case for case in metadata_file if case_filter(case))
-    data = (load_case(case, p) for case in metadata_file if case_filter(case))
+    data = (_load_case(case, p) for case in metadata_file if case_filter(case))
 
     return (; data, metadata)
 end
 
-function load_case(case::CSV.Row, p::Watkins2025GitHub)
+function _load_case(case::CSV.Row, p::Watkins2025GitHub)::ValidationDataCase
     data_dict = Dict()
     data_dict[:metadata] = Dict(symbol => case[symbol] for symbol in propertynames(case))
 
