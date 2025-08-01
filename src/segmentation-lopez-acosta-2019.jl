@@ -9,7 +9,7 @@ function LopezAcosta2019(; landmask_structuring_element=make_landmask_se())
 end
 
 function (p::LopezAcosta2019)(
-    truecolor::T, falsecolor::T, landmask::U
+    truecolor::T, falsecolor::T, landmask::U; return_intermediate_results::Bool=false
 ) where {T<:AbstractMatrix{<:AbstractRGB},U<:AbstractMatrix}
 
     # Move these conversions down through the function as each step gets support for 
@@ -22,6 +22,7 @@ function (p::LopezAcosta2019)(
     landmask_imgs = create_landmask(landmask_image, p.landmask_structuring_element)
 
     @info "Building cloudmask"
+    # TODO: @hollandjg track down why the cloudmask is different for float32 vs float64 input images
     cloudmask = create_cloudmask(falsecolor_image)
 
     # 2. Intermediate images
@@ -67,6 +68,7 @@ function (p::LopezAcosta2019)(
     watersheds_segB_product = watershed_product(watersheds_segB...)
 
     # segmentation_F
+    # TODO: @hollandjg find out why segF is more dilated
     @info "Segmenting floes part 3/3"
     segF = segmentation_F(
         segB.not_ice,
@@ -80,8 +82,28 @@ function (p::LopezAcosta2019)(
     @info "Labeling floes"
     labels_map = label_components(segF)
 
-  # Return the original truecolor image, segmented
+    # Return the original truecolor image, segmented
     segments = SegmentedImage(truecolor, labels_map)
 
-    return segments
+    if return_intermediate_results
+        intermediate_results = Dict(
+            :landmask_dilated => landmask_imgs.dilated,
+            :landmask_non_dilated => landmask_imgs.non_dilated,
+            :cloudmask => cloudmask,
+            :ice_labels => ice_labels,
+            :sharpened_truecolor_image => sharpened_truecolor_image,
+            :sharpened_gray_truecolor_image => sharpened_gray_truecolor_image,
+            :normalized_image => normalized_image,
+            :ice_water_discrim => ice_water_discrim,
+            :segA => segA,
+            :segB => segB,
+            :watersheds_segB_product => watersheds_segB_product,
+            :segF => segF,
+            :labels_map => labels_map,
+            :segments => segments,
+        )
+        return (segments, intermediate_results)
+    else
+        return segments
+    end
 end
