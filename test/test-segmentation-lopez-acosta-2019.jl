@@ -21,6 +21,7 @@ using Images: segment_labels, segment_mean, labels_map
                         "./test_outputs/segmentation-LopezAcosta2019-$(name)_$(Dates.format(Dates.now(), "yyyy-mm-dd-HHMMSS"))-mean-labels.png",
                         map(i -> segment_mean(segments, i), labels_map(segments)),
                     )
+                    # TODO: make this into a function which returns a named tuple with all the results
                     if !isnothing(validation_data.validated_labeled_floes)
                         area = labels_map(segments) .> 0
                         validated_area =
