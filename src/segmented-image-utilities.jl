@@ -1,13 +1,7 @@
 """
-segmentation_comparison(
-    validated::Union{SegmentedImage,Nothing},
-    measured::Union{SegmentedImage,Nothing},
-)::NamedTuple
-
-segmentation_comparison(;
-    validated::Union{SegmentedImage,Nothing}=nothing,
-    measured::Union{SegmentedImage,Nothing}=nothing,
-)::NamedTuple
+function segmentation_comparison(
+    validated::SegmentedImage, measured::SegmentedImage
+)::@NamedTuple{recall::Real, precision::Real, F_score::Real}
 
 Compares two SegmentedImages and returns values describing how similar the segmentations are.
 
@@ -18,43 +12,23 @@ Measures:
 - fractional_intersection: fraction of the validated segments covered by measured segments
 """
 function segmentation_comparison(
-    validated::Union{SegmentedImage,Nothing}, measured::Union{SegmentedImage,Nothing}
-)::NamedTuple
-    if !isnothing(validated)
-        normalized_validated_area = segmentation_summary(validated).normalized_non_zero_area
-    else
-        normalized_validated_area = missing
-    end
+    validated::Union{SegmentedImage}, measured::Union{SegmentedImage}
+)::@NamedTuple{recall::Real, precision::Real, F_score::Real}
+    validated_binary = binarize(validated)
+    measured_binary = binarize(measured)
+    intersection = measured_binary .&& validated_binary
+    recall = sum(intersection) / sum(validated_binary)
+    precision = sum(intersection) / sum(measured_binary)
+    F_score = 2 * (precision * recall) / (precision + recall)
+    return (; recall, precision, F_score)
+end
 
-    if !isnothing(measured)
-        normalized_measured_area = segmentation_summary(measured).normalized_non_zero_area
-    else
-        normalized_measured_area = missing
-    end
-
-    if !isnothing(validated) && !isnothing(measured)
-        intersection = Gray.(channelview(measured_binary) .&& channelview(validated_binary))
-        recall = sum(channelview(intersection)) / validated_area
-        precision = sum(channelview(intersection)) / measured_area
-        F_score = 2 * (precision * recall) / (precision + recall)
-    else
-        recall = missing
-        precision = missing
-    end
-
-    return (;
-        normalized_validated_area,
-        normalized_measured_area,
-        fractional_intersection=recall,
-        recall,
-        precision,
-        F_score,
-    )
+function binarize(segments::SegmentedImage)
+    return labels_map(segments) .> 0
 end
 
 function segmentation_comparison(;
-    validated::Union{SegmentedImage,Nothing}=nothing,
-    measured::Union{SegmentedImage,Nothing}=nothing,
+    validated::Union{SegmentedImage}, measured::Union{SegmentedImage}
 )::NamedTuple
     return segmentation_comparison(validated, measured)
 end
