@@ -27,8 +27,8 @@ function segmentation_comparison(
     (isnothing(validated) || isnothing(measured)) &&
         return (; recall=missing, precision=missing, F_score=missing)
 
-    validated_binary = binarize(validated)
-    measured_binary = binarize(measured)
+    validated_binary = binarize_segments(validated)
+    measured_binary = binarize_segments(measured)
     intersection = measured_binary .&& validated_binary
     recall = sum(intersection) / sum(validated_binary)
     precision = sum(intersection) / sum(measured_binary)
@@ -50,7 +50,7 @@ SegmentationSummary = @NamedTuple begin
 end
 
 function segmentation_summary(segmented::SegmentedImage)::SegmentationSummary
-    binary = binarize(segmented)
+    binary = binarize_segments(segmented)
     non_zero_area = sum(binary)
     labeled_fraction = non_zero_area / length(binary)
     return (; labeled_fraction)
@@ -59,6 +59,6 @@ end
 """
 Find pixels in a segmented image with non-zero labels
 """
-function binarize(segments::SegmentedImage)
-    return labels_map(segments) .> 0
+function binarize_segments(segments::SegmentedImage)::AbstractArray{Gray}
+    return Gray.(labels_map(segments) .> 0)
 end
