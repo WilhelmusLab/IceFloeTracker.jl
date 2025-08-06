@@ -41,7 +41,7 @@ end
 function get_segmented_ice(segmented::Matrix{Int64}, ice_labels::Vector{Int64})
     ## Same principle as the get_nlabels function
     ## Has the weakness that only one segment can ever be chosen.
-    isempty(ice_labels) && return segmented .== -1
+    isempty(ice_labels) && return segmented .== NaN
     return segmented .== StatsBase.mode(segmented[ice_labels])
 end
 
