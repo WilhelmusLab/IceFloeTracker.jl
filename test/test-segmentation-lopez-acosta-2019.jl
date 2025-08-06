@@ -43,7 +43,7 @@ using Images: segment_labels, segment_mean, labels_map
 
                 # Now check that all cases run through without crashing
                 successes = subset(results, :success => ByRow(==(true)))
-                @test nrow(results) == nrow(successes) # broken = true
+                @test nrow(results) == nrow(successes)
 
                 # # If not everything works, at least check that we're not introducing new crashes
                 # expected_successes = 6
