@@ -40,10 +40,10 @@ function kmeans_segmentation(
 end
 
 function get_segmented_ice(segmented::Matrix{Int64}, ice_labels::Vector{Int64})
-    ## Isolate ice floes and contrast from background
-    nlabel = StatsBase.mode(segmented[ice_labels])
-    segmented_ice = segmented .== nlabel
-    return segmented_ice
+    ## Same principle as the get_nlabels function
+    ## Has the weakness that only one segment can ever be chosen.
+    isempty(ice_labels) && return segmented .== -1
+    return segmented .== StatsBase.mode(segmented[ice_labels])
 end
 
 """
