@@ -86,7 +86,7 @@ function get_nlabel_relaxation(
     pks_band_2, pks_band_1 = get_image_peaks.([band_2, band_1])
 
     # return early if no peaks are found
-    !all(length.([pks_band_2.locs, pksc.locs]) .> 2) && return -1
+    !all(length.([pks_band_2.locs, pks_band_1.locs]) .> 2) && return -1
 
     relaxed_thresholds = [band_7_threshold_relaxed, pks_band_2.locs[2], pks_band_1.locs[2]]
     ice_labels_mask = get_ice_labels_mask(falsecolor_img, relaxed_thresholds, factor)
