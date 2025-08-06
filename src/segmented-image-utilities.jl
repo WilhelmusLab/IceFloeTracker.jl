@@ -36,6 +36,7 @@ function segmentation_comparison(
         intersection = Gray.(channelview(measured_binary) .&& channelview(validated_binary))
         recall = sum(channelview(intersection)) / validated_area
         precision = sum(channelview(intersection)) / measured_area
+        F_score = 2 * (precision * recall) / (precision + recall)
     else
         recall = missing
         precision = missing
@@ -47,6 +48,7 @@ function segmentation_comparison(
         fractional_intersection=recall,
         recall,
         precision,
+        F_score,
     )
 end
 
