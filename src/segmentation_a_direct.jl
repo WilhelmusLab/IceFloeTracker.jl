@@ -22,9 +22,9 @@ function kmeans_segmentation(
 end
 
 function kmeans_segmentation(
-    gray_image::Matrix{Gray{Float64}}; k::Int64=4, maxiter::Int64=50
+    gray_image::Matrix{Gray{Float64}}; k::Int64=4, maxiter::Int64=50, random_seed::Int64=45
 )
-    Random.seed!(45)
+    Random.seed!(random_seed)
 
     ## NOTE(tjd): this clusters into k classes and solves iteratively with a max of maxiter iterations
     feature_classes = Clustering.kmeans(
@@ -33,17 +33,16 @@ function kmeans_segmentation(
 
     class_assignments = assignments(feature_classes)
 
-    ## NOTE(tjd): this clusters into 4 classes and solves iteratively with a max of 50 iterations
     segmented = reshape(class_assignments, size(gray_image))
 
     return segmented
 end
 
 function get_segmented_ice(segmented::Matrix{Int64}, ice_labels::Vector{Int64})
-    ## Isolate ice floes and contrast from background
-    nlabel = StatsBase.mode(segmented[ice_labels])
-    segmented_ice = segmented .== nlabel
-    return segmented_ice
+    ## Same principle as the get_nlabels function
+    ## Has the weakness that only one segment can ever be chosen.
+    isempty(ice_labels) && return falses(size(segmented))
+    return segmented .== StatsBase.mode(segmented[ice_labels])
 end
 
 """
