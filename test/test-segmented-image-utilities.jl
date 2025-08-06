@@ -1,4 +1,32 @@
 @ntestset "$(@__FILE__)" begin
+    @ntestset "segmentation_summary" begin
+        """
+        Test the segmentation measurements for one label map.
+        """
+        function test_segmentation_summary_properties(label_map; kwargs...)
+            segmented = SegmentedImage(label_map, label_map)
+            summary = segmentation_summary(segmented)
+            for (key, value) in kwargs
+                @test isequal(summary[key], value)
+            end
+        end
+
+        test_segmentation_summary_properties([0]; labeled_fraction=0.0)
+        test_segmentation_summary_properties([1]; labeled_fraction=1.0)
+        test_segmentation_summary_properties([0 0]; labeled_fraction=0.0)
+        test_segmentation_summary_properties([0 1]; labeled_fraction=0.5)
+        test_segmentation_summary_properties([1 0]; labeled_fraction=0.5)
+        test_segmentation_summary_properties([1 1]; labeled_fraction=1.0)
+        test_segmentation_summary_properties([1 0 0]; labeled_fraction=1 / 3)
+        test_segmentation_summary_properties([1 1 0]; labeled_fraction=2 / 3)
+        test_segmentation_summary_properties(
+            [
+                1 1
+                1 1
+            ];
+            labeled_fraction=1.0,
+        )
+    end
     @ntestset "segmentation_comparison" begin
         """
         Test the segmentation comparison for two label maps.
