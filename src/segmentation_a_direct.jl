@@ -22,9 +22,9 @@ function kmeans_segmentation(
 end
 
 function kmeans_segmentation(
-    gray_image::Matrix{Gray{Float64}}; k::Int64=4, maxiter::Int64=50
+    gray_image::Matrix{Gray{Float64}}; k::Int64=4, maxiter::Int64=50, random_seed::Int64=45
 )
-    Random.seed!(45)
+    Random.seed!(random_seed)
 
     ## NOTE(tjd): this clusters into k classes and solves iteratively with a max of maxiter iterations
     feature_classes = Clustering.kmeans(
@@ -33,7 +33,6 @@ function kmeans_segmentation(
 
     class_assignments = assignments(feature_classes)
 
-    ## NOTE(tjd): this clusters into 4 classes and solves iteratively with a max of 50 iterations
     segmented = reshape(class_assignments, size(gray_image))
 
     return segmented
