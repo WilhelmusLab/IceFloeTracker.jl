@@ -34,13 +34,20 @@ function segmentation_comparison(
 
     if !isnothing(validated) && !isnothing(measured)
         intersection = Gray.(channelview(measured_binary) .&& channelview(validated_binary))
-        fractional_intersection =
-            fractional_intersection = sum(channelview(intersection)) / validated_area
+        recall = sum(channelview(intersection)) / validated_area
+        precision = sum(channelview(intersection)) / measured_area
     else
-        fractional_intersection = missing
+        recall = missing
+        precision = missing
     end
 
-    return (; normalized_validated_area, normalized_measured_area, fractional_intersection)
+    return (;
+        normalized_validated_area,
+        normalized_measured_area,
+        fractional_intersection=recall,
+        recall,
+        precision,
+    )
 end
 
 function segmentation_comparison(;
