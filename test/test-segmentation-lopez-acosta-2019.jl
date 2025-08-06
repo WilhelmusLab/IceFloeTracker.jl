@@ -45,12 +45,6 @@ using Images: segment_labels, segment_mean, labels_map
                 successes = subset(results, :success => ByRow(==(true)))
                 @test nrow(results) == nrow(successes)
 
-                # # If not everything works, at least check that we're not introducing new crashes
-                # expected_successes = 6
-                # successes = subset(results, :success => ByRow(==(true)))
-                # @test nrow(successes) >= expected_successes
-                # nrow(successes) > expected_successes &&
-                #     @warn "new passing cases: $(nrow(successes)) (update `expected_successes`)"
             end
 
             @ntestset "visible floes, thin clouds, no artifacts" begin
