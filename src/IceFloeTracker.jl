@@ -48,7 +48,8 @@ export readdlm,
     ValidationDataCase,
     ValidationDataLoader,
     Watkins2025GitHub,
-    segmentation_comparison
+    segmentation_comparison,
+    segmentation_summary
 
 # For IFTPipeline
 using HDF5

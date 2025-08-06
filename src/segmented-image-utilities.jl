@@ -59,7 +59,9 @@ function segmentation_comparison(;
     return segmentation_comparison(validated, measured)
 end
 
-function segmentation_summary(image::SegmentedImage)
+function segmentation_summary(
+    image::SegmentedImage
+)::@NamedTuple{normalized_non_zero_area::Real}
     image_binary = Gray.(labels_map(image) .> 0)
     non_zero_area = sum(channelview(image_binary))
     normalized_non_zero_area = non_zero_area / length(channelview(image_binary))
