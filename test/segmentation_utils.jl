@@ -10,9 +10,9 @@ function run_segmentation_over_multiple_cases(
 )::DataFrame
     results = []
     for case::ValidationDataCase in cases
-        validated = case.validated_labeled_floes
-        name = case.name
-        let measured, success, error
+        let name, validated, measured, success, error, comparison
+            name = case.name
+            validated = case.validated_labeled_floes
             @info "starting $(name)"
             try
                 measured = algorithm(
@@ -29,13 +29,14 @@ function run_segmentation_over_multiple_cases(
                 measured = nothing
             end
 
+            if !isnothing(measured) && !isnothing(validated)
+                comparison = segmentation_comparison(; validated, measured)
+            else
+                comparison = (;)
+            end
+
             # Store the aggregate results
-            push!(
-                results,
-                merge(
-                    (; name, success, error), segmentation_comparison(; validated, measured)
-                ),
-            )
+            push!(results, merge((; name, success, error), comparison))
 
             if !isnothing(output_directory)
                 mkpath(output_directory)
