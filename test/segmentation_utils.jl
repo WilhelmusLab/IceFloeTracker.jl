@@ -29,11 +29,7 @@ function run_segmentation_over_multiple_cases(
                 measured = nothing
             end
 
-            if !isnothing(measured) && !isnothing(validated)
-                comparison = segmentation_comparison(; validated, measured)
-            else
-                comparison = (;)
-            end
+            comparison = segmentation_comparison(; validated, measured)
 
             # Store the aggregate results
             push!(results, merge((; name, success, error), comparison))
