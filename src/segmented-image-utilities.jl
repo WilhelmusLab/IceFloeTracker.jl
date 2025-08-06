@@ -21,17 +21,13 @@ function segmentation_comparison(
     validated::Union{SegmentedImage,Nothing}, measured::Union{SegmentedImage,Nothing}
 )::NamedTuple
     if !isnothing(validated)
-        validated_binary = Gray.(labels_map(validated) .> 0)
-        validated_area = sum(channelview(validated_binary))
-        normalized_validated_area = validated_area / length(channelview(validated_binary))
+        normalized_validated_area = segmentation_summary(validated).normalized_non_zero_area
     else
         normalized_validated_area = missing
     end
 
     if !isnothing(measured)
-        measured_binary = Gray.(labels_map(measured) .> 0)
-        measured_area = sum(channelview(measured_binary))
-        normalized_measured_area = measured_area / length(channelview(measured_binary))
+        normalized_measured_area = segmentation_summary(measured).normalized_non_zero_area
     else
         normalized_measured_area = missing
     end
@@ -52,4 +48,11 @@ function segmentation_comparison(;
     measured::Union{SegmentedImage,Nothing}=nothing,
 )::NamedTuple
     return segmentation_comparison(validated, measured)
+end
+
+function segmentation_summary(image::SegmentedImage)
+    image_binary = Gray.(labels_map(image) .> 0)
+    non_zero_area = sum(channelview(image_binary))
+    normalized_non_zero_area = non_zero_area / length(channelview(image_binary))
+    return (; normalized_non_zero_area)
 end
