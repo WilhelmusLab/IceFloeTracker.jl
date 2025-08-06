@@ -42,10 +42,6 @@ function segmentation_comparison(;
     return segmentation_comparison(validated, measured)
 end
 
-function binarize(segments::SegmentedImage)
-    return labels_map(segments) .> 0
-end
-
 """
 Results of a segmentation comparison
 """
@@ -58,4 +54,11 @@ function segmentation_summary(segmented::SegmentedImage)::SegmentationSummary
     non_zero_area = sum(binary)
     labeled_fraction = non_zero_area / length(binary)
     return (; labeled_fraction)
+end
+
+"""
+Find pixels in a segmented image with non-zero labels
+"""
+function binarize(segments::SegmentedImage)
+    return labels_map(segments) .> 0
 end
