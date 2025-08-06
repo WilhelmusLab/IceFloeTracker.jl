@@ -46,66 +46,54 @@
         function test_identical_segmentation_properties(label_map; kwargs...)
             return test_segmentation_properties(label_map, label_map; kwargs...)
         end
-        
-        @ntestset "Self-similar results with zero labels" begin
-            for label_map in [
-                [0],
-                [0 0],
-                [0 0 0],
-                [
-                    0 0 0
-                    0 0 0
-                    0 0 0
-                ],
-            ]
-                @show label_map
-                test_identical_segmentation_properties(
-                    label_map;
-                    normalized_validated_area=0.0,
-                    normalized_measured_area=0.0,
-                    fractional_intersection=NaN,
-                )
-            end
-        end
-        @ntestset "Self-similar results with all non-zero labels" begin
-            for label_map in [[1], [1, 2], [1 2 3]]
-                @show label_map
-                test_identical_segmentation_properties(
-                    label_map;
-                    normalized_validated_area=1,
-                    normalized_measured_area=1,
-                    fractional_intersection=1,
-                )
-            end
-        end
-        @ntestset "Different label indices" begin
-            # The checks should be agnostic to what the label indices are
-            for (label_map_1, label_map_2) in
-                [([1], [2]), ([1, 2], [2, 1]), ([1 2 3], [3 1 2])]
-                @show label_map_1, label_map_2
-                test_segmentation_properties(
-                    label_map_1,
-                    label_map_2;
-                    normalized_validated_area=1,
-                    normalized_measured_area=1,
-                    fractional_intersection=1,
-                )
-            end
-        end
-        @ntestset "Overlay fractions" begin
-            test_segmentation_properties([0 0], [0 1]; fractional_intersection=NaN)
-            test_segmentation_properties([0 1], [0 0]; fractional_intersection=0.0)
-            test_segmentation_properties([0 1], [1 0]; fractional_intersection=0.0)
-            test_segmentation_properties([0 1], [0 1]; fractional_intersection=1.0)
-            test_segmentation_properties([0 1], [1 1]; fractional_intersection=1.0)
-            test_segmentation_properties([1 1], [0 1]; fractional_intersection=0.5)
-            test_segmentation_properties([1 1], [1 1]; fractional_intersection=1.0)
-            test_segmentation_properties([1 1 1], [1 0 0]; fractional_intersection=1 / 3)
-            test_segmentation_properties([1 1 1], [1 1 0]; fractional_intersection=2 / 3)
-            test_segmentation_properties([1 1 1], [1 1 1]; fractional_intersection=3 / 3)
-            test_segmentation_properties([1 0 0], [1 1 1]; fractional_intersection=1)
-            test_segmentation_properties([1 1 0], [1 1 1]; fractional_intersection=1)
-            test_segmentation_properties([1 1 1], [1 1 1]; fractional_intersection=1)
-        end
+
+        # Self-similar results with zero labels
+        test_identical_segmentation_properties([0]; recall=NaN)
+        test_identical_segmentation_properties([0 0]; recall=NaN)
+        test_identical_segmentation_properties([0 0 0]; recall=NaN)
+        test_identical_segmentation_properties(
+            [
+                0 0 0
+                0 0 0
+                0 0 0
+            ];
+            recall=NaN,
+        )
+
+        # Self-similar results with all non-zero labels
+        test_identical_segmentation_properties([1]; recall=1)
+        test_identical_segmentation_properties([1 2]; recall=1)
+        test_identical_segmentation_properties([1 2 3]; recall=1)
+
+        # Different label indices
+        # The checks should be agnostic to what the label indices are
+        test_segmentation_properties([1], [2]; recall=1)
+        test_segmentation_properties([1, 2], [2, 1]; recall=1)
+        test_segmentation_properties([1 2 3], [3 1 2]; recall=1)
+
+        # recall, precision and F_score
+        test_segmentation_properties([0 0], [0 1]; recall=NaN, precision=0, F_score=NaN)
+        test_segmentation_properties([0 1], [0 0]; recall=0.0, precision=NaN, F_score=NaN)
+        test_segmentation_properties([0 1], [1 0]; recall=0.0, precision=0.0, F_score=NaN)
+        test_segmentation_properties([0 1], [0 1]; recall=1.0, precision=1.0, F_score=1.0)
+        test_segmentation_properties(
+            [0 1], [1 1]; recall=1.0, precision=0.5, F_score=2 * (1 * 0.5) / (1 + 0.5)
+        )
+        test_segmentation_properties(
+            [1 1], [0 1]; recall=0.5, precision=1.0, F_score=2 * (1 * 0.5) / (1 + 0.5)
+        )
+        test_segmentation_properties([1 1], [1 1]; recall=1.0, precision=1.0)
+        test_segmentation_properties(
+            [1 1 1],
+            [1 0 0];
+            recall=1 / 3,
+            precision=1.0,
+            F_score=2 * (1 * (1 / 3)) / (1 + (1 / 3)),
+        )
+        test_segmentation_properties([1 1 1], [1 1 0]; recall=2 / 3, precision=1.0)
+        test_segmentation_properties([1 1 1], [1 1 1]; recall=3 / 3, precision=1.0)
+        test_segmentation_properties([1 0 0], [1 1 1]; recall=1, precision=1 / 3)
+        test_segmentation_properties([1 1 0], [1 1 1]; recall=1, precision=2 / 3)
+        test_segmentation_properties([1 1 1], [1 1 1]; recall=1, precision=1.0)
     end
 end
