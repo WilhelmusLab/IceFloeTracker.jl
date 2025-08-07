@@ -84,7 +84,7 @@ function preprocess_tiling(
     ice_masks_params,
     prelim_icemask_params,
     brighten_factor;
-    output_intermediate_results_to::Union{Nothing,NamedTuple}=nothing,
+    intermediate_results_callback::Union{Nothing,Function}=nothing,
 )
     begin
         @debug "Step 1/2: Create and apply cloudmask to reference image"
@@ -204,8 +204,8 @@ function preprocess_tiling(
         final = get_final(icemask, segment_mask, se_erosion, se_dilation)
     end
 
-    if !isnothing(output_intermediate_results_to)
-        intermediate_results = (;
+    if !isnothing(intermediate_results_callback)
+        intermediate_results_callback(;
             ref_img_cloudmasked,
             gammagreen,
             equalized_gray,
@@ -221,7 +221,6 @@ function preprocess_tiling(
             icemask,
             final,
         )
-        output_intermediate_results_to = intermediate_results
     end
 
     return final
@@ -243,7 +242,7 @@ function (p::LopezAcosta2019Tiling)(
     truecolor::AbstractArray{<:Union{AbstractRGB,TransparentRGB}},
     falsecolor::AbstractArray{<:Union{AbstractRGB,TransparentRGB}},
     landmask::AbstractArray{<:Union{AbstractGray,AbstractRGB,TransparentRGB}};
-    output_intermediate_results_to::Union{Nothing,NamedTuple}=nothing,
+    intermediate_results_callback::Union{Nothing,Function}=nothing,
 )
     @warn "using undilated landmask as dilated"
     _landmask = (dilated=(float64.(Gray.(landmask))) .> 0,) # TODO: remove this typecast to float64
@@ -263,16 +262,13 @@ function (p::LopezAcosta2019Tiling)(
         p.ice_masks_params,
         p.prelim_icemask_params,
         p.brighten_factor;
-        output_intermediate_results_to,
+        intermediate_results_callback,
     )
     labeled = label_components(binary_floe_masks)
     segmented = SegmentedImage(truecolor, labeled)
 
-    if !isnothing(output_intermediate_results_to)
-        intermediate_results = (; labeled, segmented)
-        output_intermediate_results_to = merge(
-            output_intermediate_results_to, intermediate_results
-        )
+    if !isnothing(intermediate_results_callback)
+        intermediate_results_callback(; labeled, segmented)
     end
 
     return segmented
