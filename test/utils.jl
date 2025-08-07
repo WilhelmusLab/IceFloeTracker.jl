@@ -37,7 +37,15 @@ end
         names::Union{AbstractArray{Symbol},Nothing}
     )::Function
 
-Returns a function which saves any images 
+Returns a function which saves any images passed into it as keyword arguments.
+
+# Example
+```julia-repl
+julia> callback = save_results_callback("/tmp/path/to/directory")
+julia> image = Gray.([1 1 0 0 1 0 1])
+julia> callback(;image_name=image)
+```
+... saves `image` to `/tmp/path/to/directory/image_name.png`.
 """
 function save_results_callback(
     directory::AbstractString;
