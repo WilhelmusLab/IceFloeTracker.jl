@@ -11,11 +11,11 @@
     )
     where {T<:AbstractArray{Bool,2},S<:Int64,F<:Float64}
 
-Compute the mismatch `mm` and psi-s-correlation `c` for floes with masks `f1` and `f2`.
+Compute the mismatch `sd` and psi-s-correlation `c` for floes with masks `f1` and `f2`.
 
-The criteria for floes to be considered equivalent is as follows:
-    - `c` greater than `mm` 
-    - `_mm` is less than `mm`
+The criteria for floes to be considered good matches is as follows:
+    - `c` greater than `psi` 
+    - sd is less than `mm`
 
 A pair of `NaN` is returned for cases for which one of their mask dimension is too small or their sizes are not comparable.
 
@@ -23,6 +23,7 @@ A pair of `NaN` is returned for cases for which one of their mask dimension is t
 - `f1`: mask of floe 1
 - `f2`: mask of floe 2
 - `Δt`: time difference between floes in minutes
+- `rot_stepsize`: step size in degrees for registration
 - `mxrot`: maximum rotation (in degrees) allowed between floes (default: 10)
 - `psi`: psi-s-correlation threshold (default: 0.95)
 - `sz`: size threshold (default: 16)
@@ -30,7 +31,7 @@ A pair of `NaN` is returned for cases for which one of their mask dimension is t
 - `mm`: mismatch threshold (default: 0.22)
 """
 function matchcorr(
-    f1::T, f2::T, Δt::F; mxrot::S=10, psi::F=0.95, sz::S=16, comp::F=0.25, mm::F=0.22
+    f1::T, f2::T, Δt::F; rot_stepsize::S=1, mxrot::S=10, psi::F=0.95, sz::S=16, comp::F=0.25, mm::F=0.22 # update varnames
 ) where {T<:AbstractArray{Bool,2},S<:Int64,F<:Float64}
 
     # tbd: add to function signature 
@@ -42,13 +43,20 @@ function matchcorr(
     cn = 1.96
     
     # check if the floes are too small and size are comparable
+    # dmw: this step is redundant, since we are checking the absolute difference ratios earlier in the tracker
     _sz = size.([f1, f2])
     if (any([(_sz...)...] .< sz) || getsizecomparability(_sz...) > comp)
-        return (mm=NaN, c=NaN)
+        return (shape_difference=NaN,
+            psi_s_correlation=NaN,
+            rotation=NaN,
+            corr_ci=(NaN, NaN),
+            sd_ci=(NaN, NaN),
+            rotation_ci=(NaN, NaN))
     end
 
+    # dmw: ψ-s curves are also in the region props table, we could use those instead of re-calculating
     _psi = buildψs.([f1, f2])
-    r = round(corr(_psi...), digits=3)
+    r = round(normalized_maximum_crosscorrelation(_psi...), digits=3)
     
     # confidence interval for Pearson correlation coefficient
     z = 0.5*log((1 + r)/(1 - r))
@@ -56,37 +64,42 @@ function matchcorr(
     sigma_z = sqrt(1/(n - 3))
     zlow = z - cn*sigma_z
     zhigh = z + cn*sigma_z
-    rlow = (exp(2*zlow) - 1)/(exp(2*zlow) + 1)
-    rhigh = (exp(2*zhigh) - 1)/(exp(2*zhigh) + 1)
+    rlow = round((exp(2*zlow) - 1)/(exp(2*zlow) + 1), digits=3)
+    rhigh = round((exp(2*zhigh) - 1)/(exp(2*zhigh) + 1), digits=3)
     
     if r < psi
         @warn "correlation too low, r: $r"
-        return (mm=NaN, c=r)
-    # dmw: am I wrong in thinking this avoids calculating mismatch completely?
-    # else
-    #     return (mm=0.0, c=c)
+        return (shape_difference=NaN,
+            psi_s_correlation=r,
+            rotation=NaN,
+            corr_ci=(rlow, rhigh),
+            sd_ci=(NaN, NaN),
+            rotation_ci=(NaN, NaN))
     end
 
-    # check if the time difference is too large or the rotation is too large
-    step_deg = 1
-    _mm, rot = mismatch(f1, f2, mxrot, step_deg)
+    # warn if the time difference is too large or the rotation is too large
+    # dmw: think through this section, should the matchcorr function be constraining these
+    # terms or should the constraints occur in the tracker?
+    # dmw: it looks like the mismatch function isn't registering the stepsize parameter.
+    _mm, rot = mismatch(f1, f2, mxrot, rot_stepsize)
+    _mm = round(_mm, digits=3)
+    rot = round(rot, digits=3)
     if all([Δt < max_dt_minutes, rot > mxrot]) || _mm > mm
-        @warn "time difference too small for a large rotation or mismatch too large\nmm: $mm, rot: $rot"
-        return (mm=NaN, c=NaN)
+        @warn "time difference too small for a large rotation or mismatch too large\nmm: $_mm (threshold $mm), rot: $rot (threshold $mxrot)"
     end
 
-    # dmw: why would we erase the mismatch measurement?
-    # if mm < 0.1
-    #     mm = 0.0
-    # end
-    
-    return (mm=mm, c=r, corr_ci=(rlow, rhigh), mm_ci=(NaN, NaN))
+    return (shape_difference=_mm,
+            psi_s_correlation=r,
+            rotation=rot,
+            corr_ci=(rlow, rhigh),
+            sd_ci=(NaN, NaN),
+            rotation_ci=(NaN, NaN))
 end
 
 """
     getsizecomparability(s1, s2)
 
-Check if the size of two floes `s1` and `s2` are comparable. The size is defined as the product of the floe dimensions.
+Check if the size of the bounding boxes for two floes `s1` and `s2` are comparable. The comparibility is based on the absolute difference ratio.
 
 # Arguments
 - `s1`: size of floe 1
@@ -95,7 +108,7 @@ Check if the size of two floes `s1` and `s2` are comparable. The size is defined
 function getsizecomparability(s1::T, s2::T) where {T<:Tuple{Int64,Int64}}
     a1 = *(s1...)
     a2 = *(s2...)
-    return abs(a1 - a2) / a1
+    return abs(a1 - a2) / (0.5 * (a1 + a2))
 end
 
 """
@@ -103,8 +116,9 @@ end
 
 Return the normalized cross-correlation between the psi-s curves `p1` and `p2`.
 """
-# dmw: Can we rename this to avoid confusion with standard Pearson correlation?
-function corr(p1::T, p2::T) where {T<:AbstractArray}
+# dmw: Renamed this to avoid confusion with standard Pearson correlation
+# to do: check if the curves need to be psi-s curves, or if any vector is ok
+function normalized_maximum_crosscorrelation(p1::T, p2::T) where {T<:AbstractArray}
     cc, _ = maximum.(IceFloeTracker.crosscorr(p1, p2; normalize=true))
     return cc
 end

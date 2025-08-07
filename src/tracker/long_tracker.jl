@@ -108,7 +108,7 @@ function find_floe_matches(
         )
 
         if callmatchcorr(conditions)
-            (area_mismatch, corr, corr_ci, mismatch_ci) = matchcorr(
+            (area_mismatch, corr, rot, corr_ci, mismatch_ci, rotation_ci) = matchcorr(
                 floe1.mask, floe2.mask, Δt; mc_thresholds.comp...
             )
             if isfloegoodmatch(conditions, mc_thresholds.goodness, area_mismatch, corr)

@@ -490,16 +490,16 @@ end
 isnotnan(x) = !isnan(x)
 
 # match_corr related functions
+# dmw: This function is already in matchcorr.jl
+# """
+#     corr(f1,f2)
 
-"""
-    corr(f1,f2)
-
-Return the correlation between the psi-s curves `p1` and `p2`.
-"""
-function corr(p1, p2)
-    cc, _ = maximum.(IceFloeTracker.crosscorr(p1, p2; normalize=true))
-    return cc
-end
+# Return the correlation between the psi-s curves `p1` and `p2`.
+# """
+# function corr(p1, p2)
+#     cc, _ = maximum.(IceFloeTracker.crosscorr(p1, p2; normalize=true))
+#     return cc
+# end
 
 """
    normalizeangle(revised,t=180)
