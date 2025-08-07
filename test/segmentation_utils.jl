@@ -47,6 +47,7 @@ function run_segmentation_over_multiple_cases(
             end
 
             comparison = segmentation_comparison(; validated, measured)
+            
             # Store the aggregate results
             push!(results, merge((; name, success, error), comparison))
 
