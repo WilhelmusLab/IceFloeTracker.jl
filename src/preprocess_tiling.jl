@@ -206,6 +206,8 @@ function preprocess_tiling(
 
     if !isnothing(intermediate_results_callback)
         intermediate_results_callback(;
+            ref_image,
+            true_color_image,
             ref_img_cloudmasked,
             gammagreen,
             equalized_gray,
@@ -268,7 +270,18 @@ function (p::LopezAcosta2019Tiling)(
     segmented = SegmentedImage(truecolor, labeled)
 
     if !isnothing(intermediate_results_callback)
-        intermediate_results_callback(; labeled, segmented)
+        segments_truecolor = SegmentedImage(truecolor, labeled)
+        segments_falsecolor = SegmentedImage(falsecolor, labeled)
+        intermediate_results_callback(;
+            labeled,
+            segmented,
+            segment_mean_truecolor=map(
+                i -> segment_mean(segments_truecolor, i), labels_map(segments_truecolor)
+            ),
+            segment_mean_falsecolor=map(
+                i -> segment_mean(segments_falsecolor, i), labels_map(segments_falsecolor)
+            ),
+        )
     end
 
     return segmented
