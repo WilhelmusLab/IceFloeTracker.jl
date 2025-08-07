@@ -29,7 +29,7 @@ function segmentation_comparison(
 
     validated_binary = binarize_segments(validated)
     measured_binary = binarize_segments(measured)
-    intersection = Bool.(measured_binary) .&& Bool.(validated_binary)
+    intersection = @. Bool(measured_binary) && Bool(validated_binary)
     recall = sum(intersection) / sum(validated_binary)
     precision = sum(intersection) / sum(measured_binary)
     F_score = 2 * (precision * recall) / (precision + recall)

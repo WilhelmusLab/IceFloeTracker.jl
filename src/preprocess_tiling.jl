@@ -35,12 +35,12 @@ using IceFloeTracker:
 
 # Sample input parameters expected by the main function
 cloud_mask_thresholds = (
-    prelim_threshold=110.0/255.,
-    band_7_threshold=200.0/255.,
-    band_2_threshold=190.0/255.,
+    prelim_threshold=110.0 / 255.0,
+    band_7_threshold=200.0 / 255.0,
+    band_2_threshold=190.0 / 255.0,
     ratio_lower=0.0,
     ratio_upper=0.75,
-    r_offset=0.0
+    r_offset=0.0,
 )
 
 adapthisteq_params = (
@@ -87,9 +87,10 @@ function preprocess_tiling(
 )
     begin
         @debug "Step 1/2: Create and apply cloudmask to reference image"
-        
-        cloudmask = IceFloeTracker.create_cloudmask(ref_image,
-                                LopezAcostaCloudMask(cloud_mask_thresholds...))
+
+        cloudmask = IceFloeTracker.create_cloudmask(
+            ref_image, LopezAcostaCloudMask(cloud_mask_thresholds...)
+        )
         ref_img_cloudmasked = IceFloeTracker.apply_cloudmask(ref_image, cloudmask)
     end
 
@@ -134,14 +135,14 @@ function preprocess_tiling(
     end
 
     begin
-        @debug "STEP 7: Brighten equalized_gray"
+        @debug "Step 7: Brighten equalized_gray"
         brighten = get_brighten_mask(equalized_gray_reconstructed, gammagreen)
         equalized_gray[landmask.dilated] .= 0
         equalized_gray .= imbrighten(equalized_gray, brighten, brighten_factor)
     end
 
     begin
-        @debug "STEP 8: Get morphed_residue and adjust its gamma"
+        @debug "Step 8: Get morphed_residue and adjust its gamma"
         morphed_residue = clamp.(equalized_gray - equalized_gray_reconstructed, 0, 255)
 
         agp = adjust_gamma_params
@@ -203,4 +204,44 @@ function preprocess_tiling(
     end
 
     return final
+end
+
+@kwdef struct LopezAcosta2019Tiling <: IceFloeSegmentationAlgorithm
+    tile_settings = (; rblocks=2, cblocks=2)
+    cloud_mask_thresholds = cloud_mask_thresholds
+    adapthisteq_params = adapthisteq_params
+    adjust_gamma_params = adjust_gamma_params
+    structuring_elements = structuring_elements
+    unsharp_mask_params = unsharp_mask_params
+    ice_masks_params = ice_masks_params
+    prelim_icemask_params = prelim_icemask_params
+    brighten_factor = brighten_factor
+end
+
+function (p::LopezAcosta2019Tiling)(
+    truecolor::AbstractArray{<:Union{AbstractRGB,TransparentRGB}},
+    falsecolor::AbstractArray{<:Union{AbstractRGB,TransparentRGB}},
+    landmask::AbstractArray{<:Union{AbstractGray,AbstractRGB,TransparentRGB}},
+)
+    @warn "using undilated landmask as dilated"
+    _landmask = (dilated=(float64.(Gray.(landmask))) .> 0,) # TODO: remove this typecast to float64
+
+    tiles = get_tiles(truecolor; p.tile_settings...)
+
+    binary_floe_masks = preprocess_tiling(
+        RGB.(falsecolor), # TODO: remove this typecast
+        RGB.(truecolor), # TODO: remove this typecast
+        _landmask,
+        tiles,
+        p.cloud_mask_thresholds,
+        p.adapthisteq_params,
+        p.adjust_gamma_params,
+        p.structuring_elements,
+        p.unsharp_mask_params,
+        p.ice_masks_params,
+        p.prelim_icemask_params,
+        p.brighten_factor,
+    )
+    segmented = SegmentedImage(truecolor, label_components(binary_floe_masks))
+    return segmented
 end
