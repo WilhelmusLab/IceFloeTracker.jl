@@ -131,6 +131,7 @@ end
 
 function test_all_cases_ran_without_crashing(
     results::@NamedTuple{metadata::DataFrame, results::DataFrame};
+    success_column::Symbol=:success,
 )
     (; results) = results
     successes = subset(results, success_column => ByRow(==(true)))
