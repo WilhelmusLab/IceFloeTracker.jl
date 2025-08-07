@@ -221,8 +221,7 @@ end
 function (p::LopezAcosta2019Tiling)(
     truecolor::AbstractArray{<:Union{AbstractRGB,TransparentRGB}},
     falsecolor::AbstractArray{<:Union{AbstractRGB,TransparentRGB}},
-    landmask::AbstractArray{<:Union{AbstractGray,AbstractRGB,TransparentRGB}};
-    return_intermediate_results::Bool=false,
+    landmask::AbstractArray{<:Union{AbstractGray,AbstractRGB,TransparentRGB}},
 )
     @warn "using undilated landmask as dilated"
     _landmask = (dilated=(float64.(Gray.(landmask))) .> 0,) # TODO: remove this typecast to float64
@@ -243,12 +242,6 @@ function (p::LopezAcosta2019Tiling)(
         p.prelim_icemask_params,
         p.brighten_factor,
     )
-
     segmented = SegmentedImage(truecolor, label_components(binary_floe_masks))
-    if return_intermediate_results
-        @warn "return_intermediate_results is not yet supported"
-        return segmented, (;)
-    else
-        return segmented
-    end
+    return segmented
 end
