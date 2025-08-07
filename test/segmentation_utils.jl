@@ -51,7 +51,7 @@ function run_segmentation_over_multiple_cases(
             push!(results, merge((; name, success, error), comparison))
 
             # Save the validated results we have them
-            if !ismissing(validated) && !isnothing(intermediate_results_callback)
+            if !isnothing(validated) && !isnothing(intermediate_results_callback)
                 intermediate_results_callback(;
                     validated_mean_labels=map(
                         i -> segment_mean(validated, i), labels_map(validated)
