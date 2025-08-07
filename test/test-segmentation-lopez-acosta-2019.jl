@@ -70,6 +70,31 @@ using Images: segment_labels, segment_mean, labels_map
                 successes = subset(results, :success => ByRow(==(true)))
                 @test nrow(results) == nrow(successes)
             end
+
+            @ntestset "no floes, thin clouds, no artifacts" begin
+                dataset = data_loader(;
+                    case_filter=c -> (
+                        c.visible_floes == "no" &&
+                        c.cloud_category_manual == "thin" &&
+                        c.artifacts == "no" &&
+                        c.case_number % 5 == 0
+                    ),
+                )
+                @info dataset.metadata
+                results = run_segmentation_over_multiple_cases(
+                    dataset.data, LopezAcosta2019(); output_directory="./test_outputs/"
+                )
+                @info results
+
+                # Run tests on aggregate results
+                # First be sure we have the right number of results
+                @test nrow(results) == nrow(dataset.metadata)
+
+                # Now check that all cases run through without crashing
+                successes = subset(results, :success => ByRow(==(true)))
+                @test nrow(results) == nrow(successes)
+            end
+
             @ntestset "random sample" begin
                 dataset = data_loader(; case_filter=c -> (c.case_number % 17 == 0))
                 @info dataset.metadata
