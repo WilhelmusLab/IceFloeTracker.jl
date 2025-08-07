@@ -135,14 +135,14 @@ function preprocess_tiling(
     end
 
     begin
-        @debug "STEP 7: Brighten equalized_gray"
+        @debug "Step 7: Brighten equalized_gray"
         brighten = get_brighten_mask(equalized_gray_reconstructed, gammagreen)
         equalized_gray[landmask.dilated] .= 0
         equalized_gray .= imbrighten(equalized_gray, brighten, brighten_factor)
     end
 
     begin
-        @debug "STEP 8: Get morphed_residue and adjust its gamma"
+        @debug "Step 8: Get morphed_residue and adjust its gamma"
         morphed_residue = clamp.(equalized_gray - equalized_gray_reconstructed, 0, 255)
 
         agp = adjust_gamma_params
