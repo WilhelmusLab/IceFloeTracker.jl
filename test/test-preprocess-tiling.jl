@@ -52,6 +52,19 @@ include("segmentation_utils.jl")
 
     @ntestset "Validated data" begin
         data_loader = Watkins2025GitHub(; ref="a451cd5e62a10309a9640fbbe6b32a236fcebc70")
+        output_directory = "./test_outputs/"
+        result_images_to_save = [
+            :ref_image,
+            :true_color_image,
+            :ref_img_cloudmasked,
+            :prelim_icemask,
+            :binarized_tiling,
+            :segment_mask,
+            :L0mask,
+            :icemask,
+            :final,
+        ]
+
         @ntestset "visible floes, no clouds, no artifacts" begin
             dataset = data_loader(;
                 case_filter=c -> (
@@ -63,7 +76,10 @@ include("segmentation_utils.jl")
             @info dataset.metadata
 
             results = run_segmentation_over_multiple_cases(
-                dataset.data, LopezAcosta2019Tiling(); output_directory="./test_outputs/"
+                dataset.data,
+                LopezAcosta2019Tiling();
+                output_directory,
+                result_images_to_save,
             )
             @info results
 
@@ -87,7 +103,10 @@ include("segmentation_utils.jl")
             )
             @info dataset.metadata
             results = run_segmentation_over_multiple_cases(
-                dataset.data, LopezAcosta2019Tiling(); output_directory="./test_outputs/"
+                dataset.data,
+                LopezAcosta2019Tiling();
+                output_directory,
+                result_images_to_save,
             )
             @info results
 
@@ -103,7 +122,10 @@ include("segmentation_utils.jl")
             dataset = data_loader(; case_filter=c -> (c.case_number % 17 == 0))
             @info dataset.metadata
             results = run_segmentation_over_multiple_cases(
-                dataset.data, LopezAcosta2019Tiling(); output_directory="./test_outputs/"
+                dataset.data,
+                LopezAcosta2019Tiling();
+                output_directory,
+                result_images_to_save,
             )
             @info results
 
