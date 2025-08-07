@@ -23,93 +23,61 @@ using Images: segment_labels, segment_mean, labels_map
                 ref="a451cd5e62a10309a9640fbbe6b32a236fcebc70"
             )
             @ntestset "visible floes, no clouds, no artifacts" begin
-                dataset = data_loader(;
-                    case_filter=c -> (
+                results = run_segmentation_over_multiple_cases(
+                    data_loader,
+                    c -> (
                         c.visible_floes == "yes" &&
                         c.cloud_category_manual == "none" &&
                         c.artifacts == "no"
                     ),
+                    LopezAcosta2019();
+                    output_directory="./test_outputs/",
                 )
-                @info dataset.metadata
-
-                results = run_segmentation_over_multiple_cases(
-                    dataset.data, LopezAcosta2019(); output_directory="./test_outputs/"
-                )
-                @info results
-
-                # Run tests on aggregate results
-                # First be sure we have the right number of results
-                @test nrow(results) == nrow(dataset.metadata)
-
-                # Now check that all cases run through without crashing
-                successes = subset(results, :success => ByRow(==(true)))
-                @test nrow(results) == nrow(successes)
-
+                test_results_has_same_length_as_data(results)
+                test_all_cases_ran_without_crashing(results)
             end
 
             @ntestset "visible floes, thin clouds, no artifacts" begin
-                dataset = data_loader(;
-                    case_filter=c -> (
+                results = run_segmentation_over_multiple_cases(
+                    data_loader,
+                    c -> (
                         c.visible_floes == "yes" &&
                         c.cloud_category_manual == "thin" &&
                         c.artifacts == "no" &&
                         c.case_number % 5 == 0
                     ),
+                    LopezAcosta2019();
+                    output_directory="./test_outputs/",
                 )
-                @info dataset.metadata
-                results = run_segmentation_over_multiple_cases(
-                    dataset.data, LopezAcosta2019(); output_directory="./test_outputs/"
-                )
-                @info results
-
-                # Run tests on aggregate results
-                # First be sure we have the right number of results
-                @test nrow(results) == nrow(dataset.metadata)
-
-                # Now check that all cases run through without crashing
-                successes = subset(results, :success => ByRow(==(true)))
-                @test nrow(results) == nrow(successes)
+                test_results_has_same_length_as_data(results)
+                test_all_cases_ran_without_crashing(results)
             end
 
             @ntestset "no floes, thin clouds, no artifacts" begin
-                dataset = data_loader(;
-                    case_filter=c -> (
+                results = run_segmentation_over_multiple_cases(
+                    data_loader,
+                    c -> (
                         c.visible_floes == "no" &&
                         c.cloud_category_manual == "thin" &&
                         c.artifacts == "no" &&
                         c.case_number % 5 == 0
                     ),
+                    LopezAcosta2019();
+                    output_directory="./test_outputs/",
                 )
-                @info dataset.metadata
-                results = run_segmentation_over_multiple_cases(
-                    dataset.data, LopezAcosta2019(); output_directory="./test_outputs/"
-                )
-                @info results
-
-                # Run tests on aggregate results
-                # First be sure we have the right number of results
-                @test nrow(results) == nrow(dataset.metadata)
-
-                # Now check that all cases run through without crashing
-                successes = subset(results, :success => ByRow(==(true)))
-                @test nrow(results) == nrow(successes)
+                test_results_has_same_length_as_data(results)
+                test_all_cases_ran_without_crashing(results)
             end
 
             @ntestset "random sample" begin
-                dataset = data_loader(; case_filter=c -> (c.case_number % 17 == 0))
-                @info dataset.metadata
                 results = run_segmentation_over_multiple_cases(
-                    dataset.data, LopezAcosta2019(); output_directory="./test_outputs/"
+                    data_loader,
+                    c -> (c.case_number % 17 == 0),
+                    LopezAcosta2019();
+                    output_directory="./test_outputs/",
                 )
-                @info results
-
-                # Run tests on aggregate results
-                # First be sure we have the right number of results
-                @test nrow(results) == nrow(dataset.metadata)
-
-                # Now check that all cases run through without crashing
-                successes = subset(results, :success => ByRow(==(true)))
-                @test nrow(results) == nrow(successes)
+                test_results_has_same_length_as_data(results)
+                test_all_cases_ran_without_crashing(results)
             end
         end
 

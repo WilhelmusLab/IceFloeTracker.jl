@@ -107,3 +107,32 @@ function run_segmentation_over_multiple_cases(
     results_df = DataFrame(results)
     return results_df
 end
+
+function run_segmentation_over_multiple_cases(
+    data_loader::ValidationDataLoader,
+    case_filter::Function,
+    algorithm::IceFloeSegmentationAlgorithm;
+    output_directory::Union{AbstractString,Nothing}=nothing,
+)::@NamedTuple{data::DataFrame, metadata::DataFrame, results::DataFrame}
+    dataset = data_loader(; case_filter)
+    @info dataset.metadata
+    results = run_segmentation_over_multiple_cases(
+        dataset.data, algorithm; output_directory
+    )
+    @info results
+    return (; data=dataset.data, metadata=dataset.metadata, results)
+end
+
+function test_results_has_same_length_as_data(
+    results::@NamedTuple{data::DataFrame, metadata::DataFrame, results::DataFrame}
+)
+    @test nrow(results.results) == nrow(results.metadata)
+end
+
+function test_all_cases_ran_without_crashing(
+    results::@NamedTuple{data::DataFrame, metadata::DataFrame, results::DataFrame};
+)
+    (; results) = results
+    successes = subset(results, success_column => ByRow(==(true)))
+    @test nrow(results) == nrow(successes)
+end
