@@ -9,7 +9,10 @@ function LopezAcosta2019(; landmask_structuring_element=make_landmask_se())
 end
 
 function (p::LopezAcosta2019)(
-    truecolor::T, falsecolor::T, landmask::U; return_intermediate_results::Bool=false
+    truecolor::T,
+    falsecolor::T,
+    landmask::U;
+    intermediate_results_callback::Union{Nothing,Function}=nothing,
 ) where {T<:AbstractMatrix{<:AbstractRGB},U<:AbstractMatrix}
 
     # Move these conversions down through the function as each step gets support for 
@@ -85,25 +88,23 @@ function (p::LopezAcosta2019)(
     # Return the original truecolor image, segmented
     segments = SegmentedImage(truecolor, labels_map)
 
-    if return_intermediate_results
-        intermediate_results = Dict(
-            :landmask_dilated => landmask_imgs.dilated,
-            :landmask_non_dilated => landmask_imgs.non_dilated,
-            :cloudmask => cloudmask,
-            :ice_labels => ice_labels,
-            :sharpened_truecolor_image => sharpened_truecolor_image,
-            :sharpened_gray_truecolor_image => sharpened_gray_truecolor_image,
-            :normalized_image => normalized_image,
-            :ice_water_discrim => ice_water_discrim,
-            :segA => segA,
-            :segB => segB,
-            :watersheds_segB_product => watersheds_segB_product,
-            :segF => segF,
-            :labels_map => labels_map,
-            :segments => segments,
+    if !isnothing(intermediate_results_callback)
+        intermediate_results_callback(;
+            landmask_dilated=landmask_imgs.dilated,
+            landmask_non_dilated=landmask_imgs.non_dilated,
+            cloudmask=cloudmask,
+            ice_labels=ice_labels,
+            sharpened_truecolor_image=sharpened_truecolor_image,
+            sharpened_gray_truecolor_image=sharpened_gray_truecolor_image,
+            normalized_image=normalized_image,
+            ice_water_discrim=ice_water_discrim,
+            segA=segA,
+            segB=segB,
+            watersheds_segB_product=watersheds_segB_product,
+            segF=segF,
+            labels_map=labels_map,
+            segments=segments,
         )
-        return (segments, intermediate_results)
-    else
-        return segments
     end
+    return segments
 end
