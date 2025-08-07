@@ -1,10 +1,10 @@
 """
-function save_intermediate_images(
-    directory::AbstractString,
-    results::Dict;
-    extension::AbstractString=".png",
-    names::Union{AbstractArray{Symbol},Nothing}=nothing,
-)
+    save_intermediate_images(
+        directory::AbstractString,
+        results::Dict;
+        extension::AbstractString=".png",
+        names::Union{AbstractArray{Symbol},Nothing}=nothing,
+    )
 
 Save images from a `results` Dict to a `directory` using the names in the dictionary as file names.
 Optional arguments:
@@ -28,4 +28,41 @@ function save_intermediate_images(
         end
     end
     return nothing
+end
+
+"""
+    save_results_callback(
+        path;
+        extension,
+        names::Union{AbstractArray{Symbol},Nothing}
+    )::Function
+
+Returns a function which saves any images passed into it as keyword arguments.
+
+# Example
+```julia-repl
+julia> callback = save_results_callback("/tmp/path/to/directory")
+julia> image = Gray.([1 1 0 0 1 0 1])
+julia> callback(;image_name=image)
+```
+... saves `image` to `/tmp/path/to/directory/image_name.png`.
+"""
+function save_results_callback(
+    directory::AbstractString;
+    extension::AbstractString=".png",
+    names::Union{AbstractArray{Symbol},Nothing}=nothing,
+)
+    function callback(; kwargs...)
+        mkpath(directory)
+        for (name, image) in kwargs
+            (names === nothing || name ∈ names) || continue
+            path = joinpath(directory, String(name) * extension)
+            try
+                save(path, image)
+            catch e
+                @warn "an unexpected error occured saving $name: $e"
+            end
+        end
+    end
+    return callback
 end

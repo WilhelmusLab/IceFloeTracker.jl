@@ -5,6 +5,13 @@ using FileIO: load
 using CSVFiles
 using DataFrames
 
+@kwdef struct ValidationDataSet
+    data::Base.Generator
+    metadata::DataFrame
+end
+Base.iterate(iter::ValidationDataSet) = iterate(iter.data)
+Base.iterate(iter::ValidationDataSet, state) = iterate(iter.data, state)
+
 @kwdef struct ValidationDataCase
     name::AbstractString = nothing
     metadata::Union{AbstractDict,Nothing} = nothing
@@ -105,7 +112,7 @@ function (p::ValidationDataLoader)(; case_filter::Function=(case) -> true)
     # Load the data for the filtered metadata
     filtered_data = (_load_case(case, p) for case in eachrow(filtered_metadata))
 
-    return (; data=filtered_data, metadata=filtered_metadata)
+    return ValidationDataSet(; data=filtered_data, metadata=filtered_metadata)
 end
 
 function _load_case(case, p::Watkins2025GitHub)::ValidationDataCase
