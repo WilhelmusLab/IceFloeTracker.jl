@@ -83,13 +83,17 @@ function (p::LopezAcosta2019)(
     )
 
     @info "Labeling floes"
-    labels_map = label_components(segF)
+    labels = label_components(segF)
 
     # Return the original truecolor image, segmented
-    segments = SegmentedImage(truecolor, labels_map)
+    segments = SegmentedImage(truecolor, labels)
 
     if !isnothing(intermediate_results_callback)
+        segments_truecolor = SegmentedImage(truecolor, labels)
+        segments_falsecolor = SegmentedImage(falsecolor, labels)
         intermediate_results_callback(;
+            truecolor,
+            falsecolor,
             landmask_dilated=landmask_imgs.dilated,
             landmask_non_dilated=landmask_imgs.non_dilated,
             cloudmask=cloudmask,
@@ -102,8 +106,13 @@ function (p::LopezAcosta2019)(
             segB=segB,
             watersheds_segB_product=watersheds_segB_product,
             segF=segF,
-            labels_map=labels_map,
-            segments=segments,
+            labels=labels,
+            segment_mean_truecolor=map(
+                i -> segment_mean(segments_truecolor, i), labels_map(segments_truecolor)
+            ),
+            segment_mean_falsecolor=map(
+                i -> segment_mean(segments_falsecolor, i), labels_map(segments_falsecolor)
+            ),
         )
     end
     return segments
