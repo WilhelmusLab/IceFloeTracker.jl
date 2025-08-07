@@ -14,22 +14,6 @@ using IceFloeTracker:
 include("segmentation_utils.jl")
 
 @testset "preprocess_tiling" begin
-    @ntestset "output intermediate results" begin
-        data_loader = Watkins2025GitHub(; ref="a451cd5e62a10309a9640fbbe6b32a236fcebc70")
-        case = first(
-            data_loader(; case_filter=c -> (c.case_number == 1 && c.satellite == "terra"))
-        )
-        output_intermediate_results_to = (;)
-        @show output_intermediate_results_to
-        results = LopezAcosta2019Tiling()(
-            case.modis_truecolor,
-            case.modis_falsecolor,
-            case.modis_landmask;
-            output_intermediate_results_to,
-        )
-        @show output_intermediate_results_to
-    end
-
     region = (1016:3045, 1486:3714)
     data_dir = joinpath(@__DIR__, "test_inputs")
     true_color_image = load(
@@ -131,5 +115,17 @@ include("segmentation_utils.jl")
             successes = subset(results, :success => ByRow(==(true)))
             @test nrow(results) == nrow(successes)
         end
+    end
+    @ntestset "output intermediate results" begin
+        case = first(Watkins2025GitHub(; ref="a451cd5e62a10309a9640fbbe6b32a236fcebc70")())
+        store, intermediate_results_callback = callable_store()
+        @test length(keys(store)) == 0
+        results = LopezAcosta2019Tiling()(
+            case.modis_truecolor,
+            case.modis_falsecolor,
+            case.modis_landmask;
+            intermediate_results_callback,
+        )
+        @test length(keys(store)) > 0
     end
 end
