@@ -89,7 +89,7 @@ function _pairfloes(
                     )
 
                     if callmatchcorr(conditions)
-                        (area_mismatch, corr) = matchcorr(
+                        (area_mismatch, corr, rot, corr_ci, mismatch_ci, rotation_ci) = matchcorr(
                             props1.mask[r], props2.mask[s], Δt; mc_thresholds.comp...
                         )
 
