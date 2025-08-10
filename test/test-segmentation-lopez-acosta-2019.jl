@@ -22,65 +22,36 @@ using Images: segment_labels, segment_mean, labels_map
             data_loader = Watkins2025GitHub(;
                 ref="a451cd5e62a10309a9640fbbe6b32a236fcebc70"
             )
-            @ntestset "visible floes, no clouds, no artifacts" begin
-                results = run_segmentation_over_multiple_cases(
-                    data_loader,
-                    c -> (
-                        c.visible_floes == "yes" &&
-                        c.cloud_category_manual == "none" &&
-                        c.artifacts == "no"
-                    ),
-                    LopezAcosta2019();
-                    output_directory="./test_outputs/",
-                )
-                test_results_has_same_length_as_data(results)
-                test_all_cases_ran_without_crashing(results)
-            end
 
-            @ntestset "visible floes, thin clouds, no artifacts" begin
-                results = run_segmentation_over_multiple_cases(
-                    data_loader,
-                    c -> (
-                        c.visible_floes == "yes" &&
-                        c.cloud_category_manual == "thin" &&
-                        c.artifacts == "no" &&
-                        c.case_number % 5 == 0
-                    ),
-                    LopezAcosta2019();
-                    output_directory="./test_outputs/",
-                )
-                test_results_has_same_length_as_data(results)
-                test_all_cases_ran_without_crashing(results)
-            end
-
-            @ntestset "no floes, thin clouds, no artifacts" begin
-                results = run_segmentation_over_multiple_cases(
-                    data_loader,
-                    c -> (
-                        c.visible_floes == "no" &&
-                        c.cloud_category_manual == "thin" &&
-                        c.artifacts == "no" &&
-                        c.case_number % 5 == 0
-                    ),
-                    LopezAcosta2019();
-                    output_directory="./test_outputs/",
-                )
-                test_results_has_same_length_as_data(results)
-                test_all_cases_ran_without_crashing(results)
-            end
-
-            @ntestset "random sample" begin
-                results = run_segmentation_over_multiple_cases(
-                    data_loader,
-                    c -> (c.case_number % 17 == 0),
-                    LopezAcosta2019();
-                    output_directory="./test_outputs/",
-                )
-                test_results_has_same_length_as_data(results)
-                test_all_cases_ran_without_crashing(results)
-            end
+            results = run_segmentation_over_multiple_cases(
+                data_loader,
+                c ->
+                    (  # visible floes, no clouds, no artifacts
+                            c.visible_floes == "yes" &&
+                            c.cloud_category_manual == "none" &&
+                            c.artifacts == "no"
+                        ) ||
+                        (  # visible floes, thin clouds, no artifacts
+                            c.visible_floes == "yes" &&
+                            c.cloud_category_manual == "thin" &&
+                            c.artifacts == "no" &&
+                            c.case_number % 5 == 0
+                        ) ||
+                        (  # no floes, thin clouds, no artifacts
+                            c.visible_floes == "no" &&
+                            c.cloud_category_manual == "thin" &&
+                            c.artifacts == "no" &&
+                            c.case_number % 5 == 0
+                        ) ||
+                        (  # random sample of all cases
+                            c.case_number % 17 == 0
+                        ),
+                LopezAcosta2019();
+                output_directory="./test_outputs/",
+            )
+            test_results_has_same_length_as_data(results)
+            test_all_cases_ran_without_crashing(results)
         end
-
         truecolor = load(
             "./test_inputs/pipeline/input_pipeline/20220914.aqua.truecolor.250m.tiff"
         )
