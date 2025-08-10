@@ -123,17 +123,14 @@ function run_segmentation_over_multiple_cases(
     return (; metadata=dataset.metadata, results)
 end
 
-function test_results_has_same_length_as_data(
-    results::@NamedTuple{metadata::DataFrame, results::DataFrame}
-)
-    @test nrow(results.results) == nrow(results.metadata)
-end
-
 function test_all_cases_ran_without_crashing(
-    results::@NamedTuple{metadata::DataFrame, results::DataFrame};
+    outputs::@NamedTuple{metadata::DataFrame, results::DataFrame};
     success_column::Symbol=:success,
 )
-    (; results) = results
-    successes = subset(results, success_column => ByRow(==(true)))
-    @test nrow(results) == nrow(successes)
+    # All cases from the metadata are included in the results
+    @test nrow(outputs.results) == nrow(outputs.metadata)
+
+    # ... and each of them succeeded
+    successes = subset(outputs.results, success_column => ByRow(==(true)))
+    @test nrow(outputs.results) == nrow(successes)
 end

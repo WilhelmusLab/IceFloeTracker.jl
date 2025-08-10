@@ -49,7 +49,6 @@ using Images: segment_labels, segment_mean, labels_map
                 LopezAcosta2019();
                 output_directory="./test_outputs/",
             )
-            test_results_has_same_length_as_data(results)
             test_all_cases_ran_without_crashing(results)
         end
         truecolor = load(
