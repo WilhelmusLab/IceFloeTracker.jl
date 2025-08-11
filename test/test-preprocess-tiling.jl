@@ -52,7 +52,19 @@ include("segmentation_utils.jl")
 
     @ntestset "Validated data" begin
         data_loader = Watkins2025GitHub(; ref="a451cd5e62a10309a9640fbbe6b32a236fcebc70")
-
+        intermediate_result_image_names = [
+            :ref_image,
+            :true_color_image,
+            :ref_img_cloudmasked,
+            :prelim_icemask,
+            :binarized_tiling,
+            :segment_mask,
+            :L0mask,
+            :icemask,
+            :final,
+            :segment_mean_truecolor,
+            :segment_mean_falsecolor,
+        ]
         dataset = data_loader(;
             case_filter=c -> (
                 c.visible_floes == "yes" &&
