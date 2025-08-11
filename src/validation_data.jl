@@ -196,7 +196,7 @@ function _load_case(case, p::Watkins2025GitHub)::ValidationDataCase
     ]
         file_url = joinpath(p.url, "raw", p.ref, file_information.source)
         file_path = joinpath(output_directory, file_information.target)
-        data_dict[file_information.name] = get_file(file_url, file_path)
+        data_dict[file_information.name] = _get_file(file_url, file_path)
     end
 
     # Conversions
@@ -215,7 +215,7 @@ function _load_case(case, p::Watkins2025GitHub)::ValidationDataCase
     return data_struct
 end
 
-function get_file(file_url, file_path)
+function _get_file(file_url, file_path)
     @debug "looking for file at $(file_path). File exists: $(isfile(file_path))"
     if !isfile(file_path)
         try
