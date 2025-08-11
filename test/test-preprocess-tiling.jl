@@ -60,18 +60,15 @@ include("segmentation_utils.jl")
                 c.artifacts == "no"
             ),
         )
-        passing_cases_sample = c -> (c.case_number % 17 == 0)
-        broken_cases = c -> false
-        formerly_broken_cases = c -> false  # `broken_cases` once fixed, for regression testing
+        case_filter = c -> (c.case_number % 17 == 0)
 
         results = run_segmentation_over_multiple_cases(
             data_loader,
-            c -> (passing_cases_sample(c) || formerly_broken_cases(c) || broken_cases(c)),
+            case_filter,
             LopezAcosta2019Tiling();
             output_directory="./test_outputs/",
         )
         @info results
         @test all(filter(!broken_cases, results).success)
-        @test any(filter(broken_cases, results).success) broken = true
     end
 end
