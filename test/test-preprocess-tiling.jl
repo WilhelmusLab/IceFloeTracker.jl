@@ -11,6 +11,9 @@ using IceFloeTracker:
     unsharp_mask_params,
     get_tiles,
     binarize_segments
+using StatsBase: mean
+
+skipnanormissing(arr::AbstractArray) = filter(x -> !ismissing(x) && !isnan(x), arr)
 
 include("segmentation_utils.jl")
 
@@ -81,5 +84,30 @@ include("segmentation_utils.jl")
             result_images_to_save,
         )
         @test all(results.success)
+
+        # Aggregate performance measures
+        mean_recall = mean(skipnanormissing(results.recall))
+        mean_precision = mean(skipnanormissing(results.precision))
+        mean_F_score = mean(skipnanormissing(results.F_score))
+
+        # Good performance might look liks this:
+        @test mean_recall ≥ 0.9 broken = true
+        @test mean_precision ≥ 0.9 broken = true
+        @test mean_F_score ≥ 0.9 broken = true
+
+        # Better performance might look like this:
+        @test mean_recall ≥ 0.8 broken = true
+        @test mean_precision ≥ 0.8 broken = true
+        @test mean_F_score ≥ 0.8 broken = true
+
+        # Current performance should look at least as good as this:
+        @test mean_recall ≥ 0.5
+        @test mean_precision ≥ 0.03
+        @test mean_F_score ≥ 0.05
+
+        # return current performance
+        @info mean_recall
+        @info mean_precision
+        @info mean_F_score
     end
 end
