@@ -1,44 +1,4 @@
 """
-Compares two SegmentedImages and returns values describing how similar the segmentations are.
-
-Treats the segment labeled `0` as background.
-
-Measures:
-- normalized_{validated,measured}_area: fraction of image covered by segments
-- fractional_intersection: fraction of the validated segments covered by measured segments
-"""
-function segmentation_comparison(;
-    validated::Union{SegmentedImage,Nothing}=nothing,
-    measured::Union{SegmentedImage,Nothing}=nothing,
-)::NamedTuple
-    if !isnothing(validated)
-        validated_binary = Gray.(labels_map(validated) .> 0)
-        validated_area = sum(channelview(validated_binary))
-        normalized_validated_area = validated_area / length(channelview(validated_binary))
-    else
-        normalized_validated_area = missing
-    end
-
-    if !isnothing(measured)
-        measured_binary = Gray.(labels_map(measured) .> 0)
-        measured_area = sum(channelview(measured_binary))
-        normalized_measured_area = measured_area / length(channelview(measured_binary))
-    else
-        normalized_measured_area = missing
-    end
-
-    if !isnothing(validated) && !isnothing(measured)
-        intersection = Gray.(channelview(measured_binary) .&& channelview(validated_binary))
-        fractional_intersection =
-            fractional_intersection = sum(channelview(intersection)) / validated_area
-    else
-        fractional_intersection = missing
-    end
-
-    return (; normalized_validated_area, normalized_measured_area, fractional_intersection)
-end
-
-"""
 Run the `algorithm::IceFloeSegmentationAlgorithm` over each of the `cases` and return a DataFrame of the results.
 - Each `case` should be a ValidationDataCase.
 - If `output_directory` is defined, then save the output segmentations and images to the directory. 
@@ -50,9 +10,9 @@ function run_segmentation_over_multiple_cases(
 )::DataFrame
     results = []
     for case::ValidationDataCase in cases
-        validated = case.validated_labeled_floes
-        name = case.name
-        let measured, success, error
+        let name, validated, measured, success, error, comparison
+            name = case.name
+            validated = case.validated_labeled_floes
             @info "starting $(name)"
             try
                 measured = algorithm(
@@ -69,16 +29,17 @@ function run_segmentation_over_multiple_cases(
                 measured = nothing
             end
 
+            comparison = segmentation_comparison(; validated, measured)
+
             # Store the aggregate results
             push!(
                 results,
                 merge(
                     (; name, success, error),
-                    segmentation_comparison(; validated, measured),
+                    comparison,
                     NamedTuple(case.metadata),
                 ),
             )
-
             if !isnothing(output_directory)
                 mkpath(output_directory)
                 datestamp = Dates.format(Dates.now(), "yyyy-mm-dd-HHMMSS")
