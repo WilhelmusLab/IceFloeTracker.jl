@@ -32,8 +32,10 @@ function run_segmentation_over_multiple_cases(
             comparison = segmentation_comparison(; validated, measured)
 
             # Store the aggregate results
-            push!(results, merge((; name, success, error), comparison))
-
+            push!(
+                results,
+                merge((; name, success, error), comparison, NamedTuple(case.metadata)),
+            )
             if !isnothing(output_directory)
                 mkpath(output_directory)
                 datestamp = Dates.format(Dates.now(), "yyyy-mm-dd-HHMMSS")
@@ -63,4 +65,19 @@ function run_segmentation_over_multiple_cases(
     end
     results_df = DataFrame(results)
     return results_df
+end
+
+function run_segmentation_over_multiple_cases(
+    data_loader::ValidationDataLoader,
+    case_filter::Function,
+    algorithm::IceFloeSegmentationAlgorithm;
+    output_directory::Union{AbstractString,Nothing}=nothing,
+)::DataFrame
+    dataset = data_loader(; case_filter)
+    @info dataset.metadata
+    results = run_segmentation_over_multiple_cases(
+        dataset.data, algorithm; output_directory
+    )
+    @info results
+    return results
 end
