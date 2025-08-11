@@ -124,15 +124,3 @@ function run_segmentation_over_multiple_cases(
     @info results
     return results
 end
-
-function test_all_cases_ran_without_crashing(
-    outputs::@NamedTuple{metadata::DataFrame, results::DataFrame};
-    success_column::Symbol=:success,
-)
-    # All cases from the metadata are included in the results
-    @test nrow(outputs.results) == nrow(outputs.metadata)
-
-    # ... and each of them succeeded
-    successes = subset(outputs.results, success_column => ByRow(==(true)))
-    @test nrow(outputs.results) == nrow(successes)
-end

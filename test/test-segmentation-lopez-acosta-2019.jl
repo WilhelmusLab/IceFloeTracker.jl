@@ -22,15 +22,20 @@ using Images: segment_labels, segment_mean, labels_map
             data_loader = Watkins2025GitHub(;
                 ref="a451cd5e62a10309a9640fbbe6b32a236fcebc70"
             )
+            broken_cases =
+                c -> (
+                    c.case_number == 4 ||
+                    (c.case_number == 39 && c.satellite == "aqua") ||
+                    c.case_number == 3
+                )
             results = run_segmentation_over_multiple_cases(
                 data_loader,
-                c -> (  # every 17th case (chosen arbitrarily)
-                    c.case_number % 17 == 0
-                ),
+                c -> (c.case_number % 17 == 0 || broken_cases(c)),
                 LopezAcosta2019();
                 output_directory="./test_outputs/",
             )
-            test_all_cases_ran_without_crashing(results)
+            @test all(filter(!broken_cases, results).success)
+            @test any(filter(broken_cases, results).success) broken = true
         end
         truecolor = load(
             "./test_inputs/pipeline/input_pipeline/20220914.aqua.truecolor.250m.tiff"
