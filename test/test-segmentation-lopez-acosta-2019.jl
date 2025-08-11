@@ -23,11 +23,7 @@ using Images: segment_labels, segment_mean, labels_map
                 ref="a451cd5e62a10309a9640fbbe6b32a236fcebc70"
             )
             broken_cases =
-                c -> (
-                    c.case_number == 4 ||
-                    (c.case_number == 39 && c.satellite == "aqua") ||
-                    c.case_number == 3
-                )
+                c -> (c.case_number == 4 || (c.case_number == 39 && c.satellite == "aqua"))
             results = run_segmentation_over_multiple_cases(
                 data_loader,
                 c -> (c.case_number % 17 == 0 || broken_cases(c)),
