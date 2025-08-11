@@ -22,30 +22,11 @@ using Images: segment_labels, segment_mean, labels_map
             data_loader = Watkins2025GitHub(;
                 ref="a451cd5e62a10309a9640fbbe6b32a236fcebc70"
             )
-
             results = run_segmentation_over_multiple_cases(
                 data_loader,
-                c ->
-                    (  # visible floes, no clouds, no artifacts
-                            c.visible_floes == "yes" &&
-                            c.cloud_category_manual == "none" &&
-                            c.artifacts == "no"
-                        ) ||
-                        (  # visible floes, thin clouds, no artifacts
-                            c.visible_floes == "yes" &&
-                            c.cloud_category_manual == "thin" &&
-                            c.artifacts == "no" &&
-                            c.case_number % 5 == 0
-                        ) ||
-                        (  # no floes, thin clouds, no artifacts
-                            c.visible_floes == "no" &&
-                            c.cloud_category_manual == "thin" &&
-                            c.artifacts == "no" &&
-                            c.case_number % 5 == 0
-                        ) ||
-                        (  # random sample of all cases
-                            c.case_number % 17 == 0
-                        ),
+                c -> (  # every 17th case (chosen arbitrarily)
+                    c.case_number % 17 == 0
+                ),
                 LopezAcosta2019();
                 output_directory="./test_outputs/",
             )
