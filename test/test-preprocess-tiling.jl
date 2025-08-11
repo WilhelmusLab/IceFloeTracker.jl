@@ -69,6 +69,7 @@ include("segmentation_utils.jl")
             c -> (passing_cases_sample(c) || formerly_broken_cases(c) || broken_cases(c)),
             LopezAcosta2019Tiling();
             output_directory="./test_outputs/",
+            result_images_to_save=intermediate_result_image_names,
         )
         @info results
         @test all(filter(!broken_cases, results).success)
