@@ -61,8 +61,7 @@ include("segmentation_utils.jl")
             ),
         )
         passing_cases_sample = c -> (c.case_number % 17 == 0)
-        broken_cases =
-            c -> (c.case_number == 4 || (c.case_number == 39 && c.satellite == "aqua"))
+        broken_cases = c -> false
         formerly_broken_cases = c -> false  # `broken_cases` once fixed, for regression testing
 
         results = run_segmentation_over_multiple_cases(
