@@ -92,7 +92,7 @@ end
 
 function (p::ValidationDataLoader)(; case_filter::Function=(case) -> true)
     # Load the metadata
-    all_metadata = load_metadata(p)
+    all_metadata = _load_metadata(p)
 
     # Filter the metadata
     filtered_metadata = filter(case_filter, all_metadata)
@@ -103,7 +103,7 @@ function (p::ValidationDataLoader)(; case_filter::Function=(case) -> true)
     return (; data=filtered_data, metadata=filtered_metadata)
 end
 
-function load_metadata(p::ValidationDataLoader)::DataFrame
+function _load_metadata(p::ValidationDataLoader)::DataFrame
     metadata_url = joinpath(p.url, "raw", p.ref, p.dataset_metadata_path)
     metadata_path = joinpath(p.cache_dir, p.ref, splitpath(p.dataset_metadata_path)[end])
     mkpath(dirname(metadata_path))
