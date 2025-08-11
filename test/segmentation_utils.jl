@@ -115,14 +115,14 @@ function run_segmentation_over_multiple_cases(
     case_filter::Function,
     algorithm::IceFloeSegmentationAlgorithm;
     output_directory::Union{AbstractString,Nothing}=nothing,
-)::@NamedTuple{metadata::DataFrame, results::DataFrame}
+)::DataFrame
     dataset = data_loader(; case_filter)
     @info dataset.metadata
     results = run_segmentation_over_multiple_cases(
         dataset.data, algorithm; output_directory
     )
     @info results
-    return (; metadata=dataset.metadata, results)
+    return results
 end
 
 function test_all_cases_ran_without_crashing(
