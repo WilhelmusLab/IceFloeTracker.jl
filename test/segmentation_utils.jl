@@ -73,7 +73,9 @@ function run_segmentation_over_multiple_cases(
             push!(
                 results,
                 merge(
-                    (; name, success, error), segmentation_comparison(; validated, measured)
+                    (; name, success, error),
+                    segmentation_comparison(; validated, measured),
+                    NamedTuple(case.metadata),
                 ),
             )
 
