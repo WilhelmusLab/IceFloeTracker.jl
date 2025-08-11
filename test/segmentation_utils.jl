@@ -34,11 +34,7 @@ function run_segmentation_over_multiple_cases(
             # Store the aggregate results
             push!(
                 results,
-                merge(
-                    (; name, success, error),
-                    comparison,
-                    NamedTuple(case.metadata),
-                ),
+                merge((; name, success, error), comparison, NamedTuple(case.metadata)),
             )
             if !isnothing(output_directory)
                 mkpath(output_directory)
