@@ -37,7 +37,6 @@ include("segmentation_utils.jl")
         joinpath(data_dir, "beaufort-chukchi-seas_falsecolor.2020162.aqua.250m.tiff")
     )
     landmask_image = load(joinpath(data_dir, "matlab_landmask.png"))
-    datestamp = Dates.format(Dates.now(), "yyyy-mm-dd-HHMMSS")
 
     # Crop images to region of interest
     true_color_image, ref_image, landmask_image = [
@@ -58,7 +57,7 @@ include("segmentation_utils.jl")
         ref_image,
         landmask_image;
         intermediate_results_callback=save_results_callback(
-            "./test_outputs/segmentation-LopezAcosta2019Tiling-functor-$(datestamp)";
+            "./test_outputs/segmentation-LopezAcosta2019Tiling-functor-$(Dates.format(Dates.now(), "yyyy-mm-dd-HHMMSS"))";
             names=result_images_to_save,
         ),
     )
