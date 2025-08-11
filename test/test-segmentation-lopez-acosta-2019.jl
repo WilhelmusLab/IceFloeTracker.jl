@@ -24,7 +24,7 @@ using Images: segment_labels, segment_mean, labels_map
             )
             broken_cases =
                 c -> (c.case_number == 4 || (c.case_number == 39 && c.satellite == "aqua"))
-            formerly_broken_cases = c -> false  # cases from `broken_cases` once fixed, for regression testing
+            formerly_broken_cases = c -> false  # `broken_cases` once fixed, for regression testing
             results = run_segmentation_over_multiple_cases(
                 data_loader,
                 c -> (
