@@ -91,13 +91,8 @@ Loader for validated ice floe data structured like https://github.com/danielmwat
 end
 
 function (p::ValidationDataLoader)(; case_filter::Function=(case) -> true)
-    metadata_url = joinpath(p.url, "raw", p.ref, p.dataset_metadata_path)
-    metadata_path = joinpath(p.cache_dir, p.ref, splitpath(p.dataset_metadata_path)[end])
-    mkpath(dirname(metadata_path))
-
-    # Load the metadata file
-    isfile(metadata_path) || download(metadata_url, metadata_path) # Only download if the file doesn't already exist
-    all_metadata = DataFrame(load(metadata_path))
+    # Load the metadata
+    all_metadata = load_metadata(p)
 
     # Filter the metadata
     filtered_metadata = filter(case_filter, all_metadata)
@@ -107,6 +102,19 @@ function (p::ValidationDataLoader)(; case_filter::Function=(case) -> true)
 
     return (; data=filtered_data, metadata=filtered_metadata)
 end
+
+function load_metadata(p::ValidationDataLoader)::DataFrame
+    metadata_url = joinpath(p.url, "raw", p.ref, p.dataset_metadata_path)
+    metadata_path = joinpath(p.cache_dir, p.ref, splitpath(p.dataset_metadata_path)[end])
+    mkpath(dirname(metadata_path))
+
+    # Load the metadata file
+    isfile(metadata_path) || download(metadata_url, metadata_path) # Only download if the file doesn't already exist
+    metadata = DataFrame(load(metadata_path))
+    return metadata
+end
+
+Base.length(p::ValidationDataLoader) = nrow(load_metadata(p))
 
 function _load_case(case, p::Watkins2025GitHub)::ValidationDataCase
     data_dict = Dict()
