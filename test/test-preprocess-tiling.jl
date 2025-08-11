@@ -42,8 +42,11 @@ include("segmentation_utils.jl")
     true_color_image, ref_image, landmask_image = [
         img[region...] for img in (true_color_image, ref_image, landmask_image)
     ]
+
+    tile_settings = (; rblocks=2, cblocks=3)
+
     segments = LopezAcosta2019Tiling(;
-        tile_settings=(; rblocks=2, cblocks=3),
+        tile_settings,
         cloud_mask_thresholds,
         adapthisteq_params,
         adjust_gamma_params,
