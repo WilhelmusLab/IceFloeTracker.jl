@@ -114,7 +114,7 @@ function _load_metadata(p::ValidationDataLoader)::DataFrame
     return metadata
 end
 
-Base.length(p::ValidationDataLoader) = nrow(load_metadata(p))
+Base.length(p::ValidationDataLoader) = nrow(_load_metadata(p))
 
 function _load_case(case, p::Watkins2025GitHub)::ValidationDataCase
     data_dict = Dict()
