@@ -71,7 +71,6 @@ include("segmentation_utils.jl")
                 :segment_mean_falsecolor,
             ],
         )
-        @info results
         @test all(results.success)
     end
 end
