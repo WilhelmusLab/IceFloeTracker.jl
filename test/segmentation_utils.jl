@@ -107,14 +107,12 @@ function save_results_callback(
     case::ValidationDataCase,
     algorithm::IceFloeSegmentationAlgorithm;
     extension::AbstractString=".png",
-    names::Union{AbstractArray{Symbol},Nothing}=nothing,
 )
     datestamp = Dates.format(Dates.now(), "yyyy-mm-dd-HHMMSS")
     name = case.name
     return save_results_callback(
         joinpath(directory, "segmentation-$(typeof(algorithm))-$(name)-$(datestamp)");
         extension,
-        names,
     )
 end
 
@@ -122,7 +120,6 @@ end
     save_results_callback(
         path;
         extension,
-        names::Union{AbstractArray{Symbol},Nothing}
     )::Function
 
 Returns a function which saves any images passed into it as keyword arguments.
@@ -135,15 +132,10 @@ julia> callback(;image_name=image)
 ```
 ... saves `image` to `/tmp/path/to/directory/image_name.png`.
 """
-function save_results_callback(
-    directory::AbstractString;
-    extension::AbstractString=".png",
-    names::Union{AbstractArray{Symbol},Nothing}=nothing,
-)
+function save_results_callback(directory::AbstractString; extension::AbstractString=".png")
     function callback(; kwargs...)
         mkpath(directory)
         for (name, image) in kwargs
-            (names === nothing || name ∈ names) || continue
             path = joinpath(directory, String(name) * extension)
             if typeof(image) <: AbstractArray{Bool}
                 image = Gray.(image)
