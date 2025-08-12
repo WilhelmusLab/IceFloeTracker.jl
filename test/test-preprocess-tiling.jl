@@ -82,14 +82,11 @@ using StatsBase: mean
         baseline = run_and_validate_segmentation(
             case, algorithm; output_directory="./test_outputs/"
         )
-
-        supported_types = [n0f8, n6f10, n4f12, n2f14, n0f16, float32, float64]
-        for target_type in supported_types
+        function results_invariant_under_image_type_transformation(target_type::Function)
             @info "Image type: $target_type"
             intermediate_results_callback = save_results_callback(
                 "./test_outputs/segmentation-LopezAcosta2019Tiling-$(target_type)-$(Dates.format(Dates.now(), "yyyy-mm-dd-HHMMSS"))";
             )
-
             try
                 segments = LopezAcosta2019Tiling()(
                     target_type.(RGB.(case.modis_truecolor)),
@@ -102,15 +99,24 @@ using StatsBase: mean
                 (; recall, precision, F_score) = segmentation_comparison(
                     case.validated_labeled_floes, segments
                 )
-                @test segment_count ≈ baseline.segment_count rtol = 0.01
-                @test labeled_fraction ≈ baseline.labeled_fraction rtol = 0.01
-                @test recall ≈ baseline.recall rtol = 0.01
-                @test precision ≈ baseline.precision rtol = 0.01
-                @test F_score ≈ baseline.F_score rtol = 0.01
+                return all(
+                    ≈(segment_count, baseline.segment_count; rtol=0.01),
+                    ≈(labeled_fraction, baseline.labeled_fraction; rtol=0.01),
+                    ≈(recall, baseline.recall; rtol=0.01),
+                    ≈(precision, baseline.precision; rtol=0.01),
+                    ≈(F_score, baseline.F_score; rtol=0.01),
+                )
             catch e
-                @warn "$(target_type) failed"
-                @test false
+                @error "$(target_type) failed"
+                return false
             end
         end
+        @test results_invariant_under_image_type_transformation(n0f8)
+        @test results_invariant_under_image_type_transformation(n6f10) broken = true
+        @test results_invariant_under_image_type_transformation(n4f12) broken = true
+        @test results_invariant_under_image_type_transformation(n2f14) broken = true
+        @test results_invariant_under_image_type_transformation(n0f16) broken = true
+        @test results_invariant_under_image_type_transformation(float32)
+        @test results_invariant_under_image_type_transformation(float64)
     end
 end
