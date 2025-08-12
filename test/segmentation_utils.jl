@@ -107,6 +107,16 @@ function run_segmentation_over_one_case(
     end
 end
 
+function run_segmentation_over_one_case(
+    data_loader::ValidationDataLoader,
+    case_filter::Function,
+    algorithm::IceFloeSegmentationAlgorithm;
+    output_directory::Union{AbstractString,Nothing}=nothing,
+)
+    case = first(data_loader(; case_filter))
+    return run_segmentation_over_one_case(case, algorithm; output_directory)
+end
+
 """
     run_segmentation_over_multiple_cases(
         data_loader::ValidationDataLoader,
