@@ -74,29 +74,11 @@ function run_segmentation_over_multiple_cases(
                 results,
                 merge((; name, success, error), comparison, NamedTuple(case.metadata)),
             )
-            if !isnothing(output_directory)
-                mkpath(output_directory)
-                datestamp = Dates.format(Dates.now(), "yyyy-mm-dd-HHMMSS")
-                !isnothing(measured) && save(
-                    joinpath(
-                        output_directory,
-                        "segmentation-$(typeof(algorithm))-$(name)-$(datestamp)-mean-labels.png",
+            if !isnothing(intermediate_results_callback)
+                intermediate_results_callback(;
+                    segment_mean_truecolor_validated=map(
+                        i -> segment_mean(validated, i), labels_map(validated)
                     ),
-                    map(i -> segment_mean(measured, i), labels_map(measured)),
-                )
-                !isnothing(validated) && save(
-                    joinpath(
-                        output_directory,
-                        "segmentation-$(typeof(algorithm))-$(name)-$(datestamp)-validated-mean-labels.png",
-                    ),
-                    map(i -> segment_mean(validated, i), labels_map(validated)),
-                )
-                !isnothing(case.modis_truecolor) && save(
-                    joinpath(
-                        output_directory,
-                        "segmentation-$(typeof(algorithm))-$(name)-$(datestamp)-truecolor.png",
-                    ),
-                    case.modis_truecolor,
                 )
             end
         end
