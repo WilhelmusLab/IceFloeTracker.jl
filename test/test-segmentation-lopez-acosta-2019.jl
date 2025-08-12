@@ -13,8 +13,8 @@ using Images: segment_labels, segment_mean, labels_map
                 LopezAcosta2019();
                 output_directory="./test_outputs/",
             )
-            @test all(filter(!broken_cases, results).success)
-            @test any(filter(broken_cases, results).success) broken = true
+            @test all(filter(!broken, results).success)
+            @test any(filter(broken, results).success) broken = true
         end
         @ntestset "Detailed tests" begin
             (; labeled_fraction, recall, precision, F_score) = run_and_validate_segmentation(
