@@ -1,5 +1,4 @@
 
-using IceFloeTracker: LopezAcosta2019Tiling
 using StatsBase: mean
 
 @testset "preprocess_tiling" begin
