@@ -1,4 +1,113 @@
 """
+    function check_case(
+        algorithm::IceFloeSegmentationAlgorithm,
+        data_loader::ValidationDataLoader,
+        case_filter::Function;
+        labeled_fraction_goal,
+        recall_goal,
+        precision_goal,
+        F_score_goal,
+    )
+
+    Run the segmentation `algorithm` over the data in `case` and check the results.
+
+    Tests include:
+    - `labeled_fraction` should be within 10% of `labeled_fraction_goal`
+    - `recall` should be ≥ `recall_goal`
+    - `precision` should be ≥ `precision_goal`
+    - `F_score` should be ≥ `F_score_goal`
+"""
+function check_case(
+    algorithm::IceFloeSegmentationAlgorithm,
+    data_loader::ValidationDataLoader,
+    case_filter::Function;
+    labeled_fraction_goal,
+    recall_goal,
+    precision_goal,
+    F_score_goal,
+)
+    case = first(data_loader(; case_filter))
+    @info "starting $(case.name)"
+    (; labeled_fraction, precision, recall, F_score) = run_segmentation_over_one_case(
+        case, algorithm
+    )
+    @show labeled_fraction
+    @show recall
+    @show precision
+    @show F_score
+
+    @test labeled_fraction ≈ labeled_fraction_goal rtol = 0.1
+    @test recall_goal ≤ recall
+    @test precision_goal ≤ precision
+    @test F_score_goal ≤ F_score
+end
+
+"""
+    run_segmentation_over_multiple_cases(
+        case::ValidationDataCase,
+        algorithm::IceFloeSegmentationAlgorithm;
+        output_directory::Union{AbstractString,Nothing}=nothing,
+        result_images_to_save::Union{AbstractArray{Symbol},Nothing}=nothing,
+    )
+
+Run the `algorithm::IceFloeSegmentationAlgorithm` on the `case` and return a NamedTuple of the validation results.
+
+Results include:
+- `name` – name of the `case`
+- `success` – whether the algorithm ran without throwing an error
+- `error` – if there was an error, what the error message was
+- outputs from `segmentation_summary` including `labeled_fraction`
+- outputs from `segmentation_comparison` of the measured and validated dataset, including `precision`, `recall` and `F_score`.
+
+
+"""
+function run_segmentation_over_one_case(
+    case::ValidationDataCase,
+    algorithm::IceFloeSegmentationAlgorithm;
+    output_directory::Union{AbstractString,Nothing}=nothing,
+)
+    let name, datestamp, validated, measured, success, error, comparison
+        name = case.name
+        validated = case.validated_labeled_floes
+        if !isnothing(output_directory)
+            intermediate_results_callback = save_results_callback(
+                output_directory, case, algorithm;
+            )
+        else
+            intermediate_results_callback = nothing
+        end
+        try
+            measured = algorithm(
+                RGB.(case.modis_truecolor),
+                RGB.(case.modis_falsecolor),
+                case.modis_landmask;
+                intermediate_results_callback,
+            )
+            @info "$(name) succeeded"
+            success = true
+            error = nothing
+        catch error
+            @warn "$(name) failed: $(error)"
+            success = false
+            measured = nothing
+        end
+        summary = segmentation_summary(measured)
+        comparison = segmentation_comparison(; validated, measured)
+        results = merge(
+            (; name, success, error), comparison, summary, NamedTuple(case.metadata)
+        )
+        if !isnothing(intermediate_results_callback) && !isnothing(validated)
+            intermediate_results_callback(;
+                segment_mean_truecolor_validated=map(
+                    i -> segment_mean(validated, i), labels_map(validated)
+                ),
+            )
+        end
+        return results
+    end
+end
+
+"""
     run_segmentation_over_multiple_cases(
         data_loader::ValidationDataLoader,
         case_filter::Function,
@@ -32,49 +141,9 @@ function run_segmentation_over_multiple_cases(
     @info dataset.metadata
     results = []
     for case::ValidationDataCase in dataset
-        let name, datestamp, validated, measured, success, error, comparison
-            name = case.name
-            validated = case.validated_labeled_floes
-            if !isnothing(output_directory)
-                intermediate_results_callback = save_results_callback(
-                    output_directory, case, algorithm;
-                )
-            else
-                intermediate_results_callback = nothing
-            end
-
-            @info "starting $(name)"
-            try
-                measured = algorithm(
-                    RGB.(case.modis_truecolor),
-                    RGB.(case.modis_falsecolor),
-                    case.modis_landmask;
-                    intermediate_results_callback,
-                )
-                @info "$(name) succeeded"
-                success = true
-                error = nothing
-            catch error
-                @warn "$(name) failed: $(error)"
-                success = false
-                measured = nothing
-            end
-
-            comparison = segmentation_comparison(; validated, measured)
-
-            # Store the aggregate results
-            push!(
-                results,
-                merge((; name, success, error), comparison, NamedTuple(case.metadata)),
-            )
-            if !isnothing(intermediate_results_callback) && !isnothing(validated)
-                intermediate_results_callback(;
-                    segment_mean_truecolor_validated=map(
-                        i -> segment_mean(validated, i), labels_map(validated)
-                    ),
-                )
-            end
-        end
+        @info "starting $(case.name)"
+        results_row = run_segmentation_over_one_case(case, algorithm; output_directory)
+        push!(results, results_row)
     end
     results_df = DataFrame(results)
     @info results_df

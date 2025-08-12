@@ -20,38 +20,44 @@ include("segmentation_utils.jl")
 @testset "preprocess_tiling" begin
     data_loader = Watkins2025GitHub(; ref="a451cd5e62a10309a9640fbbe6b32a236fcebc70")
     @ntestset "Detailed checks" begin
-        @ntestset "Watkins 2025, case 14, aqua" begin
-            case = first(
-                data_loader(;
-                    case_filter=c -> (c.case_number == 14 && c.satellite == "aqua")
-                ),
-            )
-
-            validated_segments = case.validated_labeled_floes
-            algorithm = LopezAcosta2019Tiling()
-            measured_segments = algorithm(
-                case.modis_truecolor,
-                case.modis_falsecolor,
-                case.modis_landmask;
-                intermediate_results_callback=save_results_callback(
-                    "./test_outputs/", case, algorithm
-                ),
-            )
-            (; labeled_fraction) = segmentation_summary(measured_segments)
-            (; precision, recall, F_score) = segmentation_comparison(
-                validated_segments, measured_segments
-            )
-            @show labeled_fraction
-            @show recall
-            @show precision
-            @show F_score
-
-            @test labeled_fraction ≈ 0.3346 atol = 0.03
-            @test 0.846 ≤ recall
-            @test 0.313 ≤ precision
-            @test 0.457 ≤ F_score
-        end
+        check_case(
+            LopezAcosta2019Tiling(),
+            data_loader,
+            c -> (c.case_number == 6 && c.satellite == "terra");
+            labeled_fraction_goal=0.426,
+            recall_goal=0.876,
+            precision_goal=0.595,
+            F_score_goal=0.708,
+        )
+        check_case(
+            LopezAcosta2019Tiling(),
+            data_loader,
+            c -> (c.case_number == 14 && c.satellite == "aqua");
+            labeled_fraction_goal=0.334,
+            recall_goal=0.846,
+            precision_goal=0.313,
+            F_score_goal=0.457,
+        )
+        check_case(
+            LopezAcosta2019Tiling(),
+            data_loader,
+            c -> (c.case_number == 61 && c.satellite == "aqua");
+            labeled_fraction_goal=0.271,
+            recall_goal=0.709,
+            precision_goal=0.686,
+            F_score_goal=0.697,
+        )
+        check_case(
+            LopezAcosta2019Tiling(),
+            data_loader,
+            c -> (c.case_number == 63 && c.satellite == "aqua");
+            labeled_fraction_goal=0.579,
+            recall_goal=0.901,
+            precision_goal=0.620,
+            F_score_goal=0.734,
+        )
     end
+
     @ntestset "Aggregate results" begin
         results = run_segmentation_over_multiple_cases(
             data_loader,
