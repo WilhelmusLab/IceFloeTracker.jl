@@ -48,35 +48,33 @@ alltests = [f for f in readdir() if startswith(f, "test-")]
 ## Put the filenames to test below
 
 to_test = alltests # uncomment this line to run all tests or add individual files below
-to_test = [
-    "test-preprocess-tiling.jl",
-    "test-segmentation-lopez-acosta-2019.jl",
-    # "test-latlon.jl",
-    # "test-create-cloudmask.jl",
-    # "test-normalize-image.jl",
-    # "test-persist.jl",
-    # "test-utils-padding.jl",
-    # "test-discrim-ice-water.jl",
-    # "test-find-ice-labels.jl",
-    # "test-segmentation-a.jl",
-    # "test-segmentation-b.jl",
-    # "test-segmentation-watershed.jl",
-    # "test-segmentation-f.jl",
-    # "test-bwtraceboundary.jl",
-    # "test-resample-boundary.jl",
-    # "test-regionprops.jl",
-    # "test-regionprops-labeled.jl",
-    # "test-psi-s.jl",
-    # "test-crosscorr.jl"
-    # "test-bwperim.jl",
-    # "test-bwareamaxfilt.jl"
-    # "test-register-mismatch.jl",
-    # "test-utils-imextendedmin.jl",
-    # "test-morphSE.jl",
-    # "test-hbreak.jl",
-    # "test-bridge.jl",
-    # "test-branch.jl"
-    # "test-pipeline.jl"
+[
+# "test-latlon.jl",
+# "test-create-cloudmask.jl",
+# "test-normalize-image.jl",
+# "test-persist.jl",
+# "test-utils-padding.jl",
+# "test-discrim-ice-water.jl",
+# "test-find-ice-labels.jl",
+# "test-segmentation-a.jl",
+# "test-segmentation-b.jl",
+# "test-segmentation-watershed.jl",
+# "test-segmentation-f.jl",
+# "test-bwtraceboundary.jl",
+# "test-resample-boundary.jl",
+# "test-regionprops.jl",
+# "test-regionprops-labeled.jl",
+# "test-psi-s.jl",
+# "test-crosscorr.jl"
+# "test-bwperim.jl",
+# "test-bwareamaxfilt.jl"
+# "test-register-mismatch.jl",
+# "test-utils-imextendedmin.jl",
+# "test-morphSE.jl",
+# "test-hbreak.jl",
+# "test-bridge.jl",
+# "test-branch.jl"
+# "test-pipeline.jl"
 ]
 
 # Run the tests
