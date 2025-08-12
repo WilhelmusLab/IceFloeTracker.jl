@@ -3,10 +3,8 @@ using Images: segment_labels, segment_mean, labels_map
 
 @ntestset "$(@__FILE__)" begin
     @ntestset "Lopez-Acosta 2019" begin
-        @ntestset "Validated data" begin
-            data_loader = Watkins2025GitHub(;
-                ref="a451cd5e62a10309a9640fbbe6b32a236fcebc70"
-            )
+        data_loader = Watkins2025GitHub(; ref="a451cd5e62a10309a9640fbbe6b32a236fcebc70")
+        @ntestset "Sample of cases" begin
             broken_cases =
                 c -> (c.case_number == 4 || (c.case_number == 39 && c.satellite == "aqua"))
             formerly_broken_cases = c -> false  # `broken_cases` once fixed, for regression testing
