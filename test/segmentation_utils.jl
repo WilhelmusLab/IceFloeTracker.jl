@@ -1,11 +1,52 @@
 """
-    run_segmentation_over_one_case(
+    run_segmentation(
+        dataset::ValidationDataSet,
+        algorithm::IceFloeSegmentationAlgorithm;
+        output_directory::Union{AbstractString,Nothing}=nothing,
+        result_images_to_save::Union{AbstractArray{Symbol},Nothing}=nothing,
+    )
+
+Run the `algorithm::IceFloeSegmentationAlgorithm` over each of the cases in `dataset` and return a DataFrame of the results.
+
+Inputs:
+- `dataset`: a ValidationDataSet
+- `algorithm`: an instantiated `IceFloeSegmentationAlgorithm` which will be called on each case
+- `output_directory`: optional – path to save intermediate and final outputs
+
+Returns:
+- A DataFrame with the results including a :success boolean, any :error messages, and the original metadata.
+
+"""
+function run_segmentation(
+    dataset::ValidationDataSet,
+    algorithm::IceFloeSegmentationAlgorithm;
+    output_directory::Union{AbstractString,Nothing}=nothing,
+)::DataFrame
+    @info dataset.metadata
+    results = []
+    for case::ValidationDataCase in dataset
+        @info "starting $(case.name)"
+        results_row = run_segmentation(case, algorithm; output_directory)
+        push!(results, results_row)
+    end
+    results_df = DataFrame(results)
+    @info results_df
+    return results_df
+end
+
+"""
+    run_segmentation(
         case::ValidationDataCase,
         algorithm::IceFloeSegmentationAlgorithm;
         output_directory::Union{AbstractString,Nothing}=nothing,
     )
 
 Run the `algorithm::IceFloeSegmentationAlgorithm` on the `case` and return a NamedTuple of the validation results.
+
+- `case`: ValidationDataCase to be processed by the algorithm
+- `algorithm`: an instantiated `IceFloeSegmentationAlgorithm` which will be called on each case
+- `output_directory`: optional – path to save intermediate and final outputs
+
 
 Results include:
 - `name` – name of the `case`
@@ -16,7 +57,7 @@ Results include:
 
 
 """
-function run_segmentation_over_one_case(
+function run_segmentation(
     case::ValidationDataCase,
     algorithm::IceFloeSegmentationAlgorithm;
     output_directory::Union{AbstractString,Nothing}=nothing,
@@ -62,65 +103,20 @@ function run_segmentation_over_one_case(
     end
 end
 
-function run_segmentation_over_one_case(
-    data_loader::ValidationDataLoader,
-    case_filter::Function,
+function save_results_callback(
+    directory::AbstractString,
+    case::ValidationDataCase,
     algorithm::IceFloeSegmentationAlgorithm;
-    output_directory::Union{AbstractString,Nothing}=nothing,
+    extension::AbstractString=".png",
+    names::Union{AbstractArray{Symbol},Nothing}=nothing,
 )
-    case = first(data_loader(; case_filter))
-    return run_segmentation_over_one_case(case, algorithm; output_directory)
-end
-
-"""
-    run_segmentation_over_multiple_cases(
-        data_loader::ValidationDataLoader,
-        case_filter::Function,
-        algorithm::IceFloeSegmentationAlgorithm;
-        output_directory::Union{AbstractString,Nothing}=nothing,
-        result_images_to_save::Union{AbstractArray{Symbol},Nothing}=nothing,
+    datestamp = Dates.format(Dates.now(), "yyyy-mm-dd-HHMMSS")
+    name = case.name
+    return save_results_callback(
+        joinpath(directory, "segmentation-$(typeof(algorithm))-$(name)-$(datestamp)");
+        extension,
+        names,
     )
-
-Run the `algorithm::IceFloeSegmentationAlgorithm` over each of the `cases` and return a DataFrame of the results.
-
-Inputs:
-- `data_loader`: a ValidationDataLoader to load the data from a validated data set
-- `case_filter`: a function which returns a boolean when given the data_loader's metadata values
-  and determines which cases are included (true) or excluded (false) from processing
-- `algorithm`: an instantiated `IceFloeSegmentationAlgorithm` which will be called on each case
-- `output_directory`: optional – path to save intermediate and final outputs
-- `result_images_to_save`: optional – symbols of the intermediate results from `algorithm` which should be saved
-
-Returns:
-- A DataFrame with the results including a :success boolean, any :error messages, and the original metadata.
-
-"""
-
-function run_segmentation_over_multiple_cases(
-    data_loader::ValidationDataLoader,
-    case_filter::Function,
-    algorithm::IceFloeSegmentationAlgorithm;
-    output_directory::Union{AbstractString,Nothing}=nothing,
-)::DataFrame
-    dataset = data_loader(; case_filter)
-    return run_segmentation_over_multiple_cases(dataset, algorithm; output_directory)
-end
-
-function run_segmentation_over_multiple_cases(
-    dataset::ValidationDataSet,
-    algorithm::IceFloeSegmentationAlgorithm;
-    output_directory::Union{AbstractString,Nothing}=nothing,
-)::DataFrame
-    @info dataset.metadata
-    results = []
-    for case::ValidationDataCase in dataset
-        @info "starting $(case.name)"
-        results_row = run_segmentation_over_one_case(case, algorithm; output_directory)
-        push!(results, results_row)
-    end
-    results_df = DataFrame(results)
-    @info results_df
-    return results_df
 end
 
 """
@@ -165,20 +161,4 @@ function save_results_callback(
         end
     end
     return callback
-end
-
-function save_results_callback(
-    directory::AbstractString,
-    case::ValidationDataCase,
-    algorithm::IceFloeSegmentationAlgorithm;
-    extension::AbstractString=".png",
-    names::Union{AbstractArray{Symbol},Nothing}=nothing,
-)
-    datestamp = Dates.format(Dates.now(), "yyyy-mm-dd-HHMMSS")
-    name = case.name
-    return save_results_callback(
-        joinpath(directory, "segmentation-$(typeof(algorithm))-$(name)-$(datestamp)");
-        extension,
-        names,
-    )
 end

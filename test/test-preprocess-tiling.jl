@@ -18,9 +18,8 @@ skipnanormissing(arr::AbstractArray) = filter(x -> !ismissing(x) && !isnan(x), a
 @testset "preprocess_tiling" begin
     data_loader = Watkins2025GitHub(; ref="a451cd5e62a10309a9640fbbe6b32a236fcebc70")
     @ntestset "Detailed checks" begin
-        (; labeled_fraction, recall, precision, F_score) = run_segmentation_over_one_case(
-            data_loader,
-            c -> (c.case_number == 6 && c.satellite == "terra"),
+        (; labeled_fraction, recall, precision, F_score) = run_segmentation(
+            first(data_loader(c -> (c.case_number == 6 && c.satellite == "terra"))),
             LopezAcosta2019Tiling();
         )
         @test 0.426 ≈ labeled_fraction atol = 0.1
@@ -28,9 +27,8 @@ skipnanormissing(arr::AbstractArray) = filter(x -> !ismissing(x) && !isnan(x), a
         @test 0.595 ≤ precision
         @test 0.708 ≤ F_score
 
-        (; labeled_fraction, recall, precision, F_score) = run_segmentation_over_one_case(
-            data_loader,
-            c -> (c.case_number == 14 && c.satellite == "aqua"),
+        (; labeled_fraction, recall, precision, F_score) = run_segmentation(
+            first(data_loader(c -> (c.case_number == 14 && c.satellite == "aqua"))),
             LopezAcosta2019Tiling();
         )
         @test 0.334 ≈ labeled_fraction atol = 0.1
@@ -38,9 +36,8 @@ skipnanormissing(arr::AbstractArray) = filter(x -> !ismissing(x) && !isnan(x), a
         @test 0.313 ≤ precision
         @test 0.457 ≤ F_score
 
-        (; labeled_fraction, recall, precision, F_score) = run_segmentation_over_one_case(
-            data_loader,
-            c -> (c.case_number == 61 && c.satellite == "aqua"),
+        (; labeled_fraction, recall, precision, F_score) = run_segmentation(
+            first(data_loader(c -> (c.case_number == 61 && c.satellite == "aqua"))),
             LopezAcosta2019Tiling();
         )
         @test 0.271 ≈ labeled_fraction atol = 0.1
@@ -48,9 +45,8 @@ skipnanormissing(arr::AbstractArray) = filter(x -> !ismissing(x) && !isnan(x), a
         @test 0.686 ≤ precision
         @test 0.697 ≤ F_score
 
-        (; labeled_fraction, recall, precision, F_score) = run_segmentation_over_one_case(
-            data_loader,
-            c -> (c.case_number == 63 && c.satellite == "aqua"),
+        (; labeled_fraction, recall, precision, F_score) = run_segmentation(
+            first(data_loader(c -> (c.case_number == 63 && c.satellite == "aqua"))),
             LopezAcosta2019Tiling();
         )
         @test 0.579 ≈ labeled_fraction atol = 0.1
@@ -60,9 +56,8 @@ skipnanormissing(arr::AbstractArray) = filter(x -> !ismissing(x) && !isnan(x), a
     end
 
     @ntestset "Aggregate results" begin
-        results = run_segmentation_over_multiple_cases(
-            data_loader,
-            case -> (case.case_number % 17 == 0),
+        results = run_segmentation(
+            data_loader(case -> (case.case_number % 17 == 0)),
             LopezAcosta2019Tiling();
             output_directory="./test_outputs/",
         )
