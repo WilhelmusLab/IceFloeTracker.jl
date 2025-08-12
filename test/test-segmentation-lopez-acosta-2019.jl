@@ -1,4 +1,3 @@
-
 using Images: segment_labels, segment_mean, labels_map
 
 @ntestset "$(@__FILE__)" begin
