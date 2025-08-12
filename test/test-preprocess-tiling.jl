@@ -18,15 +18,40 @@ skipnanormissing(arr::AbstractArray) = filter(x -> !ismissing(x) && !isnan(x), a
 include("segmentation_utils.jl")
 
 @testset "preprocess_tiling" begin
-    region = (1016:3045, 1486:3714)
-    data_dir = joinpath(@__DIR__, "test_inputs")
-    true_color_image = load(
-        joinpath(data_dir, "beaufort-chukchi-seas_truecolor.2020162.aqua.250m.tiff")
-    )
-    ref_image = load(
-        joinpath(data_dir, "beaufort-chukchi-seas_falsecolor.2020162.aqua.250m.tiff")
-    )
-    landmask_image = load(joinpath(data_dir, "matlab_landmask.png"))
+    data_loader = Watkins2025GitHub(; ref="a451cd5e62a10309a9640fbbe6b32a236fcebc70")
+    @ntestset "Detailed checks" begin
+        @ntestset "Watkins 2025, case 14, aqua" begin
+            case = first(
+                data_loader(;
+                    case_filter=c -> (c.case_number == 14 && c.satellite == "aqua")
+                ),
+            )
+
+            validated_segments = case.validated_labeled_floes
+            algorithm = LopezAcosta2019Tiling()
+            measured_segments = algorithm(
+                case.modis_truecolor,
+                case.modis_falsecolor,
+                case.modis_landmask;
+                intermediate_results_callback=save_results_callback(
+                    "./test_outputs/", case, algorithm
+                ),
+            )
+            (; labeled_fraction) = segmentation_summary(measured_segments)
+            (; precision, recall, F_score) = segmentation_comparison(
+                validated_segments, measured_segments
+            )
+            @show labeled_fraction
+            @show recall
+            @show precision
+            @show F_score
+
+            @test labeled_fraction ≈ 0.3346 atol = 0.03
+            @test 0.846 ≤ recall
+            @test 0.313 ≤ precision
+            @test 0.457 ≤ F_score
+        end
+    end
 
     # Crop images to region of interest
     true_color_image, ref_image, landmask_image = [
