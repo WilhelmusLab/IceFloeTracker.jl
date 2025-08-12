@@ -82,7 +82,6 @@ using StatsBase: mean
         baseline = run_and_validate_segmentation(
             case, algorithm; output_directory="./test_outputs/"
         )
-        @show baseline
 
         supported_types = [n0f8, n6f10, n4f12, n2f14, n0f16, float32, float64]
         for target_type in supported_types
@@ -90,22 +89,28 @@ using StatsBase: mean
             intermediate_results_callback = save_results_callback(
                 "./test_outputs/segmentation-LopezAcosta2019Tiling-$(target_type)-$(Dates.format(Dates.now(), "yyyy-mm-dd-HHMMSS"))";
             )
-            segments = LopezAcosta2019Tiling()(
-                target_type.(RGB.(case.modis_truecolor)),
-                target_type.(RGB.(case.modis_falsecolor)),
-                target_type.(RGB.(case.modis_landmask));
-                intermediate_results_callback,
-            )
-            @show segments
-            intermediate_results_callback(;
-                segment_mean_truecolor_validated=map(
-                    i -> segment_mean(case.validated_labeled_floes, i),
-                    labels_map(case.validated_labeled_floes),
-                ),
-            )
-            (; segment_count, labeled_fraction) = segmentation_summary(segments)
-            @test segment_count ≈ baseline.segment_count rtol = 0.01
-            @test labeled_fraction ≈ baseline.labeled_fraction rtol = 0.01
+
+            try
+                segments = LopezAcosta2019Tiling()(
+                    target_type.(RGB.(case.modis_truecolor)),
+                    target_type.(RGB.(case.modis_falsecolor)),
+                    target_type.(RGB.(case.modis_landmask));
+                    intermediate_results_callback,
+                )
+                @info "$(target_type) succeeded"
+                (; segment_count, labeled_fraction) = segmentation_summary(segments)
+                (; recall, precision, F_score) = segmentation_comparison(
+                    case.validated_labeled_floes, segments
+                )
+                @test segment_count ≈ baseline.segment_count rtol = 0.01
+                @test labeled_fraction ≈ baseline.labeled_fraction rtol = 0.01
+                @test recall ≈ baseline.recall rtol = 0.01
+                @test precision ≈ baseline.precision rtol = 0.01
+                @test F_score ≈ baseline.F_score rtol = 0.01
+            catch e
+                @warn "$(target_type) failed"
+                @test false
+            end
         end
     end
 end
