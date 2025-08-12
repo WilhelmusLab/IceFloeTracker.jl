@@ -1,16 +1,5 @@
 
-using IceFloeTracker:
-    adapthisteq_params,
-    adjust_gamma_params,
-    brighten_factor,
-    cloud_mask_thresholds,
-    ice_masks_params,
-    prelim_icemask_params,
-    preprocess_tiling,
-    structuring_elements,
-    unsharp_mask_params,
-    get_tiles,
-    binarize_segments
+using IceFloeTracker: LopezAcosta2019Tiling
 using StatsBase: mean
 
 @testset "preprocess_tiling" begin
