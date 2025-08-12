@@ -110,6 +110,10 @@ function (p::ValidationDataLoader)(; case_filter::Function=(case) -> true)
     return ValidationDataSet(; data=filtered_data, metadata=filtered_metadata)
 end
 
+function (p::ValidationDataLoader)(case_filter::Function)
+    return p(; case_filter)
+end
+
 function _load_metadata(p::ValidationDataLoader)::DataFrame
     metadata_url = joinpath(p.url, "raw", p.ref, p.dataset_metadata_path)
     metadata_path = joinpath(p.cache_dir, p.ref, splitpath(p.dataset_metadata_path)[end])
