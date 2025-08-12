@@ -3,7 +3,6 @@
         dataset::ValidationDataSet,
         algorithm::IceFloeSegmentationAlgorithm;
         output_directory::Union{AbstractString,Nothing}=nothing,
-        result_images_to_save::Union{AbstractArray{Symbol},Nothing}=nothing,
     )
 
 Run the `algorithm::IceFloeSegmentationAlgorithm` over each of the cases in `dataset` and return a DataFrame of the results.
