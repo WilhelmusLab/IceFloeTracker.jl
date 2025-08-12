@@ -1,53 +1,8 @@
 """
-    function check_case(
-        algorithm::IceFloeSegmentationAlgorithm,
-        data_loader::ValidationDataLoader,
-        case_filter::Function;
-        labeled_fraction_goal,
-        recall_goal,
-        precision_goal,
-        F_score_goal,
-    )
-
-    Run the segmentation `algorithm` over the data in `case` and check the results.
-
-    Tests include:
-    - `labeled_fraction` should be within 10% of `labeled_fraction_goal`
-    - `recall` should be ≥ `recall_goal`
-    - `precision` should be ≥ `precision_goal`
-    - `F_score` should be ≥ `F_score_goal`
-"""
-function check_case(
-    algorithm::IceFloeSegmentationAlgorithm,
-    data_loader::ValidationDataLoader,
-    case_filter::Function;
-    labeled_fraction_goal,
-    recall_goal,
-    precision_goal,
-    F_score_goal,
-)
-    case = first(data_loader(; case_filter))
-    @info "starting $(case.name)"
-    (; labeled_fraction, precision, recall, F_score) = run_segmentation_over_one_case(
-        case, algorithm
-    )
-    @show labeled_fraction
-    @show recall
-    @show precision
-    @show F_score
-
-    @test labeled_fraction ≈ labeled_fraction_goal rtol = 0.1
-    @test recall_goal ≤ recall
-    @test precision_goal ≤ precision
-    @test F_score_goal ≤ F_score
-end
-
-"""
-    run_segmentation_over_multiple_cases(
+    run_segmentation_over_one_case(
         case::ValidationDataCase,
         algorithm::IceFloeSegmentationAlgorithm;
         output_directory::Union{AbstractString,Nothing}=nothing,
-        result_images_to_save::Union{AbstractArray{Symbol},Nothing}=nothing,
     )
 
 Run the `algorithm::IceFloeSegmentationAlgorithm` on the `case` and return a NamedTuple of the validation results.
@@ -148,6 +103,14 @@ function run_segmentation_over_multiple_cases(
     output_directory::Union{AbstractString,Nothing}=nothing,
 )::DataFrame
     dataset = data_loader(; case_filter)
+    return run_segmentation_over_multiple_cases(dataset, algorithm; output_directory)
+end
+
+function run_segmentation_over_multiple_cases(
+    dataset::ValidationDataSet,
+    algorithm::IceFloeSegmentationAlgorithm;
+    output_directory::Union{AbstractString,Nothing}=nothing,
+)::DataFrame
     @info dataset.metadata
     results = []
     for case::ValidationDataCase in dataset

@@ -20,33 +20,36 @@ using Images: segment_labels, segment_mean, labels_map
             @test any(filter(broken_cases, results).success) broken = true
         end
         @ntestset "Detailed tests" begin
-            check_case(
-                LopezAcosta2019(),
+            (; labeled_fraction, recall, precision, F_score) = run_segmentation_over_one_case(
                 data_loader,
-                c -> (c.case_number == 6 && c.satellite == "terra");
-                labeled_fraction_goal=0.119,
-                recall_goal=0.315,
-                precision_goal=0.770,
-                F_score_goal=0.447,
-            )
-            check_case(
+                c -> (c.case_number == 6 && c.satellite == "terra"),
                 LopezAcosta2019(),
-                data_loader,
-                c -> (c.case_number == 14 && c.satellite == "aqua");
-                labeled_fraction_goal=0.052,
-                recall_goal=0.360,
-                precision_goal=0.857,
-                F_score_goal=0.507,
             )
-            check_case(
+            @test 0.119 ≈ labeled_fraction atol = 0.1
+            @test 0.315 ≤ recall
+            @test 0.770 ≤ precision
+            @test 0.447 ≤ F_score
+
+            (; labeled_fraction, recall, precision, F_score) = run_segmentation_over_one_case(
+                data_loader,
+                c -> (c.case_number == 14 && c.satellite == "aqua"),
                 LopezAcosta2019(),
-                data_loader,
-                c -> (c.case_number == 61 && c.satellite == "aqua");
-                labeled_fraction_goal=0.132,
-                recall_goal=0.379,
-                precision_goal=0.754,
-                F_score_goal=0.504,
             )
+            @test 0.052 ≈ labeled_fraction atol = 0.1
+            @test 0.360 ≤ recall
+            @test 0.857 ≤ precision
+            @test 0.507 ≤ F_score
+
+            (; labeled_fraction, recall, precision, F_score) = run_segmentation_over_one_case(
+                data_loader,
+                c -> (c.case_number == 61 && c.satellite == "aqua"),
+                LopezAcosta2019(),
+            )
+            @test 0.132 ≈ labeled_fraction atol = 0.1
+            @test 0.379 ≤ recall
+            @test 0.754 ≤ precision
+            @test 0.504 ≤ F_score
+
             (; labeled_fraction, recall, precision, F_score) = run_segmentation_over_one_case(
                 data_loader,
                 c -> (c.case_number == 63 && c.satellite == "aqua"),

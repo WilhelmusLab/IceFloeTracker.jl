@@ -20,42 +20,45 @@ include("segmentation_utils.jl")
 @testset "preprocess_tiling" begin
     data_loader = Watkins2025GitHub(; ref="a451cd5e62a10309a9640fbbe6b32a236fcebc70")
     @ntestset "Detailed checks" begin
-        check_case(
-            LopezAcosta2019Tiling(),
+        (; labeled_fraction, recall, precision, F_score) = run_segmentation_over_one_case(
             data_loader,
-            c -> (c.case_number == 6 && c.satellite == "terra");
-            labeled_fraction_goal=0.426,
-            recall_goal=0.876,
-            precision_goal=0.595,
-            F_score_goal=0.708,
+            c -> (c.case_number == 6 && c.satellite == "terra"),
+            LopezAcosta2019Tiling();
         )
-        check_case(
-            LopezAcosta2019Tiling(),
+        @test 0.426 ≈ labeled_fraction atol = 0.1
+        @test 0.876 ≤ recall
+        @test 0.595 ≤ precision
+        @test 0.708 ≤ F_score
+
+        (; labeled_fraction, recall, precision, F_score) = run_segmentation_over_one_case(
             data_loader,
-            c -> (c.case_number == 14 && c.satellite == "aqua");
-            labeled_fraction_goal=0.334,
-            recall_goal=0.846,
-            precision_goal=0.313,
-            F_score_goal=0.457,
+            c -> (c.case_number == 14 && c.satellite == "aqua"),
+            LopezAcosta2019Tiling();
         )
-        check_case(
-            LopezAcosta2019Tiling(),
+        @test 0.334 ≈ labeled_fraction atol = 0.1
+        @test 0.846 ≤ recall
+        @test 0.313 ≤ precision
+        @test 0.457 ≤ F_score
+
+        (; labeled_fraction, recall, precision, F_score) = run_segmentation_over_one_case(
             data_loader,
-            c -> (c.case_number == 61 && c.satellite == "aqua");
-            labeled_fraction_goal=0.271,
-            recall_goal=0.709,
-            precision_goal=0.686,
-            F_score_goal=0.697,
+            c -> (c.case_number == 61 && c.satellite == "aqua"),
+            LopezAcosta2019Tiling();
         )
-        check_case(
-            LopezAcosta2019Tiling(),
+        @test 0.271 ≈ labeled_fraction atol = 0.1
+        @test 0.709 ≤ recall
+        @test 0.686 ≤ precision
+        @test 0.697 ≤ F_score
+
+        (; labeled_fraction, recall, precision, F_score) = run_segmentation_over_one_case(
             data_loader,
-            c -> (c.case_number == 63 && c.satellite == "aqua");
-            labeled_fraction_goal=0.579,
-            recall_goal=0.901,
-            precision_goal=0.620,
-            F_score_goal=0.734,
+            c -> (c.case_number == 63 && c.satellite == "aqua"),
+            LopezAcosta2019Tiling();
         )
+        @test 0.579 ≈ labeled_fraction atol = 0.1
+        @test 0.901 ≤ recall
+        @test 0.620 ≤ precision
+        @test 0.734 ≤ F_score
     end
 
     @ntestset "Aggregate results" begin
