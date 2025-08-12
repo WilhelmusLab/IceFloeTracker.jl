@@ -72,7 +72,7 @@ function run_segmentation_over_multiple_cases(
                 results,
                 merge((; name, success, error), comparison, NamedTuple(case.metadata)),
             )
-            if !isnothing(intermediate_results_callback)
+            if !isnothing(intermediate_results_callback) && !isnothing(validated)
                 intermediate_results_callback(;
                     segment_mean_truecolor_validated=map(
                         i -> segment_mean(validated, i), labels_map(validated)
