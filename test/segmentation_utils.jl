@@ -102,12 +102,28 @@ function run_and_validate_segmentation(
     end
 end
 
+"""
+    save_results_callback(
+        directory::AbstractString,
+        case::ValidationDataCase,
+        algorithm::IceFloeSegmentationAlgorithm;
+        extension::AbstractString=".png",
+    )::Function
+
+Returns a function which saves any images which are passed into it as keyword arguments.
+Creates a subdirectory based on the current time, the `case` and `algorithm`.
+
+Inputs:
+- `directory`: base directory where images will be stored
+- `case`: ValidationDataCase with metadata which are used to name a subdirectory
+- `algorithm`: IceFloeSegmentationAlgorithm which is used in the subdirectory name.
+"""
 function save_results_callback(
     directory::AbstractString,
     case::ValidationDataCase,
     algorithm::IceFloeSegmentationAlgorithm;
     extension::AbstractString=".png",
-)
+)::Function
     datestamp = Dates.format(Dates.now(), "yyyy-mm-dd-HHMMSS")
     name = case.name
     return save_results_callback(
@@ -122,7 +138,7 @@ end
         extension,
     )::Function
 
-Returns a function which saves any images passed into it as keyword arguments.
+Returns a function which saves any images which are passed into it as keyword arguments.
 
 # Example
 ```julia-repl
