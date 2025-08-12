@@ -74,4 +74,38 @@ using StatsBase: mean
         @show mean_precision
         @show mean_F_score
     end
+    @ntestset "Image types" begin
+        case::ValidationDataCase = first(
+            data_loader(c -> (c.case_number == 6 && c.satellite == "terra"))
+        )
+        algorithm = LopezAcosta2019Tiling()
+        baseline = run_and_validate_segmentation(
+            case, algorithm; output_directory="./test_outputs/"
+        )
+        @show baseline
+
+        supported_types = [n0f8, n6f10, n4f12, n2f14, n0f16, float32, float64]
+        for target_type in supported_types
+            @info "Image type: $target_type"
+            intermediate_results_callback = save_results_callback(
+                "./test_outputs/segmentation-LopezAcosta2019Tiling-$(target_type)-$(Dates.format(Dates.now(), "yyyy-mm-dd-HHMMSS"))";
+            )
+            segments = LopezAcosta2019Tiling()(
+                target_type.(RGB.(case.modis_truecolor)),
+                target_type.(RGB.(case.modis_falsecolor)),
+                target_type.(RGB.(case.modis_landmask));
+                intermediate_results_callback,
+            )
+            @show segments
+            intermediate_results_callback(;
+                segment_mean_truecolor_validated=map(
+                    i -> segment_mean(case.validated_labeled_floes, i),
+                    labels_map(case.validated_labeled_floes),
+                ),
+            )
+            (; segment_count, labeled_fraction) = segmentation_summary(segments)
+            @test segment_count ≈ baseline.segment_count rtol = 0.01
+            @test labeled_fraction ≈ baseline.labeled_fraction rtol = 0.01
+        end
+    end
 end
