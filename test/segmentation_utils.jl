@@ -26,7 +26,7 @@ function run_segmentation_over_multiple_cases(
     data_loader::ValidationDataLoader,
     case_filter::Function,
     algorithm::IceFloeSegmentationAlgorithm;
-    output_directory::Union{AbstractString,Nothing}=nothing
+    output_directory::Union{AbstractString,Nothing}=nothing,
 )::DataFrame
     dataset = data_loader(; case_filter)
     @info dataset.metadata
@@ -34,15 +34,10 @@ function run_segmentation_over_multiple_cases(
     for case::ValidationDataCase in dataset
         let name, datestamp, validated, measured, success, error, comparison
             name = case.name
-            datestamp = Dates.format(Dates.now(), "yyyy-mm-dd-HHMMSS")
             validated = case.validated_labeled_floes
-
             if !isnothing(output_directory)
                 intermediate_results_callback = save_results_callback(
-                    joinpath(
-                        output_directory,
-                        "segmentation-$(typeof(algorithm))-$(name)-$(datestamp)",
-                    );
+                    output_directory, case, algorithm;
                 )
             else
                 intermediate_results_callback = nothing
@@ -128,4 +123,20 @@ function save_results_callback(
         end
     end
     return callback
+end
+
+function save_results_callback(
+    directory::AbstractString,
+    case::ValidationDataCase,
+    algorithm::IceFloeSegmentationAlgorithm;
+    extension::AbstractString=".png",
+    names::Union{AbstractArray{Symbol},Nothing}=nothing,
+)
+    datestamp = Dates.format(Dates.now(), "yyyy-mm-dd-HHMMSS")
+    name = case.name
+    return save_results_callback(
+        joinpath(directory, "segmentation-$(typeof(algorithm))-$(name)-$(datestamp)");
+        extension,
+        names,
+    )
 end
