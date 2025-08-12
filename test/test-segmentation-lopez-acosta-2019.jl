@@ -9,7 +9,7 @@ using Images: segment_labels, segment_mean, labels_map
             broken_cases =
                 c -> (c.case_number == 4 || (c.case_number == 39 && c.satellite == "aqua"))
             formerly_broken_cases = c -> false  # `broken_cases` once fixed, for regression testing
-            results = run_segmentation(
+            results = run_and_validate_segmentation(
                 data_loader(
                     c -> (passing_cases(c) || formerly_broken_cases(c) || broken_cases(c))
                 ),
@@ -20,7 +20,7 @@ using Images: segment_labels, segment_mean, labels_map
             @test any(filter(broken_cases, results).success) broken = true
         end
         @ntestset "Detailed tests" begin
-            (; labeled_fraction, recall, precision, F_score) = run_segmentation(
+            (; labeled_fraction, recall, precision, F_score) = run_and_validate_segmentation(
                 first(data_loader(c -> (c.case_number == 6 && c.satellite == "terra"))),
                 LopezAcosta2019(),
             )
@@ -29,7 +29,7 @@ using Images: segment_labels, segment_mean, labels_map
             @test 0.770 ≤ precision
             @test 0.447 ≤ F_score
 
-            (; labeled_fraction, recall, precision, F_score) = run_segmentation(
+            (; labeled_fraction, recall, precision, F_score) = run_and_validate_segmentation(
                 first(data_loader(c -> (c.case_number == 14 && c.satellite == "aqua"))),
                 LopezAcosta2019(),
             )
@@ -38,7 +38,7 @@ using Images: segment_labels, segment_mean, labels_map
             @test 0.857 ≤ precision
             @test 0.507 ≤ F_score
 
-            (; labeled_fraction, recall, precision, F_score) = run_segmentation(
+            (; labeled_fraction, recall, precision, F_score) = run_and_validate_segmentation(
                 first(data_loader(c -> (c.case_number == 61 && c.satellite == "aqua"))),
                 LopezAcosta2019(),
             )
@@ -47,7 +47,7 @@ using Images: segment_labels, segment_mean, labels_map
             @test 0.754 ≤ precision
             @test 0.504 ≤ F_score
 
-            (; labeled_fraction, recall, precision, F_score) = run_segmentation(
+            (; labeled_fraction, recall, precision, F_score) = run_and_validate_segmentation(
                 first(data_loader(c -> (c.case_number == 63 && c.satellite == "aqua"))),
                 LopezAcosta2019(),
             )

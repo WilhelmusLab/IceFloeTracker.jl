@@ -18,7 +18,7 @@ skipnanormissing(arr::AbstractArray) = filter(x -> !ismissing(x) && !isnan(x), a
 @testset "preprocess_tiling" begin
     data_loader = Watkins2025GitHub(; ref="a451cd5e62a10309a9640fbbe6b32a236fcebc70")
     @ntestset "Detailed checks" begin
-        (; labeled_fraction, recall, precision, F_score) = run_segmentation(
+        (; labeled_fraction, recall, precision, F_score) = run_and_validate_segmentation(
             first(data_loader(c -> (c.case_number == 6 && c.satellite == "terra"))),
             LopezAcosta2019Tiling();
         )
@@ -27,7 +27,7 @@ skipnanormissing(arr::AbstractArray) = filter(x -> !ismissing(x) && !isnan(x), a
         @test 0.595 ≤ precision
         @test 0.708 ≤ F_score
 
-        (; labeled_fraction, recall, precision, F_score) = run_segmentation(
+        (; labeled_fraction, recall, precision, F_score) = run_and_validate_segmentation(
             first(data_loader(c -> (c.case_number == 14 && c.satellite == "aqua"))),
             LopezAcosta2019Tiling();
         )
@@ -36,7 +36,7 @@ skipnanormissing(arr::AbstractArray) = filter(x -> !ismissing(x) && !isnan(x), a
         @test 0.313 ≤ precision
         @test 0.457 ≤ F_score
 
-        (; labeled_fraction, recall, precision, F_score) = run_segmentation(
+        (; labeled_fraction, recall, precision, F_score) = run_and_validate_segmentation(
             first(data_loader(c -> (c.case_number == 61 && c.satellite == "aqua"))),
             LopezAcosta2019Tiling();
         )
@@ -45,7 +45,7 @@ skipnanormissing(arr::AbstractArray) = filter(x -> !ismissing(x) && !isnan(x), a
         @test 0.686 ≤ precision
         @test 0.697 ≤ F_score
 
-        (; labeled_fraction, recall, precision, F_score) = run_segmentation(
+        (; labeled_fraction, recall, precision, F_score) = run_and_validate_segmentation(
             first(data_loader(c -> (c.case_number == 63 && c.satellite == "aqua"))),
             LopezAcosta2019Tiling();
         )
@@ -56,7 +56,7 @@ skipnanormissing(arr::AbstractArray) = filter(x -> !ismissing(x) && !isnan(x), a
     end
 
     @ntestset "Aggregate results" begin
-        results = run_segmentation(
+        results = run_and_validate_segmentation(
             data_loader(case -> (case.case_number % 17 == 0)),
             LopezAcosta2019Tiling();
             output_directory="./test_outputs/",

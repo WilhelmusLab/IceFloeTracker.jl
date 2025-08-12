@@ -1,5 +1,5 @@
 """
-    run_segmentation(
+    run_and_validate_segmentation(
         dataset::ValidationDataSet,
         algorithm::IceFloeSegmentationAlgorithm;
         output_directory::Union{AbstractString,Nothing}=nothing,
@@ -17,7 +17,7 @@ Returns:
 - A DataFrame with the results including a :success boolean, any :error messages, and the original metadata.
 
 """
-function run_segmentation(
+function run_and_validate_segmentation(
     dataset::ValidationDataSet,
     algorithm::IceFloeSegmentationAlgorithm;
     output_directory::Union{AbstractString,Nothing}=nothing,
@@ -26,7 +26,7 @@ function run_segmentation(
     results = []
     for case::ValidationDataCase in dataset
         @info "starting $(case.name)"
-        results_row = run_segmentation(case, algorithm; output_directory)
+        results_row = run_and_validate_segmentation(case, algorithm; output_directory)
         push!(results, results_row)
     end
     results_df = DataFrame(results)
@@ -35,7 +35,7 @@ function run_segmentation(
 end
 
 """
-    run_segmentation(
+    run_and_validate_segmentation(
         case::ValidationDataCase,
         algorithm::IceFloeSegmentationAlgorithm;
         output_directory::Union{AbstractString,Nothing}=nothing,
@@ -57,7 +57,7 @@ Results include:
 
 
 """
-function run_segmentation(
+function run_and_validate_segmentation(
     case::ValidationDataCase,
     algorithm::IceFloeSegmentationAlgorithm;
     output_directory::Union{AbstractString,Nothing}=nothing,
