@@ -2,25 +2,6 @@ include("./segmentation_utils.jl")
 using Images: segment_labels, segment_mean, labels_map
 
 @ntestset "$(@__FILE__)" begin
-
-    # Symbols returned in `_, intermediate_results = LopezAcosta2019()(...; return_intermediate_results=true)`
-    # which can be written to PNGs using `save()`
-    intermediate_result_image_names = [
-        :truecolor,
-        :falsecolor,
-        :landmask_dilated,
-        :landmask_non_dilated,
-        :cloudmask,
-        :sharpened_truecolor_image,
-        :sharpened_gray_truecolor_image,
-        :normalized_image,
-        :segA,
-        :watersheds_segB_product,
-        :segF,
-        :segment_mean_truecolor,
-        :segment_mean_falsecolor,
-    ]
-
     @ntestset "Lopez-Acosta 2019" begin
         @ntestset "Validated data" begin
             data_loader = Watkins2025GitHub(;
@@ -36,7 +17,6 @@ using Images: segment_labels, segment_mean, labels_map
                 ),
                 LopezAcosta2019();
                 output_directory="./test_outputs/",
-                result_images_to_save=intermediate_result_image_names,
             )
             @test all(filter(!broken_cases, results).success)
             @test any(filter(broken_cases, results).success) broken = true
@@ -55,7 +35,6 @@ using Images: segment_labels, segment_mean, labels_map
                 @info "Image type: $target_type"
                 intermediate_results_callback = save_results_callback(
                     "./test_outputs/segmentation-LopezAcosta2019-$(target_type)-$(Dates.format(Dates.now(), "yyyy-mm-dd-HHMMSS"))";
-                    names=intermediate_result_image_names,
                 )
                 segments = LopezAcosta2019()(
                     target_type.(truecolor[region...]),
@@ -70,7 +49,6 @@ using Images: segment_labels, segment_mean, labels_map
         @ntestset "Medium size" begin
             intermediate_results_callback = save_results_callback(
                 "./test_outputs/segmentation-LopezAcosta2019-medium-size-$( Dates.format(Dates.now(), "yyyy-mm-dd-HHMMSS"))";
-                names=intermediate_result_image_names,
             )
             segments = LopezAcosta2019()(
                 truecolor, falsecolor, landmask; intermediate_results_callback

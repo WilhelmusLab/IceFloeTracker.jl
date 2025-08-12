@@ -26,8 +26,7 @@ function run_segmentation_over_multiple_cases(
     data_loader::ValidationDataLoader,
     case_filter::Function,
     algorithm::IceFloeSegmentationAlgorithm;
-    output_directory::Union{AbstractString,Nothing}=nothing,
-    result_images_to_save::Union{AbstractArray{Symbol},Nothing}=nothing,
+    output_directory::Union{AbstractString,Nothing}=nothing
 )::DataFrame
     dataset = data_loader(; case_filter)
     @info dataset.metadata
@@ -44,7 +43,6 @@ function run_segmentation_over_multiple_cases(
                         output_directory,
                         "segmentation-$(typeof(algorithm))-$(name)-$(datestamp)",
                     );
-                    names=result_images_to_save,
                 )
             else
                 intermediate_results_callback = nothing
@@ -115,10 +113,17 @@ function save_results_callback(
         for (name, image) in kwargs
             (names === nothing || name ∈ names) || continue
             path = joinpath(directory, String(name) * extension)
-            try
-                save(path, image)
-            catch e
-                @warn "an unexpected error occured saving $name: $e"
+            if typeof(image) <: AbstractArray{Bool}
+                image = Gray.(image)
+            end
+            if typeof(image) <: AbstractArray{<:Colorant}
+                try
+                    save(path, image)
+                catch e
+                    @warn "an unexpected error occured saving $name: $e"
+                end
+            else
+                @debug "skipping $(name) – not an image we can save"
             end
         end
     end
