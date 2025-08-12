@@ -83,7 +83,6 @@ using StatsBase: mean
             case, algorithm; output_directory="./test_outputs/"
         )
         function results_invariant_under_image_type_transformation(target_type::Function)
-            @info "Image type: $target_type"
             intermediate_results_callback = save_results_callback(
                 "./test_outputs/segmentation-LopezAcosta2019Tiling-$(target_type)-$(Dates.format(Dates.now(), "yyyy-mm-dd-HHMMSS"))";
             )
