@@ -102,8 +102,8 @@ include("segmentation_utils.jl")
 
         # Current performance should look at least as good as this:
         @test mean_recall ≥ 0.5
-        @test mean_precision ≥ 0.03
-        @test mean_F_score ≥ 0.05
+        @test mean_precision ≥ 0.05
+        @test mean_F_score ≥ 0.1
 
         # return current performance
         @info mean_recall
