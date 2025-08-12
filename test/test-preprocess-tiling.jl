@@ -1,7 +1,7 @@
 
 using StatsBase: mean
 
-@testset "preprocess_tiling" begin
+@ntestset "preprocess_tiling" begin
     data_loader = Watkins2025GitHub(; ref="a451cd5e62a10309a9640fbbe6b32a236fcebc70")
     @ntestset "Detailed checks" begin
         (; labeled_fraction, recall, precision, F_score) = run_and_validate_segmentation(
