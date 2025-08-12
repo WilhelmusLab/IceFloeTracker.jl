@@ -13,8 +13,6 @@ using IceFloeTracker:
     binarize_segments
 using StatsBase: mean
 
-skipnanormissing(arr::AbstractArray) = filter(x -> !ismissing(x) && !isnan(x), arr)
-
 @testset "preprocess_tiling" begin
     data_loader = Watkins2025GitHub(; ref="a451cd5e62a10309a9640fbbe6b32a236fcebc70")
     @ntestset "Detailed checks" begin

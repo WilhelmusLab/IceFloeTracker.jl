@@ -1,0 +1,1 @@
+skipnanormissing(arr::AbstractArray) = filter(x -> !ismissing(x) && !isnan(x), arr)
