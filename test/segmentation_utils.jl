@@ -128,7 +128,7 @@ function results_invariant_for(
         );
     )
     casting_function = ∘(target_type...)
-    segments = LopezAcosta2019Tiling()(
+    segments = algorithm(
         casting_function.(case.modis_truecolor),
         casting_function.(case.modis_falsecolor),
         casting_function.(case.modis_landmask);
