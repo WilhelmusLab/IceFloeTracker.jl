@@ -57,8 +57,20 @@ include("segmentation_utils.jl")
             case -> (case.case_number % 17 == 0),
             LopezAcosta2019Tiling();
             output_directory="./test_outputs/",
+            result_images_to_save=[
+                :ref_image,
+                :true_color_image,
+                :ref_img_cloudmasked,
+                :prelim_icemask,
+                :binarized_tiling,
+                :segment_mask,
+                :L0mask,
+                :icemask,
+                :final,
+                :segment_mean_truecolor,
+                :segment_mean_falsecolor,
+            ],
         )
-        @info results
         @test all(results.success)
     end
 end
