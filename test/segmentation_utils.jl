@@ -106,12 +106,10 @@ julia> callback(;image_name=image)
 function save_results_callback(
     directory::AbstractString;
     extension::AbstractString=".png",
-    names::Union{AbstractArray{Symbol},Nothing}=nothing,
 )
     function callback(; kwargs...)
         mkpath(directory)
         for (name, image) in kwargs
-            (names === nothing || name ∈ names) || continue
             path = joinpath(directory, String(name) * extension)
             if typeof(image) <: AbstractArray{Bool}
                 image = Gray.(image)
