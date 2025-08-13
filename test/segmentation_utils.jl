@@ -115,10 +115,10 @@ Runs `algorithm` on `case` using `target_type` to cast images; returns true if r
 
 """
 function results_invariant_for(
-    target_type::Union{Function,Type},
+    target_type::Union{Function,Type}...;
     baseline::NamedTuple,
     algorithm::IceFloeSegmentationAlgorithm,
-    case::ValidationDataCase;
+    case::ValidationDataCase,
     output_directory::AbstractString="./test_outputs",
 )::Bool
     intermediate_results_callback = save_results_callback(
@@ -127,10 +127,11 @@ function results_invariant_for(
             "segmentation-$(typeof(algorithm))-$(target_type)-$(Dates.format(Dates.now(), "yyyy-mm-dd-HHMMSS"))",
         );
     )
+    casting_function = ∘(target_type...)
     segments = LopezAcosta2019Tiling()(
-        target_type.(case.modis_truecolor),
-        target_type.(case.modis_falsecolor),
-        target_type.(case.modis_landmask);
+        casting_function.(case.modis_truecolor),
+        casting_function.(case.modis_falsecolor),
+        casting_function.(case.modis_landmask);
         intermediate_results_callback,
     )
     (; segment_count, labeled_fraction) = segmentation_summary(segments)
