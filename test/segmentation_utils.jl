@@ -207,10 +207,7 @@ julia> callback(;image_name=image)
 ```
 ... saves `image` to `/tmp/path/to/directory/image_name.png`.
 """
-function save_results_callback(
-    directory::AbstractString;
-    extension::AbstractString=".png",
-)
+function save_results_callback(directory::AbstractString; extension::AbstractString=".png")
     function callback(; kwargs...)
         mkpath(directory)
         for (name, image) in kwargs
