@@ -83,7 +83,8 @@ function preprocess_tiling(
     unsharp_mask_params,
     ice_masks_params,
     prelim_icemask_params,
-    brighten_factor,
+    brighten_factor;
+    intermediate_results_callback::Union{Nothing,Function}=nothing,
 )
     begin
         @debug "Step 1/2: Create and apply cloudmask to reference image"
@@ -203,6 +204,27 @@ function preprocess_tiling(
         final = get_final(icemask, segment_mask, se_erosion, se_dilation)
     end
 
+    if !isnothing(intermediate_results_callback)
+        intermediate_results_callback(;
+            ref_image,
+            true_color_image,
+            ref_img_cloudmasked,
+            gammagreen,
+            equalized_gray,
+            equalized_gray_sharpened_reconstructed,
+            equalized_gray_reconstructed,
+            morphed_residue,
+            prelim_icemask,
+            binarized_tiling,
+            segment_mask,
+            local_maxima_mask,
+            L0mask,
+            prelim_icemask2,
+            icemask,
+            final,
+        )
+    end
+
     return final
 end
 
@@ -221,7 +243,8 @@ end
 function (p::LopezAcosta2019Tiling)(
     truecolor::AbstractArray{<:Union{AbstractRGB,TransparentRGB}},
     falsecolor::AbstractArray{<:Union{AbstractRGB,TransparentRGB}},
-    landmask::AbstractArray{<:Union{AbstractGray,AbstractRGB,TransparentRGB}},
+    landmask::AbstractArray{<:Union{AbstractGray,AbstractRGB,TransparentRGB}};
+    intermediate_results_callback::Union{Nothing,Function}=nothing,
 )
     @warn "using undilated landmask as dilated"
     _landmask = (dilated=(float64.(Gray.(landmask))) .> 0,) # TODO: remove this typecast to float64
@@ -240,8 +263,22 @@ function (p::LopezAcosta2019Tiling)(
         p.unsharp_mask_params,
         p.ice_masks_params,
         p.prelim_icemask_params,
-        p.brighten_factor,
+        p.brighten_factor;
+        intermediate_results_callback,
     )
-    segmented = SegmentedImage(truecolor, label_components(binary_floe_masks))
+    labels = label_components(binary_floe_masks)
+    segmented = SegmentedImage(truecolor, labels)
+
+    if !isnothing(intermediate_results_callback)
+        segments_truecolor = SegmentedImage(truecolor, labels)
+        segments_falsecolor = SegmentedImage(falsecolor, labels)
+        intermediate_results_callback(;
+            labels,
+            segmented,
+            segment_mean_truecolor=map(i -> segment_mean(segments_truecolor, i), labels),
+            segment_mean_falsecolor=map(i -> segment_mean(segments_falsecolor, i), labels),
+        )
+    end
+
     return segmented
 end
