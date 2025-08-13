@@ -44,7 +44,7 @@ Locate the pixels of likely ice from false color reflectance image. Returns a bi
 
 """
 function find_ice_labels(
-    falsecolor_image::Matrix{RGB{Float64}},
+    modis_band_721::Matrix{<:Union{AbstractRGB,TransparentRGB}},
     landmask::BitMatrix;
     band_7_threshold::Float64=Float64(5 / 255),
     band_2_threshold::Float64=Float64(230 / 255),
@@ -53,34 +53,36 @@ function find_ice_labels(
     band_1_threshold_relaxed::Float64=Float64(190 / 255),
     possible_ice_threshold::Float64=Float64(75 / 255),
 )::Vector{Int64}
+    # Get image bands    
+    band_7 = red.(modis_band_721)
+    band_2 = green.(modis_band_721)
+    band_1 = blue.(modis_band_721)
 
     ## Make ice masks
-    cv = channelview(falsecolor_image)
-
-    mask_ice_band_7 = @view(cv[1, :, :]) .< band_7_threshold #5 / 255
-    mask_ice_band_2 = @view(cv[2, :, :]) .> band_2_threshold #230 / 255
-    mask_ice_band_1 = @view(cv[3, :, :]) .> band_1_threshold #240 / 255
+    mask_ice_band_7 = band_7 .< band_7_threshold
+    mask_ice_band_2 = band_2 .> band_2_threshold
+    mask_ice_band_1 = band_1 .> band_1_threshold
     ice = mask_ice_band_7 .* mask_ice_band_2 .* mask_ice_band_1
     ice_labels = apply_landmask(ice, landmask; as_indices=true)
     # @info "Done with masks" # to uncomment when logger is added
 
     ## Find likely ice floes
     if sum(abs.(ice_labels)) == 0
-        mask_ice_band_7 = @view(cv[1, :, :]) .< band_7_threshold_relaxed #10 / 255
-        mask_ice_band_1 = @view(cv[3, :, :]) .> band_1_threshold_relaxed #190 / 255
+        mask_ice_band_7 = band_7 .< band_7_threshold_relaxed
+        mask_ice_band_1 = band_1 .> band_1_threshold_relaxed
         ice = mask_ice_band_7 .* mask_ice_band_2 .* mask_ice_band_1
         ice_labels = apply_landmask(ice, landmask; as_indices=true)
         if sum(abs.(ice_labels)) == 0
-            ref_image_band_2 = @view(cv[2, :, :])
-            ref_image_band_1 = @view(cv[3, :, :])
+            ref_image_band_2 = band_2
+            ref_image_band_1 = band_1
             band_2_peak = find_reflectance_peaks(
                 ref_image_band_2; possible_ice_threshold=possible_ice_threshold
             )
             band_1_peak = find_reflectance_peaks(
                 ref_image_band_1; possible_ice_threshold=possible_ice_threshold
             )
-            mask_ice_band_2 = @view(cv[2, :, :]) .> band_2_peak / 255
-            mask_ice_band_1 = @view(cv[3, :, :]) .> band_1_peak / 255
+            mask_ice_band_2 = band_2 .> band_2_peak / 255
+            mask_ice_band_1 = band_1 .> band_1_peak / 255
             ice = mask_ice_band_7 .* mask_ice_band_2 .* mask_ice_band_1
             ice_labels = apply_landmask(ice, landmask; as_indices=true)
         end
