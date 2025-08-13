@@ -82,39 +82,15 @@ using StatsBase: mean
         baseline = run_and_validate_segmentation(
             case, algorithm; output_directory="./test_outputs/"
         )
-        function results_invariant_under_image_type_transformation(
-            target_type::Union{Function,Type}
-        )
-            intermediate_results_callback = save_results_callback(
-                "./test_outputs/segmentation-LopezAcosta2019Tiling-$(target_type)-$(Dates.format(Dates.now(), "yyyy-mm-dd-HHMMSS"))";
-            )
-            segments = LopezAcosta2019Tiling()(
-                target_type.(case.modis_truecolor),
-                target_type.(case.modis_falsecolor),
-                target_type.(case.modis_landmask);
-                intermediate_results_callback,
-            )
-            (; segment_count, labeled_fraction) = segmentation_summary(segments)
-            (; recall, precision, F_score) = segmentation_comparison(
-                case.validated_labeled_floes, segments
-            )
-            
-            return all([
-                ≈(segment_count, baseline.segment_count; rtol=0.01),
-                ≈(labeled_fraction, baseline.labeled_fraction; rtol=0.01),
-                ≈(recall, baseline.recall; rtol=0.01),
-                ≈(precision, baseline.precision; rtol=0.01),
-                ≈(F_score, baseline.F_score; rtol=0.01),
-            ])
-        end
-        @test results_invariant_under_image_type_transformation(RGB)
-        @test results_invariant_under_image_type_transformation(RGBA)
-        @test results_invariant_under_image_type_transformation(n0f8)
-        @test results_invariant_under_image_type_transformation(n6f10) broken = true
-        @test results_invariant_under_image_type_transformation(n4f12) broken = true
-        @test results_invariant_under_image_type_transformation(n2f14) broken = true
-        @test results_invariant_under_image_type_transformation(n0f16) broken = true
-        @test results_invariant_under_image_type_transformation(float32) broken = true
-        @test results_invariant_under_image_type_transformation(float64) broken = true
+        
+        @test results_invariant_for(RGB, baseline, algorithm, case)
+        @test results_invariant_for(RGBA, baseline, algorithm, case)
+        @test results_invariant_for(n0f8, baseline, algorithm, case)
+        @test results_invariant_for(n6f10, baseline, algorithm, case) broken = true
+        @test results_invariant_for(n4f12, baseline, algorithm, case) broken = true
+        @test results_invariant_for(n2f14, baseline, algorithm, case) broken = true
+        @test results_invariant_for(n0f16, baseline, algorithm, case) broken = true
+        @test results_invariant_for(float32, baseline, algorithm, case) broken = true
+        @test results_invariant_for(float64, baseline, algorithm, case) broken = true
     end
 end

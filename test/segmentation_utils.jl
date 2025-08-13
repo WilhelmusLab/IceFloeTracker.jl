@@ -103,6 +103,51 @@ function run_and_validate_segmentation(
 end
 
 """
+    results_invariant_for(
+        target_type::Union{Function,Type},
+        baseline::NamedTuple,
+        algorithm::IceFloeSegmentationAlgorithm,
+        case::ValidationDataCase,
+    )::Bool
+    
+Runs `algorithm` on `case` using `target_type` to cast images; returns true if results are within 1% of the `baseline`.
+
+
+"""
+function results_invariant_for(
+    target_type::Union{Function,Type},
+    baseline::NamedTuple,
+    algorithm::IceFloeSegmentationAlgorithm,
+    case::ValidationDataCase;
+    output_directory::AbstractString="./test_outputs",
+)::Bool
+    intermediate_results_callback = save_results_callback(
+        joinpath(
+            output_directory,
+            "segmentation-$(typeof(algorithm))-$(target_type)-$(Dates.format(Dates.now(), "yyyy-mm-dd-HHMMSS"))",
+        );
+    )
+    segments = LopezAcosta2019Tiling()(
+        target_type.(case.modis_truecolor),
+        target_type.(case.modis_falsecolor),
+        target_type.(case.modis_landmask);
+        intermediate_results_callback,
+    )
+    (; segment_count, labeled_fraction) = segmentation_summary(segments)
+    (; recall, precision, F_score) = segmentation_comparison(
+        case.validated_labeled_floes, segments
+    )
+
+    return all([
+        ≈(segment_count, baseline.segment_count; rtol=0.01),
+        ≈(labeled_fraction, baseline.labeled_fraction; rtol=0.01),
+        ≈(recall, baseline.recall; rtol=0.01),
+        ≈(precision, baseline.precision; rtol=0.01),
+        ≈(F_score, baseline.F_score; rtol=0.01),
+    ])
+end
+
+"""
     save_results_callback(
         directory::AbstractString,
         case::ValidationDataCase,
