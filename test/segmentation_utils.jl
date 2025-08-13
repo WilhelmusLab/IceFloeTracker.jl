@@ -138,14 +138,26 @@ function results_invariant_for(
     (; recall, precision, F_score) = segmentation_comparison(
         case.validated_labeled_floes, segments
     )
-
-    return all([
-        ≈(segment_count, baseline.segment_count; rtol=0.01),
-        ≈(labeled_fraction, baseline.labeled_fraction; rtol=0.01),
-        ≈(recall, baseline.recall; rtol=0.01),
-        ≈(precision, baseline.precision; rtol=0.01),
-        ≈(F_score, baseline.F_score; rtol=0.01),
+    result = all([
+        ≈(segment_count, baseline.segment_count; rtol),
+        ≈(labeled_fraction, baseline.labeled_fraction; rtol),
+        ≈(recall, baseline.recall; rtol),
+        ≈(precision, baseline.precision; rtol),
+        ≈(F_score, baseline.F_score; rtol),
     ])
+    if !result
+        @show segments
+        @info "$(join(target_type,"∘")) failed"
+        !≈(segment_count, baseline.segment_count; rtol) &&
+            @show (segment_count, baseline.segment_count)
+        !≈(labeled_fraction, baseline.labeled_fraction; rtol) &&
+            @show (labeled_fraction, baseline.labeled_fraction)
+        !≈(recall, baseline.recall; rtol) && @show (recall, baseline.recall)
+        !≈(precision, baseline.precision; rtol) && @show (precision, baseline.precision)
+        !≈(F_score, baseline.F_score; rtol) && @show (F_score, baseline.F_score)
+    end
+
+    return result
 end
 
 """
