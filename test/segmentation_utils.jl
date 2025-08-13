@@ -1,24 +1,62 @@
 """
+    run_segmentation_over_multiple_cases(
+        data_loader::ValidationDataLoader,
+        case_filter::Function,
+        algorithm::IceFloeSegmentationAlgorithm;
+        output_directory::Union{AbstractString,Nothing}=nothing,
+        result_images_to_save::Union{AbstractArray{Symbol},Nothing}=nothing,
+    )
+
 Run the `algorithm::IceFloeSegmentationAlgorithm` over each of the `cases` and return a DataFrame of the results.
-- Each `case` should be a ValidationDataCase.
-- If `output_directory` is defined, then save the output segmentations and images to the directory. 
+
+Inputs:
+- `data_loader`: a ValidationDataLoader to load the data from a validated data set
+- `case_filter`: a function which returns a boolean when given the data_loader's metadata values
+  and determines which cases are included (true) or excluded (false) from processing
+- `algorithm`: an instantiated `IceFloeSegmentationAlgorithm` which will be called on each case
+- `output_directory`: optional – path to save intermediate and final outputs
+- `result_images_to_save`: optional – symbols of the intermediate results from `algorithm` which should be saved
+
+Returns:
+- A DataFrame with the results including a :success boolean, any :error messages, and the original metadata.
+
 """
+
 function run_segmentation_over_multiple_cases(
-    cases,
+    data_loader::ValidationDataLoader,
+    case_filter::Function,
     algorithm::IceFloeSegmentationAlgorithm;
     output_directory::Union{AbstractString,Nothing}=nothing,
+    result_images_to_save::Union{AbstractArray{Symbol},Nothing}=nothing,
 )::DataFrame
+    dataset = data_loader(; case_filter)
+    @info dataset.metadata
     results = []
-    for case::ValidationDataCase in cases
-        let name, validated, measured, success, error, comparison
+    for case::ValidationDataCase in dataset
+        let name, datestamp, validated, measured, success, error, comparison
             name = case.name
+            datestamp = Dates.format(Dates.now(), "yyyy-mm-dd-HHMMSS")
             validated = case.validated_labeled_floes
+
+            if !isnothing(output_directory)
+                intermediate_results_callback = save_results_callback(
+                    joinpath(
+                        output_directory,
+                        "segmentation-$(typeof(algorithm))-$(name)-$(datestamp)",
+                    );
+                    names=result_images_to_save,
+                )
+            else
+                intermediate_results_callback = nothing
+            end
+
             @info "starting $(name)"
             try
                 measured = algorithm(
                     RGB.(case.modis_truecolor),
                     RGB.(case.modis_falsecolor),
-                    case.modis_landmask,
+                    case.modis_landmask;
+                    intermediate_results_callback,
                 )
                 @info "$(name) succeeded"
                 success = true
@@ -64,20 +102,43 @@ function run_segmentation_over_multiple_cases(
         end
     end
     results_df = DataFrame(results)
+    @info results_df
     return results_df
 end
 
-function run_segmentation_over_multiple_cases(
-    data_loader::ValidationDataLoader,
-    case_filter::Function,
-    algorithm::IceFloeSegmentationAlgorithm;
-    output_directory::Union{AbstractString,Nothing}=nothing,
-)::DataFrame
-    dataset = data_loader(; case_filter)
-    @info dataset.metadata
-    results = run_segmentation_over_multiple_cases(
-        dataset.data, algorithm; output_directory
-    )
-    @info results
-    return results
+"""
+    save_results_callback(
+        path;
+        extension,
+        names::Union{AbstractArray{Symbol},Nothing}
+    )::Function
+
+Returns a function which saves any images passed into it as keyword arguments.
+
+# Example
+```julia-repl
+julia> callback = save_results_callback("/tmp/path/to/directory")
+julia> image = Gray.([1 1 0 0 1 0 1])
+julia> callback(;image_name=image)
+```
+... saves `image` to `/tmp/path/to/directory/image_name.png`.
+"""
+function save_results_callback(
+    directory::AbstractString;
+    extension::AbstractString=".png",
+    names::Union{AbstractArray{Symbol},Nothing}=nothing,
+)
+    function callback(; kwargs...)
+        mkpath(directory)
+        for (name, image) in kwargs
+            (names === nothing || name ∈ names) || continue
+            path = joinpath(directory, String(name) * extension)
+            try
+                save(path, image)
+            catch e
+                @warn "an unexpected error occured saving $name: $e"
+            end
+        end
+    end
+    return callback
 end
