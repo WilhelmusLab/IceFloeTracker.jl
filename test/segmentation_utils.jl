@@ -120,6 +120,7 @@ function results_invariant_for(
     algorithm::IceFloeSegmentationAlgorithm,
     case::ValidationDataCase,
     output_directory::AbstractString="./test_outputs",
+    rtol::Real=0.01,
 )::Bool
     intermediate_results_callback = save_results_callback(
         joinpath(
