@@ -71,21 +71,32 @@ ice_masks_params = (
 
 prelim_icemask_params = (radius=10, amount=2, factor=0.5)
 
-function preprocess_tiling(
-    ref_image,
-    true_color_image,
-    landmask,
-    tiles,
-    cloud_mask_thresholds,
-    adapthisteq_params,
-    adjust_gamma_params,
-    structuring_elements,
-    unsharp_mask_params,
-    ice_masks_params,
-    prelim_icemask_params,
-    brighten_factor;
+@kwdef struct LopezAcosta2019Tiling <: IceFloeSegmentationAlgorithm
+    tile_settings = (; rblocks=2, cblocks=2)
+    cloud_mask_thresholds = cloud_mask_thresholds
+    adapthisteq_params = adapthisteq_params
+    adjust_gamma_params = adjust_gamma_params
+    structuring_elements = structuring_elements
+    unsharp_mask_params = unsharp_mask_params
+    ice_masks_params = ice_masks_params
+    prelim_icemask_params = prelim_icemask_params
+    brighten_factor = brighten_factor
+end
+
+function (p::LopezAcosta2019Tiling)(
+    truecolor::AbstractArray{<:Union{AbstractRGB,TransparentRGB}},
+    falsecolor::AbstractArray{<:Union{AbstractRGB,TransparentRGB}},
+    landmask::AbstractArray{<:Union{AbstractGray,AbstractRGB,TransparentRGB}};
     intermediate_results_callback::Union{Nothing,Function}=nothing,
 )
+    @warn "using undilated landmask as dilated"  # TODO: add landmask dilation as a step
+    _landmask = (dilated=(float64.(Gray.(landmask))) .> 0,) # TODO: remove this typecast to float64
+
+    tiles = get_tiles(truecolor; p.tile_settings...)
+
+    ref_image = RGB.(falsecolor)  # TODO: remove this typecast
+    true_color_image = RGB.(truecolor)  # TODO: remove this typecast
+
     begin
         @debug "Step 1/2: Create and apply cloudmask to reference image"
 
@@ -98,7 +109,7 @@ function preprocess_tiling(
     begin
         @debug "Step 3: Tiled adaptive histogram equalization"
         clouds_red = to_uint8(float64.(red.(ref_img_cloudmasked) .* 255))
-        clouds_red[landmask.dilated] .= 0
+        clouds_red[_landmask.dilated] .= 0
 
         rgbchannels = _process_image_tiles(
             true_color_image, clouds_red, tiles, adapthisteq_params...
@@ -121,24 +132,24 @@ function preprocess_tiling(
         equalized_gray_sharpened_reconstructed = reconstruct(
             sharpened, structuring_elements.se_disk1, "dilation", true
         )
-        equalized_gray_sharpened_reconstructed[landmask.dilated] .= 0
+        equalized_gray_sharpened_reconstructed[_landmask.dilated] .= 0
     end
 
     # TODO: Steps 6 and 7 can be done in parallel as they are independent
     begin
         @debug "Step 6: Repeat step 5 with equalized_gray (landmasking, no sharpening)"
         equalized_gray_reconstructed = deepcopy(equalized_gray)
-        equalized_gray_reconstructed[landmask.dilated] .= 0
+        equalized_gray_reconstructed[_landmask.dilated] .= 0
         equalized_gray_reconstructed = reconstruct(
             equalized_gray_reconstructed, structuring_elements.se_disk1, "dilation", true
         )
-        equalized_gray_reconstructed[landmask.dilated] .= 0
+        equalized_gray_reconstructed[_landmask.dilated] .= 0
     end
 
     begin
         @debug "Step 7: Brighten equalized_gray"
         brighten = get_brighten_mask(equalized_gray_reconstructed, gammagreen)
-        equalized_gray[landmask.dilated] .= 0
+        equalized_gray[_landmask.dilated] .= 0
         equalized_gray .= imbrighten(equalized_gray, brighten, brighten_factor)
     end
 
@@ -159,7 +170,7 @@ function preprocess_tiling(
     begin
         @debug "Step 9: Get preliminary ice masks"
         prelim_icemask, binarized_tiling = get_ice_masks(
-            ref_image, morphed_residue, landmask.dilated, tiles, true; ice_masks_params...
+            ref_image, morphed_residue, _landmask.dilated, tiles, true; ice_masks_params...
         )
     end
 
@@ -192,7 +203,7 @@ function preprocess_tiling(
     begin
         @debug "Step 13: Get improved icemask"
         icemask, _ = get_ice_masks(
-            ref_image, prelim_icemask2, landmask.dilated, tiles, false; ice_masks_params...
+            ref_image, prelim_icemask2, _landmask.dilated, tiles, false; ice_masks_params...
         )
     end
 
@@ -201,13 +212,21 @@ function preprocess_tiling(
         se = structuring_elements
         se_erosion = se.se_disk1
         se_dilation = se.se_disk2
-        final = get_final(icemask, segment_mask, se_erosion, se_dilation)
+        binary_floe_masks = get_final(icemask, segment_mask, se_erosion, se_dilation)
+    end
+
+    begin
+        @debug "Step 15: Converting mask to segmented image"
+        labels = label_components(binary_floe_masks)
+        segmented = SegmentedImage(truecolor, labels)
     end
 
     if !isnothing(intermediate_results_callback)
+        segments_truecolor = SegmentedImage(truecolor, labels)
+        segments_falsecolor = SegmentedImage(falsecolor, labels)
         intermediate_results_callback(;
-            ref_image,
-            true_color_image,
+            falsecolor,
+            truecolor,
             ref_img_cloudmasked,
             gammagreen,
             equalized_gray,
@@ -221,58 +240,7 @@ function preprocess_tiling(
             L0mask,
             prelim_icemask2,
             icemask,
-            final,
-        )
-    end
-
-    return final
-end
-
-@kwdef struct LopezAcosta2019Tiling <: IceFloeSegmentationAlgorithm
-    tile_settings = (; rblocks=2, cblocks=2)
-    cloud_mask_thresholds = cloud_mask_thresholds
-    adapthisteq_params = adapthisteq_params
-    adjust_gamma_params = adjust_gamma_params
-    structuring_elements = structuring_elements
-    unsharp_mask_params = unsharp_mask_params
-    ice_masks_params = ice_masks_params
-    prelim_icemask_params = prelim_icemask_params
-    brighten_factor = brighten_factor
-end
-
-function (p::LopezAcosta2019Tiling)(
-    truecolor::AbstractArray{<:Union{AbstractRGB,TransparentRGB}},
-    falsecolor::AbstractArray{<:Union{AbstractRGB,TransparentRGB}},
-    landmask::AbstractArray{<:Union{AbstractGray,AbstractRGB,TransparentRGB}};
-    intermediate_results_callback::Union{Nothing,Function}=nothing,
-)
-    @warn "using undilated landmask as dilated"
-    _landmask = (dilated=(float64.(Gray.(landmask))) .> 0,) # TODO: remove this typecast to float64
-
-    tiles = get_tiles(truecolor; p.tile_settings...)
-
-    binary_floe_masks = preprocess_tiling(
-        RGB.(falsecolor), # TODO: remove this typecast
-        RGB.(truecolor), # TODO: remove this typecast
-        _landmask,
-        tiles,
-        p.cloud_mask_thresholds,
-        p.adapthisteq_params,
-        p.adjust_gamma_params,
-        p.structuring_elements,
-        p.unsharp_mask_params,
-        p.ice_masks_params,
-        p.prelim_icemask_params,
-        p.brighten_factor;
-        intermediate_results_callback,
-    )
-    labels = label_components(binary_floe_masks)
-    segmented = SegmentedImage(truecolor, labels)
-
-    if !isnothing(intermediate_results_callback)
-        segments_truecolor = SegmentedImage(truecolor, labels)
-        segments_falsecolor = SegmentedImage(falsecolor, labels)
-        intermediate_results_callback(;
+            binary_floe_masks,
             labels,
             segmented,
             segment_mean_truecolor=map(i -> segment_mean(segments_truecolor, i), labels),
