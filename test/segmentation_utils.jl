@@ -127,7 +127,7 @@ function results_invariant_for(
             "segmentation-$(typeof(algorithm))-$(target_type)-$(Dates.format(Dates.now(), "yyyy-mm-dd-HHMMSS"))",
         );
     )
-    segments = LopezAcosta2019Tiling()(
+    segments = algorithm(
         target_type.(case.modis_truecolor),
         target_type.(case.modis_falsecolor),
         target_type.(case.modis_landmask);
@@ -193,10 +193,7 @@ julia> callback(;image_name=image)
 ```
 ... saves `image` to `/tmp/path/to/directory/image_name.png`.
 """
-function save_results_callback(
-    directory::AbstractString;
-    extension::AbstractString=".png",
-)
+function save_results_callback(directory::AbstractString; extension::AbstractString=".png")
     function callback(; kwargs...)
         mkpath(directory)
         for (name, image) in kwargs
