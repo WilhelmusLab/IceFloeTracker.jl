@@ -124,7 +124,7 @@ function results_invariant_for(
     intermediate_results_callback = save_results_callback(
         joinpath(
             output_directory,
-            "segmentation-$(typeof(algorithm))-$(target_type)-$(Dates.format(Dates.now(), "yyyy-mm-dd-HHMMSS"))",
+            "segmentation-$(typeof(algorithm))-$(join(target_type,"∘"))-$(Dates.format(Dates.now(), "yyyy-mm-dd-HHMMSS"))",
         );
     )
     casting_function = ∘(target_type...)
