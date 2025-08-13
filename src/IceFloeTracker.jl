@@ -51,7 +51,8 @@ export readdlm,
     segmentation_comparison,
     segmentation_summary,
     LopezAcosta2019Tiling,
-    callable_store
+    callable_store,
+    binarize_segments
 
 # For IFTPipeline
 using HDF5
