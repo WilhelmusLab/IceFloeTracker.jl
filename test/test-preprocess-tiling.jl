@@ -82,21 +82,23 @@ using StatsBase: mean
         baseline = run_and_validate_segmentation(
             case, algorithm; output_directory="./test_outputs/"
         )
-        function results_invariant_under_image_type_transformation(target_type::Function)
+        function results_invariant_under_image_type_transformation(
+            target_type::Union{Function,Type}
+        )
             intermediate_results_callback = save_results_callback(
                 "./test_outputs/segmentation-LopezAcosta2019Tiling-$(target_type)-$(Dates.format(Dates.now(), "yyyy-mm-dd-HHMMSS"))";
             )
-
             segments = LopezAcosta2019Tiling()(
-                target_type.(RGB.(case.modis_truecolor)),
-                target_type.(RGB.(case.modis_falsecolor)),
-                target_type.(RGB.(case.modis_landmask));
+                target_type.(case.modis_truecolor),
+                target_type.(case.modis_falsecolor),
+                target_type.(case.modis_landmask);
                 intermediate_results_callback,
             )
             (; segment_count, labeled_fraction) = segmentation_summary(segments)
             (; recall, precision, F_score) = segmentation_comparison(
                 case.validated_labeled_floes, segments
             )
+            
             return all([
                 ≈(segment_count, baseline.segment_count; rtol=0.01),
                 ≈(labeled_fraction, baseline.labeled_fraction; rtol=0.01),
@@ -105,6 +107,8 @@ using StatsBase: mean
                 ≈(F_score, baseline.F_score; rtol=0.01),
             ])
         end
+        @test results_invariant_under_image_type_transformation(RGB)
+        @test results_invariant_under_image_type_transformation(RGBA)
         @test results_invariant_under_image_type_transformation(n0f8)
         @test results_invariant_under_image_type_transformation(n6f10) broken = true
         @test results_invariant_under_image_type_transformation(n4f12) broken = true
