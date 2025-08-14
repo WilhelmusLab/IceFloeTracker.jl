@@ -1,7 +1,7 @@
 
 using StatsBase: mean
 
-@testset "preprocess_tiling" begin
+@ntestset "preprocess_tiling" begin
     data_loader = Watkins2025GitHub(; ref="a451cd5e62a10309a9640fbbe6b32a236fcebc70")
     @ntestset "Detailed checks" begin
         (; labeled_fraction, recall, precision, F_score) = run_and_validate_segmentation(
@@ -73,5 +73,24 @@ using StatsBase: mean
         @show mean_recall
         @show mean_precision
         @show mean_F_score
+    end
+    @ntestset "Image types" begin
+        case::ValidationDataCase = first(
+            data_loader(c -> (c.case_number == 6 && c.satellite == "terra"))
+        )
+        algorithm = LopezAcosta2019Tiling()
+        baseline = run_and_validate_segmentation(
+            case, algorithm; output_directory="./test_outputs/"
+        )
+        
+        @test results_invariant_for(RGB, baseline, algorithm, case)
+        @test results_invariant_for(RGBA, baseline, algorithm, case)
+        @test results_invariant_for(n0f8, baseline, algorithm, case)
+        @test results_invariant_for(n6f10, baseline, algorithm, case) broken = true
+        @test results_invariant_for(n4f12, baseline, algorithm, case) broken = true
+        @test results_invariant_for(n2f14, baseline, algorithm, case) broken = true
+        @test results_invariant_for(n0f16, baseline, algorithm, case) broken = true
+        @test results_invariant_for(float32, baseline, algorithm, case) broken = true
+        @test results_invariant_for(float64, baseline, algorithm, case) broken = true
     end
 end
