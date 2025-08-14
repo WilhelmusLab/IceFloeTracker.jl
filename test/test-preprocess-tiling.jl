@@ -18,19 +18,6 @@ skipnanormissing(arr::AbstractArray) = filter(x -> !ismissing(x) && !isnan(x), a
 include("segmentation_utils.jl")
 
 @testset "preprocess_tiling" begin
-    result_images_to_save = [
-        :ref_image,
-        :true_color_image,
-        :ref_img_cloudmasked,
-        :prelim_icemask,
-        :binarized_tiling,
-        :segment_mask,
-        :L0mask,
-        :icemask,
-        :final,
-        :segment_mean_truecolor,
-        :segment_mean_falsecolor,
-    ]
     region = (1016:3045, 1486:3714)
     data_dir = joinpath(@__DIR__, "test_inputs")
     true_color_image = load(
@@ -64,7 +51,6 @@ include("segmentation_utils.jl")
         landmask_image;
         intermediate_results_callback=save_results_callback(
             "./test_outputs/segmentation-LopezAcosta2019Tiling-functor-$(Dates.format(Dates.now(), "yyyy-mm-dd-HHMMSS"))";
-            names=result_images_to_save,
         ),
     )
     binary_floe_mask = binarize_segments(segments)
@@ -81,7 +67,6 @@ include("segmentation_utils.jl")
             case -> (case.case_number % 17 == 0),
             LopezAcosta2019Tiling();
             output_directory="./test_outputs/",
-            result_images_to_save,
         )
         @test all(results.success)
 
