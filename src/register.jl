@@ -131,7 +131,7 @@ function register(
         im_reference, im_target, test_angles; imrotate_function
     )
     best_match = argmin((x) -> x.shape_difference, shape_differences)
-    return best_match.angle
+    return best_match.angle # should we include the best_match.shape_difference?
 end
 
 """
@@ -157,9 +157,9 @@ function mismatch(fixed::AbstractArray, moving::AbstractArray, test_angles::Abst
     )
     best_match = argmin((x) -> x.shape_difference, shape_differences)
     rotation_degrees = best_match.angle
-    normalized_area = (sum(fixed) + sum(moving)) / 2
+    normalized_area = (sum(fixed) + sum(moving)) / 2 # dmw: I think normalizing by perimeter may be better
     normalized_mismatch = best_match.shape_difference / normalized_area
-    return (mm=normalized_mismatch, rot=rotation_degrees)
+    return (mm=normalized_mismatch, rot=rotation_degrees) # dmw: Potentially should output the non-normalized difference, too
 end
 
 """
