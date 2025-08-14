@@ -35,12 +35,12 @@ using IceFloeTracker:
 
 # Sample input parameters expected by the main function
 cloud_mask_thresholds = (
-    prelim_threshold=110.0/255.,
-    band_7_threshold=200.0/255.,
-    band_2_threshold=190.0/255.,
+    prelim_threshold=110.0 / 255.0,
+    band_7_threshold=200.0 / 255.0,
+    band_2_threshold=190.0 / 255.0,
     ratio_lower=0.0,
     ratio_upper=0.75,
-    r_offset=0.0
+    r_offset=0.0,
 )
 
 adapthisteq_params = (
@@ -83,13 +83,15 @@ function preprocess_tiling(
     unsharp_mask_params,
     ice_masks_params,
     prelim_icemask_params,
-    brighten_factor,
+    brighten_factor;
+    intermediate_results_callback::Union{Nothing,Function}=nothing,
 )
     begin
         @debug "Step 1/2: Create and apply cloudmask to reference image"
-        
-        cloudmask = IceFloeTracker.create_cloudmask(ref_image,
-                                LopezAcostaCloudMask(cloud_mask_thresholds...))
+
+        cloudmask = IceFloeTracker.create_cloudmask(
+            ref_image, LopezAcostaCloudMask(cloud_mask_thresholds...)
+        )
         ref_img_cloudmasked = IceFloeTracker.apply_cloudmask(ref_image, cloudmask)
     end
 
@@ -134,14 +136,14 @@ function preprocess_tiling(
     end
 
     begin
-        @debug "STEP 7: Brighten equalized_gray"
+        @debug "Step 7: Brighten equalized_gray"
         brighten = get_brighten_mask(equalized_gray_reconstructed, gammagreen)
         equalized_gray[landmask.dilated] .= 0
         equalized_gray .= imbrighten(equalized_gray, brighten, brighten_factor)
     end
 
     begin
-        @debug "STEP 8: Get morphed_residue and adjust its gamma"
+        @debug "Step 8: Get morphed_residue and adjust its gamma"
         morphed_residue = clamp.(equalized_gray - equalized_gray_reconstructed, 0, 255)
 
         agp = adjust_gamma_params
@@ -202,5 +204,81 @@ function preprocess_tiling(
         final = get_final(icemask, segment_mask, se_erosion, se_dilation)
     end
 
+    if !isnothing(intermediate_results_callback)
+        intermediate_results_callback(;
+            ref_image,
+            true_color_image,
+            ref_img_cloudmasked,
+            gammagreen,
+            equalized_gray,
+            equalized_gray_sharpened_reconstructed,
+            equalized_gray_reconstructed,
+            morphed_residue,
+            prelim_icemask,
+            binarized_tiling,
+            segment_mask,
+            local_maxima_mask,
+            L0mask,
+            prelim_icemask2,
+            icemask,
+            final,
+        )
+    end
+
     return final
+end
+
+@kwdef struct LopezAcosta2019Tiling <: IceFloeSegmentationAlgorithm
+    tile_settings = (; rblocks=2, cblocks=2)
+    cloud_mask_thresholds = cloud_mask_thresholds
+    adapthisteq_params = adapthisteq_params
+    adjust_gamma_params = adjust_gamma_params
+    structuring_elements = structuring_elements
+    unsharp_mask_params = unsharp_mask_params
+    ice_masks_params = ice_masks_params
+    prelim_icemask_params = prelim_icemask_params
+    brighten_factor = brighten_factor
+end
+
+function (p::LopezAcosta2019Tiling)(
+    truecolor::AbstractArray{<:Union{AbstractRGB,TransparentRGB}},
+    falsecolor::AbstractArray{<:Union{AbstractRGB,TransparentRGB}},
+    landmask::AbstractArray{<:Union{AbstractGray,AbstractRGB,TransparentRGB}};
+    intermediate_results_callback::Union{Nothing,Function}=nothing,
+)
+    @warn "using undilated landmask as dilated"
+    _landmask = (dilated=(float64.(Gray.(landmask))) .> 0,) # TODO: remove this typecast to float64
+
+    tiles = get_tiles(truecolor; p.tile_settings...)
+
+    binary_floe_masks = preprocess_tiling(
+        RGB.(falsecolor), # TODO: remove this typecast
+        RGB.(truecolor), # TODO: remove this typecast
+        _landmask,
+        tiles,
+        p.cloud_mask_thresholds,
+        p.adapthisteq_params,
+        p.adjust_gamma_params,
+        p.structuring_elements,
+        p.unsharp_mask_params,
+        p.ice_masks_params,
+        p.prelim_icemask_params,
+        p.brighten_factor;
+        intermediate_results_callback,
+    )
+    labels = label_components(binary_floe_masks)
+    segmented = SegmentedImage(truecolor, labels)
+
+    if !isnothing(intermediate_results_callback)
+        segments_truecolor = SegmentedImage(truecolor, labels)
+        segments_falsecolor = SegmentedImage(falsecolor, labels)
+        intermediate_results_callback(;
+            labels,
+            segmented,
+            segment_mean_truecolor=map(i -> segment_mean(segments_truecolor, i), labels),
+            segment_mean_falsecolor=map(i -> segment_mean(segments_falsecolor, i), labels),
+        )
+    end
+
+    return segmented
 end

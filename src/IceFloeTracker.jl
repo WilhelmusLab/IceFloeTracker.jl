@@ -50,7 +50,9 @@ export readdlm,
     Watkins2025GitHub,
     segmentation_comparison,
     segmentation_summary,
-    callable_store
+    LopezAcosta2019Tiling,
+    callable_store,
+    binarize_segments
 
 # For IFTPipeline
 using HDF5
