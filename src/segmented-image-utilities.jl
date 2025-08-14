@@ -46,14 +46,20 @@ end
 Results of a segmentation comparison
 """
 SegmentationSummary = @NamedTuple begin
-    labeled_fraction::Real
+    labeled_fraction::Union{Real,Missing}
+    segment_count::Union{Real,Missing}
 end
 
-function segmentation_summary(segmented::SegmentedImage)::SegmentationSummary
-    binary = binarize_segments(segmented)
-    non_zero_area = sum(binary)
-    labeled_fraction = non_zero_area / length(binary)
-    return (; labeled_fraction)
+function segmentation_summary(segmented::Union{SegmentedImage,Nothing})::SegmentationSummary
+    if !isnothing(segmented)
+        binary = binarize_segments(segmented)
+        non_zero_area = sum(binary)
+        labeled_fraction = non_zero_area / length(binary)
+        segment_count = length(segment_labels(segmented))
+        return (; labeled_fraction, segment_count)
+    else
+        return (; labeled_fraction=missing, segment_count=missing)
+    end
 end
 
 """

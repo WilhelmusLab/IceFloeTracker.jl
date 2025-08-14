@@ -12,6 +12,7 @@ using ZipFile
 include("test_error_rate.jl")
 include("config.jl")
 include("utils.jl")
+include("segmentation_utils.jl")
 
 function pad_string(str::String, total_length::Int=49, padding_char::Char='-')
     # Calculate the padding needed on each side
@@ -19,7 +20,9 @@ function pad_string(str::String, total_length::Int=49, padding_char::Char='-')
     right_padding = total_length - length(str) - left_padding
 
     # Pad the string
-    padded_str = lpad(rpad(str, length(str) + right_padding, padding_char), total_length, padding_char)
+    padded_str = lpad(
+        rpad(str, length(str) + right_padding, padding_char), total_length, padding_char
+    )
 
     return padded_str
 end

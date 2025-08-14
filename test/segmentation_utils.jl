@@ -1,85 +1,32 @@
 """
-    run_segmentation_over_multiple_cases(
-        data_loader::ValidationDataLoader,
-        case_filter::Function,
+    run_and_validate_segmentation(
+        dataset::ValidationDataSet,
         algorithm::IceFloeSegmentationAlgorithm;
         output_directory::Union{AbstractString,Nothing}=nothing,
-        result_images_to_save::Union{AbstractArray{Symbol},Nothing}=nothing,
     )
 
-Run the `algorithm::IceFloeSegmentationAlgorithm` over each of the `cases` and return a DataFrame of the results.
+Run the `algorithm::IceFloeSegmentationAlgorithm` over each of the cases in `dataset` and return a DataFrame of the results.
 
 Inputs:
-- `data_loader`: a ValidationDataLoader to load the data from a validated data set
-- `case_filter`: a function which returns a boolean when given the data_loader's metadata values
-  and determines which cases are included (true) or excluded (false) from processing
+- `dataset`: a ValidationDataSet
 - `algorithm`: an instantiated `IceFloeSegmentationAlgorithm` which will be called on each case
 - `output_directory`: optional – path to save intermediate and final outputs
-- `result_images_to_save`: optional – symbols of the intermediate results from `algorithm` which should be saved
 
 Returns:
 - A DataFrame with the results including a :success boolean, any :error messages, and the original metadata.
 
 """
-
-function run_segmentation_over_multiple_cases(
-    data_loader::ValidationDataLoader,
-    case_filter::Function,
+function run_and_validate_segmentation(
+    dataset::ValidationDataSet,
     algorithm::IceFloeSegmentationAlgorithm;
-    output_directory::Union{AbstractString,Nothing}=nothing
+    output_directory::Union{AbstractString,Nothing}=nothing,
 )::DataFrame
-    dataset = data_loader(; case_filter)
     @info dataset.metadata
     results = []
     for case::ValidationDataCase in dataset
-        let name, datestamp, validated, measured, success, error, comparison
-            name = case.name
-            datestamp = Dates.format(Dates.now(), "yyyy-mm-dd-HHMMSS")
-            validated = case.validated_labeled_floes
-
-            if !isnothing(output_directory)
-                intermediate_results_callback = save_results_callback(
-                    joinpath(
-                        output_directory,
-                        "segmentation-$(typeof(algorithm))-$(name)-$(datestamp)",
-                    );
-                )
-            else
-                intermediate_results_callback = nothing
-            end
-
-            @info "starting $(name)"
-            try
-                measured = algorithm(
-                    RGB.(case.modis_truecolor),
-                    RGB.(case.modis_falsecolor),
-                    case.modis_landmask;
-                    intermediate_results_callback,
-                )
-                @info "$(name) succeeded"
-                success = true
-                error = nothing
-            catch error
-                @warn "$(name) failed: $(error)"
-                success = false
-                measured = nothing
-            end
-
-            comparison = segmentation_comparison(; validated, measured)
-
-            # Store the aggregate results
-            push!(
-                results,
-                merge((; name, success, error), comparison, NamedTuple(case.metadata)),
-            )
-            if !isnothing(intermediate_results_callback) && !isnothing(validated)
-                intermediate_results_callback(;
-                    segment_mean_truecolor_validated=map(
-                        i -> segment_mean(validated, i), labels_map(validated)
-                    ),
-                )
-            end
-        end
+        @info "starting $(case.name)"
+        results_row = run_and_validate_segmentation(case, algorithm; output_directory)
+        push!(results, results_row)
     end
     results_df = DataFrame(results)
     @info results_df
@@ -87,13 +34,111 @@ function run_segmentation_over_multiple_cases(
 end
 
 """
+    run_and_validate_segmentation(
+        case::ValidationDataCase,
+        algorithm::IceFloeSegmentationAlgorithm;
+        output_directory::Union{AbstractString,Nothing}=nothing,
+    )
+
+Run the `algorithm::IceFloeSegmentationAlgorithm` on the `case` and return a NamedTuple of the validation results.
+
+- `case`: ValidationDataCase to be processed by the algorithm
+- `algorithm`: an instantiated `IceFloeSegmentationAlgorithm` which will be called on each case
+- `output_directory`: optional – path to save intermediate and final outputs
+
+
+Results include:
+- `name` – name of the `case`
+- `success` – whether the algorithm ran without throwing an error
+- `error` – if there was an error, what the error message was
+- outputs from `segmentation_summary` including `labeled_fraction`
+- outputs from `segmentation_comparison` of the measured and validated dataset, including `precision`, `recall` and `F_score`.
+
+
+"""
+function run_and_validate_segmentation(
+    case::ValidationDataCase,
+    algorithm::IceFloeSegmentationAlgorithm;
+    output_directory::Union{AbstractString,Nothing}=nothing,
+)
+    let name, datestamp, validated, measured, success, error, comparison
+        name = case.name
+        validated = case.validated_labeled_floes
+        if !isnothing(output_directory)
+            intermediate_results_callback = save_results_callback(
+                output_directory, case, algorithm;
+            )
+        else
+            intermediate_results_callback = nothing
+        end
+        try
+            measured = algorithm(
+                RGB.(case.modis_truecolor),
+                RGB.(case.modis_falsecolor),
+                case.modis_landmask;
+                intermediate_results_callback,
+            )
+            @info "$(name) succeeded"
+            success = true
+            error = nothing
+        catch error
+            @warn "$(name) failed: $(error)"
+            success = false
+            measured = nothing
+        end
+        summary = segmentation_summary(measured)
+        comparison = segmentation_comparison(; validated, measured)
+        results = merge(
+            (; name, success, error), comparison, summary, NamedTuple(case.metadata)
+        )
+        if !isnothing(intermediate_results_callback) && !isnothing(validated)
+            intermediate_results_callback(;
+                segment_mean_truecolor_validated=map(
+                    i -> segment_mean(validated, i), labels_map(validated)
+                ),
+            )
+        end
+        return results
+    end
+end
+
+"""
+    save_results_callback(
+        directory::AbstractString,
+        case::ValidationDataCase,
+        algorithm::IceFloeSegmentationAlgorithm;
+        extension::AbstractString=".png",
+    )::Function
+
+Returns a function which saves any images which are passed into it as keyword arguments.
+Creates a subdirectory based on the current time, the `case` and `algorithm`.
+
+Inputs:
+- `directory`: base directory where images will be stored
+- `case`: ValidationDataCase with metadata which are used to name a subdirectory
+- `algorithm`: IceFloeSegmentationAlgorithm which is used in the subdirectory name.
+"""
+function save_results_callback(
+    directory::AbstractString,
+    case::ValidationDataCase,
+    algorithm::IceFloeSegmentationAlgorithm;
+    extension::AbstractString=".png",
+)::Function
+    datestamp = Dates.format(Dates.now(), "yyyy-mm-dd-HHMMSS")
+    name = case.name
+    return save_results_callback(
+        joinpath(directory, "segmentation-$(typeof(algorithm))-$(name)-$(datestamp)");
+        extension,
+    )
+end
+
+"""
     save_results_callback(
         path;
         extension,
-        names::Union{AbstractArray{Symbol},Nothing}
     )::Function
 
-Returns a function which saves any images passed into it as keyword arguments.
+Returns a function which saves any images which are passed into it as keyword arguments.
 
 # Example
 ```julia-repl
