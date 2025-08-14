@@ -44,8 +44,8 @@ Locate the pixels of likely ice from false color reflectance image. Returns a bi
 
 """
 function find_ice_labels(
-    modis_band_721::Matrix{<:Union{AbstractRGB,TransparentRGB}},
-    landmask::BitMatrix;
+    modis_band_721::AbstractArray{<:Union{AbstractRGB,TransparentRGB}},
+    landmask::AbstractArray{<:Union{BitMatrix,Gray,AbstractRGB,TransparentRGB}};
     band_7_threshold::Float64=Float64(5 / 255),
     band_2_threshold::Float64=Float64(230 / 255),
     band_1_threshold::Float64=Float64(240 / 255),
