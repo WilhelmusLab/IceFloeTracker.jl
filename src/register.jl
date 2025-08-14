@@ -5,6 +5,8 @@ end
 function imrotate_bin_nocrop(x, r)
     return greaterthan05(collect(imrotate(x, r; method=BSpline(Constant()))))
 end
+# warning: all these functions crop the floe, so if the image is not padded correctly,
+# the rotated floe will be cropped!
 imrotate_bin_clockwise_radians(x, r) = imrotate_bin(x, r)
 imrotate_bin_counterclockwise_radians(x, r) = imrotate_bin(x, -r)
 imrotate_bin_clockwise_degrees(x, r) = imrotate_bin_clockwise_radians(x, deg2rad(r))
@@ -75,6 +77,7 @@ as the angle of rotation from target to reference, so to find the best match, we
 direction. A perfect match at angle `A` would imply im_target is the same shape as if im_reference was
 rotated by `A`. 
 Use `imrotate_function=imrotate_bin_<clockwise|counterclockwise>_<radians|degrees>` to get angles <clockwise|counterclockwise> in <radians|degrees>.
+Defaults to using radians.
 """
 function shape_difference_rotation(im_reference, im_target, test_angles; imrotate_function=imrotate_bin_clockwise_radians)
     shape_differences = Array{

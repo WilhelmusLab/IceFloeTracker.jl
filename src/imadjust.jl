@@ -1,4 +1,8 @@
 # TODO: make imadjust more general to work with Gray{Float64} and RGB{Float64} types
+# dmw: This is a good example of a function where we should only very lightly touch the ImageContrastAdjustment function.
+# We don't need to do any image conversion: it should match the input and output types. We can restrict it to grayscale images
+# or single channels. The wrapper is just to add percentile-based max and min for the linear stretching.
+# Perhaps the new function can be PercentileLinearStretching?
 """
     imadjust(img; low, high)
 
