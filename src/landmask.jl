@@ -80,3 +80,62 @@ function apply_landmask(img, landmask; as_indices::Bool)
     landmasked = apply_landmask(img, landmask)
     return as_indices ? findall(vec(landmasked)) : landmasked
 end
+
+"""
+    zero_out(
+        img::AbstractArray,
+        mask::BitMatrix,
+    )
+
+    Zero out all elements in `img` where there is a `true` value in `mask`.
+
+# Examples
+
+```julia-repl
+julia> land_and_sea = Gray.([0.2 0.2 0.7 0.78])
+julia> land = [1 1 0 0]
+julia> zero_out(land_and_sea, land)
+```
+
+"""
+
+function _get_multiplicative_mask(mask::BitMatrix)
+    return .!mask
+end
+
+function _get_multiplicative_mask(mask::AbstractArray{<:Union{Bool,Real,Gray}})
+    return Bool.(mask)
+end
+
+function _get_multiplicative_mask(mask::AbstractArray{<:TransparentRGB})
+    inverse_mask = alpha.(mask) # alpha channel is 1 when fully transparent, 0 where opaque
+    mask_ = .!(Bool.(inverse_mask)) # ... so switch the sense so that the opaque bits will be zeroed
+    return mask_
+end
+
+
+
+function zero_out(mask::BitMatrix)
+    function inner(img)
+        return @. img * !(mask)
+    end
+end
+
+function zero_out(img::AbstractArray{<:Colorant}, mask::BitMatrix)
+    image_masked = @. img * !(mask)
+    return image_masked
+end
+
+function zero_out(
+    img::AbstractArray{<:Colorant}, mask::AbstractArray{<:Union{Bool,Real,Gray}}
+)
+    return zero_out(img, Bool.(mask))
+end
+
+function zero_out(img::AbstractArray{<:Colorant}, mask::AbstractArray{<:TransparentRGB})
+    inverse_mask = alpha.(mask) # alpha channel is 1 when fully transparent
+    mask_ = .!(Bool.(inverse_mask)) # ... so switch the sense so that the opaque bits will be zeroed
+    return zero_out(img, mask_)
+end
+
+
