@@ -1,18 +1,3 @@
-
-function find_reflectance_peaks(
-    reflectance_channel::AbstractArray{<:Real}; possible_ice_threshold::Real=N0f8(75 / 255)
-)
-    reflectance_channel[reflectance_channel .< possible_ice_threshold] .= 0
-    _, counts = ImageContrastAdjustment.build_histogram(reflectance_channel)
-    locs, _ = Peaks.findmaxima(counts)
-    sort!(locs; rev=true)
-    return locs[2] / 255.0 # second greatest peak
-end
-
-function get_ice_labels(ice::AbstractArray{<:TransparentGray})
-    return findall(vec(gray.(ice) .* alpha.(ice)) .> 0)
-end
-
 """
     find_ice_labels(falsecolor_image, landmask; band_7_threshold, band_2_threshold, band_1_threshold, band_7_relaxed_threshold, band_1_relaxed_threshold, possible_ice_threshold)
 
@@ -154,6 +139,20 @@ function find_ice(
     ice_img = coloralpha.(Gray.(N0f8.(ice)), alpha.(alphacolor.(modis_721_image)))
 
     return ice_img
+end
+
+function find_reflectance_peaks(
+    reflectance_channel::AbstractArray{<:Real}; possible_ice_threshold::Real=N0f8(75 / 255)
+)
+    reflectance_channel[reflectance_channel .< possible_ice_threshold] .= 0
+    _, counts = ImageContrastAdjustment.build_histogram(reflectance_channel)
+    locs, _ = Peaks.findmaxima(counts)
+    sort!(locs; rev=true)
+    return locs[2] / 255.0 # second greatest peak
+end
+
+function get_ice_labels(ice::AbstractArray{<:TransparentGray})
+    return findall(vec(gray.(ice) .* alpha.(ice)) .> 0)
 end
 
 function LopezAcosta2019IceDetection()
