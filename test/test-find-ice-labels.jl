@@ -75,8 +75,35 @@
             case = first(data_loader(c -> (c.case_number == 12 && c.satellite == "terra")))
             landmask = case.modis_landmask
             falsecolor = case.modis_falsecolor
-            find_ice(falsecolor, IceDetectionLopezAcosta2019())
-            find_ice(masker(landmask)(falsecolor), IceDetectionLopezAcosta2019())
+            baseline = find_ice(falsecolor, IceDetectionLopezAcosta2019())
+            baseline_mask = find_ice(
+                masker(landmask)(falsecolor), IceDetectionLopezAcosta2019()
+            )
+            fc_masked = masker(landmask)(falsecolor)
+
+            @ntestset "IceDetectionLopezAcosta2019 type invariant" begin
+                algorithm = IceDetectionLopezAcosta2019()
+                @test find_ice(n0f8.(falsecolor), algorithm) == baseline
+                @test find_ice(float64.(falsecolor), algorithm) == baseline
+                @test find_ice(n4f12.(falsecolor), algorithm) == baseline broken = true
+                @test find_ice(n0f8.(fc_masked), algorithm) == baseline_mask
+                @test find_ice(float64.(fc_masked), algorithm) == baseline_mask
+                @test find_ice(n4f12.(fc_masked), algorithm) == baseline_mask broken = true
+            end
+
+            @ntestset "IceDetectionThresholdMODIS721 type invariant" begin
+                algorithm = IceDetectionThresholdMODIS721(;
+                    band_7_threshold=(5 / 255),
+                    band_2_threshold=(230 / 255),
+                    band_1_threshold=(240 / 255),
+                )
+                @test find_ice(n0f8.(falsecolor), algorithm) == baseline
+                @test find_ice(float64.(falsecolor), algorithm) == baseline
+                @test find_ice(n4f12.(falsecolor), algorithm) == baseline broken = true
+                @test find_ice(n0f8.(fc_masked), algorithm) == baseline_mask
+                @test find_ice(float64.(fc_masked), algorithm) == baseline_mask
+                @test find_ice(n4f12.(fc_masked), algorithm) == baseline_mask broken = true
+            end
         end
     end
 end
