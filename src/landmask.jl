@@ -80,23 +80,3 @@ function apply_landmask(img, landmask; as_indices::Bool)
     landmasked = apply_landmask(img, landmask)
     return as_indices ? findall(vec(landmasked)) : landmasked
 end
-
-function apply_mask(mask::AbstractArray{<:Union{TransparentRGB,AGray}})
-    # alpha channel required to hide parts of `mask` > 0 
-    masking_alpha_channel = ones(size(mask)) - alpha.(mask)
-    function _apply(img::AbstractArray{<:Union{AbstractRGB,Gray}})
-        return alphacolor.(img, masking_alpha_channel)
-    end
-    function _apply(img::AbstractArray{<:Union{TransparentRGB,AGray}})
-        combined_masking_alpha_channel = min.(alpha.(img), masking_alpha_channel)
-        return alphacolor.(img, combined_masking_alpha_channel)
-    end
-    return _apply
-end
-
-function apply_mask(
-    mask::AbstractArray{<:TransparentRGB},
-    img::AbstractArray{<:Union{AbstractRGB,TransparentRGB,Gray}},
-)
-    return apply_mask(mask)(img)
-end
