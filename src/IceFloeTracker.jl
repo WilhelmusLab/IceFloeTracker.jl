@@ -59,7 +59,7 @@ export readdlm,
     IceDetectionAlgorithm,
     IceDetectionBrightnessPeaksMODIS721,
     IceDetectionThresholdMODIS721,
-    IceDetectionFirstNonZeroAlgorithm
+    IceDetectionFirstNonZeroAlgorithm,
     IceDetectionLopezAcosta2019
 
 # For IFTPipeline
