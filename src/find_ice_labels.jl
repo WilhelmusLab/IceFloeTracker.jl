@@ -73,14 +73,14 @@ function find_ice(
     return ice_img
 end
 
-@kwdef struct IceDetectionBrightnessPeaks <: IceDetectionAlgorithm
+@kwdef struct IceDetectionBrightnessPeaksMODIS721 <: IceDetectionAlgorithm
     band_7_threshold::Real
     possible_ice_threshold::Real
 end
 
 function find_ice(
     modis_721_image::AbstractArray{<:Union{AbstractRGB,TransparentRGB}},
-    a::IceDetectionBrightnessPeaks,
+    a::IceDetectionBrightnessPeaksMODIS721,
 )
     alpha_binary = alpha.(alphacolor.(modis_721_image)) .> 0.5
     band_7 = red.(modis_721_image)
@@ -129,7 +129,7 @@ function LopezAcosta2019IceDetection(;
             band_2_threshold=band_2_threshold,
             band_1_threshold=band_1_threshold_relaxed,
         ),
-        IceDetectionBrightnessPeaks(;
+        IceDetectionBrightnessPeaksMODIS721(;
             band_7_threshold=band_7_threshold, possible_ice_threshold=possible_ice_threshold
         ),
     ])
