@@ -36,8 +36,19 @@ function find_ice(
 end
 
 """
+    IceDetectionThresholdMODIS721(;
+        band_7_threshold::Real,
+        band_2_threshold::Real,
+        band_1_threshold::Real,
+    )(image)
+    find_ice(
+        modis_721_image, 
+        a::IceDetectionThresholdMODIS721
+    )
+
+Returns pixels for a MODIS image where (band_7 < threshold AND band_2 > threshold AND band_1 > threshold).
 """
-@kwdef struct IceDetectionThreshold <: IceDetectionAlgorithm
+@kwdef struct IceDetectionThresholdMODIS721 <: IceDetectionAlgorithm
     band_7_threshold::Real
     band_2_threshold::Real
     band_1_threshold::Real
@@ -45,7 +56,7 @@ end
 
 function find_ice(
     modis_721_image::AbstractArray{<:Union{AbstractRGB,TransparentRGB}},
-    a::IceDetectionThreshold,
+    a::IceDetectionThresholdMODIS721,
 )
     band_7 = red.(modis_721_image)
     band_2 = green.(modis_721_image)
@@ -108,12 +119,12 @@ function LopezAcosta2019IceDetection(;
     possible_ice_threshold::Float64=Float64(75 / 255),
 )
     return IceDetectionFirstNonZeroAlgorithm([
-        IceDetectionThreshold(;
+        IceDetectionThresholdMODIS721(;
             band_7_threshold=band_7_threshold,
             band_2_threshold=band_2_threshold,
             band_1_threshold=band_1_threshold,
         ),
-        IceDetectionThreshold(;
+        IceDetectionThresholdMODIS721(;
             band_7_threshold=band_7_threshold_relaxed,
             band_2_threshold=band_2_threshold,
             band_1_threshold=band_1_threshold_relaxed,
