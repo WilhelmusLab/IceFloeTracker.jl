@@ -67,4 +67,12 @@
             find_ice(masker(landmask)(falsecolor), LopezAcosta2019IceDetection())
         end
     end
+    @ntestset "functor version" begin
+        data_loader = Watkins2025GitHub(; ref="a451cd5e62a10309a9640fbbe6b32a236fcebc70")
+        case = first(data_loader(c -> (c.case_number == 12 && c.satellite == "terra")))
+        landmask = case.modis_landmask
+        falsecolor = case.modis_falsecolor
+        algorithm = LopezAcosta2019IceDetection()
+        @test find_ice(falsecolor, algorithm) == algorithm(falsecolor)
+    end
 end
