@@ -14,27 +14,6 @@ function (a::IceDetectionAlgorithm)(img; kwargs...)
     return find_ice(img, a; kwargs...)
 end
 
-@kwdef struct IceDetectionFirstNonZeroAlgorithm <: IceDetectionAlgorithm
-    algorithms::Vector{IceDetectionAlgorithm}
-end
-
-function find_ice(
-    modis_721_image::AbstractArray{<:Union{AbstractRGB,TransparentRGB}},
-    a::IceDetectionFirstNonZeroAlgorithm,
-)
-    let ice
-        for algorithm in a.algorithms
-            @debug algorithm
-            ice = find_ice(modis_721_image, algorithm)
-            ice_sum = sum(gray.(ice) .* alpha.(ice))
-            if ice_sum > 0
-                break
-            end
-        end
-        return ice
-    end
-end
-
 """
     IceDetectionThresholdMODIS721(;
         band_7_threshold::Real,
@@ -122,7 +101,49 @@ function _find_reflectance_peaks(
     return locs[2] / 255.0 # second greatest peak
 end
 
-function LopezAcosta2019IceDetection(;
+"""
+    IceDetectionFirstNonZeroAlgorithm(;
+        algorithms::Vector{IceDetectionAlgorithm},
+    )(image)
+    find_ice(image, algorithms::IceDetectionFirstNonZeroAlgorithm)
+
+Runs each algorithm from `algorithms` on the image, and returns the first which detects any ice.
+"""
+@kwdef struct IceDetectionFirstNonZeroAlgorithm <: IceDetectionAlgorithm
+    algorithms::Vector{IceDetectionAlgorithm}
+end
+
+function find_ice(
+    image::AbstractArray{<:Union{AbstractRGB,TransparentRGB}},
+    a::IceDetectionFirstNonZeroAlgorithm,
+)
+    let ice
+        for algorithm in a.algorithms
+            @debug algorithm
+            ice = find_ice(image, algorithm)
+            ice_sum = sum(gray.(ice) .* alpha.(ice))
+            if ice_sum > 0
+                break
+            end
+        end
+        return ice
+    end
+end
+
+"""
+    IceDetectionLopezAcosta2019(;
+        band_7_threshold::Float64=Float64(5 / 255),
+        band_2_threshold::Float64=Float64(230 / 255),
+        band_1_threshold::Float64=Float64(240 / 255),
+        band_7_threshold_relaxed::Float64=Float64(10 / 255),
+        band_1_threshold_relaxed::Float64=Float64(190 / 255),
+        possible_ice_threshold::Float64=Float64(75 / 255),
+    )
+
+Returns the first non-zero result of two threshold-based and one brightness-peak based ice detections.
+
+"""
+function IceDetectionLopezAcosta2019(;
     band_7_threshold::Float64=Float64(5 / 255),
     band_2_threshold::Float64=Float64(230 / 255),
     band_1_threshold::Float64=Float64(240 / 255),
@@ -166,7 +187,7 @@ function find_ice_labels(
     falsecolor_image::Matrix{RGB{Float64}}, landmask::BitMatrix; kwargs...
 )::Vector{Int64}
     masked_image = masker(.!(landmask))(falsecolor_image)
-    algorithm = LopezAcosta2019IceDetection(kwargs...)
+    algorithm = IceDetectionLopezAcosta2019(kwargs...)
     ice = IceFloeTracker.find_ice(masked_image, algorithm)
     ice_labels = get_ice_labels(ice)
     return ice_labels

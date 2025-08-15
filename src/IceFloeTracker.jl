@@ -59,7 +59,7 @@ export readdlm,
     IceDetectionAlgorithm,
     IceDetectionBrightnessPeaksMODIS721,
     IceDetectionThresholdMODIS721,
-    LopezAcosta2019IceDetection,
+    IceDetectionLopezAcosta2019,
 
 # For IFTPipeline
 using HDF5

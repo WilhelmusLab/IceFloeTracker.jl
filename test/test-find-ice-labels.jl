@@ -7,7 +7,7 @@
             case = first(data_loader(c -> (c.case_number == 12 && c.satellite == "terra")))
             landmask = case.modis_landmask
             falsecolor = case.modis_falsecolor
-            algorithm = LopezAcosta2019IceDetection()
+            algorithm = IceDetectionLopezAcosta2019()
             @test find_ice(falsecolor, algorithm) == algorithm(falsecolor)
         end
     end
@@ -50,7 +50,7 @@
                 )
                 ice_labels_matlab = vec(ice_labels_matlab)
                 ice_binary_new = IceFloeTracker.find_ice(
-                    masker(.!(landmask))(falsecolor_image), LopezAcosta2019IceDetection()
+                    masker(.!(landmask))(falsecolor_image), IceDetectionLopezAcosta2019()
                 )
                 ice_labels_julia_new = IceFloeTracker.get_ice_labels(ice_binary_new)
                 @test ice_labels_julia_new == ice_labels_matlab
@@ -62,7 +62,7 @@
                 ice_labels_ice_floe_region_new = IceFloeTracker.get_ice_labels(
                     IceFloeTracker.find_ice(
                         masker(.!(landmask))(falsecolor_image)[ice_floe_test_region...],
-                        LopezAcosta2019IceDetection(),
+                        IceDetectionLopezAcosta2019(),
                     ),
                 )
                 @test ice_labels_ice_floe_region_new == [84787, 107015]
@@ -75,8 +75,8 @@
             case = first(data_loader(c -> (c.case_number == 12 && c.satellite == "terra")))
             landmask = case.modis_landmask
             falsecolor = case.modis_falsecolor
-            find_ice(falsecolor, LopezAcosta2019IceDetection())
-            find_ice(masker(landmask)(falsecolor), LopezAcosta2019IceDetection())
+            find_ice(falsecolor, IceDetectionLopezAcosta2019())
+            find_ice(masker(landmask)(falsecolor), IceDetectionLopezAcosta2019())
         end
     end
 end
