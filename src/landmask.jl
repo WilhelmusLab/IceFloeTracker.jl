@@ -81,61 +81,22 @@ function apply_landmask(img, landmask; as_indices::Bool)
     return as_indices ? findall(vec(landmasked)) : landmasked
 end
 
-"""
-    zero_out(
-        img::AbstractArray,
-        mask::BitMatrix,
-    )
-
-    Zero out all elements in `img` where there is a `true` value in `mask`.
-
-# Examples
-
-```julia-repl
-julia> land_and_sea = Gray.([0.2 0.2 0.7 0.78])
-julia> land = [1 1 0 0]
-julia> zero_out(land_and_sea, land)
-```
-
-"""
-
-function _get_multiplicative_mask(mask::BitMatrix)
-    return .!mask
-end
-
-function _get_multiplicative_mask(mask::AbstractArray{<:Union{Bool,Real,Gray}})
-    return Bool.(mask)
-end
-
-function _get_multiplicative_mask(mask::AbstractArray{<:TransparentRGB})
-    inverse_mask = alpha.(mask) # alpha channel is 1 when fully transparent, 0 where opaque
-    mask_ = .!(Bool.(inverse_mask)) # ... so switch the sense so that the opaque bits will be zeroed
-    return mask_
-end
-
-
-
-function zero_out(mask::BitMatrix)
-    function inner(img)
-        return @. img * !(mask)
+function apply_mask(mask::AbstractArray{<:Union{TransparentRGB,AGray}})
+    # alpha channel required to hide parts of `mask` > 0 
+    masking_alpha_channel = ones(size(mask)) - alpha.(mask)
+    function _apply(img::AbstractArray{<:Union{AbstractRGB,Gray}})
+        return alphacolor.(img, masking_alpha_channel)
     end
+    function _apply(img::AbstractArray{<:Union{TransparentRGB,AGray}})
+        combined_masking_alpha_channel = min.(alpha.(img), masking_alpha_channel)
+        return alphacolor.(img, combined_masking_alpha_channel)
+    end
+    return _apply
 end
 
-function zero_out(img::AbstractArray{<:Colorant}, mask::BitMatrix)
-    image_masked = @. img * !(mask)
-    return image_masked
-end
-
-function zero_out(
-    img::AbstractArray{<:Colorant}, mask::AbstractArray{<:Union{Bool,Real,Gray}}
+function apply_mask(
+    mask::AbstractArray{<:TransparentRGB},
+    img::AbstractArray{<:Union{AbstractRGB,TransparentRGB,Gray}},
 )
-    return zero_out(img, Bool.(mask))
+    return apply_mask(mask)(img)
 end
-
-function zero_out(img::AbstractArray{<:Colorant}, mask::AbstractArray{<:TransparentRGB})
-    inverse_mask = alpha.(mask) # alpha channel is 1 when fully transparent
-    mask_ = .!(Bool.(inverse_mask)) # ... so switch the sense so that the opaque bits will be zeroed
-    return zero_out(img, mask_)
-end
-
-
