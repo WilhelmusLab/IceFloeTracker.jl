@@ -142,6 +142,8 @@ end
 
 Returns the first non-zero result of two threshold-based and one brightness-peak based ice detections.
 
+Default thresholds are defined in the published Ice Floe Tracker article: Remote Sensing of the Environment 234 (2019) 111406.
+
 """
 function IceDetectionLopezAcosta2019(;
     band_7_threshold::Float64=Float64(5 / 255),
@@ -171,7 +173,7 @@ end
 """
     find_ice_labels(falsecolor_image, landmask; band_7_threshold, band_2_threshold, band_1_threshold, band_7_relaxed_threshold, band_1_relaxed_threshold, possible_ice_threshold)
 
-Locate the pixels of likely ice from false color reflectance image. Returns a binary mask with ice floes contrasted from background. Default thresholds are defined in the published Ice Floe Tracker article: Remote Sensing of the Environment 234 (2019) 111406.
+ Returns pixel indices of likely ice from false color reflectance image, using the thresholds from the Ice Floe Tracker article: Remote Sensing of the Environment 234 (2019) 111406.
 
 # Arguments
 - `falsecolor_image`: corrected reflectance false color image - bands [7,2,1]
