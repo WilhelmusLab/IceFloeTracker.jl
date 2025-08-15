@@ -1,34 +1,3 @@
-# Type of ref_image_band_2
-__T__ = SubArray{
-    Float64,
-    2,
-    Base.ReinterpretArray{Float64,3,RGB{Float64},Matrix{RGB{Float64}},true},
-    Tuple{Int64,Base.Slice{Base.OneTo{Int64}},Base.Slice{Base.OneTo{Int64}}},
-    false,
-}
-
-"""
-    find_reflectance_peaks(reflectance_channel, possible_ice_threshold;)
-
-Find histogram peaks in single channels of a reflectance image and return the second greatest peak. If needed, edges can be returned as the first object from `build_histogram`. Similarly, peak values can be returned as the second object from `findmaxima`.
-
-# Arguments
-- `reflectance_channel`: either band 2 or band 1 of false-color reflectance image
-- `possible_ice_threshold`: threshold value used to identify ice if not found on first or second pass
-
-"""
-function find_reflectance_peaks(
-    reflectance_channel::Union{__T__,Matrix{Float64}};
-    possible_ice_threshold::Float64=Float64(75 / 255),
-)::Int64
-    reflectance_channel[reflectance_channel .< possible_ice_threshold] .= 0 #75 / 255
-    _, counts = ImageContrastAdjustment.build_histogram(reflectance_channel)
-    @show "find_reflectance_peaks (old)"
-    @show counts
-    locs, _ = Peaks.findmaxima(counts)
-    sort!(locs; rev=true)
-    return locs[2] # second greatest peak
-end
 
 function find_reflectance_peaks_(
     reflectance_channel::AbstractArray{<:Real}; possible_ice_threshold::Real=N0f8(75 / 255)
