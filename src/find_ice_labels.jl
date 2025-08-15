@@ -189,7 +189,7 @@ function find_ice_labels(
     falsecolor_image::Matrix{RGB{Float64}}, landmask::BitMatrix; kwargs...
 )::Vector{Int64}
     masked_image = masker(.!(landmask))(falsecolor_image)
-    algorithm = IceDetectionLopezAcosta2019(kwargs...)
+    algorithm = IceDetectionLopezAcosta2019(; kwargs...)
     ice = IceFloeTracker.find_ice(masked_image, algorithm)
     ice_labels = get_ice_labels(ice)
     return ice_labels
