@@ -56,6 +56,7 @@ export readdlm,
     binarize_segments,
     masker,
     find_ice,
+    LopezAcosta2019IceDetection,
     IceDetectionAlgorithm,
     IceDetectionBrightnessPeaks,
     IceDetectionThreshold

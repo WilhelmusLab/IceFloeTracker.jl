@@ -23,9 +23,28 @@ function find_reflectance_peaks(
 )::Int64
     reflectance_channel[reflectance_channel .< possible_ice_threshold] .= 0 #75 / 255
     _, counts = ImageContrastAdjustment.build_histogram(reflectance_channel)
+    @show "find_reflectance_peaks (old)"
+    @show counts
     locs, _ = Peaks.findmaxima(counts)
     sort!(locs; rev=true)
     return locs[2] # second greatest peak
+end
+
+function find_reflectance_peaks_(
+    reflectance_channel::AbstractArray{<:Real}; possible_ice_threshold::Real=N0f8(75 / 255)
+)
+    reflectance_channel[reflectance_channel .< possible_ice_threshold] .= 0
+    _, counts = ImageContrastAdjustment.build_histogram(reflectance_channel)
+    @show "find_reflectance_peaks_ (new)"
+    @show counts
+    locs, _ = Peaks.findmaxima(counts)
+    sort!(locs; rev=true)
+    @show locs
+    return locs[2] / 255.0 # second greatest peak
+end
+
+function get_ice_labels(ice::AbstractArray{<:TransparentGray})
+    return findall(vec(gray.(ice) .* alpha.(ice)) .> 0)
 end
 
 """
@@ -57,6 +76,7 @@ function find_ice_labels(
     ## Make ice masks
     cv = channelview(falsecolor_image)
 
+    @info "first attempt at finding ice labels"
     mask_ice_band_7 = @view(cv[1, :, :]) .< band_7_threshold #5 / 255
     mask_ice_band_2 = @view(cv[2, :, :]) .> band_2_threshold #230 / 255
     mask_ice_band_1 = @view(cv[3, :, :]) .> band_1_threshold #240 / 255
@@ -66,11 +86,13 @@ function find_ice_labels(
 
     ## Find likely ice floes
     if sum(abs.(ice_labels)) == 0
+        @info "second attempt at finding ice labels"
         mask_ice_band_7 = @view(cv[1, :, :]) .< band_7_threshold_relaxed #10 / 255
         mask_ice_band_1 = @view(cv[3, :, :]) .> band_1_threshold_relaxed #190 / 255
         ice = mask_ice_band_7 .* mask_ice_band_2 .* mask_ice_band_1
         ice_labels = apply_landmask(ice, landmask; as_indices=true)
         if sum(abs.(ice_labels)) == 0
+            @info "third attempt at finding ice labels"
             ref_image_band_2 = @view(cv[2, :, :])
             ref_image_band_1 = @view(cv[3, :, :])
             band_2_peak = find_reflectance_peaks(
@@ -91,7 +113,7 @@ end
 
 abstract type IceDetectionAlgorithm end
 
-@kwdef struct LopezAcosta2019IceDetection
+@kwdef struct LopezAcosta2019IceDetection <: IceDetectionAlgorithm
     algorithms::Vector{IceDetectionAlgorithm} = [
         IceDetectionThreshold(;
             band_7_threshold=N0f8(5 / 255),
@@ -113,13 +135,19 @@ function find_ice(
     modis_721_image::AbstractArray{<:Union{AbstractRGB,TransparentRGB}},
     a::LopezAcosta2019IceDetection,
 )
-    for algorithm in a.algorithms
-        ice = find_ice(modis_721_image, algorithm)
-        if sum(gray.(ice) .* alpha.(ice)) > 0
-            break
+    let ice
+        for algorithm in a.algorithms
+            @show algorithm
+            ice = find_ice(modis_721_image, algorithm)
+            @debug ice
+            ice_sum = sum(gray.(ice) .* alpha.(ice))
+            @debug ice_sum
+            if ice_sum > 0
+                break
+            end
         end
+        return ice
     end
-    return ice
 end
 
 #     begin
@@ -149,7 +177,7 @@ end
 #     end
 # end
 
-@kwdef struct IceDetectionThreshold
+@kwdef struct IceDetectionThreshold <: IceDetectionAlgorithm
     band_7_threshold::Real
     band_2_threshold::Real
     band_1_threshold::Real
@@ -159,7 +187,6 @@ function find_ice(
     modis_721_image::AbstractArray{<:Union{AbstractRGB,TransparentRGB}},
     a::IceDetectionThreshold,
 )
-    ## Make ice masks
     band_7 = red.(modis_721_image)
     band_2 = green.(modis_721_image)
     band_1 = blue.(modis_721_image)
@@ -175,7 +202,7 @@ function find_ice(
     return ice_img
 end
 
-@kwdef struct IceDetectionBrightnessPeaks
+@kwdef struct IceDetectionBrightnessPeaks <: IceDetectionAlgorithm
     band_7_threshold::Real
     possible_ice_threshold::Real
 end
@@ -190,8 +217,8 @@ function find_ice(
     band_1 = blue.(modis_721_image)
 
     mask_ice_band_7 = band_7 .< a.band_7_threshold
-    band_2_peak = find_reflectance_peaks_(band_2 * alpha_binary; a.possible_ice_threshold)
-    band_1_peak = find_reflectance_peaks_(band_1 * alpha_binary; a.possible_ice_threshold)
+    band_2_peak = find_reflectance_peaks_(band_2 .* alpha_binary; a.possible_ice_threshold)
+    band_1_peak = find_reflectance_peaks_(band_1 .* alpha_binary; a.possible_ice_threshold)
 
     mask_ice_band_2 = band_2 .> band_2_peak
     mask_ice_band_1 = band_1 .> band_1_peak
@@ -288,19 +315,4 @@ function find_ice_reflectance(
 
     ice_img = coloralpha.(Gray.(N0f8.(ice)), alpha.(alphacolor.(modis_721_image)))
     return ice_img
-end
-
-function find_reflectance_peaks_(
-    reflectance_channel::AbstractArray{<:Real}; possible_ice_threshold::Real=N0f8(75 / 255)
-)
-    reflectance_channel[reflectance_channel .< possible_ice_threshold] .= 0
-    _, counts = ImageContrastAdjustment.build_histogram(reflectance_channel)
-    locs, _ = Peaks.findmaxima(counts)
-    sort!(locs; rev=true)
-    @show locs
-    return locs[2] / 255.0 # second greatest peak
-end
-
-function get_ice_labels(ice::AbstractArray{<:TransparentGray})
-    return findall(vec(gray.(ice) .* alpha.(ice)) .> 0)
 end
