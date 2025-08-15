@@ -1,3 +1,13 @@
+"""
+    IceDetectionAlgorithm
+
+Functors to detect ice regions in an image.
+
+Each algorithm `a` with parameters `kwargs...` can be called like:
+- `find_ice(image, a(; kwargs...))` 
+- or `a(; kwargs...)(image)`.
+
+"""
 abstract type IceDetectionAlgorithm end
 
 function (a::IceDetectionAlgorithm)(img; kwargs...)
@@ -25,6 +35,8 @@ function find_ice(
     end
 end
 
+"""
+"""
 @kwdef struct IceDetectionThreshold <: IceDetectionAlgorithm
     band_7_threshold::Real
     band_2_threshold::Real
