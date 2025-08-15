@@ -56,10 +56,10 @@ export readdlm,
     binarize_segments,
     masker,
     find_ice,
-    LopezAcosta2019IceDetection,
     IceDetectionAlgorithm,
     IceDetectionBrightnessPeaksMODIS721,
-    IceDetectionThresholdMODIS721
+    IceDetectionThresholdMODIS721,
+    LopezAcosta2019IceDetection,
 
 # For IFTPipeline
 using HDF5

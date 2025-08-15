@@ -73,6 +73,18 @@ function find_ice(
     return ice_img
 end
 
+"""
+    IceDetectionBrightnessPeaksMODIS721(;
+        band_7_threshold::Real,
+        possible_ice_threshold::Real
+    )(image)
+    find_ice(
+        modis_721_image, 
+        a::IceDetectionBrightnessPeaksMODIS721
+    )
+
+Returns pixels for a MODIS image where (band_7 < threshold AND both (band_2, band_1) are are above a peak value above some threshold).
+"""
 @kwdef struct IceDetectionBrightnessPeaksMODIS721 <: IceDetectionAlgorithm
     band_7_threshold::Real
     possible_ice_threshold::Real
