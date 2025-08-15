@@ -130,4 +130,5 @@ include("tracker/tracker.jl")
 include("tracker/long_tracker.jl")
 include("segmentation-lopez-acosta-2019-tiling.jl")
 include("fill_holes.jl")
+include("mask.jl")
 end
