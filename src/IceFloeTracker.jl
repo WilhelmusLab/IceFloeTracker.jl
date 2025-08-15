@@ -53,7 +53,12 @@ export readdlm,
     segmentation_summary,
     LopezAcosta2019Tiling,
     callable_store,
-    binarize_segments
+    binarize_segments,
+    masker,
+    find_ice,
+    IceDetectionAlgorithm,
+    IceDetectionBrightnessPeaks,
+    IceDetectionThreshold
 
 # For IFTPipeline
 using HDF5
