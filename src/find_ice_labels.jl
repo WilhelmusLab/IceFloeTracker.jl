@@ -40,12 +40,13 @@ function find_ice(
     band_7 = red.(modis_721_image)
     band_2 = green.(modis_721_image)
     band_1 = blue.(modis_721_image)
+    alpha_binary = alpha.(alphacolor.(modis_721_image)) .> 0.5
 
     mask_ice_band_7 = band_7 .< a.band_7_threshold
     mask_ice_band_2 = band_2 .> a.band_2_threshold
     mask_ice_band_1 = band_1 .> a.band_1_threshold
 
-    ice = (mask_ice_band_7 .* mask_ice_band_2 .* mask_ice_band_1)
+    ice = (mask_ice_band_7 .* mask_ice_band_2 .* mask_ice_band_1 .* alpha_binary)
 
     ice_img = coloralpha.(Gray.(ice), alpha.(alphacolor.(modis_721_image)))
 
@@ -77,6 +78,7 @@ function find_ice(
     band_7 = red.(modis_721_image)
     band_2 = green.(modis_721_image)
     band_1 = blue.(modis_721_image)
+    alpha_binary = alpha.(alphacolor.(modis_721_image)) .> 0.5
 
     mask_ice_band_7 = band_7 .< a.band_7_threshold
     band_2_peak = _find_reflectance_peaks(band_2 .* alpha_binary; a.possible_ice_threshold)
