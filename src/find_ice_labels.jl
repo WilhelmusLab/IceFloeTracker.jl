@@ -47,7 +47,7 @@ function find_ice(
 
     ice = (mask_ice_band_7 .* mask_ice_band_2 .* mask_ice_band_1)
 
-    ice_img = coloralpha.(Gray.(N0f8.(ice)), alpha.(alphacolor.(modis_721_image)))
+    ice_img = coloralpha.(Gray.(ice), alpha.(alphacolor.(modis_721_image)))
 
     return ice_img
 end
@@ -86,7 +86,7 @@ function find_ice(
     mask_ice_band_1 = band_1 .> band_1_peak
     ice = mask_ice_band_7 .* mask_ice_band_2 .* mask_ice_band_1 .* alpha_binary
 
-    ice_img = coloralpha.(Gray.(N0f8.(ice)), alpha.(alphacolor.(modis_721_image)))
+    ice_img = coloralpha.(Gray.(ice), alpha.(alphacolor.(modis_721_image)))
 
     return ice_img
 end
