@@ -186,9 +186,3 @@ end
 function get_ice_labels(ice::AbstractArray{<:AbstractGray})
     return findall(vec(gray.(ice)) .> 0)
 end
-
-function get_ice_binary(ice_labels, _size)
-    ice = zeros(_size)
-    ice[ice_labels] .= 1
-    return ice
-end
