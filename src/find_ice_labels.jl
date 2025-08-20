@@ -174,9 +174,8 @@ function find_ice_labels(
 )::Vector{Int64}
     masked_image = masker(.!(landmask))(falsecolor_image)
     algorithm = IceDetectionLopezAcosta2019(; kwargs...)
-    ice = binarize(masked_image, algorithm)
-    ice_labels = get_ice_labels(ice)
-    return ice_labels
+    ice_mask = binarize(masked_image, algorithm)
+    return ice_mask
 end
 
 function get_ice_labels(ice::AbstractArray{<:TransparentGray})
