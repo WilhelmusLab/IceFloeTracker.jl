@@ -46,9 +46,6 @@ using Images: ARGB
 
     @ntestset "IceDetectionLopezAcosta2019" begin
         fc = IceDetectionLopezAcosta2019()
-        f1 = fc.algorithms[1]
-        f2 = fc.algorithms[2]
-        f3 = fc.algorithms[3]
 
         data_loader = Watkins2025GitHub(; ref="a451cd5e62a10309a9640fbbe6b32a236fcebc70")
         case = first(data_loader(c -> (c.case_number == 12 && c.satellite == "terra")))
@@ -57,6 +54,9 @@ using Images: ARGB
         individual_results = [binarize(case.modis_falsecolor, f) for f in fc.algorithms]
         # Regardless of the input, the output should be identical to one of the algorithms
         @test any(bc == bi for bi in individual_results)
+        # The first non-zero output should be the same as the return value
+        first_non_zero = first(bi for bi in individual_results if sum(bi) > 0)
+        @test bc == first_non_zero
     end
 end
 
