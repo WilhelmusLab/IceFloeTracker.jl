@@ -1,18 +1,22 @@
+using ImageBinarization: AbstractImageBinarizationAlgorithm, binarize
 """
     IceDetectionAlgorithm
 
 Functors to detect ice regions in an image.
 
 Each algorithm `a` with parameters `kwargs...` can be called like:
-- `find_ice(image, a(; kwargs...))` 
+- `binarize(image, a(; kwargs...))` 
+- `find_ice(image, a(; kwargs...))`
 - or `a(; kwargs...)(image)`.
 
 """
-abstract type IceDetectionAlgorithm end
+abstract type IceDetectionAlgorithm <: AbstractImageBinarizationAlgorithm end
 
-function (a::IceDetectionAlgorithm)(img; kwargs...)
-    return find_ice(img, a; kwargs...)
+function (a::IceDetectionAlgorithm)(image::AbstractArray{<:Colorant})
+    return binarize(image, a)
 end
+
+find_ice = binarize
 
 """
     IceDetectionThresholdMODIS721(;
@@ -28,29 +32,20 @@ end
 Returns pixels for a MODIS image where (band_7 < threshold AND band_2 > threshold AND band_1 > threshold).
 """
 @kwdef struct IceDetectionThresholdMODIS721 <: IceDetectionAlgorithm
-    band_7_threshold::Real
-    band_2_threshold::Real
-    band_1_threshold::Real
+    band_7_max::Real
+    band_2_min::Real
+    band_1_min::Real
 end
 
-function find_ice(
-    modis_721_image::AbstractArray{<:Union{AbstractRGB,TransparentRGB}},
-    a::IceDetectionThresholdMODIS721,
-)
+function (f::IceDetectionThresholdMODIS721)(out, modis_721_image, args...; kwargs...)
     band_7 = red.(modis_721_image)
     band_2 = green.(modis_721_image)
     band_1 = blue.(modis_721_image)
+    mask_band_7 = band_7 .< f.band_7_max
+    mask_band_2 = band_2 .> f.band_2_min
+    mask_band_1 = band_1 .> f.band_1_min
     alpha_binary = alpha.(alphacolor.(modis_721_image)) .> 0.5
-
-    mask_ice_band_7 = band_7 .< a.band_7_threshold
-    mask_ice_band_2 = band_2 .> a.band_2_threshold
-    mask_ice_band_1 = band_1 .> a.band_1_threshold
-
-    ice = (mask_ice_band_7 .* mask_ice_band_2 .* mask_ice_band_1 .* alpha_binary)
-
-    ice_img = coloralpha.(Gray.(ice), alpha.(alphacolor.(modis_721_image)))
-
-    return ice_img
+    @. out = mask_band_7 * mask_band_2 * mask_band_1 * alpha_binary
 end
 
 """
@@ -66,31 +61,25 @@ end
 Returns pixels for a MODIS image where (band_7 < threshold AND both (band_2, band_1) are are above a peak value above some threshold).
 """
 @kwdef struct IceDetectionBrightnessPeaksMODIS721 <: IceDetectionAlgorithm
-    band_7_threshold::Real
+    band_7_max::Real
     possible_ice_threshold::Real
 end
 
-function find_ice(
-    modis_721_image::AbstractArray{<:Union{AbstractRGB,TransparentRGB}},
-    a::IceDetectionBrightnessPeaksMODIS721,
-)
-    alpha_binary = alpha.(alphacolor.(modis_721_image)) .> 0.5
+function (f::IceDetectionBrightnessPeaksMODIS721)(out, modis_721_image, args...; kwargs...)
     band_7 = red.(modis_721_image)
     band_2 = green.(modis_721_image)
     band_1 = blue.(modis_721_image)
+
     alpha_binary = alpha.(alphacolor.(modis_721_image)) .> 0.5
 
-    mask_ice_band_7 = band_7 .< a.band_7_threshold
-    band_2_peak = _find_reflectance_peaks(band_2 .* alpha_binary; a.possible_ice_threshold)
-    band_1_peak = _find_reflectance_peaks(band_1 .* alpha_binary; a.possible_ice_threshold)
+    band_2_peak = _find_reflectance_peaks(band_2 .* alpha_binary; f.possible_ice_threshold)
+    band_1_peak = _find_reflectance_peaks(band_1 .* alpha_binary; f.possible_ice_threshold)
 
-    mask_ice_band_2 = band_2 .> band_2_peak
-    mask_ice_band_1 = band_1 .> band_1_peak
-    ice = mask_ice_band_7 .* mask_ice_band_2 .* mask_ice_band_1 .* alpha_binary
+    mask_band_7 = band_7 .< f.band_7_max
+    mask_band_2 = band_2 .> band_2_peak
+    mask_band_1 = band_1 .> band_1_peak
 
-    ice_img = coloralpha.(Gray.(ice), alpha.(alphacolor.(modis_721_image)))
-
-    return ice_img
+    @. out = mask_band_7 * mask_band_2 * mask_band_1 * alpha_binary
 end
 
 function _find_reflectance_peaks(
@@ -115,20 +104,14 @@ Runs each algorithm from `algorithms` on the image, and returns the first which 
     algorithms::Vector{IceDetectionAlgorithm}
 end
 
-function find_ice(
-    image::AbstractArray{<:Union{AbstractRGB,TransparentRGB}},
-    a::IceDetectionFirstNonZeroAlgorithm,
-)
-    let ice
-        for algorithm in a.algorithms
-            @debug algorithm
-            ice = find_ice(image, algorithm)
-            ice_sum = sum(gray.(ice) .* alpha.(ice))
-            if ice_sum > 0
-                break
-            end
+function (f::IceDetectionFirstNonZeroAlgorithm)(out, img, args...; kwargs...)
+    for algorithm in f.algorithms
+        @debug algorithm
+        result = binarize(img, algorithm)
+        ice_sum = sum(result)
+        if ice_sum > 0
+            @. out = result
         end
-        return ice
     end
 end
 
@@ -148,26 +131,24 @@ Default thresholds are defined in the published Ice Floe Tracker article: Remote
 
 """
 function IceDetectionLopezAcosta2019(;
-    band_7_threshold::Float64=Float64(5 / 255),
-    band_2_threshold::Float64=Float64(230 / 255),
-    band_1_threshold::Float64=Float64(240 / 255),
-    band_7_threshold_relaxed::Float64=Float64(10 / 255),
-    band_1_threshold_relaxed::Float64=Float64(190 / 255),
+    band_7_max::Float64=Float64(5 / 255),
+    band_2_min::Float64=Float64(230 / 255),
+    band_1_min::Float64=Float64(240 / 255),
+    band_7_max_relaxed::Float64=Float64(10 / 255),
+    band_1_min_relaxed::Float64=Float64(190 / 255),
     possible_ice_threshold::Float64=Float64(75 / 255),
 )
     return IceDetectionFirstNonZeroAlgorithm([
         IceDetectionThresholdMODIS721(;
-            band_7_threshold=band_7_threshold,
-            band_2_threshold=band_2_threshold,
-            band_1_threshold=band_1_threshold,
+            band_7_max=band_7_max, band_2_min=band_2_min, band_1_min=band_1_min
         ),
         IceDetectionThresholdMODIS721(;
-            band_7_threshold=band_7_threshold_relaxed,
-            band_2_threshold=band_2_threshold,
-            band_1_threshold=band_1_threshold_relaxed,
+            band_7_max=band_7_max_relaxed,
+            band_2_min=band_2_min,
+            band_1_min=band_1_min_relaxed,
         ),
         IceDetectionBrightnessPeaksMODIS721(;
-            band_7_threshold=band_7_threshold, possible_ice_threshold=possible_ice_threshold
+            band_7_max=band_7_max, possible_ice_threshold=possible_ice_threshold
         ),
     ])
 end
@@ -192,11 +173,15 @@ function find_ice_labels(
 )::Vector{Int64}
     masked_image = masker(.!(landmask))(falsecolor_image)
     algorithm = IceDetectionLopezAcosta2019(; kwargs...)
-    ice = IceFloeTracker.find_ice(masked_image, algorithm)
+    ice = binarize(masked_image, algorithm)
     ice_labels = get_ice_labels(ice)
     return ice_labels
 end
 
 function get_ice_labels(ice::AbstractArray{<:TransparentGray})
     return findall(vec(gray.(ice) .* alpha.(ice)) .> 0)
+end
+
+function get_ice_labels(ice::AbstractArray{<:AbstractGray})
+    return findall(vec(gray.(ice)) .> 0)
 end
