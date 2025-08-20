@@ -109,8 +109,9 @@ function (f::IceDetectionFirstNonZeroAlgorithm)(out, img, args...; kwargs...)
         @debug algorithm
         result = binarize(img, algorithm)
         ice_sum = sum(result)
-        if ice_sum > 0
+        if 0 < ice_sum
             @. out = result
+            return nothing
         end
     end
 end
@@ -184,4 +185,10 @@ end
 
 function get_ice_labels(ice::AbstractArray{<:AbstractGray})
     return findall(vec(gray.(ice)) .> 0)
+end
+
+function get_ice_binary(ice_labels, _size)
+    ice = zeros(_size)
+    ice[ice_labels] .= 1
+    return ice
 end
