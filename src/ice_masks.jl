@@ -12,13 +12,19 @@ end
 
 # dmw: we can drop the "factor" argrument; if thresholds are integers we
 # need to scale them by dividing by 255.
+# jgh: TODO: replace this function with the same call to binarize
 function get_ice_labels_mask(ref_img::Matrix{RGB{N0f8}}, thresholds, factor=255)
-    cv = channelview(ref_img)
-    cv = [float64.(cv[i, :, :]) .* factor for i in 1:3]
-    mask_ice_band_7 = cv[1] .< thresholds[1]
-    mask_ice_band_2 = cv[2] .> thresholds[2]
-    mask_ice_band_1 = cv[3] .> thresholds[3]
-    mask = mask_ice_band_7 .* mask_ice_band_2 .* mask_ice_band_1
+    mask =
+        binarize(
+            ref_img,
+            IceDetectionThresholdMODIS721(;
+                band_7_max=thresholds[1] / factor,
+                band_2_min=thresholds[2] / factor,
+                band_1_min=thresholds[3] / factor,
+            ),
+        ) .|>
+        gray .|>
+        Bool
     @debug "Found $(sum(mask)) ice pixels"
     return mask
 end
@@ -71,7 +77,6 @@ function get_nlabel_relaxation(
     band_7_threshold_relaxed,
     band_2_threshold,
 )
-
     _getnlabel(image_indexmap, mask) = begin
         isempty(mask) && return -1
         sum(mask) == 0 && return -1
@@ -96,7 +101,6 @@ function get_nlabel_relaxation(
     # Final relaxation
     ice_labels_mask = band_2 .> band_2_threshold
     return _getnlabel(morph_residue_labels, ice_labels_mask)
-
 end
 
 # dmw: split into the k-means and binarization methods, since they operate on different principles.
