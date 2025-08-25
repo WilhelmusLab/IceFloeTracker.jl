@@ -149,6 +149,7 @@ function get_ice_masks(
     morph_residue::Matrix{<:Integer},
     landmask::BitMatrix,
     tiles::S,
+    # TODO: don't shadow "binarize" function
     binarize::Bool=true;
     band_7_threshold::T=5,
     band_2_threshold::T=230,
