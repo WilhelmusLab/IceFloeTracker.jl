@@ -139,23 +139,24 @@ function results_invariant_for(
     (; recall, precision, F_score) = segmentation_comparison(
         case.validated_labeled_floes, segments
     )
+
+    segment_count_pass = ≈(segment_count, baseline.segment_count; rtol)
+    labeled_fraction_pass = ≈(labeled_fraction, baseline.labeled_fraction; rtol)
+    recall_pass = ≈(recall, baseline.recall; rtol)
+    precision_pass = ≈(precision, baseline.precision; rtol)
+    F_score_pass = ≈(F_score, baseline.F_score; rtol)
+
     result = all([
-        ≈(segment_count, baseline.segment_count; rtol),
-        ≈(labeled_fraction, baseline.labeled_fraction; rtol),
-        ≈(recall, baseline.recall; rtol),
-        ≈(precision, baseline.precision; rtol),
-        ≈(F_score, baseline.F_score; rtol),
+        segment_count_pass, labeled_fraction_pass, recall_pass, precision_pass, F_score_pass
     ])
     if !result
         @show segments
         @info "$(join(target_type,"∘")) failed"
-        !≈(segment_count, baseline.segment_count; rtol) &&
-            @show (segment_count, baseline.segment_count)
-        !≈(labeled_fraction, baseline.labeled_fraction; rtol) &&
-            @show (labeled_fraction, baseline.labeled_fraction)
-        !≈(recall, baseline.recall; rtol) && @show (recall, baseline.recall)
-        !≈(precision, baseline.precision; rtol) && @show (precision, baseline.precision)
-        !≈(F_score, baseline.F_score; rtol) && @show (F_score, baseline.F_score)
+        !segment_count_pass && @show (segment_count, baseline.segment_count)
+        !labeled_fraction_pass && @show (labeled_fraction, baseline.labeled_fraction)
+        !recall_pass && @show (recall, baseline.recall)
+        !precision_pass && @show (precision, baseline.precision)
+        !F_score_pass && @show (F_score, baseline.F_score)
     end
 
     return result
