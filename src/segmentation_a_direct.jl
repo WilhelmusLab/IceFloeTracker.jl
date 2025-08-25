@@ -10,7 +10,7 @@ Apply k-means segmentation to a gray image to isolate a cluster group representi
 """
 function kmeans_segmentation(
     gray_image::Matrix{Gray{Float64}},
-    ice_labels::Union{Vector{Int64},BitMatrix},
+    ice_labels::Union{Vector{Int64},BitMatrix,AbstractArray{<:Gray}},
     k::Int64=4,
     maxiter::Int64=50,
 )::BitMatrix
@@ -68,7 +68,7 @@ Apply cloudmask to a bitmatrix of segmented ice after kmeans clustering. Returns
 function segmented_ice_cloudmasking(
     gray_image::Matrix{Gray{Float64}},
     cloudmask::BitMatrix,
-    ice_labels::Union{Vector{Int64},BitMatrix},
+    ice_labels::Union{Vector{Int64},BitMatrix,AbstractArray{<:Gray}},
 )::BitMatrix
     segmented_ice = IceFloeTracker.kmeans_segmentation(gray_image, ice_labels)
     segmented_ice_cloudmasked = deepcopy(segmented_ice)
