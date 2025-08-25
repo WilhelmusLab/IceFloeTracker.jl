@@ -69,8 +69,8 @@ function (f::IceDetectionBrightnessPeaksMODIS721)(out, modis_721_image, args...;
 
     alpha_binary = alpha.(alphacolor.(modis_721_image)) .> 0.5
 
-    band_2_peak = _find_reflectance_peaks(band_2 .* alpha_binary; f.possible_ice_threshold)
-    band_1_peak = _find_reflectance_peaks(band_1 .* alpha_binary; f.possible_ice_threshold)
+    band_2_peak = find_reflectance_peaks(band_2 .* alpha_binary; f.possible_ice_threshold)
+    band_1_peak = find_reflectance_peaks(band_1 .* alpha_binary; f.possible_ice_threshold)
 
     mask_band_7 = band_7 .< f.band_7_max
     mask_band_2 = band_2 .> band_2_peak
@@ -79,7 +79,17 @@ function (f::IceDetectionBrightnessPeaksMODIS721)(out, modis_721_image, args...;
     @. out = mask_band_7 * mask_band_2 * mask_band_1 * alpha_binary
 end
 
-function _find_reflectance_peaks(
+"""
+    find_reflectance_peaks(reflectance_channel, possible_ice_threshold;)
+    
+Find histogram peaks in single channels of a reflectance image and return the second greatest peak. If needed, edges can be returned as the first object from `build_histogram`. Similarly, peak values can be returned as the second object from `findmaxima`.
+
+# Arguments
+- `reflectance_channel`: either band 2 or band 1 of false-color reflectance image
+- `possible_ice_threshold`: threshold value used to identify ice if not found on first or second pass
+
+"""
+function find_reflectance_peaks(
     reflectance_channel::AbstractArray{<:Real}; possible_ice_threshold::Real=N0f8(75 / 255)
 )
     reflectance_channel[reflectance_channel .< possible_ice_threshold] .= 0
