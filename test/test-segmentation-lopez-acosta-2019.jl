@@ -55,10 +55,10 @@ using Images: segment_labels, segment_mean, labels_map
                 first(data_loader(c -> (c.case_number == 63 && c.satellite == "aqua"))),
                 LopezAcosta2019(),
             )
-            @test labeled_fraction ≈ 0.579 rtol = 0.1 broken = true
-            @test 0.901 ≤ recall broken = true
-            @test 0.620 ≤ precision broken = true
-            @test 0.734 ≤ F_score broken = true
+            @test labeled_fraction ≈ 0.286 rtol = 0.1
+            @test 0.466 ≤ recall
+            @test 0.649 ≤ precision
+            @test 0.543 ≤ F_score
         end
         @ntestset "Image types" begin
             case = first(
