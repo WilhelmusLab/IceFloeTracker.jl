@@ -82,7 +82,7 @@ function run_and_validate_segmentation(
             success = true
             error = nothing
         catch error
-            @warn "$(name) failed: $(error)"
+            @error "An error occurred." exception = (error, catch_backtrace())
             success = false
             measured = nothing
         end
