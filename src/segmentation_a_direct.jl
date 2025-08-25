@@ -47,6 +47,12 @@ function get_segmented_ice(
     return segmented .== StatsBase.mode(segmented[ice_labels])
 end
 
+function get_segmented_ice(segmented::Matrix{Int64}, ice_labels::AbstractArray{<:Gray})
+    boolean_map = ice_labels .|> Bool
+    !(any(boolean_map)) && return falses(size(segmented))
+    return segmented .== StatsBase.mode(segmented[boolean_map])
+end
+
 """
     segmented_ice_cloudmasking(gray_image, cloudmask, ice_labels;)
 
