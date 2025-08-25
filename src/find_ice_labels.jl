@@ -99,7 +99,7 @@ function find_reflectance_peaks(
     if 2 ≤ length(locs)
         return locs[2] / 255.0 # second greatest peak
     else
-        return nan
+        return Inf
     end
 end
 
