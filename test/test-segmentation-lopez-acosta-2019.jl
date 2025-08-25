@@ -3,6 +3,13 @@ using Images: segment_labels, segment_mean, labels_map
 @ntestset "$(@__FILE__)" begin
     @ntestset "Lopez-Acosta 2019" begin
         data_loader = Watkins2025GitHub(; ref="a451cd5e62a10309a9640fbbe6b32a236fcebc70")
+        @ntestset "Simple case" begin
+            case = first(data_loader(c -> (c.case_number == 6 && c.satellite == "terra")))
+            falsecolor = RGB.(case.modis_falsecolor)
+            truecolor = RGB.(case.modis_truecolor)
+            landmask = RGB.(case.modis_landmask)
+            LopezAcosta2019()(truecolor, falsecolor, landmask)
+        end
         @ntestset "Sample of cases" begin
             passing = c -> c.case_number % 17 == 0
             broken =
