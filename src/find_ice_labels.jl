@@ -6,7 +6,6 @@ Functors to detect ice regions in an image.
 
 Each algorithm `a` with parameters `kwargs...` can be called like:
 - `binarize(image, a(; kwargs...))` 
-- `find_ice(image, a(; kwargs...))`
 - or `a(; kwargs...)(image)`.
 
 """
@@ -16,15 +15,13 @@ function (a::IceDetectionAlgorithm)(image::AbstractArray{<:Colorant})
     return binarize(image, a)
 end
 
-find_ice = binarize
-
 """
     IceDetectionThresholdMODIS721(;
         band_7_threshold::Real,
         band_2_threshold::Real,
         band_1_threshold::Real,
     )(image)
-    find_ice(
+    binarize(
         modis_721_image, 
         a::IceDetectionThresholdMODIS721
     )
@@ -53,7 +50,7 @@ end
         band_7_threshold::Real,
         possible_ice_threshold::Real
     )(image)
-    find_ice(
+    binarize(
         modis_721_image, 
         a::IceDetectionBrightnessPeaksMODIS721
     )
@@ -96,7 +93,7 @@ end
     IceDetectionFirstNonZeroAlgorithm(;
         algorithms::Vector{IceDetectionAlgorithm},
     )(image)
-    find_ice(image, algorithms::IceDetectionFirstNonZeroAlgorithm)
+    binarize(image, algorithms::IceDetectionFirstNonZeroAlgorithm)
 
 Runs each algorithm from `algorithms` on the image, and returns the first which detects any ice.
 """
