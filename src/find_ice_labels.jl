@@ -114,6 +114,9 @@ function (f::IceDetectionFirstNonZeroAlgorithm)(out, img, args...; kwargs...)
             return nothing
         end
     end
+    # In case we don't find anything, we're going to return zeros
+    @. out = zero(eltype(out))
+    return nothing
 end
 
 """
