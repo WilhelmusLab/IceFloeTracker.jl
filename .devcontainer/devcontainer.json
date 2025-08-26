@@ -10,7 +10,8 @@
 		"vscode": {
 			"extensions": [
 				"ms-python.python",
-				"GitHub.vscode-github-actions"
+				"GitHub.vscode-github-actions",
+				"ms-azuretools.vscode-containers"
 			]
 		}
 	}
