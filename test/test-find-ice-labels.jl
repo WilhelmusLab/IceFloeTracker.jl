@@ -41,7 +41,7 @@ using Images: ARGB, binarize
         @test sum(binarize(just_water, f)) == 0
 
         masked_land = masker(case.modis_landmask, case.modis_falsecolor)[1:50, 1:50]
-        @test sum(binarize(masked_land, f)) == 0 broken = true
+        @test sum(binarize(masked_land, f)) == 0
     end
 
     @ntestset "IceDetectionLopezAcosta2019" begin
