@@ -4,15 +4,6 @@
 		"dockerfile": "Dockerfile"
 	},
 	"features": {
-		"ghcr.io/julialang/devcontainer-features/julia:1": {},
-		"customizations": {
-			"vscode": {
-				"extensions": [
-					"github.vscode-github-actions",
-					"mechatroner.rainbow-csv",
-					"ucodkr.tiff-preview"
-				]
-			}
-		}
+		"ghcr.io/julialang/devcontainer-features/julia:1": {}
 	}
 }
