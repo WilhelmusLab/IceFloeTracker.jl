@@ -15,5 +15,6 @@
 	},
 	"postCreateCommand": {
 		"setup-PyCall": "julia --project=.devcontainer/PyCallSetup.jl .devcontainer/PyCallSetup.jl/setup.jl"
-	}
+	},
+	"postStartCommand": "julia --project=. -e 'using Pkg; Pkg.test()'"
 }
