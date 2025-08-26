@@ -3,23 +3,17 @@
 	"build": {
 		"dockerfile": "Dockerfile"
 	},
-	"features": {
-		"ghcr.io/julialang/devcontainer-features/julia:1": {},
-		"ghcr.io/devcontainers/features/python:1": {
-			"installTools": true,
-			"version": "3.12"
-		}
-	},
+	"features": {},
 	"customizations": {
 		"vscode": {
 			"extensions": [
 				"GitHub.vscode-github-actions",
-				"ms-azuretools.vscode-containers"
+				"ms-azuretools.vscode-containers",
+				"julialang.language-julia"
 			]
 		}
 	},
 	"postCreateCommand": {
-		"check": "echo 'here is the postcreate'",
 		"setup-PyCall": "julia --project=.devcontainer/PyCallSetup.jl .devcontainer/PyCallSetup.jl/setup.jl"
 	}
 }
