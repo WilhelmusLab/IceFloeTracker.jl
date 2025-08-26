@@ -3,6 +3,13 @@ using Images: segment_labels, segment_mean, labels_map
 @ntestset "$(@__FILE__)" begin
     @ntestset "Lopez-Acosta 2019" begin
         data_loader = Watkins2025GitHub(; ref="a451cd5e62a10309a9640fbbe6b32a236fcebc70")
+        @ntestset "Simple case" begin
+            case = first(data_loader(c -> (c.case_number == 6 && c.satellite == "terra")))
+            falsecolor = RGB.(case.modis_falsecolor)
+            truecolor = RGB.(case.modis_truecolor)
+            landmask = RGB.(case.modis_landmask)
+            LopezAcosta2019()(truecolor, falsecolor, landmask)
+        end
         @ntestset "Sample of cases" begin
             passing = c -> c.case_number % 17 == 0
             broken =
@@ -19,7 +26,8 @@ using Images: segment_labels, segment_mean, labels_map
         @ntestset "Detailed tests" begin
             (; labeled_fraction, recall, precision, F_score) = run_and_validate_segmentation(
                 first(data_loader(c -> (c.case_number == 6 && c.satellite == "terra"))),
-                LopezAcosta2019(),
+                LopezAcosta2019();
+                output_directory="./test_outputs/",
             )
             @test 0.119 ≈ labeled_fraction atol = 0.1
             @test 0.315 ≤ recall
@@ -28,7 +36,8 @@ using Images: segment_labels, segment_mean, labels_map
 
             (; labeled_fraction, recall, precision, F_score) = run_and_validate_segmentation(
                 first(data_loader(c -> (c.case_number == 14 && c.satellite == "aqua"))),
-                LopezAcosta2019(),
+                LopezAcosta2019();
+                output_directory="./test_outputs/",
             )
             @test 0.052 ≈ labeled_fraction atol = 0.1
             @test 0.360 ≤ recall
@@ -37,7 +46,8 @@ using Images: segment_labels, segment_mean, labels_map
 
             (; labeled_fraction, recall, precision, F_score) = run_and_validate_segmentation(
                 first(data_loader(c -> (c.case_number == 61 && c.satellite == "aqua"))),
-                LopezAcosta2019(),
+                LopezAcosta2019();
+                output_directory="./test_outputs/",
             )
             @test 0.132 ≈ labeled_fraction atol = 0.1
             @test 0.379 ≤ recall
@@ -46,7 +56,8 @@ using Images: segment_labels, segment_mean, labels_map
 
             (; labeled_fraction, recall, precision, F_score) = run_and_validate_segmentation(
                 first(data_loader(c -> (c.case_number == 63 && c.satellite == "aqua"))),
-                LopezAcosta2019(),
+                LopezAcosta2019();
+                output_directory="./test_outputs/",
             )
             @test labeled_fraction ≈ 0.579 rtol = 0.1 broken = true
             @test 0.901 ≤ recall broken = true

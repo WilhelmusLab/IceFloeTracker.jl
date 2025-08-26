@@ -25,7 +25,7 @@ function segmentation_F(
     segmentation_B_not_ice_mask::Matrix{Gray{Float64}},
     segmentation_B_ice_intersect::BitMatrix,
     segmentation_B_watershed_intersect::BitMatrix,
-    ice_labels::Union{Vector{Int64},BitMatrix},
+    ice_labels::Union{Vector{Int64},BitMatrix,AbstractArray{<:Gray}},
     cloudmask::BitMatrix,
     landmask::BitMatrix;
     min_area_opening::Int64=20,
