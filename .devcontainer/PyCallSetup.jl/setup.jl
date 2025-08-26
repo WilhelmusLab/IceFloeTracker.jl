@@ -1,3 +1,5 @@
+#!/usr/bin/env julia
+
 # Set up PyCall
 #
 # On Linux, by default, PyCall will use the system Python, 
