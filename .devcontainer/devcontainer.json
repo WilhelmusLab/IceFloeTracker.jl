@@ -9,6 +9,7 @@
 	"customizations": {
 		"vscode": {
 			"extensions": [
+				"ms-python.python",
 				"GitHub.vscode-github-actions"
 			]
 		}
