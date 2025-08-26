@@ -30,7 +30,6 @@ function (p::LopezAcosta2019)(
 
     # 2. Intermediate images
     @info "Finding ice labels"
-    # TODO: refactor to use the binary image rather than the pixel indices (for improved understandability)
     ice_mask = find_ice_mask(falsecolor_image, landmask_imgs.dilated)
 
     @info "Sharpening truecolor image"
