@@ -19,7 +19,8 @@ using Images: segment_labels, segment_mean, labels_map
         @ntestset "Detailed tests" begin
             (; labeled_fraction, recall, precision, F_score) = run_and_validate_segmentation(
                 first(data_loader(c -> (c.case_number == 6 && c.satellite == "terra"))),
-                LopezAcosta2019(),
+                LopezAcosta2019();
+                output_directory="./test_outputs/",
             )
             @test 0.119 ≈ labeled_fraction atol = 0.1
             @test 0.315 ≤ recall
@@ -28,7 +29,8 @@ using Images: segment_labels, segment_mean, labels_map
 
             (; labeled_fraction, recall, precision, F_score) = run_and_validate_segmentation(
                 first(data_loader(c -> (c.case_number == 14 && c.satellite == "aqua"))),
-                LopezAcosta2019(),
+                LopezAcosta2019();
+                output_directory="./test_outputs/",
             )
             @test 0.052 ≈ labeled_fraction atol = 0.1
             @test 0.360 ≤ recall
@@ -37,7 +39,8 @@ using Images: segment_labels, segment_mean, labels_map
 
             (; labeled_fraction, recall, precision, F_score) = run_and_validate_segmentation(
                 first(data_loader(c -> (c.case_number == 61 && c.satellite == "aqua"))),
-                LopezAcosta2019(),
+                LopezAcosta2019();
+                output_directory="./test_outputs/",
             )
             @test 0.132 ≈ labeled_fraction atol = 0.1
             @test 0.379 ≤ recall
@@ -46,7 +49,8 @@ using Images: segment_labels, segment_mean, labels_map
 
             (; labeled_fraction, recall, precision, F_score) = run_and_validate_segmentation(
                 first(data_loader(c -> (c.case_number == 63 && c.satellite == "aqua"))),
-                LopezAcosta2019(),
+                LopezAcosta2019();
+                output_directory="./test_outputs/",
             )
             @test labeled_fraction ≈ 0.286 rtol = 0.1
             @test 0.466 ≤ recall
