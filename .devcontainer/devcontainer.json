@@ -9,7 +9,8 @@
 			"extensions": [
 				"GitHub.vscode-github-actions",
 				"ms-azuretools.vscode-containers",
-				"julialang.language-julia"
+				"julialang.language-julia",
+				"tamasfe.even-better-toml"
 			]
 		}
 	},
