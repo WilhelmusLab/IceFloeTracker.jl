@@ -5,5 +5,12 @@
 	},
 	"features": {
 		"ghcr.io/julialang/devcontainer-features/julia:1": {}
+	},
+	"customizations": {
+		"vscode": {
+			"extensions": [
+				"GitHub.vscode-github-actions"
+			]
+		}
 	}
 }
