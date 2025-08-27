@@ -1,4 +1,6 @@
 @testitem "Segmentation-F" begin
+    using DelimitedFiles
+    
     include("config.jl")
     include("test_error_rate.jl")
 
