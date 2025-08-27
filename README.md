@@ -10,6 +10,13 @@ Track Ice Floes using Moderate Resolution Imaging Spectroradiometer (MODIS) data
 
 See the package's documentation at https://wilhelmuslab.github.io/IceFloeTracker.jl/
 
+There are Jupyter notebooks illustrating the main image processing and tracking functions, in the `/notebooks` folder. 
+
+See related tools in the 
+[IFTPipeline repository](https://github.com/WilhelmusLab/ice-floe-tracker-pipeline#ice-floe-tracker-pipeline), 
+including a Julia Command-line Interface and templates 
+that leverage the [Cylc](https://cylc.github.io) pipeline orchestrator.
+
 ## Developer Quick Start
 
 The easiest way to get started developing the IceFloeTracker.jl is to use a [devcontainer](https://containers.dev/). 
