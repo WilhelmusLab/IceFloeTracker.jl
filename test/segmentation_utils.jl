@@ -1,5 +1,4 @@
-using Images: labels_map, segment_mean, Colorant
-using FileIO: save
+using Images: labels_map, segment_mean, Colorant, save
 
 """
     run_and_validate_segmentation(
