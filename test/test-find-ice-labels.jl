@@ -63,6 +63,8 @@ end
 
 @testitem "find_ice_labels" begin
     using Images: binarize, n0f8, float64, n4f12, n0f8, float64, n4f12
+    using DelimitedFiles
+
     include("config.jl")
 
     @testset "interface checks" begin
