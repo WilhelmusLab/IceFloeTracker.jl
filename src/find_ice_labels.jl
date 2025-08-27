@@ -181,12 +181,18 @@ Returns pixel indices of likely ice from false color reflectance image, using th
 """
 function find_ice_labels(
     falsecolor_image::Matrix{RGB{Float64}}, landmask::BitMatrix; kwargs...
-)::Vector{Int64}
-    masked_image = masker(.!(landmask))(falsecolor_image)
-    algorithm = IceDetectionLopezAcosta2019(; kwargs...)
-    ice = binarize(masked_image, algorithm)
-    ice_labels = get_ice_labels(ice)
+)
+    ice_labels = find_ice_mask(falsecolor_image, landmask) |> get_ice_labels
     return ice_labels
+end
+
+function find_ice_mask(
+    falsecolor_image::Matrix{RGB{Float64}}, not_land::BitMatrix; kwargs...
+)
+    masked_image = masker(.!(not_land))(falsecolor_image)
+    algorithm = IceDetectionLopezAcosta2019(; kwargs...)
+    ice_mask = binarize(masked_image, algorithm)
+    return ice_mask
 end
 
 function get_ice_labels(ice::AbstractArray{<:TransparentGray})
