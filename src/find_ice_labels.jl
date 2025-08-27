@@ -96,7 +96,8 @@ function find_reflectance_peaks(
     _, counts = ImageContrastAdjustment.build_histogram(reflectance_channel)
     locs, _ = Peaks.findmaxima(counts)
     sort!(locs; rev=true)
-    return locs[2] / 255.0 # second greatest peak
+    2 ≤ length(locs) && return locs[2] / 255.0 # second greatest peak
+    return Inf
 end
 
 """
