@@ -17,6 +17,10 @@ See related tools in the
 including a Julia Command-line Interface and templates 
 that leverage the [Cylc](https://cylc.github.io) pipeline orchestrator.
 
+## User Quick Start
+
+Open a [Google Colab notebook](https://colab.research.google.com/github/WilhelmusLab/IceFloeTracker.jl/blob/main/notebooks/preprocessing-workflow/lopez-acosta-2019-workflow.ipynb) and start segmenting images.
+
 ## Developer Quick Start
 
 ### Devcontainer
