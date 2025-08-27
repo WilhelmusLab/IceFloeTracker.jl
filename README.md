@@ -10,6 +10,10 @@ Track Ice Floes using Moderate Resolution Imaging Spectroradiometer (MODIS) data
 
 See the package's documentation (in development) at https://wilhelmuslab.github.io/IceFloeTracker.jl/
 
+## User Quick Start
+
+Open a [Google Colab notebook](https://colab.research.google.com/github/WilhelmusLab/IceFloeTracker.jl/blob/main/notebooks/preprocessing-workflow/lopez-acosta-2019-workflow.ipynb) and start segmenting images.
+
 ## Prerequisites
 
 A `julia` installation; ensure it is available on the `PATH`.
