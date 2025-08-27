@@ -117,22 +117,24 @@ Runs `algorithm` on `case` using `target_type` to cast images; returns true if r
 
 """
 function results_invariant_for(
-    target_type::Union{Function,Type},
+    target_type::Union{Function,Type}...;
     baseline::NamedTuple,
     algorithm::IceFloeSegmentationAlgorithm,
-    case::ValidationDataCase;
+    case::ValidationDataCase,
     output_directory::AbstractString="./test_outputs",
+    rtol::Real=0.01,
 )::Bool
     intermediate_results_callback = save_results_callback(
         joinpath(
             output_directory,
-            "segmentation-$(typeof(algorithm))-$(target_type)-$(Dates.format(Dates.now(), "yyyy-mm-dd-HHMMSS"))",
+            "segmentation-$(typeof(algorithm))-$(join(target_type,"∘"))-$(Dates.format(Dates.now(), "yyyy-mm-dd-HHMMSS"))",
         );
     )
+    casting_function = ∘(target_type...)
     segments = algorithm(
-        target_type.(case.modis_truecolor),
-        target_type.(case.modis_falsecolor),
-        target_type.(case.modis_landmask);
+        casting_function.(case.modis_truecolor),
+        casting_function.(case.modis_falsecolor),
+        casting_function.(case.modis_landmask);
         intermediate_results_callback,
     )
     (; segment_count, labeled_fraction) = segmentation_summary(segments)
@@ -140,13 +142,26 @@ function results_invariant_for(
         case.validated_labeled_floes, segments
     )
 
-    return all([
-        ≈(segment_count, baseline.segment_count; rtol=0.01),
-        ≈(labeled_fraction, baseline.labeled_fraction; rtol=0.01),
-        ≈(recall, baseline.recall; rtol=0.01),
-        ≈(precision, baseline.precision; rtol=0.01),
-        ≈(F_score, baseline.F_score; rtol=0.01),
+    segment_count_pass = ≈(segment_count, baseline.segment_count; rtol)
+    labeled_fraction_pass = ≈(labeled_fraction, baseline.labeled_fraction; rtol)
+    recall_pass = ≈(recall, baseline.recall; rtol)
+    precision_pass = ≈(precision, baseline.precision; rtol)
+    F_score_pass = ≈(F_score, baseline.F_score; rtol)
+
+    result = all([
+        segment_count_pass, labeled_fraction_pass, recall_pass, precision_pass, F_score_pass
     ])
+    if !result
+        @show segments
+        @info "$(join(target_type,"∘")) failed"
+        !segment_count_pass && @show (segment_count, baseline.segment_count)
+        !labeled_fraction_pass && @show (labeled_fraction, baseline.labeled_fraction)
+        !recall_pass && @show (recall, baseline.recall)
+        !precision_pass && @show (precision, baseline.precision)
+        !F_score_pass && @show (F_score, baseline.F_score)
+    end
+
+    return result
 end
 
 """

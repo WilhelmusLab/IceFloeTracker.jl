@@ -77,23 +77,29 @@
         @test 0.734 ≤ F_score broken = true
     end
     @testset "Image types" begin
-        case = first(
-            data_loader(; case_filter=c -> (c.case_number == 6 && c.satellite == "terra"))
+        case::ValidationDataCase = first(
+            data_loader(c -> (c.case_number == 6 && c.satellite == "terra"))
         )
-        supported_types = [n0f8, n6f10, n4f12, n2f14, n0f16, float32, float64]
-        for target_type in supported_types
-            @info "Image type: $target_type"
-            intermediate_results_callback = save_results_callback(
-                "./test_outputs/segmentation-LopezAcosta2019-$(target_type)-$(Dates.format(Dates.now(), "yyyy-mm-dd-HHMMSS"))";
-            )
-            segments = LopezAcosta2019()(
-                target_type.(RGB.(case.modis_truecolor)),
-                target_type.(RGB.(case.modis_falsecolor)),
-                target_type.(RGB.(case.modis_landmask));
-                intermediate_results_callback,
-            )
-            @show segments
-            @test length(segment_labels(segments)) ≈ 65 atol = 2
-        end
+        algorithm = LopezAcosta2019()
+        baseline = run_and_validate_segmentation(
+            case, algorithm; output_directory="./test_outputs/"
+        )
+
+        @test results_invariant_for(RGB; baseline, algorithm, case)
+        @test results_invariant_for(RGBA; baseline, algorithm, case) broken = true
+        @test results_invariant_for(n0f8; baseline, algorithm, case) broken = true
+        @test results_invariant_for(n6f10; baseline, algorithm, case) broken = true
+        @test results_invariant_for(n4f12; baseline, algorithm, case) broken = true
+        @test results_invariant_for(n2f14; baseline, algorithm, case) broken = true
+        @test results_invariant_for(n0f16; baseline, algorithm, case) broken = true
+        @test results_invariant_for(float32; baseline, algorithm, case) broken = true
+        @test results_invariant_for(float64; baseline, algorithm, case) broken = true
+        @test results_invariant_for(RGB, n0f8; baseline, algorithm, case)
+        @test results_invariant_for(RGB, n6f10; baseline, algorithm, case) broken = true
+        @test results_invariant_for(RGB, n4f12; baseline, algorithm, case) broken = true
+        @test results_invariant_for(RGB, n2f14; baseline, algorithm, case) broken = true
+        @test results_invariant_for(RGB, n0f16; baseline, algorithm, case)
+        @test results_invariant_for(RGB, float32; baseline, algorithm, case)
+        @test results_invariant_for(RGB, float64; baseline, algorithm, case)
     end
 end

@@ -96,7 +96,8 @@ function find_reflectance_peaks(
     _, counts = ImageContrastAdjustment.build_histogram(reflectance_channel)
     locs, _ = Peaks.findmaxima(counts)
     sort!(locs; rev=true)
-    return locs[2] / 255.0 # second greatest peak
+    2 ≤ length(locs) && return locs[2] / 255.0 # second greatest peak
+    return Inf
 end
 
 """
@@ -167,7 +168,7 @@ end
 """
     find_ice_labels(falsecolor_image, landmask; band_7_threshold, band_2_threshold, band_1_threshold, band_7_relaxed_threshold, band_1_relaxed_threshold, possible_ice_threshold)
 
- Returns pixel indices of likely ice from false color reflectance image, using the thresholds from the Ice Floe Tracker article: Remote Sensing of the Environment 234 (2019) 111406.
+Returns pixel indices of likely ice from false color reflectance image, using the thresholds from the Ice Floe Tracker article: Remote Sensing of the Environment 234 (2019) 111406.
 
 # Arguments
 - `falsecolor_image`: corrected reflectance false color image - bands [7,2,1]
