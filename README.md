@@ -8,7 +8,15 @@ Track Ice Floes using Moderate Resolution Imaging Spectroradiometer (MODIS) data
 
 ## Documentation 
 
-See the package's documentation (in development) at https://wilhelmuslab.github.io/IceFloeTracker.jl/
+See the package's documentation at https://wilhelmuslab.github.io/IceFloeTracker.jl/
+
+## Developer Quick Start
+
+The easiest way to get started developing the IceFloeTracker.jl is to use a [devcontainer](https://containers.dev/). 
+Clone the repository in VSCode and then run the command "Reopen in Container".
+This will create a virtual machine to run the code, 
+ensure all the packages are installed and precompiled,
+and run a subset of the package tests.
 
 ## Prerequisites
 
