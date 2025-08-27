@@ -2,8 +2,11 @@
     data_loader = Watkins2025GitHub(; ref="a451cd5e62a10309a9640fbbe6b32a236fcebc70")
     case = first(data_loader(c -> (c.case_number == 6 && c.satellite == "terra")))
     segments = LopezAcosta2019()(
-        RGB.(case.modis_falsecolor), RGB.(case.modis_truecolor), RGB.(case.modis_landmask)
+        RGB.(case.modis_truecolor),
+        RGB.(case.modis_falsecolor),
+        RGB.(case.modis_landmask),
     )
+    @show segments
     expected_segment_count = case.validated_floe_properties |> DataFrame |> nrow
     @test length(segments.segment_labels) ≈ expected_segment_count rtol = 0.7
 end
