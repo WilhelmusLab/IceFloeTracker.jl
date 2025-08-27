@@ -8,6 +8,9 @@
         rgb2gray,
         to_uint8,
         histeq
+
+    include("config.jl")
+
     begin
         datadir = joinpath(@__DIR__, "test_inputs/")
         path_true_color_image = joinpath(
