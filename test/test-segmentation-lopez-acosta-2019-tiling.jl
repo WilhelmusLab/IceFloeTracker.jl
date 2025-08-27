@@ -4,6 +4,7 @@
     using Images: RGB, RGBA, n0f8, n6f10, n4f12, n2f14, n0f16, float32, float64
 
     include("segmentation_utils.jl")
+    include("utils.jl")
 
     data_loader = Watkins2025GitHub(; ref="a451cd5e62a10309a9640fbbe6b32a236fcebc70")
     @testset "Detailed checks" begin
