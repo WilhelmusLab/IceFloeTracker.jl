@@ -1,6 +1,7 @@
-@testset "Discriminate Ice-Water" begin
-    println("------------------------------------------------")
-    println("------------ Create Ice-Water Discrimination Test --------------")
+@testitem "Discriminate Ice-Water" begin
+    using IceFloeTracker: @test_approx_eq_sigma_eps
+    include("config.jl")
+
     input_image = float64.(load(truecolor_test_image_file)[test_region...])
     falsecolor_image = float64.(load(falsecolor_test_image_file)[test_region...])
     landmask = convert(BitMatrix, load(current_landmask_file))

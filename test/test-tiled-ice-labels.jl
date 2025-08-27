@@ -1,6 +1,10 @@
-using IceFloeTracker: get_image_peaks, get_tiles, get_ice_labels_mask, get_nlabel_relaxation
 
-@testset "tiled ice labels" begin
+@testitem "tiled ice labels" begin
+    using IceFloeTracker:
+        get_image_peaks, get_tiles, get_ice_labels_mask, get_nlabel_relaxation
+    using Random
+    include("config.jl")
+
     @testset "get_image_peaks" begin
         Random.seed!(123)
         img = rand(0:255, 10, 10)

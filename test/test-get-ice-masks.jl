@@ -1,24 +1,29 @@
-using IceFloeTracker:
-    get_ice_labels_mask,
-    get_tiles,
-    kmeans_segmentation,
-    get_nlabel,
-    get_ice_masks,
-    apply_landmask
 
-begin
-    region = (1016:3045, 1486:3714)
-    data_dir = joinpath(@__DIR__, "test_inputs")
-    ref_image = load(joinpath(data_dir, "beaufort-chukchi-seas_falsecolor.2020162.aqua.250m.tiff"))
-    landmask = float64.(load(joinpath(data_dir, "matlab_landmask.png"))) .> 0
-    ref_image, landmask = [img[region...] for img in (ref_image, landmask)]
-    morph_residue = readdlm(joinpath(data_dir, "ice_masks/morph_residue.csv"), ',', Int)
-end
+@testitem "get_ice_labels_mask tests" begin
+    using IceFloeTracker:
+        get_ice_labels_mask,
+        get_tiles,
+        kmeans_segmentation,
+        get_nlabel,
+        get_ice_masks,
+        apply_landmask
 
-tiles = get_tiles(ref_image; rblocks=2, cblocks=3)
-ref_image_landmasked = apply_landmask(ref_image, .!landmask)
+    include("config.jl")
 
-@testset "get_ice_labels_mask tests" begin
+    begin
+        region = (1016:3045, 1486:3714)
+        data_dir = joinpath(@__DIR__, "test_inputs")
+        ref_image = load(
+            joinpath(data_dir, "beaufort-chukchi-seas_falsecolor.2020162.aqua.250m.tiff")
+        )
+        landmask = float64.(load(joinpath(data_dir, "matlab_landmask.png"))) .> 0
+        ref_image, landmask = [img[region...] for img in (ref_image, landmask)]
+        morph_residue = readdlm(joinpath(data_dir, "ice_masks/morph_residue.csv"), ',', Int)
+    end
+
+    tiles = get_tiles(ref_image; rblocks=2, cblocks=3)
+    ref_image_landmasked = apply_landmask(ref_image, .!landmask)
+
     begin
         tile = tiles[1]
         band_7_threshold = 5
@@ -74,7 +79,9 @@ ref_image_landmasked = apply_landmask(ref_image, .!landmask)
     end
 
     begin
-        morph_residue_seglabels = kmeans_segmentation(Gray.(morph_residue[tile...] / 255), k=3)
+        morph_residue_seglabels = kmeans_segmentation(
+            Gray.(morph_residue[tile...] / 255); k=3
+        )
         @test get_nlabel(ref_image_landmasked[tile...], morph_residue_seglabels, 255) == 1
     end
 

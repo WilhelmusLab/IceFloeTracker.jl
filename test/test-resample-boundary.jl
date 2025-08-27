@@ -1,4 +1,4 @@
-@testset "resample_boundary test" begin
+@testitem "resample_boundary test" begin
     println("-------------------------------------------------")
     println("------------ resample_boundary Tests --------------")
 

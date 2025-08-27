@@ -1,3 +1,5 @@
+using Images: labels_map, segment_mean, Colorant
+
 """
     run_and_validate_segmentation(
         dataset::ValidationDataSet,
