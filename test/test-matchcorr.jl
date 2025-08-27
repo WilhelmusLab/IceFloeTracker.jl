@@ -1,6 +1,6 @@
 
-@testitem "matchcorr" setup = [Paths] begin
-
+@testitem "matchcorr" begin
+    include("config.jl")
     path = joinpath(test_data_dir, "tracker")
 
     floes =

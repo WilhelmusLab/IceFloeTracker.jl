@@ -1,5 +1,5 @@
 
-@testitem "get_ice_labels_mask tests" setup = [Paths] begin
+@testitem "get_ice_labels_mask tests" begin
     using IceFloeTracker:
         get_ice_labels_mask,
         get_tiles,
@@ -7,6 +7,8 @@
         get_nlabel,
         get_ice_masks,
         apply_landmask
+
+    include("config.jl")
 
     begin
         region = (1016:3045, 1486:3714)

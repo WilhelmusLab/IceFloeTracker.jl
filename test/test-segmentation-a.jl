@@ -1,6 +1,8 @@
 
-@testitem "Segmentation-A" setup = [Paths, Similarity] begin
+@testitem "Segmentation-A" setup = [Similarity] begin
     using DelimitedFiles
+
+    include("config.jl")
 
     ice_water_discriminated_image =
         float64.(load("$(test_data_dir)/matlab_ice_water_discrim.png"))

@@ -1,7 +1,8 @@
 
-@testitem "Create Cloudmask" setup = [Paths] begin
+@testitem "Create Cloudmask" begin
     using IceFloeTracker: @test_approx_eq_sigma_eps
     using Images: RGBA, N0f8
+    include("config.jl")
 
     # define constants, maybe move to test config file
     matlab_cloudmask_file = "$(test_data_dir)/matlab_cloudmask.tiff"

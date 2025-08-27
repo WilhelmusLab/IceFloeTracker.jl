@@ -1,5 +1,7 @@
-@testitem "imextendedmin and bwdist" setup = [Paths] begin
+@testitem "imextendedmin and bwdist" begin
     using DelimitedFiles
+
+    include("config.jl")
 
     test_matrix = "$(test_data_dir)/test_extendedmin.csv"
     test_image = DelimitedFiles.readdlm(test_matrix, ',', Bool)
