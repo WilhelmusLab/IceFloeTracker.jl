@@ -56,7 +56,7 @@ git commit -m "some informative message"
 git push
 ```
 
-### Versioning the registered package
+## Release Process
 
 1. Start a new branch and update the major or minor version numbers in the corresponding field at the top of `Project.toml`
 2. After merging the changes, add `@JuliaRegistrator register` in a comment in the commit you wish to use for the release (not a comment on a PR, but the actual commit)
