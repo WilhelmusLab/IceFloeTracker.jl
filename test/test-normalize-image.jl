@@ -1,5 +1,6 @@
 @testitem "Normalize Image" begin
-    using IceFloeTracker: strel_diamond
+    using IceFloeTracker: strel_diamond, @test_approx_eq_sigma_eps
+    using Images: channelview, colorview, RGB
 
     include("config.jl")
 
