@@ -219,6 +219,11 @@ function get_time_space_proximity_condition(
            (delta_time >= search_thresholds.dt[3] && d < search_thresholds.dist[3])
 end
 
+### dmw: add new function here
+# question: how to handle docs for multiple versions of function?
+# get_time_space_proximity_condition(d, delta_time, max_velocity)
+
+
 """
     get_large_floe_condition(
     area1,
@@ -485,16 +490,16 @@ end
 isnotnan(x) = !isnan(x)
 
 # match_corr related functions
+# dmw: This function is already in matchcorr.jl
+# """
+#     corr(f1,f2)
 
-"""
-    corr(f1,f2)
-
-Return the correlation between the psi-s curves `p1` and `p2`.
-"""
-function corr(p1, p2)
-    cc, _ = maximum.(IceFloeTracker.crosscorr(p1, p2; normalize=true))
-    return cc
-end
+# Return the correlation between the psi-s curves `p1` and `p2`.
+# """
+# function corr(p1, p2)
+#     cc, _ = maximum.(IceFloeTracker.crosscorr(p1, p2; normalize=true))
+#     return cc
+# end
 
 """
    normalizeangle(revised,t=180)
