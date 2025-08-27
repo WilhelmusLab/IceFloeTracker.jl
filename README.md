@@ -8,53 +8,46 @@ Track Ice Floes using Moderate Resolution Imaging Spectroradiometer (MODIS) data
 
 ## Documentation 
 
-See the package's documentation (in development) at https://wilhelmuslab.github.io/IceFloeTracker.jl/
-
-## Prerequisites
-
-A `julia` installation; ensure it is available on the `PATH`.
-
-## Clone repo and run tests
-
-Clone the repository.
-```zsh
-$ git clone https://github.com/WilhelmusLab/IceFloeTracker.jl
-```
-
-Now start a Julia session.
-```zsh
-$ julia
-```
-
-```
-julia> ]
-```
-... to enter package mode.
-
-```
-(@v1.9) pkg> activate IceFloeTracker.jl/
-Activating project at `~/IceFloeTracker.jl`
-```
-
-Instantiate the environment and run the tests:
-```
-(IceFloeTracker) pkg> instantiate
-(IceFloeTracker) pkg> test
-```
-
-## Notebooks
+See the package's documentation at https://wilhelmuslab.github.io/IceFloeTracker.jl/
 
 There are Jupyter notebooks illustrating the main image processing and tracking functions, in the `/notebooks` folder. 
 
-## Interface for Pipeline Workflows
+See related tools in the 
+[IFTPipeline repository](https://github.com/WilhelmusLab/ice-floe-tracker-pipeline#ice-floe-tracker-pipeline), 
+including a Julia Command-line Interface and templates 
+that leverage the [Cylc](https://cylc.github.io) pipeline orchestrator.
 
-See related tools in the [IFTPipeline repository](https://github.com/WilhelmusLab/ice-floe-tracker-pipeline#ice-floe-tracker-pipeline), including a Julia Command-line Interface and templates that leverage the [Cylc](https://cylc.github.io) pipeline orchestrator.
+## User Quick Start
 
-## Development
+Open a [Google Colab notebook](https://colab.research.google.com/github/WilhelmusLab/IceFloeTracker.jl/blob/main/notebooks/preprocessing-workflow/lopez-acosta-2019-workflow.ipynb) and start segmenting images.
 
-Git hooks are used to run common developer tasks on commits (e.g. code formatting, tests, etc.). If you are running git version 2.9 or later run the following from the root of the project to enable git hooks.
+## Developer Quick Start
 
+### Devcontainer
+The easiest way to get started developing the IceFloeTracker.jl is to use a [devcontainer](https://containers.dev/). 
+Clone the repository in VSCode and then run the command "Reopen in Container".
+This will create a virtual machine to run the code, 
+ensure all the packages are installed and precompiled,
+and run a subset of the package tests.
+
+### Regular Operating System
+
+If you prefer to run within your regular operating system, 
+install the dependencies:
+- [Julia](https://julialang.org/)
+- [libgdal-dev](https://gdal.org/)
+- [git](https://git-scm.com/) version 2.9 or later
+
+The PyCall dependency of IceFloeTracker.jl often causes issues when installing the package. 
+To set up PyCall and its Conda environment correctly after installing Julia, 
+run:
+```shell
+julia --project=.devcontainer/PyCallSetup.jl .devcontainer/PyCallSetup.jl/setup.jl
 ```
+
+Git hooks are used to run common developer tasks on commits (e.g. code formatting, tests, etc.). 
+Run the following from the root of the project to enable git hooks:
+```shell
 git config core.hooksPath ./hooks
 ```
 
@@ -67,7 +60,7 @@ git commit -m "some informative message"
 git push
 ```
 
-### Versioning the registered package
+## Release Process
 
 1. Start a new branch and update the major or minor version numbers in the corresponding field at the top of `Project.toml`
 2. After merging the changes, add `@JuliaRegistrator register` in a comment in the commit you wish to use for the release (not a comment on a PR, but the actual commit)
