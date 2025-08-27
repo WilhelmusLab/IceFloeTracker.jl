@@ -8,6 +8,8 @@
         rgb2gray,
         to_uint8,
         histeq
+    using Images: load, float64
+    using TestImages: testimage
 
     include("config.jl")
 
