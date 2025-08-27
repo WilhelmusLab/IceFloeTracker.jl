@@ -53,7 +53,13 @@ export readdlm,
     segmentation_summary,
     LopezAcosta2019Tiling,
     callable_store,
-    binarize_segments
+    binarize_segments,
+    masker,
+    IceDetectionAlgorithm,
+    IceDetectionBrightnessPeaksMODIS721,
+    IceDetectionThresholdMODIS721,
+    IceDetectionFirstNonZeroAlgorithm,
+    IceDetectionLopezAcosta2019
 
 # For IFTPipeline
 using HDF5
@@ -130,4 +136,5 @@ include("tracker/tracker.jl")
 include("tracker/long_tracker.jl")
 include("segmentation-lopez-acosta-2019-tiling.jl")
 include("fill_holes.jl")
+include("mask.jl")
 end

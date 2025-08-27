@@ -30,7 +30,7 @@ function (p::LopezAcosta2019)(
 
     # 2. Intermediate images
     @info "Finding ice labels"
-    ice_labels = find_ice_labels(falsecolor_image, landmask_imgs.dilated)
+    ice_mask = find_ice_mask(falsecolor_image, landmask_imgs.dilated)
 
     @info "Sharpening truecolor image"
     # a. apply imsharpen to truecolor image using non-dilated landmask
@@ -54,7 +54,7 @@ function (p::LopezAcosta2019)(
     # 3. Segmentation
     @info "Segmenting floes part 1/3"
     segA = segmentation_A(
-        segmented_ice_cloudmasking(ice_water_discrim, cloudmask, ice_labels)
+        segmented_ice_cloudmasking(ice_water_discrim, cloudmask, ice_mask)
     )
 
     # segmentation_B
@@ -77,7 +77,7 @@ function (p::LopezAcosta2019)(
         segB.not_ice,
         segB.ice_intersect,
         watersheds_segB_product,
-        ice_labels,
+        ice_mask,
         cloudmask,
         landmask_imgs.dilated,
     )
@@ -97,7 +97,7 @@ function (p::LopezAcosta2019)(
             landmask_dilated=landmask_imgs.dilated,
             landmask_non_dilated=landmask_imgs.non_dilated,
             cloudmask=cloudmask,
-            ice_labels=ice_labels,
+            ice_mask=ice_mask,
             sharpened_truecolor_image=sharpened_truecolor_image,
             sharpened_gray_truecolor_image=sharpened_gray_truecolor_image,
             normalized_image=normalized_image,
