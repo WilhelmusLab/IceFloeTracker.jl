@@ -2,12 +2,10 @@
 @testitem "LopezAcosta2019Tiling – simple case" tags = [:e2e, :smoke] begin
     data_loader = Watkins2025GitHub(; ref="a451cd5e62a10309a9640fbbe6b32a236fcebc70")
     case = first(data_loader(c -> (c.case_number == 6 && c.satellite == "terra")))
-    falsecolor = case.modis_falsecolor
-    truecolor = case.modis_truecolor
-    landmask = case.modis_landmask
-    segments = LopezAcosta2019Tiling()(truecolor, falsecolor, landmask)
+    segments = LopezAcosta2019Tiling()(
+        case.modis_truecolor, case.modis_falsecolor, case.modis_landmask
+    )
     expected_segment_count = case.validated_floe_properties |> DataFrame |> nrow
-    # expect right ballpark number of floes
     @test length(segments.segment_labels) ≈ expected_segment_count rtol = 1.0
 end
 @testitem "LopezAcosta2019Tiling - detailed" setup = [Segmentation] tags = [:e2e] begin
