@@ -1,8 +1,7 @@
-@testitem "Segmentation-B" begin
+@testitem "Segmentation-B" setup = [Similarity] begin
     using IceFloeTracker: @test_approx_eq_sigma_eps
     
     include("config.jl")
-    include("test_error_rate.jl")
     
     sharpened_image = float64.(load(sharpened_test_image_file))
     segmented_a_ice_mask = convert(BitMatrix, load(segmented_a_ice_mask_file))
