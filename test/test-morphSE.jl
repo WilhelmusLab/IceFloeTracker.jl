@@ -1,5 +1,4 @@
-@testitem "MorphSE test" begin
-    include("config.jl")
+@testitem "MorphSE test" setup = [Paths] begin
 
     # Dilate -- Start with a pixel in the middle and dilate in one go to fill up the full image
     n = rand(11:2:21) # choose random odd number

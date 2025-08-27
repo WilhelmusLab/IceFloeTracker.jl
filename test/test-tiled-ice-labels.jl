@@ -1,9 +1,8 @@
 
-@testitem "tiled ice labels" begin
+@testitem "tiled ice labels" setup = [Paths] begin
     using IceFloeTracker:
         get_image_peaks, get_tiles, get_ice_labels_mask, get_nlabel_relaxation
     using Random
-    include("config.jl")
 
     @testset "get_image_peaks" begin
         Random.seed!(123)

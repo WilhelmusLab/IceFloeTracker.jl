@@ -1,10 +1,8 @@
 
-@testitem "Utilities" begin
+@testitem "Utilities" setup = [Paths] begin
     using IceFloeTracker:
         long_tracker, _imhist, condition_thresholds, mc_thresholds, get_trajectory_heads
     using CSV
-
-    include("config.jl")
 
     @testset "get_trajectory_heads" begin
         @testset "basic case" begin

@@ -1,5 +1,4 @@
-@testitem "branch points tests" begin
-    include("config.jl")
+@testitem "branch points tests" setup = [Paths] begin
 
     dir = joinpath(test_data_dir, "branch")
     readcsv(f) = readdlm(joinpath(dir, f), ',', Bool)

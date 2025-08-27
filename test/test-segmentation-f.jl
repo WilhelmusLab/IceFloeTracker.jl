@@ -1,7 +1,5 @@
-@testitem "Segmentation-F" setup = [Similarity] begin
+@testitem "Segmentation-F" setup = [Paths, Similarity] begin
     using DelimitedFiles
-
-    include("config.jl")
 
     ## Load inputs for comparison
     segmentation_B_not_ice_mask = float64.(load("$(test_data_dir)/matlab_I.png"))

@@ -1,5 +1,4 @@
-@testitem "Create Landmask" setup=[Similarity] begin
-    include("config.jl")
+@testitem "Create Landmask" setup = [Paths, Similarity] begin
 
     # define constants, maybe move to test config file
     matlab_landmask_file = "$(test_data_dir)/matlab_landmask.png"

@@ -1,5 +1,5 @@
 
-@testitem "Conditional adaptivehisteq" begin
+@testitem "Conditional adaptivehisteq" setup = [Paths] begin
     using IceFloeTracker:
         _get_false_color_cloudmasked,
         convert_to_255_matrix,
@@ -10,8 +10,6 @@
         histeq
     using Images: load, float64
     using TestImages: testimage
-
-    include("config.jl")
 
     begin
         datadir = joinpath(@__DIR__, "test_inputs/")

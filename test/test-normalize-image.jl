@@ -1,8 +1,6 @@
-@testitem "Normalize Image" begin
+@testitem "Normalize Image" setup = [Paths] begin
     using IceFloeTracker: strel_diamond, @test_approx_eq_sigma_eps
     using Images: channelview, colorview, RGB
-
-    include("config.jl")
 
     struct_elem2 = strel_diamond((5, 5)) #original matlab structuring element -  a disk-shaped kernel with radius of 2 px
     matlab_normalized_img_file = "$(test_data_dir)/matlab_normalized.png"
