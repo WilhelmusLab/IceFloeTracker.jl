@@ -4,7 +4,9 @@
     falsecolor = RGB.(case.modis_falsecolor)
     truecolor = RGB.(case.modis_truecolor)
     landmask = RGB.(case.modis_landmask)
-    LopezAcosta2019()(truecolor, falsecolor, landmask)
+    segments = LopezAcosta2019()(truecolor, falsecolor, landmask)
+    expected_segment_count = case.validated_floe_properties |> DataFrame |> nrow
+    @test length(segments.segment_labels) ≈ expected_segment_count rtol = 0.7
 end
 
 @testitem "LopezAcosta2019 – sample of cases" setup = [Segmentation] tags = [:e2e] begin

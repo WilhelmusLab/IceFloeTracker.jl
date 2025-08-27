@@ -5,7 +5,10 @@
     falsecolor = case.modis_falsecolor
     truecolor = case.modis_truecolor
     landmask = case.modis_landmask
-    LopezAcosta2019Tiling()(truecolor, falsecolor, landmask)
+    segments = LopezAcosta2019Tiling()(truecolor, falsecolor, landmask)
+    expected_segment_count = case.validated_floe_properties |> DataFrame |> nrow
+    # expect right ballpark number of floes
+    @test length(segments.segment_labels) ≈ expected_segment_count rtol = 1.0
 end
 @testitem "LopezAcosta2019Tiling - detailed" setup = [Segmentation] tags = [:e2e] begin
     data_loader = Watkins2025GitHub(; ref="a451cd5e62a10309a9640fbbe6b32a236fcebc70")
