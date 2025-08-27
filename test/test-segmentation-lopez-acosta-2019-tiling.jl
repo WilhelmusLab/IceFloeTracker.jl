@@ -1,6 +1,7 @@
 
 @testitem "preprocess_tiling" begin
     using StatsBase: mean
+    using Images: RGB, RGBA, n0f8, n6f10, n4f12, n2f14, n0f16, float32, float64
 
     include("segmentation_utils.jl")
 
