@@ -19,57 +19,31 @@ that leverage the [Cylc](https://cylc.github.io) pipeline orchestrator.
 
 ## Developer Quick Start
 
+### Devcontainer
 The easiest way to get started developing the IceFloeTracker.jl is to use a [devcontainer](https://containers.dev/). 
 Clone the repository in VSCode and then run the command "Reopen in Container".
 This will create a virtual machine to run the code, 
 ensure all the packages are installed and precompiled,
 and run a subset of the package tests.
 
-## Prerequisites
+### Regular Operating System
 
-A `julia` installation; ensure it is available on the `PATH`.
+If you prefer to run within your regular operating system, 
+install the dependencies:
+- [Julia](https://julialang.org/)
+- [libgdal-dev](https://gdal.org/)
+- [git](https://git-scm.com/) version 2.9 or later
 
-## Clone repo and run tests
-
-Clone the repository.
-```zsh
-$ git clone https://github.com/WilhelmusLab/IceFloeTracker.jl
+The PyCall dependency of IceFloeTracker.jl often causes issues when installing the package. 
+To set up PyCall and its Conda environment correctly after installing Julia, 
+run:
+```shell
+julia --project=.devcontainer/PyCallSetup.jl .devcontainer/PyCallSetup.jl/setup.jl
 ```
 
-Now start a Julia session.
-```zsh
-$ julia
-```
-
-```
-julia> ]
-```
-... to enter package mode.
-
-```
-(@v1.9) pkg> activate IceFloeTracker.jl/
-Activating project at `~/IceFloeTracker.jl`
-```
-
-Instantiate the environment and run the tests:
-```
-(IceFloeTracker) pkg> instantiate
-(IceFloeTracker) pkg> test
-```
-
-## Notebooks
-
-There are Jupyter notebooks illustrating the main image processing and tracking functions, in the `/notebooks` folder. 
-
-## Interface for Pipeline Workflows
-
-See related tools in the [IFTPipeline repository](https://github.com/WilhelmusLab/ice-floe-tracker-pipeline#ice-floe-tracker-pipeline), including a Julia Command-line Interface and templates that leverage the [Cylc](https://cylc.github.io) pipeline orchestrator.
-
-## Development
-
-Git hooks are used to run common developer tasks on commits (e.g. code formatting, tests, etc.). If you are running git version 2.9 or later run the following from the root of the project to enable git hooks.
-
-```
+Git hooks are used to run common developer tasks on commits (e.g. code formatting, tests, etc.). 
+Run the following from the root of the project to enable git hooks:
+```shell
 git config core.hooksPath ./hooks
 ```
 
