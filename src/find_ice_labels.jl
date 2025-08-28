@@ -93,7 +93,7 @@ function find_reflectance_peaks(
     reflectance_channel::AbstractArray{<:Real}; possible_ice_threshold::Real=N0f8(75 / 255)
 )
     reflectance_channel[reflectance_channel .< possible_ice_threshold] .= 0
-    _, counts = ImageContrastAdjustment.build_histogram(reflectance_channel)
+    edges, counts = ImageContrastAdjustment.build_histogram(reflectance_channel)
     locs, _ = Peaks.findmaxima(counts)
     sort!(locs; rev=true)
     2 ≤ length(locs) && return locs[2] / 255.0 # second greatest peak
