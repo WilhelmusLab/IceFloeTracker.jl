@@ -8,7 +8,7 @@ largest local maximum that is bright enough that it is possibly sea ice. Locatio
 the edges, which by default are the left bin edges. Note also that peaks defaults to the left side of
 plateaus.
 """
-function get_ice_peaks(edges, counts; possible_ice_threshold=Float64::0.30, minimum_prominence=Float64::0.1, window=Int64::3)
+function get_ice_peaks(edges, counts; possible_ice_threshold::Float64=0.30, minimum_prominence::Float64=0.1, window::Int64=3)
     counts = counts[1:end]
     counts = counts ./ sum(counts[edges .> possible_ice_threshold])
     pks = findmaxima(counts, window) |> peakproms! |> peakwidths!
@@ -126,6 +126,7 @@ end
 
 # dmw: split into the k-means and binarization methods, since they operate on different principles.
 # remove the "factor" argument, since it can be inferred from the image type.
+# move this into a segmentation algorithms file
 """
     get_ice_masks(
         falsecolor_image,
