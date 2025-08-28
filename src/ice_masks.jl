@@ -52,7 +52,7 @@ end
 
 function get_nlabel(
     falsecolor_img,
-    segmented_image_indexmap,
+    segmented_image_indexmap;
     band_7_threshold::T=5/255,
     band_2_threshold::T=230/255,
     band_1_threshold::T=240/255,
@@ -157,7 +157,7 @@ are applied in order to find the cluster containing bright sea ice pixels.
 # Arguments
 - `falsecolor_image`: MODIS False Color Bands 7-2-1.
 - `morph_residue`: Grayscale sharpened and equalized image from preprocessing workflow.
-- `landmask`: Binary landmask.
+- `landmask`: Binary landmask. 
 - `tiles`: Iterable with tile divisions.
 - `binarize::Bool=true`: Whether to binarize the tiling.
 - `band_7_threshold=5/255`: The threshold for band 7.
@@ -174,33 +174,33 @@ are applied in order to find the cluster containing bright sea ice pixels.
   - `bin`: The binarized tiling.
 """
 function get_ice_masks(
-    falsecolor_image::Matrix{RGB{N0f8}},
-    morph_residue::Matrix{<:Integer}, # Make this Gray
-    landmask::BitMatrix,
-    tiles::S,
+    falsecolor_image::AbstractArray{<:Union{AbstractRGB,TransparentRGB}},
+    morph_residue::AbstractArray{<:AbstractGray},
+    landmask::AbstractArray{<:Bool},
+    tiles::AbstractMatrix{Tuple{UnitRange{Int64},UnitRange{Int64}}},
     # TODO: don't shadow "binarize" function (dmw: remove binarization from this function)
     binarize::Bool=true;
-    band_7_threshold::T=5,
-    band_2_threshold::T=230,
-    band_1_threshold::T=240,
-    band_7_threshold_relaxed::T=10,
-    band_1_threshold_relaxed::T=190,
-    possible_ice_threshold::T=75,
-    k::T=4
-) where {T<:Integer,S<:AbstractMatrix{Tuple{UnitRange{Int64},UnitRange{Int64}}}}
+    band_7_threshold::Float64=5/255,
+    band_2_threshold::Float64=230/255,
+    band_1_threshold::Float64=240/255,
+    band_7_threshold_relaxed::Float64=10/255,
+    band_1_threshold_relaxed::Float64=190/255,
+    possible_ice_threshold::Float64=75/255,
+    k=4
+) 
 
     # Make canvases
     sz = size(falsecolor_image)
     ice_mask = BitMatrix(zeros(Bool, sz))
     binarized_tiling = zeros(Int, sz)
 
-    fc_landmasked = apply_landmask(falsecolor_image, .!landmask)
+    fc_landmasked = apply_landmask(falsecolor_image, .!landmask) # will need to flip once the landmask is the right style
 
     # Threads.@threads
     for tile in tiles
         @debug "Processing tile: $tile"
         mrt = morph_residue[tile...]
-        segmented_image_indexmap = kmeans_segmentation(Gray.(mrt / 255); k=k)
+        segmented_image_indexmap = kmeans_segmentation(mrt; k=k)
 
         # TODO: handle case where get_nlabel returns missing
         floes_label = get_nlabel(
