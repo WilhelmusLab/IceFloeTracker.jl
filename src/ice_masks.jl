@@ -1,7 +1,28 @@
-function get_image_peaks(arr, imgtype="uint8")
-    _, heights = imhist(arr, imgtype)
+using Images: build_histogram
+using Peaks: findmaxima, peakproms!, peakwidths!
+using DataFrames
 
-    locs, heights, _ = Peaks.findmaxima(heights)
+"""
+Given the edges and counts from build_histogram, identify local maxima and return the location of the
+largest local maximum that is bright enough that it is possibly sea ice. Locations are determined by 
+the edges, which by default are the left bin edges. Note also that peaks defaults to the left side of
+plateaus.
+"""
+function get_ice_peaks(edges, counts; possible_ice_threshold=Float64::0.30, minimum_prominence=Float64::0.1, window=Int64::3)
+    counts = counts[1:end]
+    counts = counts ./ sum(counts[edges .> possible_ice_threshold])
+    pks = findmaxima(counts, window) |> peakproms! |> peakwidths!
+    pks_df = DataFrame(pks[Not(:data)])
+    pks_df = sort(pks_df, :proms, rev=true)
+    maximum(pks_df.proms) < minimum_prominence && return Inf
+    return edges[pks_df[argmax(pks_df.proms), :indices]] 
+end
+
+function get_image_peaks(img::AbstractArray, nbins=Int64::64)
+    # _, heights = imhist(arr, imgtype)
+    edges, counts = build_histogram(img, nbins)
+
+    locs, heights, _ = Peaks.findmaxima(counts)
 
     # TODO: make this conditional on input args
     order = sortperm(heights; rev=true)
