@@ -1,7 +1,5 @@
-@testset "crosscorr tests" begin
-    println("-------------------------------------------------")
-    println("----------- cross correlation tests -------------")
-
+@testitem "crosscorr tests" begin
+    
     # Compare against matlab xcorr with normalization (standard use case in IceFloeTracker)
     n = 0:15
     x = 0.84 .^ n

@@ -1,9 +1,13 @@
 
-using StatsBase: mean
+@testitem "preprocess_tiling" begin
+    using StatsBase: mean
+    using Images: RGB, RGBA, n0f8, n6f10, n4f12, n2f14, n0f16, float32, float64
 
-@ntestset "preprocess_tiling" begin
+    include("segmentation_utils.jl")
+    include("utils.jl")
+
     data_loader = Watkins2025GitHub(; ref="a451cd5e62a10309a9640fbbe6b32a236fcebc70")
-    @ntestset "Detailed checks" begin
+    @testset "Detailed checks" begin
         (; labeled_fraction, recall, precision, F_score) = run_and_validate_segmentation(
             first(data_loader(c -> (c.case_number == 6 && c.satellite == "terra"))),
             LopezAcosta2019Tiling();
@@ -41,7 +45,7 @@ using StatsBase: mean
         @test 0.734 ≤ F_score
     end
 
-    @ntestset "Aggregate results" begin
+    @testset "Aggregate results" begin
         results = run_and_validate_segmentation(
             data_loader(case -> (case.case_number % 17 == 0)),
             LopezAcosta2019Tiling();
@@ -74,7 +78,7 @@ using StatsBase: mean
         @show mean_precision
         @show mean_F_score
     end
-    @ntestset "Image types" begin
+    @testset "Image types" begin
         case::ValidationDataCase = first(
             data_loader(c -> (c.case_number == 6 && c.satellite == "terra"))
         )

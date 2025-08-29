@@ -1,23 +1,24 @@
-using IceFloeTracker: imcomplement, reconstruct
-using ZipFile
 
-r = ZipFile.Reader("test_inputs/coins.zip")
-coins = readdlm(r.files[1], ',', Int)
-close(r)
+@testitem "reconstruct" begin
+    using IceFloeTracker: imcomplement, reconstruct, strel_diamond
+    using ZipFile
 
-se_disk1 = strel_diamond((3, 3))
+    r = ZipFile.Reader("test_inputs/coins.zip")
+    coins = readdlm(r.files[1], ',', Int)
+    close(r)
 
-_round(x) = Int(round(x, RoundNearestTiesAway))
-_reconstruct(img, se, type) = reconstruct(img, se, type, false)
+    se_disk1 = strel_diamond((3, 3))
 
-function run_tests(test_cases, func, se)
-    for (img, expected) in test_cases
-        result = func(img, se)
-        @test _round(Float64(sum(result))) == _round(expected)
+    _round(x) = Int(round(x, RoundNearestTiesAway))
+    _reconstruct(img, se, type) = reconstruct(img, se, type, false)
+
+    function run_tests(test_cases, func, se)
+        for (img, expected) in test_cases
+            result = func(img, se)
+            @test _round(Float64(sum(result))) == _round(expected)
+        end
     end
-end
 
-@testset "reconstruct" begin
     @testset "imcomplement" begin
         @test imcomplement(coins) == 255 .- coins
 

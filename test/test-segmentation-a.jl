@@ -1,7 +1,9 @@
 
-@testset "Segmentation-A" begin
-    println("------------------------------------------------")
-    println("------------ Create Segmentation-A Test --------------")
+@testitem "Segmentation-A" begin
+    using DelimitedFiles
+
+    include("config.jl")
+    include("test_error_rate.jl")
 
     ice_water_discriminated_image =
         float64.(load("$(test_data_dir)/matlab_ice_water_discrim.png"))

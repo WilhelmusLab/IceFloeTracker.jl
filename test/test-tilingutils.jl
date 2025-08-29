@@ -1,7 +1,10 @@
-using IceFloeTracker: get_optimal_tile_size, get_tile_meta, bump_tile, get_tiles
-gots = get_optimal_tile_size
 
-@testset "Tiling utils" begin
+@testitem "Tiling utils" begin
+    using IceFloeTracker: get_optimal_tile_size, get_tile_meta, bump_tile, get_tiles
+    using TiledIteration: TileIterator
+
+    gots = get_optimal_tile_size
+
     @testset "get_optimal_tile_size" begin
         @test gots(2, (10, 10)) == 2 # disregard tiles of 1 pixel
         @test gots(3, (15, 15)) == 3
@@ -29,12 +32,13 @@ gots = get_optimal_tile_size
     @testset "bump_tile" begin
         extrarows, extracols = rand(1:100, 2)
         bumpby = (extrarows, extracols)
-        @test bump_tile(tile, bumpby) == (1:2+extrarows, 3:4+extracols)
+        @test bump_tile(tile, bumpby) == (1:(2 + extrarows), 3:(4 + extracols))
     end
 
     @testset "get_tiles" begin
         # unadjusted tiles
-        _get_tiles(array, side_length) = TileIterator(axes(array), (side_length, side_length)) |> collect
+        _get_tiles(array, side_length) =
+            TileIterator(axes(array), (side_length, side_length)) |> collect
 
         array = rand(40, 20)
 
@@ -56,8 +60,10 @@ gots = get_optimal_tile_size
         @test all(size(tiles) .- size(adjusted_tiles) .== (0, 1))
 
         # general case with both edges adjusted
-        expected_tiles = [(1:5, 1:5) (1:5, 6:10) (1:5, 11:16);
-            (6:12, 1:5) (6:12, 6:10) (6:12, 11:16)]
+        expected_tiles = [
+            (1:5, 1:5) (1:5, 6:10) (1:5, 11:16)
+            (6:12, 1:5) (6:12, 6:10) (6:12, 11:16)
+        ]
 
         array = rand(12, 16)
         side_length = 5

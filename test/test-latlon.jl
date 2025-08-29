@@ -1,12 +1,13 @@
-using IceFloeTracker: latlon
 
-function round4(v)
-    # round to 4 decimal places to avoid weirdness in different arch/os
-    _round4(x) = round(x; digits=4)
-    return _round4.(v)
-end
+@testitem "latlon" begin
+    using IceFloeTracker: latlon
+    
+    function round4(v)
+        # round to 4 decimal places to avoid weirdness in different arch/os
+        _round4(x) = round(x; digits=4)
+        return _round4.(v)
+    end
 
-@testset "latlon" begin
     imgpth = "test_inputs/latlon/latlon_test_image-2020-06-21T00_00_00Z.tif"
     # vec needed to convert to vector instead of nx1 matrix
     expected_X = vec(readdlm("test_inputs/latlon/X.csv", ',', Float64))

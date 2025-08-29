@@ -1,7 +1,5 @@
-@testset "regionprops-labeled.jl" begin
-    println("------------------------------------------------------------")
-    println("-------------- regionprops (labeled) Tests ----------------")
-
+@testitem "regionprops (labeled)" begin
+    
     img1 = Int[
         0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0   # row  1
         0 1 1 0 2 2 2 0 3 3 3 3 0 0 0 0   #      2
