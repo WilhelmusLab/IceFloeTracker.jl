@@ -74,5 +74,6 @@ jobs:
           for script in $(find notebooks -name "*.jl"); do
             echo "Running Julia script: $script"
             julia "$script" || EXIT_CODE=$?
+            echo -e "\n=======\n" # divider between scripts
           done
           exit $EXIT_CODE
