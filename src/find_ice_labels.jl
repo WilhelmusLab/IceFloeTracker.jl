@@ -110,29 +110,6 @@ function (f::IceDetectionBrightnessPeaksMODIS721)(out, modis_721_image, args...;
     @. out = mask_band_7 * mask_band_2 * mask_band_1 * alpha_binary
 end
 
-
-
-# """
-#     find_reflectance_peaks(reflectance_channel, possible_ice_threshold;)
-    
-# Find histogram peaks in single channels of a reflectance image and return the second greatest peak. If needed, edges can be returned as the first object from `build_histogram`. Similarly, peak values can be returned as the second object from `findmaxima`.
-
-# # Arguments
-# - `reflectance_channel`: either band 2 or band 1 of false-color reflectance image
-# - `possible_ice_threshold`: threshold value used to identify ice if not found on first or second pass
-
-# """
-# function find_reflectance_peaks(
-#     reflectance_channel::AbstractArray{<:Real}; possible_ice_threshold::Real=N0f8(75 / 255)
-# )
-#     reflectance_channel[reflectance_channel .< possible_ice_threshold] .= 0
-#     edges, counts = ImageContrastAdjustment.build_histogram(reflectance_channel)
-#     locs, _ = Peaks.findmaxima(counts)
-#     sort!(locs; rev=true)
-#     2 ≤ length(locs) && return locs[2] / 255.0 # second greatest peak
-#     return Inf
-# end
-
 """
     IceDetectionFirstNonZeroAlgorithm(;
         algorithms::Vector{IceDetectionAlgorithm},
@@ -197,6 +174,12 @@ function IceDetectionLopezAcosta2019(;
         ),
     ])
 end
+
+
+
+
+
+
 
 """
     find_ice_labels(falsecolor_image, landmask; band_7_threshold, band_2_threshold, band_1_threshold, band_7_relaxed_threshold, band_1_relaxed_threshold, possible_ice_threshold)
