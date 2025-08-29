@@ -63,7 +63,7 @@ jobs:
             echo "Updating paths in $script"
             sed -i 's|^HOME = .*$|HOME = "${{ github.workspace }}"|g' "$script" # replace HOME with path of repo
             sed -i 's|Pkg.add("IceFloeTracker")|Pkg.add(;path="${{ github.workspace }}")|g' "$script" # replace IceFloeTracker installer with local path
-            cat "$script"
+            head "$script"
           done
 
       # Run converted .jl files using Julia
