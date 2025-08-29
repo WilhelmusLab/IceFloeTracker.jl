@@ -47,11 +47,6 @@ jobs:
         env:
           PYTHON: python
 
-      - name: Update env for notebook workflows
-        run: |
-          julia --project=. scripts/update_env_for_notebooks.jl
-
-
       # Convert notebooks to .jl files using nbconvert
       - name: Convert Notebooks to Julia Scripts
         run: |
@@ -77,6 +72,6 @@ jobs:
           EXIT_CODE=0
           for script in $(find notebooks -name "*.jl"); do
             echo "Running Julia script: $script"
-            julia --project=. "$script" || EXIT_CODE=$?
+            julia "$script" || EXIT_CODE=$?
           done
           exit $EXIT_CODE
