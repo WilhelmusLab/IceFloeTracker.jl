@@ -18,19 +18,6 @@ function get_ice_peaks(edges, counts; possible_ice_threshold::Float64=0.30, mini
     return edges[pks_df[argmax(pks_df.proms), :indices]] 
 end
 
-# function get_image_peaks(img::AbstractArray, nbins=Int64::64)
-#     # _, heights = imhist(arr, imgtype)
-#     edges, counts = build_histogram(img, nbins)
-
-#     locs, heights, _ = Peaks.findmaxima(counts)
-
-#     # TODO: make this conditional on input args
-#     order = sortperm(heights; rev=true)
-#     locs, heights = locs[order], heights[order]
-
-#     return (locs=locs, heights=heights)
-# end
-
 # dmw: wrapper for the IceDetectionThreshold method. We should be able to 
 # use this directly rather than piping the types.
 # jgh: TODO: replace this function with the same call to binarize
