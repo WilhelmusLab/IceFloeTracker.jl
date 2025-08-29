@@ -1,6 +1,6 @@
 @testitem "utils.jl pad utilities" begin
     using Images: Pad, Fill
-    
+
     fill_value = 0
     simpleimg = collect(reshape(1:4, 2, 2))
     w, h = size(simpleimg)
