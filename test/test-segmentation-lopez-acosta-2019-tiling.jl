@@ -90,11 +90,11 @@
         @test results_invariant_for(RGB; baseline, algorithm, case)
         @test results_invariant_for(RGBA; baseline, algorithm, case)
         @test results_invariant_for(n0f8; baseline, algorithm, case)
-        @test results_invariant_for(n6f10; baseline, algorithm, case) broken = true
-        @test results_invariant_for(n4f12; baseline, algorithm, case) broken = true
-        @test results_invariant_for(n2f14; baseline, algorithm, case) broken = true
-        @test results_invariant_for(n0f16; baseline, algorithm, case) broken = true
-        @test results_invariant_for(float32; baseline, algorithm, case) broken = true
-        @test results_invariant_for(float64; baseline, algorithm, case) broken = true
+        @test results_invariant_for(n6f10; baseline, algorithm, case)
+        @test results_invariant_for(n4f12; baseline, algorithm, case)
+        @test results_invariant_for(n2f14; baseline, algorithm, case)
+        @test results_invariant_for(n0f16; baseline, algorithm, case)
+        @test results_invariant_for(float32; baseline, algorithm, case)
+        @test results_invariant_for(float64; baseline, algorithm, case)
     end
 end
