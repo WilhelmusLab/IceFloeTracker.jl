@@ -122,7 +122,7 @@ function get_nlabel_relaxation(
 
     # relaxed_thresholds = [band_7_threshold_relaxed, pks_band_2.locs[2], pks_band_1.locs[2]]
     relaxed_thresholds = [band_7_threshold_relaxed, pks_band_2, pks_band_1]
-    ice_labels_mask = get_ice_labels_mask(falsecolor_img, relaxed_thresholds, factor)
+    ice_labels_mask = get_ice_labels_mask(falsecolor_img, relaxed_thresholds)
 
     sum(ice_labels_mask) > 0 && return _getnlabel(segmented_image_indexmap, ice_labels_mask)
 
