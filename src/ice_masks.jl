@@ -2,27 +2,8 @@ using Images: build_histogram
 using Peaks: findmaxima, peakproms!, peakwidths!
 using DataFrames
 
-# dmw: wrapper for the IceDetectionThreshold method. We should be able to 
-# use this directly rather than piping the types.
-# jgh: TODO: replace this function with the same call to binarize
-
-# function get_ice_labels_mask(ref_img::Matrix{RGB{N0f8}}, thresholds)
-#     mask =
-#         binarize(
-#             ref_img,
-#             IceDetectionThresholdMODIS721(;
-#                 band_7_max=thresholds[1],
-#                 band_2_min=thresholds[2],
-#                 band_1_min=thresholds[3],
-#             ),
-#         ) .|>
-#         gray .|>
-#         Bool
-#     @debug "Found $(sum(mask)) ice pixels"
-#     return mask
-# end
-
-function get_nlabel(
+# Select a k-means cluster based on the 
+function _get_nlabel(
     falsecolor_img,
     segmented_image_indexmap;
     band_7_threshold::T=5/255,
@@ -55,16 +36,12 @@ function get_nlabel(
         )
         ])
 
-    ice_labels = binarize(falsecolor_img, f)
+    ice_labels = binarize(falsecolor_img, f) .> 0
     isempty(ice_labels) && return -1
     sum(ice_labels) == 0 && return -1
-    return StatsBase.mode(image_indexmap[mask])
+    return StatsBase.mode(segmented_image_indexmap[ice_labels])
 end
 
-
-# dmw: split into the k-means and binarization methods, since they operate on different principles.
-# remove the "factor" argument, since it can be inferred from the image type.
-# move this into a segmentation algorithms file
 """
     get_ice_masks(
         falsecolor_image,
@@ -106,8 +83,7 @@ function get_ice_masks( #tbd: rename to kmeans_binarization?
     falsecolor_image::AbstractArray{<:Union{AbstractRGB,TransparentRGB}},
     morph_residue::AbstractArray{<:AbstractGray},
     landmask::AbstractArray{<:Bool},
-    tiles::AbstractMatrix{Tuple{UnitRange{Int64},UnitRange{Int64}}},
-    binarize::Bool=true, # remove if the get_nlabel works
+    tiles::AbstractMatrix{Tuple{UnitRange{Int64},UnitRange{Int64}}};
     band_7_threshold::Float64=5/255,
     band_2_threshold::Float64=230/255,
     band_1_threshold::Float64=240/255,
@@ -130,8 +106,7 @@ function get_ice_masks( #tbd: rename to kmeans_binarization?
         mrt = morph_residue[tile...]
         segmented_image_indexmap = kmeans_segmentation(mrt; k=k)
 
-        # TODO: handle case where get_nlabel returns missing
-        floes_label = get_nlabel(
+        floes_label = _get_nlabel(
             fc_landmasked[tile...],
             segmented_image_indexmap,           
             band_7_threshold=band_7_threshold,
@@ -144,9 +119,23 @@ function get_ice_masks( #tbd: rename to kmeans_binarization?
 
         ice_mask[tile...] .= (segmented_image_indexmap .== floes_label)
 
-        #  Conditionally update binarized_tiling as its not used in some workflows
-        binarize && (binarized_tiling[tile...] .= imbinarize(mrt))
     end
+    return ice_mask
+end
 
-    return (icemask=ice_mask, bin=binarized_tiling .> 0)
+# temp function until we replace tests to use IceDetectionThresholdMODIS721 directly
+function get_ice_labels_mask(ref_img::Matrix{RGB{N0f8}}, thresholds)
+    mask =
+        binarize(
+            ref_img,
+            IceDetectionThresholdMODIS721(;
+                band_7_max=thresholds[1],
+                band_2_min=thresholds[2],
+                band_1_min=thresholds[3]
+            ),
+        ) .|>
+        gray .|>
+        Bool
+    @debug "Found $(sum(mask)) ice pixels"
+    return mask
 end

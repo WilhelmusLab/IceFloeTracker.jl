@@ -219,3 +219,13 @@ end
 function get_ice_labels(ice::AbstractArray{<:AbstractGray})
     return findall(vec(gray.(ice)) .> 0)
 end
+
+function tiled_adaptive_binarization(img, tiles)
+    canvas = zeros(size(img))
+    for tile in tiles
+        f = AdaptiveThreshold(img[tile...])
+        canvas[tile...] = binarize(img[tile...], f)
+    end
+    return canvas
+end
+

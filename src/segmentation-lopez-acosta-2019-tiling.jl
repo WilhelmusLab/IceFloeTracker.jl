@@ -1,17 +1,14 @@
 using Images
 using IceFloeTracker:
     get_tiles,
-    _get_masks,
     _process_image_tiles,
     to_uint8,
     unsharp_mask,
     imbrighten,
-    imadjust,
     get_ice_masks,
     imcomplement,
     adjustgamma,
     to_uint8,
-    get_holes,
     get_segment_mask,
     se_disk4,
     se_disk2,
@@ -20,17 +17,13 @@ using IceFloeTracker:
     get_final,
     apply_landmask,
     kmeans_segmentation,
-    get_nlabel,
     get_brighten_mask,
-    get_holes,
     reconstruct,
     imgradientmag,
     histeq,
-    impose_minima,
     label_components,
-    imregionalmin,
     watershed2,
-    imbinarize,
+    tiled_adaptive_binarization,
     _regularize
 
 # Sample input parameters expected by the main function
@@ -167,8 +160,9 @@ function (p::LopezAcosta2019Tiling)(
 
     begin
         @debug "Step 9: Get preliminary ice masks"
-        prelim_icemask, binarized_tiling = get_ice_masks(
-            ref_image, Gray.(morphed_residue / 255), _landmask.dilated, tiles, true; ice_masks_params...
+        binarized_tiling = tiled_adaptive_binarization(Gray.(morphed_residue ./ 255), tiles)
+        prelim_icemask = get_ice_masks(
+            ref_image, Gray.(morphed_residue / 255), _landmask.dilated, tiles; ice_masks_params...
         )
     end
 
@@ -200,8 +194,8 @@ function (p::LopezAcosta2019Tiling)(
 
     begin
         @debug "Step 13: Get improved icemask"
-        icemask, _ = get_ice_masks(
-            ref_image, Gray.(prelim_icemask2 ./ 255), _landmask.dilated, tiles, false; ice_masks_params...
+        icemask = get_ice_masks(
+            ref_image, Gray.(prelim_icemask2 ./ 255), _landmask.dilated, tiles; ice_masks_params...
         )
     end
 

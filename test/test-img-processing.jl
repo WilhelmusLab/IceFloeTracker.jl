@@ -1,7 +1,8 @@
 
 @testitem "misc. image processing" begin
     using IceFloeTracker:
-        imgradientmag, to_uint8, imbinarize, adjustgamma, get_holes, impose_minima
+        imgradientmag, to_uint8, adjustgamma, get_holes, impose_minima
+    using Images
     using ZipFile
 
     r = ZipFile.Reader("test_inputs/coins.zip")
@@ -13,8 +14,9 @@
         @test sum(gmag) == 2938959
     end
 
-    @testset "imbinarize" begin
-        @test sum(imbinarize(coins)) == 51638
+    @testset "image binarization" begin
+        f = AdaptiveThreshold(coins)
+        @test sum(binarize(coins, f)) == 51638
     end
 
     @testset "adjustgamma" begin

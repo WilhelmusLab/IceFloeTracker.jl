@@ -4,10 +4,11 @@
         get_ice_labels_mask,
         get_tiles,
         kmeans_segmentation,
-        get_nlabel,
+        _get_nlabel,
         get_ice_masks,
         get_ice_peaks,
         apply_landmask
+        tiled_adaptive_binarization
 
     include("config.jl")
 
@@ -35,7 +36,7 @@
         @test sum(foo) == 0
 
         morph_residue_seglabels = kmeans_segmentation(morph_residue[tile...])
-        @test get_nlabel(ref_image_landmasked[tile...], morph_residue_seglabels) == 3
+        @test _get_nlabel(ref_image_landmasked[tile...], morph_residue_seglabels) == 3
     end
 
     begin # first relaxation
@@ -52,7 +53,7 @@
 
     begin
         morph_residue_seglabels = kmeans_segmentation(morph_residue[tile...])
-        @test get_nlabel(ref_image_landmasked[tile...], morph_residue_seglabels) == 3
+        @test _get_nlabel(ref_image_landmasked[tile...], morph_residue_seglabels) == 3
     end
 
     begin
@@ -82,12 +83,14 @@
     begin
         morph_residue_seglabels = kmeans_segmentation(morph_residue[tile...]; k=3
         )
-        @test get_nlabel(ref_image_landmasked[tile...], morph_residue_seglabels) == 1
+        @test _get_nlabel(ref_image_landmasked[tile...], morph_residue_seglabels) == 1
     end
 
-    ice_mask, binarized_tiling = get_ice_masks(ref_image, morph_residue, landmask, tiles; k=3)
+    ice_mask = get_ice_masks(ref_image, morph_residue, landmask, tiles; k=3)
+    binarized_tiling = tiled_adaptive_binarization(ref_image, tiles)
     @test sum(ice_mask) == 2669451
     # @test sum(binarized_tiling) == 2873080
-    # dmw: Dropping this for now: I'm going to remove binarized_tiling from the get_ice_masks function anyway
+    # Come back to this: the binarization has some odd issues, such as adding bright
+    # pixels into the ocean regions where it's otherwise dark.
 end
 
