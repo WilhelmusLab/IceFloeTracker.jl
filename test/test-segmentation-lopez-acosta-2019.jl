@@ -73,7 +73,7 @@
         )
         @test labeled_fraction ≈ 0.579 rtol = 0.1 broken = true
         @test 0.901 ≤ recall broken = true
-        @test 0.620 ≤ precision broken = true
+        @test 0.620 ≤ precision
         @test 0.734 ≤ F_score broken = true
     end
     @testset "Image types" begin

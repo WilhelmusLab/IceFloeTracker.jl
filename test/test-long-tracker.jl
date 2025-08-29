@@ -1,8 +1,9 @@
 
 @testitem "Utilities" begin
     using IceFloeTracker:
-        long_tracker, _imhist, condition_thresholds, mc_thresholds, get_trajectory_heads
+        long_tracker, condition_thresholds, mc_thresholds, get_trajectory_heads
     using CSV
+    using DataFrames
 
     include("config.jl")
 
@@ -76,7 +77,7 @@ end
 @testitem "Basic cases" begin
     using Random
     using DataFrames
-    using IceFloeTracker: _imhist, condition_thresholds, mc_thresholds
+    using IceFloeTracker: condition_thresholds, mc_thresholds
 
     """
     addgaps(props)
@@ -123,13 +124,9 @@ end
         )
 
         # Expected: 5 trajectories, all of which have length 3
-        IDs = trajectories[!, :ID]
-        ids, counts = _imhist(IDs, unique(IDs))
-        @test maximum(ids) == 5
-
-        ids, counts = _imhist(counts, unique(counts))
-        @test ids == [3]
-        @test counts == [5]
+        counts = combine(groupby(trajectories, [:ID]), nrow => :count)
+        @test nrow(counts) == 5
+        @test all(counts[!, :count] .== 3)
     end
 
     begin # Unmatched floe in day 1, unmatched floe in day 2, and matches for every floe starting in day 3
