@@ -64,17 +64,18 @@ jobs:
       # HOME = "../.." => "."
       - name: Update Paths in Converted Julia Scripts
         run: |
-          for script in $(find . -maxdepth 1 -name "*.jl"); do
+          for script in $(find notebooks -name "*.jl"); do
             echo "Updating paths in $script"
-            sed -i 's|\.\./\.\.|.|g' "$script" # replace HOME to .
-            sed -i '/Pkg\.activate/d' "$script" # delete lines with 'Pkg.activate'
+            sed -i 's|^HOME = .*$|HOME = "${{ github.workspace }}"|g' "$script" # replace HOME with path of repo
+            sed -i 's|Pkg.add("IceFloeTracker")|Pkg.add(;path="${{ github.workspace }}")|g' "$script" # replace IceFloeTracker installer with local path
+            cat "$script"
           done
 
       # Run converted .jl files using Julia
       - name: Run Julia Scripts
         run: |
           EXIT_CODE=0
-          for script in $(find . -maxdepth 1 -name "*.jl"); do
+          for script in $(find notebooks -name "*.jl"); do
             echo "Running Julia script: $script"
             julia --project=. "$script" || EXIT_CODE=$?
           done
