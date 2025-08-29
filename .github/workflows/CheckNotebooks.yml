@@ -36,9 +36,6 @@ jobs:
       - name: Install Python dependencies
         run: python -m pip install -U -r requirements.txt
 
-      - name: Install nbconvert
-        run: python -m pip install nbconvert
-
       - uses: julia-actions/setup-julia@v2
         with:
           version: ${{ matrix.version }}
@@ -60,7 +57,7 @@ jobs:
         run: |
           for notebook in $(find notebooks -name "*.ipynb"); do
             echo "Converting $notebook to Julia script"
-            jupyter nbconvert --to script "$notebook" --output-dir=.
+            pipx run --spec nbconvert jupyter-nbconvert --to script "$notebook"
           done
 
       # Update HOME variable in nb => .jl scripts
