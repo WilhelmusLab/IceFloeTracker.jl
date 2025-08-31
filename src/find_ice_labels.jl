@@ -21,8 +21,9 @@ function get_ice_peaks(edges, counts; possible_ice_threshold::Float64=0.30, mini
     pks = findmaxima(counts, window) |> peakproms! |> peakwidths!
     pks_df = DataFrame(pks[Not(:data)])
     pks_df = sort(pks_df, :proms, rev=true)
-    maximum(pks_df.proms) < minimum_prominence && return Inf
-    return edges[pks_df[argmax(pks_df.proms), :indices]] 
+    mx, argmx = findmax(pks_df.proms)
+    mx < minimum_prominence && return Inf
+    return edges[pks_df[argmx, :indices]] 
 end
 
 """
