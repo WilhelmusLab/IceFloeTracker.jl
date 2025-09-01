@@ -37,8 +37,7 @@ function _get_nlabel(
         ])
 
     ice_labels = binarize(falsecolor_img, f) .> 0
-    isempty(ice_labels) && return -1
-    sum(ice_labels) == 0 && return -1
+    (isempty(ice_labels) || sum(ice_labels) == 0) && return -1
     return StatsBase.mode(segmented_image_indexmap[ice_labels])
 end
 
