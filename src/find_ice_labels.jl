@@ -96,13 +96,15 @@ function (f::IceDetectionBrightnessPeaksMODIS721)(out, modis_721_image, args...;
 
     alpha_binary = alpha.(alphacolor.(modis_721_image)) .> 0.5
 
-    band_2_peak = get_ice_peaks(
-                    build_histogram(band_2 .* alpha_binary, 64; minval=0, maxval=1)... ;
-                    possible_ice_threshold=f.possible_ice_threshold)
+    get_band_peak = function(band)
+        get_ice_peaks(
+            build_histogram(band .* alpha_binary, 64; minval=0, maxval=1)... ;
+            possible_ice_threshold=f.possible_ice_threshold
+        )
+    end
 
-    band_1_peak = get_ice_peaks(
-                    build_histogram(band_1 .* alpha_binary, 64; minval=0, maxval=1)... ;
-                    possible_ice_threshold=f.possible_ice_threshold)                    
+    band_2_peak = get_band_peak(band_2)
+    band_1_peak = get_band_peak(band_1)                   
 
     mask_band_7 = band_7 .< f.band_7_max
     mask_band_2 = band_2 .> band_2_peak
@@ -175,12 +177,6 @@ function IceDetectionLopezAcosta2019(;
         ),
     ])
 end
-
-
-
-
-
-
 
 """
     find_ice_labels(falsecolor_image, landmask; band_7_threshold, band_2_threshold, band_1_threshold, band_7_relaxed_threshold, band_1_relaxed_threshold, possible_ice_threshold)
