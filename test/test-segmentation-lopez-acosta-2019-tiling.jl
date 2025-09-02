@@ -32,7 +32,7 @@
         )
         @test 0.271 ≈ labeled_fraction atol = 0.1
         @test 0.709 ≤ recall
-        @test 0.67 ≤ precision # temporarily lowered from 0.686
+        @test 0.67 ≤ precision
         @test 0.697 ≤ F_score
 
         (; labeled_fraction, recall, precision, F_score) = run_and_validate_segmentation(
