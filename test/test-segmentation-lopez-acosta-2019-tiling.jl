@@ -14,8 +14,8 @@
         )
         @test 0.426 ≈ labeled_fraction atol = 0.1
         @test 0.87 ≤ recall
-        @test 0.57 ≤ precision # temporarily lowered from 0.595
-        @test 0.69 ≤ F_score # temporarily lowered from 0.708
+        @test 0.57 ≤ precision
+        @test 0.69 ≤ F_score
 
         (; labeled_fraction, recall, precision, F_score) = run_and_validate_segmentation(
             first(data_loader(c -> (c.case_number == 14 && c.satellite == "aqua"))),
