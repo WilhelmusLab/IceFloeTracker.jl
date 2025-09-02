@@ -1,6 +1,9 @@
-@testset "Normalize Image" begin
-    println("-------------------------------------------------")
-    println("---------- Create Normalization Test ------------")
+@testitem "Normalize Image" begin
+    using IceFloeTracker: strel_diamond, @test_approx_eq_sigma_eps
+    using Images: channelview, colorview, RGB
+
+    include("config.jl")
+
     struct_elem2 = strel_diamond((5, 5)) #original matlab structuring element -  a disk-shaped kernel with radius of 2 px
     matlab_normalized_img_file = "$(test_data_dir)/matlab_normalized.png"
     matlab_sharpened_file = "$(test_data_dir)/matlab_sharpened.png"
@@ -14,8 +17,7 @@
     matlab_diffused = float64.(load(matlab_diffused_file)[test_region...])
     matlab_equalized = float64.(load(matlab_equalized_file))
 
-    println("-------------- Process Image - Diffusion ----------------")
-
+    @info "Process Image - Diffusion"
     input_landmasked = IceFloeTracker.apply_landmask(input_image, landmask_no_dilate)
 
     @time image_diffused = IceFloeTracker.diffusion(input_landmasked, 0.1, 75, 3)
@@ -34,7 +36,7 @@
         ".png"
     IceFloeTracker.@persist image_diffused diffused_image_filename
 
-    println("-------------- Process Image - Equalization ----------------")
+    @info "Process Image - Equalization"
 
     ## Equalization
     masked_view = (channelview(matlab_diffused))
@@ -52,7 +54,7 @@
         ".png"
     IceFloeTracker.@persist image_equalized equalized_image_filename
 
-    println("-------------- Process Image - Sharpening ----------------")
+    @info "Process Image - Sharpening"
 
     ## Sharpening
     @time sharpenedimg = IceFloeTracker.imsharpen(input_image, landmask_no_dilate)
@@ -68,7 +70,7 @@
         ".png"
     IceFloeTracker.@persist image_sharpened_gray sharpened_image_filename
 
-    println("-------------- Process Image - Normalization ----------------")
+    @info "Process Image - Normalization"
 
     ## Normalization
     @time normalized_image = IceFloeTracker.normalize_image(

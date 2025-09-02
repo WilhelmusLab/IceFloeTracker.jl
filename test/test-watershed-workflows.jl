@@ -1,4 +1,4 @@
-@testset "watershed workflows" begin
+@testitem "watershed workflows" begin
     function build_test_image()
         center1, center2 = -40, 40
         radius = sqrt(8 * center1^2) * 0.7
@@ -14,9 +14,8 @@
             yi in x, xi in x
         ]
     end
-    @testset "watershed" begin
-        println("------------------------------------------------")
-        println("------------ Create Watershed Test --------------")
+
+    @testset "watershed1" begin
         @test sum(IceFloeTracker.watershed1(build_test_image())) == 1088
     end
 

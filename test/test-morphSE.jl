@@ -1,6 +1,6 @@
-@testset "MorphSE test" begin
-    println("------------------------------------------------")
-    println("---------------- MorphSE Tests -----------------")
+@testitem "MorphSE test" begin
+    include("config.jl")
+
     # Dilate -- Start with a pixel in the middle and dilate in one go to fill up the full image
     n = rand(11:2:21) # choose random odd number
     mid = (n - 1) ÷ 2 + 1 # get median

@@ -1,7 +1,5 @@
-@testset "bwareamaxfilt test" begin
-    println("-------------------------------------------------")
-    println("------------ bwareamaxfilt Tests --------------")
-
+@testitem "bwareamaxfilt test" begin
+    
     # Create a bitmatrix with a big floe and two smaller floes -- 3 connected components in total.
     A = zeros(Bool, 12, 15)
     A[2:6, 2:6] .= 1

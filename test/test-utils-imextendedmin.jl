@@ -1,6 +1,7 @@
-@testset "imextendedmin and bwdist" begin
-    println("-------------------------------------------------")
-    println("------- imextendedmin bwdist Tests --------------")
+@testitem "imextendedmin and bwdist" begin
+    using DelimitedFiles
+
+    include("config.jl")
 
     test_matrix = "$(test_data_dir)/test_extendedmin.csv"
     test_image = DelimitedFiles.readdlm(test_matrix, ',', Bool)

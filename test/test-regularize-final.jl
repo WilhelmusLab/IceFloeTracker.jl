@@ -1,33 +1,36 @@
-using IceFloeTracker:
-    get_tiles,
-    regularize_fill_holes,
-    regularize_sharpening,
-    _regularize,
-    se_disk2,
-    get_final
-using DelimitedFiles: readdlm
 
-se = collect(IceFloeTracker.strel_diamond((3, 3)))
+@testitem "regularize/get_final" begin
+    using IceFloeTracker:
+        get_tiles,
+        regularize_fill_holes,
+        regularize_sharpening,
+        _regularize,
+        se_disk2,
+        get_final
+    using DelimitedFiles: readdlm
 
-test_files_dir = joinpath(@__DIR__, "test_inputs/regularize")
+    se = collect(IceFloeTracker.strel_diamond((3, 3)))
 
-morph_residue = readdlm(joinpath(test_files_dir, "morph_residue.csv"), ',', Int)
-local_maxima_mask = readdlm(joinpath(test_files_dir, "local_maxima_mask.csv"), ',', Int)
-segment_mask = readdlm(joinpath(test_files_dir, "segment_mask.csv"), ',', Bool)
-L0mask = readdlm(joinpath(test_files_dir, "L0mask.csv"), ',', Bool)
-expected_regularized_holes_filled = readdlm(
-    joinpath(test_files_dir, "reg_holes_filled_expected.csv"), ',', Int
-)
-expected_regularized_sharpened = readdlm(
-    joinpath(test_files_dir, "reg_sharpened.csv"), ',', Int
-)
+    test_files_dir = joinpath(@__DIR__, "test_inputs/regularize")
 
-get_final_input = readdlm(joinpath(test_files_dir, "get_final.csv"), ',', Bool)
-se_erosion = se
-se_dilation = se_disk2()
-get_final_expected = readdlm(joinpath(test_files_dir, "get_final_expected.csv"), ',', Bool)
+    morph_residue = readdlm(joinpath(test_files_dir, "morph_residue.csv"), ',', Int)
+    local_maxima_mask = readdlm(joinpath(test_files_dir, "local_maxima_mask.csv"), ',', Int)
+    segment_mask = readdlm(joinpath(test_files_dir, "segment_mask.csv"), ',', Bool)
+    L0mask = readdlm(joinpath(test_files_dir, "L0mask.csv"), ',', Bool)
+    expected_regularized_holes_filled = readdlm(
+        joinpath(test_files_dir, "reg_holes_filled_expected.csv"), ',', Int
+    )
+    expected_regularized_sharpened = readdlm(
+        joinpath(test_files_dir, "reg_sharpened.csv"), ',', Int
+    )
 
-@testset "regularize/get_final" begin
+    get_final_input = readdlm(joinpath(test_files_dir, "get_final.csv"), ',', Bool)
+    se_erosion = se
+    se_dilation = se_disk2()
+    get_final_expected = readdlm(
+        joinpath(test_files_dir, "get_final_expected.csv"), ',', Bool
+    )
+
     @testset "regularize_fill_holes/sharpening" begin
         reg_holes_filled = regularize_fill_holes(
             morph_residue, local_maxima_mask, segment_mask, L0mask, 0.3
