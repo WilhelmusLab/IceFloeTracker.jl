@@ -111,9 +111,7 @@ function (f::PeronaMalikDiffusion)(img::AbstractArray{<:Union{AbstractRGB,Transp
     # TBD
 end
 
-# TBD: set up test that the diffusion function produces the same result as before with the inverse_quadratic function.
-
-# Replace this with a function that broadcasts to each image channel
+# We can replace this with a loop through the channel view, as done for the function above
 function anisotropic_diffusion_3D(I)
     rgbchannels = get_rgb_channels(I)
 
@@ -134,6 +132,7 @@ function anisotropic_diffusion_2D(
     end
 
     # Determine the gradient threshold if not provided
+    # dmw: this is more of a scaling factor than a threshold is it not?
     if gradient_threshold === nothing
         dynamic_range = maximum(I) - minimum(I)
         gradient_threshold = 0.1 * dynamic_range
@@ -177,6 +176,8 @@ function anisotropic_diffusion_2D(
 
         # Discrete PDE solution
         sum_ = (1 / (dd^2)) .* (flux_nw .+ flux_ne .+ flux_sw .+ flux_se)
+
+        # Carlos - is this a typo? Shouldn't it be north minus east here? Or east minus north?
         I = I .+ diffusion_rate .* (flux_north_diff .- flux_north_diff .+ sum_)
     end
 
