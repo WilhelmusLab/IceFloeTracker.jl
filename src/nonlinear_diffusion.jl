@@ -22,10 +22,10 @@ using Images # I think this can be taken out, I have it here for the RGB types
 abstract type AbstractDiffusionAlgorithm end
 
 @kwdef struct PeronaMalikDiffusion <: AbstractDiffusionAlgorithm
-    λ::Float64
-    K::Int
-    niters::Int
-    g::String
+    λ::Float64 = 0.1
+    K::Int = 75
+    niters::Int = 3
+    g::String = "inverse_quadratic"
     
     # enforce conditions
     function PeronaMalikDiffusion(λ, K, niters, g
@@ -38,7 +38,7 @@ abstract type AbstractDiffusionAlgorithm end
     end
 end
 
-# Default to using Perona Malik diffusion, future releases may include more modern algorithms.
+# Default to using Perona Malik diffusion. Future releases may include more modern algorithms.
 function nonlinear_diffusion(
     img::AbstractArray{<:Union{AbstractRGB,TransparentRGB, AbstractGray}},
     f::AbstractDiffusionAlgorithm=PeronaMalikDiffusion()
@@ -46,10 +46,8 @@ function nonlinear_diffusion(
     return f(img)
 end
 
-
 function (f::PeronaMalikDiffusion)(img::AbstractArray{<:AbstractGray})
-    
-    # future option: allow user to supply function for g
+    # Future option: Allow user to supply a monotonic function for g
     g(norm∇I, k) = 
         if f.g_option == "exponential"
             exp(-(norm∇I / k)^2)
@@ -58,7 +56,7 @@ function (f::PeronaMalikDiffusion)(img::AbstractArray{<:AbstractGray})
         end
 
     
-    # future option: implement with 8-connectivity
+    # Future option: Implement updater using 8-connectivity instead of 4-connectivity
     function pmd_updater!(image, output, g, λ, k)
         M, N = size(image)
         padded_array = padarray(image, Pad(:replicate, 1, 1))
@@ -77,23 +75,33 @@ function (f::PeronaMalikDiffusion)(img::AbstractArray{<:AbstractGray})
         output .= image +  λ .* (Cn .* ∇n + Cs .* ∇s + Ce .* ∇e + Cw .* ∇w)
     end
     
+    # Since we are doing math on the image, we need to reinterpret as float
     _img = float64.(img)
     _out = deepcopy(_img)
+
     for _ in 1:f.niters
-        # future option: estimate k from the data, as in P-M paper
+        # Future option: estimate k from the data, as in P-M paper
         pmd_updater!(_img, _out, g, f.λ, f.k)
         _img, _out = _out, _img
     end
 
+    # Map the diffused image back to the original base color type
     recast_img_type = base_color_type(eltype(_out)){eltype(eltype(img))}
     return recast_img_type.(_out)
 end
 
 function (f::PeronaMalikDiffusion)(img::AbstractArray{<:Union{AbstractRGB,TransparentRGB}})
+    # TBD: loop through colorview applying the diffusion function
+    cv = channelview(img)
+    for i in 1:3
+        cv[i,:,:] .= Float64.(f(Gray.(cv[i,:,:])))
+    end
 
-
+    return colorview(eltype(img), cv)
     # TBD
 end
+
+# TBD: set up test that the diffusion function produces the same result as before with the inverse_quadratic function.
 
 # Replace this with a function that broadcasts to each image channel
 function anisotropic_diffusion_3D(I)

@@ -16,76 +16,7 @@ function to_uint8(num::T) where {T<:Union{AbstractFloat,Int,Signed}}
 end
 
 # dmw: use multiple dispatch, so that if the 2d function is called 
-# with a 3D image we do this automatically
-function anisotropic_diffusion_3D(I)
-    rgbchannels = get_rgb_channels(I)
-
-    for i in 1:3
-        rgbchannels[:, :, i] .= anisotropic_diffusion_2D(rgbchannels[:, :, i])
-    end
-
-    return rgbchannels
-end
-
-# dmw: Move this to the image diffusion file
-function anisotropic_diffusion_2D(
-    # Implementation of the matlab 2D anisotropic diffusion filter default mode
-    # by Carlos Paniagua
-    I::AbstractMatrix{T}; gradient_threshold::Union{T,Nothing}=nothing, niter::Int=1
-) where {T}
-    if eltype(I) <: Int
-        I = Gray.(I ./ 255)
-    end
-
-    # Determine the gradient threshold if not provided
-    if gradient_threshold === nothing
-        dynamic_range = maximum(I) - minimum(I)
-        gradient_threshold = 0.1 * dynamic_range
-    end
-
-    # Padding the image (corrected)
-    padded_img = padarray(I, Pad(:replicate, (1, 1)))
-    dd = sqrt(2)
-    diffusion_rate = 1 / 8  # Fixed for maximal connectivity (8 neighbors)
-
-    for _ in 1:niter
-        # These are zero-indexed offset arrays
-        diff_img_north =
-            padded_img[0:(end - 1), 1:(end - 1)] .- padded_img[1:end, 1:(end - 1)]
-        diff_img_east =
-            padded_img[1:(end - 1), 1:end] .- padded_img[1:(end - 1), 0:(end - 1)]
-        diff_img_nw = padded_img[0:(end - 2), 0:(end - 2)] .- I
-        diff_img_ne = padded_img[0:(end - 2), 2:end] .- I
-        diff_img_sw = padded_img[2:end, 0:(end - 2)] .- I
-        diff_img_se = padded_img[2:end, 2:end] .- I
-
-        # Exponential conduction coefficients
-        conduct_coeff_north = exp.(-(abs.(diff_img_north) ./ gradient_threshold) .^ 2)
-        conduct_coeff_east = exp.(-(abs.(diff_img_east) ./ gradient_threshold) .^ 2)
-        conduct_coeff_nw = exp.(-(abs.(diff_img_nw) ./ gradient_threshold) .^ 2)
-        conduct_coeff_ne = exp.(-(abs.(diff_img_ne) ./ gradient_threshold) .^ 2)
-        conduct_coeff_sw = exp.(-(abs.(diff_img_sw) ./ gradient_threshold) .^ 2)
-        conduct_coeff_se = exp.(-(abs.(diff_img_se) ./ gradient_threshold) .^ 2)
-
-        # Flux calculations
-        flux_north = conduct_coeff_north .* diff_img_north
-        flux_east = conduct_coeff_east .* diff_img_east
-        flux_nw = conduct_coeff_nw .* diff_img_nw
-        flux_ne = conduct_coeff_ne .* diff_img_ne
-        flux_sw = conduct_coeff_sw .* diff_img_sw
-        flux_se = conduct_coeff_se .* diff_img_se
-
-        # Back to regular 1-indexed arrays
-        flux_north_diff = flux_north[1:(end - 1), :] .- flux_north[2:end, :]
-        flux_east_diff = flux_east[:, 2:end] .- flux_east[:, 1:(end - 1)]
-
-        # Discrete PDE solution
-        sum_ = (1 / (dd^2)) .* (flux_nw .+ flux_ne .+ flux_sw .+ flux_se)
-        I = I .+ diffusion_rate .* (flux_north_diff .- flux_north_diff .+ sum_)
-    end
-
-    return I
-end
+# wi
 
 # dmw: This function doesn't belong here
 function imshow(img)
