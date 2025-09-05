@@ -5,11 +5,11 @@ We include two implementations of the Perona and Malik algorithm: one adapted fr
 other a reimplementation of approach used in the default Matlab image processing toolbox.
 Since the algorithm is not truly anisotropic, we refer to it instead as nonlinear diffusion.
 
-PeronaMalikDiffusion(λ, K, niters, g_option)
+PeronaMalikDiffusion(λ, K, niters, g)
     λ = Parameter weighting the diffusion rate, needs to be between 0 and 0.25 for stability.
     K = Numerator for the image gradient function. (TBD: Option to estimate from image gradient histogram)
     niters = Number of interations
-    g_option = "exponential", "inverse_quadratic" (TBD: Option to provide user-defined function)
+    g = "exponential", "inverse_quadratic" (TBD: Option to provide user-defined function)
 
 
 P. Perona and J. Malik (November 1987). "Scale-space and edge detection using anisotropic diffusion". Proceedings of IEEE Computer Society Workshop on Computer Vision. pp. 16–22.
@@ -46,12 +46,22 @@ function nonlinear_diffusion(
     return f(img)
 end
 
+function nonlinear_diffusion(
+    img::AbstractArray{<:Union{AbstractRGB,TransparentRGB, AbstractGray}},
+    λ::Float64,
+    K::Int,
+    niters::Int
+    )
+    return nonlinear_diffusion(img, PeronaMalikDiffusion(λ, K, niters, "inverse_quadratic"))
+end
+
+
 function (f::PeronaMalikDiffusion)(img::AbstractArray{<:AbstractGray})
     # Future option: Allow user to supply a monotonic function for g
     g(norm∇I, k) = 
-        if f.g_option == "exponential"
+        if f.g == "exponential"
             exp(-(norm∇I / k)^2)
-        elseif f.g_option == "inverse_quadratic"
+        elseif f.g == "inverse_quadratic"
             1 / (1 + (norm∇I / k)^2)
         end
 
@@ -81,7 +91,7 @@ function (f::PeronaMalikDiffusion)(img::AbstractArray{<:AbstractGray})
 
     for _ in 1:f.niters
         # Future option: estimate k from the data, as in P-M paper
-        pmd_updater!(_img, _out, g, f.λ, f.k)
+        pmd_updater!(_img, _out, g, f.λ, f.K)
         _img, _out = _out, _img
     end
 
