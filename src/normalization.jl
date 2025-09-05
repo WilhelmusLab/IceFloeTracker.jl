@@ -93,7 +93,7 @@ function imsharpen(
 )::Matrix{Float64}
     input_image = IceFloeTracker.apply_landmask(truecolor_image, landmask_no_dilate)
 
-    input_image .= IceFloeTracker.diffusion(input_image, lambda, kappa, niters)
+    input_image .= IceFloeTracker.nonlinear_diffusion(input_image, lambda, kappa, niters)
 
     masked_view = Float64.(channelview(input_image))
 
