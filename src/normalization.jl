@@ -110,25 +110,43 @@ function imsharpen(
 end
 
 """
-    unsharp_mask(image_gray, smoothing_param, intensity, clampmax)
+    unsharp_mask(img, radius, amount, threshold)
 
-Apply unsharp masking on (equalized) grayscale ([0, `clampmax`]) image to enhance its sharpness.
+    Enhance image sharpness by weighted differencing of the image and a Gaussian blurred image.
+    If $B$ is the blurred version of image $I$, then an unsharp mask sharpened image is obtained by
+    $$ S = I + (I - B)*A $$
+    The amount of sharpening is determined by the factor A. An option threshold can be supplied such
+    that the sharpening is only applied where $I - B$ is greater than some factor.
 
-# Arguments
-- `image_gray`: The input grayscale image, typically already equalized.
-- `smoothing_param::Int`: The pixel radius for Gaussian blurring (typically between 1 and 10).
-- `intensity`: The amount of sharpening to apply. Higher values result in more pronounced sharpening.
-- `clampmax`: upper limit of intensity values in the returned image.`
-# Returns
-The sharpened grayscale image with values clipped between 0 and `clapmax`.
+    # Arguments
+    img: input image
+    radius: standard deviation of the Gaussian blur
+    amount: multiplicative factor
+    threshold: (optional) minimum difference for applying the sharpening
+
+    # Returns
+    Sharpened image
 """
-function unsharp_mask(image_gray, smoothing_param, intensity, clampmax)
-    image_smoothed = imfilter(image_gray, Kernel.gaussian(smoothing_param))
-    clamp!(image_smoothed, 0.0, clampmax)
-    image_sharpened = image_gray * (1 + intensity) .- image_smoothed * intensity
-    clamp!(image_sharpened, 0.0, clampmax)
-    return round.(Int, image_sharpened)
+function unsharp_mask(
+    img::AbstractArray{<:Union{AbstractRGB,TransparentRGB, AbstractGray}},
+    radius::Real=3,
+    amount::Real=0.5,
+    threshold::Real=0.01)
+
+    
+    image = float64.(img)
+    image_smoothed = imfilter(I, Kernel.gaussian(radius))
+    diff = image .- image_smoothed
+    image_sharpened = image .+ diff .* amount
+    image_sharpened[diff .< threshold] .= image
+
+    clamp!(image_sharpened, 0, 1)
+
+    recast_img_type = base_color_type(eltype(image_sharpened)){eltype(eltype(img))}
+    return recast_img_type.(image_sharpened)
+
 end
+
 
 # For old workflow in final2020.m
 """
@@ -146,6 +164,7 @@ Does not perform clamping after the smoothing step. Kept for legacy tests of Ice
 # Returns
 The sharpened grayscale image with values clipped between 0 and `clapmax`.
 """
+# TODO: with a few tweaks, this functionality is covered by the updated unsharp mask function
 function unsharp_mask(image_gray, smoothing_param, intensity)
     image_smoothed = imfilter(image_gray, Kernel.gaussian(smoothing_param))
     image_sharpened = image_gray * (1 + intensity) .- image_smoothed * intensity
