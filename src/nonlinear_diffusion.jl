@@ -175,7 +175,6 @@ function anisotropic_diffusion_2D(
         # Discrete PDE solution
         sum_ = @. (1 / (dd^2)) * (flux_nw + flux_ne + flux_sw + flux_se)
 
-        # Carlos - is this a typo? Shouldn't it be north minus east here? Or east minus north?
         I = @. I + diffusion_rate * (flux_north_diff + flux_east_diff + sum_)
     end
 
