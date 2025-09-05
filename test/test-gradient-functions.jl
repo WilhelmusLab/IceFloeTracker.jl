@@ -1,5 +1,4 @@
 using Test
-using TestItems
 
 # Import the gradient functions
 include("../src/gradient_functions.jl")
