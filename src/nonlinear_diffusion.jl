@@ -18,7 +18,7 @@ G. Grieg, O. Kubler, R. Kikinis, and F. A. Jolesz, Nonlinear Anisotropic Filteri
 
 """
 
-using Images # I think this can be taken out, I have it here for the RGB types
+include("gradient_functions.jl")
 abstract type AbstractDiffusionAlgorithm end
 
 @kwdef struct PeronaMalikDiffusion <: AbstractDiffusionAlgorithm
@@ -26,70 +26,66 @@ abstract type AbstractDiffusionAlgorithm end
     K::Int = 75
     niters::Int = 3
     g::String = "inverse_quadratic"
-    
+
     # enforce conditions
-    function PeronaMalikDiffusion(λ, K, niters, g
-    )
+    function PeronaMalikDiffusion(λ, K, niters, g)
         !(0 < λ <= 0.25) && throw(ArgumentError("Lambda must be between zero and 0.25"))
         K <= 0 && throw(ArgumentError("K must be greater than zero"))
-        niters <= 0 && throw(ArgumentError("Number of iterations must be greater than zero"))
-        g ∉ ["exponential", "inverse_quadratic"] && throw(ArgumentError("Unknown function name"))
+        niters <= 0 &&
+            throw(ArgumentError("Number of iterations must be greater than zero"))
+        g ∉ SUPPORTED_GRADIENT_FUNCTIONS && throw(
+            ArgumentError(
+                "Unknown function name. Supported functions: $SUPPORTED_GRADIENT_FUNCTIONS",
+            ),
+        )
         return new(λ, K, niters, g)
     end
 end
 
 # Default to using Perona Malik diffusion. Future releases may include more modern algorithms.
 function nonlinear_diffusion(
-    img::AbstractArray{<:Union{AbstractRGB,TransparentRGB, AbstractGray}},
-    f::AbstractDiffusionAlgorithm=PeronaMalikDiffusion()
-    )
+    img::AbstractArray{<:Union{AbstractRGB,TransparentRGB,AbstractGray}},
+    f::AbstractDiffusionAlgorithm=PeronaMalikDiffusion(),
+)
     return f(img)
 end
 
 function nonlinear_diffusion(
-    img::AbstractArray{<:Union{AbstractRGB,TransparentRGB, AbstractGray}},
+    img::AbstractArray{<:Union{AbstractRGB,TransparentRGB,AbstractGray}},
     λ::Float64,
     K::Int,
-    niters::Int
-    )
+    niters::Int,
+)
     return nonlinear_diffusion(img, PeronaMalikDiffusion(λ, K, niters, "inverse_quadratic"))
 end
 
-
 function (f::PeronaMalikDiffusion)(img::AbstractArray{<:AbstractGray})
-    # Future option: Allow user to supply a monotonic function for g
-    g(norm∇I, k) = 
-        if f.g == "exponential"
-            exp(-(norm∇I / k)^2)
-        elseif f.g == "inverse_quadratic"
-            1 / (1 + (norm∇I / k)^2)
-        end
+    # Get the gradient function from the supported functions
+    g = SUPPORTED_GRADIENT_FUNCTIONS[f.g]
 
-    
     # Future option: Implement updater using 8-connectivity instead of 4-connectivity
     function pmd_updater!(image, output, g, λ, k)
         M, N = size(image)
         padded_array = padarray(image, Pad(:replicate, 1, 1))
 
-        ∇n = padded_array[1:M, 0:N-1] .- image
-        ∇s = padded_array[1:M, 2:N+1] .- image
-        ∇e = padded_array[2:M+1, 1:N] .- image
-        ∇w = padded_array[0:M-1, 1:N] .- image
-        
+        ∇n = padded_array[1:M, 0:(N - 1)] .- image
+        ∇s = padded_array[1:M, 2:(N + 1)] .- image
+        ∇e = padded_array[2:(M + 1), 1:N] .- image
+        ∇w = padded_array[0:(M - 1), 1:N] .- image
 
         Cn = g.(abs.(∇n), k)
         Cs = g.(abs.(∇s), k)
         Ce = g.(abs.(∇e), k)
         Cw = g.(abs.(∇w), k)
 
-        output .= image +  λ .* (Cn .* ∇n + Cs .* ∇s + Ce .* ∇e + Cw .* ∇w)
+        return output .= image + λ .* (Cn .* ∇n + Cs .* ∇s + Ce .* ∇e + Cw .* ∇w)
     end
-    
+
     # Since we are doing math on the image, we need to reinterpret as float
     _img = float64.(img)
     _out = deepcopy(_img)
 
-    for _ in 1:f.niters
+    for _ in 1:(f.niters)
         # Future option: estimate k from the data, as in P-M paper
         pmd_updater!(_img, _out, g, f.λ, f.K)
         _img, _out = _out, _img
@@ -104,7 +100,7 @@ function (f::PeronaMalikDiffusion)(img::AbstractArray{<:Union{AbstractRGB,Transp
     # TBD: loop through colorview applying the diffusion function
     cv = channelview(img)
     for i in 1:3
-        cv[i,:,:] .= Float64.(f(Gray.(cv[i,:,:])))
+        cv[i, :, :] .= Float64.(f(Gray.(cv[i, :, :])))
     end
 
     return colorview(eltype(img), cv)
@@ -125,7 +121,9 @@ end
 function anisotropic_diffusion_2D(
     # Implementation of the matlab 2D anisotropic diffusion filter default mode
     # by Carlos Paniagua
-    I::AbstractMatrix{T}; gradient_threshold::Union{T,Nothing}=nothing, niter::Int=1
+    I::AbstractMatrix{T};
+    gradient_threshold::Union{T,Nothing}=nothing,
+    niter::Int=1,
 ) where {T}
     if eltype(I) <: Int
         I = Gray.(I ./ 255)
@@ -175,10 +173,10 @@ function anisotropic_diffusion_2D(
         flux_east_diff = flux_east[:, 2:end] .- flux_east[:, 1:(end - 1)]
 
         # Discrete PDE solution
-        sum_ = (1 / (dd^2)) .* (flux_nw .+ flux_ne .+ flux_sw .+ flux_se)
+        sum_ = @. (1 / (dd^2)) * (flux_nw + flux_ne + flux_sw + flux_se)
 
         # Carlos - is this a typo? Shouldn't it be north minus east here? Or east minus north?
-        I = I .+ diffusion_rate .* (flux_north_diff .- flux_north_diff .+ sum_)
+        I = @. I + diffusion_rate * (flux_north_diff + flux_east_diff + sum_)
     end
 
     return I
