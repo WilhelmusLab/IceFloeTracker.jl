@@ -113,10 +113,10 @@ end
     unsharp_mask(img, radius, amount, threshold)
 
     Enhance image sharpness by weighted differencing of the image and a Gaussian blurred image.
-    If $B$ is the blurred version of image $I$, then an unsharp mask sharpened image is obtained by
-    $$ S = I + (I - B)*A $$
+    If ``B`` is the blurred version of image ``I``, then an unsharp mask sharpened image is obtained by
+    ``S = I + (I - B)*A``
     The amount of sharpening is determined by the factor A. An option threshold can be supplied such
-    that the sharpening is only applied where $I - B$ is greater than some factor.
+    that the sharpening is only applied where ``I - B`` is greater than some factor.
 
     # Arguments
     img: input image
