@@ -15,8 +15,9 @@
 		}
 	},
 	"postCreateCommand": {
+ 		"setup-git-hooks": "git config core.hooksPath ./hooks",
 		"setup-PyCall": "julia --project=.devcontainer/PyCallSetup.jl .devcontainer/PyCallSetup.jl/setup.jl",
-		"setup-git-hooks": "git config core.hooksPath ./hooks"
+		"setup-TestEnv": "julia -e 'using Pkg; Pkg.add(\"TestEnv\")'" // Add TestEnv globally to use in PostStart
 	},
-	"postStartCommand": "julia --project=. -e 'using Pkg; Pkg.test()'"
+	"postStartCommand": "julia --project=. -e 'using TestEnv; TestEnv.activate(); include(\"test/runtests-smoke.jl\")'"
 }
