@@ -46,7 +46,7 @@ structuring_elements = (
     se_disk1=collect(strel_diamond((3, 3))), se_disk2=se_disk2(), se_disk4=se_disk4()
 )
 
-unsharp_mask_params = (radius=10, amount=2.0, factor=255.0)
+unsharp_mask_params = (radius=10, amount=2.0, threshold=0.0)
 
 brighten_factor = 0.1
 
