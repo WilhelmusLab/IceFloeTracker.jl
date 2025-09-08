@@ -21,7 +21,7 @@ end
 
 @testitem "gradient function – inverse_quadratic" begin
     using IceFloeTracker: inverse_quadratic
-    
+
     # Test basic functionality
     @test inverse_quadratic(0, 1) ≈ 1.0
     @test inverse_quadratic(1, 1) ≈ 0.5
