@@ -135,7 +135,7 @@ function unsharp_mask(
 
     
     image = float64.(img)
-    image_smoothed = imfilter(I, Kernel.gaussian(radius))
+    image_smoothed = imfilter(image, Kernel.gaussian(radius))
     diff = image .- image_smoothed
     image_sharpened = image .+ diff .* amount
     image_sharpened[diff .< threshold] .= image
