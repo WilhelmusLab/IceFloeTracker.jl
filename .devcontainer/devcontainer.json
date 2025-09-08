@@ -1,20 +1,22 @@
-// See https://github.com/julia-vscode/julia-devcontainer/blob/master/Dockerfile for image contents
 {
-	"name": "Julia (Community)",
-	"image": "ghcr.io/julia-vscode/julia-devcontainer",
-
-	// Configure tool-specific properties.
+	"name": "IceFloeTracker.jl (Debian)",
+	"build": {
+		"dockerfile": "Dockerfile"
+	},
+	"features": {},
 	"customizations": {
-		// Configure properties specific to VS Code.
 		"vscode": {
-			// Add the IDs of extensions you want installed when the container is created.
 			"extensions": [
-				"julialang.language-julia"
+				"GitHub.vscode-github-actions",
+				"ms-azuretools.vscode-containers",
+				"julialang.language-julia",
+				"tamasfe.even-better-toml"
 			]
 		}
 	},
-
-	"postCreateCommand": "/julia-devcontainer-scripts/postcreate.jl",
-
-	"remoteUser": "vscode"
+	"postCreateCommand": {
+		"setup-PyCall": "julia --project=.devcontainer/PyCallSetup.jl .devcontainer/PyCallSetup.jl/setup.jl",
+		"setup-git-hooks": "git config core.hooksPath ./hooks"
+	},
+	"postStartCommand": "julia --project=. -e 'using Pkg; Pkg.test()'"
 }
