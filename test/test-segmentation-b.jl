@@ -1,7 +1,9 @@
-@testset "Segmentation-B" begin
-    println("------------------------------------------------")
-    println("------------ Create Segmentation-B Test --------------")
-
+@testitem "Segmentation-B" begin
+    using IceFloeTracker: @test_approx_eq_sigma_eps
+    
+    include("config.jl")
+    include("test_error_rate.jl")
+    
     sharpened_image = float64.(load(sharpened_test_image_file))
     segmented_a_ice_mask = convert(BitMatrix, load(segmented_a_ice_mask_file))
     cloudmask = convert(BitMatrix, load(cloudmask_test_file))

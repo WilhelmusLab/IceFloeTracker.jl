@@ -1,6 +1,6 @@
-@testset "Segmentation-Watershed" begin
-    println("------------------------------------------------")
-    println("------------ Create Segmentation-Watershed Test --------------")
+@testitem "Segmentation-Watershed" begin
+    include("config.jl")
+    include("test_error_rate.jl")
 
     matlab_not_ice = load("$(test_data_dir)/matlab_not_ice_mask.png")
     matlab_not_ice_bit = matlab_not_ice .> 0.499

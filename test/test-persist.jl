@@ -1,7 +1,4 @@
-@testset "persist.jl" begin
-    println("-------------------------------------------------")
-    println("---------- Persist Image Tests ------------")
-
+@testitem "Persist image" begin
     outimage_path = "outimage1.tiff"
     img = ones(3, 3)
 

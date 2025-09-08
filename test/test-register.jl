@@ -1,44 +1,43 @@
-using Dates
-using LinearAlgebra: dot, det, norm
-using IceFloeTracker: register, imrotate_bin_counterclockwise_radians
 
-unit_vector(θ) = [cos(θ); sin(θ)]
-oriented_angle_between_vectors(u, v) = atan(det(hcat(u, v)), dot(u, v))
-oriented_angle_between_angles(θ1, θ2) =
-    oriented_angle_between_vectors(unit_vector(θ1), unit_vector(θ2))
+@testitem "registration" begin
+    using Dates
+    using LinearAlgebra: dot, det, norm
+    using IceFloeTracker: register, imrotate_bin_counterclockwise_radians
 
-function test_mask_dictionary(
-    masks;
-    precision_goal_degrees::Float64=10.0,
-    target_fraction_ok::Float64=0.99, # TODO: Ideally this would be 1.0
-    angle_aliases=[0.0],
-)
-    results = []
-    for (θ1, mask1) in masks, (θ2, mask2) in masks
-        Δθ = oriented_angle_between_angles(deg2rad(θ1), deg2rad(θ2))
-        Δθ_measured = register(
-            mask1,
-            mask2;
-            imrotate_function=imrotate_bin_counterclockwise_radians
-        )
-        absolute_error_wrt_all_aliased_angles = [
-            abs(oriented_angle_between_angles(Δθ + offset, Δθ_measured)) for
-            offset in angle_aliases
-        ]
-        minimum_absolute_error = minimum(absolute_error_wrt_all_aliased_angles)
-        ok = minimum_absolute_error < deg2rad(precision_goal_degrees)
-        push!(results, (; θ1, θ2, Δθ, Δθ_measured, minimum_absolute_error, ok))
+    unit_vector(θ) = [cos(θ); sin(θ)]
+    oriented_angle_between_vectors(u, v) = atan(det(hcat(u, v)), dot(u, v))
+    function oriented_angle_between_angles(θ1, θ2)
+        return oriented_angle_between_vectors(unit_vector(θ1), unit_vector(θ2))
     end
-    df = DataFrame(results)
-    @info sort(df)
-    fraction_ok = sum(df[:, :ok]) / length(df[:, :ok])
-    @info "fraction_ok $fraction_ok >= $target_fraction_ok?"
-    @test target_fraction_ok <= fraction_ok
-end
 
-@testset "registration" begin
+    function test_mask_dictionary(
+        masks;
+        precision_goal_degrees::Float64=10.0,
+        target_fraction_ok::Float64=0.99, # TODO: Ideally this would be 1.0
+        angle_aliases=[0.0],
+    )
+        results = []
+        for (θ1, mask1) in masks, (θ2, mask2) in masks
+            Δθ = oriented_angle_between_angles(deg2rad(θ1), deg2rad(θ2))
+            Δθ_measured = register(
+                mask1, mask2; imrotate_function=imrotate_bin_counterclockwise_radians
+            )
+            absolute_error_wrt_all_aliased_angles = [
+                abs(oriented_angle_between_angles(Δθ + offset, Δθ_measured)) for
+                offset in angle_aliases
+            ]
+            minimum_absolute_error = minimum(absolute_error_wrt_all_aliased_angles)
+            ok = minimum_absolute_error < deg2rad(precision_goal_degrees)
+            push!(results, (; θ1, θ2, Δθ, Δθ_measured, minimum_absolute_error, ok))
+        end
+        df = DataFrame(results)
+        @info sort(df)
+        fraction_ok = sum(df[:, :ok]) / length(df[:, :ok])
+        @info "fraction_ok $fraction_ok >= $target_fraction_ok?"
+        @test target_fraction_ok <= fraction_ok
+    end
+
     @testset "individual registration" begin
-
         @testset "rectangles" begin
             masks = Dict(
                 90 => Bool[
@@ -352,7 +351,7 @@ end
                 masks;
                 angle_aliases=[0.0, π],
                 target_fraction_ok=0.90,
-                precision_goal_degrees=10.0
+                precision_goal_degrees=10.0,
             )
         end
         @testset "joined rectangles" begin
@@ -737,9 +736,7 @@ end
                 ],
             )
             test_mask_dictionary(
-                masks;
-                target_fraction_ok=0.975,
-                precision_goal_degrees=10.0
+                masks; target_fraction_ok=0.975, precision_goal_degrees=10.0
             )
         end
         @testset "unambiguous joined rectangles" begin
@@ -1196,9 +1193,7 @@ end
                 ],
             )
             test_mask_dictionary(
-                masks;
-                target_fraction_ok=0.99,
-                precision_goal_degrees=10.0
+                masks; target_fraction_ok=0.99, precision_goal_degrees=10.0
             )
         end
         @testset "larger images" begin
@@ -2054,45 +2049,41 @@ end
                     0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
                 ],
             )
-            test_mask_dictionary(
-                masks;
-                target_fraction_ok=0.98,
-                precision_goal_degrees=5.0
-            )
+            test_mask_dictionary(masks; target_fraction_ok=0.98, precision_goal_degrees=5.0)
         end
     end
-end
 
-@ntestset "registration mismatch tests" begin
-    # Read in floe from file
-    floe = readdlm("./test_inputs/floetorotate.csv", ',', Bool)
+    @testset "registration mismatch tests" begin
+        # Read in floe from file
+        floe = readdlm("./test_inputs/floetorotate.csv", ',', Bool)
 
-    # Define rotation angle
-    rot_angle = 15 # degrees
+        # Define rotation angle
+        rot_angle = 15 # degrees
 
-    # Rotate floe
-    rotated_floe = imrotate(floe, deg2rad(rot_angle))
-    @ntestset "defaults" begin
+        # Rotate floe
+        rotated_floe = imrotate(floe, deg2rad(rot_angle))
+        @testset "defaults" begin
 
-        # Estimate rigid transformation and mismatch
-        mm, rot = IceFloeTracker.mismatch(floe, rotated_floe)
+            # Estimate rigid transformation and mismatch
+            mm, rot = IceFloeTracker.mismatch(floe, rotated_floe)
 
-        # Test 1: mismatch accuracy
-        @test mm < 0.0055
+            # Test 1: mismatch accuracy
+            @test mm < 0.0055
 
-        # Test 2: angle estimate
-        @test abs(rot - rot_angle) < 0.5
-    end
+            # Test 2: angle estimate
+            @test abs(rot - rot_angle) < 0.5
+        end
 
-    @ntestset "test_angles" begin
-        test_angles = [0, 5, -5, 10, -10, 15, -15, 20, -20, 25, -25]
-        mm, rot = IceFloeTracker.mismatch(floe, rotated_floe, test_angles)
-        @test mm < 0.0055
-        @test abs(rot - rot_angle) < 0.5
-    end
-    @ntestset "mxrot, step" begin
-        mm, rot = IceFloeTracker.mismatch(floe, rotated_floe, 25, 5)
-        @test mm < 0.0055
-        @test abs(rot - rot_angle) < 0.5
+        @testset "test_angles" begin
+            test_angles = [0, 5, -5, 10, -10, 15, -15, 20, -20, 25, -25]
+            mm, rot = IceFloeTracker.mismatch(floe, rotated_floe, test_angles)
+            @test mm < 0.0055
+            @test abs(rot - rot_angle) < 0.5
+        end
+        @testset "mxrot, step" begin
+            mm, rot = IceFloeTracker.mismatch(floe, rotated_floe, 25, 5)
+            @test mm < 0.0055
+            @test abs(rot - rot_angle) < 0.5
+        end
     end
 end

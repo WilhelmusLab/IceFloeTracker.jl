@@ -1,4 +1,4 @@
-@testset "ψ-s curve test" begin
+@testitem "ψ-s curve test" begin
     # draw cardioid https://en.wikipedia.org/wiki/Cardioid
     t = range(0, 2pi, 201)
     x = @. cos(t) * (1 - cos(t))
