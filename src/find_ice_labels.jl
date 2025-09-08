@@ -1,4 +1,31 @@
 using ImageBinarization: AbstractImageBinarizationAlgorithm, binarize
+using Images: build_histogram
+using Peaks: findmaxima, peakproms!, peakwidths!
+
+"""
+Given the edges and counts from build_histogram, identify local maxima and return the location of the
+largest local maximum that is bright enough that it is possibly sea ice. Locations are determined by 
+the edges, which by default are the left bin edges. Note also that peaks defaults to the left side of
+plateaus. Returns Inf if there are no non-zero parts of the histogram with bins larger than the possible
+ice threshold, or if there are no detected peaks larger than the minimum prominence.
+"""
+function get_ice_peaks(edges, counts; possible_ice_threshold::Float64=0.30, minimum_prominence::Float64=0.05, window::Int64=3)
+    size(counts)
+    counts = counts[1:end]
+    normalizer = sum(counts[edges .> possible_ice_threshold])
+    # Normalize the possible sea ice section of the histogram. 
+    # Images with a lot of masked pixels can have large peaks at 0, which
+    # we don't want to include in the normalization. If no potential
+    # ice pixels, then return early
+    counts = normalizer > 0 ? counts ./ normalizer : return Inf
+    pks = findmaxima(counts, window) |> peakproms! |> peakwidths!
+    pks_df = DataFrame(pks[Not(:data)])
+    pks_df = sort(pks_df, :proms, rev=true)
+    mx, argmx = findmax(pks_df.proms)
+    mx < minimum_prominence && return Inf
+    return edges[pks_df[argmx, :indices]] 
+end
+
 """
     IceDetectionAlgorithm
 
@@ -69,35 +96,21 @@ function (f::IceDetectionBrightnessPeaksMODIS721)(out, modis_721_image, args...;
 
     alpha_binary = alpha.(alphacolor.(modis_721_image)) .> 0.5
 
-    band_2_peak = find_reflectance_peaks(band_2 .* alpha_binary; f.possible_ice_threshold)
-    band_1_peak = find_reflectance_peaks(band_1 .* alpha_binary; f.possible_ice_threshold)
+    get_band_peak = function(band)
+        get_ice_peaks(
+            build_histogram(band .* alpha_binary, 64; minval=0, maxval=1)... ;
+            possible_ice_threshold=f.possible_ice_threshold
+        )
+    end
+
+    band_2_peak = get_band_peak(band_2)
+    band_1_peak = get_band_peak(band_1)                   
 
     mask_band_7 = band_7 .< f.band_7_max
     mask_band_2 = band_2 .> band_2_peak
     mask_band_1 = band_1 .> band_1_peak
 
     @. out = mask_band_7 * mask_band_2 * mask_band_1 * alpha_binary
-end
-
-"""
-    find_reflectance_peaks(reflectance_channel, possible_ice_threshold;)
-    
-Find histogram peaks in single channels of a reflectance image and return the second greatest peak. If needed, edges can be returned as the first object from `build_histogram`. Similarly, peak values can be returned as the second object from `findmaxima`.
-
-# Arguments
-- `reflectance_channel`: either band 2 or band 1 of false-color reflectance image
-- `possible_ice_threshold`: threshold value used to identify ice if not found on first or second pass
-
-"""
-function find_reflectance_peaks(
-    reflectance_channel::AbstractArray{<:Real}; possible_ice_threshold::Real=N0f8(75 / 255)
-)
-    reflectance_channel[reflectance_channel .< possible_ice_threshold] .= 0
-    _, counts = ImageContrastAdjustment.build_histogram(reflectance_channel)
-    locs, _ = Peaks.findmaxima(counts)
-    sort!(locs; rev=true)
-    2 ≤ length(locs) && return locs[2] / 255.0 # second greatest peak
-    return Inf
 end
 
 """
@@ -203,3 +216,13 @@ end
 function get_ice_labels(ice::AbstractArray{<:AbstractGray})
     return findall(vec(gray.(ice)) .> 0)
 end
+
+function tiled_adaptive_binarization(img, tiles)
+    canvas = zeros(size(img))
+    for tile in tiles
+        f = AdaptiveThreshold(img[tile...])
+        canvas[tile...] = binarize(img[tile...], f)
+    end
+    return canvas
+end
+

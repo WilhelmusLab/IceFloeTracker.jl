@@ -1,10 +1,9 @@
 @testitem "LopezAcosta2019 – simple case" tags = [:e2e, :smoke] begin
     data_loader = Watkins2025GitHub(; ref="a451cd5e62a10309a9640fbbe6b32a236fcebc70")
+
     case = first(data_loader(c -> (c.case_number == 6 && c.satellite == "terra")))
     segments = LopezAcosta2019()(
-        RGB.(case.modis_truecolor),
-        RGB.(case.modis_falsecolor),
-        RGB.(case.modis_landmask),
+        RGB.(case.modis_truecolor), RGB.(case.modis_falsecolor), RGB.(case.modis_landmask)
     )
     @show segments
     expected_segment_count = case.validated_floe_properties |> DataFrame |> nrow
@@ -64,7 +63,7 @@ end
     )
     @test labeled_fraction ≈ 0.579 rtol = 0.1 broken = true
     @test 0.901 ≤ recall broken = true
-    @test 0.620 ≤ precision broken = true
+    @test 0.620 ≤ precision
     @test 0.734 ≤ F_score broken = true
 end
 
