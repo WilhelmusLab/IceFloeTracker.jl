@@ -100,7 +100,9 @@ function (f::PeronaMalikDiffusion)(img::AbstractArray{<:Union{AbstractRGB,Transp
     # TBD: loop through colorview applying the diffusion function
     cv = channelview(img)
     for i in 1:3
-        cv[i, :, :] .= Float64.(f(Gray.(cv[i, :, :])))
+        cvi_gray = Gray.(cv[i, :, :])
+        diffused_cvi = f(cvi_gray)
+        cv[i, :, :] .= Float64.(diffused_cvi)
     end
 
     return colorview(eltype(img), cv)
