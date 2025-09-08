@@ -1,6 +1,7 @@
 @testitem "gradient function – exponential" begin
-    # Test basic functionality
     using IceFloeTracker: exponential
+
+    # Test basic functionality
     @test exponential(0, 1) ≈ 1.0
     @test exponential(1, 1) ≈ exp(-1)
     @test exponential(2, 1) ≈ exp(-4)
@@ -20,6 +21,7 @@ end
 
 @testitem "gradient function – inverse_quadratic" begin
     using IceFloeTracker: inverse_quadratic
+    
     # Test basic functionality
     @test inverse_quadratic(0, 1) ≈ 1.0
     @test inverse_quadratic(1, 1) ≈ 0.5
