@@ -16,7 +16,6 @@ function to_uint8(num::T) where {T<:Union{AbstractFloat,Int,Signed}}
 end
 
 # dmw: use multiple dispatch, so that if the 2d function is called 
-# wi
 
 # dmw: This function doesn't belong here
 function imshow(img)
