@@ -30,6 +30,8 @@ jobs:
       - uses: julia-actions/cache@v2
       - name: Install dependencies
         shell: julia --color=yes --project=docs {0}
+        env:
+          PYTHON: python
         run: |
           using Pkg
           Pkg.develop(PackageSpec(path=pwd()))
