@@ -30,6 +30,8 @@ jobs:
       - uses: julia-actions/cache@v2
       - name: Install dependencies
         shell: julia --color=yes --project=docs {0}
+        env:
+          PYTHON: python
         run: |
           using Pkg
           Pkg.develop(PackageSpec(path=pwd()))
@@ -38,5 +40,6 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} # If authenticating with GitHub Actions token
           DOCUMENTER_KEY: ${{ secrets.DOCUMENTER_KEY }} # If authenticating with SSH deploy key
+          PYTHON: python
         run: julia --color=yes --project=docs docs/make.jl
 
