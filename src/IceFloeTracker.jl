@@ -59,7 +59,8 @@ export readdlm,
     IceDetectionBrightnessPeaksMODIS721,
     IceDetectionThresholdMODIS721,
     IceDetectionFirstNonZeroAlgorithm,
-    IceDetectionLopezAcosta2019
+    IceDetectionLopezAcosta2019,
+    tiled_adaptive_binarization
 
 # For IFTPipeline
 using HDF5
@@ -77,7 +78,7 @@ include("landmask.jl")
 include("cloudmask.jl")
 include("normalization.jl")
 include("ice-water-discrimination.jl")
-include("anisotropic_image_diffusion.jl")
+include("nonlinear_diffusion.jl")
 include("bwtraceboundary.jl")
 include("resample-boundary.jl")
 include("psi-s.jl")

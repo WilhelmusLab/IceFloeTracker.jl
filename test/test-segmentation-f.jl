@@ -1,6 +1,8 @@
-@testset "Segmentation-F" begin
-    println("------------------------------------------------")
-    println("--------- Create Segmentation-F Test -----------")
+@testitem "Segmentation-F" begin
+    using DelimitedFiles
+    
+    include("config.jl")
+    include("test_error_rate.jl")
 
     ## Load inputs for comparison
     segmentation_B_not_ice_mask = float64.(load("$(test_data_dir)/matlab_I.png"))

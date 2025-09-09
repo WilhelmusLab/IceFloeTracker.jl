@@ -1,110 +1,46 @@
-function get_image_peaks(arr, imgtype="uint8")
-    _, heights = imhist(arr, imgtype)
+using Images: build_histogram
+using Peaks: findmaxima, peakproms!, peakwidths!
+using DataFrames
 
-    locs, heights, _ = Peaks.findmaxima(heights)
-
-    # TODO: make this conditional on input args
-    order = sortperm(heights; rev=true)
-    locs, heights = locs[order], heights[order]
-
-    return (locs=locs, heights=heights)
-end
-
-# dmw: we can drop the "factor" argrument; if thresholds are integers we
-# need to scale them by dividing by 255.
-# jgh: TODO: replace this function with the same call to binarize
-function get_ice_labels_mask(ref_img::Matrix{RGB{N0f8}}, thresholds, factor=255)
-    mask =
-        binarize(
-            ref_img,
-            IceDetectionThresholdMODIS721(;
-                band_7_max=thresholds[1] / factor,
-                band_2_min=thresholds[2] / factor,
-                band_1_min=thresholds[3] / factor,
-            ),
-        ) .|>
-        gray .|>
-        Bool
-    @debug "Found $(sum(mask)) ice pixels"
-    return mask
-end
-
-function get_nlabel(
+# Select a k-means cluster based on the 
+function _get_nlabel(
     falsecolor_img,
-    morph_residue_labels,
-    factor;
-    band_7_threshold::T=5,
-    band_2_threshold::T=230,
-    band_1_threshold::T=240,
-    band_7_threshold_relaxed::T=10,
-    band_1_threshold_relaxed::T=190,
-    possible_ice_threshold::T=75,
-) where {T<:Integer}
-    _getnlabel(image_indexmap, mask) = begin
-        isempty(mask) && return -1
-        sum(mask) == 0 && return -1
-        StatsBase.mode(image_indexmap[mask])
-    end
+    segmented_image_indexmap;
+    band_7_threshold::T=5/255,
+    band_2_threshold::T=230/255,
+    band_1_threshold::T=240/255,
+    band_7_threshold_relaxed::T=10/255,
+    band_1_threshold_relaxed::T=190/255,
+    possible_ice_threshold::T=75/255,
+) where {T<:Float64}
+    
+    f = IceDetectionFirstNonZeroAlgorithm([
+        IceDetectionThresholdMODIS721(;
+            band_7_max=band_7_threshold,
+            band_2_min=band_2_threshold,
+            band_1_min=band_1_threshold
+        ),
+        IceDetectionThresholdMODIS721(;
+            band_7_max=band_7_threshold_relaxed,
+            band_2_min=band_2_threshold,
+            band_1_min=band_1_threshold_relaxed,
+        ),
+        IceDetectionBrightnessPeaksMODIS721(;
+            band_7_max=band_7_threshold,
+            possible_ice_threshold=possible_ice_threshold
+        ),
+        IceDetectionThresholdMODIS721(;
+            band_7_max=1.,
+            band_2_min=band_2_threshold,
+            band_1_min=0.,
+        )
+        ])
 
-    # Initial threshold set identifies bright ice
-    thresholds = (band_7_threshold, band_2_threshold, band_1_threshold)
-    ice_labels_mask = get_ice_labels_mask(falsecolor_img, thresholds)
-    sum(ice_labels_mask) > 0 && return _getnlabel(morph_residue_labels, ice_labels_mask)
-    @debug "Trying first relaxation."
-
-    # First relaxation allows slightly grayer ice, potentially with some cloud
-    thresholds = (band_7_threshold_relaxed, band_2_threshold, band_1_threshold_relaxed)
-    ice_labels_mask = get_ice_labels_mask(falsecolor_img, thresholds)
-    sum(ice_labels_mask) > 0 && return _getnlabel(morph_residue_labels, ice_labels_mask)
-
-    @debug "Trying second/third relaxation."
-    # The second and third relaxation are handled in a separate function.
-    return get_nlabel_relaxation(
-        falsecolor_img,
-        morph_residue_labels,
-        factor, # we can remove this, I think
-        possible_ice_threshold, # set this with data
-        band_7_threshold_relaxed, # set this with data
-        band_2_threshold,
-    )
+    ice_labels = binarize(falsecolor_img, f) .> 0
+    (isempty(ice_labels) || sum(ice_labels) == 0) && return -1
+    return StatsBase.mode(segmented_image_indexmap[ice_labels])
 end
 
-function get_nlabel_relaxation(
-    falsecolor_img,
-    morph_residue_labels,
-    factor,
-    possible_ice_threshold,
-    band_7_threshold_relaxed,
-    band_2_threshold,
-)
-    _getnlabel(image_indexmap, mask) = begin
-        isempty(mask) && return -1
-        sum(mask) == 0 && return -1
-        StatsBase.mode(image_indexmap[mask])
-    end
-
-    # filter b/c channels (landmasked channels 2 and 3) and compute peaks
-    # b is band_2, c is band_1
-    band_2, band_1 = [float64.(channelview(falsecolor_img)[i, :, :]) .* factor for i in 2:3]
-    band_2[band_2 .< possible_ice_threshold] .= 0
-    band_1[band_1 .< possible_ice_threshold] .= 0
-    pks_band_2, pks_band_1 = get_image_peaks.([band_2, band_1])
-
-    # return early if no peaks are found
-    !all(length.([pks_band_2.locs, pks_band_1.locs]) .> 2) && return -1
-
-    relaxed_thresholds = [band_7_threshold_relaxed, pks_band_2.locs[2], pks_band_1.locs[2]]
-    ice_labels_mask = get_ice_labels_mask(falsecolor_img, relaxed_thresholds, factor)
-
-    sum(ice_labels_mask) > 0 && return _getnlabel(morph_residue_labels, ice_labels_mask)
-
-    # Final relaxation
-    ice_labels_mask = band_2 .> band_2_threshold
-    return _getnlabel(morph_residue_labels, ice_labels_mask)
-end
-
-# dmw: split into the k-means and binarization methods, since they operate on different principles.
-# remove the "factor" argument, since it can be inferred from the image type.
 """
     get_ice_masks(
         falsecolor_image,
@@ -118,67 +54,60 @@ end
         band_7_threshold_relaxed,
         band_1_threshold_relaxed,
         possible_ice_threshold,
-        k,
-        factor
+        k
     )
 
-Get the ice masks from the falsecolor image and morphological residue given a particular tiling configuration.
+Identifies potential sea ice floes using two methods: selection of a relevant k-means cluster and application of
+adaptive threshold binarization. For the k-means section, a series of thresholds on band 7, 2, and 1 reflectance 
+are applied in order to find the cluster containing bright sea ice pixels.
 
 # Arguments
-- `falsecolor_image`: The falsecolor image.
-- `morph_residue`: The morphological residue image.
-- `landmask`: The landmask.
-- `tiles`: The tiles.
+- `falsecolor_image`: MODIS False Color Bands 7-2-1.
+- `morph_residue`: Grayscale sharpened and equalized image from preprocessing workflow.
+- `landmask`: Binary landmask. 
+- `tiles`: Iterable with tile divisions.
 - `binarize::Bool=true`: Whether to binarize the tiling.
-- `band_7_threshold=5`: The threshold for band 7.
-- `band_2_threshold=230`: The threshold for band 2.
-- `band_1_threshold=240`: The threshold for band 1.
+- `band_7_threshold=5/255`: The threshold for band 7.
+- `band_2_threshold=230/255`: The threshold for band 2.
+- `band_1_threshold=240/255`: The threshold for band 1.
 - `band_7_threshold_relaxed=10`: The relaxed threshold for band 7.
 - `band_1_threshold_relaxed=190`: The relaxed threshold for band 1.
-- `possible_ice_threshold=75`: The threshold for possible ice.
-- `k=3`: The number of clusters to use for k-means segmentation.
-- `factor=255`: normalization factor to convert images to uint8.
+- `possible_ice_threshold=75/255`: The threshold for possible ice.
+- `k=4`: The number of clusters to use for k-means segmentation.
 
 # Returns
-- A named tuple `(icemask, bin)` where:
-  - `icemask`: The ice mask.
-  - `bin`: The binarized tiling.
+- Binary image with likely sea ice floes = 1.
 """
-function get_ice_masks(
-    falsecolor_image::Matrix{RGB{N0f8}},
-    morph_residue::Matrix{<:Integer},
-    landmask::BitMatrix,
-    tiles::S,
-    # TODO: don't shadow "binarize" function
-    binarize::Bool=true;
-    band_7_threshold::T=5,
-    band_2_threshold::T=230,
-    band_1_threshold::T=240,
-    band_7_threshold_relaxed::T=10,
-    band_1_threshold_relaxed::T=190,
-    possible_ice_threshold::T=75,
-    k::T=3,
-    factor::T=255,
-) where {T<:Integer,S<:AbstractMatrix{Tuple{UnitRange{Int64},UnitRange{Int64}}}}
+function get_ice_masks( #tbd: rename to kmeans_binarization?
+    falsecolor_image::AbstractArray{<:Union{AbstractRGB,TransparentRGB}},
+    morph_residue::AbstractArray{<:AbstractGray},
+    landmask::AbstractArray{<:Bool},
+    tiles::AbstractMatrix{Tuple{UnitRange{Int64},UnitRange{Int64}}};
+    band_7_threshold::Float64=5/255,
+    band_2_threshold::Float64=230/255,
+    band_1_threshold::Float64=240/255,
+    band_7_threshold_relaxed::Float64=10/255,
+    band_1_threshold_relaxed::Float64=190/255,
+    possible_ice_threshold::Float64=75/255,
+    k=4
+) 
 
     # Make canvases
     sz = size(falsecolor_image)
     ice_mask = BitMatrix(zeros(Bool, sz))
     binarized_tiling = zeros(Int, sz)
 
-    fc_landmasked = apply_landmask(falsecolor_image, .!landmask)
+    fc_landmasked = apply_landmask(falsecolor_image, .!landmask) # will need to flip once the landmask is the right style
 
     # Threads.@threads
     for tile in tiles
         @debug "Processing tile: $tile"
         mrt = morph_residue[tile...]
-        morph_residue_seglabels = kmeans_segmentation(Gray.(mrt / 255); k=k)
+        segmented_image_indexmap = kmeans_segmentation(mrt; k=k)
 
-        # TODO: handle case where get_nlabel returns missing
-        floes_label = get_nlabel(
+        floes_label = _get_nlabel(
             fc_landmasked[tile...],
-            morph_residue_seglabels,
-            factor;
+            segmented_image_indexmap,           
             band_7_threshold=band_7_threshold,
             band_2_threshold=band_2_threshold,
             band_1_threshold=band_1_threshold,
@@ -187,11 +116,25 @@ function get_ice_masks(
             possible_ice_threshold=possible_ice_threshold,
         )
 
-        ice_mask[tile...] .= (morph_residue_seglabels .== floes_label)
+        ice_mask[tile...] .= (segmented_image_indexmap .== floes_label)
 
-        #  Conditionally update binarized_tiling as its not used in some workflows
-        binarize && (binarized_tiling[tile...] .= imbinarize(mrt))
     end
+    return ice_mask
+end
 
-    return (icemask=ice_mask, bin=binarized_tiling .> 0)
+# temp function until we replace tests to use IceDetectionThresholdMODIS721 directly
+function get_ice_labels_mask(ref_img::Matrix{RGB{N0f8}}, thresholds)
+    mask =
+        binarize(
+            ref_img,
+            IceDetectionThresholdMODIS721(;
+                band_7_max=thresholds[1],
+                band_2_min=thresholds[2],
+                band_1_min=thresholds[3]
+            ),
+        ) .|>
+        gray .|>
+        Bool
+    @debug "Found $(sum(mask)) ice pixels"
+    return mask
 end

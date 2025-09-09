@@ -1,7 +1,5 @@
-@testset "bwperim" begin
-    println("-------------------------------------------------")
-    println("---------------- bwperim Tests ------------------")
-
+@testitem "bwperim" begin
+    
     # Create image with 3 connected components. The test consists of digging the biggests holes for each blob in the foreground using bwperim, thereby creating 3 additional connected components, 6 in total.
     A = zeros(Bool, 13, 16)
     A[2:6, 2:6] .= 1
