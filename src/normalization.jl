@@ -161,6 +161,7 @@ end
 Apply landmask and return Gray type image in colorview for normalization.
 
 """
+# TODO: Delete this function and simply include apply_landmask and colorview in the workflow.
 function imsharpen_gray(
     imgsharpened::Matrix{Float64}, landmask::AbstractArray{Bool}
 )::Matrix{Gray{Float64}}
@@ -168,6 +169,7 @@ function imsharpen_gray(
     return colorview(Gray, image_sharpened_landmasked)
 end
 
+# TODO: Delete this function and use adjust_histogram directly.
 function adjustgamma(img, gamma=1.5, asuint8=true)
     if maximum(img) > 1
         img = img ./ 255
