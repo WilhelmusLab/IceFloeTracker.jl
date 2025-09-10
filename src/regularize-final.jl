@@ -40,7 +40,10 @@ Regularize `img` via sharpening, filtering, reconstruction, and maxima elevating
 function regularize_sharpening(
     img, L0mask, local_maxima_mask, segment_mask, se, radius, amount, factor
 )
-    new3 = unsharp_mask(img, radius, amount, 0) # dmw: is img really an image? Or is it a matrix of integers?
+    # dmw: temporary fix while sorting out the scaled / non-scaled image confusion
+    temp_img = Gray.(img ./ 255)
+    temp_new3 = unsharp_mask(temp_img, radius, amount, 0) # dmw: is img really an image? Or is it a matrix of integers?
+    new3 = Int64.(round.(Float64.(temp_new3 .* 255), digits=0))
     new3[L0mask] .= 0
     new3 = IceFloeTracker.reconstruct(new3, se, "dilation", false)
     new3[segment_mask] .= 0
