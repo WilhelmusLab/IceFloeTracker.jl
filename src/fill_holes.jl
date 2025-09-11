@@ -3,7 +3,7 @@
 """
     fill_holes(img; [dims])
     fill_holes(img; se)
-Fill the holes in image 'img'. Could be binary or grascale
+Fill the holes in image 'img'. Could be binary or grayscale
 The `dims` keyword is used to specify the dimension to process by constructing the box shape
 structuring element [`strel_box(img; dims)`](@ref strel_box). For generic structuring
 element, the half-size is expected to be either `0` or `1` along each dimension.
