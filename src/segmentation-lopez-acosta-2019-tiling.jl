@@ -124,7 +124,7 @@ function (p::LopezAcosta2019Tiling)(
             end
         end
 
-        true_color_equalized = color_view(eltype(true_color_diffused), rgbchannels)
+        true_color_equalized = colorview(eltype(true_color_diffused), rgbchannels)
 
         gammagreen = green.(true_color_equalized)
         equalized_gray = Gray.(true_color_equalized)
@@ -171,6 +171,7 @@ function (p::LopezAcosta2019Tiling)(
 
         _mask = (Float64.(equalized_gray_reconstructed) .- Float64.(gammagreen)) .> 0
         equalized_gray[_mask] .= equalized_gray[_mask] * brighten_factor
+        # dmw: this method of brightening can make things larger than 1. clamp or rescale?
         morphed_residue = clamp.(equalized_gray .- equalized_gray_reconstructed, 0, 1)
 
         # brighten = get_brighten_mask(equalized_gray_reconstructed, gammagreen)
@@ -187,12 +188,13 @@ function (p::LopezAcosta2019Tiling)(
         adjusting_mask =
             equalized_gray_sharpened_reconstructed_adjusted .> agp.gamma_threshold ./ 255 # gamma threshold depends on image type
         morphed_residue[adjusting_mask] .= morphed_residue[adjusting_mask] .* agp.gamma_factor
-        clamp!(morphed_residue, 0, 1)
+        # clamp!(morphed_residue, 0, 1)
+        morphed_residue .= morphed_residue ./ maximum(morphed_residue)
     end
 
     begin
         @debug "Step 9: Get preliminary ice masks"
-        binarized_tiling = tiled_adaptive_binarization(Gray.(morphed_residue ./ 255), tiles) .> 0
+        binarized_tiling = tiled_adaptive_binarization(Gray.(morphed_residue ), tiles) .> 0
         prelim_icemask = get_ice_masks(
             ref_image, Gray.(morphed_residue), _landmask.dilated, tiles; ice_masks_params...
         )
@@ -201,12 +203,21 @@ function (p::LopezAcosta2019Tiling)(
     begin
         @debug "Step 10: Get segmentation mask from preliminary icemask"
         # Fill holes function in get_segment_mask a bit more aggressive than Matlabs
-        segment_mask = get_segment_mask(prelim_icemask, binarized_tiling)
+        # The "segment mask" is actually the boundaries in between floes.
+        # The function mutates the prelim and binarized images in place
+        # and replaces them with the watershed boundaries.
+        pimask = deepcopy(prelim_icemask)
+        bimask = deepcopy(binarized_tiling)
+        segment_mask = get_segment_mask(pimask, bimask)
     end
 
     begin # _reconst_watershed requires an integer matrix
         @debug "Step 11: Get local_maxima_mask and L0mask via watershed"
         # TODO: Internally watershed2 is requiring morphed residue to be an integer
+        # _reconst_watershed()
+        #
+        # L0mask comes back empty
+
         local_maxima_mask, L0mask = watershed2(
             morphed_residue, segment_mask, prelim_icemask
         )
@@ -214,7 +225,7 @@ function (p::LopezAcosta2019Tiling)(
 
     begin
         @debug "Step 12: Build icemask from all others"
-        local_maxima_mask = to_uint8(local_maxima_mask * 255)
+        local_maxima_mask = to_uint8(local_maxima_mask * 255) # dmw: lmm is binary, I think
         prelim_icemask2 = _regularize(
             morphed_residue,
             local_maxima_mask,

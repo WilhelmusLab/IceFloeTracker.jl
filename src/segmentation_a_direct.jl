@@ -110,6 +110,7 @@ function segmentation_A(
     return segmented_A
 end
 
+#TAG: morphology
 function get_holes(img, min_opening_area=20, se=IceFloeTracker.se_disk4())
     _img = ImageMorphology.area_opening(img; min_area=min_opening_area)
     IceFloeTracker.hbreak!(_img)
@@ -121,6 +122,7 @@ function get_holes(img, min_opening_area=20, se=IceFloeTracker.se_disk4())
     return out .!= _img
 end
 
+#TAG: morphology
 function fillholes!(img)
     img[get_holes(img)] .= true
     return nothing
@@ -136,6 +138,7 @@ function get_segment_mask(ice_mask, tiled_binmask)
     return segment_mask
 end
 
+#TAG: morphology
 function branchbridge(img)
     img = IceFloeTracker.branch(img)
     img = IceFloeTracker.bridge(img)

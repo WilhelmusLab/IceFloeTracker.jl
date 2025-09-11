@@ -26,6 +26,8 @@ function reconstruct(img, se, type, invert::Bool=true)
 
     type == "dilation" &&
         return IceFloeTracker.mreconstruct(IceFloeTracker.dilate, morphed, img)
-
+    # dmw: the default for SK_Morphology is dilation, so even with the "erode" option, 
+    # it's still doing reconstruction by dilation!
+    # The default uses 
     return IceFloeTracker.sk_morphology.reconstruction(morphed, img)
 end
