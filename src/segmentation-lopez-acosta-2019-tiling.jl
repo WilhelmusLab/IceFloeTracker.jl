@@ -189,7 +189,7 @@ function (p::LopezAcosta2019Tiling)(
             equalized_gray_sharpened_reconstructed_adjusted .> agp.gamma_threshold ./ 255 # gamma threshold depends on image type
         morphed_residue[adjusting_mask] .= morphed_residue[adjusting_mask] .* agp.gamma_factor
         # clamp!(morphed_residue, 0, 1)
-        morphed_residue .= morphed_residue ./ maximum(morphed_residue)
+        morphed_residue .= Gray.(morphed_residue ./ maximum(morphed_residue))
     end
 
     begin
@@ -198,6 +198,7 @@ function (p::LopezAcosta2019Tiling)(
         prelim_icemask = get_ice_masks(
             ref_image, Gray.(morphed_residue), _landmask.dilated, tiles; ice_masks_params...
         )
+        # dmw: In case 14, one of the tiles is coming out blank -- look into this!
     end
 
     begin
@@ -206,6 +207,7 @@ function (p::LopezAcosta2019Tiling)(
         # The "segment mask" is actually the boundaries in between floes.
         # The function mutates the prelim and binarized images in place
         # and replaces them with the watershed boundaries.
+        # Instead, it should do the imfill operation in place and return that.
         pimask = deepcopy(prelim_icemask)
         bimask = deepcopy(binarized_tiling)
         segment_mask = get_segment_mask(pimask, bimask)
@@ -213,11 +215,6 @@ function (p::LopezAcosta2019Tiling)(
 
     begin # _reconst_watershed requires an integer matrix
         @debug "Step 11: Get local_maxima_mask and L0mask via watershed"
-        # TODO: Internally watershed2 is requiring morphed residue to be an integer
-        # _reconst_watershed()
-        #
-        # L0mask comes back empty
-
         local_maxima_mask, L0mask = watershed2(
             morphed_residue, segment_mask, prelim_icemask
         )
@@ -225,21 +222,21 @@ function (p::LopezAcosta2019Tiling)(
 
     begin
         @debug "Step 12: Build icemask from all others"
-        local_maxima_mask = to_uint8(local_maxima_mask * 255) # dmw: lmm is binary, I think
+        # local_maxima_mask = to_uint8(local_maxima_mask * 255) # dmw: lmm is binary, I think
         prelim_icemask2 = _regularize(
-            morphed_residue,
+            morphed_residue, 
             local_maxima_mask,
             segment_mask,
             L0mask,
             structuring_elements.se_disk1;
-            prelim_icemask_params...,
+            prelim_icemask_params..., # choice of factor? It's 0.3 in the MATLAB code.
         )
     end
 
     begin
         @debug "Step 13: Get improved icemask"
         icemask = get_ice_masks(
-            ref_image, Gray.(prelim_icemask2 ./ 255), _landmask.dilated, tiles; ice_masks_params...
+            ref_image, Gray.(prelim_icemask2), _landmask.dilated, tiles; ice_masks_params...
         )
     end
 

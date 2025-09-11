@@ -13,14 +13,16 @@ Regularize `img` by:
 # Arguments
 - `img`: The morphological residue image.
 - `local_maxima_mask`: The local maxima mask.
-- `factor`: The factor to apply to the local maxima mask.
+- `factor`: Scaling factor to apply to the local maxima mask.
 - `segment_mask`: The segment mask -- intersection of bw1 and bw2 in first tiled workflow of `master.m`.
 - `L0mask`: zero-labeled pixels from watershed.
 """
 function regularize_fill_holes(img, local_maxima_mask, segment_mask, L0mask, factor)
-    new2 = to_uint8(img .+ local_maxima_mask .* factor)
-    new2[segment_mask .|| L0mask] .= 0
-    return IceFloeTracker.fill_holes(new2)
+    # brighten maxima by factor
+    _img = clamp.(img .+ local_maxima_mask .* factor, 0, 1)
+    # darken at boundaries from watershed transform
+    _img[segment_mask .|| L0mask] .= 0
+    return Gray.(IceFloeTracker.fill_holes(_img)) # dmw: I added the Gray.(), we need to be careful though about where the image types are declared.
 end
 
 """
@@ -41,13 +43,15 @@ function regularize_sharpening(
     img, L0mask, local_maxima_mask, segment_mask, se, radius, amount, factor
 )
     # dmw: temporary fix while sorting out the scaled / non-scaled image confusion
-    temp_img = Gray.(img ./ 255)
-    temp_new3 = unsharp_mask(temp_img, radius, amount, 0) # dmw: is img really an image? Or is it a matrix of integers?
-    new3 = Int64.(round.(Float64.(temp_new3 .* 255), digits=0))
-    new3[L0mask] .= 0
-    new3 = IceFloeTracker.reconstruct(new3, se, "dilation", false)
-    new3[segment_mask] .= 0
-    return to_uint8(new3 + local_maxima_mask .* factor)
+    
+    _img = unsharp_mask(Gray.(img), radius, amount, 0) # dmw: The regularize_fill_holes function strips the image 
+    _img[L0mask] .= 0 # dmw: very strict with these boundary masks! why this order?
+    _img .= mreconstruct(dilate, dilate(_img, se), _img, collect(strel_box((3,3))))
+    # _img = IceFloeTracker.reconstruct(_img, se, "dilation", false)
+    _img[segment_mask] .= 0
+    
+    # dmw: brightening the image with the local maxima mask again!
+    return clamp.(_img + local_maxima_mask .* factor, 0, 1)
 end
 
 function _regularize(

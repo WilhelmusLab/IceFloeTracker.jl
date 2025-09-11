@@ -17,32 +17,28 @@ end
 # dmw: figure out new name for this that is clearer that "watershed2".
 function watershed2(morph_residue, segment_mask, ice_mask)
 
+    # Part 1: 
     # Two passes of reconstruction by dilation, first eroding to find markers, then dilating the complement.
     # This is a really large structuring element, and the erosion of the morphological residue
     # is very similar to the dilation of the complement.
-    mr_reconst = mreconstruct(dilate,
-                              erode(morph_residue, se_disk20()),
-                              morph_residue,
-                              collect(strel_box((3, 3)))
-                            ) # 3x3 box is default for sk morphology
+
+    se_octagon = se_disk20()
+    se_box = collect(strel_box((3, 3))) # default strel from sk_morphology
     
-    # dmw: question with local max: are we trying to find places between floes, or find the floes themselves?
-    # Originally the function was returning the complement of the reconstruction of the complement:
-    # i.e., inverting the image, reconstructing it, then inverting it back.
-    # However, then the maxima are floes, not gaps.
-    # So here I've taken out the final complement step.
-    mr_reconst .= complement.(
-                        mreconstruct(dilate,
-                                     complement.(dilate(mr_reconst, se_disk20())), 
-                                     complement.(mr_reconst),
-                                     collect(strel_box((3, 3)))
-                                    )
-                            )
+    mr_reconst = mreconstruct(dilate,
+                              erode(morph_residue, se_octagon),
+                              morph_residue,
+                              se_box)
+    mr_reconst .= complement.(mreconstruct(dilate,
+                                    complement.(dilate(mr_reconst, se_octagon)), 
+                                    complement.(mr_reconst),
+                                    se_box))
 
 
     # dmw: The local_maxima function selects the level sets larger than their surroundings.
     # It should be identifying ice floes, but may leave many ice floes out.
-    local_max = ImageMorphology.local_maxima(mr_reconst; connectivity=2) .> 0
+    # To my eye, connectivity 4 provides nicer results than the matlab default connectivity 8.
+    local_max = ImageMorphology.local_maxima(mr_reconst; connectivity=1) .> 0
     
     
     # Compute the image gradients of the equalized morphological residue using the Sobel operator
@@ -59,6 +55,9 @@ function watershed2(morph_residue, segment_mask, ice_mask)
     gmag .= impose_minima(gmag, minimamarkers)
     cc = label_components(imregionalmin(gmag), trues(3, 3))
     w = ImageSegmentation.watershed(morph_residue, cc)
-    lmap = labels_map(w) # dmw: inspect results here. Should we not multiply by an earlier mask to remove weird edges?
+    # TODO: The watershed object boundaries don't correspond with the original boundaries,
+    # which produces some strange results. We can clean these up if we have a clean floe mask available.
+    # (i.e., without internal holes).
+    lmap = labels_map(w) 
     return (fgm=local_max, L0mask=isboundary(lmap) .> 0) # dmw: what does fgm stand for?
 end
