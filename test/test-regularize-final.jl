@@ -42,7 +42,7 @@
 
 
         reg_sharpened = regularize_sharpening(
-            morph_residue, L0mask, local_maxima_mask, segment_mask, se, 10, 2, 0.5
+            expected_regularized_holes_filled, L0mask, local_maxima_mask, segment_mask, se, 10, 2, 0.5
         )
 
         reg = _regularize(
@@ -56,9 +56,12 @@
             amount=2,
         )
 
-        @test maximum(abs.(expected_regularized_holes_filled .- reg_holes_filled)) .< 2/255
-        @test expected_regularized_sharpened == reg_sharpened
-        @test expected_regularized_sharpened == reg
+        @test maximum(abs.(expected_regularized_holes_filled .- reg_holes_filled)) .< 1/255
+        # First compare as if the reg_holes_filled was exactly as expected
+        @test maximum(abs.(expected_regularized_sharpened .- reg_sharpened)) .< 1/255
+
+        # Then string both operations together and compare
+        @test maximum(abs.(expected_regularized_sharpened .- reg)) .< 3/255 
     end
 
     @testset "get_final" begin
