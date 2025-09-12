@@ -98,7 +98,7 @@ end
 
 function (f::PeronaMalikDiffusion)(img::AbstractArray{<:Union{AbstractRGB,TransparentRGB}})
     # TBD: loop through colorview applying the diffusion function
-    cv = channelview(img)
+    cv = channelview(deepcopy(img))
     for i in 1:3
         cvi_gray = Gray.(cv[i, :, :])
         diffused_cvi = f(cvi_gray)

@@ -11,7 +11,7 @@ Does reconstruction and landmasking to `image_sharpened`.
 - `landmask`: landmask for region of interest
 - `struct_elem`: structuring element for dilation
 
-"""
+""" # dmw: Re-name (or delete) this function: It doesn't normalize anything, it's a reconstruction operation.
 function normalize_image(
     image_sharpened::Matrix{Float64},
     image_sharpened_gray::T,
@@ -106,51 +106,54 @@ function imsharpen(
 
     image_equalized_gray = Gray.(image_equalized)
 
-    return unsharp_mask(image_equalized_gray, smoothing_param, intensity)
+    return unsharp_mask(image_equalized_gray, smoothing_param, intensity, 0.)
 end
 
 """
-    unsharp_mask(image_gray, smoothing_param, intensity, clampmax)
+    unsharp_mask(img, radius, amount, threshold)
 
-Apply unsharp masking on (equalized) grayscale ([0, `clampmax`]) image to enhance its sharpness.
+    Enhance image sharpness by weighted differencing of the image and a Gaussian blurred image.
+    If ``B`` is the blurred version of image ``I``, then an unsharp mask sharpened image is obtained by
+    ``S = I + (I - B)*A``
+    The amount of sharpening is determined by the factor A. An option threshold can be supplied such
+    that the sharpening is only applied where ``I - B`` is greater than some factor.
 
-# Arguments
-- `image_gray`: The input grayscale image, typically already equalized.
-- `smoothing_param::Int`: The pixel radius for Gaussian blurring (typically between 1 and 10).
-- `intensity`: The amount of sharpening to apply. Higher values result in more pronounced sharpening.
-- `clampmax`: upper limit of intensity values in the returned image.`
-# Returns
-The sharpened grayscale image with values clipped between 0 and `clapmax`.
+    # Arguments
+    img: input image
+    radius: standard deviation of the Gaussian blur
+    amount: multiplicative factor
+    threshold: minimum difference for applying the sharpening
+
+    # Returns
+    Sharpened image
 """
-function unsharp_mask(image_gray, smoothing_param, intensity, clampmax)
-    image_smoothed = imfilter(image_gray, Kernel.gaussian(smoothing_param))
-    clamp!(image_smoothed, 0.0, clampmax)
-    image_sharpened = image_gray * (1 + intensity) .- image_smoothed * intensity
-    clamp!(image_sharpened, 0.0, clampmax)
-    return round.(Int, image_sharpened)
+function unsharp_mask(
+    img::AbstractArray{<:Union{AbstractRGB,TransparentRGB,AbstractGray}},
+    radius::Real=3,
+    amount::Real=0.5,
+    threshold::Real=0.01)
+
+    image_float = float64.(img)
+    image_smoothed = imfilter(image_float, Kernel.gaussian(radius))
+
+    cv_image = channelview(image_float)
+    cv_smooth = channelview(image_smoothed)    
+    diff = cv_image .- cv_smooth
+    cv_sharp = cv_image .+ diff .* amount
+    clamp!(cv_sharp, 0, 1)
+
+    # # Convert back into an image of the original type
+    sharpened_image = colorview(base_colorant_type(eltype(img)), cv_sharp)
+    sharpened_image = convert.(eltype(img), sharpened_image)
+
+    # Optionally use only where sharpening is larger than threshold
+    diff_magnitude = length(size(diff)) > 2 ? dropdims(sqrt.(sum(diff.^2, dims=1)); dims=1) : abs.(diff)
+
+    threshold > 0 && (sharpened_image[diff_magnitude .< threshold] .= img[diff_magnitude .< threshold])
+    
+    return sharpened_image
 end
 
-# For old workflow in final2020.m
-"""
-    (Deprecated)
-    unsharp_mask(image_gray, smoothing_param, intensity)
-
-Apply unsharp masking on (equalized) grayscale image to enhance its sharpness.
-
-Does not perform clamping after the smoothing step. Kept for legacy tests of IceFloeTracker.jl.
-
-# Arguments
-- `image_gray`: The input grayscale image, typically already equalized.
-- `smoothing_param::Int`: The pixel radius for Gaussian blurring (typically between 1 and 10).
-- `intensity`: The amount of sharpening to apply. Higher values result in more pronounced sharpening.
-# Returns
-The sharpened grayscale image with values clipped between 0 and `clapmax`.
-"""
-function unsharp_mask(image_gray, smoothing_param, intensity)
-    image_smoothed = imfilter(image_gray, Kernel.gaussian(smoothing_param))
-    image_sharpened = image_gray * (1 + intensity) .- image_smoothed * intensity
-    return clamp.(image_sharpened, 0.0, 1.0)
-end
 
 """
     imsharpen_gray(imgsharpened, landmask)
@@ -158,6 +161,7 @@ end
 Apply landmask and return Gray type image in colorview for normalization.
 
 """
+# TODO: Delete this function and simply include apply_landmask and colorview in the workflow.
 function imsharpen_gray(
     imgsharpened::Matrix{Float64}, landmask::AbstractArray{Bool}
 )::Matrix{Gray{Float64}}
@@ -165,6 +169,7 @@ function imsharpen_gray(
     return colorview(Gray, image_sharpened_landmasked)
 end
 
+# TODO: Delete this function and use adjust_histogram directly.
 function adjustgamma(img, gamma=1.5, asuint8=true)
     if maximum(img) > 1
         img = img ./ 255

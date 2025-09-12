@@ -15,8 +15,6 @@ function to_uint8(num::T) where {T<:Union{AbstractFloat,Int,Signed}}
     return clamp(num, 0, 255)
 end
 
-# dmw: use multiple dispatch, so that if the 2d function is called 
-
 # dmw: This function doesn't belong here
 function imshow(img)
     if typeof(img) <: BitMatrix
