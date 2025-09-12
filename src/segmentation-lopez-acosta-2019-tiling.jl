@@ -49,7 +49,7 @@ structuring_elements = (
 
 unsharp_mask_params = (radius=10, amount=2.0, threshold=0.0)
 
-brighten_factor = 0.1
+brighten_factor = 0.1 # brightens by darkening the complement
 
 ice_masks_params = (
     band_7_threshold=5/255,
@@ -58,10 +58,10 @@ ice_masks_params = (
     band_7_threshold_relaxed=10/255,
     band_1_threshold_relaxed=190/255,
     possible_ice_threshold=75/255,
-    k=3 # number of clusters for kmeans segmentation
+    k=4 # number of clusters for kmeans segmentation
 )
 
-prelim_icemask_params = (radius=10, amount=2, factor=0.5)
+prelim_icemask_params = (radius=10, amount=2, factor=[0.3, 0.5])
 
 @kwdef struct LopezAcosta2019Tiling <: IceFloeSegmentationAlgorithm
     tile_settings = (; rblocks=2, cblocks=2)

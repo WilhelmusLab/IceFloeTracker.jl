@@ -22,7 +22,7 @@ function regularize_fill_holes(img, local_maxima_mask, segment_mask, L0mask, fac
     _img = clamp.(img .+ local_maxima_mask .* factor, 0, 1)
     # darken at boundaries from watershed transform
     _img[segment_mask .|| L0mask] .= 0
-    return Gray.(IceFloeTracker.fill_holes(_img)) # dmw: I added the Gray.(), we need to be careful though about where the image types are declared.
+    return Gray.(IceFloeTracker.fill_holes(_img)) # dmw: I added the Gray.(), we need to be careful though about where the image types are. Why isn't fill_holes exported?
 end
 
 """
@@ -40,17 +40,11 @@ Regularize `img` via sharpening, filtering, reconstruction, and maxima elevating
 - `segment_mask`: The segment mask -- intersection of bw1 and bw2 in first tiled workflow of `master.m`.
 """
 function regularize_sharpening(
-    img, L0mask, local_maxima_mask, segment_mask, se, radius, amount, factor
-)
-    # dmw: temporary fix while sorting out the scaled / non-scaled image confusion
-    
+    img, L0mask, local_maxima_mask, segment_mask, se, radius, amount, factor)
     _img = unsharp_mask(Gray.(img), radius, amount, 0) # dmw: The regularize_fill_holes function strips the image 
-    _img[L0mask] .= 0 # dmw: very strict with these boundary masks! why this order?
-    _img .= mreconstruct(dilate, dilate(_img, se), _img, collect(strel_box((3,3))))
-    # _img = IceFloeTracker.reconstruct(_img, se, "dilation", false)
+    _img[L0mask] .= 0 
+    _img .= mreconstruct(dilate, dilate(_img, se), _img, strel_diamond((3,3)))
     _img[segment_mask] .= 0
-    
-    # dmw: brightening the image with the local maxima mask again!
     return clamp.(_img + local_maxima_mask .* factor, 0, 1)
 end
 
