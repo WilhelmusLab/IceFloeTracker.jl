@@ -36,6 +36,15 @@ jobs:
           using Pkg
           Pkg.develop(PackageSpec(path=pwd()))
           Pkg.instantiate()
+      - name: Update Paths in Converted Julia Scripts
+        run: |
+          for script in $(find docs/src -name "*.ipynb"); do
+            echo "Updating paths in $script"
+            sed -i 's|^HOME = .*$|HOME = "${{ github.workspace }}"|g' "$script" # replace HOME with path of repo
+            sed -i 's|Pkg.add("IceFloeTracker")|Pkg.add(;path="${{ github.workspace }}")|g' "$script" # replace IceFloeTracker installer with local path
+            head "$script"
+            echo -e "\n=======\n" # divider between scripts
+          done
       - name: Build and deploy
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} # If authenticating with GitHub Actions token
