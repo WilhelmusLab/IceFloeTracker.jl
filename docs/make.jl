@@ -71,6 +71,7 @@ makedocs(;
             "tutorials/preprocessing-workflow.md",
             "tutorials/tiling.md",
             "tutorials/track-floes.md",
+            "tutorials/example-track-floes-rotation.md",
         ],
     ],
 )
