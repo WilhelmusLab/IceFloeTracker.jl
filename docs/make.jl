@@ -1,20 +1,15 @@
-module NotebookToDocumenter
-# Based on https://github.com/marius311/CMBLensing.jl/blob/v0.10.1/docs/make.jl
-# TODO:
-# - replace convert_equations! with jinja template function
+using Documenter
+using IceFloeTracker
 
-function notebooks_to_documenter_md(directory)
+# Based on https://github.com/marius311/CMBLensing.jl/blob/v0.10.1/docs/make.jl
+
+function convert_notebooks(directory; converter)
     for path in readdir_recursive(directory)
         if endswith(path, ".ipynb")
-            @info "Converting $path to markdown"
-            notebook_to_documenter_md(path)
+            @info "Converting $path"
+            converter(path)
         end
     end
-end
-
-function notebook_to_documenter_md(file)
-    new_file = file |> convert_to_markdown |> convert_equations! |> convert_example_blocks!
-    return new_file
 end
 
 function convert_to_markdown(file)
@@ -45,6 +40,30 @@ function convert_example_blocks!(file)
     return file
 end
 
+function add_colab_link!(; kwargs...)
+    return (file -> add_colab_link!(file; kwargs...))
+end
+
+function add_colab_link!(
+    file;
+    paths_relative_to="docs/prebuild",
+    username="username",
+    repo="repo",
+    branch="main",
+    extension=".ipynb",
+    colab_badge_url="https://colab.research.google.com/assets/colab-badge.svg",
+    alt_text="Open this notebook in Colab",
+)
+    source_relative_path = replace(file, paths_relative_to * "/" => "")
+    target_relative_path = splitext(source_relative_path)[1] * extension
+    colab_link = "https://colab.research.google.com/github/$username/$repo/blob/$branch/$target_relative_path"
+    colab_badge = "[![$alt_text]($colab_badge_url)]($colab_link)"
+    contents = read(file, String)
+    contents = colab_badge * "\n" * contents
+    write(file, contents)
+    return file
+end
+
 function readdir_recursive(directory)
     result::Vector{String} = String[]
     for (root, _, files) in walkdir(directory)
@@ -55,13 +74,20 @@ function readdir_recursive(directory)
     return result
 end
 
-end
+username = "WilhelmusLab"
+repo = "IceFloeTracker.jl"
+branch = "gh-pages"
 
 run(`rsync --recursive --delete docs/src/ docs/prebuild/`)
-NotebookToDocumenter.notebooks_to_documenter_md("docs/prebuild")
-
-using Documenter
-using IceFloeTracker
+convert_notebooks(
+    "docs/prebuild";
+    converter=file ->
+        file |>
+        convert_to_markdown |>
+        convert_equations! |>
+        convert_example_blocks! |>
+        add_colab_link!(; username, repo, branch),
+)
 
 makedocs(;
     sitename="IceFloeTracker.jl",
