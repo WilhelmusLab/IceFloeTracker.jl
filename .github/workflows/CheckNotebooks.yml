@@ -50,7 +50,7 @@ jobs:
       # Convert notebooks to .jl files using nbconvert
       - name: Convert Notebooks to Julia Scripts
         run: |
-          for notebook in $(find notebooks -name "*.ipynb"); do
+          for notebook in $(find docs/src -name "*.ipynb"); do
             echo "Converting $notebook to Julia script"
             pipx run --spec nbconvert jupyter-nbconvert --to script "$notebook"
           done
@@ -59,7 +59,7 @@ jobs:
       # HOME = "../.." => "."
       - name: Update Paths in Converted Julia Scripts
         run: |
-          for script in $(find notebooks -name "*.jl"); do
+          for script in $(find docs/src -name "*.jl"); do
             echo "Updating paths in $script"
             sed -i 's|^HOME = .*$|HOME = "${{ github.workspace }}"|g' "$script" # replace HOME with path of repo
             sed -i 's|Pkg.add("IceFloeTracker")|Pkg.add(;path="${{ github.workspace }}")|g' "$script" # replace IceFloeTracker installer with local path
@@ -71,7 +71,7 @@ jobs:
       - name: Run Julia Scripts
         run: |
           EXIT_CODE=0
-          for script in $(find notebooks -name "*.jl"); do
+          for script in $(find docs/src -name "*.jl"); do
             echo "Running Julia script: $script"
             julia "$script" || EXIT_CODE=$?
             echo -e "\n=======\n" # divider between scripts
