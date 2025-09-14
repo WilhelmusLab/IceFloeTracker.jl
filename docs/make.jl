@@ -13,7 +13,7 @@ function notebooks_to_documenter_md(directory)
 end
 
 function notebook_to_documenter_md(file)
-    new_file = file |> convert_to_markdown |> convert_equations!
+    new_file = file |> convert_to_markdown |> convert_equations! |> convert_example_blocks!
     return new_file
 end
 
@@ -32,6 +32,15 @@ function convert_equations!(file)
     \g<1>
     ```""")
     contents = replace(contents, r"\* \$(.*?)\$" => s"* ``\g<1>``") # starting a line with inline math screws up tex2jax for some reason
+    write(file, contents)
+    return file
+end
+
+function convert_example_blocks!(file)
+    contents = read(file, String)
+    contents = replace(contents, r"```julia(.*?)```"s => s"""```@example _page-environment
+    \g<1>
+    ```""")
     write(file, contents)
     return file
 end
