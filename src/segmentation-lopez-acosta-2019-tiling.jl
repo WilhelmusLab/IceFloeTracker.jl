@@ -188,17 +188,16 @@ function (p::LopezAcosta2019Tiling)(
         adjusting_mask =
             equalized_gray_sharpened_reconstructed_adjusted .> agp.gamma_threshold ./ 255 # gamma threshold depends on image type
         morphed_residue[adjusting_mask] .= morphed_residue[adjusting_mask] .* agp.gamma_factor
-        # clamp!(morphed_residue, 0, 1)
-        morphed_residue .= Gray.(morphed_residue ./ maximum(morphed_residue))
+        clamp!(morphed_residue, 0, 1)
+        # morphed_residue .= Gray.(morphed_residue ./ maximum(morphed_residue))
     end
 
     begin
         @debug "Step 9: Get preliminary ice masks"
-        binarized_tiling = tiled_adaptive_binarization(Gray.(morphed_residue), tiles; minimum_window_size=32) .> 0
+        binarized_tiling = tiled_adaptive_binarization(Gray.(morphed_residue), tiles; minimum_window_size=50) .> 0
         prelim_icemask = get_ice_masks(
             ref_image, Gray.(morphed_residue), _landmask.dilated, tiles; ice_masks_params...
         )
-        # dmw: In case 14, one of the tiles is coming out blank -- look into this!
     end
 
     begin
