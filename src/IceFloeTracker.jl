@@ -1,4 +1,14 @@
 module IceFloeTracker
+
+include("Algorithms/Algorithms.jl")
+using .Algorithms
+
+include("Filtering/Filtering.jl")
+using .Filtering
+
+include("Morphology/Morphology.jl")
+using .Morphology
+
 using Clustering
 using DataFrames
 using Dates
