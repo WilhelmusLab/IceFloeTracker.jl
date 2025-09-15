@@ -83,7 +83,8 @@ end
 
 username = "WilhelmusLab"
 repo = "IceFloeTracker.jl"
-ref = get(ENV, "GITHUB_REF", "main")
+ref = get(ENV, "GITHUB_REF", read(`git rev-parse HEAD`, String) |> chomp)
+@show ref
 
 run(`rsync --recursive --delete docs/src/ docs/prebuild/`)
 convert_notebooks(
