@@ -1,7 +1,7 @@
 module IceFloeTracker
 
-include("Algorithms/Algorithms.jl")
-using .Algorithms
+include("Segmentation/Segmentation.jl")
+using .Segmentation
 
 include("Filtering/Filtering.jl")
 using .Filtering
