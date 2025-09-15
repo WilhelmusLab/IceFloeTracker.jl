@@ -217,12 +217,26 @@ function get_ice_labels(ice::AbstractArray{<:AbstractGray})
     return findall(vec(gray.(ice)) .> 0)
 end
 
-function tiled_adaptive_binarization(img, tiles)
+
+"""
+tiled_adaptive_binarization(img, tiles; minimum_window_size=). 
+
+Applies the (AdaptiveThreshold)[https://juliaimages.org/ImageBinarization.jl/v0.1/#Adaptive-Threshold-1] binarization algorithm
+to each tile in the image. Following the recommendations from ImageBinarization, the default is to use the integer window size
+nearest to 1/8th the tile size if the tile is large enough. With ice floes of 10-25 km length scale, 
+
+"""
+
+function tiled_adaptive_binarization(img, tiles; minimum_window_size=100, minimum_brightness=30/255)
     canvas = zeros(size(img))
+    img = deepcopy(img)
+    img[Gray.(img) .< minimum_brightness] .= 0
     for tile in tiles
-        f = AdaptiveThreshold(img[tile...])
+        L = Int64.(round.(minimum(length.(tile)) / 8, digits=0))
+        L < minimum_window_size && (L = minimum_window_size)
+
+        f = AdaptiveThreshold(img[tile...], window_size = L, percentage = 50)
         canvas[tile...] = binarize(img[tile...], f)
     end
     return canvas
 end
-
