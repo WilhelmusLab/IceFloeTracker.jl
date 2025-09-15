@@ -221,13 +221,16 @@ end
 """
 tiled_adaptive_binarization(img, tiles; minimum_window_size=). 
 
-Applies the (AdaptiveThreshold)[https://juliaimages.org/ImageBinarization.jl/v0.1/#Adaptive-Threshold-1] binarization algorithm
-to each tile in the image. Following the recommendations from ImageBinarization, the default is to use the integer window size
-nearest to 1/8th the tile size if the tile is large enough. With ice floes of 10-25 km length scale, 
+    Applies the (AdaptiveThreshold)[https://juliaimages.org/ImageBinarization.jl/v0.1/#Adaptive-Threshold-1] binarization algorithm
+    to each tile in the image. Following the recommendations from ImageBinarization, the default is to use the integer window size
+    nearest to 1/8th the tile size if the tile is large enough. So that the window is large enough to include moderately large floes,
+    the default minimum window size is 100 pixels (25 km for MODIS imagery). The minimum brightness parameter masks pixels with low
+    grayscale intensity to prevent dark regions from getting brightened (i.e., the center of a large patch of open water).
+    The "threshold_percentage" parameter is passed to the the AdaptiveThreshold function (percentage parameter).
 
 """
 
-function tiled_adaptive_binarization(img, tiles; minimum_window_size=100, minimum_brightness=30/255)
+function tiled_adaptive_binarization(img, tiles; minimum_window_size=100, minimum_brightness=30/255, threshold_percentage=15)
     canvas = zeros(size(img))
     img = deepcopy(img)
     img[Gray.(img) .< minimum_brightness] .= 0
@@ -235,7 +238,7 @@ function tiled_adaptive_binarization(img, tiles; minimum_window_size=100, minimu
         L = Int64.(round.(minimum(length.(tile)) / 8, digits=0))
         L < minimum_window_size && (L = minimum_window_size)
 
-        f = AdaptiveThreshold(img[tile...], window_size = L, percentage = 50)
+        f = AdaptiveThreshold(img[tile...], window_size = L, percentage = threshold_percentage)
         canvas[tile...] = binarize(img[tile...], f)
     end
     return canvas
