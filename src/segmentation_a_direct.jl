@@ -128,19 +128,15 @@ function fillholes!(img)
     return nothing
 end
 
+#TAG: potential simplification to remove this function.
 function get_segment_mask(ice_mask, tiled_binmask)
     # TODO: Threads.@threads # sometimes crashes (too much memory?)
-    ice_mask = deepcopy(ice_mask)
-    tiled_binmask = deepcopy(tiled_binmask)
-    for img in (ice_mask, tiled_binmask)
-        fillholes!(img)
-        img .= watershed1(img)
-    end
-    segment_mask = ice_mask .&& tiled_binmask
-    return segment_mask
+    fillholes!(ice_mask)
+    fillholes!(tiled_binmask)
+    return watershed1(ice_mask) .&& watershed1(tiled_binmask)
 end
 
-#TAG: morphology
+#TAG: morphology, or replace with branch(bridge(image))
 function branchbridge(img)
     img = IceFloeTracker.branch(img)
     img = IceFloeTracker.bridge(img)
