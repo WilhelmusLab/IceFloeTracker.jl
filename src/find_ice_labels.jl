@@ -230,7 +230,7 @@ tiled_adaptive_binarization(img, tiles; minimum_window_size=).
 
 """
 
-function tiled_adaptive_binarization(img, tiles; minimum_window_size=100, minimum_brightness=30/255, threshold_percentage=15)
+function tiled_adaptive_binarization(img, tiles; minimum_window_size=50, minimum_brightness=75/255, threshold_percentage=15)
     canvas = zeros(size(img))
     img = deepcopy(img)
     img[Gray.(img) .< minimum_brightness] .= 0
