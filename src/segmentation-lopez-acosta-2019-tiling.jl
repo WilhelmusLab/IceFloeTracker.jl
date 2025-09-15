@@ -203,14 +203,8 @@ function (p::LopezAcosta2019Tiling)(
 
     begin
         @debug "Step 10: Get segmentation mask from preliminary icemask"
-        # Fill holes function in get_segment_mask a bit more aggressive than Matlabs
-        # The "segment mask" is actually the boundaries in between floes.
-        # The function mutates the prelim and binarized images in place
-        # and replaces them with the watershed boundaries.
-        # Instead, it should do the imfill operation in place and return that.
-        pimask = deepcopy(prelim_icemask)
-        bimask = deepcopy(binarized_tiling)
-        segment_mask = get_segment_mask(pimask, bimask)
+        # Fill holes function in get_segment_mask a bit more aggressive 
+        segment_mask = get_segment_mask(prelim_icemask, binarized_tiling)
     end
 
     begin # _reconst_watershed requires an integer matrix

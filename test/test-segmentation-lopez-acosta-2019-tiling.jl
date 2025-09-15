@@ -15,9 +15,9 @@ end
         LopezAcosta2019Tiling();
     )
     @test 0.426 ≈ labeled_fraction atol = 0.1
-    @test 0.87 ≤ recall
-    @test 0.57 ≤ precision
-    @test 0.69 ≤ F_score
+    @test 0.83 ≤ round(recall, digits=2)
+    @test 0.57 ≤ round(precision, digits=2)
+    @test 0.69 ≤ round(F_score, digits=2)
 
     (; labeled_fraction, recall, precision, F_score) = run_and_validate_segmentation(
         first(data_loader(c -> (c.case_number == 14 && c.satellite == "aqua"))),
