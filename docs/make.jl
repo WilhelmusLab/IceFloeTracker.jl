@@ -110,6 +110,7 @@ makedocs(;
 
 deploydocs(;
     repo="github.com/WilhelmusLab/IceFloeTracker.jl.git",
+    devbranch="main",
     push_preview=true,
     versions=nothing,
 )
