@@ -1,4 +1,4 @@
-module Algorithms
+module Segmentation
 
 """
     dummy_segmentation_function()
