@@ -33,6 +33,8 @@ function convert_equations!(file)
     return file
 end
 
+# -----------------------------------------------------------------------------
+
 function convert_example_blocks!(file)
     contents = read(file, String)
     contents = replace(contents, r"```julia(.*?)```"s => s"""```@example _page-environment
@@ -41,8 +43,6 @@ function convert_example_blocks!(file)
     write(file, contents)
     return file
 end
-
-# -----------------------------------------------------------------------------
 
 function add_colab_link!(; kwargs...)
     return (file -> add_colab_link!(file; kwargs...))
