@@ -92,7 +92,6 @@ export addlatlon!, convertcentroid!, converttounits!, dropcols!, latlon
 export addfloemasks!, add_passtimes!, addψs!, long_tracker
 
 include("utils.jl")
-include("persist.jl")
 include("landmask.jl")
 include("cloudmask.jl")
 include("normalization.jl")
