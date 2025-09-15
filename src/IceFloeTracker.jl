@@ -9,6 +9,9 @@ using .Filtering
 include("Morphology/Morphology.jl")
 using .Morphology
 
+include("Tracking/Tracking.jl")
+using .Tracking
+
 include("Utils/Utils.jl")
 using .Utils
 
