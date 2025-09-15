@@ -1,21 +1,18 @@
-module NotebookToDocumenter
-# Based on https://github.com/marius311/CMBLensing.jl/blob/v0.10.1/docs/make.jl
-# TODO:
-# - replace convert_equations! with jinja template function
+using Documenter
+using IceFloeTracker
 
-function notebooks_to_documenter_md(directory)
+function convert_notebooks(directory; converter)
     for path in readdir_recursive(directory)
         if endswith(path, ".ipynb")
-            @info "Converting $path to markdown"
-            notebook_to_documenter_md(path)
+            @info "Converting $path"
+            converter(path)
         end
     end
 end
 
-function notebook_to_documenter_md(file)
-    new_file = file |> convert_to_markdown |> convert_equations! |> convert_example_blocks!
-    return new_file
-end
+# -----------------------------------------------------------------------------
+# These functions based on https://github.com/marius311/CMBLensing.jl/blob/v0.10.1/docs/make.jl
+# Under the MIT Expat license, © 2019–2023 Marius Millea
 
 function convert_to_markdown(file)
     template_path = joinpath(dirname(@__FILE__), "documenter.tpl")
@@ -31,7 +28,7 @@ function convert_equations!(file)
     contents = replace(contents, r"\$\$(.*?)\$\$"s => s"""```math
     \g<1>
     ```""")
-    contents = replace(contents, r"\* \$(.*?)\$" => s"* ``\g<1>``") # starting a line with inline math screws up tex2jax for some reason
+    contents = replace(contents, r"\* \$(.*?)\$" => s"* ``\g<1>``")
     write(file, contents)
     return file
 end
@@ -41,6 +38,39 @@ function convert_example_blocks!(file)
     contents = replace(contents, r"```julia(.*?)```"s => s"""```@example _page-environment
     \g<1>
     ```""")
+    write(file, contents)
+    return file
+end
+
+# -----------------------------------------------------------------------------
+
+function add_colab_link!(; kwargs...)
+    return (file -> add_colab_link!(file; kwargs...))
+end
+
+function add_colab_link!(
+    file;
+    path_resolver="docs/prebuild/" => "docs/src/",
+    username="username",
+    repo="repo",
+    ref="main",
+    extension=".ipynb",
+    colab_badge_url="https://colab.research.google.com/assets/colab-badge.svg",
+    alt_text="Open this notebook in Colab",
+)
+    source_relative_path = replace(file, path_resolver)
+    target_relative_path = splitext(source_relative_path)[1] * extension
+    colab_link = joinpath(
+        "https://colab.research.google.com/github/",
+        username,
+        repo,
+        "blob",
+        ref,
+        target_relative_path,
+    )
+    colab_badge = "[![$alt_text]($colab_badge_url)]($colab_link)"
+    contents = read(file, String)
+    contents = colab_badge * "\n" * contents
     write(file, contents)
     return file
 end
@@ -55,13 +85,21 @@ function readdir_recursive(directory)
     return result
 end
 
-end
+username = "WilhelmusLab"
+repo = "IceFloeTracker.jl"
+ref = get(ENV, "GITHUB_REF", read(`git rev-parse HEAD`, String) |> chomp)
+@show ref
 
 run(`rsync --recursive --delete docs/src/ docs/prebuild/`)
-NotebookToDocumenter.notebooks_to_documenter_md("docs/prebuild")
-
-using Documenter
-using IceFloeTracker
+convert_notebooks(
+    "docs/prebuild";
+    converter=file ->
+        file |>
+        convert_to_markdown |>
+        convert_equations! |>
+        convert_example_blocks! |>
+        add_colab_link!(; username, repo, ref),
+)
 
 makedocs(;
     sitename="IceFloeTracker.jl",
@@ -75,18 +113,13 @@ makedocs(;
         "preprocessing.md",
         "segmentation.md",
         "tracking.md",
-        "Tutorials" => [
-            "tutorials/lopez-acosta-2019-workflow.md",
-            "tutorials/preprocessing-workflow.md",
-            "tutorials/tiling.md",
-            "tutorials/track-floes.md",
-            "tutorials/example-track-floes-rotation.md",
-        ],
+        "Tutorials" => ["tutorials/lopez-acosta-2019-workflow.md"],
     ],
 )
 
 deploydocs(;
     repo="github.com/WilhelmusLab/IceFloeTracker.jl.git",
+    devbranch="main",
     push_preview=true,
     versions=nothing,
 )
