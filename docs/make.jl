@@ -1,8 +1,6 @@
 using Documenter
 using IceFloeTracker
 
-# Based on https://github.com/marius311/CMBLensing.jl/blob/v0.10.1/docs/make.jl
-
 function convert_notebooks(directory; converter)
     for path in readdir_recursive(directory)
         if endswith(path, ".ipynb")
@@ -11,6 +9,10 @@ function convert_notebooks(directory; converter)
         end
     end
 end
+
+# -----------------------------------------------------------------------------
+# These functions based on https://github.com/marius311/CMBLensing.jl/blob/v0.10.1/docs/make.jl
+# Under the MIT Expat license, © 2019–2023 Marius Millea
 
 function convert_to_markdown(file)
     template_path = joinpath(dirname(@__FILE__), "documenter.tpl")
@@ -26,7 +28,7 @@ function convert_equations!(file)
     contents = replace(contents, r"\$\$(.*?)\$\$"s => s"""```math
     \g<1>
     ```""")
-    contents = replace(contents, r"\* \$(.*?)\$" => s"* ``\g<1>``") # starting a line with inline math screws up tex2jax for some reason
+    contents = replace(contents, r"\* \$(.*?)\$" => s"* ``\g<1>``")
     write(file, contents)
     return file
 end
@@ -39,6 +41,8 @@ function convert_example_blocks!(file)
     write(file, contents)
     return file
 end
+
+# -----------------------------------------------------------------------------
 
 function add_colab_link!(; kwargs...)
     return (file -> add_colab_link!(file; kwargs...))
