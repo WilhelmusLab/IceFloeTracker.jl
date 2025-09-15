@@ -104,7 +104,6 @@ makedocs(;
         "Tutorials" => [
             "tutorials/lopez-acosta-2019-workflow.md",
             "tutorials/preprocessing-workflow.md",
-            "tutorials/tiling.md",
         ],
     ],
 )
