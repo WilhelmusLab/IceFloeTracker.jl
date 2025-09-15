@@ -46,17 +46,24 @@ end
 
 function add_colab_link!(
     file;
-    paths_relative_to="docs/prebuild",
+    path_resolver="docs/prebuild/" => "docs/src/",
     username="username",
     repo="repo",
-    branch="main",
+    ref="main",
     extension=".ipynb",
     colab_badge_url="https://colab.research.google.com/assets/colab-badge.svg",
     alt_text="Open this notebook in Colab",
 )
-    source_relative_path = replace(file, paths_relative_to * "/" => "")
+    source_relative_path = replace(file, path_resolver)
     target_relative_path = splitext(source_relative_path)[1] * extension
-    colab_link = "https://colab.research.google.com/github/$username/$repo/blob/$branch/$target_relative_path"
+    colab_link = joinpath(
+        "https://colab.research.google.com/github/",
+        username,
+        repo,
+        "blob",
+        ref,
+        target_relative_path,
+    )
     colab_badge = "[![$alt_text]($colab_badge_url)]($colab_link)"
     contents = read(file, String)
     contents = colab_badge * "\n" * contents
@@ -76,7 +83,7 @@ end
 
 username = "WilhelmusLab"
 repo = "IceFloeTracker.jl"
-branch = "gh-pages"
+ref = get(ENV, "GITHUB_REF", "main")
 
 run(`rsync --recursive --delete docs/src/ docs/prebuild/`)
 convert_notebooks(
@@ -86,7 +93,7 @@ convert_notebooks(
         convert_to_markdown |>
         convert_equations! |>
         convert_example_blocks! |>
-        add_colab_link!(; username, repo, branch),
+        add_colab_link!(; username, repo, ref),
 )
 
 makedocs(;
