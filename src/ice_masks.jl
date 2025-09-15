@@ -95,7 +95,6 @@ function get_ice_masks( #tbd: rename to kmeans_binarization?
     # Make canvases
     sz = size(falsecolor_image)
     ice_mask = BitMatrix(zeros(Bool, sz))
-    binarized_tiling = zeros(Int, sz)
 
     fc_landmasked = apply_landmask(falsecolor_image, .!landmask) # will need to flip once the landmask is the right style
 
