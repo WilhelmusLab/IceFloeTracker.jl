@@ -1,7 +1,5 @@
 # Helper functions
 
-
-
 """
     loadimg(; dir::String, fname::String)
 
@@ -202,7 +200,6 @@ function _pad_handler(I, img, nhood)
     (length(nhood) == 6) && return padnhood(img, I, nhood) # edge pixels
     return @view img[nhood]
 end
-
 
 """
     callable_store()
