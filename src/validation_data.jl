@@ -171,12 +171,20 @@ function _load_case(case, p::Watkins2025GitHub)::ValidationDataCase
     masie_landmask = (;
         source="data/masie/landmask/$(case_number)-$(region)-$(image_side_length)-$(date).masie.landmask.$(pixel_scale).$(ext)",
         target="masie_landmask.$(ext)",
+<<<<<<< HEAD
         name=:maisie_landmask,
+=======
+        name=:masie_landmask,
+>>>>>>> 6454c96 (fix typo)
     )
     masie_seaice = (;
         source="data/masie/seaice/$(case_number)-$(region)-$(image_side_length)-$(date).masie.seaice.$(pixel_scale).$(ext)",
         target="masie_seaice.$(ext)",
+<<<<<<< HEAD
         name=:maisie_seaice,
+=======
+        name=:masie_seaice,
+>>>>>>> 6454c96 (fix typo)
     )
     validated_binary_floes = (;
         source="data/validation_dataset/binary_floes/$(case_number)-$(region)-$(date)-$(satellite)-binary_floes.png",
