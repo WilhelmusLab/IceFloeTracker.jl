@@ -7,4 +7,4 @@ RUN apt-get install -y \
     hdf5-tools
 
 USER vscode
-RUN curl -fsSL https://install.julialang.org | sh -s -- --yes
+RUN curl -fsSL https://install.julialang.org | sh -s -- --yes --default-channel lts
