@@ -57,8 +57,7 @@ ice_masks_params = (
     band_1_threshold=240/255,
     band_7_threshold_relaxed=10/255,
     band_1_threshold_relaxed=190/255,
-    possible_ice_threshold=75/255,
-    k=4 # number of clusters for kmeans segmentation
+    possible_ice_threshold=75/255
 )
 
 prelim_icemask_params = (radius=10, amount=2, factor=[0.3, 0.5])
@@ -196,7 +195,7 @@ function (p::LopezAcosta2019Tiling)(
         @debug "Step 9: Get preliminary ice masks"
         binarized_tiling = tiled_adaptive_binarization(Gray.(morphed_residue), tiles) .> 0
         prelim_icemask = get_ice_masks(
-            ref_image, Gray.(morphed_residue), _landmask.dilated, tiles; ice_masks_params...
+            ref_image, Gray.(morphed_residue), _landmask.dilated, tiles; ice_masks_params..., k=4
         )
     end
 
@@ -229,7 +228,7 @@ function (p::LopezAcosta2019Tiling)(
     begin
         @debug "Step 13: Get improved icemask"
         icemask = get_ice_masks(
-            ref_image, Gray.(prelim_icemask2), _landmask.dilated, tiles; ice_masks_params...
+            ref_image, Gray.(prelim_icemask2), _landmask.dilated, tiles; ice_masks_params..., k=3
         )
     end
 
