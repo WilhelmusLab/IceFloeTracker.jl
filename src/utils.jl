@@ -1,67 +1,4 @@
 # Helper functions
-"""
-    make_filename()
-
-Makes default filename with timestamp.
-
-"""
-function make_filename()::String
-    return "persisted_img-" * Dates.format(Dates.now(), "yyyy-mm-dd-HHMMSS") * ".png"
-end
-
-function make_filename(fname::T, ext::T=".png")::T where {T<:AbstractString}
-    return timestamp(fname) * ext
-end
-
-"""
-    timestamp(fname)
-
-Attach timestamp to `fname`.
-"""
-function timestamp(fname::String)
-    ts = Dates.format(Dates.now(), "yyyy-mm-dd-HHMMSS")
-    return fname * "-" * ts
-end
-
-"""
-    fname_ext_split(fname)
-
-Split `"fname.ext"` into `"fname"` and `"ext"`.
-"""
-function fname_ext_split(fname::String)
-    return (name=fname[1:(end - 4)], ext=fname[(end - 2):end])
-end
-
-"""
-    fname_ext_splice(fname, ext)
-
-Join `"fname"` and `"ext"` with `'.'`.
-"""
-function fname_ext_splice(fname::String, ext::String)
-    return fname * '.' * ext
-end
-
-"""
-    check_fname(fname)
-
-Checks `fname` does not exist in current directory; throws an assertion if this condition is false.
-
-# Arguments
-- `fname`: String object or Symbol to a reference to a String representing a path.
-"""
-function check_fname(fname::Union{String,Symbol,Nothing}=nothing)::String
-    if fname isa String # then use as filename
-        check_name = fname
-    elseif fname isa Symbol
-        check_name = eval(fname) # get the object represented by the symbol
-    elseif isnothing(fname) # nothing provided so make a filename
-        check_name = make_filename()
-    end
-
-    # check name does not exist in wd
-    isfile(check_name) && error("$check_name already exists in $(pwd())")
-    return check_name
-end
 
 """
     loadimg(; dir::String, fname::String)
@@ -263,7 +200,6 @@ function _pad_handler(I, img, nhood)
     (length(nhood) == 6) && return padnhood(img, I, nhood) # edge pixels
     return @view img[nhood]
 end
-
 
 """
     callable_store()

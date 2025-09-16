@@ -1,4 +1,23 @@
 module IceFloeTracker
+
+include("Segmentation/Segmentation.jl")
+using .Segmentation
+
+include("Filtering/Filtering.jl")
+using .Filtering
+
+include("Morphology/Morphology.jl")
+using .Morphology
+
+include("Tracking/Tracking.jl")
+using .Tracking
+
+include("Preprocessing/Preprocessing.jl")
+using .Preprocessing
+
+include("Utils/Utils.jl")
+using .Utils
+
 using Clustering
 using DataFrames
 using Dates
@@ -73,7 +92,6 @@ export addlatlon!, convertcentroid!, converttounits!, dropcols!, latlon
 export addfloemasks!, add_passtimes!, addψs!, long_tracker
 
 include("utils.jl")
-include("persist.jl")
 include("landmask.jl")
 include("cloudmask.jl")
 include("normalization.jl")
