@@ -241,5 +241,8 @@ function tiled_adaptive_binarization(img, tiles; minimum_window_size=50, minimum
         f = AdaptiveThreshold(img[tile...], window_size = L, percentage = threshold_percentage)
         canvas[tile...] = binarize(img[tile...], f)
     end
+    
+    # possibly overkill
+    canvas[Gray.(img) .< minimum_brightness] .= 0 
     return canvas
 end
