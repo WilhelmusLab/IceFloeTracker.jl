@@ -20,8 +20,8 @@ Base.iterate(iter::ValidationDataSet, state) = iterate(iter.data, state)
     modis_falsecolor::Union{AbstractArray,Nothing} = nothing
     modis_landmask::Union{AbstractArray,Nothing} = nothing
     modis_cloudfraction::Union{AbstractArray,Nothing} = nothing
-    maisie_landmask::Union{AbstractArray,Nothing} = nothing
-    maisie_seaice::Union{AbstractArray,Nothing} = nothing
+    masie_landmask::Union{AbstractArray,Nothing} = nothing
+    masie_seaice::Union{AbstractArray,Nothing} = nothing
 
     validated_binary_floes::Union{AbstractArray{Gray{Bool}},Nothing} = nothing
     validated_labeled_floes::Union{SegmentedImage,Nothing} = nothing
@@ -168,14 +168,14 @@ function _load_case(case, p::Watkins2025GitHub)::ValidationDataCase
         target="modis_cloudfraction.$(ext)",
         name=:modis_cloudfraction,
     )
-    maisie_landmask = (;
+    masie_landmask = (;
         source="data/masie/landmask/$(case_number)-$(region)-$(image_side_length)-$(date).masie.landmask.$(pixel_scale).$(ext)",
-        target="maisie_landmask.$(ext)",
+        target="masie_landmask.$(ext)",
         name=:maisie_landmask,
     )
-    maisie_seaice = (;
+    masie_seaice = (;
         source="data/masie/seaice/$(case_number)-$(region)-$(image_side_length)-$(date).masie.seaice.$(pixel_scale).$(ext)",
-        target="maisie_seaice.$(ext)",
+        target="masie_seaice.$(ext)",
         name=:maisie_seaice,
     )
     validated_binary_floes = (;
@@ -199,8 +199,8 @@ function _load_case(case, p::Watkins2025GitHub)::ValidationDataCase
         modis_falsecolor,
         modis_landmask,
         modis_cloudfraction,
-        maisie_landmask,
-        maisie_seaice,
+        masie_landmask,
+        masie_seaice,
         validated_binary_floes,
         validated_labeled_floes,
         validated_floe_properties,
