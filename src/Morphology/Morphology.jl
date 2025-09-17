@@ -1,7 +1,6 @@
 module Morphology
 
-import ImageMorphology: ImageMorphology
-
+import Images: Images, ImageMorphology, ImageSegmentation
 """
     imregionalmin(img, conn=2)
 
