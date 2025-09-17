@@ -87,13 +87,32 @@ function rgb2gray(rgbchannels::Array{Float64,3})
 end
 
 # dmw: let's figure out the difference between the three versions of this function
-function _process_image_tiles(
-    true_color_image,
-    clouds_red,
-    tiles,
-    white_threshold,
-    entropy_threshold,
-    white_fraction_threshold,
+"""
+    conditional_histeq(
+        image,
+        clouds_red,
+        tiles,
+        entropy_threshold::AbstractFloat=4.0,
+        white_threshold::AbstractFloat=25.5,
+        white_fraction_threshold::AbstractFloat=0.4,
+    )
+
+Performs conditional histogram equalization on a true color image.
+
+# Arguments
+- `image`: The true color image to be equalized.
+- `clouds_red`: The land/cloud masked red channel of the false color image.
+- `tiles`: the output from `get_tiles(image)` specifying the tiling to use on the image.
+- `entropy_threshold`: The entropy threshold used to determine if a block should be equalized. Default is 4.0.
+- `white_threshold`: The white threshold used to determine if a pixel should be considered white. Default is 25.5.
+- `white_fraction_threshold`: The white fraction threshold used to determine if a block should be equalized. Default is 0.4.
+
+# Returns
+The equalized true color image.
+
+"""
+function conditional_histeq(
+    image, clouds_red, tiles, white_threshold, entropy_threshold, white_fraction_threshold
 )
 
     # Apply Perona-Malik diffusion to each channel of true color image 
