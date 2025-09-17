@@ -70,15 +70,6 @@ function impose_minima(
 end
 
 """
-    bwdist(bwimg)
-
-Distance transform for binary image `bwdist`.
-"""
-function bwdist(bwimg::AbstractArray{Bool})::AbstractArray{Float64}
-    return Images.distance_transform(Images.feature_transform(bwimg))
-end
-
-"""
     padnhood(img, I, nhood)
 
 Pad the matrix `img[nhood]` with zeros according to the position of `I` within the edges`img`.

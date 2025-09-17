@@ -32,6 +32,16 @@ function imextendedmin(img::AbstractArray, h::Int=2, conn::Int=2)::BitMatrix
     return mask_minima .> 0
 end
 
-export imregionalmin, imextendedmin
+"""
+    bwdist(bwimg)
+
+Distance transform for binary image `bwdist`.
+"""
+function bwdist(bwimg::AbstractArray{Bool})::AbstractArray{Float64}
+    return Images.distance_transform(Images.feature_transform(bwimg))
+end
+
+# Exported functions
+export imregionalmin, imextendedmin, bwdist
 
 end
