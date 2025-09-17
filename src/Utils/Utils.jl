@@ -1,6 +1,6 @@
 module Utils
 
-using Images: save
+using Images: save, Gray
 using Dates: format, now
 
 """
