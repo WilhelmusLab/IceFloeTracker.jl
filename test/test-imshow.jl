@@ -6,7 +6,7 @@
     @test imshow(bitmatrix) isa Array{Gray{Bool},2}
 end
 
-@testitem "imshow fixed-point images" begin
+@testitem "imshow numeric types" begin
     import IceFloeTracker: imshow
     import Images: FixedPoint, N0f8, N0f16, N0f32, N0f64, N4f12, N4f28, Gray
 
