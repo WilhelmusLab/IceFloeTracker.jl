@@ -1,6 +1,8 @@
 module Utils
 
-using Images: save
+export @persist, imshow
+
+using Images: save, Gray, FixedPoint
 using Dates: format, now
 
 """
@@ -103,6 +105,13 @@ function fname_ext_splice(fname::String, ext::String)
     return fname * '.' * ext
 end
 
-export @persist
+"""
+    imshow(array)
+
+Convert a 2d-array of booleans or fractions in the range [0, 1] to a grayscale image.
+Values larger than 1 will be white, smaller than 0 will be black.
+"""
+imshow(array::Union{AbstractArray{<:Union{FixedPoint,AbstractFloat},2},BitMatrix}) =
+    Gray.(array) # function to display an array as a grayscale image
 
 end
