@@ -109,6 +109,7 @@ end
 Convert an array of booleans or values scaled to the range [0, 255] to a grayscale image.
 Values larger than 255 will be white, smaller than 0 will be black.
 """
+function imshow(::Union{AbstractArray{<:Real,2},BitMatrix})
     if typeof(img) <: BitMatrix
         return Gray.(img)
     end
