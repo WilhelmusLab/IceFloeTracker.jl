@@ -123,7 +123,7 @@ function conditional_histeq(
     # Apply Perona-Malik diffusion to each channel of true color image 
     # using the default inverse quadratic flux coefficient function
     true_color_diffused = IceFloeTracker.nonlinear_diffusion(
-        float64.(true_color_image), 0.1, 75, 3
+        float64.(true_color_image), PeronaMalikDiffusion(0.1, 0.1, 5, "exponential")
     )
 
     rgbchannels = get_rgb_channels(true_color_diffused)
