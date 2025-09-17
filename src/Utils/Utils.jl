@@ -109,6 +109,6 @@ function imshow(img)
     return Gray.(img ./ 255)
 end
 
-export @persist
+export @persist, imshow
 
 end
