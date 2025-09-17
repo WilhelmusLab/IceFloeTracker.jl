@@ -25,7 +25,7 @@ abstract type AbstractDiffusionAlgorithm end
     λ::Float64 = 0.1
     K::Float64 = 0.1
     niters::Int = 5
-    g::String = "inverse_quadratic"
+    g::String = "exponential"
 
     # enforce conditions
     function PeronaMalikDiffusion(λ, K, niters, g)
