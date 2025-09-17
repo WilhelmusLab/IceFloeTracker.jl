@@ -112,7 +112,7 @@ The equalized true color image.
 
 """
 function conditional_histeq(
-    image,
+    true_color_image,
     clouds_red,
     tiles,
     entropy_threshold::Real=4.0,
