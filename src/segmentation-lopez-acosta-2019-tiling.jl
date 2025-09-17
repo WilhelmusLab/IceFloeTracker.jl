@@ -1,7 +1,7 @@
 using Images
 using IceFloeTracker:
     get_tiles,
-    _process_image_tiles,
+    conditional_histeq,
     to_uint8,
     unsharp_mask,
     imbrighten,
@@ -102,8 +102,8 @@ function (p::LopezAcosta2019Tiling)(
         clouds_red = to_uint8(float64.(red.(ref_img_cloudmasked) .* 255))
         clouds_red[_landmask.dilated] .= 0
 
-        rgbchannels = _process_image_tiles(
-            true_color_image, clouds_red, tiles, adapthisteq_params...
+        rgbchannels = conditional_histeq(
+            true_color_image, clouds_red, tiles; adapthisteq_params...
         )
 
         gammagreen = @view rgbchannels[:, :, 2]
