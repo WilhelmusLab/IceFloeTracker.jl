@@ -102,7 +102,13 @@ Join `"fname"` and `"ext"` with `'.'`.
 function fname_ext_splice(fname::String, ext::String)
     return fname * '.' * ext
 end
-function imshow(img)
+
+"""
+    imshow(img)
+
+Convert an array of booleans or values scaled to the range [0, 255] to a grayscale image.
+Values larger than 255 will be white, smaller than 0 will be black.
+"""
     if typeof(img) <: BitMatrix
         return Gray.(img)
     end
