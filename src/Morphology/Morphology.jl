@@ -1,6 +1,8 @@
 module Morphology
 
-import Images: Images, ImageMorphology, ImageSegmentation
+import Images.ImageMorphology: local_minima, distance_transform, feature_transform
+import Images.ImageSegmentation: hmin_transform
+
 """
     imregionalmin(img, conn=2)
 
@@ -13,7 +15,7 @@ Returns a bitmatrix of the same size as `img` with the regional minima.
 - `conn`: Neighborhood connectivity; in 2D, 1 = 4-neighborhood and 2 = 8-neighborhood
 """
 function imregionalmin(img, conn=2)
-    return ImageMorphology.local_minima(img; connectivity=conn) .> 0
+    return local_minima(img; connectivity=conn) .> 0
 end
 
 """
@@ -27,8 +29,8 @@ Mimics MATLAB's imextendedmin function that computes the extended-minima transfo
 - `conn`: neighborhood connectivity; in 2D 1 = 4-neighborhood and 2 = 8-neighborhood
 """
 function imextendedmin(img::AbstractArray, h::Int=2, conn::Int=2)::BitMatrix
-    mask = ImageSegmentation.hmin_transform(img, h)
-    mask_minima = Images.local_minima(mask; connectivity=conn)
+    mask = hmin_transform(img, h)
+    mask_minima = local_minima(mask; connectivity=conn)
     return mask_minima .> 0
 end
 
@@ -38,7 +40,7 @@ end
 Distance transform for binary image `bwdist`.
 """
 function bwdist(bwimg::AbstractArray{Bool})::AbstractArray{Float64}
-    return Images.distance_transform(Images.feature_transform(bwimg))
+    return distance_transform(feature_transform(bwimg))
 end
 
 # Exported functions
