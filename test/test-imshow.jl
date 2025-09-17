@@ -15,3 +15,13 @@ end
         @test imshow(intmatrix) isa Array{Gray{T},2}
     end
 end
+
+@testitem "imshow integers" begin
+    using Test
+    import IceFloeTracker: imshow
+
+    for T in (Int16, Int32, Int64)
+        intmatrix = rand(T, 10, 10)
+        @test_throws ArgumentError imshow(intmatrix)
+    end
+end
