@@ -1,5 +1,7 @@
 module Morphology
 
+export imregionalmin, imextendedmin, bwdist
+
 import Images.ImageMorphology: local_minima, distance_transform, feature_transform
 import Images.ImageSegmentation: hmin_transform
 
@@ -42,8 +44,5 @@ Distance transform for binary image `bwdist`.
 function bwdist(bwimg::AbstractArray{Bool})::AbstractArray{Float64}
     return distance_transform(feature_transform(bwimg))
 end
-
-# Exported functions
-export imregionalmin, imextendedmin, bwdist
 
 end
