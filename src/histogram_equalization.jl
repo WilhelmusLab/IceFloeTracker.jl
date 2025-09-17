@@ -91,7 +91,7 @@ end
     conditional_histeq(
         image,
         clouds_red,
-        tiles,
+        tiles;
         entropy_threshold::Real=4.0,
         white_threshold::Real=25.5,
         white_fraction_threshold::Real=0.4,
@@ -114,7 +114,7 @@ The equalized true color image.
 function conditional_histeq(
     true_color_image,
     clouds_red,
-    tiles,
+    tiles;
     entropy_threshold::Real=4.0,
     white_threshold::Real=25.5,
     white_fraction_threshold::Real=0.4,
