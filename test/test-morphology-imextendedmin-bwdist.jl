@@ -1,4 +1,4 @@
-@testitem "imextendedmin and bwdist" begin
+@testitem "imextendedmin/bwdist" begin
     using DelimitedFiles
 
     include("config.jl")
