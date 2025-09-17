@@ -82,8 +82,8 @@ function imsharpen(
     truecolor_image::Matrix{RGB{Float64}},
     landmask_no_dilate::BitMatrix,
     lambda::Real=0.1,
-    kappa::Real=75,
-    niters::Int64=3,
+    kappa::Real=0.1,
+    niters::Int64=5,
     nbins::Int64=255,
     rblocks::Int64=10, # matlab default is 8 CP
     cblocks::Int64=10, # matlab default is 8 CP
