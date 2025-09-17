@@ -103,7 +103,7 @@ function (p::LopezAcosta2019Tiling)(
         clouds_red[_landmask.dilated] .= 0
 
         rgbchannels = conditional_histeq(
-            true_color_image, clouds_red, tiles, adapthisteq_params...
+            true_color_image, clouds_red, tiles; adapthisteq_params...
         )
 
         gammagreen = @view rgbchannels[:, :, 2]
