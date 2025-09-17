@@ -18,7 +18,6 @@ end
 
 @testitem "imshow floats outside [0, 1]" begin
     import IceFloeTracker: imshow
-    import InteractiveUtils: subtypes
 
     for T in [Float16, Float32, Float64]
         array = rand(T, 10, 10) .* 10 .- 5 # values in range [-5, 5]
