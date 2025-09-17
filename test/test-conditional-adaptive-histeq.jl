@@ -5,6 +5,7 @@
         convert_to_255_matrix,
         adapthisteq,
         conditional_histeq,
+        get_tiles,
         rgb2gray,
         to_uint8,
         histeq
@@ -64,8 +65,8 @@
         tolerance_fraction = 0.01
         @test abs(1 - sum(clouds_red) / 1_320_925_065) < tolerance_fraction
 
-        # Using rblocks = 8, cblocks = 6
-        true_color_eq = conditional_histeq(true_color_image, clouds_red, 8, 6)
+        tiles = get_tiles(true_color_image; rblocks=8, cblocks=6)
+        true_color_eq = conditional_histeq(true_color_image, clouds_red, tiles)
 
         # This differs from MATLAB script due to disparity in the implementations
         # of the adaptive histogram equalization / diffusion functions
@@ -74,7 +75,8 @@
 
         # Use custom tile size
         side_length = size(true_color_eq, 1) ÷ 8
-        true_color_eq = conditional_histeq(true_color_image, clouds_red, side_length)
+        tiles = get_tiles(true_color_image, side_length)
+        true_color_eq = conditional_histeq(true_color_image, clouds_red, tiles)
         @test sum(to_uint8(true_color_eq[:, :, 1])) == 6_328_796_398
     end
 
