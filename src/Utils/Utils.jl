@@ -1,5 +1,7 @@
 module Utils
 
+export @persist, imshow
+
 using Images: save, Gray
 using Dates: format, now
 
@@ -110,7 +112,5 @@ Convert an array of booleans or reals in the range [0, 1] to a grayscale image.
 Values larger than 1 will be white, smaller than 0 will be black.
 """
 imshow(array::Union{AbstractArray{<:Real,2},BitMatrix}) = Gray.(array) # function to display an array as a grayscale image
-
-export @persist, imshow
 
 end
