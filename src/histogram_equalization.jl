@@ -77,9 +77,9 @@ Convert an array of RGB channel data to grayscale in the range [0, 255].
 
 Identical to MATLAB `rgb2gray` (https://www.mathworks.com/help/matlab/ref/rgb2gray.html).
 """
-function rgb2gray(rgbchannels::Array{Float64,3}) 
-# dmw: Can we set this up to return a Gray image instead of an int matrix?
-# dmw: Check whether the coefficients differ substantially -- we can make it an alternative to the Gray function, like GrayMLB and apply it like Gray.()
+function rgb2gray(rgbchannels::Array{Float64,3})
+    # dmw: Can we set this up to return a Gray image instead of an int matrix?
+    # dmw: Check whether the coefficients differ substantially -- we can make it an alternative to the Gray function, like GrayMLB and apply it like Gray.()
     r, g, b = [to_uint8(rgbchannels[:, :, i]) for i in 1:3]
     # Reusing the r array to store the equalized gray image
     r .= to_uint8(0.2989 * r .+ 0.5870 * g .+ 0.1140 * b)
@@ -92,9 +92,9 @@ end
         image,
         clouds_red,
         tiles,
-        entropy_threshold::AbstractFloat=4.0,
-        white_threshold::AbstractFloat=25.5,
-        white_fraction_threshold::AbstractFloat=0.4,
+        entropy_threshold::Real=4.0,
+        white_threshold::Real=25.5,
+        white_fraction_threshold::Real=0.4,
     )
 
 Performs conditional histogram equalization on a true color image.
@@ -112,12 +112,19 @@ The equalized true color image.
 
 """
 function conditional_histeq(
-    image, clouds_red, tiles, white_threshold, entropy_threshold, white_fraction_threshold
+    image,
+    clouds_red,
+    tiles,
+    entropy_threshold::Real=4.0,
+    white_threshold::Real=25.5,
+    white_fraction_threshold::Real=0.4,
 )
 
     # Apply Perona-Malik diffusion to each channel of true color image 
     # using the default inverse quadratic flux coefficient function
-    true_color_diffused = IceFloeTracker.nonlinear_diffusion(float64.(true_color_image), 0.1, 75, 3)
+    true_color_diffused = IceFloeTracker.nonlinear_diffusion(
+        float64.(true_color_image), 0.1, 75, 3
+    )
 
     rgbchannels = get_rgb_channels(true_color_diffused)
 
@@ -150,12 +157,12 @@ function _get_false_color_cloudmasked(;
 )
     mask_cloud_ice, clouds_view = IceFloeTracker._get_masks(
         false_color_image;
-        prelim_threshold=prelim_threshold/255.,
-        band_7_threshold=band_7_threshold/255.,
-        band_2_threshold=band_2_threshold/255.,
+        prelim_threshold=prelim_threshold / 255.0,
+        band_7_threshold=band_7_threshold / 255.0,
+        band_2_threshold=band_2_threshold / 255.0,
         ratio_lower=0.0,
         ratio_offset=0.0,
-        ratio_upper=0.75
+        ratio_upper=0.75,
     )
 
     clouds_view[mask_cloud_ice] .= 0
