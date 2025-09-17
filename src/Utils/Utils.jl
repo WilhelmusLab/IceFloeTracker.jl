@@ -102,6 +102,12 @@ Join `"fname"` and `"ext"` with `'.'`.
 function fname_ext_splice(fname::String, ext::String)
     return fname * '.' * ext
 end
+function imshow(img)
+    if typeof(img) <: BitMatrix
+        return Gray.(img)
+    end
+    return Gray.(img ./ 255)
+end
 
 export @persist
 
