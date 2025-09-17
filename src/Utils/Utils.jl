@@ -104,17 +104,12 @@ function fname_ext_splice(fname::String, ext::String)
 end
 
 """
-    imshow(img)
+    imshow(array)
 
-Convert an array of booleans or values scaled to the range [0, 255] to a grayscale image.
-Values larger than 255 will be white, smaller than 0 will be black.
+Convert an array of booleans or reals in the range [0, 1] to a grayscale image.
+Values larger than 1 will be white, smaller than 0 will be black.
 """
-function imshow(::Union{AbstractArray{<:Real,2},BitMatrix})
-    if typeof(img) <: BitMatrix
-        return Gray.(img)
-    end
-    return Gray.(img ./ 255)
-end
+imshow(array::Union{AbstractArray{<:Real,2},BitMatrix}) = Gray.(array) # function to display an array as a grayscale image
 
 export @persist, imshow
 
