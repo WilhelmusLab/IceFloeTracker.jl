@@ -108,7 +108,7 @@ end
 """
     imshow(array)
 
-Convert an array of booleans or reals in the range [0, 1] to a grayscale image.
+Convert a 2d-array of booleans or fractions in the range [0, 1] to a grayscale image.
 Values larger than 1 will be white, smaller than 0 will be black.
 """
 imshow(array::Union{AbstractArray{<:Union{FixedPoint,AbstractFloat},2},BitMatrix}) =
