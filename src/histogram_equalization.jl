@@ -112,20 +112,13 @@ The equalized true color image.
 
 """
 function conditional_histeq(
-    true_color_image,
+    true_color_diffused,
     clouds_red,
     tiles;
     entropy_threshold::Real=4.0,
     white_threshold::Real=25.5,
     white_fraction_threshold::Real=0.4,
 )
-
-    # Apply Perona-Malik diffusion to each channel of true color image 
-    # using the default inverse quadratic flux coefficient function
-    true_color_diffused = IceFloeTracker.nonlinear_diffusion(
-        float64.(true_color_image), PeronaMalikDiffusion(0.1, 0.1, 5, "exponential")
-    )
-
     rgbchannels = get_rgb_channels(true_color_diffused)
 
     # For each tile, compute the entropy in the false color tile, and the fraction of white and black pixels
