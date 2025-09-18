@@ -10,7 +10,7 @@ Apply k-means segmentation to a gray image to isolate a cluster group representi
 """
 function kmeans_segmentation(
     gray_image::Matrix{Gray{Float64}},
-    ice_labels::Vector{Int64},
+    ice_labels::Union{Vector{Int64},BitMatrix,AbstractArray{<:Gray}},
     k::Int64=4,
     maxiter::Int64=50,
 )::BitMatrix
@@ -38,11 +38,19 @@ function kmeans_segmentation(
     return segmented
 end
 
-function get_segmented_ice(segmented::Matrix{Int64}, ice_labels::Vector{Int64})
+function get_segmented_ice(
+    segmented::Matrix{Int64}, ice_labels::Union{Vector{Int64},BitMatrix}
+)
     ## Same principle as the get_nlabels function
     ## Has the weakness that only one segment can ever be chosen.
     isempty(ice_labels) && return falses(size(segmented))
     return segmented .== StatsBase.mode(segmented[ice_labels])
+end
+
+function get_segmented_ice(segmented::Matrix{Int64}, ice_labels::AbstractArray{<:Gray})
+    boolean_map = ice_labels .|> Bool
+    !(any(boolean_map)) && return falses(size(segmented))
+    return segmented .== StatsBase.mode(segmented[boolean_map])
 end
 
 """
@@ -58,10 +66,12 @@ Apply cloudmask to a bitmatrix of segmented ice after kmeans clustering. Returns
 
 """
 function segmented_ice_cloudmasking(
-    gray_image::Matrix{Gray{Float64}}, cloudmask::BitMatrix, ice_labels::Vector{Int64}
+    gray_image::Matrix{Gray{Float64}},
+    cloudmask::BitMatrix,
+    ice_labels::Union{Vector{Int64},BitMatrix,AbstractArray{<:Gray}},
 )::BitMatrix
     segmented_ice = IceFloeTracker.kmeans_segmentation(gray_image, ice_labels)
-    segmented_ice_cloudmasked = deepcopy(segmented_ice) 
+    segmented_ice_cloudmasked = deepcopy(segmented_ice)
     segmented_ice_cloudmasked[cloudmask] .= 0
     return segmented_ice_cloudmasked
 end

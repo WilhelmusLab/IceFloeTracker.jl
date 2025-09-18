@@ -9,7 +9,10 @@ function LopezAcosta2019(; landmask_structuring_element=make_landmask_se())
 end
 
 function (p::LopezAcosta2019)(
-    truecolor::T, falsecolor::T, landmask::U; return_intermediate_results::Bool=false
+    truecolor::T,
+    falsecolor::T,
+    landmask::U;
+    intermediate_results_callback::Union{Nothing,Function}=nothing,
 ) where {T<:AbstractMatrix{<:AbstractRGB},U<:AbstractMatrix}
 
     # Move these conversions down through the function as each step gets support for 
@@ -27,7 +30,7 @@ function (p::LopezAcosta2019)(
 
     # 2. Intermediate images
     @info "Finding ice labels"
-    ice_labels = find_ice_labels(falsecolor_image, landmask_imgs.dilated)
+    ice_mask = find_ice_mask(falsecolor_image, landmask_imgs.dilated)
 
     @info "Sharpening truecolor image"
     # a. apply imsharpen to truecolor image using non-dilated landmask
@@ -51,7 +54,7 @@ function (p::LopezAcosta2019)(
     # 3. Segmentation
     @info "Segmenting floes part 1/3"
     segA = segmentation_A(
-        segmented_ice_cloudmasking(ice_water_discrim, cloudmask, ice_labels)
+        segmented_ice_cloudmasking(ice_water_discrim, cloudmask, ice_mask)
     )
 
     # segmentation_B
@@ -74,36 +77,43 @@ function (p::LopezAcosta2019)(
         segB.not_ice,
         segB.ice_intersect,
         watersheds_segB_product,
-        ice_labels,
+        ice_mask,
         cloudmask,
         landmask_imgs.dilated,
     )
 
     @info "Labeling floes"
-    labels_map = label_components(segF)
+    labels = label_components(segF)
 
     # Return the original truecolor image, segmented
-    segments = SegmentedImage(truecolor, labels_map)
+    segments = SegmentedImage(truecolor, labels)
 
-    if return_intermediate_results
-        intermediate_results = Dict(
-            :landmask_dilated => landmask_imgs.dilated,
-            :landmask_non_dilated => landmask_imgs.non_dilated,
-            :cloudmask => cloudmask,
-            :ice_labels => ice_labels,
-            :sharpened_truecolor_image => sharpened_truecolor_image,
-            :sharpened_gray_truecolor_image => sharpened_gray_truecolor_image,
-            :normalized_image => normalized_image,
-            :ice_water_discrim => ice_water_discrim,
-            :segA => segA,
-            :segB => segB,
-            :watersheds_segB_product => watersheds_segB_product,
-            :segF => segF,
-            :labels_map => labels_map,
-            :segments => segments,
+    if !isnothing(intermediate_results_callback)
+        segments_truecolor = SegmentedImage(truecolor, labels)
+        segments_falsecolor = SegmentedImage(falsecolor, labels)
+        intermediate_results_callback(;
+            truecolor,
+            falsecolor,
+            landmask_dilated=landmask_imgs.dilated,
+            landmask_non_dilated=landmask_imgs.non_dilated,
+            cloudmask=cloudmask,
+            ice_mask=ice_mask,
+            sharpened_truecolor_image=sharpened_truecolor_image,
+            sharpened_gray_truecolor_image=sharpened_gray_truecolor_image,
+            normalized_image=normalized_image,
+            ice_water_discrim=ice_water_discrim,
+            segA=segA,
+            segB=segB,
+            watersheds_segB_product=watersheds_segB_product,
+            segF=segF,
+            labels=labels,
+            segment_mean_truecolor=map(
+                i -> segment_mean(segments_truecolor, i), labels_map(segments_truecolor)
+            ),
+            segment_mean_falsecolor=map(
+                i -> segment_mean(segments_falsecolor, i), labels_map(segments_falsecolor)
+            ),
         )
-        return (segments, intermediate_results)
-    else
-        return segments
     end
+    return segments
 end

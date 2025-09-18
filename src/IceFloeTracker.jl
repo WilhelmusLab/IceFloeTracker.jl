@@ -1,4 +1,23 @@
 module IceFloeTracker
+
+include("Segmentation/Segmentation.jl")
+using .Segmentation
+
+include("Filtering/Filtering.jl")
+using .Filtering
+
+include("Morphology/Morphology.jl")
+using .Morphology
+
+include("Tracking/Tracking.jl")
+using .Tracking
+
+include("Preprocessing/Preprocessing.jl")
+using .Preprocessing
+
+include("Utils/Utils.jl")
+using .Utils
+
 using Clustering
 using DataFrames
 using Dates
@@ -47,9 +66,20 @@ export readdlm,
     LopezAcosta2019,
     ValidationDataCase,
     ValidationDataLoader,
+    ValidationDataSet,
     Watkins2025GitHub,
     segmentation_comparison,
-    segmentation_summary
+    segmentation_summary,
+    LopezAcosta2019Tiling,
+    callable_store,
+    binarize_segments,
+    masker,
+    IceDetectionAlgorithm,
+    IceDetectionBrightnessPeaksMODIS721,
+    IceDetectionThresholdMODIS721,
+    IceDetectionFirstNonZeroAlgorithm,
+    IceDetectionLopezAcosta2019,
+    tiled_adaptive_binarization
 
 # For IFTPipeline
 using HDF5
@@ -62,12 +92,11 @@ export addlatlon!, convertcentroid!, converttounits!, dropcols!, latlon
 export addfloemasks!, add_passtimes!, addψs!, long_tracker
 
 include("utils.jl")
-include("persist.jl")
 include("landmask.jl")
 include("cloudmask.jl")
 include("normalization.jl")
 include("ice-water-discrimination.jl")
-include("anisotropic_image_diffusion.jl")
+include("nonlinear_diffusion.jl")
 include("bwtraceboundary.jl")
 include("resample-boundary.jl")
 include("psi-s.jl")
@@ -124,6 +153,7 @@ include("tracker/tracker-funcs.jl")
 include("tracker/matchcorr.jl")
 include("tracker/tracker.jl")
 include("tracker/long_tracker.jl")
-include("preprocess_tiling.jl")
+include("segmentation-lopez-acosta-2019-tiling.jl")
 include("fill_holes.jl")
+include("mask.jl")
 end

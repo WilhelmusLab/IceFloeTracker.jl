@@ -24,7 +24,7 @@ jobs:
 
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       - uses: actions/setup-python@v5
         with:
@@ -35,9 +35,6 @@ jobs:
 
       - name: Install Python dependencies
         run: python -m pip install -U -r requirements.txt
-
-      - name: Install nbconvert
-        run: python -m pip install nbconvert
 
       - uses: julia-actions/setup-julia@v2
         with:
@@ -50,35 +47,34 @@ jobs:
         env:
           PYTHON: python
 
-      - name: Update env for notebook workflows
-        run: |
-          julia --project=. scripts/update_env_for_notebooks.jl
-
-
       # Convert notebooks to .jl files using nbconvert
       - name: Convert Notebooks to Julia Scripts
         run: |
-          for notebook in $(find notebooks -name "*.ipynb"); do
+          for notebook in $(find docs/src notebooks -name "*.ipynb"); do
             echo "Converting $notebook to Julia script"
-            jupyter nbconvert --to script "$notebook" --output-dir=.
+            pipx run --spec nbconvert jupyter-nbconvert --to script "$notebook"
           done
 
       # Update HOME variable in nb => .jl scripts
       # HOME = "../.." => "."
       - name: Update Paths in Converted Julia Scripts
         run: |
-          for script in $(find . -maxdepth 1 -name "*.jl"); do
+          for script in $(find docs/src notebooks -name "*.jl"); do
             echo "Updating paths in $script"
-            sed -i 's|\.\./\.\.|.|g' "$script" # replace HOME to .
-            sed -i '/Pkg\.activate/d' "$script" # delete lines with 'Pkg.activate'
+            sed -i 's|^HOME = .*$|HOME = "${{ github.workspace }}"|g' "$script" # replace HOME with path of repo
+            sed -i 's|Pkg.add("IceFloeTracker")|Pkg.add(;path="${{ github.workspace }}")|g' "$script"
+            sed -i 's|Pkg.add(name="IceFloeTracker".*)|Pkg.add(;path="${{ github.workspace }}")|g' "$script"
+            head "$script"
+            echo -e "\n=======\n" # divider between scripts
           done
 
       # Run converted .jl files using Julia
       - name: Run Julia Scripts
         run: |
           EXIT_CODE=0
-          for script in $(find . -maxdepth 1 -name "*.jl"); do
+          for script in $(find docs/src notebooks -name "*.jl"); do
             echo "Running Julia script: $script"
-            julia --project=. "$script" || EXIT_CODE=$?
+            julia "$script" || EXIT_CODE=$?
+            echo -e "\n=======\n" # divider between scripts
           done
           exit $EXIT_CODE

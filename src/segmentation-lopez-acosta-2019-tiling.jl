@@ -1,17 +1,14 @@
 using Images
 using IceFloeTracker:
     get_tiles,
-    _get_masks,
     _process_image_tiles,
     to_uint8,
     unsharp_mask,
     imbrighten,
-    imadjust,
     get_ice_masks,
     imcomplement,
     adjustgamma,
     to_uint8,
-    get_holes,
     get_segment_mask,
     se_disk4,
     se_disk2,
@@ -20,27 +17,23 @@ using IceFloeTracker:
     get_final,
     apply_landmask,
     kmeans_segmentation,
-    get_nlabel,
     get_brighten_mask,
-    get_holes,
     reconstruct,
     imgradientmag,
     histeq,
-    impose_minima,
     label_components,
-    imregionalmin,
     watershed2,
-    imbinarize,
+    tiled_adaptive_binarization,
     _regularize
 
 # Sample input parameters expected by the main function
 cloud_mask_thresholds = (
-    prelim_threshold=110.0/255.,
-    band_7_threshold=200.0/255.,
-    band_2_threshold=190.0/255.,
+    prelim_threshold=110.0 / 255.0,
+    band_7_threshold=200.0 / 255.0,
+    band_2_threshold=190.0 / 255.0,
     ratio_lower=0.0,
+    ratio_offset=0.0,
     ratio_upper=0.75,
-    r_offset=0.0
 )
 
 adapthisteq_params = (
@@ -57,46 +50,57 @@ unsharp_mask_params = (radius=10, amount=2.0, factor=255.0)
 
 brighten_factor = 0.1
 
-# dmw: these will need to be normalized as well
 ice_masks_params = (
-    band_7_threshold=5,
-    band_2_threshold=230,
-    band_1_threshold=240,
-    band_7_threshold_relaxed=10,
-    band_1_threshold_relaxed=190,
-    possible_ice_threshold=75,
-    k=3, # number of clusters for kmeans segmentation
-    factor=255, # normalization factor to convert images to uint8
+    band_7_threshold=5/255,
+    band_2_threshold=230/255,
+    band_1_threshold=240/255,
+    band_7_threshold_relaxed=10/255,
+    band_1_threshold_relaxed=190/255,
+    possible_ice_threshold=75/255,
+    k=3 # number of clusters for kmeans segmentation
 )
 
 prelim_icemask_params = (radius=10, amount=2, factor=0.5)
 
-function preprocess_tiling(
-    ref_image,
-    true_color_image,
-    landmask,
-    tiles,
-    cloud_mask_thresholds,
-    adapthisteq_params,
-    adjust_gamma_params,
-    structuring_elements,
-    unsharp_mask_params,
-    ice_masks_params,
-    prelim_icemask_params,
-    brighten_factor,
+@kwdef struct LopezAcosta2019Tiling <: IceFloeSegmentationAlgorithm
+    tile_settings = (; rblocks=2, cblocks=2)
+    cloud_mask_thresholds = cloud_mask_thresholds
+    adapthisteq_params = adapthisteq_params
+    adjust_gamma_params = adjust_gamma_params
+    structuring_elements = structuring_elements
+    unsharp_mask_params = unsharp_mask_params
+    ice_masks_params = ice_masks_params
+    prelim_icemask_params = prelim_icemask_params
+    brighten_factor = brighten_factor
+end
+
+function (p::LopezAcosta2019Tiling)(
+    truecolor::AbstractArray{<:Union{AbstractRGB,TransparentRGB}},
+    falsecolor::AbstractArray{<:Union{AbstractRGB,TransparentRGB}},
+    landmask::AbstractArray{<:Union{AbstractGray,AbstractRGB,TransparentRGB}};
+    intermediate_results_callback::Union{Nothing,Function}=nothing,
 )
+    @warn "using undilated landmask as dilated"  # TODO: add landmask dilation as a step
+    _landmask = (dilated=(float64.(Gray.(landmask))) .> 0,) # TODO: remove this typecast to float64
+
+    tiles = get_tiles(truecolor; p.tile_settings...)
+
+    ref_image = RGB.(falsecolor)  # TODO: remove this typecast
+    true_color_image = RGB.(truecolor)  # TODO: remove this typecast
+
     begin
         @debug "Step 1/2: Create and apply cloudmask to reference image"
-        
-        cloudmask = IceFloeTracker.create_cloudmask(ref_image,
-                                LopezAcostaCloudMask(cloud_mask_thresholds...))
+
+        cloudmask = IceFloeTracker.create_cloudmask(
+            ref_image, LopezAcostaCloudMask(cloud_mask_thresholds...)
+        )
         ref_img_cloudmasked = IceFloeTracker.apply_cloudmask(ref_image, cloudmask)
     end
 
     begin
         @debug "Step 3: Tiled adaptive histogram equalization"
         clouds_red = to_uint8(float64.(red.(ref_img_cloudmasked) .* 255))
-        clouds_red[landmask.dilated] .= 0
+        clouds_red[_landmask.dilated] .= 0
 
         rgbchannels = _process_image_tiles(
             true_color_image, clouds_red, tiles, adapthisteq_params...
@@ -119,29 +123,29 @@ function preprocess_tiling(
         equalized_gray_sharpened_reconstructed = reconstruct(
             sharpened, structuring_elements.se_disk1, "dilation", true
         )
-        equalized_gray_sharpened_reconstructed[landmask.dilated] .= 0
+        equalized_gray_sharpened_reconstructed[_landmask.dilated] .= 0
     end
 
     # TODO: Steps 6 and 7 can be done in parallel as they are independent
     begin
         @debug "Step 6: Repeat step 5 with equalized_gray (landmasking, no sharpening)"
         equalized_gray_reconstructed = deepcopy(equalized_gray)
-        equalized_gray_reconstructed[landmask.dilated] .= 0
+        equalized_gray_reconstructed[_landmask.dilated] .= 0
         equalized_gray_reconstructed = reconstruct(
             equalized_gray_reconstructed, structuring_elements.se_disk1, "dilation", true
         )
-        equalized_gray_reconstructed[landmask.dilated] .= 0
+        equalized_gray_reconstructed[_landmask.dilated] .= 0
     end
 
     begin
-        @debug "STEP 7: Brighten equalized_gray"
+        @debug "Step 7: Brighten equalized_gray"
         brighten = get_brighten_mask(equalized_gray_reconstructed, gammagreen)
-        equalized_gray[landmask.dilated] .= 0
+        equalized_gray[_landmask.dilated] .= 0
         equalized_gray .= imbrighten(equalized_gray, brighten, brighten_factor)
     end
 
     begin
-        @debug "STEP 8: Get morphed_residue and adjust its gamma"
+        @debug "Step 8: Get morphed_residue and adjust its gamma"
         morphed_residue = clamp.(equalized_gray - equalized_gray_reconstructed, 0, 255)
 
         agp = adjust_gamma_params
@@ -156,8 +160,9 @@ function preprocess_tiling(
 
     begin
         @debug "Step 9: Get preliminary ice masks"
-        prelim_icemask, binarized_tiling = get_ice_masks(
-            ref_image, morphed_residue, landmask.dilated, tiles, true; ice_masks_params...
+        binarized_tiling = tiled_adaptive_binarization(Gray.(morphed_residue ./ 255), tiles) .> 0
+        prelim_icemask = get_ice_masks(
+            ref_image, Gray.(morphed_residue / 255), _landmask.dilated, tiles; ice_masks_params...
         )
     end
 
@@ -189,8 +194,8 @@ function preprocess_tiling(
 
     begin
         @debug "Step 13: Get improved icemask"
-        icemask, _ = get_ice_masks(
-            ref_image, prelim_icemask2, landmask.dilated, tiles, false; ice_masks_params...
+        icemask = get_ice_masks(
+            ref_image, Gray.(prelim_icemask2 ./ 255), _landmask.dilated, tiles; ice_masks_params...
         )
     end
 
@@ -199,8 +204,41 @@ function preprocess_tiling(
         se = structuring_elements
         se_erosion = se.se_disk1
         se_dilation = se.se_disk2
-        final = get_final(icemask, segment_mask, se_erosion, se_dilation)
+        binary_floe_masks = get_final(icemask, segment_mask, se_erosion, se_dilation)
     end
 
-    return final
+    begin
+        @debug "Step 15: Converting mask to segmented image"
+        labels = label_components(binary_floe_masks)
+        segmented = SegmentedImage(truecolor, labels)
+    end
+
+    if !isnothing(intermediate_results_callback)
+        segments_truecolor = SegmentedImage(truecolor, labels)
+        segments_falsecolor = SegmentedImage(falsecolor, labels)
+        intermediate_results_callback(;
+            falsecolor,
+            truecolor,
+            ref_img_cloudmasked,
+            gammagreen,
+            equalized_gray,
+            equalized_gray_sharpened_reconstructed,
+            equalized_gray_reconstructed,
+            morphed_residue,
+            prelim_icemask,
+            binarized_tiling,
+            segment_mask,
+            local_maxima_mask,
+            L0mask,
+            prelim_icemask2,
+            icemask,
+            binary_floe_masks,
+            labels,
+            segmented,
+            segment_mean_truecolor=map(i -> segment_mean(segments_truecolor, i), labels),
+            segment_mean_falsecolor=map(i -> segment_mean(segments_falsecolor, i), labels),
+        )
+    end
+
+    return segmented
 end

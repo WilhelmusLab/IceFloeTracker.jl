@@ -5,6 +5,13 @@ using FileIO: load
 using CSVFiles
 using DataFrames
 
+@kwdef struct ValidationDataSet
+    data::Base.Generator
+    metadata::DataFrame
+end
+Base.iterate(iter::ValidationDataSet) = iterate(iter.data)
+Base.iterate(iter::ValidationDataSet, state) = iterate(iter.data, state)
+
 @kwdef struct ValidationDataCase
     name::AbstractString = nothing
     metadata::Union{AbstractDict,Nothing} = nothing
@@ -13,8 +20,8 @@ using DataFrames
     modis_falsecolor::Union{AbstractArray,Nothing} = nothing
     modis_landmask::Union{AbstractArray,Nothing} = nothing
     modis_cloudfraction::Union{AbstractArray,Nothing} = nothing
-    maisie_landmask::Union{AbstractArray,Nothing} = nothing
-    maisie_seaice::Union{AbstractArray,Nothing} = nothing
+    masie_landmask::Union{AbstractArray,Nothing} = nothing
+    masie_seaice::Union{AbstractArray,Nothing} = nothing
 
     validated_binary_floes::Union{AbstractArray{Gray{Bool}},Nothing} = nothing
     validated_labeled_floes::Union{SegmentedImage,Nothing} = nothing
@@ -91,13 +98,8 @@ Loader for validated ice floe data structured like https://github.com/danielmwat
 end
 
 function (p::ValidationDataLoader)(; case_filter::Function=(case) -> true)
-    metadata_url = joinpath(p.url, "raw", p.ref, p.dataset_metadata_path)
-    metadata_path = joinpath(p.cache_dir, p.ref, splitpath(p.dataset_metadata_path)[end])
-    mkpath(dirname(metadata_path))
-
-    # Load the metadata file
-    isfile(metadata_path) || download(metadata_url, metadata_path) # Only download if the file doesn't already exist
-    all_metadata = DataFrame(load(metadata_path))
+    # Load the metadata
+    all_metadata = _load_metadata(p)
 
     # Filter the metadata
     filtered_metadata = filter(case_filter, all_metadata)
@@ -105,8 +107,25 @@ function (p::ValidationDataLoader)(; case_filter::Function=(case) -> true)
     # Load the data for the filtered metadata
     filtered_data = (_load_case(case, p) for case in eachrow(filtered_metadata))
 
-    return (; data=filtered_data, metadata=filtered_metadata)
+    return ValidationDataSet(; data=filtered_data, metadata=filtered_metadata)
 end
+
+function (p::ValidationDataLoader)(case_filter::Function)
+    return p(; case_filter)
+end
+
+function _load_metadata(p::ValidationDataLoader)::DataFrame
+    metadata_url = joinpath(p.url, "raw", p.ref, p.dataset_metadata_path)
+    metadata_path = joinpath(p.cache_dir, p.ref, splitpath(p.dataset_metadata_path)[end])
+    mkpath(dirname(metadata_path))
+
+    # Load the metadata file
+    isfile(metadata_path) || download(metadata_url, metadata_path) # Only download if the file doesn't already exist
+    metadata = DataFrame(load(metadata_path))
+    return metadata
+end
+
+Base.length(p::ValidationDataLoader) = nrow(_load_metadata(p))
 
 function _load_case(case, p::Watkins2025GitHub)::ValidationDataCase
     data_dict = Dict()
@@ -149,15 +168,15 @@ function _load_case(case, p::Watkins2025GitHub)::ValidationDataCase
         target="modis_cloudfraction.$(ext)",
         name=:modis_cloudfraction,
     )
-    maisie_landmask = (;
+    masie_landmask = (;
         source="data/masie/landmask/$(case_number)-$(region)-$(image_side_length)-$(date).masie.landmask.$(pixel_scale).$(ext)",
-        target="maisie_landmask.$(ext)",
-        name=:maisie_landmask,
+        target="masie_landmask.$(ext)",
+        name=:masie_landmask,
     )
-    maisie_seaice = (;
+    masie_seaice = (;
         source="data/masie/seaice/$(case_number)-$(region)-$(image_side_length)-$(date).masie.seaice.$(pixel_scale).$(ext)",
-        target="maisie_seaice.$(ext)",
-        name=:maisie_seaice,
+        target="masie_seaice.$(ext)",
+        name=:masie_seaice,
     )
     validated_binary_floes = (;
         source="data/validation_dataset/binary_floes/$(case_number)-$(region)-$(date)-$(satellite)-binary_floes.png",
@@ -180,15 +199,15 @@ function _load_case(case, p::Watkins2025GitHub)::ValidationDataCase
         modis_falsecolor,
         modis_landmask,
         modis_cloudfraction,
-        maisie_landmask,
-        maisie_seaice,
+        masie_landmask,
+        masie_seaice,
         validated_binary_floes,
         validated_labeled_floes,
         validated_floe_properties,
     ]
         file_url = joinpath(p.url, "raw", p.ref, file_information.source)
         file_path = joinpath(output_directory, file_information.target)
-        data_dict[file_information.name] = get_file(file_url, file_path)
+        data_dict[file_information.name] = _get_file(file_url, file_path)
     end
 
     # Conversions
@@ -207,7 +226,7 @@ function _load_case(case, p::Watkins2025GitHub)::ValidationDataCase
     return data_struct
 end
 
-function get_file(file_url, file_path)
+function _get_file(file_url, file_path)
     @debug "looking for file at $(file_path). File exists: $(isfile(file_path))"
     if !isfile(file_path)
         try

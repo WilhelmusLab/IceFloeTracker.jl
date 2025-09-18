@@ -1,8 +1,7 @@
 using IceFloeTracker: morph_fill
 
-@testset "morp_fill.jl" begin
-    println("------------------------------------------------")
-    println("----------- Create Morp Fill Test --------------")
+@testitem "Morph Fill" begin
+    using IceFloeTracker: morph_fill
 
     img = Bool[
         0 0 0 0 0

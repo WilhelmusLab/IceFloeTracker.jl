@@ -1,4 +1,4 @@
-@testset "hbreak tests" begin
+@testitem "hbreak tests" begin
     h1, h2 = keys(IceFloeTracker.make_hbreak_dict())
     A = zeros(Bool, 20, 20)
 

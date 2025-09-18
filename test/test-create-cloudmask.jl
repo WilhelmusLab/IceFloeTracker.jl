@@ -1,15 +1,20 @@
-@testset "Create Cloudmask" begin
-    println("-------------------------------------------------")
-    println("------------ Create Cloudmask Test --------------")
+
+@testitem "Create Cloudmask" begin
+    using IceFloeTracker: @test_approx_eq_sigma_eps
+    using Images: RGBA, N0f8
+    include("config.jl")
 
     # define constants, maybe move to test config file
     matlab_cloudmask_file = "$(test_data_dir)/matlab_cloudmask.tiff"
-    println("--------- Create and apply cloudmask --------")
+
+    # Create and apply cloudmask
     ref_image = float64.(load(falsecolor_test_image_file)[test_region...])
 
     matlab_cloudmask = float64.(load(matlab_cloudmask_file))
     @time cloudmask = IceFloeTracker.create_cloudmask(ref_image)
-    @time masked_image = IceFloeTracker.apply_cloudmask(ref_image, cloudmask, modify_channel_1=true)
+    @time masked_image = IceFloeTracker.apply_cloudmask(
+        ref_image, cloudmask; modify_channel_1=true
+    )
 
     # test for percent difference in cloudmask images
     @test (@test_approx_eq_sigma_eps masked_image matlab_cloudmask [0, 0] 0.005) === nothing
