@@ -8,7 +8,8 @@
         get_tiles,
         rgb2gray,
         to_uint8,
-        histeq
+        histeq,
+        PeronaMalikDiffusion
     using Images: load, float64
     using TestImages: testimage
 
@@ -65,8 +66,13 @@
         tolerance_fraction = 0.01
         @test abs(1 - sum(clouds_red) / 1_320_925_065) < tolerance_fraction
 
+        true_color_diffused = IceFloeTracker.nonlinear_diffusion(
+            float64.(true_color_image),
+            PeronaMalikDiffusion(0.1, 75, 3, "inverse_quadratic"),
+        )
+
         tiles = get_tiles(true_color_image; rblocks=8, cblocks=6)
-        true_color_eq = conditional_histeq(true_color_image, clouds_red, tiles)
+        true_color_eq = conditional_histeq(true_color_diffused, clouds_red, tiles)
 
         # This differs from MATLAB script due to disparity in the implementations
         # of the adaptive histogram equalization / diffusion functions
@@ -76,7 +82,7 @@
         # Use custom tile size
         side_length = size(true_color_eq, 1) ÷ 8
         tiles = get_tiles(true_color_image, side_length)
-        true_color_eq = conditional_histeq(true_color_image, clouds_red, tiles)
+        true_color_eq = conditional_histeq(true_color_diffused, clouds_red, tiles)
         @test sum(to_uint8(true_color_eq[:, :, 1])) == 6_328_796_398
     end
 

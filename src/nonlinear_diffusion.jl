@@ -23,9 +23,9 @@ abstract type AbstractDiffusionAlgorithm end
 
 @kwdef struct PeronaMalikDiffusion <: AbstractDiffusionAlgorithm
     λ::Float64 = 0.1
-    K::Int = 75
-    niters::Int = 3
-    g::String = "inverse_quadratic"
+    K::Float64 = 0.1
+    niters::Int = 5
+    g::String = "exponential"
 
     # enforce conditions
     function PeronaMalikDiffusion(λ, K, niters, g)
@@ -53,7 +53,7 @@ end
 function nonlinear_diffusion(
     img::AbstractArray{<:Union{AbstractRGB,TransparentRGB,AbstractGray}},
     λ::Float64,
-    K::Int,
+    K::Float64,
     niters::Int,
 )
     return nonlinear_diffusion(img, PeronaMalikDiffusion(λ, K, niters, "inverse_quadratic"))
