@@ -62,6 +62,8 @@ ice_masks_params = (
 
 prelim_icemask_params = (radius=10, amount=2, factor=0.5)
 
+diffusion_params = PeronaMalikDiffusion(0.1, 0.1, 5, "exponential")
+
 @kwdef struct LopezAcosta2019Tiling <: IceFloeSegmentationAlgorithm
     tile_settings = (; rblocks=2, cblocks=2)
     cloud_mask_thresholds = cloud_mask_thresholds
@@ -72,6 +74,7 @@ prelim_icemask_params = (radius=10, amount=2, factor=0.5)
     ice_masks_params = ice_masks_params
     prelim_icemask_params = prelim_icemask_params
     brighten_factor = brighten_factor
+    diffusion_params:AbstractDiffusionAlgorithm = diffusion_params
 end
 
 function (p::LopezAcosta2019Tiling)(
@@ -105,7 +108,7 @@ function (p::LopezAcosta2019Tiling)(
         # Apply Perona-Malik diffusion to each channel of true color image 
         # using the default inverse quadratic flux coefficient function
         true_color_diffused = IceFloeTracker.nonlinear_diffusion(
-            float64.(true_color_image), PeronaMalikDiffusion(0.1, 0.1, 5, "exponential")
+            float64.(true_color_image), p.diffusion_params
         )
 
         rgbchannels = conditional_histeq(
