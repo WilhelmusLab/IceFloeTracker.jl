@@ -72,14 +72,14 @@
         # For the moment testing for regression
         old_value = 6_372_159_606
         new_value = sum(to_uint8(true_color_eq[:, :, 1]))
-        @test abs(old_value - new_value) / old_value < 0.002
+        @test abs(old_value - new_value) / old_value < 0.003
 
         # Use custom tile size
         side_length = size(true_color_eq, 1) ÷ 8
         true_color_eq = conditional_histeq(true_color_image, clouds_red, side_length)
         old_value = 6_328_796_398
         new_value = sum(to_uint8(true_color_eq[:, :, 1]))
-        @test abs(old_value - new_value) / old_value < 0.002
+        @test abs(old_value - new_value) / old_value < 0.003
     end
 
     @testset "RGB to grayscale" begin

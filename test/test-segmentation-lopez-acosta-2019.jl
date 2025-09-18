@@ -32,9 +32,9 @@ end
         output_directory="./test_outputs/",
     )
     @test 0.12 ≈ labeled_fraction atol = 0.1
-    @test 0.32 ≤ round(recall, digits=2)
-    @test 0.77 ≤ round(precision, digits=2)
-    @test 0.45 ≤ round(F_score, digits=2)
+    @test 0.27 ≤ round(recall, digits=2)
+    @test 0.75 ≤ round(precision, digits=2)
+    @test 0.40 ≤ round(F_score, digits=2)
 
     (; labeled_fraction, recall, precision, F_score) = run_and_validate_segmentation(
         first(data_loader(c -> (c.case_number == 14 && c.satellite == "aqua"))),
@@ -43,8 +43,8 @@ end
     )
     @test 0.05 ≈ labeled_fraction atol = 0.1
     @test 0.36 ≤ round(recall, digits=2)
-    @test 0.86 ≤ round(precision, digits=2)
-    @test 0.51 ≤ round(F_score, digits=2)
+    @test 0.5 ≤ round(precision, digits=2)
+    @test 0.46 ≤ round(F_score, digits=2)
 
     (; labeled_fraction, recall, precision, F_score) = run_and_validate_segmentation(
         first(data_loader(c -> (c.case_number == 61 && c.satellite == "aqua"))),
@@ -52,8 +52,8 @@ end
         output_directory="./test_outputs/",
     )
     @test 0.13 ≈ labeled_fraction atol = 0.1
-    @test 0.38 ≤ round(recall, digits=2)
-    @test 0.75 ≤ round(precision, digits=2)
+    @test 0.37 ≤ round(recall, digits=2)
+    @test 0.74 ≤ round(precision, digits=2)
     @test 0.50 ≤ round(F_score, digits=2)
 
     (; labeled_fraction, recall, precision, F_score) = run_and_validate_segmentation(

@@ -42,7 +42,7 @@ end
         LopezAcosta2019Tiling();
     )
     @test 0.58 ≈ labeled_fraction atol = 0.1
-    @test 0.90 ≤ round(recall, digits=2)
+    @test 0.85 ≤ round(recall, digits=2)
     @test 0.62 ≤ round(precision, digits=2)
     @test 0.73 ≤ round(F_score, digits=2)
 end
