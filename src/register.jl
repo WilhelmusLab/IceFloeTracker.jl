@@ -5,6 +5,8 @@ end
 function imrotate_bin_nocrop(x, r)
     return greaterthan05(collect(imrotate(x, r; method=BSpline(Constant()))))
 end
+# warning: all these functions crop the floe, so if the image is not padded correctly,
+# the rotated floe will be cropped!
 imrotate_bin_clockwise_radians(x, r) = imrotate_bin(x, r)
 imrotate_bin_counterclockwise_radians(x, r) = imrotate_bin(x, -r)
 imrotate_bin_clockwise_degrees(x, r) = imrotate_bin_clockwise_radians(x, deg2rad(r))
@@ -75,6 +77,7 @@ as the angle of rotation from target to reference, so to find the best match, we
 direction. A perfect match at angle `A` would imply im_target is the same shape as if im_reference was
 rotated by `A`. 
 Use `imrotate_function=imrotate_bin_<clockwise|counterclockwise>_<radians|degrees>` to get angles <clockwise|counterclockwise> in <radians|degrees>.
+Defaults to using radians.
 """
 function shape_difference_rotation(im_reference, im_target, test_angles; imrotate_function=imrotate_bin_clockwise_radians)
     shape_differences = Array{
@@ -128,7 +131,7 @@ function register(
         im_reference, im_target, test_angles; imrotate_function
     )
     best_match = argmin((x) -> x.shape_difference, shape_differences)
-    return best_match.angle
+    return best_match.angle # should we include the best_match.shape_difference?
 end
 
 """
@@ -154,9 +157,9 @@ function mismatch(fixed::AbstractArray, moving::AbstractArray, test_angles::Abst
     )
     best_match = argmin((x) -> x.shape_difference, shape_differences)
     rotation_degrees = best_match.angle
-    normalized_area = (sum(fixed) + sum(moving)) / 2
+    normalized_area = (sum(fixed) + sum(moving)) / 2 # dmw: I think normalizing by perimeter may be better
     normalized_mismatch = best_match.shape_difference / normalized_area
-    return (mm=normalized_mismatch, rot=rotation_degrees)
+    return (mm=normalized_mismatch, rot=rotation_degrees) # dmw: Potentially should output the non-normalized difference, too
 end
 
 """
