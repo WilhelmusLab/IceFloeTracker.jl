@@ -72,7 +72,7 @@
         # For the moment testing for regression
         old_value = 6_372_159_606
         new_value = sum(to_uint8(true_color_eq[:, :, 1]))
-        @test abs(old_value - new_value) / old_value < 0.003
+        @test abs(1 - new_value / old_value) < 0.003
 
         # Use custom tile size
         side_length = size(true_color_eq, 1) ÷ 8
