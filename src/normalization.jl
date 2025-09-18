@@ -92,8 +92,9 @@ function imsharpen(
     intensity::Float64=2.0,
 )::Matrix{Float64}
     input_image = IceFloeTracker.apply_landmask(truecolor_image, landmask_no_dilate)
-
-    input_image .= IceFloeTracker.nonlinear_diffusion(input_image, PeronaMalikDiffusion(lambda, kappa, niters, "exponential"))
+    
+    pmd = PeronaMalikDiffusion(lambda, kappa, niters, "exponential")
+    input_image .= IceFloeTracker.nonlinear_diffusion(input_image, pmd)
 
     masked_view = Float64.(channelview(input_image))
 

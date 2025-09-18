@@ -98,7 +98,8 @@ function _process_image_tiles(
 
     # Apply Perona-Malik diffusion to each channel of true color image 
     # using the default inverse quadratic flux coefficient function
-    true_color_diffused = IceFloeTracker.nonlinear_diffusion(float64.(true_color_image), PeronaMalikDiffusion(0.1, 0.1, 5, "exponential"))
+    pmd = PeronaMalikDiffusion(0.1, 0.1, 5, "exponential")
+    true_color_diffused = IceFloeTracker.nonlinear_diffusion(float64.(true_color_image), pmd)
 
     rgbchannels = get_rgb_channels(true_color_diffused)
 
