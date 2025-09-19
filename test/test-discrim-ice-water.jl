@@ -5,8 +5,8 @@
 
     input_image = float64.(load(truecolor_test_image_file)[test_region...])
     falsecolor_image = float64.(load(falsecolor_test_image_file)[test_region...])
-    landmask = convert(BitMatrix, load(current_landmask_file))
-    landmask_no_dilate = convert(BitMatrix, float64.(load(landmask_no_dilate_file)))
+    landmask = .!convert(BitMatrix, load(current_landmask_file))
+    landmask_no_dilate = .!convert(BitMatrix, float64.(load(landmask_no_dilate_file)))
     cloudmask = .!IceFloeTracker.create_cloudmask(falsecolor_image) # reversed cloudmask
     matlab_ice_water_discrim =
         float64.(load("$(test_data_dir)/matlab_ice_water_discrim.png"))
