@@ -97,7 +97,7 @@ function get_ice_masks( #tbd: rename to kmeans_binarization?
     ice_mask = BitMatrix(zeros(Bool, sz))
     binarized_tiling = zeros(Int, sz)
 
-    fc_landmasked = apply_landmask(falsecolor_image, .!landmask) # will need to flip once the landmask is the right style
+    fc_landmasked = apply_landmask(falsecolor_image, landmask) # will need to flip once the landmask is the right style
 
     # Threads.@threads
     for tile in tiles
