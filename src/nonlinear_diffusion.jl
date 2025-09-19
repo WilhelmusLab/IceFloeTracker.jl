@@ -15,6 +15,7 @@ PeronaMalikDiffusion(λ, K, niters, g)
 P. Perona and J. Malik (November 1987). "Scale-space and edge detection using anisotropic diffusion". Proceedings of IEEE Computer Society Workshop on Computer Vision. pp. 16–22.
 P. Perona and J. Malik, Scale-Space and Edge Detection Using Anisotropic Diffusion, IEEE Transactions on Pattern Analysis and Machine Intelligence, 12(7):629-639, July 1990
 G. Grieg, O. Kubler, R. Kikinis, and F. A. Jolesz, Nonlinear Anisotropic Filtering of MRI Data, IEEE Transactions on Medical Imaging, 11(2):221-232, June 1992
+
 """
 
 include("gradient_functions.jl")
@@ -49,6 +50,7 @@ function nonlinear_diffusion(
     return f(img)
 end
 
+"""Perform nonlinear diffusion on an input image. By default, use the Perona-Malik method."""
 function nonlinear_diffusion(
     img::AbstractArray{<:Union{AbstractRGB,TransparentRGB,AbstractGray}},
     λ::Float64,

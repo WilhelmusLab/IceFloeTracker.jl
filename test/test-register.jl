@@ -31,7 +31,6 @@
             push!(results, (; θ1, θ2, Δθ, Δθ_measured, minimum_absolute_error, ok))
         end
         df = DataFrame(results)
-        # @info sort(df)
         fraction_ok = sum(df[:, :ok]) / length(df[:, :ok])
         @info "fraction_ok $fraction_ok >= $target_fraction_ok?"
         @test target_fraction_ok <= fraction_ok

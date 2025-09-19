@@ -21,6 +21,7 @@
     input_landmasked = IceFloeTracker.apply_landmask(input_image, landmask_no_dilate)
 
     @time image_diffused = IceFloeTracker.nonlinear_diffusion(input_landmasked, PeronaMalikDiffusion(0.1, 0.1, 5, "exponential"))
+    @time image_diffused = IceFloeTracker.nonlinear_diffusion(input_landmasked, PeronaMalikDiffusion(0.1, 0.1, 5, "exponential"))
 
     @test (@test_approx_eq_sigma_eps image_diffused matlab_diffused [0, 0] 0.0054) ===
         nothing
@@ -79,7 +80,7 @@
     )
 
     #test for percent difference in normalized images
-    eps = test_approx_eq_sigma_eps(normalized_image, matlab_norm_image, ones(2), 0.1, true))
+    eps = test_approx_eq_sigma_eps(normalized_image, matlab_norm_image, ones(2), 0.1, true)
     @info "Epsilon: "*string(eps)
 
     @test (@test_approx_eq_sigma_eps normalized_image matlab_norm_image [0, 0] 0.05) ===
