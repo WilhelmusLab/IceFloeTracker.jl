@@ -160,7 +160,8 @@ function (p::LopezAcosta2019Tiling)(
 
     begin
         @debug "Step 9: Get preliminary ice masks"
-        binarized_tiling = tiled_adaptive_binarization(Gray.(morphed_residue ./ 255), tiles) .> 0
+        binarized_tiling = tiled_adaptive_binarization(Gray.(morphed_residue ./ 255), tiles;
+                                           minimum_window_size=32, threshold_percentage=15) .> 0
         prelim_icemask = get_ice_masks(
             ref_image, Gray.(morphed_residue / 255), _landmask.dilated, tiles; ice_masks_params...
         )
