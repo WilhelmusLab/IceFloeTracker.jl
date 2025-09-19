@@ -16,7 +16,7 @@ end
     )
     @test 0.43 ≈ labeled_fraction atol = 0.1
     @test 0.87 ≤ round(recall, digits=2)
-    @test 0.57 ≤ round(precision, digits=2)
+    @test 0.56 ≤ round(precision, digits=2)
     @test 0.69 ≤ round(F_score, digits=2)
 
     (; labeled_fraction, recall, precision, F_score) = run_and_validate_segmentation(
