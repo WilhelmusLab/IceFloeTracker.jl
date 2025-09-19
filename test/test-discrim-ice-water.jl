@@ -5,6 +5,7 @@
 
     input_image = float64.(load(truecolor_test_image_file)[test_region...])
     falsecolor_image = float64.(load(falsecolor_test_image_file)[test_region...])
+    # Flip the imported landmasks, since they have ocean=0 (i.e. they are ocean masks).
     landmask = .!convert(BitMatrix, load(current_landmask_file))
     landmask_no_dilate = .!convert(BitMatrix, float64.(load(landmask_no_dilate_file)))
     cloudmask = .!IceFloeTracker.create_cloudmask(falsecolor_image) # reversed cloudmask
