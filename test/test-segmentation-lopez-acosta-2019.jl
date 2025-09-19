@@ -34,7 +34,7 @@ end
     @test 0.12 ≈ labeled_fraction atol = 0.1
     @test 0.27 ≤ round(recall, digits=2)
     @test 0.75 ≤ round(precision, digits=2)
-    @test 0.4 ≤ round(F_score, digits=2)
+    @test 0.40 ≤ round(F_score, digits=2)
 
     (; labeled_fraction, recall, precision, F_score) = run_and_validate_segmentation(
         first(data_loader(c -> (c.case_number == 14 && c.satellite == "aqua"))),

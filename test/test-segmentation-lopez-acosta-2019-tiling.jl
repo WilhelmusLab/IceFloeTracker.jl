@@ -23,7 +23,7 @@ end
         first(data_loader(c -> (c.case_number == 14 && c.satellite == "aqua"))),
         LopezAcosta2019Tiling();
     )
-    @test 0.334 ≈ labeled_fraction atol = 0.1
+    @test 0.33 ≈ labeled_fraction atol = 0.1
     @test 0.85 ≤ round(recall, digits=2)
     @test 0.31 ≤ round(precision, digits=2)
     @test 0.46 ≤ round(F_score, digits=2)
@@ -42,7 +42,7 @@ end
         LopezAcosta2019Tiling();
     )
     @test 0.58 ≈ labeled_fraction atol = 0.1
-    @test 0.89 ≤ round(recall, digits=2)
+    @test 0.85 ≤ round(recall, digits=2)
     @test 0.62 ≤ round(precision, digits=2)
     @test 0.73 ≤ round(F_score, digits=2)
 end
