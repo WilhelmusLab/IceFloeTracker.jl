@@ -1,5 +1,6 @@
 @testitem "Segmentation-F" begin
     using DelimitedFiles
+    using Images: complement
     
     include("config.jl")
     include("test_error_rate.jl")
@@ -12,7 +13,8 @@
     ## Load function arg files
 
     cloudmask = convert(BitMatrix, load(cloudmask_test_file))
-    landmask = convert(BitMatrix, load(current_landmask_file))
+    # convert ocean mask into land mask, so land=1
+    landmask = .!convert(BitMatrix, load(current_landmask_file))
     watershed_intersect = load(watershed_test_file) .> 0.499
     ice_labels =
         Int64.(

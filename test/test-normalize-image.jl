@@ -9,8 +9,9 @@
     matlab_sharpened_file = "$(test_data_dir)/matlab_sharpened.png"
     matlab_diffused_file = "$(test_data_dir)/matlab_diffused.png"
     matlab_equalized_file = "$(test_data_dir)/matlab_equalized.png"
-    landmask_bitmatrix = convert(BitMatrix, float64.(load(current_landmask_file)))
-    landmask_no_dilate = convert(BitMatrix, float64.(load(landmask_no_dilate_file)))
+    # flip ocean mask to land mask
+    landmask_bitmatrix = .!convert(BitMatrix, float64.(load(current_landmask_file)))
+    landmask_no_dilate = .!convert(BitMatrix, float64.(load(landmask_no_dilate_file)))
     input_image = float64.(load(truecolor_test_image_file)[test_region...])
     matlab_norm_image = float64.(load(matlab_normalized_img_file)[test_region...])
     matlab_sharpened = float64.(load(matlab_sharpened_file))
@@ -20,7 +21,8 @@
     @info "Process Image - Diffusion"
     input_landmasked = IceFloeTracker.apply_landmask(input_image, landmask_no_dilate)
 
-    @time image_diffused = IceFloeTracker.nonlinear_diffusion(input_landmasked, PeronaMalikDiffusion(0.1, 0.1, 5, "exponential"))
+    pmd =  PeronaMalikDiffusion(0.1, 0.1, 5, "exponential")
+    @time image_diffused = IceFloeTracker.nonlinear_diffusion(input_landmasked, pmd)
 
     @test (@test_approx_eq_sigma_eps image_diffused matlab_diffused [0, 0] 0.0054) ===
         nothing
