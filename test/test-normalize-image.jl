@@ -21,7 +21,6 @@
     input_landmasked = IceFloeTracker.apply_landmask(input_image, landmask_no_dilate)
 
     @time image_diffused = IceFloeTracker.nonlinear_diffusion(input_landmasked, PeronaMalikDiffusion(0.1, 0.1, 5, "exponential"))
-    @time image_diffused = IceFloeTracker.nonlinear_diffusion(input_landmasked, PeronaMalikDiffusion(0.1, 0.1, 5, "exponential"))
 
     @test (@test_approx_eq_sigma_eps image_diffused matlab_diffused [0, 0] 0.0054) ===
         nothing
