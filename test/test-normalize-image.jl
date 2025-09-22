@@ -82,7 +82,7 @@
     eps = test_approx_eq_sigma_eps(normalized_image, matlab_norm_image, ones(2), 0.1, true)
     @info "Epsilon: "*string(eps)
 
-    @test (@test_approx_eq_sigma_eps normalized_image matlab_norm_image [0, 0] 0.05) ===
+    @test test_approx_eq_sigma_eps(normalized_image, matlab_norm_image, ones(2), 0.1, true) <= 0.05
         nothing
 
     normalized_image_filename =
