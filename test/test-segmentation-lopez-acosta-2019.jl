@@ -67,7 +67,6 @@ end
     @test 0.73 ≤ round(F_score, digits=2) broken = true
 end
 
-
 @testitem "LopezAcosta2019 – image types" setup = [Segmentation] tags = [:e2e] begin
     using Images: RGB, n0f8, n6f10, n4f12, n2f14, n0f16, float32, float64
     data_loader = Watkins2025GitHub(; ref="a451cd5e62a10309a9640fbbe6b32a236fcebc70")
