@@ -119,6 +119,7 @@ function conditional_histeq(
     white_threshold::Real=25.5,
     white_fraction_threshold::Real=0.4,
 )
+
     rgbchannels = get_rgb_channels(true_color_diffused)
 
     # For each tile, compute the entropy in the false color tile, and the fraction of white and black pixels

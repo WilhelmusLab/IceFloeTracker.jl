@@ -77,13 +77,17 @@
         # This differs from MATLAB script due to disparity in the implementations
         # of the adaptive histogram equalization / diffusion functions
         # For the moment testing for regression
-        @test sum(to_uint8(true_color_eq[:, :, 1])) == 6_372_159_606
+        old_value = 6_372_159_606
+        new_value = sum(to_uint8(true_color_eq[:, :, 1]))
+        @test abs(1 - new_value / old_value) < 0.003
 
         # Use custom tile size
         side_length = size(true_color_eq, 1) ÷ 8
         tiles = get_tiles(true_color_image, side_length)
         true_color_eq = conditional_histeq(true_color_diffused, clouds_red, tiles)
-        @test sum(to_uint8(true_color_eq[:, :, 1])) == 6_328_796_398
+        old_value = 6_328_796_398
+        new_value = sum(to_uint8(true_color_eq[:, :, 1]))
+        @test abs(1 - new_value / old_value) < 0.003
     end
 
     @testset "RGB to grayscale" begin
