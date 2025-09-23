@@ -1,4 +1,5 @@
 @testitem "Create Landmask" begin
+    using Images: save
     include("config.jl")
     include("test_error_rate.jl")
 

@@ -82,7 +82,7 @@ end
     @testset "find_ice_labels" begin
         @testset "matlab comparison" begin
             falsecolor_image = float64.(load(falsecolor_test_image_file)[test_region...])
-            landmask = .!convert(BitMatrix, load(current_landmask_file)) # Test landmask file has ocean = 0
+            landmask = convert(BitMatrix, load(current_landmask_file)) 
             ice_labels_matlab = DelimitedFiles.readdlm(
                 "$(test_data_dir)/ice_labels_matlab.csv", ','
             )
