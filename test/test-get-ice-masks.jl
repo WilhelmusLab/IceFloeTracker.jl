@@ -24,7 +24,7 @@
     end
 
     tiles = get_tiles(ref_image; rblocks=2, cblocks=3)
-    ref_image_landmasked = apply_landmask(ref_image, .!landmask)
+    ref_image_landmasked = apply_landmask(ref_image, landmask)
 
     begin
         tile = tiles[1]

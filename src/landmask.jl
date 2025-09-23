@@ -38,13 +38,13 @@ for land pixels be chosen.
 - `landmask_image`: land mask image, e.g. from NASA Worldview
 - `tol` (Optional): Values in the image larger than `tol` are considered land.
 """
-function binarize_landmask(landmask_image::AbstractArray{<:Union{AbstractRGB,TransparentRGB}}; tol=0.1)::BitMatrix
-    return Gray.(landmask_image) .>= tol
+function binarize_landmask(landmask_image; tol=0.1)::BitMatrix
+    return Gray.(landmask_image) .> tol
 end
 
-function binarize_landmask(landmask_image::AbstractArray{AbstractGray}; tol=0.1)::BitMatrix
-    return landmask_image .>= tol
-end
+# function binarize_landmask(landmask_image; tol=0.1)::BitMatrix
+#     return binarize_landmask(Gray.(landmask_image); tol=tol)
+# end
 
 """
     apply_landmask(input_image, landmask_binary)

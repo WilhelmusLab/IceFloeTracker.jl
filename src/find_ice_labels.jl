@@ -201,9 +201,9 @@ function find_ice_labels(
 end
 
 function find_ice_mask(
-    falsecolor_image::Matrix{RGB{Float64}}, not_land::BitMatrix; kwargs...
+    falsecolor_image::Matrix{RGB{Float64}}, landmask::BitMatrix; kwargs...
 )
-    masked_image = masker(.!(not_land))(falsecolor_image)
+    masked_image = masker(landmask)(falsecolor_image)
     algorithm = IceDetectionLopezAcosta2019(; kwargs...)
     ice_mask = binarize(masked_image, algorithm)
     return ice_mask
