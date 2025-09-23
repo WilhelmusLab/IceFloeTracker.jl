@@ -50,6 +50,7 @@ function nonlinear_diffusion(
     return f(img)
 end
 
+"""Perform nonlinear diffusion on an input image. By default, use the Perona-Malik method."""
 function nonlinear_diffusion(
     img::AbstractArray{<:Union{AbstractRGB,TransparentRGB,AbstractGray}},
     λ::Float64,
