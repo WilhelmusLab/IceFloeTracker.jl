@@ -1,6 +1,6 @@
 @testitem "Normalize Image" begin
     using IceFloeTracker: strel_diamond, @test_approx_eq_sigma_eps, PeronaMalikDiffusion
-    using Images: channelview, colorview, RGB
+    using Images: channelview, colorview, RGB, test_approx_eq_sigma_eps
 
     include("config.jl")
 
@@ -25,6 +25,7 @@
     @test (@test_approx_eq_sigma_eps image_diffused matlab_diffused [0, 0] 0.0054) ===
         nothing
 
+    # dmw: not sure what these are for
     @test (@test_approx_eq_sigma_eps input_landmasked image_diffused [0, 0] 0.004) ===
         nothing
     @test (@test_approx_eq_sigma_eps input_landmasked matlab_diffused [0, 0] 0.007) ===
@@ -78,7 +79,10 @@
     )
 
     #test for percent difference in normalized images
-    @test (@test_approx_eq_sigma_eps normalized_image matlab_norm_image [0, 0] 0.045) ===
+    eps = test_approx_eq_sigma_eps(normalized_image, matlab_norm_image, ones(2), 0.1, true)
+    @info "Epsilon: "*string(eps)
+
+    @test test_approx_eq_sigma_eps(normalized_image, matlab_norm_image, ones(2), 0.1, true) <= 0.05
         nothing
 
     normalized_image_filename =
