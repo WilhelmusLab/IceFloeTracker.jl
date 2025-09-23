@@ -20,8 +20,8 @@
        
     # Create and save the landmask images
     landmask_imgs = IceFloeTracker.create_landmask(lm_image)
-    save("test/test_inputs/julia_landmask_non_dilated.png", landmask_imgs.non_dilated)
-    save("test/test_inputs/julia_landmask_dilated.png", landmask_imgs.non_dilated)
+    IceFloeTracker.@persist landmask_imgs.non_dilated "test/test_inputs/julia_landmask_non_dilated.png"
+    IceFloeTracker.@persist landmask_imgs.dilated "test/test_inputs/julia_landmask_dilated.png"
 
     # Generate testing files
     @time landmask_no_dilate = landmask.non_dilated
