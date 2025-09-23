@@ -2,20 +2,25 @@
     include("config.jl")
     include("test_error_rate.jl")
 
-    # define constants, maybe move to test config file
-    matlab_landmask_file = "$(test_data_dir)/matlab_landmask.png"
-    matlab_landmask_no_dilate_file = "$(test_data_dir)/matlab_landmask_no_dilate.png"
     strel_file = "$(test_data_dir)/se.csv"
     struct_elem = readdlm(strel_file, ',', Bool) # read in original matlab structuring element -  a disk-shaped kernel with radius of 50 px
-    matlab_landmask = convert(BitMatrix, load(matlab_landmask_file)[lm_test_region...])
-    matlab_landmask_no_dilate = convert(BitMatrix, load(matlab_landmask_no_dilate_file)[lm_test_region...])
-    lm_image = load(landmask_file)[lm_test_region...]
+    matlab_landmask_dilated = convert(BitMatrix, load("$(test_data_dir)/matlab_landmask_dilated.png")[lm_test_region...])
+    matlab_landmask_non_dilated = convert(BitMatrix, load("$(test_data_dir)/matlab_landmask_non_dilated.png")[lm_test_region...])
+    lm_image = load(landmask_file)
     test_image = load(truecolor_test_image_file)[lm_test_region...]
     
-    @time landmask = IceFloeTracker.create_landmask(lm_image, struct_elem)
+    landmask_image = load("$(test_data_dir)/landmask.tiff")
 
-    # Test method with default se
-    @test landmask == IceFloeTracker.create_landmask(lm_image)
+    # Check whether the built-in strel matches the matlab strel
+    @time landmask_init_strel = IceFloeTracker.create_landmask(lm_image[lm_test_region...], struct_elem)
+    @time landmask_default_strel = IceFloeTracker.create_landmask(lm_image[lm_test_region...])
+
+    @test landmask_default_strel == landmask_init_strel 
+       
+    # Create and save the landmask images
+    landmask_imgs = IceFloeTracker.create_landmask(lm_image)
+    save("test/test_inputs/julia_landmask_non_dilated.png", landmask_imgs.non_dilated)
+    save("test/test_inputs/julia_landmask_dilated.png", landmask_imgs.non_dilated)
 
     # Generate testing files
     @time landmask_no_dilate = landmask.non_dilated
@@ -26,9 +31,9 @@
     )
 
     # test for percent difference in landmask images
-    @test test_similarity(landmask.dilated, convert(BitMatrix, matlab_landmask), 0.005)
+    @test test_similarity(landmask.dilated, convert(BitMatrix, matlab_landmask_dilated), 0.005)
     @test test_similarity(
-        landmask.non_dilated, convert(BitMatrix, matlab_landmask_no_dilate), 0.005
+        landmask.non_dilated, convert(BitMatrix, matlab_landmask_non_dilated), 0.005
     ) # flipping the landmask to match the matlab landmask
 
     # test for in-place allocation reduction
