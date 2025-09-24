@@ -10,8 +10,8 @@
     matlab_diffused_file = "$(test_data_dir)/matlab_diffused.png"
     matlab_equalized_file = "$(test_data_dir)/matlab_equalized.png"
     # flip ocean mask to land mask
-    landmask_bitmatrix = .!convert(BitMatrix, float64.(load(current_landmask_file)))
-    landmask_no_dilate = .!convert(BitMatrix, float64.(load(landmask_no_dilate_file)))
+    landmask_bitmatrix = .!convert(BitMatrix, float64.(load(current_landmask_file)[test_region...]))
+    landmask_no_dilate = .!convert(BitMatrix, float64.(load(landmask_no_dilate_file)[test_region...]))
     input_image = float64.(load(truecolor_test_image_file)[test_region...])
     matlab_norm_image = float64.(load(matlab_normalized_img_file)[test_region...])
     matlab_sharpened = float64.(load(matlab_sharpened_file))
