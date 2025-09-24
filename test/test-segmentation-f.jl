@@ -14,7 +14,7 @@
 
     cloudmask = convert(BitMatrix, load(cloudmask_test_file))
     # convert ocean mask into land mask, so land=1
-    landmask = .!convert(BitMatrix, load(current_landmask_file))
+    landmask = convert(BitMatrix, load(current_landmask_file)[test_region...])
     watershed_intersect = load(watershed_test_file) .> 0.499
     ice_labels =
         Int64.(
