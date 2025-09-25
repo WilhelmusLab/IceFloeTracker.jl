@@ -1,4 +1,5 @@
-"""create_landmask(landmask_image, struct_elem, fill_value_lower, fill_value_upper)
+"""
+    create_landmask(landmask_image, struct_elem, fill_value_lower, fill_value_upper)
 
 Convert a land mask image to a 1-channel binary matrix, and use a structuring element to extend a buffer to mask complex coastal features, and fill holes in the dilated image. In the resulting mask, land = 0 and ocean = 1. Returns a named tuple with the dilated and non-dilated landmask.
 
