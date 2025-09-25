@@ -80,9 +80,7 @@ function (p::LopezAcosta2019Tiling)(
     landmask::AbstractArray{<:Union{AbstractGray,AbstractRGB,TransparentRGB}};
     intermediate_results_callback::Union{Nothing,Function}=nothing,
 )
-    @warn "using undilated landmask as dilated"  # TODO: add landmask dilation as a step
-    _landmask = (dilated=(float64.(Gray.(landmask))) .> 0,) # TODO: remove this typecast to float64
-
+    _landmask = IceFloeTracker.create_landmask(landmask, strel_box((3,3))) # smaller strel than in some test cases
     tiles = get_tiles(truecolor; p.tile_settings...)
 
     ref_image = RGB.(falsecolor)  # TODO: remove this typecast
@@ -130,17 +128,18 @@ function (p::LopezAcosta2019Tiling)(
     begin
         @debug "Step 6: Repeat step 5 with equalized_gray (landmasking, no sharpening)"
         equalized_gray_reconstructed = deepcopy(equalized_gray)
-        equalized_gray_reconstructed[_landmask.dilated] .= 0
+        IceFloeTracker.apply_landmask!(equalized_gray_reconstructed, _landmask.dilated)
+
         equalized_gray_reconstructed = reconstruct(
             equalized_gray_reconstructed, structuring_elements.se_disk1, "dilation", true
         )
-        equalized_gray_reconstructed[_landmask.dilated] .= 0
+        IceFloeTracker.apply_landmask!(equalized_gray_reconstructed, _landmask.dilated)
     end
 
     begin
         @debug "Step 7: Brighten equalized_gray"
         brighten = get_brighten_mask(equalized_gray_reconstructed, gammagreen)
-        equalized_gray[_landmask.dilated] .= 0
+        IceFloeTracker.apply_landmask!(equalized_gray, _landmask.dilated)
         equalized_gray .= imbrighten(equalized_gray, brighten, brighten_factor)
     end
 

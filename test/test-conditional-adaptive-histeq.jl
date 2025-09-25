@@ -24,7 +24,7 @@
         )
         true_color_image = float64.(load(path_true_color_image))
         false_color_image = float64.(load(path_false_color_image))
-        dilated_landmask = BitMatrix(load(joinpath(datadir, "matlab_landmask.png")))
+        dilated_landmask = BitMatrix(load(joinpath(datadir, "matlab_landmask_dilated.png")))
     end
 
     @testset "Prereq cloud image" begin
