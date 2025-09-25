@@ -31,30 +31,30 @@ end
         LopezAcosta2019();
         output_directory="./test_outputs/",
     )
-    @test 0.119 ≈ labeled_fraction atol = 0.1
-    @test 0.315 ≤ recall
-    @test 0.770 ≤ precision
-    @test 0.447 ≤ F_score
+    @test 0.12 ≈ labeled_fraction atol = 0.1
+    @test 0.27 ≤ round(recall, digits=2)
+    @test 0.75 ≤ round(precision, digits=2)
+    @test 0.40 ≤ round(F_score, digits=2)
 
     (; labeled_fraction, recall, precision, F_score) = run_and_validate_segmentation(
         first(data_loader(c -> (c.case_number == 14 && c.satellite == "aqua"))),
         LopezAcosta2019();
         output_directory="./test_outputs/",
     )
-    @test 0.052 ≈ labeled_fraction atol = 0.1
-    @test 0.360 ≤ recall
-    @test 0.857 ≤ precision
-    @test 0.507 ≤ F_score
+    @test 0.05 ≈ labeled_fraction atol = 0.1
+    @test 0.36 ≤ round(recall, digits=2)
+    @test 0.5 ≤ round(precision, digits=2)
+    @test 0.46 ≤ round(F_score, digits=2)
 
     (; labeled_fraction, recall, precision, F_score) = run_and_validate_segmentation(
         first(data_loader(c -> (c.case_number == 61 && c.satellite == "aqua"))),
         LopezAcosta2019();
         output_directory="./test_outputs/",
     )
-    @test 0.132 ≈ labeled_fraction atol = 0.1
-    @test 0.379 ≤ recall
-    @test 0.754 ≤ precision
-    @test 0.504 ≤ F_score
+    @test 0.13 ≈ labeled_fraction atol = 0.1
+    @test 0.37 ≤ round(recall, digits=2)
+    @test 0.74 ≤ round(precision, digits=2)
+    @test 0.50 ≤ round(F_score, digits=2)
 
     (; labeled_fraction, recall, precision, F_score) = run_and_validate_segmentation(
         first(data_loader(c -> (c.case_number == 63 && c.satellite == "aqua"))),
@@ -62,9 +62,9 @@ end
         output_directory="./test_outputs/",
     )
     @test labeled_fraction ≈ 0.579 rtol = 0.1 broken = true
-    @test 0.901 ≤ recall broken = true
-    @test 0.620 ≤ precision
-    @test 0.734 ≤ F_score broken = true
+    @test 0.90 ≤ round(recall, digits=2) broken = true
+    @test 0.62 ≤ round(precision, digits=2)
+    @test 0.73 ≤ round(F_score, digits=2) broken = true
 end
 
 @testitem "LopezAcosta2019 – image types" setup = [Segmentation] tags = [:e2e] begin

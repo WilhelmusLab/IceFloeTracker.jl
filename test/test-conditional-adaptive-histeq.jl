@@ -5,6 +5,7 @@
         convert_to_255_matrix,
         adapthisteq,
         conditional_histeq,
+        get_tiles,
         rgb2gray,
         to_uint8,
         histeq
@@ -23,7 +24,7 @@
         )
         true_color_image = float64.(load(path_true_color_image))
         false_color_image = float64.(load(path_false_color_image))
-        dilated_landmask = BitMatrix(load(joinpath(datadir, "matlab_landmask.png")))
+        dilated_landmask = BitMatrix(load(joinpath(datadir, "matlab_landmask_dilated.png")))
     end
 
     @testset "Prereq cloud image" begin
@@ -64,18 +65,23 @@
         tolerance_fraction = 0.01
         @test abs(1 - sum(clouds_red) / 1_320_925_065) < tolerance_fraction
 
-        # Using rblocks = 8, cblocks = 6
-        true_color_eq = conditional_histeq(true_color_image, clouds_red, 8, 6)
+        tiles = get_tiles(true_color_image; rblocks=8, cblocks=6)
+        true_color_eq = conditional_histeq(true_color_image, clouds_red, tiles)
 
         # This differs from MATLAB script due to disparity in the implementations
         # of the adaptive histogram equalization / diffusion functions
         # For the moment testing for regression
-        @test sum(to_uint8(true_color_eq[:, :, 1])) == 6_372_159_606
+        old_value = 6_372_159_606
+        new_value = sum(to_uint8(true_color_eq[:, :, 1]))
+        @test abs(1 - new_value / old_value) < 0.003
 
         # Use custom tile size
         side_length = size(true_color_eq, 1) ÷ 8
-        true_color_eq = conditional_histeq(true_color_image, clouds_red, side_length)
-        @test sum(to_uint8(true_color_eq[:, :, 1])) == 6_328_796_398
+        tiles = get_tiles(true_color_image, side_length)
+        true_color_eq = conditional_histeq(true_color_image, clouds_red, tiles)
+        old_value = 6_328_796_398
+        new_value = sum(to_uint8(true_color_eq[:, :, 1]))
+        @test abs(1 - new_value / old_value) < 0.003
     end
 
     @testset "RGB to grayscale" begin

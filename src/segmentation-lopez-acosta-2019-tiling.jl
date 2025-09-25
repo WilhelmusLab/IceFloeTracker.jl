@@ -1,7 +1,7 @@
 using Images
 using IceFloeTracker:
     get_tiles,
-    _process_image_tiles,
+    conditional_histeq,
     to_uint8,
     unsharp_mask,
     imbrighten,
@@ -80,9 +80,7 @@ function (p::LopezAcosta2019Tiling)(
     landmask::AbstractArray{<:Union{AbstractGray,AbstractRGB,TransparentRGB}};
     intermediate_results_callback::Union{Nothing,Function}=nothing,
 )
-    @warn "using undilated landmask as dilated"  # TODO: add landmask dilation as a step
-    _landmask = (dilated=(float64.(Gray.(landmask))) .> 0,) # TODO: remove this typecast to float64
-
+    _landmask = IceFloeTracker.create_landmask(landmask, strel_box((3,3))) # smaller strel than in some test cases
     tiles = get_tiles(truecolor; p.tile_settings...)
 
     ref_image = RGB.(falsecolor)  # TODO: remove this typecast
@@ -111,17 +109,9 @@ function (p::LopezAcosta2019Tiling)(
             entropy = Images.entropy(clouds_tile) # Entropy calculation works on grayscale images and on uint8
             whitefraction = sum(clouds_tile .> adapthisteq_params.white_threshold / 255) / length(clouds_tile) # threshold depends on image type. Update to 0-1.
 
-            if entropy > adapthisteq_params.entropy_threshold && whitefraction > adapthisteq_params.white_fraction_threshold
-                for i in 1:3
-                    img = rgbchannels[i, tile...]
-                    image_min, image_max = minimum(img), maximum(img)
-                    normalized_image = adjust_histogram(img, LinearStretching((image_min, image_max) => (0, 1)))
-                    equalized_image = sk_exposure.equalize_adapthist(normalized_image; clip_limit=0.01,  nbins=256)
-                    final_image = sk_exposure.rescale_intensity(equalized_image; in_range="image", out_range=(image_min, image_max))
-                    rgbchannels[i, tile...] .= final_image
-                end
-            end
-        end
+        rgbchannels = conditional_histeq(
+            true_color_image, clouds_red, tiles; adapthisteq_params...
+        )
 
         true_color_equalized = colorview(eltype(true_color_diffused), rgbchannels)
 
@@ -168,19 +158,24 @@ function (p::LopezAcosta2019Tiling)(
         # floes are being darkened by a multiplicative factor "bright factor".
         # Note: very sensitive to the data being float, not N0f8
 
-        _mask = (Float64.(equalized_gray_reconstructed) .- Float64.(gammagreen)) .> 0
-        equalized_gray[_mask] .= equalized_gray[_mask] * brighten_factor
-        # dmw: this method of brightening can make things larger than 1. clamp or rescale?
-        morphed_residue = clamp.(equalized_gray .- equalized_gray_reconstructed, 0, 1)
+    # TODO: Steps 6 and 7 can be done in parallel as they are independent
+    begin
+        @debug "Step 6: Repeat step 5 with equalized_gray (landmasking, no sharpening)"
+        equalized_gray_reconstructed = deepcopy(equalized_gray)
+        IceFloeTracker.apply_landmask!(equalized_gray_reconstructed, _landmask.dilated)
 
-        # brighten = get_brighten_mask(equalized_gray_reconstructed, gammagreen)
-        # equalized_gray[_landmask.dilated] .= 0 # dmw: do we need this here?
-        # equalized_gray .= imbrighten(equalized_gray, brighten, brighten_factor)
+        equalized_gray_reconstructed = reconstruct(
+            equalized_gray_reconstructed, structuring_elements.se_disk1, "dilation", true
+        )
+        IceFloeTracker.apply_landmask!(equalized_gray_reconstructed, _landmask.dilated)
     end
 
     begin
-        @debug "Step 8: Brighten residue using gamma adjustment mask"
-        agp = adjust_gamma_params # gamma, factor, threshold
+        @debug "Step 7: Brighten equalized_gray"
+        brighten = get_brighten_mask(equalized_gray_reconstructed, gammagreen)
+        IceFloeTracker.apply_landmask!(equalized_gray, _landmask.dilated)
+        equalized_gray .= imbrighten(equalized_gray, brighten, brighten_factor)
+    end
 
         equalized_gray_sharpened_reconstructed_adjusted = complement.(
             adjust_histogram(equalized_gray_sharpened_reconstructed, GammaCorrection(agp.gamma)))
@@ -193,7 +188,8 @@ function (p::LopezAcosta2019Tiling)(
 
     begin
         @debug "Step 9: Get preliminary ice masks"
-        binarized_tiling = tiled_adaptive_binarization(Gray.(morphed_residue), tiles) .> 0
+        binarized_tiling = tiled_adaptive_binarization(Gray.(morphed_residue ./ 255), tiles;
+                                           minimum_window_size=32, threshold_percentage=15) .> 0
         prelim_icemask = get_ice_masks(
             ref_image, Gray.(morphed_residue), _landmask.dilated, tiles; ice_masks_params..., k=4
         )
