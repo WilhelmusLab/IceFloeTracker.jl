@@ -110,6 +110,7 @@ function segmentation_A(
     return segmented_A
 end
 
+#TAG: morphology
 function get_holes(img, min_opening_area=20, se=IceFloeTracker.se_disk4())
     _img = ImageMorphology.area_opening(img; min_area=min_opening_area)
     IceFloeTracker.hbreak!(_img)
@@ -121,21 +122,21 @@ function get_holes(img, min_opening_area=20, se=IceFloeTracker.se_disk4())
     return out .!= _img
 end
 
+#TAG: morphology
 function fillholes!(img)
     img[get_holes(img)] .= true
     return nothing
 end
 
+#TAG: potential simplification to remove this function.
 function get_segment_mask(ice_mask, tiled_binmask)
     # TODO: Threads.@threads # sometimes crashes (too much memory?)
-    for img in (ice_mask, tiled_binmask)
-        fillholes!(img)
-        img .= watershed1(img)
-    end
-    segment_mask = ice_mask .&& tiled_binmask
-    return segment_mask
+    fillholes!(ice_mask)
+    fillholes!(tiled_binmask)
+    return watershed1(ice_mask) .&& watershed1(tiled_binmask)
 end
 
+#TAG: morphology, or replace with branch(bridge(image))
 function branchbridge(img)
     img = IceFloeTracker.branch(img)
     img = IceFloeTracker.bridge(img)

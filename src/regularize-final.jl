@@ -13,14 +13,16 @@ Regularize `img` by:
 # Arguments
 - `img`: The morphological residue image.
 - `local_maxima_mask`: The local maxima mask.
-- `factor`: The factor to apply to the local maxima mask.
+- `factor`: Scaling factor to apply to the local maxima mask.
 - `segment_mask`: The segment mask -- intersection of bw1 and bw2 in first tiled workflow of `master.m`.
 - `L0mask`: zero-labeled pixels from watershed.
 """
 function regularize_fill_holes(img, local_maxima_mask, segment_mask, L0mask, factor)
-    new2 = to_uint8(img .+ local_maxima_mask .* factor)
-    new2[segment_mask .|| L0mask] .= 0
-    return IceFloeTracker.fill_holes(new2)
+    # brighten maxima by factor
+    _img = clamp.(img .+ local_maxima_mask .* factor, 0, 1)
+    # darken at boundaries from watershed transform
+    _img[segment_mask .|| L0mask] .= 0
+    return Gray.(IceFloeTracker.fill_holes(_img)) # dmw: I added the Gray.(), we need to be careful though about where the image types are. Why isn't fill_holes exported?
 end
 
 """
@@ -38,13 +40,12 @@ Regularize `img` via sharpening, filtering, reconstruction, and maxima elevating
 - `segment_mask`: The segment mask -- intersection of bw1 and bw2 in first tiled workflow of `master.m`.
 """
 function regularize_sharpening(
-    img, L0mask, local_maxima_mask, segment_mask, se, radius, amount, factor
-)
-    new3 = unsharp_mask(img, radius, amount, 255)
-    new3[L0mask] .= 0
-    new3 = IceFloeTracker.reconstruct(new3, se, "dilation", false)
-    new3[segment_mask] .= 0
-    return to_uint8(new3 + local_maxima_mask .* factor)
+    img, L0mask, local_maxima_mask, segment_mask, se, radius, amount, factor)
+    _img = unsharp_mask(Gray.(img), radius, amount, 0) # dmw: The regularize_fill_holes function strips the image 
+    _img[L0mask] .= 0 
+    _img .= mreconstruct(dilate, dilate(_img, se), _img, strel_diamond((3,3)))
+    _img[segment_mask] .= 0
+    return clamp.(_img + local_maxima_mask .* factor, 0, 1)
 end
 
 function _regularize(

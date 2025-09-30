@@ -12,7 +12,8 @@ end
     data_loader = Watkins2025GitHub(; ref="a451cd5e62a10309a9640fbbe6b32a236fcebc70")
     (; labeled_fraction, recall, precision, F_score) = run_and_validate_segmentation(
         first(data_loader(c -> (c.case_number == 6 && c.satellite == "terra"))),
-        LopezAcosta2019Tiling();
+        LopezAcosta2019Tiling(); 
+        output_directory="./test_outputs/",
     )
     @test 0.43 ≈ labeled_fraction atol = 0.1
     @test 0.87 ≤ round(recall, digits=2)
@@ -21,7 +22,7 @@ end
 
     (; labeled_fraction, recall, precision, F_score) = run_and_validate_segmentation(
         first(data_loader(c -> (c.case_number == 14 && c.satellite == "aqua"))),
-        LopezAcosta2019Tiling();
+        LopezAcosta2019Tiling(); output_directory="./test_outputs/",
     )
     @test 0.33 ≈ labeled_fraction atol = 0.1
     @test 0.85 ≤ round(recall, digits=2)
@@ -30,7 +31,7 @@ end
 
     (; labeled_fraction, recall, precision, F_score) = run_and_validate_segmentation(
         first(data_loader(c -> (c.case_number == 61 && c.satellite == "aqua"))),
-        LopezAcosta2019Tiling();
+        LopezAcosta2019Tiling(); output_directory="./test_outputs/",
     )
     @test 0.27 ≈ labeled_fraction atol = 0.1
     @test 0.71 ≤ round(recall, digits=2)
@@ -39,7 +40,7 @@ end
 
     (; labeled_fraction, recall, precision, F_score) = run_and_validate_segmentation(
         first(data_loader(c -> (c.case_number == 63 && c.satellite == "aqua"))),
-        LopezAcosta2019Tiling();
+        LopezAcosta2019Tiling(); output_directory="./test_outputs/",
     )
     @test 0.58 ≈ labeled_fraction atol = 0.1
     @test 0.85 ≤ round(recall, digits=2)

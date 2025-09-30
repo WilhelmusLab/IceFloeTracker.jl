@@ -11,7 +11,7 @@ Does reconstruction and landmasking to `image_sharpened`.
 - `landmask`: landmask for region of interest
 - `struct_elem`: structuring element for dilation
 
-"""
+""" # dmw: Re-name (or delete) this function: It doesn't normalize anything, it's a reconstruction operation.
 function normalize_image(
     image_sharpened::Matrix{Float64},
     image_sharpened_gray::T,
@@ -107,23 +107,27 @@ function imsharpen(
 
     image_equalized_gray = Gray.(image_equalized)
 
-    return unsharp_mask(image_equalized_gray, smoothing_param, intensity)
+    return unsharp_mask(image_equalized_gray, smoothing_param, intensity, 0.)
 end
 
 """
-    unsharp_mask(image_gray, smoothing_param, intensity, clampmax)
+    unsharp_mask(img, radius, amount, threshold)
 
-Apply unsharp masking on (equalized) grayscale ([0, `clampmax`]) image to enhance its sharpness.
+    Enhance image sharpness by weighted differencing of the image and a Gaussian blurred image.
+    If ``B`` is the blurred version of image ``I``, then an unsharp mask sharpened image is obtained by
+    ``S = I + (I - B)*A``
+    The amount of sharpening is determined by the factor A. An option threshold can be supplied such
+    that the sharpening is only applied where ``I - B`` is greater than some factor.
 
-# Arguments
-- `image_gray`: The input grayscale image, typically already equalized.
-- `smoothing_param::Int`: The pixel radius for Gaussian blurring (typically between 1 and 10).
-- `intensity`: The amount of sharpening to apply. Higher values result in more pronounced sharpening.
-- `clampmax`: upper limit of intensity values in the returned image.`
-# Returns
-The sharpened grayscale image with values clipped between 0 and `clapmax`.
+    # Arguments
+    img: input image
+    radius: standard deviation of the Gaussian blur
+    amount: multiplicative factor
+    threshold: minimum difference for applying the sharpening
+
+    # Returns
+    Sharpened image
 """
-
 
 # TODO: Remove function, replace with direct use of landmask and colorview.
 """
@@ -132,6 +136,7 @@ The sharpened grayscale image with values clipped between 0 and `clapmax`.
 Apply landmask and return Gray type image in colorview for normalization.
 
 """
+# TODO: Delete this function and simply include apply_landmask and colorview in the workflow.
 function imsharpen_gray(
     imgsharpened::Matrix{Float64}, landmask::AbstractArray{Bool}
 )::Matrix{Gray{Float64}}
