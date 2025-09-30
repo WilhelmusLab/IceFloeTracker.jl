@@ -1,6 +1,8 @@
 module Utils
 
-using Images: save
+export @persist
+
+using Images: save, Gray, FixedPoint
 using Dates: format, now
 
 """
@@ -102,7 +104,5 @@ Join `"fname"` and `"ext"` with `'.'`.
 function fname_ext_splice(fname::String, ext::String)
     return fname * '.' * ext
 end
-
-export @persist
 
 end
