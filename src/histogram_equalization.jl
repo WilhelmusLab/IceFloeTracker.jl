@@ -69,9 +69,9 @@ Convert an array of RGB channel data to grayscale in the range [0, 255].
 
 Identical to MATLAB `rgb2gray` (https://www.mathworks.com/help/matlab/ref/rgb2gray.html).
 """
-function rgb2gray(rgbchannels::Array{Float64,3}) 
-# dmw: Can we set this up to return a Gray image instead of an int matrix?
-# dmw: Check whether the coefficients differ substantially -- we can make it an alternative to the Gray function, like GrayMLB and apply it like Gray.()
+function rgb2gray(rgbchannels::Array{Float64,3})
+    # dmw: Can we set this up to return a Gray image instead of an int matrix?
+    # dmw: Check whether the coefficients differ substantially -- we can make it an alternative to the Gray function, like GrayMLB and apply it like Gray.()
     r, g, b = [to_uint8(rgbchannels[:, :, i]) for i in 1:3]
     # Reusing the r array to store the equalized gray image
     r .= to_uint8(0.2989 * r .+ 0.5870 * g .+ 0.1140 * b)
@@ -79,18 +79,43 @@ function rgb2gray(rgbchannels::Array{Float64,3})
 end
 
 # dmw: let's figure out the difference between the three versions of this function
-function _process_image_tiles(
+"""
+    conditional_histeq(
+        image,
+        clouds_red,
+        tiles;
+        entropy_threshold::Real=4.0,
+        white_threshold::Real=25.5,
+        white_fraction_threshold::Real=0.4,
+    )
+
+Performs conditional histogram equalization on a true color image.
+
+# Arguments
+- `image`: The true color image to be equalized.
+- `clouds_red`: The land/cloud masked red channel of the false color image.
+- `tiles`: the output from `get_tiles(image)` specifying the tiling to use on the image.
+- `entropy_threshold`: The entropy threshold used to determine if a block should be equalized. Default is 4.0.
+- `white_threshold`: The white threshold used to determine if a pixel should be considered white. Default is 25.5.
+- `white_fraction_threshold`: The white fraction threshold used to determine if a block should be equalized. Default is 0.4.
+
+# Returns
+The equalized true color image.
+
+"""
+function conditional_histeq(
     true_color_image,
     clouds_red,
-    tiles,
-    white_threshold,
-    entropy_threshold,
-    white_fraction_threshold,
+    tiles;
+    entropy_threshold::Real=4.0,
+    white_threshold::Real=25.5,
+    white_fraction_threshold::Real=0.4,
 )
 
     # Apply Perona-Malik diffusion to each channel of true color image 
     # using the default inverse quadratic flux coefficient function
-    true_color_diffused = IceFloeTracker.nonlinear_diffusion(float64.(true_color_image), 0.1, 75, 3)
+    pmd = PeronaMalikDiffusion(0.1, 0.1, 5, "exponential")
+    true_color_diffused = IceFloeTracker.nonlinear_diffusion(float64.(true_color_image), pmd)
 
     rgbchannels = get_rgb_channels(true_color_diffused)
 
@@ -113,91 +138,6 @@ function _process_image_tiles(
 end
 
 """
-    conditional_histeq(
-    true_color_image,
-    clouds_red,
-    rblocks::Int,
-    cblocks::Int,
-    entropy_threshold::AbstractFloat=4.0,
-    white_threshold::AbstractFloat=25.5,
-    white_fraction_threshold::AbstractFloat=0.4,
-)
-
-Performs conditional histogram equalization on a true color image.
-
-# Arguments
-- `true_color_image`: The true color image to be equalized.
-- `clouds_red`: The land/cloud masked red channel of the false color image.
-- `rblocks`: The number of row-blocks to divide the image into for histogram equalization. Default is 8.
-- `cblocks`: The number of column-blocks to divide the image into for histogram equalization. Default is 6.
-- `entropy_threshold`: The entropy threshold used to determine if a block should be equalized. Default is 4.0.
-- `white_threshold`: The white threshold used to determine if a pixel should be considered white. Default is 25.5.
-- `white_fraction_threshold`: The white fraction threshold used to determine if a block should be equalized. Default is 0.4.
-
-# Returns
-The equalized true color image.
-
-"""
-function conditional_histeq(
-    true_color_image,
-    clouds_red,
-    rblocks::Int,
-    cblocks::Int,
-    entropy_threshold::AbstractFloat=4.0,
-    white_threshold::AbstractFloat=25.5,
-    white_fraction_threshold::AbstractFloat=0.4,
-)
-    tiles = get_tiles(true_color_image; rblocks=rblocks, cblocks=cblocks)
-    rgbchannels_equalized = _process_image_tiles(
-        true_color_image,
-        clouds_red,
-        tiles,
-        white_threshold,
-        entropy_threshold,
-        white_fraction_threshold,
-    )
-
-    return rgbchannels_equalized
-end
-
-"""
-    conditional_histeq(
-    true_color_image,
-    clouds_red,
-    side_length::Int,
-    entropy_threshold::AbstractFloat=4.0,
-    white_threshold::AbstractFloat=25.5,
-    white_fraction_threshold::AbstractFloat=0.4,
-
-)
-
-Performs conditional histogram equalization on a true color image using tiles of approximately sidelength size `side_length`. If a perfect tiling is not possible, the tiling on the egde of the image is adjusted to ensure that the tiles are as close to `side_length` as possible. See `get_tiles(array, side_length)` for more details.
-"""
-function conditional_histeq(
-    true_color_image,
-    clouds_red,
-    side_length::Int,
-    entropy_threshold::AbstractFloat=4.0,
-    white_threshold::AbstractFloat=25.5,
-    white_fraction_threshold::AbstractFloat=0.4,
-)
-    side_length = IceFloeTracker.get_optimal_tile_size(side_length, size(true_color_image))
-
-    tiles = IceFloeTracker.get_tiles(true_color_image, side_length)
-
-    rgbchannels_equalized = _process_image_tiles(
-        true_color_image,
-        clouds_red,
-        tiles,
-        white_threshold,
-        entropy_threshold,
-        white_fraction_threshold,
-    )
-
-    return rgbchannels_equalized
-end
-
-"""
 Private function for testing the conditional adaptive histogram equalization workflow.
 """
 function _get_false_color_cloudmasked(;
@@ -208,12 +148,12 @@ function _get_false_color_cloudmasked(;
 )
     mask_cloud_ice, clouds_view = IceFloeTracker._get_masks(
         false_color_image;
-        prelim_threshold=prelim_threshold/255.,
-        band_7_threshold=band_7_threshold/255.,
-        band_2_threshold=band_2_threshold/255.,
+        prelim_threshold=prelim_threshold / 255.0,
+        band_7_threshold=band_7_threshold / 255.0,
+        band_2_threshold=band_2_threshold / 255.0,
         ratio_lower=0.0,
         ratio_offset=0.0,
-        ratio_upper=0.75
+        ratio_upper=0.75,
     )
 
     clouds_view[mask_cloud_ice] .= 0

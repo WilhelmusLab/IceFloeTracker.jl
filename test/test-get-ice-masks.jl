@@ -18,13 +18,13 @@
         ref_image = load(
             joinpath(data_dir, "beaufort-chukchi-seas_falsecolor.2020162.aqua.250m.tiff")
         )
-        landmask = float64.(load(joinpath(data_dir, "matlab_landmask.png"))) .> 0
+        landmask = float64.(load(joinpath(data_dir, "matlab_landmask_dilated.png"))) .> 0
         ref_image, landmask = [img[region...] for img in (ref_image, landmask)]
         morph_residue = Gray.(readdlm(joinpath(data_dir, "ice_masks/morph_residue.csv"), ',', Int) / 255)
     end
 
     tiles = get_tiles(ref_image; rblocks=2, cblocks=3)
-    ref_image_landmasked = apply_landmask(ref_image, .!landmask)
+    ref_image_landmasked = apply_landmask(ref_image, landmask)
 
     begin
         tile = tiles[1]
