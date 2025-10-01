@@ -17,14 +17,6 @@ end
 
 # dmw: use multiple dispatch, so that if the 2d function is called 
 
-# dmw: This function doesn't belong here
-function imshow(img)
-    if typeof(img) <: BitMatrix
-        return Gray.(img)
-    end
-    return Gray.(img ./ 255)
-end
-
 function adapthisteq(img::Matrix{T}, nbins=256, clip=0.01) where {T}
     # Step 1: Normalize the image to [0, 1] based on its own min and max
     image_min, image_max = minimum(img), maximum(img)
