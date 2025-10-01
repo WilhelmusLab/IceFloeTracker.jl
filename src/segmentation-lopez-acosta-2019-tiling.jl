@@ -1,7 +1,7 @@
 using Images
 using IceFloeTracker:
     get_tiles,
-    _process_image_tiles,
+    conditional_histeq,
     to_uint8,
     unsharp_mask,
     imbrighten,
@@ -80,9 +80,7 @@ function (p::LopezAcosta2019Tiling)(
     landmask::AbstractArray{<:Union{AbstractGray,AbstractRGB,TransparentRGB}};
     intermediate_results_callback::Union{Nothing,Function}=nothing,
 )
-    @warn "using undilated landmask as dilated"  # TODO: add landmask dilation as a step
-    _landmask = (dilated=(float64.(Gray.(landmask))) .> 0,) # TODO: remove this typecast to float64
-
+    _landmask = IceFloeTracker.create_landmask(landmask, strel_box((3,3))) # smaller strel than in some test cases
     tiles = get_tiles(truecolor; p.tile_settings...)
 
     ref_image = RGB.(falsecolor)  # TODO: remove this typecast
@@ -102,8 +100,8 @@ function (p::LopezAcosta2019Tiling)(
         clouds_red = to_uint8(float64.(red.(ref_img_cloudmasked) .* 255))
         clouds_red[_landmask.dilated] .= 0
 
-        rgbchannels = _process_image_tiles(
-            true_color_image, clouds_red, tiles, adapthisteq_params...
+        rgbchannels = conditional_histeq(
+            true_color_image, clouds_red, tiles; adapthisteq_params...
         )
 
         gammagreen = @view rgbchannels[:, :, 2]
@@ -130,17 +128,18 @@ function (p::LopezAcosta2019Tiling)(
     begin
         @debug "Step 6: Repeat step 5 with equalized_gray (landmasking, no sharpening)"
         equalized_gray_reconstructed = deepcopy(equalized_gray)
-        equalized_gray_reconstructed[_landmask.dilated] .= 0
+        IceFloeTracker.apply_landmask!(equalized_gray_reconstructed, _landmask.dilated)
+
         equalized_gray_reconstructed = reconstruct(
             equalized_gray_reconstructed, structuring_elements.se_disk1, "dilation", true
         )
-        equalized_gray_reconstructed[_landmask.dilated] .= 0
+        IceFloeTracker.apply_landmask!(equalized_gray_reconstructed, _landmask.dilated)
     end
 
     begin
         @debug "Step 7: Brighten equalized_gray"
         brighten = get_brighten_mask(equalized_gray_reconstructed, gammagreen)
-        equalized_gray[_landmask.dilated] .= 0
+        IceFloeTracker.apply_landmask!(equalized_gray, _landmask.dilated)
         equalized_gray .= imbrighten(equalized_gray, brighten, brighten_factor)
     end
 
@@ -160,7 +159,8 @@ function (p::LopezAcosta2019Tiling)(
 
     begin
         @debug "Step 9: Get preliminary ice masks"
-        binarized_tiling = tiled_adaptive_binarization(Gray.(morphed_residue ./ 255), tiles) .> 0
+        binarized_tiling = tiled_adaptive_binarization(Gray.(morphed_residue ./ 255), tiles;
+                                           minimum_window_size=32, threshold_percentage=15) .> 0
         prelim_icemask = get_ice_masks(
             ref_image, Gray.(morphed_residue / 255), _landmask.dilated, tiles; ice_masks_params...
         )

@@ -201,9 +201,9 @@ function find_ice_labels(
 end
 
 function find_ice_mask(
-    falsecolor_image::Matrix{RGB{Float64}}, not_land::BitMatrix; kwargs...
+    falsecolor_image::Matrix{RGB{Float64}}, landmask::BitMatrix; kwargs...
 )
-    masked_image = masker(.!(not_land))(falsecolor_image)
+    masked_image = masker(landmask)(falsecolor_image)
     algorithm = IceDetectionLopezAcosta2019(; kwargs...)
     ice_mask = binarize(masked_image, algorithm)
     return ice_mask
@@ -217,12 +217,32 @@ function get_ice_labels(ice::AbstractArray{<:AbstractGray})
     return findall(vec(gray.(ice)) .> 0)
 end
 
-function tiled_adaptive_binarization(img, tiles)
+# TODO: Find the right home for this function
+# TODO: Set up wrapper for applying binarization to a tiled iterator. Let this
+# method be one functor algorithm option, and the version that uses the Peaks as a second.
+"""
+tiled_adaptive_binarization(img, tiles; minimum_window_size=). 
+
+    Applies the (AdaptiveThreshold)[https://juliaimages.org/ImageBinarization.jl/v0.1/#Adaptive-Threshold-1] binarization algorithm
+    to each tile in the image. Following the recommendations from ImageBinarization, the default is to use the integer window size
+    nearest to 1/8th the tile size if the tile is large enough. So that the window is large enough to include moderately large floes,
+    the default minimum window size is 100 pixels (25 km for MODIS imagery). The minimum brightness parameter masks pixels with low
+    grayscale intensity to prevent dark regions from getting brightened (i.e., the center of a large patch of open water).
+    The "threshold_percentage" parameter is passed to the the AdaptiveThreshold function (percentage parameter).
+"""
+function tiled_adaptive_binarization(img, tiles; minimum_window_size=50, minimum_brightness=75/255, threshold_percentage=15)
     canvas = zeros(size(img))
+    img = deepcopy(img)
+    img[Gray.(img) .< minimum_brightness] .= 0
     for tile in tiles
-        f = AdaptiveThreshold(img[tile...])
+        L = Int64.(round.(minimum(length.(tile)) / 8, digits=0))
+        L < minimum_window_size && (L = minimum_window_size)
+
+        f = AdaptiveThreshold(img[tile...], window_size = L, percentage = threshold_percentage)
         canvas[tile...] = binarize(img[tile...], f)
     end
+    
+    # possibly overkill
+    canvas[Gray.(img) .< minimum_brightness] .= 0 
     return canvas
 end
-

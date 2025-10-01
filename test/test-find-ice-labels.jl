@@ -82,7 +82,7 @@ end
     @testset "find_ice_labels" begin
         @testset "matlab comparison" begin
             falsecolor_image = float64.(load(falsecolor_test_image_file)[test_region...])
-            landmask = convert(BitMatrix, load(current_landmask_file))
+            landmask = convert(BitMatrix, load(current_landmask_file)[test_region...]) 
             ice_labels_matlab = DelimitedFiles.readdlm(
                 "$(test_data_dir)/ice_labels_matlab.csv", ','
             )
@@ -135,13 +135,13 @@ end
             @testset "example 1" begin
                 falsecolor_image =
                     float64.(load(falsecolor_test_image_file)[test_region...])
-                landmask = convert(BitMatrix, load(current_landmask_file))
+                landmask = convert(BitMatrix, load(current_landmask_file)[test_region...])
                 ice_labels_matlab = DelimitedFiles.readdlm(
                     "$(test_data_dir)/ice_labels_matlab.csv", ','
                 )
                 ice_labels_matlab = vec(ice_labels_matlab)
                 ice_binary_new = IceFloeTracker.binarize(
-                    masker(.!(landmask))(falsecolor_image), IceDetectionLopezAcosta2019()
+                    masker(landmask)(falsecolor_image), IceDetectionLopezAcosta2019()
                 )
                 ice_labels_julia_new = IceFloeTracker.get_ice_labels(ice_binary_new)
                 @test ice_labels_julia_new == ice_labels_matlab
@@ -149,10 +149,10 @@ end
             @testset "example 2" begin
                 falsecolor_image =
                     float64.(load(falsecolor_test_image_file)[test_region...])
-                landmask = convert(BitMatrix, load(current_landmask_file))
+                landmask = convert(BitMatrix, load(current_landmask_file)[test_region...])
                 ice_labels_ice_floe_region_new = IceFloeTracker.get_ice_labels(
                     IceFloeTracker.binarize(
-                        masker(.!(landmask))(falsecolor_image)[ice_floe_test_region...],
+                        masker(landmask)(falsecolor_image)[ice_floe_test_region...],
                         IceDetectionLopezAcosta2019(),
                     ),
                 )
