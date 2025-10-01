@@ -10,7 +10,8 @@ export bridge,
     se_disk50,
     se_disk4,
     se_disk20,
-    se_disk2
+    se_disk2,
+    make_landmask_se
 
 include("lut/lutbridge.jl")
 include("lut/lutfill.jl")
