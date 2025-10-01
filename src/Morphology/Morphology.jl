@@ -1,5 +1,7 @@
 module Morphology
 
+# Extends ImageMorphology.jl
+
 """
     dummy_morphology_function()
 

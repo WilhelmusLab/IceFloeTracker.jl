@@ -1,5 +1,16 @@
 module IceFloeTracker
 
+export IceFloeSegmentationAlgorithm
+
+# High-level, pipeline functors
+abstract type IceFloeSegmentationAlgorithm end
+include("segmentation-lopez-acosta-2019.jl")
+include("segmentation-lopez-acosta-2019-tiling.jl")
+
+# Submodules
+include("Data/Data.jl")
+using .Data
+
 include("Segmentation/Segmentation.jl")
 using .Segmentation
 
@@ -17,6 +28,8 @@ using .Preprocessing
 
 include("Utils/Utils.jl")
 using .Utils
+
+# below this: Dirty, needs cleanup
 
 using Clustering
 using DataFrames
@@ -119,8 +132,6 @@ include("ice_masks.jl")
 include("regularize-final.jl")
 include("latlon.jl")
 include("rotation.jl")
-include("segmentation-lopez-acosta-2019.jl")
-include("validation_data.jl")
 include("segmented-image-utilities.jl")
 
 function get_version_from_toml(pth=dirname(dirname(pathof(IceFloeTracker))))::VersionNumber
@@ -153,7 +164,7 @@ include("tracker/tracker-funcs.jl")
 include("tracker/matchcorr.jl")
 include("tracker/tracker.jl")
 include("tracker/long_tracker.jl")
-include("segmentation-lopez-acosta-2019-tiling.jl")
+
 include("fill_holes.jl")
 include("mask.jl")
 end

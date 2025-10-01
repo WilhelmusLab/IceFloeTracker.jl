@@ -1,3 +1,6 @@
+# TODO: merge into segmentation-lopez-acosta-2019.jl
+# TODO: Check if there's a preprocessing algorithm (e.g. conditional adaptive histogram based on skewness/kurtosis)
+
 """
     discriminate_ice_water(
     falsecolor_image::Matrix{RGB{Float64}},
