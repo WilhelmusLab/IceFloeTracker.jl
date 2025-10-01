@@ -1,6 +1,16 @@
 module Morphology
 
-export bridge, branch, bwareamaxfilt, fill_holes, hbreak, hbreak!, morph_fill
+export bridge,
+    branch,
+    bwareamaxfilt,
+    fill_holes,
+    hbreak,
+    hbreak!,
+    morph_fill,
+    se_disk50,
+    se_disk4,
+    se_disk20,
+    se_disk2
 
 include("lut/lutbridge.jl")
 include("lut/lutfill.jl")
@@ -12,5 +22,6 @@ include("fill-holes.jl")
 include("hbreak.jl")
 include("morph-fill.jl")
 include("operator.jl")
+include("special-strels.jl")
 
 end
