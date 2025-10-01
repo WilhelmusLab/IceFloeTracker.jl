@@ -10,7 +10,7 @@ include("bwareamaxfilt.jl")
 include("bwperim.jl")
 include("fill-holes.jl")
 include("hbreak.jl")
-include("morph_fill.jl")
+include("morph-fill.jl")
 include("operator.jl")
 
 end
