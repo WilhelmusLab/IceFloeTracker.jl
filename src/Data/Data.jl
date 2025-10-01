@@ -52,7 +52,7 @@ Struct fields:
 
 
 Cacheing: 
-Data are downloaded to the `ref` subdirectory of `cache_dir`, e.g. /tmp/Watkins2025/main`. 
+Data are downloaded to the `ref` subdirectory of `cache_dir`, e.g. `/tmp/Watkins2025/main`. 
 If a file of the correct name already exists in that path, if loaded again the cached data will be returned.
 If the data change in the source for that ref, the loader won't load the new data.
 In that case, it's necessary to delete the cached file.
