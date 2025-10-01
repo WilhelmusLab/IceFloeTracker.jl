@@ -1,9 +1,13 @@
-using Downloads: download, RequestError
-using Dates
-using Images: SegmentedImage, Colorant, Gray
-using FileIO: load
-using CSVFiles
-using DataFrames
+module Data
+
+export ValidationDataSet, ValidationDataCase, ValidationDataLoader, Watkins2025GitHub
+
+import Downloads: download, RequestError
+import Dates: format
+import Images: SegmentedImage, Colorant, Gray
+import FileIO: load, save
+import CSVFiles: CSVFile
+import DataFrames: DataFrame
 
 @kwdef struct ValidationDataSet
     data::Base.Generator
@@ -25,7 +29,7 @@ Base.iterate(iter::ValidationDataSet, state) = iterate(iter.data, state)
 
     validated_binary_floes::Union{AbstractArray{Gray{Bool}},Nothing} = nothing
     validated_labeled_floes::Union{SegmentedImage,Nothing} = nothing
-    validated_floe_properties::Union{CSVFiles.CSVFile,Nothing} = nothing
+    validated_floe_properties::Union{CSVFile,Nothing} = nothing
 end
 
 """
@@ -133,7 +137,7 @@ function _load_case(case, p::Watkins2025GitHub)::ValidationDataCase
 
     case_number = lpad(case.case_number, 3, "0")
     region = case.region
-    date = Dates.format(case.start_date, "yyyymmdd")
+    date = format(case.start_date, "yyyymmdd")
     satellite = case.satellite
     pixel_scale = "250m"
     image_side_length = "100km"
@@ -242,4 +246,6 @@ function _get_file(file_url, file_path)
     end
     file = load(file_path)
     return file
+end
+
 end
