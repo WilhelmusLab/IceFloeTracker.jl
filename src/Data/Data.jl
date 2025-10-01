@@ -42,7 +42,7 @@ abstract type ValidationDataLoader end
     Watkins2025GitHub(; ref)()
     Watkins2025GitHub(; ref, [url, dataset_metadata_path, cache_dir])(; [case_filter])
 
-Loader for validated ice floe data from https://github.com/danielmwatkins/ice_floe_validation_dataset.
+Loader for validated ice floe data from [the Watkins 2025 Ice Floe Validation Dataset](https://github.com/danielmwatkins/ice_floe_validation_dataset).
 
 Struct fields: 
 - `url`: URL of the GitHub repository with the dataset
