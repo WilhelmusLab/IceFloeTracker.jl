@@ -2,6 +2,5 @@
     # TODO: remove once dummy functions are deleted
     @test !isempty(IceFloeTracker.Filtering.dummy_filtering_function())
     @test !isempty(IceFloeTracker.Preprocessing.dummy_preprocessing_function())
-    @test !isempty(IceFloeTracker.Segmentation.dummy_segmentation_function())
     @test !isempty(IceFloeTracker.Tracking.dummy_tracking_function())
 end
