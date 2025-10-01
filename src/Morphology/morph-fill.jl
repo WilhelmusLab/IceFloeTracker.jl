@@ -1,5 +1,3 @@
-const LUTFILL = make_lutfill()
-
 function _fill_operator_lut(
     I::CartesianIndex{2},
     img::AbstractArray{Bool},

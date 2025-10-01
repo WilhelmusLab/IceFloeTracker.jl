@@ -518,3 +518,5 @@ function make_lutbridge()
         )
     end
 end
+
+const LUTBRIDGE = make_lutbridge()
