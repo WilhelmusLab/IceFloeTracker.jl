@@ -1,5 +1,3 @@
-include("./lut/lutbridge.jl")
-
 const LUTBRIDGE = make_lutbridge()
 
 function _bridge_operator_lut(

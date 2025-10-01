@@ -1,3 +1,5 @@
+import Images: label_components
+
 """
     get_max_label(d::Dict{Int, Int})
 

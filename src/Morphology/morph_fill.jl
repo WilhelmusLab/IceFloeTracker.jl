@@ -1,5 +1,3 @@
-include("./lut/lutfill.jl")
-
 const LUTFILL = make_lutfill()
 
 function _fill_operator_lut(

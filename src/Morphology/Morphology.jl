@@ -1,18 +1,16 @@
 module Morphology
 
-"""
-    dummy_morphology_function()
+export bridge, branch, bwareamaxfilt, fill_holes, hbreak, hbreak!, morph_fill
 
-Example function for morphology module
-
-!!! todo "Delete this once real functions are added"
-    This function should be removed when real morphology functions are moved into this module.
-
-"""
-function dummy_morphology_function()
-    return "This is a dummy morphology function."
-end
-
-export dummy_morphology_function
+include("lut/lutbridge.jl")
+include("lut/lutfill.jl")
+include("branch.jl")
+include("bridge.jl")
+include("bwareamaxfilt.jl")
+include("bwperim.jl")
+include("fill_holes.jl")
+include("hbreak.jl")
+include("morph_fill.jl")
+include("operator.jl")
 
 end

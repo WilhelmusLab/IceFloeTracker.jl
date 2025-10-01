@@ -1,3 +1,6 @@
+import Images: coords_spatial, strel_box, strel_size, mreconstruct!, erode
+import TiledIteration: EdgeIterator
+
 # From https://github.com/JuliaImages/ImageMorphology.jl/pull/119
 
 """
