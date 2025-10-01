@@ -1,7 +1,5 @@
-using IceFloeTracker: morph_fill
-
 @testitem "Morph Fill" begin
-    using IceFloeTracker: morph_fill
+    import IceFloeTracker.Morphology: morph_fill
 
     img = Bool[
         0 0 0 0 0
