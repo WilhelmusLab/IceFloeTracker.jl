@@ -1,6 +1,4 @@
 @testitem "bwtraceboundary test" begin
-    import IceFloeTracker.Morphology: bwtraceboundary
-
     # Create an image with 3 connected components. The test consists of identifying the three closed sequences of border pixels in the image below. We do so using bwtraceboundary.
     A = zeros(Int, 13, 16)
     A[2:6, 2:6] .= 1
