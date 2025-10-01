@@ -1,7 +1,7 @@
 @testitem "bwareamaxfilt test" begin
+    import IceFloeTracker.Morphology:
+        get_areas, get_max_label, filt_except_label, bwareamaxfilt
 
-    import IceFloeTracker.Morphology: get_areas, get_max_label, filt_except_label, bwareamaxfilt
-    
     # Create a bitmatrix with a big floe and two smaller floes -- 3 connected components in total.
     A = zeros(Bool, 12, 15)
     A[2:6, 2:6] .= 1
@@ -50,9 +50,7 @@
     @test all([d[1] == 45, d[2] == 12, d[3] == 9])
 
     # Test 2: Filter smaller blobs from label matrix
-    @test sum(
-        filt_except_label(labels, get_max_label(d)) .!= 0
-    ) == 45
+    @test sum(filt_except_label(labels, get_max_label(d)) .!= 0) == 45
 
     # Test 3: Keep largest blob in input matrix a
     @test sum(bwareamaxfilt(A)) == 45
