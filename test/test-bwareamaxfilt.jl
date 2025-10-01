@@ -1,6 +1,6 @@
 @testitem "bwareamaxfilt test" begin
     import IceFloeTracker.Morphology:
-        get_areas, get_max_label, filt_except_label, bwareamaxfilt
+        get_areas, get_max_label, filt_except_label, bwareamaxfilt, bwareamaxfilt!
 
     # Create a bitmatrix with a big floe and two smaller floes -- 3 connected components in total.
     A = zeros(Bool, 12, 15)
