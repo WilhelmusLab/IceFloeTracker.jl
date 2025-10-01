@@ -29,6 +29,7 @@ julia> morph_fill(bw)
  0  1  1  1  0
  0  1  1  1  0
  0  0  0  0  0
+```
 """
 function morph_fill(bw::T)::T where {T<:AbstractArray{Bool}}
     # TODO: see about implemting _filter using parallelization
