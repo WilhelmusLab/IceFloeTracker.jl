@@ -1,6 +1,6 @@
 module Morphology
 
-export imregionalmin, imextendedmin, bwdist
+export imregionalmin, imextendedmin
 
 import Images.ImageMorphology: local_minima, distance_transform, feature_transform
 import Images.ImageSegmentation: hmin_transform
@@ -34,15 +34,6 @@ function imextendedmin(img::AbstractArray, h::Int=2, conn::Int=2)::BitMatrix
     mask = hmin_transform(img, h)
     mask_minima = local_minima(mask; connectivity=conn)
     return mask_minima .> 0
-end
-
-"""
-    bwdist(bwimg)
-
-Distance transform for binary image `bwdist`.
-"""
-function bwdist(bwimg::AbstractArray{Bool})::AbstractArray{Float64}
-    return distance_transform(feature_transform(bwimg))
 end
 
 end

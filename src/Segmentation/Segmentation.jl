@@ -1,5 +1,7 @@
 module Segmentation
 
+export dummy_segmentation_function
+
 """
     dummy_segmentation_function()
 
@@ -13,6 +15,13 @@ function dummy_segmentation_function()
     return "This is a dummy segmentation function."
 end
 
-export dummy_segmentation_function
+"""
+    bwdist(bwimg)
+
+Distance transform for binary image `bwdist`.
+"""
+function bwdist(bwimg::AbstractArray{Bool})::AbstractArray{Float64}
+    return distance_transform(feature_transform(bwimg))
+end
 
 end
