@@ -28,5 +28,5 @@ Returns a bitmatrix of the same size as `img` with the regional minima.
 - `conn`: Neighborhood connectivity; in 2D, 1 = 4-neighborhood and 2 = 8-neighborhood
 """
 function imregionalmin(img, conn=2)
-    return ImageMorphology.local_minima(img; connectivity=conn) .> 0
+    return local_minima(img; connectivity=conn) .> 0
 end
