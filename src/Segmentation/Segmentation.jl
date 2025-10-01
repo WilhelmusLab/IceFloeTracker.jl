@@ -1,6 +1,6 @@
 module Segmentation
 
-export dummy_segmentation_function
+export bwdist
 
 """
     dummy_segmentation_function()
