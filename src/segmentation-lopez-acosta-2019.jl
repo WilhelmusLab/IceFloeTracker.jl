@@ -1,4 +1,6 @@
-abstract type IceFloeSegmentationAlgorithm end
+export LopezAcosta2019
+
+
 
 struct LopezAcosta2019 <: IceFloeSegmentationAlgorithm
     landmask_structuring_element::AbstractMatrix{Bool}

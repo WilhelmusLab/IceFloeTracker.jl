@@ -5,6 +5,8 @@
 - `gamma_green`: The gamma value for the green channel (also uint8).
 # Returns
 Difference equalized_gray_reconstructed_img - gamma_green clamped between 0 and 255.
+
+# TODO: deprecate and do in place instead
 """
 function get_brighten_mask(equalized_gray_reconstructed_img, gamma_green)
     return to_uint8(equalized_gray_reconstructed_img - gamma_green)
@@ -19,6 +21,8 @@ Brighten the image using a mask and a brightening factor.
 - `bright_factor`: The factor by which to brighten the pixels.
 # Returns
 - The brightened image.
+
+# TODO: deprecate and do in place instead
 """
 function imbrighten(img, brighten_mask, bright_factor)
     img = Float64.(img)

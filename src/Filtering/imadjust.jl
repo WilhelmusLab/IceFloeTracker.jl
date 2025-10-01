@@ -12,6 +12,8 @@ Adjust the contrast of an image using linear stretching. The image is normalized
 # Returns
 
 The contrast-adjusted image in the range [0, 255].
+
+# TODO: deprecate and do in place instead, or rename as "percentile linear stretch" and put into filtering.
 """
 function imadjust(
     img::AbstractArray{<:Integer}; low::T=0.01, high::T=0.99

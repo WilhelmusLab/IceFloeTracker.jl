@@ -1,5 +1,7 @@
 module Segmentation
 
+# Extensions of ImageSegmentation.jl
+
 """
     dummy_segmentation_function()
 
