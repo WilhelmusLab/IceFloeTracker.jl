@@ -2,6 +2,8 @@ module Segmentation
 
 export bwdist
 
+using Images: distance_transform, feature_transform
+
 """
     bwdist(bwimg)
 
