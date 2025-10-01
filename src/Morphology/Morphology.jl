@@ -15,14 +15,14 @@ export bridge,
     se_disk2,
     make_landmask_se
 
+include("lut/lutbridge.jl")
+include("lut/lutfill.jl")
 include("branch.jl")
 include("bridge.jl")
 include("bwareamaxfilt.jl")
 include("bwperim.jl")
 include("fill-holes.jl")
 include("hbreak.jl")
-include("lut/lutbridge.jl")
-include("lut/lutfill.jl")
 include("minima-transform.jl")
 include("morph-fill.jl")
 include("operator.jl")
