@@ -1,3 +1,6 @@
+import StaticArrays: SMatrix
+import Images: label_components, dilate
+
 """
     branch_candidates_func(nhood)
 
