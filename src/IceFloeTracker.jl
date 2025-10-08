@@ -18,6 +18,9 @@ using .Preprocessing
 include("Utils/Utils.jl")
 using .Utils
 
+include("Data/Data.jl")
+using .Data
+
 using Clustering
 using DataFrames
 using Dates
@@ -120,7 +123,6 @@ include("regularize-final.jl")
 include("latlon.jl")
 include("rotation.jl")
 include("segmentation-lopez-acosta-2019.jl")
-include("validation_data.jl")
 include("segmented-image-utilities.jl")
 
 function get_version_from_toml(pth=dirname(dirname(pathof(IceFloeTracker))))::VersionNumber
