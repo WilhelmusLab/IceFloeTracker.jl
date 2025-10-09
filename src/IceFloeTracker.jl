@@ -80,6 +80,7 @@ export readdlm,
     IceDetectionFirstNonZeroAlgorithm,
     IceDetectionLopezAcosta2019,
     tiled_adaptive_binarization
+   
 
 # For IFTPipeline
 using HDF5
@@ -88,8 +89,15 @@ export DataFrames, DataFrame, nrow, Not, select!
 export Dates, Time, Date, DateTime, @dateformat_str
 export addlatlon!, convertcentroid!, converttounits!, dropcols!, latlon
 
-# For the tracker
-export addfloemasks!, add_passtimes!, addψs!, long_tracker
+# Tracking 
+export 
+    addfloemasks!, 
+    add_passtimes!, 
+    addψs!, 
+    LopezAcostaTimeDistanceFunction, 
+    LogLogQuadraticTimeDistanceFunction,
+    distance_threshold,
+    long_tracker
 
 include("utils.jl")
 include("landmask.jl")
@@ -156,4 +164,5 @@ include("tracker/long_tracker.jl")
 include("segmentation-lopez-acosta-2019-tiling.jl")
 include("fill_holes.jl")
 include("mask.jl")
+
 end
