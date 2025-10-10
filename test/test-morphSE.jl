@@ -1,13 +1,16 @@
 @testitem "MorphSE test" begin
     include("config.jl")
 
+    import Images: opening, erode, bothat, dilate, mreconstruct, strel_box
+    import IceFloeTracker.Morphology: fill_holes, se_disk4
+
     # Dilate -- Start with a pixel in the middle and dilate in one go to fill up the full image
     n = rand(11:2:21) # choose random odd number
     mid = (n - 1) ÷ 2 + 1 # get median
     a = zeros(Int, n, n)
     a[mid, mid] = 1 # make 1 the pixel in the center
-    se = IceFloeTracker.strel_box((n, n))
-    @test IceFloeTracker.dilate(a, se) == ones(Int, n, n)
+    se = strel_box((n, n))
+    @test dilate(a, se) == ones(Int, n, n)
 
     # Bothat, opening, erode, filling holes, reconstruction using output from Matlab
     A = zeros(Bool, 41, 41)
@@ -16,7 +19,7 @@
     I[1:8, 3:6] .= 1
     I[[CartesianIndex(4, 4), CartesianIndex(5, 5)]] .= 0
     I
-    se = centered(IceFloeTracker.se_disk4())
+    se = centered(se_disk4())
 
     #read in expected files from MATLAB
     path = joinpath(test_data_dir, "morphSE")
@@ -29,10 +32,9 @@
     filled_holes_exp = readdlm(joinpath(path, "filled_holes.csv"), ',', Int64)
 
     #run tests
-    @test open_withse_exp == IceFloeTracker.opening(A, se)
-    @test erode_withse_exp == IceFloeTracker.erode(A, se)
-    @test bothat_withse_exp == IceFloeTracker.bothat(A, se)
-    @test reconstruct_exp ==
-        IceFloeTracker.mreconstruct(IceFloeTracker.dilate, matrix_B, matrix_A)
-    @test filled_holes_exp == IceFloeTracker.fill_holes(I)
+    @test open_withse_exp == opening(A, se)
+    @test erode_withse_exp == erode(A, se)
+    @test bothat_withse_exp == bothat(A, se)
+    @test reconstruct_exp == mreconstruct(dilate, matrix_B, matrix_A)
+    @test filled_holes_exp == fill_holes(I)
 end

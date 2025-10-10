@@ -1,6 +1,8 @@
 @testitem "branch points tests" begin
     include("config.jl")
 
+    import Images: erode
+
     dir = joinpath(test_data_dir, "branch")
     readcsv(f) = readdlm(joinpath(dir, f), ',', Bool)
 
@@ -13,5 +15,5 @@
     @test circles_branch_exp == branch(circles_skel)
 
     # Test on non-skeletonized image: Effect of brach = eroding
-    @test IceFloeTracker.erode(circles) == branch(circles)
+    @test erode(circles) == branch(circles)
 end
