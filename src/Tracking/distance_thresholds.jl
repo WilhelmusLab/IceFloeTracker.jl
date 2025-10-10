@@ -46,11 +46,11 @@ end
 function (f::LogLogQuadraticTimeDistanceFunction)(Δx, Δt)
     a, b, c = f.llq_params
     seconds(Δt) > seconds(f.max_time) && return false
-    seconds(Δt) < seconds(f.min_time) && return Δx <= 10^a
+    
+    Δx_km = Δx / 1000
+    seconds(Δt) <= seconds(f.min_time) && return Δx_km <= 10^a # Check whether this is being activated early. Issue with time format?
     
     Δt_hours = seconds(Δt) / 3600
-    Δx_km = Δx / 1000
-
     Δx_km <= 10^(a + b * log10(Δt_hours) + c * (log10(Δt_hours))^2) && return true
     return false
 end
