@@ -51,16 +51,18 @@ unsharp_mask_params = (radius=10, amount=2.0, factor=255.0)
 brighten_factor = 0.1
 
 ice_masks_params = (
-    band_7_threshold=5/255,
-    band_2_threshold=230/255,
-    band_1_threshold=240/255,
-    band_7_threshold_relaxed=10/255,
-    band_1_threshold_relaxed=190/255,
-    possible_ice_threshold=75/255,
-    k=3 # number of clusters for kmeans segmentation
+    band_7_threshold=5 / 255,
+    band_2_threshold=230 / 255,
+    band_1_threshold=240 / 255,
+    band_7_threshold_relaxed=10 / 255,
+    band_1_threshold_relaxed=190 / 255,
+    possible_ice_threshold=75 / 255,
+    k=3, # number of clusters for kmeans segmentation
 )
 
 prelim_icemask_params = (radius=10, amount=2, factor=0.5)
+
+diffusion_params = PeronaMalikDiffusion(0.1, 0.1, 5, "exponential")
 
 @kwdef struct LopezAcosta2019Tiling <: IceFloeSegmentationAlgorithm
     tile_settings = (; rblocks=2, cblocks=2)
@@ -72,6 +74,7 @@ prelim_icemask_params = (radius=10, amount=2, factor=0.5)
     ice_masks_params = ice_masks_params
     prelim_icemask_params = prelim_icemask_params
     brighten_factor = brighten_factor
+    diffusion_params:AbstractDiffusionAlgorithm = diffusion_params
 end
 
 function (p::LopezAcosta2019Tiling)(
@@ -100,8 +103,14 @@ function (p::LopezAcosta2019Tiling)(
         clouds_red = to_uint8(float64.(red.(ref_img_cloudmasked) .* 255))
         clouds_red[_landmask.dilated] .= 0
 
+        # Apply Perona-Malik diffusion to each channel of true color image 
+        # using the default inverse quadratic flux coefficient function
+        true_color_diffused = IceFloeTracker.nonlinear_diffusion(
+            float64.(true_color_image), p.diffusion_params
+        )
+
         rgbchannels = conditional_histeq(
-            true_color_image, clouds_red, tiles; adapthisteq_params...
+            true_color_diffused, clouds_red, tiles; adapthisteq_params...
         )
 
         gammagreen = @view rgbchannels[:, :, 2]
@@ -162,7 +171,11 @@ function (p::LopezAcosta2019Tiling)(
         binarized_tiling = tiled_adaptive_binarization(Gray.(morphed_residue ./ 255), tiles;
                                            minimum_window_size=32, threshold_percentage=15) .> 0
         prelim_icemask = get_ice_masks(
-            ref_image, Gray.(morphed_residue / 255), _landmask.dilated, tiles; ice_masks_params...
+            ref_image,
+            Gray.(morphed_residue / 255),
+            _landmask.dilated,
+            tiles;
+            ice_masks_params...,
         )
     end
 
@@ -195,7 +208,11 @@ function (p::LopezAcosta2019Tiling)(
     begin
         @debug "Step 13: Get improved icemask"
         icemask = get_ice_masks(
-            ref_image, Gray.(prelim_icemask2 ./ 255), _landmask.dilated, tiles; ice_masks_params...
+            ref_image,
+            Gray.(prelim_icemask2 ./ 255),
+            _landmask.dilated,
+            tiles;
+            ice_masks_params...,
         )
     end
 
