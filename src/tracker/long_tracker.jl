@@ -105,16 +105,56 @@ function find_floe_matches(
     tracked::T, candidate_props::T, candidate_filter_settings, candidate_matching_settings
 ) where {T<:AbstractDataFrame}
     matches = []
-    for floe1 in eachrow(tracked), floe2 in eachrow(candidate_props)
-        Δt = floe2.passtime - floe1.passtime
-        ratios, conditions, dist = compute_ratios_conditions(
-            floe1, floe2, Δt, candidate_filter_settings
-        )
+    
+    for floe1 in eachrow(tracked)
+        floe1_candidate_props = deepcopy(candidate_props)
 
-        if callmatchcorr(conditions)
-            (area_mismatch, corr, rot, corr_ci, mismatch_ci, rotation_ci) = matchcorr(
+        #### Step 1: Restrict to plausible distances
+        # TODO: Update to use x/y when we've added that to the property tables.
+        # TODO: Rename dist to euclidean_distance to avoid confusion with built-ins
+        floe1_candidate_props[!, :Δt] = floe1_candidate_props.passtime .- floe1.passtime
+        floe1_candidate_props[!, :Δx] = [dist(getcentroid(floe1), getcentroid(floe2); candidate_filter_settings.resolution) 
+                                            for floe2 in eachrow(floe1_candidate_props)]        
+        floe1_candidate_props .= filter(r -> candidate_filter_settings.time_distance_threshold_function(r.Δx, r.Δt), floe1_candidate_props)
+        
+    
+        #### Step 2: Compute and check geometric ratios
+        # TODO: Add geometric_thresholds function to the candidate filter settings
+        if nrow(floe1_candidate_props) > 0
+           
+            # need to get ratio names in order to build dataframe columns
+            # better to merge? or to loop?
+            ratios = compute_ratios(floe1, floe1_candidate_props) # won't work yet!
+           
+           
+            # Add function (or functor) to compute whether the geometric ratios are acceptable.
+            # large_floe_condition = get_large_floe_condition(floe1.area, ratios, candidate_filter_settings)
+            # small_floe_condition = get_small_floe_condition(floe1.area, ratios, candidate_filter_settings)
+           floe1_candidate_props .= filter(r -> candidate_filter_settings.geometric_thresholds(r), floe1_candidate_props)
+        end
+
+        #### Step 3: Psi-s correlation
+        if nrow(flow1_candidate_props) > 0
+
+            # broadcast this function across the psi-s curves
+            r, r_low, r_high = round(normalized_maximum_crosscorrelation(_psi...), digits=3)
+
+            # filter the candidates -- transform this from the pseudocode to real code
+            floe1_candidate_props .= filter(r -> candidate_filter_settings.minimum_psi_s_corr in (r_low, r_high), floe1_candidate_props)
+        end
+            
+        if nrow(flow1_candidate_props) > 0
+
+            # Named tuple with results. Do we want to do psi-s and correlation and registration all at once?
+            area_mismatch, corr, rot, corr_ci, mismatch_ci, rotation_ci = matchcorr(
                 floe1.mask, floe2.mask, Δt; candidate_matching_settings.comp...
             )
+
+           end
+
+        end
+
+            
             if isfloegoodmatch(conditions, candidate_matching_settings.goodness, area_mismatch, corr)
                 @debug "** Found a good match for ", floe1.uuid, "<=", floe2.uuid
                 push!(
