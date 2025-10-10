@@ -1,13 +1,22 @@
 module Tracking
 export 
-    LopezAcostaTimeDistanceFunction, 
-    LogLogQuadraticTimeDistanceFunction,
+
+    addfloemasks!, 
+    add_passtimes!, 
+    addψs!, 
+    candidate_filter_settings, 
+    candidate_matching_settings,
     distance_threshold
+    LogLogQuadraticTimeDistanceFunction,
+    long_tracker,
+    LopezAcostaTimeDistanceFunction
+    normalized_maximum_crosscorrelation
 
 using Dates: seconds, Minute, Hour, Day
 
 include("distance_thresholds.jl")
-
+include("psi-s.jl")
+include("crosscorr.jl")
 
 
 ##### Default settings ######

@@ -460,16 +460,6 @@ isnotnan(x) = !isnan(x)
 # match_corr related functions
 
 """
-    corr(f1,f2)
-
-Return the correlation between the psi-s curves `p1` and `p2`.
-"""
-function corr(p1, p2)
-    cc, _ = maximum.(IceFloeTracker.crosscorr(p1, p2; normalize=true))
-    return cc
-end
-
-"""
    normalizeangle(revised,t=180)
 
 Normalize angle to be between -180 and 180 degrees.
@@ -477,28 +467,6 @@ Normalize angle to be between -180 and 180 degrees.
 function normalizeangle(revised, t=180)
     revised > t ? theta_revised = revised - 360 : theta_revised = revised
     return (theta_revised=theta_revised, ROT=-theta_revised)
-end
-
-function buildψs(floe)
-    bd = IceFloeTracker.bwtraceboundary(floe)
-    bdres = IceFloeTracker.resample_boundary(bd[1])
-    return IceFloeTracker.make_psi_s(bdres)[1]
-end
-
-"""
-    addψs!(props::Vector{DataFrame})
-
-Add the ψ-s curves to each member of `props`.
-
-Note: each member of `props` must have a `mask` column with a binary image representing the floe.
-
-To add floe masks see [`addfloemasks!`](@ref).
-"""
-function addψs!(props::Vector{DataFrame})
-    for prop in props
-        prop.psi = map(buildψs, prop.mask)
-    end
-    return nothing
 end
 
 function addfloemasks!(props::Vector{DataFrame}, imgs::Vector{<:FloeLabelsImage})
