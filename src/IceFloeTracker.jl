@@ -18,9 +18,13 @@ using .Preprocessing
 include("Utils/Utils.jl")
 using .Utils
 
+include("Data/Data.jl")
+using .Data
+
 using Clustering
 using DataFrames
 using Dates
+using Dates: seconds
 using DelimitedFiles: readdlm, writedlm
 using DSP
 using Images
@@ -80,6 +84,7 @@ export readdlm,
     IceDetectionFirstNonZeroAlgorithm,
     IceDetectionLopezAcosta2019,
     tiled_adaptive_binarization
+   
 
 # For IFTPipeline
 using HDF5
@@ -88,9 +93,18 @@ export DataFrames, DataFrame, nrow, Not, select!
 export Dates, Time, Date, DateTime, @dateformat_str
 export addlatlon!, convertcentroid!, converttounits!, dropcols!, latlon
 
-# For the tracker
-export addfloemasks!, add_passtimes!, addψs!, long_tracker
-
+# Tracking 
+export 
+    addfloemasks!, 
+    add_passtimes!, 
+    addψs!, 
+    LopezAcostaTimeDistanceFunction, 
+    LogLogQuadraticTimeDistanceFunction,
+    distance_threshold,
+    candidate_filter_settings, 
+    candidate_matching_settings,
+    long_tracker
+    
 include("utils.jl")
 include("landmask.jl")
 include("cloudmask.jl")
@@ -102,17 +116,11 @@ include("resample-boundary.jl")
 include("psi-s.jl")
 include("crosscorr.jl")
 include("register.jl")
-include("bwareamaxfilt.jl")
-include("hbreak.jl")
-include("bridge.jl")
-include("branch.jl")
-include("special_strels.jl")
 include("tilingutils.jl")
 include("histogram_equalization.jl")
 include("reconstruction.jl")
 include("watershed.jl")
 include("brighten.jl")
-include("morph_fill.jl")
 include("imcomplement.jl")
 include("imadjust.jl")
 include("ice_masks.jl")
@@ -120,7 +128,6 @@ include("regularize-final.jl")
 include("latlon.jl")
 include("rotation.jl")
 include("segmentation-lopez-acosta-2019.jl")
-include("validation_data.jl")
 include("segmented-image-utilities.jl")
 
 function get_version_from_toml(pth=dirname(dirname(pathof(IceFloeTracker))))::VersionNumber
@@ -146,7 +153,6 @@ include("regionprops.jl")
 include("segmentation_a_direct.jl")
 include("segmentation_b.jl")
 include("segmentation_watershed.jl")
-include("bwperim.jl")
 include("find_ice_labels.jl")
 include("segmentation_f.jl")
 include("tracker/tracker-funcs.jl")
@@ -154,6 +160,6 @@ include("tracker/matchcorr.jl")
 include("tracker/tracker.jl")
 include("tracker/long_tracker.jl")
 include("segmentation-lopez-acosta-2019-tiling.jl")
-include("fill_holes.jl")
 include("mask.jl")
+
 end
