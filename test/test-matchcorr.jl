@@ -3,13 +3,14 @@
     include("config.jl")
     path = joinpath(test_data_dir, "tracker")
 
+    # will need to update in order to use dataframe rows
     floes =
         deserialize.([
             joinpath(path, f) for f in ["f1.dat", "f2.dat", "f3.dat", "f4.dat"]
         ])
     mm, c, rot, corr_ci, sd_ci, rot_ci = matchcorr(floes[1], floes[2], 400.0)
     # Should use cases where the mm is known! I set the test to 0.6 just to see when things change.
-
+    @info "matchcorr results: " * string(mm) * ", " * string(c)
     @test isapprox(mm, 0.6; atol=0.05) && isapprox(c, 0.99; atol=0.05)
    
     # floes 3 and 4 are too dissimilar in shape (corr = 0.91).
