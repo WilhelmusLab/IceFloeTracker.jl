@@ -1,3 +1,5 @@
+import Images: erode
+
 """
     bwperim(bwimg)
 

@@ -1,18 +1,31 @@
 module Morphology
 
-"""
-    dummy_morphology_function()
+export bridge,
+    branch,
+    bwareamaxfilt,
+    fill_holes,
+    hbreak,
+    hbreak!,
+    morph_fill,
+    imextendedmin,
+    imregionalmin,
+    se_disk50,
+    se_disk4,
+    se_disk20,
+    se_disk2,
+    make_landmask_se
 
-Example function for morphology module
-
-!!! todo "Delete this once real functions are added"
-    This function should be removed when real morphology functions are moved into this module.
-
-"""
-function dummy_morphology_function()
-    return "This is a dummy morphology function."
-end
-
-export dummy_morphology_function
+include("branch.jl")
+include("bridge.jl")
+include("bwareamaxfilt.jl")
+include("bwperim.jl")
+include("fill-holes.jl")
+include("hbreak.jl")
+include("lut/lutbridge.jl")
+include("lut/lutfill.jl")
+include("minima-transform.jl")
+include("morph-fill.jl")
+include("operator.jl")
+include("special-strels.jl")
 
 end

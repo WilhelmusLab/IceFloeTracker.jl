@@ -77,6 +77,14 @@ Order   = [:function, :macro, :type]
 Private = false
 ```
 
+### Data
+
+```@autodocs
+Modules = [IceFloeTracker.Data]
+Order   = [:function, :macro, :type]
+Private = false
+```
+
 ### Utils
 
 ```@autodocs

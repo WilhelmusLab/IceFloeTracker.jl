@@ -514,3 +514,5 @@ function make_lutfill()
         1
     ]
 end
+
+const LUTFILL = make_lutfill()

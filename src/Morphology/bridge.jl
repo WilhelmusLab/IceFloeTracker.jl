@@ -1,7 +1,3 @@
-include("./lut/lutbridge.jl")
-
-const LUTBRIDGE = make_lutbridge()
-
 function _bridge_operator_lut(
     I::CartesianIndex{2},
     img::AbstractArray{Bool},

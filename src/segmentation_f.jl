@@ -1,3 +1,5 @@
+import Images: mreconstruct!
+
 """
     segmentation_F(
     segmentation_B_not_ice_mask::Matrix{Gray{Float64}},
@@ -41,7 +43,7 @@ function segmentation_F(
         segmentation_B_not_ice_mask, IceFloeTracker.strel_diamond((5, 5))
     )
 
-    IceFloeTracker.mreconstruct!(
+    mreconstruct!(
         IceFloeTracker.dilate,
         not_ice,
         complement.(not_ice),
@@ -80,7 +82,7 @@ function segmentation_F(
 
     floes_opened = IceFloeTracker.opening(floes, centered(IceFloeTracker.se_disk4()))
 
-    IceFloeTracker.mreconstruct!(IceFloeTracker.dilate, floes_opened, floes, floes_opened)
+    mreconstruct!(IceFloeTracker.dilate, floes_opened, floes, floes_opened)
 
     return floes_opened
 end
