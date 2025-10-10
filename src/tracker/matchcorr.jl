@@ -30,15 +30,17 @@ A pair of `NaN` is returned for cases for which one of their mask dimension is t
 - `mm`: mismatch threshold (default: 0.22)
 """
 function matchcorr(
-    f1::T, f2::T, Δt::F; mxrot::S=10, psi::F=0.95, sz::S=16, comp::F=0.25, mm::F=0.22
+    f1::T, f2::T, Δt; mxrot::S=10, psi::F=0.95, sz::S=16, comp::F=0.25, mm::F=0.22
 ) where {T<:AbstractArray{Bool,2},S<:Int64,F<:Float64}
 
     # check if the floes are too small and size are comparable
+    # TODO: check if this condition ever is called. Should be already taken care of by the ratio tests.
     _sz = size.([f1, f2])
     if (any([(_sz...)...] .< sz) || getsizecomparability(_sz...) > comp)
         return (mm=NaN, c=NaN)
     end
 
+    # TODO: consider sending the props rows into matchcorr instead of bitmatrices, so that we don't build psi-s curves twice for every floe.
     _psi = buildψs.([f1, f2])
     c = corr(_psi...)
 
@@ -62,6 +64,7 @@ function matchcorr(
     return (mm=mm, c=c)
 end
 
+# TODO: consider removing this function and test
 """
     getsizecomparability(s1, s2)
 
@@ -82,6 +85,8 @@ end
 
 Return the normalized cross-correlation between the psi-s curves `p1` and `p2`.
 """
+# TODO: consider renaming to maximum_psi_s_cross_correlation
+# TODO: Place function into the same file as the other psi-s functions
 function corr(p1::T, p2::T) where {T<:AbstractArray}
     cc, _ = maximum.(IceFloeTracker.crosscorr(p1, p2; normalize=true))
     return cc

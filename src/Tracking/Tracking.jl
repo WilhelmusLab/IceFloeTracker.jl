@@ -1,11 +1,13 @@
 module Tracking
-
 export 
     LopezAcostaTimeDistanceFunction, 
     LogLogQuadraticTimeDistanceFunction,
     distance_threshold
 
+using Dates: seconds, Minute, Hour, Day
+
 include("distance_thresholds.jl")
+
 
 
 ##### Default settings ######
@@ -18,7 +20,7 @@ include("distance_thresholds.jl")
 # TODO: The size-dependent geometric thresholds can also be a function, e.g. geometric_filter_function(area, ratios...)
 # TODO: Replace references to condition_thresholds in function documentation
 
-candidate_filter_thresholds = (
+candidate_filter_settings = (
     time_space_threshold_function = LopezAcostaTimeDistanceFunction(),
     small_floe_settings = (
             minimumarea=400,
@@ -33,19 +35,20 @@ candidate_filter_thresholds = (
             majaxisratio=0.10,
             minaxisratio=0.12,
             convexarearatio=0.14,
-        )
+        ),
+    resolution = 250 # spatial resolution per pixel for distance computation
 )
 
-# TODO: replace references to mc_thresholds in function calls
+# TODO: replace all references to mc_thresholds in function calls
 candidate_matching_settings = (
-    goodness=(small_floe_area=0.18, # check: how does this compare with the areas in the initial filter?
+    goodness=(small_floe_area=0.18, # TODO: Check: how does this compare with the areas in the initial filter? Do we need it at all?
               large_floe_area=0.236,
-              corr=0.68), # Why is this correlation so low?
-    comp=(mxrot=10, sz=16), # Rename these variables for clarity -- we don't need to ration letters
+              corr=0.68), # TODO: this correlation is too low. Should be above 0.9. Fix in next pull request.
+    comp=(mxrot=10, sz=16), # TODO: Rename these variables for clarity -- we don't need to ration letters
 )
 
 export 
     candidate_filter_settings,
     candidate_matching_settings
-    
+
 end

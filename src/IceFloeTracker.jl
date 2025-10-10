@@ -97,8 +97,10 @@ export
     LopezAcostaTimeDistanceFunction, 
     LogLogQuadraticTimeDistanceFunction,
     distance_threshold,
+    candidate_filter_settings, 
+    candidate_matching_settings,
     long_tracker
-
+    
 include("utils.jl")
 include("landmask.jl")
 include("cloudmask.jl")
