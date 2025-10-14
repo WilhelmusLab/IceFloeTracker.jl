@@ -1,23 +1,22 @@
 module Tracking
-export 
-    LopezAcostaTimeDistanceFunction, 
-    LogLogQuadraticTimeDistanceFunction,
-    distance_threshold
 
-using Dates: seconds, Minute, Hour, Day
+export 
+    addfloemasks!, 
+    add_passtimes!, 
+    addψs!, 
+    candidate_filter_settings, 
+    candidate_matching_settings,
+    distance_threshold,
+    LogLogQuadraticTimeDistanceFunction,
+    long_tracker,
+    LopezAcostaTimeDistanceFunction
 
 include("distance_thresholds.jl")
 
 
-
 ##### Default settings ######
-# dmw: Should these be exported variables? Or should there be a function that
-# returns the defaults? I'm placing them here temporarily, with the intent
-# of including these in a file such as segmentation-lopez-acosta-2019.jl.
-
 # TODO: Set these to match the Lopez-Acosta 2019 paper
-# TODO: Generalize area filtering. We could have a size-dependent floe filter function. Here it's two-step, but it doesn't have to be.
-# TODO: The size-dependent geometric thresholds can also be a function, e.g. geometric_filter_function(area, ratios...)
+# TODO: Replace two-level geometry threshold function with a functor or function
 # TODO: Replace references to condition_thresholds in function documentation
 
 candidate_filter_settings = (

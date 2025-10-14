@@ -1,11 +1,6 @@
-"""
-Time-distance threshold functions are used to identify search regions for floe matching. We include two distance threshold functions:
-LopezAcostaTimeDistanceFunction, based on the stepwise method in Lopez-Acosta et al. 2019, and LogLogQuadraticTimeDistanceFunction, 
-which is defined in Watkins et al. 2025 and is based on fitting a quadratic function to log-transformed displacements calculated from
-drifting buoy data.
-"""
-
+using Dates: seconds, Minute, Hour, Day
 abstract type AbstractTimeDistanceThresholdFunction end
+
 
 """
 LopezAcostaTimeDistanceFunction(Δx, Δt; dt, dx)
@@ -58,7 +53,16 @@ end
 """
 distance_threshold(Δx, Δt, threshold_function)
 
-Check whether the time/space pair Δx, Δt passes a given threshold function.
+Time-distance threshold functions are used to identify search regions for floe matching. We include two distance threshold functions:
+LopezAcostaTimeDistanceFunction, based on the stepwise method in Lopez-Acosta et al. 2019, and LogLogQuadraticTimeDistanceFunction, 
+which is defined in Watkins et al. 2025 and is based on fitting a quadratic function to log-transformed displacements calculated from
+drifting buoy data.
+
+Example usage:
+```
+distance_threshold(100, Hour(12), LopezAcostaTimeDistanceFunction())
+```
+
 """
 # TODO: require dt to be milliseconds (or at least a timedelta), so we can do e.g. = Dates.seconds(passtimes[2] - passtimes[1])
 function distance_threshold(Δx, Δt, threshold_function::AbstractTimeDistanceThresholdFunction)
