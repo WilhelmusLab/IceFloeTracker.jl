@@ -1,17 +1,53 @@
 module Tracking
 
-"""
-    dummy_tracking_function()
+export 
+    addfloemasks!, 
+    add_passtimes!, 
+    addψs!, 
+    candidate_filter_settings, 
+    candidate_matching_settings,
+    distance_threshold,
+    LogLogQuadraticTimeDistanceFunction,
+    long_tracker,
+    LopezAcostaTimeDistanceFunction
 
-Example function for tracking module
+include("distance_thresholds.jl")
 
-!!! todo "Delete this once real functions are added"
-    This function should be removed when real tracking functions are moved into this module.
-"""
-function dummy_tracking_function()
-    return "This is a dummy tracking function."
-end
 
-export dummy_tracking_function
+##### Default settings ######
+# TODO: Set these to match the Lopez-Acosta 2019 paper
+# TODO: Replace two-level geometry threshold function with a functor or function
+# TODO: Replace references to condition_thresholds in function documentation
+
+candidate_filter_settings = (
+    time_space_threshold_function = LopezAcostaTimeDistanceFunction(),
+    small_floe_settings = (
+            minimumarea=400,
+            arearatio=0.18,
+            majaxisratio=0.1,
+            minaxisratio=0.15,
+            convexarearatio=0.2,
+        ),
+    large_floe_settings = (
+            minimumarea=1200,
+            arearatio=0.28,
+            majaxisratio=0.10,
+            minaxisratio=0.12,
+            convexarearatio=0.14,
+        ),
+    resolution = 250 # spatial resolution per pixel for distance computation
+)
+
+# TODO: replace all references to mc_thresholds in function calls
+candidate_matching_settings = (
+    goodness=(small_floe_area=0.18, # TODO: Check: how does this compare with the areas in the initial filter? Do we need it at all?
+              large_floe_area=0.236,
+              corr=0.68), # TODO: this correlation is too low. Should be above 0.9. Fix in next pull request.
+    comp=(mxrot=10, sz=16), # TODO: Rename these variables for clarity -- we don't need to ration letters
+)
+
+export 
+    candidate_filter_settings,
+    candidate_matching_settings
 
 end

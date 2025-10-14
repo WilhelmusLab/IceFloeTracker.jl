@@ -28,8 +28,8 @@ Trajectories are built as follows:
     - "passtime": A timestamp for the floe
     - "psi": the psi-s curve for the floe
     - "uuid": a universally unique identifier for each segmented floe
-- `condition_thresholds`: namedtuple of thresholds for deciding whether to match floe `i` from day `k` to floe j from day `k+1`. See `IceFloeTracker.condition_thresholds` for sample values.
-- `mc_thresholds`: thresholds for area mismatch and psi-s shape correlation. See `IceFloeTracker.mc_thresholds` for sample values.
+- `candidate_filter_settings`: namedtuple of settings and functions for reducing the number of possible matches. See `IceFloeTracker.candidate_filter_settings` for sample values.
+- `candidate_matching_settings`: settings for area mismatch and psi-s shape correlation. See `IceFloeTracker.candidate_matching_settings` for sample values.
 
 # Returns
 A DataFrame with the above columns, plus extra columns:
@@ -38,11 +38,15 @@ A DataFrame with the above columns, plus extra columns:
 - Trajectories are identified by: 
   - a unique identifier `ID` and the 
   - UUID of the trajectory, `trajectory_uuid`.
+
+Note: the props dataframes are modified in place.
 """
-function long_tracker(props::Vector{DataFrame}, condition_thresholds, mc_thresholds)
+function long_tracker(props::Vector{DataFrame}, candidate_filter_settings, candidate_matching_settings)
+    # dmw: this can be generalized to have a global area filter setting in the candidate_filter_settings
     filter_out_small_floes = filter(
-        r -> r.area >= condition_thresholds.small_floe_settings.minimumarea
+        r -> r.area >= candidate_filter_settings.small_floe_settings.minimumarea
     )
+    # dmw: we should warn users that props gets mutated in place, or give an option to avoid mutating it
     props .= filter_out_small_floes.(props)
 
     # The starting trajectories are just the floes visible and large enough on day 1.
@@ -54,7 +58,7 @@ function long_tracker(props::Vector{DataFrame}, condition_thresholds, mc_thresho
 
 
         new_matches = find_floe_matches(
-            trajectory_heads, prop, condition_thresholds, mc_thresholds
+            trajectory_heads, prop, candidate_filter_settings, candidate_matching_settings
         )
 
         # Get unmatched floes in day 2 (iterations > 2)
@@ -94,24 +98,24 @@ Find matches for floes in `tracked` from floes in  `candidate_props`.
 # Arguments
 - `tracked`: dataframe containing floe trajectories.
 - `candidate_props`: dataframe containing floe candidate properties.
-- `condition_thresholds`: thresholds for deciding whether to match floe `i` from tracked to floe j from `candidate_props`
-- `mc_thresholds`: thresholds for area mismatch and psi-s shape correlation
+- `candidate_filter_settings`: thresholds for deciding whether to match floe `i` from tracked to floe j from `candidate_props`
+- `candidate_matching_settings`: thresholds for area mismatch and psi-s shape correlation
 """
 function find_floe_matches(
-    tracked::T, candidate_props::T, condition_thresholds, mc_thresholds
+    tracked::T, candidate_props::T, candidate_filter_settings, candidate_matching_settings
 ) where {T<:AbstractDataFrame}
     matches = []
     for floe1 in eachrow(tracked), floe2 in eachrow(candidate_props)
-        Δt = get_dt(floe1, floe2)
+        Δt = floe2.passtime - floe1.passtime
         ratios, conditions, dist = compute_ratios_conditions(
-            floe1, floe2, Δt, condition_thresholds
+            floe1, floe2, Δt, candidate_filter_settings
         )
 
         if callmatchcorr(conditions)
             (area_mismatch, corr) = matchcorr(
-                floe1.mask, floe2.mask, Δt; mc_thresholds.comp...
+                floe1.mask, floe2.mask, Δt; candidate_matching_settings.comp...
             )
-            if isfloegoodmatch(conditions, mc_thresholds.goodness, area_mismatch, corr)
+            if isfloegoodmatch(conditions, candidate_matching_settings.goodness, area_mismatch, corr)
                 @debug "** Found a good match for ", floe1.uuid, "<=", floe2.uuid
                 push!(
                     matches,
@@ -138,7 +142,7 @@ function find_floe_matches(
         nrow(matches_involving_floe2_df) == 0 && continue
         best_match = matches_involving_floe2_df[1, :]
         measures_df = DataFrame(matches_involving_floe2_df.measures)
-        best_match_idx = getidxmostminimumeverything(measures_df)
+        best_match_idx = getidxmostminimumeverything(measures_df) # TODO: Update this to take travel distance into account; potentially add weighing function
         best_match = matches_involving_floe2_df[best_match_idx, :]
         push!(
             best_matches,
@@ -164,36 +168,3 @@ function find_floe_matches(
     append!(best_matches_df, best_matches; promote=true)
     return best_matches_df
 end
-
-# Sample values for condition_thresholds
-small_floe_minimum_area = 400
-large_floe_minimum_area = 1200
-_dt = (30.0, 100.0, 1300.0)
-_dist = (200, 250, 300)
-search_thresholds = (dt=_dt, dist=_dist)
-
-large_floe_settings = (
-    minimumarea=large_floe_minimum_area,
-    arearatio=0.28,
-    majaxisratio=0.10,
-    minaxisratio=0.12,
-    convexarearatio=0.14,
-)
-
-small_floe_settings = (
-    minimumarea=small_floe_minimum_area,
-    arearatio=0.18,
-    majaxisratio=0.1,
-    minaxisratio=0.15,
-    convexarearatio=0.2,
-)
-condition_thresholds = (
-    search_thresholds=search_thresholds,
-    small_floe_settings=small_floe_settings,
-    large_floe_settings=large_floe_settings,
-)
-
-mc_thresholds = (
-    goodness=(small_floe_area=0.18, large_floe_area=0.236, corr=0.68),
-    comp=(mxrot=10, sz=16),
-)

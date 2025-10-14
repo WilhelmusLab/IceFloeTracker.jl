@@ -1,6 +1,7 @@
 # need this for adding methods to Base functions
 import Base.isempty
 import Base.isequal
+using Dates: Day, Hour, Minute, seconds
 
 # Containers and methods for preliminary matches
 struct MatchingProps
@@ -193,32 +194,6 @@ function makeemptyratiosdf()
     )
 end
 
-#= Conditions for a match:
-    Condition 1: displacement time delta =#
-
-"""
-    get_time_space_proximity_condition(p1, p2, delta_time, search_thresholds=(dt = (30, 100, 1300), dist=(15, 30, 120)))
-
-Return `true` distance `d` and time elapsed `delta_time` between observations are within a certain range. Return `false` otherwise.
-
-# Arguments
-- `d` distance (in pixels) between the centroids of the floes
-- `delta_time`: time (in minutes) elapsed between observations
-- `search_thresholds`: tuple of thresholds for elapsed time `dt` (in minutes) and distance `dist` (in pixels).
-
-"""
-function get_time_space_proximity_condition(
-    d, delta_time, search_thresholds=(dt=(30, 100, 1300), dist=(15, 30, 120))
-)
-    return (delta_time < search_thresholds.dt[1] && d < search_thresholds.dist[1]) ||
-           (
-               delta_time >= search_thresholds.dt[1] &&
-               delta_time <= search_thresholds.dt[2] &&
-               d < search_thresholds.dist[2]
-           ) ||
-           (delta_time >= search_thresholds.dt[3] && d < search_thresholds.dist[3])
-end
-
 """
     get_large_floe_condition(
     area1,
@@ -322,16 +297,14 @@ Compute the conditions for a match between the floe in `floe_day1` and the floe 
 - `floe_day2`: floe properties for day 2
 - `delta_time`: time elapsed from image day 1 to image day 2
 - `thresholds`: namedtuple of thresholds for elapsed time and distance. See `pair_floes` for details.
-"""
-function compute_ratios_conditions(floe_day1, floe_day2, delta_time, thresholds)
+""" # TBD: Set up threshold function using the search_thresholds settings.
+function compute_ratios_conditions(floe_day1, floe_day2, Δt, thresholds)
     p1 = getcentroid(floe_day1)
     p2 = getcentroid(floe_day2)
-    d = dist(p1, p2)
+    Δx = dist(p1, p2; px_to_meters=candidate_filter_settings.resolution) # set distance function up to return distance in meters
     area1 = floe_day1.area
     ratios = compute_ratios(floe_day1, floe_day2)
-    time_space_proximity_condition = get_time_space_proximity_condition(
-        d, delta_time, thresholds.search_thresholds
-    )
+    time_space_proximity_condition = distance_threshold(Δx, Δt, thresholds.time_space_threshold_function )
     large_floe_condition = get_large_floe_condition(area1, ratios, thresholds)
     small_floe_condition = get_small_floe_condition(area1, ratios, thresholds)
     return (
@@ -341,7 +314,7 @@ function compute_ratios_conditions(floe_day1, floe_day2, delta_time, thresholds)
             large_floe_condition=large_floe_condition,
             small_floe_condition=small_floe_condition,
         ),
-        dist=d,
+        dist=Δx,
     )
 end
 
@@ -350,10 +323,10 @@ end
 
 Return the distance between the points `p1` and `p2`.
 """
-function dist(p1, p2)
+function dist(p1, p2; px_to_meters=250)
     return sqrt(
         (p1.row_centroid - p2.row_centroid)^2 + (p1.col_centroid - p2.col_centroid)^2
-    )
+    ) * px_to_meters
 end
 
 """
@@ -566,6 +539,7 @@ function get_trajectory_heads(
     return heads
 end
 
+# TODO: use SI units. For times, we should either keep it as a time object, or we should use seconds.
 """
     get_dt(props1, props2)
 
