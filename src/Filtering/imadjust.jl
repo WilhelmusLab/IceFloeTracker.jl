@@ -1,3 +1,6 @@
+import StatsBase: StatsBase
+import Images: LinearStretching
+
 # TODO: make imadjust more general to work with Gray{Float64} and RGB{Float64} types
 """
     imadjust(img; low, high)

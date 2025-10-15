@@ -1,18 +1,50 @@
 
 @testitem "Conditional adaptivehisteq" begin
     using IceFloeTracker:
-        _get_false_color_cloudmasked,
         convert_to_255_matrix,
         adapthisteq,
         conditional_histeq,
         get_tiles,
         rgb2gray,
         to_uint8,
-        histeq
+        histeq,
+        IceFloeTracker
     using Images: load, float64
     using TestImages: testimage
 
     include("config.jl")
+
+    """
+    Private function for testing the conditional adaptive histogram equalization workflow.
+    """
+    function _get_false_color_cloudmasked(;
+        false_color_image,
+        prelim_threshold=110.0,
+        band_7_threshold=200.0,
+        band_2_threshold=190.0,
+    )
+        mask_cloud_ice, clouds_view = IceFloeTracker._get_masks(
+            false_color_image;
+            prelim_threshold=prelim_threshold / 255.0,
+            band_7_threshold=band_7_threshold / 255.0,
+            band_2_threshold=band_2_threshold / 255.0,
+            ratio_lower=0.0,
+            ratio_offset=0.0,
+            ratio_upper=0.75,
+        )
+
+        clouds_view[mask_cloud_ice] .= 0
+
+        # remove clouds and land from each channel
+        channels = Int.(channelview(false_color_image) * 255)
+
+        # Apply the mask to each channel
+        for i in 1:3
+            @views channels[i, :, :][clouds_view] .= 0
+        end
+
+        return channels
+    end
 
     begin
         datadir = joinpath(@__DIR__, "test_inputs/")

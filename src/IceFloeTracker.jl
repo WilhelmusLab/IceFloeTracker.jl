@@ -1,5 +1,8 @@
 module IceFloeTracker
 
+include("skimage/skimage.jl")
+using .skimage
+
 include("Segmentation/Segmentation.jl")
 using .Segmentation
 
@@ -31,7 +34,6 @@ using Interpolations
 using OffsetArrays: centered
 using Peaks
 using Pkg
-using PyCall
 using Random
 using Serialization: deserialize, serialize
 using StaticArrays
@@ -99,19 +101,16 @@ include("landmask.jl")
 include("cloudmask.jl")
 include("normalization.jl")
 include("ice-water-discrimination.jl")
-include("nonlinear_diffusion.jl")
 include("bwtraceboundary.jl")
 include("resample-boundary.jl")
 include("psi-s.jl")
 include("crosscorr.jl")
 include("register.jl")
 include("tilingutils.jl")
-include("histogram_equalization.jl")
 include("reconstruction.jl")
 include("watershed.jl")
 include("brighten.jl")
 include("imcomplement.jl")
-include("imadjust.jl")
 include("ice_masks.jl")
 include("regularize-final.jl")
 include("latlon.jl")
@@ -126,17 +125,6 @@ end
 
 const IFTVERSION = get_version_from_toml()
 
-const sk_measure = PyNULL()
-const sk_morphology = PyNULL()
-const sk_exposure = PyNULL()
-
-function __init__()
-    skimage = "scikit-image=0.25.1"
-    copy!(sk_measure, pyimport_conda("skimage.measure", skimage))
-    copy!(sk_exposure, pyimport_conda("skimage.exposure", skimage))
-    copy!(sk_morphology, pyimport_conda("skimage.morphology", skimage))
-    return nothing
-end
 
 include("regionprops.jl")
 include("segmentation_a_direct.jl")
