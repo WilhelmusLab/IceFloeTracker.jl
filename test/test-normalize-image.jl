@@ -1,6 +1,7 @@
 @testitem "Normalize Image" begin
     using IceFloeTracker: strel_diamond, @test_approx_eq_sigma_eps, PeronaMalikDiffusion
     using Images: channelview, colorview, RGB, test_approx_eq_sigma_eps
+    using Dates: Dates
 
     include("config.jl")
 
