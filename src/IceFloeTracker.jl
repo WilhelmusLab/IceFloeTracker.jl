@@ -125,7 +125,6 @@ end
 
 const IFTVERSION = get_version_from_toml()
 
-
 include("regionprops.jl")
 include("segmentation_a_direct.jl")
 include("segmentation_b.jl")
