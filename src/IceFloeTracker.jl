@@ -87,7 +87,6 @@ export readdlm,
 # For IFTPipeline
 using HDF5
 export HDF5, PyCall
-export DataFrames, DataFrame, nrow, Not, select!
 export Dates, Time, Date, DateTime, @dateformat_str
 export addlatlon!, convertcentroid!, converttounits!, dropcols!, latlon
 
