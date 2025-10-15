@@ -14,10 +14,9 @@ export exponential,
     AbstractDiffusionAlgorithm,
     PeronaMalikDiffusion,
     anisotropic_diffusion_3D,
-    anisotropic_diffusion_2D,
-    include(
-    "gradient_functions.jl"
-)
+    anisotropic_diffusion_2D
+
+include("gradient_functions.jl")
 include("histogram_equalization.jl")
 include("imadjust.jl")
 include("nonlinear_diffusion.jl")
