@@ -1,6 +1,13 @@
-using Dates: seconds, Minute, Hour, Day
+import Dates: Millisecond, Second, Minute, Hour, Day
 abstract type AbstractTimeDistanceThresholdFunction end
 
+# Minimum in Dates in milliseconds, so I just need to add
+# a function that converts to base units.
+
+function seconds(time_difference)
+    ms = convert(Millisecond, time_difference)
+    return ms.value / 1000
+end
 
 """
 LopezAcostaTimeDistanceFunction(Δx, Δt; dt, dx)
