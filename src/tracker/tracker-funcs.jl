@@ -1,7 +1,7 @@
 # need this for adding methods to Base functions
 import Base.isempty
 import Base.isequal
-using Dates: Day, Hour, Minute, seconds
+using Dates: Day, Hour, Minute
 
 # Containers and methods for preliminary matches
 struct MatchingProps
