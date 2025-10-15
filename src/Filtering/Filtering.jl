@@ -9,7 +9,8 @@ export exponential,
     conditional_histeq,
     histeq,
     rgb2gray,
-    PeronaMalikDiffusion
+    PeronaMalikDiffusion,
+    nonlinear_diffusion
 
 include("gradient_functions.jl")
 include("histogram_equalization.jl")
