@@ -92,13 +92,12 @@ export Dates, Time, Date, DateTime, @dateformat_str
 export addlatlon!, convertcentroid!, converttounits!, dropcols!, latlon
 
 # For the tracker
-export
-    addfloemasks!, 
+export addfloemasks!, 
     add_passtimes!, 
     addψs!, 
     candidate_filter_settings, 
     candidate_matching_settings,
-    distance_threshold
+    distance_threshold,
     LogLogQuadraticTimeDistanceFunction,
     long_tracker,
     LopezAcostaTimeDistanceFunction
