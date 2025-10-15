@@ -4,16 +4,25 @@ export
     addfloemasks!, 
     add_passtimes!, 
     addψs!, 
+    bwtraceboundary,
     candidate_filter_settings, 
     candidate_matching_settings,
+    crosscorr,
     distance_threshold,
+    grad,
+    imrotate_bin_counterclockwise_radians,
+    matchcorr,
+    mismatch,
+    make_psi_s,
     LogLogQuadraticTimeDistanceFunction,
     long_tracker,
-    LopezAcostaTimeDistanceFunction
+    LopezAcostaTimeDistanceFunction,
+    register
 
 include("distance_thresholds.jl")
 include("bwtraceboundary.jl")
 include("crosscorr.jl")
+include("extended_regionprops.jl")
 include("long_tracker.jl")
 include("matchcorr.jl")
 include("psi-s.jl")

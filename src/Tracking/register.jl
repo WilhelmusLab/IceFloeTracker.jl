@@ -1,3 +1,7 @@
+using Images: imrotate, padarray
+
+# import padarray from wherever we get it
+
 greaterthan05(x) = x .> 0.5 # used for the image resize step and for binarizing images
 function imrotate_bin(x, r)
     return greaterthan05(collect(imrotate(x, r, axes(x); method=BSpline(Constant()))))

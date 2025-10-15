@@ -2,6 +2,7 @@
 import Base.isempty
 import Base.isequal
 using Dates: Day, Hour, Minute
+using Interpolations
 
 # Containers and methods for preliminary matches
 struct MatchingProps
@@ -465,7 +466,7 @@ isnotnan(x) = !isnan(x)
 Return the correlation between the psi-s curves `p1` and `p2`.
 """
 function corr(p1, p2)
-    cc, _ = maximum.(IceFloeTracker.crosscorr(p1, p2; normalize=true))
+    cc, _ = maximum.(crosscorr(p1, p2; normalize=true))
     return cc
 end
 
@@ -480,9 +481,9 @@ function normalizeangle(revised, t=180)
 end
 
 function buildψs(floe)
-    bd = IceFloeTracker.bwtraceboundary(floe)
-    bdres = IceFloeTracker.resample_boundary(bd[1])
-    return IceFloeTracker.make_psi_s(bdres)[1]
+    bd = bwtraceboundary(floe)
+    bdres = resample_boundary(bd[1])
+    return make_psi_s(bdres)[1]
 end
 
 """
@@ -503,7 +504,7 @@ end
 
 function addfloemasks!(props::Vector{DataFrame}, imgs::Vector{<:FloeLabelsImage})
     for (img, prop) in zip(imgs, props)
-        IceFloeTracker.addfloemasks!(prop, img)
+        addfloemasks!(prop, img)
     end
     return nothing
 end
