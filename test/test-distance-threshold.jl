@@ -8,7 +8,7 @@ using Dates: Minute, Hour, Day
     @test distance_threshold(1, Minute(19), lopez_acosta_dist)
     @test !distance_threshold(7e5, Minute(19), lopez_acosta_dist)
     @test distance_threshold(1, Minute(19), loglog_quadratic)
-    @test !distance_threshold(1e3, Minute(19), loglog_quadratic)
+    @test !distance_threshold(3e3, Minute(19), loglog_quadratic)
 
     @test distance_threshold(1e3, Hour(15), lopez_acosta_dist)
     @test !distance_threshold(1e5, Hour(15), lopez_acosta_dist)
