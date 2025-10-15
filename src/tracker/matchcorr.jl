@@ -23,15 +23,19 @@ A pair of `NaN` is returned for cases for which one of their mask dimension is t
 - `f1`: mask of floe 1
 - `f2`: mask of floe 2
 - `Δt`: time difference between floes
-- `mxrot`: maximum rotation (in degrees) allowed between floesn (default: 10)
+- `mxrot`: maximum rotation (in degrees) allowed between floes (default: 10)
 - `psi`: psi-s-correlation threshold (default: 0.95)
 - `sz`: size threshold (default: 16)
 - `comp`: size comparability threshold (default: 0.25)
 - `mm`: mismatch threshold (default: 0.22)
 """
 function matchcorr(
-    f1::T, f2::T, Δt::F; mxrot::S=10, psi::F=0.95, sz::S=16, comp::F=0.25, mm::F=0.22
+    f1::T, f2::T, Δt; mxrot::S=10, psi::F=0.95, sz::S=16, comp::F=0.25, mm::F=0.22
 ) where {T<:AbstractArray{Bool,2},S<:Int64,F<:Float64}
+
+    # temp function
+    time_threshold = 20*60 # twenty minutes
+    short_time = convert(Millisecond, Δt).value / 1000 > time_threshold
 
     # check if the floes are too small and size are comparable
     _sz = size.([f1, f2])
@@ -52,7 +56,7 @@ function matchcorr(
     # check if the time difference is too large or the rotation is too large
     step_deg = 1
     _mm, rot = mismatch(f1, f2, mxrot, step_deg)
-    if all([Δt < max_dt_minutes, rot > mxrot]) || _mm > mm
+    if all([short_time, rot > mxrot]) || _mm > mm
         @warn "time difference too small for a large rotation or mismatch too large\nmm: $mm, rot: $rot"
         return (mm=NaN, c=NaN)
     end

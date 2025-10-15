@@ -1,7 +1,7 @@
 
 @testitem "Utilities" begin
     using IceFloeTracker:
-        long_tracker, condition_thresholds, mc_thresholds, get_trajectory_heads
+        long_tracker, candidate_filter_settings, candidate_matching_settings, get_trajectory_heads
     using CSV
     using DataFrames
 
@@ -77,7 +77,7 @@ end
 @testitem "Basic cases" begin
     using Random
     using DataFrames
-    using IceFloeTracker: condition_thresholds, mc_thresholds
+    using IceFloeTracker: candidate_filter_settings, candidate_matching_settings
 
     """
     addgaps(props)
@@ -120,7 +120,7 @@ end
         # Every floe is matched in every day
         props_test_case1 = deepcopy(_props)
         trajectories = IceFloeTracker.long_tracker(
-            props_test_case1, condition_thresholds, mc_thresholds
+            props_test_case1, candidate_filter_settings, candidate_matching_settings
         )
 
         # Expected: 5 trajectories, all of which have length 3
@@ -137,7 +137,7 @@ end
 
     @testset "Case 2" begin
         trajectories = IceFloeTracker.long_tracker(
-            props_test_case2, condition_thresholds, mc_thresholds
+            props_test_case2, candidate_filter_settings, candidate_matching_settings
         )
 
         # Expected: 5 trajectories, 3 of which have length 3 and 2 of which have length 2
@@ -152,7 +152,7 @@ end
             props = addgaps(_props)
 
             trajectories = IceFloeTracker.long_tracker(
-                props, condition_thresholds, mc_thresholds
+                props, candidate_filter_settings, candidate_matching_settings
             )
 
             # Expected: 5 trajectories, all of which have length 3 as in test case 1
@@ -165,7 +165,7 @@ end
             Random.seed!(123)
             props = addgaps(props_test_case2)
             trajectories = IceFloeTracker.long_tracker(
-                props, condition_thresholds, mc_thresholds
+                props, candidate_filter_settings, candidate_matching_settings
             )
 
             # Expected: 5 trajectories, 3 of which have length 3 and 2 of which have length 2 as in test case 2
@@ -178,7 +178,7 @@ end
 @testitem "Ellipses" begin
     using CSV
     using DataFrames
-    using IceFloeTracker: long_tracker, condition_thresholds, mc_thresholds
+    using IceFloeTracker: long_tracker, candidate_filter_settings, candidate_matching_settings
 
     function load_props_from_csv(path; eval_cols=[:mask, :psi])
         df = DataFrame(CSV.File(path))
@@ -192,7 +192,7 @@ end
         props = [
             load_props_from_csv(p) for p in readdir(path; join=true) if endswith(p, ".csv")
         ]
-        trajectories_ = long_tracker(props, condition_thresholds, mc_thresholds)
+        trajectories_ = long_tracker(props, candidate_filter_settings, candidate_matching_settings)
 
         trajectory_lengths = combine(groupby(trajectories_, :trajectory_uuid), nrow)
 
@@ -236,13 +236,13 @@ end
         ]
 
         modified_condition_thresholds = (
-            search_thresholds=condition_thresholds.search_thresholds,
+            time_space_threshold_function=candidate_filter_settings.time_space_threshold_function,
             small_floe_settings=(;
-                condition_thresholds.small_floe_settings..., minimumarea=1200
+                candidate_filter_settings.small_floe_settings..., minimumarea=1200
             ),
-            large_floe_settings=condition_thresholds.large_floe_settings,
+            large_floe_settings=candidate_filter_settings.large_floe_settings,
         )
-        trajectories_ = long_tracker(props, modified_condition_thresholds, mc_thresholds)
+        trajectories_ = long_tracker(props, modified_condition_thresholds, candidate_matching_settings)
 
         @test all(
             modified_condition_thresholds.small_floe_settings.minimumarea .<=
