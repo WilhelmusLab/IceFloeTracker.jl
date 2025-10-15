@@ -1,5 +1,5 @@
 import StatsBase: StatsBase
-import Images: LinearStretching
+import Images: LinearStretching, adjust_histogram
 
 # TODO: make imadjust more general to work with Gray{Float64} and RGB{Float64} types
 """
