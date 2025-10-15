@@ -9,7 +9,7 @@
         to_uint8,
         histeq,
         IceFloeTracker
-    using Images: load, float64
+    using Images: load, float64, channelview
     using TestImages: testimage
 
     include("config.jl")
