@@ -14,10 +14,13 @@ export
 
 using Dates: seconds, Minute, Hour, Day
 
+include("bwtraceboundary.jl")
+include("crosscorr.jl")
 include("distance_thresholds.jl")
 include("psi-s.jl")
-include("crosscorr.jl")
-
+include("resample-boundary.jl")
+include("register.jl")
+include("rotation.jl")
 
 ##### Default settings ######
 # dmw: Should these be exported variables? Or should there be a function that
@@ -59,5 +62,4 @@ candidate_matching_settings = (
 export 
     candidate_filter_settings,
     candidate_matching_settings
-
 end
