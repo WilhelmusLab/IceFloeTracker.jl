@@ -12,6 +12,16 @@ export
     LopezAcostaTimeDistanceFunction
 
 include("distance_thresholds.jl")
+include("bwtraceboundary.jl")
+include("crosscorr.jl")
+include("long_tracker.jl")
+include("matchcorr.jl")
+include("psi-s.jl")
+include("register.jl")
+include("resample-boundary.jl")
+include("rotation.jl")
+include("tracker-funcs.jl")
+include("tracker.jl")
 
 
 ##### Default settings ######
