@@ -1,5 +1,6 @@
 
 @testitem "LopezAcosta2019Tiling – simple case" tags = [:e2e, :smoke] begin
+    using DataFrames: DataFrame, nrow
     data_loader = Watkins2025GitHub(; ref="a451cd5e62a10309a9640fbbe6b32a236fcebc70")
     case = first(data_loader(c -> (c.case_number == 6 && c.satellite == "terra")))
     segments = LopezAcosta2019Tiling()(
