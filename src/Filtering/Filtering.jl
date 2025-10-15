@@ -15,7 +15,8 @@ export exponential,
     PeronaMalikDiffusion,
     anisotropic_diffusion_3D,
     anisotropic_diffusion_2D,
-    adapthisteq
+    adapthisteq,
+    imadjust
 
 include("gradient_functions.jl")
 include("histogram_equalization.jl")
