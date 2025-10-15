@@ -106,3 +106,25 @@ function crosscorr(
         return c, Vector(1:radius)
     end
 end
+
+"""normalized_maximum_crosscorrelation(p1::T, p2::T; cn=1.96)
+
+Compute the normalized maximum cross correlation for a pair of psi-s curves p1 and p2. By default, returns the 
+correlation with a 95% confidence interval. For a difference confidence interval, choose a different critical number
+`cn`. The confidence interval is calculated using the formula for the Pearson correlation coefficient and is not scaled
+in the normalization step.
+"""
+function normalized_maximum_crosscorrelation(p1::T, p2::T; cn=1.96) where {T<:AbstractArray}
+    cc, _ = maximum.(IceFloeTracker.crosscorr(p1, p2; normalize=true))
+    
+    # confidence interval for Pearson correlation coefficient
+    z = 0.5*log((1 + r)/(1 - r))
+    n = minimum(length.(_psi))
+    sigma_z = sqrt(1/(n - 3))
+    zlow = z - cn*sigma_z
+    zhigh = z + cn*sigma_z
+    rlow = round((exp(2*zlow) - 1)/(exp(2*zlow) + 1), digits=3)
+    rhigh = round((exp(2*zhigh) - 1)/(exp(2*zhigh) + 1), digits=3)
+
+    return (r=cc, r_ci=(rlow, rhigh))
+end

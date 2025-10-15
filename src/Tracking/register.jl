@@ -1,3 +1,4 @@
+# simple utilities for registration functions
 greaterthan05(x) = x .> 0.5 # used for the image resize step and for binarizing images
 function imrotate_bin(x, r)
     return greaterthan05(collect(imrotate(x, r, axes(x); method=BSpline(Constant()))))
@@ -5,6 +6,9 @@ end
 function imrotate_bin_nocrop(x, r)
     return greaterthan05(collect(imrotate(x, r; method=BSpline(Constant()))))
 end
+
+# warning: all these functions crop the floe, so if the image is not padded correctly,
+# the rotated floe will be cropped!
 imrotate_bin_clockwise_radians(x, r) = imrotate_bin(x, r)
 imrotate_bin_counterclockwise_radians(x, r) = imrotate_bin(x, -r)
 imrotate_bin_clockwise_degrees(x, r) = imrotate_bin_clockwise_radians(x, deg2rad(r))
@@ -68,13 +72,15 @@ function align_centroids(im1::AbstractArray{Bool}, im2::AbstractArray{Bool})
     return im1_padded, im2_padded
 end
 
-"""
+"""shape_difference_rotation(im_reference, im_target, test_angles; imrotate_function)
+
 Computes the shape difference between im_reference and im_target for each angle in test_angles.
 The reference image is held constant, while the target image is rotated. The test_angles are interpreted
 as the angle of rotation from target to reference, so to find the best match, we rotate the reverse
 direction. A perfect match at angle `A` would imply im_target is the same shape as if im_reference was
 rotated by `A`. 
 Use `imrotate_function=imrotate_bin_<clockwise|counterclockwise>_<radians|degrees>` to get angles <clockwise|counterclockwise> in <radians|degrees>.
+Defaults to using radians.
 """
 function shape_difference_rotation(im_reference, im_target, test_angles; imrotate_function=imrotate_bin_clockwise_radians)
     shape_differences = Array{
@@ -122,71 +128,18 @@ function register(
     im_reference,
     im_target;
     test_angles=register_default_angles_rad,
-    imrotate_function=imrotate_bin_clockwise_radians,
+    imrotate_function=imrotate_bin_clockwise_radians; uncertainty::bool=false
 )
     shape_differences = shape_difference_rotation(
         im_reference, im_target, test_angles; imrotate_function
     )
     best_match = argmin((x) -> x.shape_difference, shape_differences)
-    return best_match.angle
+    return (minimum_shape_difference=best_match.shape_difference, 
+            minimum_angle=best_match.angle,
+            )
 end
 
-"""
-    mismatch(
-        fixed::AbstractArray,
-        moving::AbstractArray,
-        test_angles::AbstractArray,
-    )
+# TODO: normalize shape difference, option for normalizer
+# TODO: method that takes "step_degrees" and "maximum_rotation" as an argument
+# TODO: improve docs to have examples of images to register, and use the proper formatting for code examples. This is a key portion of the package!
 
-Estimate a rotation that minimizes the 'mismatch' of aligning `moving` with `fixed`.
-
-Returns a pair with the mismatch score `mm` and the associated registration angle `rot`.
-
-# Arguments
-- `fixed`,`moving`: images to align via a rigid transformation
-- `test_angles`: candidate angles to check for rotations by, in degrees. 
-  In the case of a tie in the shape difference, the earlier angle from this array will be returned.
-```
-"""
-function mismatch(fixed::AbstractArray, moving::AbstractArray, test_angles::AbstractArray)
-    shape_differences = shape_difference_rotation(
-        fixed, moving, test_angles; imrotate_function=imrotate_bin_clockwise_degrees
-    )
-    best_match = argmin((x) -> x.shape_difference, shape_differences)
-    rotation_degrees = best_match.angle
-    normalized_area = (sum(fixed) + sum(moving)) / 2
-    normalized_mismatch = best_match.shape_difference / normalized_area
-    return (mm=normalized_mismatch, rot=rotation_degrees)
-end
-
-"""
-    mismatch(
-        fixed::AbstractArray,
-        moving::AbstractArray,
-        mxrot::Real,
-        step::Real,
-    )
-
-Estimate a rotation that minimizes the 'mismatch' of aligning `moving` with `fixed`.
-
-Returns a pair with the mismatch score `mm` and the associated registration angle `rot`.
-
-# Arguments
-- `fixed`,`moving`: images to align via a rigid transformation
-- `mxrot`: maximum rotation angle in degrees
-- `step`: rotation angle step size in degrees
-
-The default registration angles are evenly distributed in steps of 5º around a full rotation,
-ensuring that no angles are repeated (since -180º == +180º).
-
-Angles are ordered so that smaller absolute angles which are positive will be returned in the event of a tie in the shape difference.
-```
-"""
-function mismatch(
-    fixed::AbstractArray, moving::AbstractArray, mxrot::Real=180, step::Real=5
-)
-    test_angles = sort(
-        reverse(range(; start=-mxrot, stop=mxrot, step=step)[1:(end - 1)]); by=abs
-    )
-    return mismatch(fixed, moving, test_angles)
-end

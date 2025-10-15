@@ -1,3 +1,6 @@
+"""
+Functions and utilities for calculating and evaluating the Ψ-s curve.
+"""
 
 """
     dx, dy = grad(x::Vector{<:Number}, y::Vector{<:Number})
@@ -140,4 +143,26 @@ function make_psi_s(XY::Matrix{<:Number}; rangeout::Bool=true, unwrap::Bool=true
     x = XY[:, 1]
     y = XY[:, 2]
     return make_psi_s(x, y; rangeout=rangeout, unwrap=unwrap)
+end
+
+function buildψs(floe)
+    bd = IceFloeTracker.bwtraceboundary(floe)
+    bdres = IceFloeTracker.resample_boundary(bd[1])
+    return IceFloeTracker.make_psi_s(bdres)[1]
+end
+
+"""
+    addψs!(props::Vector{DataFrame})
+
+Add the ψ-s curves to each member of `props`.
+
+Note: each member of `props` must have a `mask` column with a binary image representing the floe.
+
+To add floe masks see [`addfloemasks!`](@ref).
+""" # TODO: Adjust docs to link to the file with the floe mask generation in it.
+function addψs!(props::Vector{DataFrame})
+    for prop in props
+        prop.psi = map(buildψs, prop.mask)
+    end
+    return nothing
 end

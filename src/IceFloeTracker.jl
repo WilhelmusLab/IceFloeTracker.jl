@@ -1,4 +1,5 @@
 module IceFloeTracker
+using Dates: seconds # this should be imported in tracking, but it's not working
 
 include("Segmentation/Segmentation.jl")
 using .Segmentation
@@ -24,6 +25,7 @@ using .Data
 using Clustering
 using DataFrames
 using Dates
+using Dates: seconds
 using DelimitedFiles: readdlm, writedlm
 using DSP
 using Images
@@ -83,6 +85,7 @@ export readdlm,
     IceDetectionFirstNonZeroAlgorithm,
     IceDetectionLopezAcosta2019,
     tiled_adaptive_binarization
+   
 
 # For IFTPipeline
 using HDF5
@@ -91,9 +94,18 @@ export DataFrames, DataFrame, nrow, Not, select!
 export Dates, Time, Date, DateTime, @dateformat_str
 export addlatlon!, convertcentroid!, converttounits!, dropcols!, latlon
 
-# For the tracker
-export addfloemasks!, add_passtimes!, addψs!, long_tracker
-
+# Tracking 
+export 
+    addfloemasks!, 
+    add_passtimes!, 
+    addψs!, 
+    LopezAcostaTimeDistanceFunction, 
+    LogLogQuadraticTimeDistanceFunction,
+    distance_threshold,
+    candidate_filter_settings, 
+    candidate_matching_settings,
+    long_tracker
+    
 include("utils.jl")
 include("landmask.jl")
 include("cloudmask.jl")
@@ -150,4 +162,5 @@ include("tracker/tracker.jl")
 include("tracker/long_tracker.jl")
 include("segmentation-lopez-acosta-2019-tiling.jl")
 include("mask.jl")
+
 end
