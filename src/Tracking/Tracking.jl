@@ -17,7 +17,8 @@ export
     LogLogQuadraticTimeDistanceFunction,
     long_tracker,
     LopezAcostaTimeDistanceFunction,
-    register
+    register,
+    resample_boundary
 
 include("distance_thresholds.jl")
 include("bwtraceboundary.jl")

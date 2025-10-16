@@ -100,7 +100,9 @@ export addfloemasks!,
     distance_threshold,
     LogLogQuadraticTimeDistanceFunction,
     long_tracker,
-    LopezAcostaTimeDistanceFunction
+    LopezAcostaTimeDistanceFunction,
+    register,
+    resample_boundary
 
 include("utils.jl")
 include("landmask.jl")
