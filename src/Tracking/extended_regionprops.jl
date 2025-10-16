@@ -1,6 +1,8 @@
 # Functions for adding additional columns to regionprops needed for floe tracking
 
 using DataFrames
+using Images: label_components
+using ..Morphology: bwareamaxfilt
 
 FloeLabelsImage = Union{BitMatrix, Matrix{<:Bool}, Matrix{<:Integer}}
 
@@ -66,7 +68,7 @@ function cropfloe(floesimg::BitMatrix, min_row::I, min_col::I, max_row::I, max_c
     components = label_components(prefloe, trues(3, 3))
 
     if length(unique(components)) > 2
-        mask = IceFloeTracker.bwareamaxfilt(components .> 0)
+        mask = bwareamaxfilt(components .> 0)
         prefloe[.!mask] .= 0
     end
     return prefloe
