@@ -4,6 +4,7 @@ import Base.isequal
 using Dates: Day, Hour, Minute
 using Interpolations
 using Random
+using StatsBase
 
 # Containers and methods for preliminary matches
 struct MatchingProps
