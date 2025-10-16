@@ -3,6 +3,7 @@ import Base.isempty
 import Base.isequal
 using Dates: Day, Hour, Minute
 using Interpolations
+using Random
 
 # Containers and methods for preliminary matches
 struct MatchingProps

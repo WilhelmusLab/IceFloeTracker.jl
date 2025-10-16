@@ -93,6 +93,7 @@ export addlatlon!, convertcentroid!, converttounits!, dropcols!, latlon
 
 # For the tracker
 export addfloemasks!, 
+    addlatlon!,
     add_passtimes!, 
     addψs!, 
     candidate_filter_settings, 
