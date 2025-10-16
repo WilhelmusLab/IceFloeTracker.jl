@@ -5,9 +5,11 @@ export
     add_passtimes!, 
     addψs!, 
     adduuid!,
+    align_centroids,
     bwtraceboundary,
     candidate_filter_settings, 
     candidate_matching_settings,
+    compute_centroid,
     cropfloe,
     crosscorr,
     distance_threshold,
@@ -23,6 +25,7 @@ export
     LopezAcostaTimeDistanceFunction,
     register,
     resample_boundary,
+    shape_difference_rotation,
     _add_suffix
 
 include("distance_thresholds.jl")
