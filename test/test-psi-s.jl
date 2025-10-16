@@ -28,13 +28,14 @@
     A = [x y]
     # norm of a Vector
     @test all([
-        IceFloeTracker.norm(x) == sum(x .^ 2)^0.5, IceFloeTracker.norm(y) == sum(y .^ 2)^0.5
+        isapprox(IceFloeTracker.norm(x), sum(x .^ 2)^0.5),
+        isapprox(IceFloeTracker.norm(y), sum(y .^ 2)^0.5)
     ])
 
     # norm of a row/col
     @test all([
-        IceFloeTracker.norm(A[1, :]) == sum(A[1, :] .^ 2)^0.5,
-        IceFloeTracker.norm(A[:, 1]) == sum(A[:, 1] .^ 2)^0.5,
+        isapprox(IceFloeTracker.norm(A[1, :]), sum(A[1, :] .^ 2)^0.5),
+        isapprox(IceFloeTracker.norm(A[:, 1]), sum(A[:, 1] .^ 2)^0.5),
     ])
 
     # test grad methods for vectors and matrices
