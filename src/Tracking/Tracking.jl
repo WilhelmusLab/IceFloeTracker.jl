@@ -9,6 +9,7 @@ export
     candidate_matching_settings,
     crosscorr,
     distance_threshold,
+    get_rotation_measurements,
     grad,
     imrotate_bin_counterclockwise_radians,
     matchcorr,
@@ -18,7 +19,8 @@ export
     long_tracker,
     LopezAcostaTimeDistanceFunction,
     register,
-    resample_boundary
+    resample_boundary,
+    _add_suffix
 
 include("distance_thresholds.jl")
 include("bwtraceboundary.jl")
