@@ -13,6 +13,7 @@ export
     cropfloe,
     crosscorr,
     distance_threshold,
+    dropcols!
     get_rotation_measurements,
     get_trajectory_heads,
     grad,
