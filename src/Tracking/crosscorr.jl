@@ -94,7 +94,7 @@ function crosscorr(
 )::Tuple{Vector{T},Vector{T}} where {T<:Real}
     # dmw: check whether we could implement this with the tools in StatsBase or Statistics
     # so we can avoid an extra import.
-    c = DSP.xcorr(u, v; padmode=padmode)
+    c = xcorr(u, v; padmode=padmode)
     radius = 0
 
     if normalize
