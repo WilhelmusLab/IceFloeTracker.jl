@@ -1,4 +1,4 @@
-using DataFrames
+import DataFrames: DataFrames, DataFrame, AbstractDataFrame, eachrow, select!
 
 """
     long_tracker(props, condition_thresholds, mc_thresholds)
