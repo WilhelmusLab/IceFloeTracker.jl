@@ -1,8 +1,8 @@
 # Functions for adding additional columns to regionprops needed for floe tracking
 
-using DataFrames
-using Images: label_components
-using ..Morphology: bwareamaxfilt
+import DataFrames: DataFrame, nrow
+import Images: label_components
+import ..Morphology: bwareamaxfilt
 
 FloeLabelsImage = Union{BitMatrix, Matrix{<:Bool}, Matrix{<:Integer}}
 
