@@ -2,7 +2,6 @@ module Tracking
 
 export 
     addfloemasks!, 
-    addlatlon!,
     add_passtimes!, 
     addψs!, 
     adduuid!,
