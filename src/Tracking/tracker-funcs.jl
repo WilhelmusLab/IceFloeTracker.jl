@@ -606,64 +606,7 @@ function get_matches(matched_pairs::MatchedPairs)
     return combined_df
 end
 
-## LatLon functions originally from IFTPipeline.jl
-
-"""
-    convertcentroid!(propdf, latlondata, colstodrop)
-
-Convert the centroid coordinates from row and column to latitude and longitude dropping unwanted columns specified in `colstodrop` for the output data structure. Addionally, add columns `x` and `y` with the pixel coordinates of the centroid.
-"""
-function convertcentroid!(propdf, latlondata, colstodrop)
-    latitude, longitude = [
-        [
-            latlondata[c][Int(round(x)), Int(round(y))] for
-            (x, y) in zip(propdf.row_centroid, propdf.col_centroid)
-        ] for c in [:latitude, :longitude]
-    ]
-
-    x, y = [
-        [latlondata[c][Int(round(z))] for z in V] for
-        (c, V) in zip([:Y, :X], [propdf.row_centroid, propdf.col_centroid])
-    ]
-
-    propdf.latitude = latitude
-    propdf.longitude = longitude
-    propdf.x = x
-    propdf.y = y
-    dropcols!(propdf, colstodrop)
-    return nothing
-end
-
-"""
-    converttounits!(propdf, latlondata, colstodrop)
-
-Convert the floe properties from pixels to kilometers and square kilometers where appropiate. Also drop the columns specified in `colstodrop`.
-"""
-function converttounits!(propdf, latlondata, colstodrop)
-    if nrow(propdf) == 0
-        dropcols!(propdf, colstodrop)
-        insertcols!(
-            propdf,
-            :latitude => Float64,
-            :longitude => Float64,
-            :x => Float64,
-            :y => Float64,
-        )
-        return nothing
-    end
-    convertcentroid!(propdf, latlondata, colstodrop)
-    x = latlondata[:X]
-    dx = abs(x[2] - x[1])
-    convertarea(area) = area * dx^2 / 1e6
-    convertlength(length) = length * dx / 1e3
-    propdf.area .= convertarea(propdf.area)
-    propdf.convex_area .= convertarea(propdf.convex_area)
-    propdf.minor_axis_length .= convertlength(propdf.minor_axis_length)
-    propdf.major_axis_length .= convertlength(propdf.major_axis_length)
-    propdf.perimeter .= convertlength(propdf.perimeter)
-    return nothing
-end
-
+#dmw - we can just use the select function directly
 function dropcols!(df, colstodrop)
     select!(df, Not(colstodrop))
     return nothing
