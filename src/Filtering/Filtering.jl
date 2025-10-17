@@ -1,17 +1,26 @@
 module Filtering
-"""
-    dummy_filtering_function()
 
-Example function for filtering module
+export exponential,
+    inverse_quadratic,
+    SupportedFunctions,
+    is_supported,
+    SUPPORTED_GRADIENT_FUNCTIONS,
+    to_uint8,
+    conditional_histeq,
+    histeq,
+    rgb2gray,
+    PeronaMalikDiffusion,
+    nonlinear_diffusion,
+    AbstractDiffusionAlgorithm,
+    PeronaMalikDiffusion,
+    anisotropic_diffusion_3D,
+    anisotropic_diffusion_2D,
+    adapthisteq,
+    imadjust
 
-!!! todo "Delete this once real functions are added"
-    This function should be removed when real filtering functions are moved into this module.
-
-"""
-function dummy_filtering_function()
-    return "This is a dummy filtering function."
-end
-
-export dummy_filtering_function
+include("gradient_functions.jl")
+include("histogram_equalization.jl")
+include("imadjust.jl")
+include("nonlinear_diffusion.jl")
 
 end

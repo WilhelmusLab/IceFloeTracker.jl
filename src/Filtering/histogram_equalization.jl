@@ -1,3 +1,6 @@
+import ..skimage: sk_exposure
+import Images: Images, RGB, float64, Gray, red, green, blue
+
 # dmw: look for ways to avoid using these functions
 function to_uint8(arr::AbstractMatrix{T}) where {T<:AbstractFloat}
     img = Int.(round.(arr, RoundNearestTiesAway))
@@ -115,7 +118,7 @@ function conditional_histeq(
     # Apply Perona-Malik diffusion to each channel of true color image 
     # using the default inverse quadratic flux coefficient function
     pmd = PeronaMalikDiffusion(0.1, 0.1, 5, "exponential")
-    true_color_diffused = IceFloeTracker.nonlinear_diffusion(float64.(true_color_image), pmd)
+    true_color_diffused = nonlinear_diffusion(float64.(true_color_image), pmd)
 
     rgbchannels = get_rgb_channels(true_color_diffused)
 
@@ -135,38 +138,6 @@ function conditional_histeq(
     end
 
     return rgbchannels
-end
-
-"""
-Private function for testing the conditional adaptive histogram equalization workflow.
-"""
-function _get_false_color_cloudmasked(;
-    false_color_image,
-    prelim_threshold=110.0,
-    band_7_threshold=200.0,
-    band_2_threshold=190.0,
-)
-    mask_cloud_ice, clouds_view = IceFloeTracker._get_masks(
-        false_color_image;
-        prelim_threshold=prelim_threshold / 255.0,
-        band_7_threshold=band_7_threshold / 255.0,
-        band_2_threshold=band_2_threshold / 255.0,
-        ratio_lower=0.0,
-        ratio_offset=0.0,
-        ratio_upper=0.75,
-    )
-
-    clouds_view[mask_cloud_ice] .= 0
-
-    # remove clouds and land from each channel
-    channels = Int.(channelview(false_color_image) * 255)
-
-    # Apply the mask to each channel
-    for i in 1:3
-        @views channels[i, :, :][clouds_view] .= 0
-    end
-
-    return channels
 end
 
 """

@@ -1,3 +1,5 @@
+import Images: AbstractRGB, TransparentRGB, AbstractGray
+
 """
 Gradient Functions for Nonlinear Diffusion
 
