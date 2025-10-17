@@ -85,13 +85,19 @@ export readdlm,
     tiled_adaptive_binarization
 
 # For IFTPipeline
-using HDF5
-export HDF5, PyCall
 export Dates, Time, Date, DateTime, @dateformat_str
 export addlatlon!, convertcentroid!, converttounits!, dropcols!, latlon
 
 # For the tracker
-export addfloemasks!, add_passtimes!, addψs!, long_tracker
+export addfloemasks!, 
+    add_passtimes!, 
+    addψs!, 
+    candidate_filter_settings, 
+    candidate_matching_settings,
+    distance_threshold,
+    LogLogQuadraticTimeDistanceFunction,
+    long_tracker,
+    LopezAcostaTimeDistanceFunction
 
 include("utils.jl")
 include("landmask.jl")
