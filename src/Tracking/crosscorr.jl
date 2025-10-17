@@ -1,4 +1,4 @@
-using DSP
+import DSP: xcorr
 """
     r, lags = crosscorr(u::Vector{T},
                         v::Vector{T};
