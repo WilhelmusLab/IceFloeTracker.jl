@@ -1,3 +1,4 @@
+import DSP: unwrap
 
 """
     dx, dy = grad(x::Vector{<:Number}, y::Vector{<:Number})
@@ -121,7 +122,7 @@ function make_psi_s(
     end
 
     if unwrap
-        phase = DSP.unwrap(phase)
+        phase = unwrap(phase)
     end
 
     # compute arclength
