@@ -1,20 +1,4 @@
 """
-    addlatlon(pairedfloesdf::DataFrame, refimage::AbstractString)
-
-Add columns `latitude`, `longitude`, and pixel coordinates `x`, `y` to `pairedfloesdf`.
-
-# Arguments
-- `pairedfloesdf`: dataframe containing floe tracking data.
-- `refimage`: path to reference image.
-"""
-function addlatlon!(pairedfloesdf::DataFrame, refimage::AbstractString)
-    latlondata = latlon(refimage)
-    colstodrop = [:row_centroid, :col_centroid, :min_row, :min_col, :max_row, :max_col]
-    converttounits!(pairedfloesdf, latlondata, colstodrop)
-    return nothing
-end
-
-"""
     add_passtimes!(props, passtimes)
 
 Add a column `passtime` to each DataFrame in `props` containing the time of the image in which the floes were captured.

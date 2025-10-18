@@ -180,119 +180,6 @@ function getbboxcolumns(props::DataFrame)
     return filter(col -> occursin(r"^bbox-\d$", col), names(props))
 end
 
-
-FloeLabelsImage = Union{BitMatrix, Matrix{<:Bool}, Matrix{<:Integer}}
-
-"""
-    cropfloe(floesimg, props, i)
-
-Crops the floe delimited by the bounding box data in `props` at index `i` from the floe image `floesimg`.
-
-If the dataframe has bounding box data `min_row`, `min_col`, `max_row`, `max_col`, but no `label`, then returns the largest contiguous component.
-
-If the dataframe has bounding box data `min_row`, `min_col`, `max_row`, `max_col`, and a `label`, then returns the component with the label. In this case, `floesimg` must be an Array{Int}.
-
-If the dataframe has only a `label` and no bounding box data, then returns the component with the label, padded by one cell of zeroes on all sides. In this case, `floesimg` must be an Array{Int}.
-
-
-"""
-function cropfloe(floesimg::FloeLabelsImage, props::DataFrame, i::Integer)
-    props_row = props[i, :]
-    colnames = Set(names(props_row))
-    bbox_column_names = Set(["min_row", "min_col", "max_row", "max_col"])
-    label_column_names = Set(["label"])
-    bbox_label_column_names = union(bbox_column_names, label_column_names)
-
-    if issubset(bbox_label_column_names, colnames)
-        return cropfloe(
-                floesimg,
-                props_row.min_row,
-                props_row.min_col,
-                props_row.max_row,
-                props_row.max_col,
-                props_row.label
-            )
-
-    elseif issubset(bbox_column_names, colnames)
-        floesimg_bitmatrix = floesimg .> 0
-        return cropfloe(
-            floesimg_bitmatrix,
-            props_row.min_row,
-            props_row.min_col,
-            props_row.max_row,
-            props_row.max_col
-        )
-    
-    elseif issubset(label_column_names, colnames)
-        return cropfloe(floesimg, props_row.label)
-    
-    end
-end
-
-"""
-    cropfloe(floesimg, min_row, min_col, max_row, max_col)
-
-Crops the floe delimited by `min_row`, `min_col`, `max_row`, `max_col`, from the floe image `floesimg`.
-"""
-function cropfloe(floesimg::BitMatrix, min_row::I, min_col::I, max_row::I, max_col::I) where {I<:Integer}
-    #= 
-    Crop the floe using bounding box data in props.
-    Note: Using a view of the cropped floe was considered but if there were multiple components in the cropped floe, the source array with the floes would be modified. =#
-    prefloe = floesimg[min_row:max_row, min_col:max_col]
-
-    #= Check if more than one component is present in the cropped image.
-    If so, keep only the largest component by removing all on pixels not in the largest component =#
-    components = label_components(prefloe, trues(3, 3))
-
-    if length(unique(components)) > 2
-        mask = IceFloeTracker.bwareamaxfilt(components .> 0)
-        prefloe[.!mask] .= 0
-    end
-    return prefloe
-end
-
-"""
-    cropfloe(floesimg, min_row, min_col, max_row, max_col, label)
-
-Crops the floe from `floesimg` with the label `label`, returning the region bounded by `min_row`, `min_col`, `max_row`, `max_col`, and converting to a BitMatrix.
-"""
-function cropfloe(floesimg::Matrix{I}, min_row::J, min_col::J, max_row::J, max_col::J, label::I)  where {I<:Integer, J<:Integer}
-    #= 
-    Crop the floe using bounding box data in props.
-    Note: Using a view of the cropped floe was considered but if there were multiple components in the cropped floe, the source array with the floes would be modified. =#
-    prefloe = floesimg[min_row:max_row, min_col:max_col]
-    @debug "prefloe: $prefloe"
-
-    #= Remove any pixels not corresponding to that numbered floe 
-    (each segment has a different integer) =#
-    floe_area = prefloe .== label
-    @debug "mask: $floe_area"
-
-    return floe_area
-end
-
-
-
-
-"""
-    addfloemasks!(props::DataFrame, floeimg::FloeLabelsImage)
-
-Add a column to `props` called `floearray` containing the cropped floe masks from `floeimg`.
-"""
-function addfloemasks!(props::DataFrame, floeimg::FloeLabelsImage)
-    props.mask = getfloemasks(props, floeimg)
-    return nothing
-end
-
-"""
-    getfloemasks(props::DataFrame, floeimg::BitMatrix)
-
-Return a vector of cropped floe masks from `floeimg` using the bounding box data in `props`.
-"""
-function getfloemasks(props::DataFrame, floeimg::FloeLabelsImage)
-    return map(i -> cropfloe(floeimg, props, i), 1:nrow(props))
-end
-
 """
     fixzeroindexing!(props::DataFrame, props_to_fix::Vector{T}) where T<:Union{Symbol,String}
 
@@ -324,5 +211,79 @@ Round the `colnames` columns in `props` to `Int`.
 """
 function roundtoint!(props::DataFrame, colnames::Vector{T}) where {T<:Union{Symbol,String}}
     props[!, colnames] = (x -> convert.(Int, x))(round.(Int, props[!, colnames]))
+    return nothing
+end
+
+"""
+    addlatlon(pairedfloesdf::DataFrame, refimage::AbstractString)
+
+Add columns `latitude`, `longitude`, and pixel coordinates `x`, `y` to `pairedfloesdf`.
+
+# Arguments
+- `pairedfloesdf`: dataframe containing floe tracking data.
+- `refimage`: path to reference image.
+"""
+function addlatlon!(pairedfloesdf::DataFrame, refimage::AbstractString)
+    latlondata = latlon(refimage)
+    colstodrop = [:row_centroid, :col_centroid, :min_row, :min_col, :max_row, :max_col]
+    converttounits!(pairedfloesdf, latlondata, colstodrop)
+    return nothing
+end
+
+## LatLon functions originally from IFTPipeline.jl
+
+"""
+    convertcentroid!(propdf, latlondata, colstodrop)
+
+Convert the centroid coordinates from row and column to latitude and longitude dropping unwanted columns specified in `colstodrop` for the output data structure. Addionally, add columns `x` and `y` with the pixel coordinates of the centroid.
+"""
+function convertcentroid!(propdf, latlondata, colstodrop)
+    latitude, longitude = [
+        [
+            latlondata[c][Int(round(x)), Int(round(y))] for
+            (x, y) in zip(propdf.row_centroid, propdf.col_centroid)
+        ] for c in [:latitude, :longitude]
+    ]
+
+    x, y = [
+        [latlondata[c][Int(round(z))] for z in V] for
+        (c, V) in zip([:Y, :X], [propdf.row_centroid, propdf.col_centroid])
+    ]
+
+    propdf.latitude = latitude
+    propdf.longitude = longitude
+    propdf.x = x
+    propdf.y = y
+    dropcols!(propdf, colstodrop)
+    return nothing
+end
+
+"""
+    converttounits!(propdf, latlondata, colstodrop)
+
+Convert the floe properties from pixels to kilometers and square kilometers where appropiate. Also drop the columns specified in `colstodrop`.
+"""
+function converttounits!(propdf, latlondata, colstodrop)
+    if nrow(propdf) == 0
+        dropcols!(propdf, colstodrop)
+        insertcols!(
+            propdf,
+            :latitude => Float64,
+            :longitude => Float64,
+            :x => Float64,
+            :y => Float64,
+        )
+        return nothing
+    end
+    convertcentroid!(propdf, latlondata, colstodrop)
+    x = latlondata[:X]
+    dx = abs(x[2] - x[1])
+    convertarea(area) = area * dx^2 / 1e6
+    convertlength(length) = length * dx / 1e3
+    propdf.area .= convertarea(propdf.area)
+    propdf.convex_area .= convertarea(propdf.convex_area)
+    propdf.minor_axis_length .= convertlength(propdf.minor_axis_length)
+    propdf.major_axis_length .= convertlength(propdf.major_axis_length)
+    propdf.perimeter .= convertlength(propdf.perimeter)
     return nothing
 end
