@@ -4,14 +4,43 @@ export
     addfloemasks!, 
     add_passtimes!, 
     addψs!, 
+    adduuid!,
+    align_centroids,
+    bwtraceboundary,
     candidate_filter_settings, 
     candidate_matching_settings,
+    compute_centroid,
+    cropfloe,
+    crosscorr,
     distance_threshold,
+    dropcols!,
+    get_rotation_measurements,
+    get_trajectory_heads,
+    grad,
+    imrotate_bin_counterclockwise_radians,
+    matchcorr,
+    mismatch,
+    make_psi_s,
     LogLogQuadraticTimeDistanceFunction,
     long_tracker,
-    LopezAcostaTimeDistanceFunction
+    LopezAcostaTimeDistanceFunction,
+    register,
+    resample_boundary,
+    shape_difference_rotation,
+    _add_suffix
 
 include("distance_thresholds.jl")
+include("bwtraceboundary.jl")
+include("crosscorr.jl")
+include("extended_regionprops.jl")
+include("long_tracker.jl")
+include("matchcorr.jl")
+include("psi-s.jl")
+include("register.jl")
+include("resample-boundary.jl")
+include("rotation.jl")
+include("tracker-funcs.jl")
+include("tracker.jl")
 
 
 ##### Default settings ######
