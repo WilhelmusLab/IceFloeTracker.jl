@@ -90,6 +90,7 @@ export addlatlon!, convertcentroid!, converttounits!, dropcols!, latlon
 
 # For the tracker
 export addfloemasks!, 
+    addlatlon!,
     add_passtimes!, 
     addψs!, 
     candidate_filter_settings, 
@@ -97,7 +98,9 @@ export addfloemasks!,
     distance_threshold,
     LogLogQuadraticTimeDistanceFunction,
     long_tracker,
-    LopezAcostaTimeDistanceFunction
+    LopezAcostaTimeDistanceFunction,
+    register,
+    resample_boundary
 
 include("utils.jl")
 include("landmask.jl")
@@ -105,11 +108,6 @@ include("cloudmask.jl")
 include("normalization.jl")
 include("ice-water-discrimination.jl")
 include("nonlinear_diffusion.jl")
-include("bwtraceboundary.jl")
-include("resample-boundary.jl")
-include("psi-s.jl")
-include("crosscorr.jl")
-include("register.jl")
 include("tilingutils.jl")
 include("histogram_equalization.jl")
 include("reconstruction.jl")
@@ -120,7 +118,6 @@ include("imadjust.jl")
 include("ice_masks.jl")
 include("regularize-final.jl")
 include("latlon.jl")
-include("rotation.jl")
 include("segmentation-lopez-acosta-2019.jl")
 include("segmented-image-utilities.jl")
 
@@ -149,10 +146,6 @@ include("segmentation_b.jl")
 include("segmentation_watershed.jl")
 include("find_ice_labels.jl")
 include("segmentation_f.jl")
-include("tracker/tracker-funcs.jl")
-include("tracker/matchcorr.jl")
-include("tracker/tracker.jl")
-include("tracker/long_tracker.jl")
 include("segmentation-lopez-acosta-2019-tiling.jl")
 include("mask.jl")
 end
