@@ -121,7 +121,7 @@ function make_psi_s(
         phase = atan.(dy, dx)
     end
 
-    if unwrap
+    if dsp_unwrap
         phase = unwrap(phase)
     end
 
@@ -140,5 +140,5 @@ Alternate method of `make_psi_s` accepting input vectors `x` and `y` as a 2-colu
 function make_psi_s(XY::Matrix{<:Number}; rangeout::Bool=true, dsp_unwrap::Bool=true)
     x = XY[:, 1]
     y = XY[:, 2]
-    return make_psi_s(x, y; rangeout=rangeout, unwrap=dsp_unwrap)
+    return make_psi_s(x, y; rangeout=rangeout, dsp_unwrap=dsp_unwrap)
 end
