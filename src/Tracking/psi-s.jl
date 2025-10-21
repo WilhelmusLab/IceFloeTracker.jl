@@ -1,3 +1,4 @@
+import DSP: unwrap
 
 """
     dx, dy = grad(x::Vector{<:Number}, y::Vector{<:Number})
@@ -108,7 +109,7 @@ julia> [s psi] # inspect psi-s data
 ```
 """
 function make_psi_s(
-    x::Vector{<:Number}, y::Vector{<:Number}; rangeout::Bool=true, unwrap::Bool=true
+    x::Vector{<:Number}, y::Vector{<:Number}; rangeout::Bool=true, dsp_unwrap::Bool=true
 )::Tuple{Vector{Float64},Vector{Float64}}
     # gradient
     dx, dy = grad(x, y)
@@ -120,8 +121,8 @@ function make_psi_s(
         phase = atan.(dy, dx)
     end
 
-    if unwrap
-        phase = DSP.unwrap(phase)
+    if dsp_unwrap
+        phase = unwrap(phase)
     end
 
     # compute arclength
@@ -136,8 +137,8 @@ end
 
 Alternate method of `make_psi_s` accepting input vectors `x` and `y` as a 2-column matrix `[x y]` in order to facillitate workflow (output from `resample_boundary`).
 """
-function make_psi_s(XY::Matrix{<:Number}; rangeout::Bool=true, unwrap::Bool=true)
+function make_psi_s(XY::Matrix{<:Number}; rangeout::Bool=true, dsp_unwrap::Bool=true)
     x = XY[:, 1]
     y = XY[:, 2]
-    return make_psi_s(x, y; rangeout=rangeout, unwrap=unwrap)
+    return make_psi_s(x, y; rangeout=rangeout, dsp_unwrap=dsp_unwrap)
 end
