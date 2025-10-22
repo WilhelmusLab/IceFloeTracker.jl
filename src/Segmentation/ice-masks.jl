@@ -3,7 +3,7 @@ import Peaks: findmaxima, peakproms!, peakwidths!
 import DataFrames: DataFrames
 import StatsBase: StatsBase
 
-import ..Images: apply_landmask
+import ..ImageUtils: apply_landmask
 
 # Select a k-means cluster based on the 
 function _get_nlabel(

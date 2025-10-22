@@ -3,8 +3,8 @@ module IceFloeTracker
 include("skimage/skimage.jl")
 using .skimage
 
-include("Images/Images.jl")
-using .Images
+include("ImageUtils/ImageUtils.jl")
+using .ImageUtils
 
 include("Segmentation/Segmentation.jl")
 using .Segmentation
