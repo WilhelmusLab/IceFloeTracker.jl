@@ -90,7 +90,6 @@ export readdlm,
     tiled_adaptive_binarization
 
 # For IFTPipeline
-export DataFrames, DataFrame, nrow, Not, select!
 export addlatlon!, convertcentroid!, converttounits!, dropcols!, latlon
 
 # For the tracker

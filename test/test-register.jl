@@ -1,6 +1,7 @@
 
 @testitem "registration" begin
     using Dates
+    using DataFrames: DataFrame
     using LinearAlgebra: dot, det, norm
     using IceFloeTracker: register, imrotate_bin_counterclockwise_radians
 
