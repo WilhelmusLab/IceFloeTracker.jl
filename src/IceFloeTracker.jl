@@ -34,7 +34,6 @@ using Interpolations
 using OffsetArrays: centered
 using Peaks
 using Random
-using Serialization: deserialize, serialize
 using StaticArrays
 using StatsBase
 using TiledIteration
@@ -48,8 +47,6 @@ export readdlm,
     cloudmask,
     create_cloudmask,
     LopezAcostaCloudMask,
-    deserialize,
-    serialize,
     check_landmask_path,
     create_landmask,
     RGB,
@@ -88,11 +85,11 @@ export readdlm,
 export addlatlon!, convertcentroid!, converttounits!, dropcols!, latlon
 
 # For the tracker
-export addfloemasks!, 
+export addfloemasks!,
     addlatlon!,
-    add_passtimes!, 
-    addψs!, 
-    candidate_filter_settings, 
+    add_passtimes!,
+    addψs!,
+    candidate_filter_settings,
     candidate_matching_settings,
     distance_threshold,
     LogLogQuadraticTimeDistanceFunction,
