@@ -1,6 +1,9 @@
 import Images: N0f8, RGB, AbstractGray, AbstractRGB, TransparentRGB, gray
 import Peaks: findmaxima, peakproms!, peakwidths!
 import DataFrames: DataFrames
+import StatsBase: StatsBase
+
+import ..Images: apply_landmask
 
 # Select a k-means cluster based on the 
 function _get_nlabel(
