@@ -16,7 +16,8 @@ export bridge,
     make_landmask_se,
     create_landmask,
     apply_landmask,
-    apply_landmask!
+    apply_landmask!,
+    reconstruct
 
 include("branch.jl")
 include("bridge.jl")
