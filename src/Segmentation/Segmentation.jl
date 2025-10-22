@@ -3,6 +3,7 @@ module Segmentation
 export find_ice_labels,
     get_ice_labels_mask,
     get_ice_masks,
+    find_ice_mask,
     tiled_adaptive_binarization,
     IceDetectionAlgorithm,
     IceDetectionThresholdMODIS721,
