@@ -1,3 +1,4 @@
+import ImageSegmentation: SegmentedImage, labels_map, segment_labels
 """
 Results of a segmentation comparison
 """

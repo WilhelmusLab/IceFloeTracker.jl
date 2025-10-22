@@ -1,6 +1,20 @@
-using ImageBinarization: AbstractImageBinarizationAlgorithm, binarize
-using Images: build_histogram
-using Peaks: findmaxima, peakproms!, peakwidths!
+import ImageBinarization: AbstractImageBinarizationAlgorithm, binarize
+import Images:
+    build_histogram,
+    Colorant,
+    AbstractGray,
+    AbstractRGB,
+    TransparentRGB,
+    RGB,
+    Gray,
+    TransparentGray,
+    red,
+    green,
+    blue,
+    alpha,
+    alphacolor
+import Peaks: findmaxima, peakproms!, peakwidths!
+import DataFrames: DataFrame, sort, Not
 
 """
 Given the edges and counts from build_histogram, identify local maxima and return the location of the
@@ -9,7 +23,13 @@ the edges, which by default are the left bin edges. Note also that peaks default
 plateaus. Returns Inf if there are no non-zero parts of the histogram with bins larger than the possible
 ice threshold, or if there are no detected peaks larger than the minimum prominence.
 """
-function get_ice_peaks(edges, counts; possible_ice_threshold::Float64=0.30, minimum_prominence::Float64=0.05, window::Int64=3)
+function get_ice_peaks(
+    edges,
+    counts;
+    possible_ice_threshold::Float64=0.30,
+    minimum_prominence::Float64=0.05,
+    window::Int64=3,
+)
     size(counts)
     counts = counts[1:end]
     normalizer = sum(counts[edges .> possible_ice_threshold])
@@ -20,10 +40,10 @@ function get_ice_peaks(edges, counts; possible_ice_threshold::Float64=0.30, mini
     counts = normalizer > 0 ? counts ./ normalizer : return Inf
     pks = findmaxima(counts, window) |> peakproms! |> peakwidths!
     pks_df = DataFrame(pks[Not(:data)])
-    pks_df = sort(pks_df, :proms, rev=true)
+    pks_df = sort(pks_df, :proms; rev=true)
     mx, argmx = findmax(pks_df.proms)
     mx < minimum_prominence && return Inf
-    return edges[pks_df[argmx, :indices]] 
+    return edges[pks_df[argmx, :indices]]
 end
 
 """
@@ -96,15 +116,15 @@ function (f::IceDetectionBrightnessPeaksMODIS721)(out, modis_721_image, args...;
 
     alpha_binary = alpha.(alphacolor.(modis_721_image)) .> 0.5
 
-    get_band_peak = function(band)
-        get_ice_peaks(
-            build_histogram(band .* alpha_binary, 64; minval=0, maxval=1)... ;
-            possible_ice_threshold=f.possible_ice_threshold
+    get_band_peak = function (band)
+        return get_ice_peaks(
+            build_histogram(band .* alpha_binary, 64; minval=0, maxval=1)...;
+            possible_ice_threshold=f.possible_ice_threshold,
         )
     end
 
     band_2_peak = get_band_peak(band_2)
-    band_1_peak = get_band_peak(band_1)                   
+    band_1_peak = get_band_peak(band_1)
 
     mask_band_7 = band_7 .< f.band_7_max
     mask_band_2 = band_2 .> band_2_peak
@@ -230,7 +250,9 @@ tiled_adaptive_binarization(img, tiles; minimum_window_size=).
     grayscale intensity to prevent dark regions from getting brightened (i.e., the center of a large patch of open water).
     The "threshold_percentage" parameter is passed to the the AdaptiveThreshold function (percentage parameter).
 """
-function tiled_adaptive_binarization(img, tiles; minimum_window_size=50, minimum_brightness=75/255, threshold_percentage=15)
+function tiled_adaptive_binarization(
+    img, tiles; minimum_window_size=50, minimum_brightness=75 / 255, threshold_percentage=15
+)
     canvas = zeros(size(img))
     img = deepcopy(img)
     img[Gray.(img) .< minimum_brightness] .= 0
@@ -238,11 +260,11 @@ function tiled_adaptive_binarization(img, tiles; minimum_window_size=50, minimum
         L = Int64.(round.(minimum(length.(tile)) / 8, digits=0))
         L < minimum_window_size && (L = minimum_window_size)
 
-        f = AdaptiveThreshold(img[tile...], window_size = L, percentage = threshold_percentage)
+        f = AdaptiveThreshold(img[tile...]; window_size=L, percentage=threshold_percentage)
         canvas[tile...] = binarize(img[tile...], f)
     end
-    
+
     # possibly overkill
-    canvas[Gray.(img) .< minimum_brightness] .= 0 
+    canvas[Gray.(img) .< minimum_brightness] .= 0
     return canvas
 end

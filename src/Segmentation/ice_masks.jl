@@ -1,24 +1,23 @@
-using Images: build_histogram
-using Peaks: findmaxima, peakproms!, peakwidths!
-using DataFrames
+import Images: N0f8, RGB, AbstractGray, AbstractRGB, TransparentRGB, gray
+import Peaks: findmaxima, peakproms!, peakwidths!
+import DataFrames: DataFrames
 
 # Select a k-means cluster based on the 
 function _get_nlabel(
     falsecolor_img,
     segmented_image_indexmap;
-    band_7_threshold::T=5/255,
-    band_2_threshold::T=230/255,
-    band_1_threshold::T=240/255,
-    band_7_threshold_relaxed::T=10/255,
-    band_1_threshold_relaxed::T=190/255,
-    possible_ice_threshold::T=75/255,
+    band_7_threshold::T=5 / 255,
+    band_2_threshold::T=230 / 255,
+    band_1_threshold::T=240 / 255,
+    band_7_threshold_relaxed::T=10 / 255,
+    band_1_threshold_relaxed::T=190 / 255,
+    possible_ice_threshold::T=75 / 255,
 ) where {T<:Float64}
-    
     f = IceDetectionFirstNonZeroAlgorithm([
         IceDetectionThresholdMODIS721(;
             band_7_max=band_7_threshold,
             band_2_min=band_2_threshold,
-            band_1_min=band_1_threshold
+            band_1_min=band_1_threshold,
         ),
         IceDetectionThresholdMODIS721(;
             band_7_max=band_7_threshold_relaxed,
@@ -26,15 +25,12 @@ function _get_nlabel(
             band_1_min=band_1_threshold_relaxed,
         ),
         IceDetectionBrightnessPeaksMODIS721(;
-            band_7_max=band_7_threshold,
-            possible_ice_threshold=possible_ice_threshold
+            band_7_max=band_7_threshold, possible_ice_threshold=possible_ice_threshold
         ),
         IceDetectionThresholdMODIS721(;
-            band_7_max=1.,
-            band_2_min=band_2_threshold,
-            band_1_min=0.,
-        )
-        ])
+            band_7_max=1.0, band_2_min=band_2_threshold, band_1_min=0.0
+        ),
+    ])
 
     ice_labels = binarize(falsecolor_img, f) .> 0
     (isempty(ice_labels) || sum(ice_labels) == 0) && return -1
@@ -83,14 +79,14 @@ function get_ice_masks( #tbd: rename to kmeans_binarization?
     morph_residue::AbstractArray{<:AbstractGray},
     landmask::AbstractArray{<:Bool},
     tiles::AbstractMatrix{Tuple{UnitRange{Int64},UnitRange{Int64}}};
-    band_7_threshold::Float64=5/255,
-    band_2_threshold::Float64=230/255,
-    band_1_threshold::Float64=240/255,
-    band_7_threshold_relaxed::Float64=10/255,
-    band_1_threshold_relaxed::Float64=190/255,
-    possible_ice_threshold::Float64=75/255,
-    k=4
-) 
+    band_7_threshold::Float64=5 / 255,
+    band_2_threshold::Float64=230 / 255,
+    band_1_threshold::Float64=240 / 255,
+    band_7_threshold_relaxed::Float64=10 / 255,
+    band_1_threshold_relaxed::Float64=190 / 255,
+    possible_ice_threshold::Float64=75 / 255,
+    k=4,
+)
 
     # Make canvases
     sz = size(falsecolor_image)
@@ -105,7 +101,7 @@ function get_ice_masks( #tbd: rename to kmeans_binarization?
 
         floes_label = _get_nlabel(
             fc_landmasked[tile...],
-            segmented_image_indexmap,           
+            segmented_image_indexmap;
             band_7_threshold=band_7_threshold,
             band_2_threshold=band_2_threshold,
             band_1_threshold=band_1_threshold,
@@ -115,7 +111,6 @@ function get_ice_masks( #tbd: rename to kmeans_binarization?
         )
 
         ice_mask[tile...] .= (segmented_image_indexmap .== floes_label)
-
     end
     return ice_mask
 end
@@ -126,9 +121,7 @@ function get_ice_labels_mask(ref_img::Matrix{RGB{N0f8}}, thresholds)
         binarize(
             ref_img,
             IceDetectionThresholdMODIS721(;
-                band_7_max=thresholds[1],
-                band_2_min=thresholds[2],
-                band_1_min=thresholds[3]
+                band_7_max=thresholds[1], band_2_min=thresholds[2], band_1_min=thresholds[3]
             ),
         ) .|>
         gray .|>
