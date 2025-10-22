@@ -1,4 +1,3 @@
-import ..Morphology: make_landmask_se
 
 """
     create_landmask(landmask_image, struct_elem, fill_value_lower, fill_value_upper)
@@ -25,6 +24,8 @@ function create_landmask(
         non_dilated=landmask_binary,
     )
 end
+
+make_landmask_se = se_disk50
 
 function create_landmask(landmask_image; strel=make_landmask_se())
     return create_landmask(landmask_image, strel)

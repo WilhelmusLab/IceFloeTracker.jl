@@ -13,7 +13,10 @@ export bridge,
     se_disk4,
     se_disk20,
     se_disk2,
-    make_landmask_se
+    make_landmask_se,
+    create_landmask,
+    apply_landmask,
+    apply_landmask!
 
 include("branch.jl")
 include("bridge.jl")
