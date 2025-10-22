@@ -1,5 +1,5 @@
 import ArchGDAL:
-    readraster, toPROJ4, importEPSG, getproj, toPROJ4, getgeotransform, importWKT
+    readraster, toPROJ4, importEPSG, toEPSG, getproj, toPROJ4, getgeotransform, importWKT
 import Proj: Transformation
 
 # px2xy function from creator of ArchGDAL https://github.com/yeesian/ArchGDAL.jl/issues/68
