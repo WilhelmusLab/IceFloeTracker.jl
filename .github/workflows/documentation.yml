@@ -17,21 +17,14 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
-      - uses: actions/setup-python@v6
-        with:
-          python-version: '3.12'
-      - name: update pip
-        run: python -m pip install -U pip
-      - name: install python deps
-        run: python -m pip install -U scikit-image==0.25.1
       - uses: julia-actions/setup-julia@v2
         with:
           version: '1.11'
       - uses: julia-actions/cache@v2
+      - name: setup PyCall
+        run: julia --project=.devcontainer/PyCallSetup.jl .devcontainer/PyCallSetup.jl/setup.jl
       - name: Install dependencies
         shell: julia --color=yes --project=docs {0}
-        env:
-          PYTHON: python
         run: |
           using Pkg
           Pkg.develop(PackageSpec(path=pwd()))
@@ -48,6 +41,5 @@ jobs:
       - name: Build and deploy
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} # If authenticating with GitHub Actions token
-          PYTHON: python
         run: julia --color=yes --project=docs docs/make.jl
 
