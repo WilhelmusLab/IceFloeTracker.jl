@@ -1,6 +1,7 @@
 @testitem "regionprops" begin
     using Random
     import IceFloeTracker.Segmentation: regionprops
+    import DataFrames: DataFrame, nrow
 
     Random.seed!(123)
     bw_img = Bool.(rand([0, 1], 5, 10))
