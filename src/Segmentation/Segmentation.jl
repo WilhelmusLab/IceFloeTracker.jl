@@ -16,7 +16,10 @@ export find_ice_labels,
     SegmentationSummary,
     segmentation_summary,
     binarize_segments,
-    kmeans_segmentation
+    kmeans_segmentation,
+    addlatlon!,
+    convertcentroid!,
+    converttounits!
 
 include("find-ice-labels.jl")
 include("ice-masks.jl")
