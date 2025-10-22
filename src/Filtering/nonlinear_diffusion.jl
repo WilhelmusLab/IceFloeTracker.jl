@@ -1,3 +1,5 @@
+import Images: float64, channelview, Gray, padarray, Pad, base_color_type, colorview
+
 """Nonlinear Diffusion
 
 Anisotropic diffusion was introduced by Perona and Malik (1987) and refined in subsequent publications.
@@ -18,7 +20,6 @@ G. Grieg, O. Kubler, R. Kikinis, and F. A. Jolesz, Nonlinear Anisotropic Filteri
 
 """
 
-include("gradient_functions.jl")
 abstract type AbstractDiffusionAlgorithm end
 
 @kwdef struct PeronaMalikDiffusion <: AbstractDiffusionAlgorithm
