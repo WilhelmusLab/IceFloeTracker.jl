@@ -14,7 +14,6 @@ end
 """
     latlon(imgpath::AbstractString)
 
-
 Reads the GeoTiff located at <imgpath>, extracts the coordinate reference system,
 and produces a lookup table with for the column and row values in the same projection
 as the GeoTiff and a 2D array for latitude and longitude.
@@ -46,5 +45,3 @@ function latlon(imgpath::AbstractString)
 
     return (crs=toEPSG(importWKT(p)), longitude=lon, latitude=lat, X=X, Y=Y)
 end
-
-
