@@ -17,8 +17,8 @@ export find_ice_labels,
     binarize_segments,
     kmeans_segmentation
 
-include("find_ice_labels.jl")
-include("ice_masks.jl")
+include("find-ice-labels.jl")
+include("ice-masks.jl")
 include("k-means-segmentation.jl")
 include("regionprops.jl")
 include("segmented-image-utilities.jl")
