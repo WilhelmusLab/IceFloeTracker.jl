@@ -15,7 +15,7 @@ import Images:
     alphacolor
 import Peaks: findmaxima, peakproms!, peakwidths!
 import DataFrames: DataFrame, sort, Not
-import .ImageUtils: masker
+import ..ImageUtils: masker
 
 """
 Given the edges and counts from build_histogram, identify local maxima and return the location of the
