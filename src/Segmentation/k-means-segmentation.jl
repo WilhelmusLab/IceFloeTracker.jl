@@ -1,6 +1,7 @@
 import Images: Gray, Float64
 import StatsBase: StatsBase
 import Random: Random
+import Clustering: Clustering, assignments
 
 """
     kmeans_segmentation(gray_image, ice_labels;)
