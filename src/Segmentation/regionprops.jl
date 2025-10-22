@@ -1,6 +1,6 @@
 
 import ..skimage: sk_measure
-import DataFrames: rename!, DataFrame
+import DataFrames: rename!, DataFrame, nrow
 import ..Geospatial: latlon
 
 """
@@ -258,7 +258,7 @@ function convertcentroid!(propdf, latlondata, colstodrop)
     propdf.longitude = longitude
     propdf.x = x
     propdf.y = y
-    dropcols!(propdf, colstodrop)
+    select!(propdf, Not(colstodrop))
     return nothing
 end
 
@@ -269,7 +269,7 @@ Convert the floe properties from pixels to kilometers and square kilometers wher
 """
 function converttounits!(propdf, latlondata, colstodrop)
     if nrow(propdf) == 0
-        dropcols!(propdf, colstodrop)
+        select!(propdf, Not(colstodrop))
         insertcols!(
             propdf,
             :latitude => Float64,
