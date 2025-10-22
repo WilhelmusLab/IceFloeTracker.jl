@@ -27,8 +27,6 @@ function create_landmask(
     )
 end
 
-make_landmask_se = se_disk50
-
 function create_landmask(landmask_image; strel=make_landmask_se())
     return create_landmask(landmask_image, strel)
 end

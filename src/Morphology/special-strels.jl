@@ -17,6 +17,8 @@ function se_disk50()
     return se
 end
 
+make_landmask_se = se_disk50
+
 function se_disk4()
     se = [sum(c.I) <= 3 for c in CartesianIndices((7, 7))]
     _generate_se!(se)
