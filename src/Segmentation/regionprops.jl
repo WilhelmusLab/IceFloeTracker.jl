@@ -1,6 +1,7 @@
 
 import ..skimage: sk_measure
 import DataFrames: rename!, DataFrame
+import ..Geospatial: latlon
 
 """
     regionprops_table(label_img, intensity_img; properties, connectivity, extra_properties)
