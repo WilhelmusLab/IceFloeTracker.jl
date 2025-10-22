@@ -6,6 +6,9 @@ using .skimage
 include("ImageUtils/ImageUtils.jl")
 using .ImageUtils
 
+include("Geospatial/Geospatial.jl")
+using .Geospatial
+
 include("Morphology/Morphology.jl")
 using .Morphology
 
@@ -114,7 +117,6 @@ include("tilingutils.jl")
 include("watershed.jl")
 include("brighten.jl")
 include("regularize-final.jl")
-include("latlon.jl")
 include("segmentation-lopez-acosta-2019.jl")
 
 function get_version_from_toml(pth=dirname(dirname(pathof(IceFloeTracker))))::VersionNumber
