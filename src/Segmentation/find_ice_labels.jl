@@ -1,4 +1,4 @@
-import ImageBinarization: AbstractImageBinarizationAlgorithm, binarize
+import ImageBinarization: AbstractImageBinarizationAlgorithm, binarize, AdaptiveThreshold
 import Images:
     build_histogram,
     Colorant,
