@@ -1,6 +1,7 @@
 @testitem "regionprops" begin
     using Random
-    
+    import DataFrames: DataFrame, nrow
+
     Random.seed!(123)
     bw_img = Bool.(rand([0, 1], 5, 10))
     bw_img[end, 7] = 1
