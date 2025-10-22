@@ -3,6 +3,7 @@
 
     import Images: opening, erode, bothat, dilate, mreconstruct, strel_box
     import IceFloeTracker.Morphology: fill_holes, se_disk4
+    import DelimitedFiles: readdlm
 
     # Dilate -- Start with a pixel in the middle and dilate in one go to fill up the full image
     n = rand(11:2:21) # choose random odd number

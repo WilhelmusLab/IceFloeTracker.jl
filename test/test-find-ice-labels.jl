@@ -63,7 +63,7 @@ end
 
 @testitem "find_ice_labels" begin
     using Images: binarize, n0f8, float64, n4f12, n0f8, float64, n4f12
-    using DelimitedFiles
+    import DelimitedFiles: readdlm, writedlm
 
     include("config.jl")
 
@@ -82,17 +82,15 @@ end
     @testset "find_ice_labels" begin
         @testset "matlab comparison" begin
             falsecolor_image = float64.(load(falsecolor_test_image_file)[test_region...])
-            landmask = convert(BitMatrix, load(current_landmask_file)[test_region...]) 
-            ice_labels_matlab = DelimitedFiles.readdlm(
-                "$(test_data_dir)/ice_labels_matlab.csv", ','
-            )
+            landmask = convert(BitMatrix, load(current_landmask_file)[test_region...])
+            ice_labels_matlab = readdlm("$(test_data_dir)/ice_labels_matlab.csv", ',')
             ice_labels_matlab = vec(ice_labels_matlab)
 
             @testset "example 1" begin
                 @time ice_labels_julia = IceFloeTracker.find_ice_labels(
                     falsecolor_image, landmask
                 )
-                DelimitedFiles.writedlm("ice_labels_julia.csv", ice_labels_julia, ',')
+                writedlm("ice_labels_julia.csv", ice_labels_julia, ',')
                 @test ice_labels_matlab == ice_labels_julia
             end
             @testset "example 2" begin
@@ -100,9 +98,7 @@ end
                     falsecolor_image[ice_floe_test_region...],
                     landmask[ice_floe_test_region...],
                 )
-                DelimitedFiles.writedlm(
-                    "ice_labels_floe_region.csv", ice_labels_ice_floe_region, ','
-                )
+                writedlm("ice_labels_floe_region.csv", ice_labels_ice_floe_region, ',')
                 @test ice_labels_ice_floe_region == [84787, 107015]
             end
         end
@@ -115,20 +111,78 @@ end
             edges, counts = build_histogram(img, 64; minval=0, maxval=1)
             pk = get_ice_peaks(edges, counts)
             @test pk == 0.375
-        
+
             # Counts from case "111-greenland_sea-100km-20120623-terra-250m"
             edges = 0.0:0.015625:0.984375
-            counts = [0.22849, 0.04548, 0.0317, 0.02294, 0.01893, 0.01466, 0.01293, 0.011,
-                  0.00977, 0.00934, 0.00841, 0.00838, 0.00746, 0.00743, 0.00736, 0.00682,
-                  0.00684, 0.00667, 0.00638, 0.00712, 0.00615, 0.0065, 0.00614, 0.00601,
-                  0.00612, 0.00683, 0.00734, 0.00782, 0.00882, 0.0092, 0.00828, 0.00926,
-                  0.00923, 0.00933, 0.00934, 0.00978, 0.0096, 0.01093, 0.01162, 0.01295,
-                  0.0149, 0.01803, 0.02223, 0.0239, 0.02755, 0.03081, 0.03796, 0.04513,
-                  0.054, 0.06292, 0.06747, 0.07155, 0.08288, 0.07175, 0.09395, 0.0995,
-                  0.00321, 0.00075, 0.00022, 4.0e-5, 1.0e-5, 0.0, 0.0, 0.0]
+            counts = [
+                0.22849,
+                0.04548,
+                0.0317,
+                0.02294,
+                0.01893,
+                0.01466,
+                0.01293,
+                0.011,
+                0.00977,
+                0.00934,
+                0.00841,
+                0.00838,
+                0.00746,
+                0.00743,
+                0.00736,
+                0.00682,
+                0.00684,
+                0.00667,
+                0.00638,
+                0.00712,
+                0.00615,
+                0.0065,
+                0.00614,
+                0.00601,
+                0.00612,
+                0.00683,
+                0.00734,
+                0.00782,
+                0.00882,
+                0.0092,
+                0.00828,
+                0.00926,
+                0.00923,
+                0.00933,
+                0.00934,
+                0.00978,
+                0.0096,
+                0.01093,
+                0.01162,
+                0.01295,
+                0.0149,
+                0.01803,
+                0.02223,
+                0.0239,
+                0.02755,
+                0.03081,
+                0.03796,
+                0.04513,
+                0.054,
+                0.06292,
+                0.06747,
+                0.07155,
+                0.08288,
+                0.07175,
+                0.09395,
+                0.0995,
+                0.00321,
+                0.00075,
+                0.00022,
+                4.0e-5,
+                1.0e-5,
+                0.0,
+                0.0,
+                0.0,
+            ]
             pk = get_ice_peaks(edges, counts)
             @test pk == 0.859375
-    end
+        end
     end
     @testset "binarize" begin
         @testset "matlab comparison" begin
@@ -136,9 +190,7 @@ end
                 falsecolor_image =
                     float64.(load(falsecolor_test_image_file)[test_region...])
                 landmask = convert(BitMatrix, load(current_landmask_file)[test_region...])
-                ice_labels_matlab = DelimitedFiles.readdlm(
-                    "$(test_data_dir)/ice_labels_matlab.csv", ','
-                )
+                ice_labels_matlab = readdlm("$(test_data_dir)/ice_labels_matlab.csv", ',')
                 ice_labels_matlab = vec(ice_labels_matlab)
                 ice_binary_new = IceFloeTracker.binarize(
                     masker(landmask)(falsecolor_image), IceDetectionLopezAcosta2019()

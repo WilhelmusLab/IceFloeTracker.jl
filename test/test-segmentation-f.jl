@@ -1,7 +1,7 @@
 @testitem "Segmentation-F" begin
-    using DelimitedFiles
+    using DelimitedFiles: readdlm
     using Images: complement
-    
+
     include("config.jl")
     include("test_error_rate.jl")
 
@@ -16,10 +16,7 @@
     # convert ocean mask into land mask, so land=1
     landmask = convert(BitMatrix, load(current_landmask_file)[test_region...])
     watershed_intersect = load(watershed_test_file) .> 0.499
-    ice_labels =
-        Int64.(
-            vec(DelimitedFiles.readdlm("$(test_data_dir)/ice_labels_floe_region.csv", ','))
-        )
+    ice_labels = Int64.(vec(readdlm("$(test_data_dir)/ice_labels_floe_region.csv", ',')))
 
     ## Run function with Matlab inputs
 
