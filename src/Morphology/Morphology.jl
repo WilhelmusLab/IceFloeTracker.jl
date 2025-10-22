@@ -26,6 +26,7 @@ include("lut/lutfill.jl")
 include("minima-transform.jl")
 include("morph-fill.jl")
 include("operator.jl")
+include("reconstruction.jl")
 include("special-strels.jl")
 
 end
