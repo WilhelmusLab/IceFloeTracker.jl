@@ -109,7 +109,7 @@ end
         @testset "get_ice_peaks" begin
             using Random
             using Images: build_histogram
-            using IceFloeTracker: get_ice_peaks
+            import IceFloeTracker.Segmentation: get_ice_peaks
             Random.seed!(123)
             img = Gray.(rand(0:255, 10, 10) ./ 255)
             edges, counts = build_histogram(img, 64; minval=0, maxval=1)
