@@ -6,14 +6,14 @@ using .skimage
 include("ImageUtils/ImageUtils.jl")
 using .ImageUtils
 
-include("Segmentation/Segmentation.jl")
-using .Segmentation
+include("Morphology/Morphology.jl")
+using .Morphology
 
 include("Filtering/Filtering.jl")
 using .Filtering
 
-include("Morphology/Morphology.jl")
-using .Morphology
+include("Segmentation/Segmentation.jl")
+using .Segmentation
 
 include("Tracking/Tracking.jl")
 using .Tracking
