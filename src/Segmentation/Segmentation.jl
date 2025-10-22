@@ -14,10 +14,12 @@ export find_ice_labels,
     segmentation_comparison,
     SegmentationSummary,
     segmentation_summary,
-    binarize_segments
+    binarize_segments,
+    kmeans_segmentation
 
 include("find_ice_labels.jl")
 include("ice_masks.jl")
+include("k-means-segmentation.jl")
 include("regionprops.jl")
 include("segmented-image-utilities.jl")
 
