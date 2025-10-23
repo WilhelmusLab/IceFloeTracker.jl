@@ -1,9 +1,9 @@
 
 @testitem "misc. image processing" begin
-    using IceFloeTracker:
-        imgradientmag, to_uint8, adjustgamma, get_holes, impose_minima
+    using IceFloeTracker: imgradientmag, to_uint8, adjustgamma, get_holes, impose_minima
     using Images
     using ZipFile
+    import DelimitedFiles: readdlm
 
     r = ZipFile.Reader("test_inputs/coins.zip")
     coins = readdlm(r.files[1], ',', Int)

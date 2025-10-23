@@ -63,7 +63,7 @@ end
 
 @testitem "find_ice_labels" begin
     using Images: binarize, n0f8, float64, n4f12, n0f8, float64, n4f12
-    using DelimitedFiles
+    import DelimitedFiles: readdlm, writedlm
 
     include("config.jl")
 
@@ -83,16 +83,14 @@ end
         @testset "matlab comparison" begin
             falsecolor_image = float64.(load(falsecolor_test_image_file)[test_region...])
             landmask = convert(BitMatrix, load(current_landmask_file)[test_region...])
-            ice_labels_matlab = DelimitedFiles.readdlm(
-                "$(test_data_dir)/ice_labels_matlab.csv", ','
-            )
+            ice_labels_matlab = readdlm("$(test_data_dir)/ice_labels_matlab.csv", ',')
             ice_labels_matlab = vec(ice_labels_matlab)
 
             @testset "example 1" begin
                 @time ice_labels_julia = IceFloeTracker.find_ice_labels(
                     falsecolor_image, landmask
                 )
-                DelimitedFiles.writedlm("ice_labels_julia.csv", ice_labels_julia, ',')
+                writedlm("ice_labels_julia.csv", ice_labels_julia, ',')
                 @test ice_labels_matlab == ice_labels_julia
             end
             @testset "example 2" begin
@@ -100,9 +98,7 @@ end
                     falsecolor_image[ice_floe_test_region...],
                     landmask[ice_floe_test_region...],
                 )
-                DelimitedFiles.writedlm(
-                    "ice_labels_floe_region.csv", ice_labels_ice_floe_region, ','
-                )
+                writedlm("ice_labels_floe_region.csv", ice_labels_ice_floe_region, ',')
                 @test ice_labels_ice_floe_region == [84787, 107015]
             end
         end
@@ -194,9 +190,7 @@ end
                 falsecolor_image =
                     float64.(load(falsecolor_test_image_file)[test_region...])
                 landmask = convert(BitMatrix, load(current_landmask_file)[test_region...])
-                ice_labels_matlab = DelimitedFiles.readdlm(
-                    "$(test_data_dir)/ice_labels_matlab.csv", ','
-                )
+                ice_labels_matlab = readdlm("$(test_data_dir)/ice_labels_matlab.csv", ',')
                 ice_labels_matlab = vec(ice_labels_matlab)
                 ice_binary_new = IceFloeTracker.binarize(
                     masker(landmask)(falsecolor_image), IceDetectionLopezAcosta2019()

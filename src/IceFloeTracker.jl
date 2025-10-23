@@ -33,7 +33,6 @@ using .Data
 using Clustering
 using DataFrames
 using Dates
-using DelimitedFiles: readdlm, writedlm
 using DSP
 using Images
 using Interpolations
@@ -44,8 +43,7 @@ using StaticArrays
 using StatsBase
 using TiledIteration
 
-export readdlm,
-    padnhood,
+export padnhood,
     bridge,
     branch,
     @persist,

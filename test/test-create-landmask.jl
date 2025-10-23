@@ -1,5 +1,6 @@
 @testitem "Create Landmask" begin
     using Dates: Dates
+    import DelimitedFiles: readdlm
     include("config.jl")
     include("test_error_rate.jl")
 

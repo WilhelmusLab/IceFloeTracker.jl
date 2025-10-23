@@ -1,6 +1,6 @@
 
 @testitem "Segmentation-A" begin
-    using DelimitedFiles
+    import DelimitedFiles: readdlm
 
     include("config.jl")
     include("test_error_rate.jl")
@@ -9,7 +9,7 @@
         float64.(load("$(test_data_dir)/matlab_ice_water_discrim.png"))
     cloudmask = .!convert(BitMatrix, load(cloudmask_test_file))
     landmask = convert(BitMatrix, load(current_landmask_file)[test_region...]) # Test landmask file has ocean == 1
-    ice_labels = DelimitedFiles.readdlm("$(test_data_dir)/ice_labels_julia.csv", ',')
+    ice_labels = readdlm("$(test_data_dir)/ice_labels_julia.csv", ',')
     ice_labels = Int64.(vec(ice_labels))
     matlab_segmented_A = float64.(load("$(test_data_dir)/matlab_segmented_A.png"))
     matlab_segmented_A_bitmatrix = convert(BitMatrix, matlab_segmented_A)
