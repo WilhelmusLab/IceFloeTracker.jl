@@ -16,7 +16,8 @@ export bridge,
     make_landmask_se,
     create_landmask,
     apply_landmask,
-    apply_landmask!
+    apply_landmask!,
+    reconstruct
 
 include("branch.jl")
 include("bridge.jl")
@@ -30,6 +31,7 @@ include("lut/lutfill.jl")
 include("minima-transform.jl")
 include("morph-fill.jl")
 include("operator.jl")
+include("reconstruction.jl")
 include("special-strels.jl")
 
 end
