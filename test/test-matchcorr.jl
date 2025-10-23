@@ -2,6 +2,7 @@
 @testitem "matchcorr" begin
     include("config.jl")
     using Dates: Minute
+    using Serialization: deserialize
     path = joinpath(test_data_dir, "tracker")
 
     floes =
