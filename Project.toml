@@ -27,14 +27,11 @@ Images = "916415d5-f1e6-5110-898d-aaa5f9f070e0"
 Interpolations = "a98d9a8b-a2ab-59e6-89dd-64a1c18fca59"
 OffsetArrays = "6fe1bfb0-de20-5000-8ca7-80f57d26f881"
 Peaks = "18e31ff7-3703-566c-8e60-38913d67486b"
-Pkg = "44cfe95a-1eb2-52ea-b672-e2afdf69b78f"
 Proj = "c94c279d-25a6-4763-9509-64d165bea63e"
 PyCall = "438e738f-606a-5dbb-bf0a-cddfbfd45ab0"
 Random = "9a3f8284-a2c9-5f02-9a11-845980a1fd5c"
-Serialization = "9e88b42a-f829-5b0c-bbe9-9e923198166b"
 StaticArrays = "90137ffa-7385-5640-81b9-e52037218182"
 StatsBase = "2913bbd2-ae8a-5f71-8c99-4fb6c76f3a91"
-TOML = "fa267f1f-6049-4f14-aa54-33bafae1ed76"
 TiffImages = "731e570b-9d59-4bfa-96dc-6df516fadf69"
 TiledIteration = "06e1c1a7-607b-532d-9fad-de7d9aa2abac"
 TimeZones = "f269a46b-ccf7-5d73-abea-4c690281aa53"
@@ -69,9 +66,17 @@ TestImages = "5e47fb64-e119-507b-a336-dd2b206d9990"
 TestItemRunner = "f8b46487-2199-4994-9208-9a1283c18c0a"
 TestItems = "1c621080-faea-4a02-84b6-bbd5e436b8fe"
 ZipFile = "a5390f91-8eb1-5f08-bee0-b1d1ffed6cea"
+Serialization = "9e88b42a-f829-5b0c-bbe9-9e923198166b"
 
 [targets]
 notebooks = ["CSV", "Plots"]
 test = [
-    "CSV", "LinearAlgebra", "Test", "TestImages", "TestItemRunner", "TestItems", "ZipFile"
+    "CSV",
+    "LinearAlgebra",
+    "Serialization",
+    "Test",
+    "TestImages",
+    "TestItemRunner",
+    "TestItems",
+    "ZipFile",
 ]

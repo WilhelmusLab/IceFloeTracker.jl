@@ -39,13 +39,10 @@ using Images
 using Interpolations
 using OffsetArrays: centered
 using Peaks
-using Pkg
 using Random
-using Serialization: deserialize, serialize
 using StaticArrays
 using StatsBase
 using TiledIteration
-using TOML
 
 export readdlm,
     padnhood,
@@ -56,8 +53,6 @@ export readdlm,
     cloudmask,
     create_cloudmask,
     LopezAcostaCloudMask,
-    deserialize,
-    serialize,
     check_landmask_path,
     create_landmask,
     RGB,
@@ -71,7 +66,6 @@ export readdlm,
     matchcorr,
     centered,
     imrotate,
-    IFTVERSION,
     get_rotation_measurements,
     IceFloeSegmentationAlgorithm,
     LopezAcosta2019,
@@ -118,14 +112,6 @@ include("watershed.jl")
 include("brighten.jl")
 include("regularize-final.jl")
 include("segmentation-lopez-acosta-2019.jl")
-
-function get_version_from_toml(pth=dirname(dirname(pathof(IceFloeTracker))))::VersionNumber
-    toml = TOML.parsefile(joinpath(pth, "Project.toml"))
-    return VersionNumber(toml["version"])
-end
-
-const IFTVERSION = get_version_from_toml()
-
 include("segmentation_a_direct.jl")
 include("segmentation_b.jl")
 include("segmentation_watershed.jl")
