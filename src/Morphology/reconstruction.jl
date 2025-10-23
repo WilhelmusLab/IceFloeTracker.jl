@@ -1,6 +1,6 @@
 import Images: mreconstruct, dilate
 import ..skimage: sk_morphology
-import ..ImageUtils: to_uint8
+import ..ImageUtils: to_uint8, imcomplement
 
 """
     reconstruct(img, se, type, invert)
