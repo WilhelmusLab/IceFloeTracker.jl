@@ -1,7 +1,8 @@
 
 @testitem "latlon" begin
     using IceFloeTracker: latlon
-    
+    import DelimitedFiles: readdlm
+
     function round4(v)
         # round to 4 decimal places to avoid weirdness in different arch/os
         _round4(x) = round(x; digits=4)
