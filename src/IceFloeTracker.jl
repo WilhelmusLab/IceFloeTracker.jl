@@ -39,7 +39,6 @@ using Serialization: deserialize, serialize
 using StaticArrays
 using StatsBase
 using TiledIteration
-using TOML
 
 export readdlm,
     padnhood,
@@ -65,7 +64,6 @@ export readdlm,
     matchcorr,
     centered,
     imrotate,
-    IFTVERSION,
     get_rotation_measurements,
     IceFloeSegmentationAlgorithm,
     LopezAcosta2019,
@@ -118,14 +116,6 @@ include("regularize-final.jl")
 include("latlon.jl")
 include("segmentation-lopez-acosta-2019.jl")
 include("segmented-image-utilities.jl")
-
-function get_version_from_toml(pth=dirname(dirname(pathof(IceFloeTracker))))::VersionNumber
-    toml = TOML.parsefile(joinpath(pth, "Project.toml"))
-    return VersionNumber(toml["version"])
-end
-
-const IFTVERSION = get_version_from_toml()
-
 include("regionprops.jl")
 include("segmentation_a_direct.jl")
 include("segmentation_b.jl")
