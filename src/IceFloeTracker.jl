@@ -3,14 +3,20 @@ module IceFloeTracker
 include("skimage/skimage.jl")
 using .skimage
 
-include("Segmentation/Segmentation.jl")
-using .Segmentation
+include("ImageUtils/ImageUtils.jl")
+using .ImageUtils
+
+include("Geospatial/Geospatial.jl")
+using .Geospatial
+
+include("Morphology/Morphology.jl")
+using .Morphology
 
 include("Filtering/Filtering.jl")
 using .Filtering
 
-include("Morphology/Morphology.jl")
-using .Morphology
+include("Segmentation/Segmentation.jl")
+using .Segmentation
 
 include("Tracking/Tracking.jl")
 using .Tracking
@@ -96,7 +102,6 @@ export addfloemasks!,
     resample_boundary
 
 include("utils.jl")
-include("landmask.jl")
 include("cloudmask.jl")
 include("normalization.jl")
 include("ice-water-discrimination.jl")
@@ -105,17 +110,12 @@ include("reconstruction.jl")
 include("watershed.jl")
 include("brighten.jl")
 include("imcomplement.jl")
-include("ice_masks.jl")
 include("regularize-final.jl")
-include("latlon.jl")
 include("segmentation-lopez-acosta-2019.jl")
-include("segmented-image-utilities.jl")
-include("regionprops.jl")
 include("segmentation_a_direct.jl")
 include("segmentation_b.jl")
 include("segmentation_watershed.jl")
-include("find_ice_labels.jl")
 include("segmentation_f.jl")
 include("segmentation-lopez-acosta-2019-tiling.jl")
-include("mask.jl")
+
 end

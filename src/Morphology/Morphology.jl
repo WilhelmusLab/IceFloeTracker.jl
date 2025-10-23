@@ -13,7 +13,10 @@ export bridge,
     se_disk4,
     se_disk20,
     se_disk2,
-    make_landmask_se
+    make_landmask_se,
+    create_landmask,
+    apply_landmask,
+    apply_landmask!
 
 include("branch.jl")
 include("bridge.jl")
@@ -21,6 +24,7 @@ include("bwareamaxfilt.jl")
 include("bwperim.jl")
 include("fill-holes.jl")
 include("hbreak.jl")
+include("landmask.jl")
 include("lut/lutbridge.jl")
 include("lut/lutfill.jl")
 include("minima-transform.jl")

@@ -1,6 +1,4 @@
 @testitem "dummy functions" begin
     # TODO: remove once dummy functions are deleted
     @test !isempty(IceFloeTracker.Preprocessing.dummy_preprocessing_function())
-    @test !isempty(IceFloeTracker.Segmentation.dummy_segmentation_function())
-    
 end

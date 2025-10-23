@@ -4,11 +4,10 @@
         get_ice_labels_mask,
         get_tiles,
         kmeans_segmentation,
-        _get_nlabel,
         get_ice_masks,
-        get_ice_peaks,
         apply_landmask,
         tiled_adaptive_binarization
+    import IceFloeTracker.Segmentation: _get_nlabel, get_ice_peaks
     import DelimitedFiles: readdlm
 
     include("config.jl")
