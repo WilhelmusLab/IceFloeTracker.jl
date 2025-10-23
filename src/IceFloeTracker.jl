@@ -33,7 +33,6 @@ using Images
 using Interpolations
 using OffsetArrays: centered
 using Peaks
-using Pkg
 using Random
 using Serialization: deserialize, serialize
 using StaticArrays
