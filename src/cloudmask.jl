@@ -27,8 +27,28 @@ abstract type AbstractCloudMaskAlgorithm end
 end
 
 
+"""LopezAcostaCloudMask(prelim_threshold, band_7_threshold, band_2_threshold, ratio_lower, ratio_offset, ratio_upper)
 
-# use functor notation to define a function using the parameter struct
+AbstractCloudMaskAlgorithm implementation of the cloud mask from Lopez-Acosta et al. 2019. Cloud masks algorithms are
+initialized with a set of parameters, then can be supplied to `create_cloudmask` as an argument. The Lopez-Acosta et al.
+cloudmask creates a piecewise linear bifurcation of band 2 and band 7 brightness in a MODIS 7-2-1 false color image using
+a sequence of thresholds on band 2 and band 7 and on the ratio of band 7 to band 2 brightness. 
+
+Example:
+
+```
+using IceFloeTracker
+using IceFloeTracker: Watkins2025GitHub
+
+data_loader = Watkins2025GitHub(; ref="a451cd5e62a10309a9640fbbe6b32a236fcebc70")
+case = first(data_loader(c -> (c.case_number == 6 && c.satellite == "terra")))
+cm_algo = LopezAcostaCloudMask()
+cloud_mask = create_cloudmask(case.modis_falsecolor, cm_algo)
+
+# show image:
+Gray.(cloud_mask)
+```
+"""
 function (f::LopezAcostaCloudMask)(img::AbstractArray{<:Union{AbstractRGB,TransparentRGB}})
     mask_cloud_ice, clouds_view = _get_masks(
         img;
@@ -79,6 +99,54 @@ function _get_masks(
     return mask_cloud_ice, clouds_view
 end
 
+@kwdef struct Watkins2025CloudMask <: AbstractCloudMaskAlgorithm
+    prelim_threshold::Float64 = 0.21
+    band_7_threshold::Float64 = 0.51
+    band_2_threshold::Float64 = 0.67
+    ratio_lower::Float64 = 0.0
+    ratio_offset::Float64 = 0.0
+    ratio_upper::Float64 = 0.52
+    marker_strel = strel_box((7,7))
+    opening_strel = strel_diamond((3,3))
+end
+
+"""Watkins2025CloudMask(prelim_threshold, band_7_threshold, band_2_threshold, ratio_lower, ratio_offset, ratio_upper, marker_strel, opening_strel)
+
+Extension of the Lopez-Acosta et al. 2019 with parameters calibrated to the Ice Floe Validation Dataset.
+The Lopez-Acosta et al. cloudmask creates a piecewise linear bifurcation of band 2 and band 7 brightness 
+in a MODIS 7-2-1 false color image using a sequence of thresholds on band 2 and band 7 and on the ratio of
+band 7 to band 2 brightness. This extension first creates a cloud mask using the LopezAcostaCloudMask, then
+applies morphological operations to remove speckle and smooth boundaries.
+
+Example:
+
+```
+using IceFloeTracker
+using IceFloeTracker: Watkins2025GitHub
+
+data_loader = Watkins2025GitHub(; ref="a451cd5e62a10309a9640fbbe6b32a236fcebc70")
+case = first(data_loader(c -> (c.case_number == 6 && c.satellite == "terra")))
+cm_algo = Watkins2025CloudMask()
+cloud_mask = create_cloudmask(case.modis_falsecolor, cm_algo)
+
+# show image:
+Gray.(cloud_mask)
+```
+"""
+function (f::Watkins2025CloudMask)(img::AbstractArray{<:Union{AbstractRGB,TransparentRGB}})
+    init_cloud_mask = LopezAcostaCloudMask(f.prelim_threshold,
+                                           f.band_7_threshold,
+                                           f.band_2_threshold,
+                                           f.ratio_lower,
+                                           f.ratio_offset,
+                                           f.ratio_upper)(img)
+    markers = opening(init_cloud_mask, f.marker_strel)
+    reconstructed = mreconstruct(dilate, markers, init_cloud_mask, f.opening_strel)
+    smoothed = opening(reconstructed, f.opening_strel)
+    filled = fill_holes(smoothed)
+    return filled
+end
+
 # Deprecated
 # this function is now only used in the test of the conditional adaptive histogram
 # it was also used in an earlier version of the cloud mask algorithm
@@ -89,7 +157,7 @@ end
 
 # Potential upgrade: add method to create a sequence of cloud masks
 """
-    create_cloudmask(img; f=AbstractCloudMaskAlgorithm)
+    create_cloudmask(img, f::AbstractCloudMaskAlgorithm)
 
 Cloud masks in the IFT are BitMatrix objects such that for an image I and cloudmask C, cloudy pixels can be selected by I[C], and clear-sky pixels can be selected with I[.!C]. Construction of a cloud mask uses the syntax
 
