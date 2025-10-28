@@ -20,14 +20,42 @@ import Images:
     dilate,
     mreconstruct,
     RGB,
-    Gray
-
-import ..Preprocessing:
-    apply_landmask, apply_landmask!, apply_cloudmask, create_cloudmask, create_landmask
+    Gray,
+    float64,
+    red,
+    green,
+    blue,
+    adjust_histogram,
+    GammaCorrection,
+    opening,
+    centered,
+    labels_map,
+    local_maxima,
+    SegmentedImage
+import ..skimage: sk_morphology
 import ..ImageUtils: get_brighten_mask, to_uint8, imcomplement, imbrighten, get_tiles
-import ..Filtering: histeq, unsharp_mask, conditional_histeq
+import ..Filtering: histeq, unsharp_mask, conditional_histeq, rgb2gray
+import ..Preprocessing:
+    apply_landmask,
+    apply_landmask!,
+    apply_cloudmask,
+    create_cloudmask,
+    create_landmask,
+    LopezAcostaCloudMask
 import ..Morphology:
-    hbreak!, hbreak, fill_holes, morph_fill, reconstruct, branch, bridge, se_disk4, se_disk2
+    hbreak!,
+    hbreak,
+    fill_holes,
+    morph_fill,
+    reconstruct,
+    branch,
+    bridge,
+    se_disk4,
+    se_disk2,
+    se_disk20,
+    imextendedmin,
+    impose_minima,
+    imregionalmin
 import ..Segmentation:
     IceFloeSegmentationAlgorithm,
     tiled_adaptive_binarization,
@@ -327,7 +355,7 @@ function watershed2(morph_residue, segment_mask, ice_mask)
     # Task 1: Reconstruct morph_residue
     # task1 = Threads.@spawn begin
     mr_reconst = _reconst_watershed(morph_residue)
-    mr_reconst = ImageMorphology.local_maxima(mr_reconst; connectivity=2) .> 0
+    mr_reconst = local_maxima(mr_reconst; connectivity=2) .> 0
     # end
 
     # Task 2: Calculate gradient magnitude
