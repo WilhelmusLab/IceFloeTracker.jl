@@ -7,6 +7,6 @@ export masker, apply_mask, imcomplement, to_uint8
 
 include("mask.jl")
 include("imcomplement.jl")
-include("to_uint8.jl")
+include("uint8.jl")
 
 end
