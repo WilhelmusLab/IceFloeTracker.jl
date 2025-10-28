@@ -102,8 +102,6 @@ export addfloemasks!,
     register,
     resample_boundary
 
-include("utils.jl")
-include("normalization.jl")
 include("segmentation-lopez-acosta-2019.jl")
 include("segmentation-lopez-acosta-2019-tiling.jl")
 
