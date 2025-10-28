@@ -2,17 +2,21 @@ using Images # I think this can be taken out, I have it here for the RGB types
 abstract type AbstractCloudMaskAlgorithm end
 
 @kwdef struct LopezAcostaCloudMask <: AbstractCloudMaskAlgorithm
-    prelim_threshold::Float64 = 110/255.
-    band_7_threshold::Float64 = 200/255.
-    band_2_threshold::Float64 =190/255.
+    prelim_threshold::Float64 = 110 / 255.0
+    band_7_threshold::Float64 = 200 / 255.0
+    band_2_threshold::Float64 = 190 / 255.0
     ratio_lower::Float64 = 0.0
     ratio_offset::Float64 = 0.0
     ratio_upper::Float64 = 0.75
-    
+
     # enforce all are between 0 and 1 inclusive
     function LopezAcostaCloudMask(
-        prelim_threshold, band_7_threshold, band_2_threshold,
-        ratio_lower, ratio_offset, ratio_upper
+        prelim_threshold,
+        band_7_threshold,
+        band_2_threshold,
+        ratio_lower,
+        ratio_offset,
+        ratio_upper,
     )
         0 ≤ prelim_threshold ≤ 1 || error("$prelim_threshold must be between 0 and 1")
         0 ≤ band_7_threshold ≤ 1 || error("$band_7_threshold must be between 0 and 1")
@@ -20,13 +24,15 @@ abstract type AbstractCloudMaskAlgorithm end
         0 ≤ ratio_lower ≤ 1 || error("$ratio_lower must be between 0 and 1")
         0 ≤ ratio_upper ≤ 1 || error("$ratio_upper must be between 0 and 1")
         return new(
-            prelim_threshold, band_7_threshold, band_2_threshold,
-            ratio_lower, ratio_offset, ratio_upper
+            prelim_threshold,
+            band_7_threshold,
+            band_2_threshold,
+            ratio_lower,
+            ratio_offset,
+            ratio_upper,
         )
     end
 end
-
-
 
 # use functor notation to define a function using the parameter struct
 function (f::LopezAcostaCloudMask)(img::AbstractArray{<:Union{AbstractRGB,TransparentRGB}})
@@ -129,7 +135,6 @@ function create_cloudmask(
     return f(false_color_image)
 end
 
-
 """
     apply_cloudmask(false_color_image, cloudmask)
 
@@ -172,16 +177,12 @@ function apply_cloudmask!(
     img::AbstractArray{<:Union{AbstractRGB,TransparentRGB,Gray}},
     cloudmask::AbstractArray{Bool},
 )
-    img[cloudmask] .= 0.0
+    return img[cloudmask] .= 0.0
 end
 
-function apply_cloudmask(
-    img::AbstractArray,
-    cloudmask::AbstractArray{Bool},
-)
-    img[cloudmask] .= 0.0
+function apply_cloudmask(img::AbstractArray, cloudmask::AbstractArray{Bool})
+    return img[cloudmask] .= 0.0
 end
-
 
 # dmw: in the future, we may want the option to use "missing".
 # dmw: used only in ice-water-discrimination. could be generalized. compare to similar method in the conditional adaptive histogram
