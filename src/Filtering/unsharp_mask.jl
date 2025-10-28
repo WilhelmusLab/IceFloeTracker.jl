@@ -1,4 +1,4 @@
-import Images: Kernel, imfilter
+import Images: Kernel, imfilter, channelview, colorview, base_colorant_type, float64
 
 """
     unsharp_mask(img, radius, amount, threshold)
