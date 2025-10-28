@@ -104,12 +104,7 @@ export addfloemasks!,
 
 include("utils.jl")
 include("normalization.jl")
-include("watershed.jl")
-include("regularize-final.jl")
 include("segmentation-lopez-acosta-2019.jl")
-include("segmentation_b.jl")
-include("segmentation_watershed.jl")
-include("segmentation_f.jl")
 include("segmentation-lopez-acosta-2019-tiling.jl")
 
 end
