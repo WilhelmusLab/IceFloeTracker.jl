@@ -414,7 +414,6 @@ function segmentation_B(
     )
 end
 
-
 """
     watershed_ice_floes(intermediate_segmentation_image;)
 Performs image processing and watershed segmentation with intermediate files from segmentation_b.jl to further isolate ice floes, returning a binary segmentation mask indicating potential sparse boundaries of ice floes.
@@ -534,4 +533,42 @@ function segmentation_F(
     mreconstruct!(IceFloeTracker.dilate, floes_opened, floes, floes_opened)
 
     return floes_opened
+end
+
+"""
+    normalize_image(image_sharpened, image_sharpened_gray, landmask, struct_elem;)
+
+Adjusts sharpened land-masked image to highlight ice floe features.
+
+Does reconstruction and landmasking to `image_sharpened`.
+
+# Arguments
+- `image_sharpened`: sharpened image (output of `imsharpen`)
+- `image_sharpened_gray`: grayscale, landmasked sharpened image (output of `imsharpen_gray(image_sharpened)`)
+- `landmask`: landmask for region of interest
+- `struct_elem`: structuring element for dilation
+
+"""
+function normalize_image(
+    image_sharpened::Matrix{Float64},
+    image_sharpened_gray::T,
+    landmask::BitMatrix,
+    struct_elem;
+)::Matrix{Gray{Float64}} where {T<:AbstractMatrix{Gray{Float64}}}
+    image_dilated = dilate(image_sharpened_gray, struct_elem)
+
+    image_reconstructed = mreconstruct(
+        dilate, complement.(image_dilated), complement.(image_sharpened)
+    )
+    return IceFloeTracker.apply_landmask(image_reconstructed, landmask)
+end
+
+function normalize_image(
+    image_sharpened::Matrix{Float64},
+    image_sharpened_gray::Matrix{Gray{Float64}},
+    landmask::BitMatrix,
+)::Matrix{Gray{Float64}}
+    return normalize_image(
+        image_sharpened, image_sharpened_gray, landmask, strel_diamond((5, 5))
+    )
 end
