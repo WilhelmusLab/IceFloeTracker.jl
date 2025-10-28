@@ -288,13 +288,22 @@ function branchbridge(img)
 end
 
 function watershed1(bw::T) where {T<:Union{BitMatrix,AbstractMatrix{Bool}}}
-    seg = -IceFloeTracker.bwdist(.!bw)
+    seg = -bwdist(.!bw)
     mask2 = imextendedmin(seg)
     seg = impose_minima(seg, mask2)
     cc = label_components(imregionalmin(seg), trues(3, 3))
     w = watershed(seg, cc)
     lmap = labels_map(w)
     return Images.isboundary(lmap) .> 0
+end
+
+"""
+    bwdist(bwimg)
+
+Distance transform for binary image `bwdist`.
+"""
+function bwdist(bwimg::AbstractArray{Bool})::AbstractArray{Float64}
+    return Images.distance_transform(Images.feature_transform(bwimg))
 end
 
 function _reconst_watershed(morph_residue::Matrix{<:Integer}, se::Matrix{Bool}=se_disk20())
