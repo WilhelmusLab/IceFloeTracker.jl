@@ -40,7 +40,7 @@ function impose_minima(I::AbstractArray{T}, BW::AbstractArray{Bool}) where {T<:I
     marker = 255 .* BW
     mask = imcomplement(min.(I .+ 1, 255 .- marker))
     reconstructed = sk_morphology.reconstruction(marker, mask)
-    return IceFloeTracker.imcomplement(Int.(reconstructed))
+    return imcomplement(Int.(reconstructed))
 end
 
 function impose_minima(
