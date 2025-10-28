@@ -104,7 +104,6 @@ export addfloemasks!,
 
 include("utils.jl")
 include("normalization.jl")
-include("ice-water-discrimination.jl")
 include("watershed.jl")
 include("regularize-final.jl")
 include("segmentation-lopez-acosta-2019.jl")
