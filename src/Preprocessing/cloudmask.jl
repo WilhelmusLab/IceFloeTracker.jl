@@ -79,14 +79,6 @@ function _get_masks(
     return mask_cloud_ice, clouds_view
 end
 
-# Deprecated
-# this function is now only used in the test of the conditional adaptive histogram
-# it was also used in an earlier version of the cloud mask algorithm
-function convert_to_255_matrix(img)::Matrix{Int}
-    img_clamped = clamp.(img, 0.0, 1.0)
-    return round.(Int, img_clamped * 255)
-end
-
 # Potential upgrade: add method to create a sequence of cloud masks
 """
     create_cloudmask(img; f=AbstractCloudMaskAlgorithm)

@@ -1,7 +1,6 @@
 
 @testitem "Conditional adaptivehisteq" begin
     using IceFloeTracker:
-        convert_to_255_matrix,
         adapthisteq,
         conditional_histeq,
         get_tiles,
@@ -79,6 +78,11 @@
     end
 
     @testset "Adaptive histogram equalization" begin
+        function convert_to_255_matrix(img)::Matrix{Int}
+            img_clamped = clamp.(img, 0.0, 1.0)
+            return round.(Int, img_clamped * 255)
+        end
+
         img = convert_to_255_matrix(testimage("cameraman"))
         img_eq = adapthisteq(img)
         @test sum(img_eq) == 32_387_397
