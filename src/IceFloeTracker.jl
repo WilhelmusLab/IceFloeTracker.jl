@@ -51,6 +51,7 @@ export padnhood,
     cloudmask,
     create_cloudmask,
     LopezAcostaCloudMask,
+    Watkins2025CloudMask,
     check_landmask_path,
     create_landmask,
     RGB,
@@ -105,10 +106,8 @@ include("utils.jl")
 include("cloudmask.jl")
 include("normalization.jl")
 include("ice-water-discrimination.jl")
-include("reconstruction.jl")
 include("watershed.jl")
 include("brighten.jl")
-include("imcomplement.jl")
 include("regularize-final.jl")
 include("segmentation-lopez-acosta-2019.jl")
 include("segmentation_a_direct.jl")
