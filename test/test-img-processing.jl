@@ -1,6 +1,7 @@
 
 @testitem "misc. image processing" begin
     using IceFloeTracker: imgradientmag, to_uint8, adjustgamma, get_holes, impose_minima
+    import IceFloeTracker.LopezAcosta2019TilingModule: imgradientmag
     using Images
     using ZipFile
     import DelimitedFiles: readdlm
