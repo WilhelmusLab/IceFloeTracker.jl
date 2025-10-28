@@ -1,3 +1,5 @@
+import Images: mreconstruct!
+
 abstract type IceFloeSegmentationAlgorithm end
 
 struct LopezAcosta2019 <: IceFloeSegmentationAlgorithm
@@ -385,8 +387,6 @@ function watershed_product(
     watershed_intersect = watershed_B_ice_intersect .* watershed_B_not_ice
     return watershed_intersect
 end
-
-import Images: mreconstruct!
 
 """
     segmentation_F(
