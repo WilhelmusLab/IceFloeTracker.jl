@@ -32,3 +32,29 @@
     cloudmask = IceFloeTracker.create_cloudmask(ref_image)
     @test sum(.!cloudmask) === 0 # all pixels are clouds
 end
+
+# Test creation and application of multiple cloudmask types
+@testitem "Cloudmask Customization" begin
+    using IceFloeTracker: Watkins2025GitHub, LopezAcostaCloudMask, Watkins2025CloudMask, create_cloudmask
+
+    data_loader = Watkins2025GitHub(; ref="a451cd5e62a10309a9640fbbe6b32a236fcebc70")
+    case = first(data_loader(c -> (c.case_number == 6 && c.satellite == "terra")))
+
+    # Settings from Watkins et al. 2025
+    cloud_mask_settings = (
+        prelim_threshold=53.0/255.,
+        band_7_threshold=130.0/255.,
+        band_2_threshold=170.0/255.,
+        ratio_lower=0.0,
+        ratio_offset=0.0,
+        ratio_upper=0.52
+    )
+
+    cmask_orig = LopezAcostaCloudMask(cloud_mask_settings...)
+    cmask_morpho = Watkins2025CloudMask()
+
+    cmask_orig_img = create_cloudmask(case.modis_falsecolor, cmask_orig)
+    cmask_morpho_img = create_cloudmask(case.modis_falsecolor, cmask_morpho)
+    @test sum(cmask_orig_img) >= sum(cmask_morpho_img)
+end
+
