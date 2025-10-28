@@ -1,3 +1,5 @@
+import ..ImageUtils: to_uint8
+
 """
     reconstruct(img, se, type, invert)
 
