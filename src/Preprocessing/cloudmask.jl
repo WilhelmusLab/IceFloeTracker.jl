@@ -1,4 +1,20 @@
-using Images # I think this can be taken out, I have it here for the RGB types
+import ..Morphology: fill_holes
+import Images:
+    AbstractRGB,
+    TransparentRGB,
+    RGB,
+    Gray,
+    red,
+    green,
+    channelview,
+    colorview,
+    StackedView,
+    strel_diamond,
+    strel_box,
+    zeroarray,
+    opening,
+    mreconstruct
+
 abstract type AbstractCloudMaskAlgorithm end
 
 @kwdef struct LopezAcostaCloudMask <: AbstractCloudMaskAlgorithm
