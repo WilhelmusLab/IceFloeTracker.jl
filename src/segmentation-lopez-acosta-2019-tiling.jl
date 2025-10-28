@@ -462,3 +462,18 @@ function get_final(
     final = IceFloeTracker.mreconstruct(IceFloeTracker.dilate, _img, mask)
     return BitMatrix(final)
 end
+
+# TODO: Remove once the workflow is all normed images
+function adjustgamma(img, gamma=1.5, asuint8=true)
+    if maximum(img) > 1
+        img = img ./ 255
+    end
+
+    adjusted = adjust_histogram(img, GammaCorrection(gamma))
+
+    if asuint8
+        adjusted = Int.(round.(adjusted * 255, RoundNearestTiesAway))
+    end
+
+    return adjusted
+end
