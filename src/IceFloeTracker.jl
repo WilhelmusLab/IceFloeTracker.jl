@@ -3,6 +3,12 @@ module IceFloeTracker
 include("skimage/skimage.jl")
 using .skimage
 
+include("Utils/Utils.jl")
+using .Utils
+
+include("Data/Data.jl")
+using .Data
+
 include("ImageUtils/ImageUtils.jl")
 using .ImageUtils
 
@@ -23,12 +29,6 @@ using .Segmentation
 
 include("Tracking/Tracking.jl")
 using .Tracking
-
-include("Utils/Utils.jl")
-using .Utils
-
-include("Data/Data.jl")
-using .Data
 
 using Clustering
 using DataFrames
