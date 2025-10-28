@@ -105,7 +105,7 @@ end
         @testset "get_ice_peaks" begin
             using Random
             using Images: build_histogram
-            using IceFloeTracker: get_ice_peaks
+            import IceFloeTracker.Segmentation: get_ice_peaks
             Random.seed!(123)
             img = Gray.(rand(0:255, 10, 10) ./ 255)
             edges, counts = build_histogram(img, 64; minval=0, maxval=1)
@@ -195,14 +195,16 @@ end
                 ice_binary_new = IceFloeTracker.binarize(
                     masker(landmask)(falsecolor_image), IceDetectionLopezAcosta2019()
                 )
-                ice_labels_julia_new = IceFloeTracker.get_ice_labels(ice_binary_new)
+                ice_labels_julia_new = IceFloeTracker.Segmentation.get_ice_labels(
+                    ice_binary_new
+                )
                 @test ice_labels_julia_new == ice_labels_matlab
             end
             @testset "example 2" begin
                 falsecolor_image =
                     float64.(load(falsecolor_test_image_file)[test_region...])
                 landmask = convert(BitMatrix, load(current_landmask_file)[test_region...])
-                ice_labels_ice_floe_region_new = IceFloeTracker.get_ice_labels(
+                ice_labels_ice_floe_region_new = IceFloeTracker.Segmentation.get_ice_labels(
                     IceFloeTracker.binarize(
                         masker(landmask)(falsecolor_image)[ice_floe_test_region...],
                         IceDetectionLopezAcosta2019(),

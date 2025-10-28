@@ -4,8 +4,8 @@
 Generate a structuring element by leveraging symmetry (mirroring and inverting) a given initial structuring element.
 """
 function _generate_se!(se)
-    for d in [1,2]
-    se .= se .| reverse(se; dims=d)
+    for d in [1, 2]
+        se .= se .| reverse(se; dims=d)
     end
     se .= .!se
     return nothing
@@ -16,8 +16,6 @@ function se_disk50()
     _generate_se!(se)
     return se
 end
-
-make_landmask_se = se_disk50
 
 function se_disk4()
     se = [sum(c.I) <= 3 for c in CartesianIndices((7, 7))]
@@ -31,7 +29,7 @@ function se_disk20()
 end
 
 function se_disk2()
-    se = [sum(c.I) <= 3 for c in CartesianIndices((5,5))]
+    se = [sum(c.I) <= 3 for c in CartesianIndices((5, 5))]
     _generate_se!(se)
     return se
 end

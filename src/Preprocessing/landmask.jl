@@ -1,3 +1,15 @@
+import ..Morphology: se_disk50
+import Images: Gray
+import OffsetArrays: centered
+import Images: ImageMorphology, dilate
+
+"""
+    make_landmask_se()
+
+Create a structuring element for dilating the landmask.
+"""
+make_landmask_se = se_disk50
+
 """
     create_landmask(landmask_image, struct_elem, fill_value_lower, fill_value_upper)
 
