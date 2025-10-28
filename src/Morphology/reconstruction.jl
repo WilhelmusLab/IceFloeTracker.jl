@@ -1,4 +1,6 @@
-import ..ImageUtils: to_uint8
+import Images: mreconstruct, dilate
+import ..skimage: sk_morphology
+import ..ImageUtils: to_uint8, imcomplement
 
 """
     reconstruct(img, se, type, invert)
@@ -15,19 +17,14 @@ function reconstruct(img, se, type, invert::Bool=true)
     !(type == "dilation" || type == "erosion") &&
         throw(ArgumentError("Invalid type: $type. Must be 'dilation' or 'erosion'."))
 
-    type == "dilation" && (
-        morphed = to_uint8(
-            IceFloeTracker.sk_morphology.dilation(img; footprint=collect(se))
-        )
-    )
-    type == "erosion" && (
-        morphed = to_uint8(IceFloeTracker.sk_morphology.erosion(img; footprint=collect(se)))
-    )
+    type == "dilation" &&
+        (morphed = to_uint8(sk_morphology.dilation(img; footprint=collect(se))))
+    type == "erosion" &&
+        (morphed = to_uint8(sk_morphology.erosion(img; footprint=collect(se))))
 
     invert && (morphed = imcomplement(to_uint8(morphed)); img = imcomplement(img))
 
-    type == "dilation" &&
-        return IceFloeTracker.mreconstruct(IceFloeTracker.dilate, morphed, img)
+    type == "dilation" && return mreconstruct(dilate, morphed, img)
 
-    return IceFloeTracker.sk_morphology.reconstruction(morphed, img)
+    return sk_morphology.reconstruction(morphed, img)
 end
