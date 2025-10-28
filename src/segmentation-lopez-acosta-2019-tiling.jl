@@ -1,4 +1,5 @@
-using Images
+
+using Images: Images, area_opening, watershed, imfilter
 using IceFloeTracker:
     get_tiles,
     conditional_histeq,
@@ -9,22 +10,20 @@ using IceFloeTracker:
     imcomplement,
     adjustgamma,
     to_uint8,
-    get_segment_mask,
     se_disk4,
     se_disk2,
-    branchbridge,
-    fillholes!,
+    branch,
+    bridge,
     get_final,
     apply_landmask,
     kmeans_segmentation,
     get_brighten_mask,
     reconstruct,
-    imgradientmag,
     histeq,
     label_components,
-    watershed2,
     tiled_adaptive_binarization,
     _regularize
+using IceFloeTracker.Morphology: hbreak!, fill_holes
 
 # Sample input parameters expected by the main function
 cloud_mask_thresholds = (
@@ -51,13 +50,13 @@ unsharp_mask_params = (radius=10, amount=2.0, factor=255.0)
 brighten_factor = 0.1
 
 ice_masks_params = (
-    band_7_threshold=5/255,
-    band_2_threshold=230/255,
-    band_1_threshold=240/255,
-    band_7_threshold_relaxed=10/255,
-    band_1_threshold_relaxed=190/255,
-    possible_ice_threshold=75/255,
-    k=3 # number of clusters for kmeans segmentation
+    band_7_threshold=5 / 255,
+    band_2_threshold=230 / 255,
+    band_1_threshold=240 / 255,
+    band_7_threshold_relaxed=10 / 255,
+    band_1_threshold_relaxed=190 / 255,
+    possible_ice_threshold=75 / 255,
+    k=3, # number of clusters for kmeans segmentation
 )
 
 prelim_icemask_params = (radius=10, amount=2, factor=0.5)
@@ -80,7 +79,7 @@ function (p::LopezAcosta2019Tiling)(
     landmask::AbstractArray{<:Union{AbstractGray,AbstractRGB,TransparentRGB}};
     intermediate_results_callback::Union{Nothing,Function}=nothing,
 )
-    _landmask = IceFloeTracker.create_landmask(landmask, strel_box((3,3))) # smaller strel than in some test cases
+    _landmask = IceFloeTracker.create_landmask(landmask, strel_box((3, 3))) # smaller strel than in some test cases
     tiles = get_tiles(truecolor; p.tile_settings...)
 
     ref_image = RGB.(falsecolor)  # TODO: remove this typecast
@@ -159,10 +158,19 @@ function (p::LopezAcosta2019Tiling)(
 
     begin
         @debug "Step 9: Get preliminary ice masks"
-        binarized_tiling = tiled_adaptive_binarization(Gray.(morphed_residue ./ 255), tiles;
-                                           minimum_window_size=32, threshold_percentage=15) .> 0
+        binarized_tiling =
+            tiled_adaptive_binarization(
+                Gray.(morphed_residue ./ 255),
+                tiles;
+                minimum_window_size=32,
+                threshold_percentage=15,
+            ) .> 0
         prelim_icemask = get_ice_masks(
-            ref_image, Gray.(morphed_residue / 255), _landmask.dilated, tiles; ice_masks_params...
+            ref_image,
+            Gray.(morphed_residue / 255),
+            _landmask.dilated,
+            tiles;
+            ice_masks_params...,
         )
     end
 
@@ -195,7 +203,11 @@ function (p::LopezAcosta2019Tiling)(
     begin
         @debug "Step 13: Get improved icemask"
         icemask = get_ice_masks(
-            ref_image, Gray.(prelim_icemask2 ./ 255), _landmask.dilated, tiles; ice_masks_params...
+            ref_image,
+            Gray.(prelim_icemask2 ./ 255),
+            _landmask.dilated,
+            tiles;
+            ice_masks_params...,
         )
     end
 
@@ -241,4 +253,92 @@ function (p::LopezAcosta2019Tiling)(
     end
 
     return segmented
+end
+
+function get_holes(img, min_opening_area=20, se=se_disk4())
+    _img = area_opening(img; min_area=min_opening_area)
+    hbreak!(_img)
+
+    out = branchbridge(_img)
+    out = opening(out, centered(se))
+    out = fill_holes(out)
+
+    return out .!= _img
+end
+
+function fillholes!(img)
+    img[get_holes(img)] .= true
+    return nothing
+end
+
+function get_segment_mask(ice_mask, tiled_binmask)
+    # TODO: Threads.@threads # sometimes crashes (too much memory?)
+    for img in (ice_mask, tiled_binmask)
+        fillholes!(img)
+        img .= watershed1(img)
+    end
+    segment_mask = ice_mask .&& tiled_binmask
+    return segment_mask
+end
+
+function branchbridge(img)
+    img = branch(img)
+    img = bridge(img)
+    return img
+end
+
+function watershed1(bw::T) where {T<:Union{BitMatrix,AbstractMatrix{Bool}}}
+    seg = -IceFloeTracker.bwdist(.!bw)
+    mask2 = imextendedmin(seg)
+    seg = impose_minima(seg, mask2)
+    cc = label_components(imregionalmin(seg), trues(3, 3))
+    w = watershed(seg, cc)
+    lmap = labels_map(w)
+    return Images.isboundary(lmap) .> 0
+end
+
+function _reconst_watershed(morph_residue::Matrix{<:Integer}, se::Matrix{Bool}=se_disk20())
+    mr_reconst = to_uint8(IceFloeTracker.reconstruct(morph_residue, se, "erosion", false))
+    mr_reconst .= to_uint8(IceFloeTracker.reconstruct(mr_reconst, se, "dilation", true))
+    mr_reconst .= imcomplement(mr_reconst)
+    return mr_reconst
+end
+
+function watershed2(morph_residue, segment_mask, ice_mask)
+    # TODO: reconfigure to use async tasks or threads
+    # Task 1: Reconstruct morph_residue
+    # task1 = Threads.@spawn begin
+    mr_reconst = _reconst_watershed(morph_residue)
+    mr_reconst = ImageMorphology.local_maxima(mr_reconst; connectivity=2) .> 0
+    # end
+
+    # Task 2: Calculate gradient magnitude
+    # task2 = Threads.@spawn begin
+    gmag = imgradientmag(histeq(morph_residue))
+    # end
+
+    # Wait for both tasks to complete
+    # mr_reconst = fetch(task1)
+    # gmag = fetch(task2)
+
+    minimamarkers = mr_reconst .| segment_mask .| ice_mask
+    gmag .= impose_minima(gmag, minimamarkers)
+    cc = label_components(imregionalmin(gmag), trues(3, 3))
+    w = watershed(morph_residue, cc)
+    lmap = labels_map(w)
+    return (fgm=mr_reconst, L0mask=isboundary(lmap) .> 0)
+end
+
+"""
+    imgradientmag(img)
+
+Compute the gradient magnitude of an image using the Sobel operator.
+"""
+function imgradientmag(img)
+    h = centered([-1 0 1; -2 0 2; -1 0 1]')
+    Gx_future = Threads.@spawn imfilter(img, h', "replicate")
+    Gy_future = Threads.@spawn imfilter(img, h, "replicate")
+    Gx = fetch(Gx_future)
+    Gy = fetch(Gy_future)
+    return hypot.(Gx, Gy)
 end
