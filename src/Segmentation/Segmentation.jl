@@ -1,6 +1,7 @@
 module Segmentation
 
-export find_ice_labels,
+export IceFloeSegmentationAlgorithm,
+    find_ice_labels,
     get_ice_labels_mask,
     get_ice_masks,
     find_ice_mask,
@@ -21,6 +22,7 @@ export find_ice_labels,
     convertcentroid!,
     converttounits!
 
+include("abstract-algorithms.jl")
 include("find-ice-labels.jl")
 include("ice-masks.jl")
 include("k-means-segmentation.jl")

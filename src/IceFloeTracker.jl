@@ -30,6 +30,9 @@ using .Segmentation
 include("Tracking/Tracking.jl")
 using .Tracking
 
+include("segmentation-lopez-acosta-2019-tiling.jl")
+using .LopezAcosta2019TilingModule
+
 using Clustering
 using DataFrames
 using Dates
@@ -103,6 +106,5 @@ export addfloemasks!,
     resample_boundary
 
 include("segmentation-lopez-acosta-2019.jl")
-include("segmentation-lopez-acosta-2019-tiling.jl")
 
 end

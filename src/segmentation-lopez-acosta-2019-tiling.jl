@@ -1,30 +1,38 @@
 
-using Images: Images, area_opening, watershed, imfilter
-using IceFloeTracker:
-    get_tiles,
-    conditional_histeq,
-    to_uint8,
-    unsharp_mask,
-    imbrighten,
-    get_ice_masks,
-    imcomplement,
-    adjustgamma,
-    to_uint8,
-    se_disk4,
-    se_disk2,
-    branch,
-    bridge,
-    get_final,
-    apply_landmask,
-    kmeans_segmentation,
-    get_brighten_mask,
-    reconstruct,
-    histeq,
+module LopezAcosta2019TilingModule
+
+export LopezAcosta2019Tiling
+
+import Images:
+    Images,
+    area_opening,
+    watershed,
+    imfilter,
+    isboundary,
+    distance_transform,
+    feature_transform,
     label_components,
+    strel_diamond,
+    strel_box,
+    AbstractRGB,
+    TransparentRGB,
+    AbstractGray,
+    dilate,
+    mreconstruct,
+    RGB,
+    Gray
+
+import ..Preprocessing:
+    apply_landmask, apply_landmask!, apply_cloudmask, create_cloudmask, create_landmask
+import ..ImageUtils: get_brighten_mask, to_uint8, imcomplement, imbrighten, get_tiles
+import ..Filtering: histeq, unsharp_mask, conditional_histeq
+import ..Morphology:
+    hbreak!, hbreak, fill_holes, morph_fill, reconstruct, branch, bridge, se_disk4, se_disk2
+import ..Segmentation:
+    IceFloeSegmentationAlgorithm,
     tiled_adaptive_binarization,
-    hbreak,
-    morph_fill
-using IceFloeTracker.Morphology: hbreak!, fill_holes
+    kmeans_segmentation,
+    get_ice_masks
 
 # Sample input parameters expected by the main function
 cloud_mask_thresholds = (
@@ -80,7 +88,7 @@ function (p::LopezAcosta2019Tiling)(
     landmask::AbstractArray{<:Union{AbstractGray,AbstractRGB,TransparentRGB}};
     intermediate_results_callback::Union{Nothing,Function}=nothing,
 )
-    _landmask = IceFloeTracker.create_landmask(landmask, strel_box((3, 3))) # smaller strel than in some test cases
+    _landmask = create_landmask(landmask, strel_box((3, 3))) # smaller strel than in some test cases
     tiles = get_tiles(truecolor; p.tile_settings...)
 
     ref_image = RGB.(falsecolor)  # TODO: remove this typecast
@@ -89,10 +97,10 @@ function (p::LopezAcosta2019Tiling)(
     begin
         @debug "Step 1/2: Create and apply cloudmask to reference image"
 
-        cloudmask = IceFloeTracker.create_cloudmask(
+        cloudmask = create_cloudmask(
             ref_image, LopezAcostaCloudMask(cloud_mask_thresholds...)
         )
-        ref_img_cloudmasked = IceFloeTracker.apply_cloudmask(ref_image, cloudmask)
+        ref_img_cloudmasked = apply_cloudmask(ref_image, cloudmask)
     end
 
     begin
@@ -128,18 +136,18 @@ function (p::LopezAcosta2019Tiling)(
     begin
         @debug "Step 6: Repeat step 5 with equalized_gray (landmasking, no sharpening)"
         equalized_gray_reconstructed = deepcopy(equalized_gray)
-        IceFloeTracker.apply_landmask!(equalized_gray_reconstructed, _landmask.dilated)
+        apply_landmask!(equalized_gray_reconstructed, _landmask.dilated)
 
         equalized_gray_reconstructed = reconstruct(
             equalized_gray_reconstructed, structuring_elements.se_disk1, "dilation", true
         )
-        IceFloeTracker.apply_landmask!(equalized_gray_reconstructed, _landmask.dilated)
+        apply_landmask!(equalized_gray_reconstructed, _landmask.dilated)
     end
 
     begin
         @debug "Step 7: Brighten equalized_gray"
         brighten = get_brighten_mask(equalized_gray_reconstructed, gammagreen)
-        IceFloeTracker.apply_landmask!(equalized_gray, _landmask.dilated)
+        apply_landmask!(equalized_gray, _landmask.dilated)
         equalized_gray .= imbrighten(equalized_gray, brighten, brighten_factor)
     end
 
@@ -295,7 +303,7 @@ function watershed1(bw::T) where {T<:Union{BitMatrix,AbstractMatrix{Bool}}}
     cc = label_components(imregionalmin(seg), trues(3, 3))
     w = watershed(seg, cc)
     lmap = labels_map(w)
-    return Images.isboundary(lmap) .> 0
+    return isboundary(lmap) .> 0
 end
 
 """
@@ -304,12 +312,12 @@ end
 Distance transform for binary image `bwdist`.
 """
 function bwdist(bwimg::AbstractArray{Bool})::AbstractArray{Float64}
-    return Images.distance_transform(Images.feature_transform(bwimg))
+    return distance_transform(feature_transform(bwimg))
 end
 
 function _reconst_watershed(morph_residue::Matrix{<:Integer}, se::Matrix{Bool}=se_disk20())
-    mr_reconst = to_uint8(IceFloeTracker.reconstruct(morph_residue, se, "erosion", false))
-    mr_reconst .= to_uint8(IceFloeTracker.reconstruct(mr_reconst, se, "dilation", true))
+    mr_reconst = to_uint8(reconstruct(morph_residue, se, "erosion", false))
+    mr_reconst .= to_uint8(reconstruct(mr_reconst, se, "dilation", true))
     mr_reconst .= imcomplement(mr_reconst)
     return mr_reconst
 end
@@ -371,7 +379,7 @@ Regularize `img` by:
 function regularize_fill_holes(img, local_maxima_mask, segment_mask, L0mask, factor)
     new2 = to_uint8(img .+ local_maxima_mask .* factor)
     new2[segment_mask .|| L0mask] .= 0
-    return IceFloeTracker.fill_holes(new2)
+    return fill_holes(new2)
 end
 
 """
@@ -393,7 +401,7 @@ function regularize_sharpening(
 )
     new3 = unsharp_mask(img, radius, amount, 255)
     new3[L0mask] .= 0
-    new3 = IceFloeTracker.reconstruct(new3, se, "dilation", false)
+    new3 = reconstruct(new3, se, "dilation", false)
     new3[segment_mask] .= 0
     return to_uint8(new3 + local_maxima_mask .* factor)
 end
@@ -448,7 +456,7 @@ function get_final(
     apply_segment_mask && (_img[segment_mask] .= false)
 
     # tends to fill more than matlabs imfill
-    _img .= IceFloeTracker.fill_holes(_img)
+    _img .= fill_holes(_img)
 
     # marker image
     _img .= branch(_img)
@@ -459,7 +467,7 @@ function get_final(
     mask .= sk_morphology.dilation(mask, se_dilation)
 
     # Restore shape of floes based on the cleaned up `mask`
-    final = IceFloeTracker.mreconstruct(IceFloeTracker.dilate, _img, mask)
+    final = mreconstruct(dilate, _img, mask)
     return BitMatrix(final)
 end
 
@@ -476,4 +484,6 @@ function adjustgamma(img, gamma=1.5, asuint8=true)
     end
 
     return adjusted
+end
+
 end

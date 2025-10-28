@@ -1,7 +1,5 @@
 import Images: mreconstruct!
 
-abstract type IceFloeSegmentationAlgorithm end
-
 struct LopezAcosta2019 <: IceFloeSegmentationAlgorithm
     landmask_structuring_element::AbstractMatrix{Bool}
 end
