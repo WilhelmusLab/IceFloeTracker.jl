@@ -1,3 +1,5 @@
+import Images: Kernel, imfilter
+
 """
     unsharp_mask(img, radius, amount, threshold)
 
