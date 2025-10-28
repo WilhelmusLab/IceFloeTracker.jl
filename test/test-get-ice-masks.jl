@@ -8,6 +8,7 @@
         apply_landmask,
         tiled_adaptive_binarization
     import IceFloeTracker.Segmentation: _get_nlabel, get_ice_peaks
+    import DelimitedFiles: readdlm
 
     include("config.jl")
 
