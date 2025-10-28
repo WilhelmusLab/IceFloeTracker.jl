@@ -1,3 +1,5 @@
+import Images: Kernel, imfilter, channelview, colorview, base_colorant_type, float64
+
 """
     unsharp_mask(img, radius, amount, threshold)
 
@@ -55,6 +57,7 @@ function unsharp_mask(img::Matrix{Float64}, smoothing_param, intensity)
 end
 
 # method for integer matrices
+# TODO: this function's `clampmax` argument is unused
 """
     unsharp_mask(image_gray, smoothing_param, intensity, clampmax)
 
