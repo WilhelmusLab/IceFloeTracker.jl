@@ -1,13 +1,8 @@
 
 @testitem "Conditional adaptivehisteq" begin
+    import IceFloeTracker.Preprocessing: _get_masks
     using IceFloeTracker:
-        adapthisteq,
-        conditional_histeq,
-        get_tiles,
-        rgb2gray,
-        to_uint8,
-        histeq,
-        IceFloeTracker
+        adapthisteq, conditional_histeq, get_tiles, rgb2gray, to_uint8, histeq
     using Images: load, float64, channelview
     using TestImages: testimage
 
@@ -22,7 +17,7 @@
         band_7_threshold=200.0,
         band_2_threshold=190.0,
     )
-        mask_cloud_ice, clouds_view = IceFloeTracker._get_masks(
+        mask_cloud_ice, clouds_view = _get_masks(
             false_color_image;
             prelim_threshold=prelim_threshold / 255.0,
             band_7_threshold=band_7_threshold / 255.0,
