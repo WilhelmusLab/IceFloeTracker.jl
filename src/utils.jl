@@ -1,15 +1,6 @@
 # Helper functions
 
 """
-    loadimg(; dir::String, fname::String)
-
-Load an image from `dir` with filename `fname` into a matrix of `Float64` values. Returns the loaded image.
-"""
-function loadimg(; dir::String, fname::String)
-    return (x -> float64.(x))(load(joinpath(dir, fname)))
-end
-
-"""
     add_padding(img, style)
 
 Extrapolate the image `img` according to the `style` specifications type. Returns the extrapolated image.
