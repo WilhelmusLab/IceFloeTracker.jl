@@ -1,3 +1,5 @@
+import Images: Gray
+
 function imcomplement(img::Matrix{T}) where {T<:Union{Unsigned,Int}}
     return 255 .- img
 end
