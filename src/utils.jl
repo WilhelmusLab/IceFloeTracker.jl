@@ -42,34 +42,6 @@ function remove_padding(paddedimg, border_spec::Union{Pad,Fill})::Matrix
 end
 
 """
-    impose_minima(I::AbstractArray{T}, BW::AbstractArray{Bool}) where {T<:Integer}
-
-Use morphological reconstruction to enforce minima on the input image `I` at the positions where the binary mask `BW` is non-zero.
-
-It supports both integer and grayscale images using different implementations for each.
-"""
-function impose_minima(I::AbstractArray{T}, BW::AbstractArray{Bool}) where {T<:Integer}
-    marker = 255 .* BW
-    mask = imcomplement(min.(I .+ 1, 255 .- marker))
-    reconstructed = sk_morphology.reconstruction(marker, mask)
-    return IceFloeTracker.imcomplement(Int.(reconstructed))
-end
-
-function impose_minima(
-    I::AbstractArray{T}, BW::AbstractMatrix{Bool}
-) where {T<:AbstractFloat}
-    # compute shift
-    a, b = extrema(I)
-    rng = b - a
-    h = rng == 0 ? 0.1 : rng / 1000
-
-    marker = -Inf * BW .+ (Inf * .!BW)
-    mask = min.(I .+ h, marker)
-
-    return 1 .- sk_morphology.reconstruction(1 .- marker, 1 .- mask)
-end
-
-"""
     bwdist(bwimg)
 
 Distance transform for binary image `bwdist`.
