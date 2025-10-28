@@ -103,7 +103,6 @@ export addfloemasks!,
     resample_boundary
 
 include("utils.jl")
-include("cloudmask.jl")
 include("normalization.jl")
 include("ice-water-discrimination.jl")
 include("tilingutils.jl")
