@@ -15,14 +15,14 @@ using .Morphology
 include("Filtering/Filtering.jl")
 using .Filtering
 
+include("Preprocessing/Preprocessing.jl")
+using .Preprocessing
+
 include("Segmentation/Segmentation.jl")
 using .Segmentation
 
 include("Tracking/Tracking.jl")
 using .Tracking
-
-include("Preprocessing/Preprocessing.jl")
-using .Preprocessing
 
 include("Utils/Utils.jl")
 using .Utils
