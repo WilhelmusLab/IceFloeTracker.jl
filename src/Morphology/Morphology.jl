@@ -13,7 +13,8 @@ export bridge,
     se_disk4,
     se_disk20,
     se_disk2,
-    reconstruct
+    reconstruct,
+    impose_minima
 
 include("branch.jl")
 include("bridge.jl")
