@@ -29,7 +29,6 @@ function reconstruct(img, se, type, invert::Bool=true)
     return sk_morphology.reconstruction(morphed, img)
 end
 
-
 """
     impose_minima(I::AbstractArray{T}, BW::AbstractArray{Bool}) where {T<:Integer}
 
