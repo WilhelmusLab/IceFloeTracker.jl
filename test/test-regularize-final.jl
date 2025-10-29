@@ -1,12 +1,9 @@
 
 @testitem "regularize/get_final" begin
-    using IceFloeTracker:
-        get_tiles,
-        regularize_fill_holes,
-        regularize_sharpening,
-        _regularize,
-        se_disk2,
-        get_final
+    import IceFloeTracker.LopezAcosta2019Tiling:
+        regularize_fill_holes, regularize_sharpening, _regularize, get_final
+    import IceFloeTracker: get_tiles, se_disk2
+
     using DelimitedFiles: readdlm
     import Images: strel_diamond
 
