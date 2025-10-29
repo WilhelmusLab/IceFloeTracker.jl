@@ -1,6 +1,13 @@
 @testitem "Normalize Image" begin
     using Images:
-        channelview, colorview, RGB, @test_approx_eq_sigma_eps, strel_diamond, float64, load
+        channelview,
+        colorview,
+        RGB,
+        @test_approx_eq_sigma_eps,
+        test_approx_eq_sigma_eps,
+        strel_diamond,
+        float64,
+        load
     using Dates: Dates
 
     include("config.jl")

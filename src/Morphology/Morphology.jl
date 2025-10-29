@@ -16,7 +16,8 @@ export bridge,
     se_disk20,
     se_disk2,
     reconstruct,
-    impose_minima
+    impose_minima,
+    get_areas
 
 include("branch.jl")
 include("bridge.jl")
