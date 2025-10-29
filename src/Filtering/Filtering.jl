@@ -1,3 +1,25 @@
+# IceFloeTracker.jl exports:
+export exponential,
+    inverse_quadratic,
+    SupportedFunctions,
+    is_supported,
+    SUPPORTED_GRADIENT_FUNCTIONS,
+    conditional_histeq,
+    histeq,
+    rgb2gray,
+    PeronaMalikDiffusion,
+    nonlinear_diffusion,
+    AbstractDiffusionAlgorithm,
+    PeronaMalikDiffusion,
+    anisotropic_diffusion_3D,
+    anisotropic_diffusion_2D,
+    adapthisteq,
+    imadjust,
+    unsharp_mask
+
+"""
+Module for image filtering functions.
+"""
 module Filtering
 
 export exponential,

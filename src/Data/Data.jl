@@ -1,3 +1,9 @@
+# IceFloeTracker.jl exports:
+export ValidationDataSet, ValidationDataCase, ValidationDataLoader, Watkins2025GitHub
+
+"""
+Module for loading and working with validation data.
+"""
 module Data
 
 export ValidationDataSet, ValidationDataCase, ValidationDataLoader, Watkins2025GitHub

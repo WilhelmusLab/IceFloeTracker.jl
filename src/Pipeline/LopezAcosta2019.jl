@@ -1,3 +1,11 @@
+"""
+Pipeline from Lopez Acosta et al. (2019) for sea ice floe segmentation.
+
+Lopez-Acosta et al., (2019). 
+Ice Floe Tracker: An algorithm to automatically retrieve Lagrangian trajectories via feature matching from moderate-resolution visual imagery. 
+_Remote Sensing of Environment_, 234(111406), 
+[doi:10.1016/j.rse.2019.111406](https://doi.org/10.1016/j.rse.2019.111406).
+"""
 module LopezAcosta2019
 
 import Images:
