@@ -8,8 +8,9 @@
         se_disk2,
         get_final
     using DelimitedFiles: readdlm
+    import Images: strel_diamond
 
-    se = collect(IceFloeTracker.strel_diamond((3, 3)))
+    se = collect(strel_diamond((3, 3)))
 
     test_files_dir = joinpath(@__DIR__, "test_inputs/regularize")
 
