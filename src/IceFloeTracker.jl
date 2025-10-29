@@ -31,7 +31,6 @@ include("Tracking/Tracking.jl")
 using .Tracking
 
 include("segmentation-lopez-acosta-2019-tiling.jl")
-using .LopezAcosta2019TilingModule
 
 using Clustering
 using DataFrames
@@ -70,14 +69,12 @@ export padnhood,
     imrotate,
     get_rotation_measurements,
     IceFloeSegmentationAlgorithm,
-    LopezAcosta2019,
     ValidationDataCase,
     ValidationDataLoader,
     ValidationDataSet,
     Watkins2025GitHub,
     segmentation_comparison,
     segmentation_summary,
-    LopezAcosta2019Tiling,
     callable_store,
     binarize_segments,
     masker,

@@ -1,7 +1,5 @@
 
-module LopezAcosta2019TilingModule
-
-export LopezAcosta2019Tiling
+module LopezAcosta2019Tiling
 
 import Images:
     Images,
@@ -98,7 +96,7 @@ ice_masks_params = (
 
 prelim_icemask_params = (radius=10, amount=2, factor=0.5)
 
-@kwdef struct LopezAcosta2019Tiling <: IceFloeSegmentationAlgorithm
+@kwdef struct Segment <: IceFloeSegmentationAlgorithm
     tile_settings = (; rblocks=2, cblocks=2)
     cloud_mask_thresholds = cloud_mask_thresholds
     adapthisteq_params = adapthisteq_params
@@ -110,7 +108,7 @@ prelim_icemask_params = (radius=10, amount=2, factor=0.5)
     brighten_factor = brighten_factor
 end
 
-function (p::LopezAcosta2019Tiling)(
+function (p::Segment)(
     truecolor::AbstractArray{<:Union{AbstractRGB,TransparentRGB}},
     falsecolor::AbstractArray{<:Union{AbstractRGB,TransparentRGB}},
     landmask::AbstractArray{<:Union{AbstractGray,AbstractRGB,TransparentRGB}};
