@@ -31,7 +31,6 @@ include("Tracking/Tracking.jl")
 using .Tracking
 
 include("segmentation-lopez-acosta-2019-tiling.jl")
-import .LopezAcosta2019Tiling: LopezAcosta2019Tiling
 
 using Clustering
 using DataFrames
