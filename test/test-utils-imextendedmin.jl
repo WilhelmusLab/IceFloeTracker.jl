@@ -1,6 +1,5 @@
 @testitem "imextendedmin and bwdist" begin
     using DelimitedFiles: readdlm
-    using IceFloeTracker.Morphology: imextendedmin
     using IceFloeTracker.LopezAcosta2019Tiling: bwdist
 
     include("config.jl")

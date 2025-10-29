@@ -1,7 +1,5 @@
 
 @testitem "Tiling utils" begin
-    using IceFloeTracker.ImageUtils:
-        get_optimal_tile_size, get_tile_meta, bump_tile, get_tiles
     using TiledIteration: TileIterator
 
     gots = get_optimal_tile_size

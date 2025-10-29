@@ -12,7 +12,9 @@ export masker,
     get_tiles,
     imbrighten,
     imcomplement,
-    to_uint8
+    to_uint8,
+    get_tile_meta,
+    bump_tile
 
 include("brighten.jl")
 include("imcomplement.jl")
