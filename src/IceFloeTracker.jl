@@ -84,7 +84,8 @@ export padnhood,
     IceDetectionFirstNonZeroAlgorithm,
     IceDetectionLopezAcosta2019,
     tiled_adaptive_binarization,
-    LopezAcosta2019Tiling
+    LopezAcosta2019Tiling,
+    LopezAcosta2019
 
 # For IFTPipeline
 export addlatlon!, convertcentroid!, converttounits!, dropcols!, latlon
@@ -103,6 +104,6 @@ export addfloemasks!,
     register,
     resample_boundary
 
-include("segmentation-lopez-acosta-2019.jl")
+include("Pipeline/LopezAcosta2019.jl")
 
 end

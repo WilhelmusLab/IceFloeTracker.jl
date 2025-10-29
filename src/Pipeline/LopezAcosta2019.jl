@@ -1,14 +1,68 @@
-import Images: mreconstruct!
+module LopezAcosta2019
 
-struct LopezAcosta2019 <: IceFloeSegmentationAlgorithm
+import Images:
+    Images,
+    mreconstruct!,
+    mreconstruct,
+    feature_transform,
+    distance_transform,
+    hmin_transform,
+    label_components,
+    watershed,
+    labels_map,
+    isboundary,
+    SegmentedImage,
+    segment_mean,
+    float64,
+    channelview,
+    build_histogram,
+    adjust_histogram,
+    imfill,
+    opening,
+    closing,
+    feature_transform,
+    distance_transform,
+    hmin_transform,
+    clamp01nan,
+    area_opening,
+    area_opening!,
+    dilate,
+    strel_diamond,
+    complement,
+    bothat,
+    AdaptiveEqualization,
+    colorview,
+    Gray,
+    AbstractRGB,
+    RGB,
+    stdmult,
+    ⋅, # dot operator
+    GammaCorrection,
+    centered
+import Peaks: findmaxima
+import StatsBase: kurtosis, skewness
+
+import ..Filtering: nonlinear_diffusion, PeronaMalikDiffusion, unsharp_mask
+import ..Morphology: hbreak, hbreak!, branch, bridge, fill_holes, se_disk4
+import ..Preprocessing:
+    make_landmask_se,
+    create_landmask,
+    create_cloudmask,
+    create_clouds_channel,
+    apply_landmask,
+    apply_landmask!,
+    apply_cloudmask
+import ..Segmentation: IceFloeSegmentationAlgorithm, find_ice_mask, kmeans_segmentation
+
+struct Segment <: IceFloeSegmentationAlgorithm
     landmask_structuring_element::AbstractMatrix{Bool}
 end
 
-function LopezAcosta2019(; landmask_structuring_element=make_landmask_se())
-    return LopezAcosta2019(landmask_structuring_element)
+function Segment(; landmask_structuring_element=make_landmask_se())
+    return Segment(landmask_structuring_element)
 end
 
-function (p::LopezAcosta2019)(
+function (p::Segment)(
     truecolor::T,
     falsecolor::T,
     landmask::U;
@@ -120,24 +174,22 @@ end
 
 """
     discriminate_ice_water(
-    falsecolor_image::Matrix{RGB{Float64}},
-    normalized_image::Matrix{Gray{Float64}},
-    landmask_bitmatrix::T,
-    cloudmask_bitmatrix::T,
-    floes_threshold::Float64=Float64(100 / 255),
-    mask_clouds_lower::Float64=Float64(17 / 255),
-    mask_clouds_upper::Float64=Float64(30 / 255),
-    kurt_thresh_lower::Real=2,
-    kurt_thresh_upper::Real=8,
-    skew_thresh::Real=4,
-    st_dev_thresh_lower::Float64=Float64(84 / 255),
-    st_dev_thresh_upper::Float64=Float64(98.9 / 255),
-    clouds_ratio_threshold::Float64=0.02,
-    differ_threshold::Float64=0.6,
-    nbins::Real=155
-)
-
-
+        falsecolor_image::Matrix{RGB{Float64}},
+        normalized_image::Matrix{Gray{Float64}},
+        landmask_bitmatrix::T,
+        cloudmask_bitmatrix::T,
+        floes_threshold::Float64=Float64(100 / 255),
+        mask_clouds_lower::Float64=Float64(17 / 255),
+        mask_clouds_upper::Float64=Float64(30 / 255),
+        kurt_thresh_lower::Real=2,
+        kurt_thresh_upper::Real=8,
+        skew_thresh::Real=4,
+        st_dev_thresh_lower::Float64=Float64(84 / 255),
+        st_dev_thresh_upper::Float64=Float64(98.9 / 255),
+        clouds_ratio_threshold::Float64=0.02,
+        differ_threshold::Float64=0.6,
+        nbins::Real=155
+    )
 
 Generates an image with ice floes apparent after filtering and combining previously processed versions of falsecolor and truecolor images from the same region of interest. Returns an image ready for segmentation to isolate floes.
 
@@ -178,17 +230,13 @@ function discriminate_ice_water(
     differ_threshold::Float64=0.6,
     nbins::Real=155,
 )::AbstractMatrix where {T<:AbstractArray{Bool}}
-    clouds_channel = IceFloeTracker.create_clouds_channel(
-        cloudmask_bitmatrix, falsecolor_image
-    )
+    clouds_channel = create_clouds_channel(cloudmask_bitmatrix, falsecolor_image)
     falsecolor_image_band7 = @view(channelview(falsecolor_image)[1, :, :])
 
     # first define all of the image variations
-    image_clouds = IceFloeTracker.apply_landmask(clouds_channel, landmask_bitmatrix) # output during cloudmask apply, landmasked
-    image_cloudless = IceFloeTracker.apply_landmask(
-        falsecolor_image_band7, landmask_bitmatrix
-    ) # channel 1 (band 7) from source falsecolor image, landmasked
-    image_floes = IceFloeTracker.apply_landmask(falsecolor_image, landmask_bitmatrix) # source false color reflectance, landmasked
+    image_clouds = apply_landmask(clouds_channel, landmask_bitmatrix) # output during cloudmask apply, landmasked
+    image_cloudless = apply_landmask(falsecolor_image_band7, landmask_bitmatrix) # channel 1 (band 7) from source falsecolor image, landmasked
+    image_floes = apply_landmask(falsecolor_image, landmask_bitmatrix) # source false color reflectance, landmasked
     image_floes_view = channelview(image_floes)
 
     floes_band_2 = @view(image_floes_view[2, :, :])
@@ -198,8 +246,8 @@ function discriminate_ice_water(
     floes_band_2_keep = floes_band_2[floes_band_2 .> floes_threshold]
     floes_band_1_keep = floes_band_1[floes_band_1 .> floes_threshold]
 
-    _, floes_bin_counts = ImageContrastAdjustment.build_histogram(floes_band_2_keep, nbins)
-    _, vals = Peaks.findmaxima(floes_bin_counts)
+    _, floes_bin_counts = build_histogram(floes_band_2_keep, nbins)
+    _, vals = findmaxima(floes_bin_counts)
 
     differ = vals / (maximum(vals))
     proportional_intensity = sum(differ .> differ_threshold) / length(differ) # finds the proportional intensity of the peaks in the histogram
@@ -211,7 +259,7 @@ function discriminate_ice_water(
     standard_dev = stdmult(⋅, normalized_image)
 
     # find the ratio of clouds in the image to use in threshold filtering
-    _, clouds_bin_counts = ImageContrastAdjustment.build_histogram(image_clouds .> 0)
+    _, clouds_bin_counts = build_histogram(image_clouds .> 0)
     total_clouds = sum(clouds_bin_counts[51:end])
     total_all = sum(clouds_bin_counts)
     clouds_ratio = total_clouds / total_all
@@ -310,17 +358,17 @@ Apply k-means segmentation to a gray image to isolate a cluster group representi
 function segmentation_A(
     segmented_ice_cloudmasked::BitMatrix; min_opening_area::Real=50
 )::BitMatrix
-    segmented_ice_opened = ImageMorphology.area_opening(
+    segmented_ice_opened = area_opening(
         segmented_ice_cloudmasked; min_area=min_opening_area
     )
 
-    IceFloeTracker.hbreak!(segmented_ice_opened)
+    hbreak!(segmented_ice_opened)
 
-    segmented_opened_branched = IceFloeTracker.branch(segmented_ice_opened)
+    segmented_opened_branched = branch(segmented_ice_opened)
 
-    segmented_bridged = IceFloeTracker.bridge(segmented_opened_branched)
+    segmented_bridged = bridge(segmented_opened_branched)
 
-    segmented_ice_filled = IceFloeTracker.fill_holes(segmented_bridged)
+    segmented_ice_filled = fill_holes(segmented_bridged)
 
     diff_matrix = segmented_ice_opened .!= segmented_ice_filled
 
@@ -346,7 +394,7 @@ function segmented_ice_cloudmasking(
     cloudmask::BitMatrix,
     ice_labels::Union{Vector{Int64},BitMatrix,AbstractArray{<:Gray}},
 )::BitMatrix
-    segmented_ice = IceFloeTracker.kmeans_segmentation(gray_image, ice_labels)
+    segmented_ice = kmeans_segmentation(gray_image, ice_labels)
     segmented_ice_cloudmasked = deepcopy(segmented_ice)
     segmented_ice_cloudmasked[cloudmask] .= 0
     return segmented_ice_cloudmasked
@@ -389,14 +437,14 @@ function segmentation_B(
     adjusted_sharpened = (
         (1 - alpha_level) .* sharpened_image .+ alpha_level .* not_ice_mask
     )
-    gamma_adjusted_sharpened = ImageContrastAdjustment.adjust_histogram(
+    gamma_adjusted_sharpened = adjust_histogram(
         adjusted_sharpened, GammaCorrection(; gamma=gamma_factor)
     )
-    gamma_adjusted_sharpened_cloudmasked = IceFloeTracker.apply_cloudmask(
+    gamma_adjusted_sharpened_cloudmasked = apply_cloudmask(
         gamma_adjusted_sharpened, cloudmask
     )
     segb_filled =
-        .!ImageMorphology.imfill(
+        .!imfill(
             gamma_adjusted_sharpened_cloudmasked .<= adjusted_ice_threshold, fill_range
         )
 
@@ -419,14 +467,14 @@ Performs image processing and watershed segmentation with intermediate files fro
 -`intermediate_segmentation_image`: binary cloudmasked and landmasked intermediate file from segmentation B, either `SegB.not_ice_bit` or `SegB.ice_intersect`
 """
 function watershed_ice_floes(intermediate_segmentation_image::BitMatrix)::BitMatrix
-    features = Images.feature_transform(.!intermediate_segmentation_image)
-    distances = 1 .- Images.distance_transform(features)
-    seg_mask = ImageSegmentation.hmin_transform(distances, 2)
+    features = feature_transform(.!intermediate_segmentation_image)
+    distances = 1 .- distance_transform(features)
+    seg_mask = hmin_transform(distances, 2)
     seg_mask_bool = seg_mask .> 0
-    markers = Images.label_components(seg_mask_bool)
-    segment = ImageSegmentation.watershed(distances, markers)
-    labels = ImageSegmentation.labels_map(segment)
-    borders = Images.isboundary(labels)
+    markers = label_components(seg_mask_bool)
+    segment = watershed(distances, markers)
+    labels = labels_map(segment)
+    borders = isboundary(labels)
     return borders
 end
 
@@ -478,57 +526,48 @@ function segmentation_F(
     landmask::BitMatrix;
     min_area_opening::Int64=20,
 )::BitMatrix
-    IceFloeTracker.apply_landmask!(segmentation_B_not_ice_mask, landmask)
+    apply_landmask!(segmentation_B_not_ice_mask, landmask)
 
     ice_leads = .!segmentation_B_watershed_intersect .* segmentation_B_ice_intersect
 
-    ice_leads .=
-        .!ImageMorphology.area_opening(ice_leads; min_area=min_area_opening, connectivity=2)
+    ice_leads .= .!area_opening(ice_leads; min_area=min_area_opening, connectivity=2)
 
-    not_ice = IceFloeTracker.dilate(
-        segmentation_B_not_ice_mask, IceFloeTracker.strel_diamond((5, 5))
-    )
+    not_ice = dilate(segmentation_B_not_ice_mask, strel_diamond((5, 5)))
 
     mreconstruct!(
-        IceFloeTracker.dilate,
-        not_ice,
-        complement.(not_ice),
-        complement.(segmentation_B_not_ice_mask),
+        dilate, not_ice, complement.(not_ice), complement.(segmentation_B_not_ice_mask)
     )
 
     reconstructed_leads = (not_ice .* ice_leads) .+ (60 / 255)
 
     leads_segmented =
-        IceFloeTracker.kmeans_segmentation(reconstructed_leads, ice_labels) .*
+        kmeans_segmentation(reconstructed_leads, ice_labels) .*
         .!segmentation_B_watershed_intersect
     @info("Done with k-means segmentation")
-    leads_segmented_broken = IceFloeTracker.hbreak(leads_segmented)
+    leads_segmented_broken = hbreak(leads_segmented)
 
-    leads_branched = IceFloeTracker.branch(leads_segmented_broken)
+    leads_branched = branch(leads_segmented_broken)
 
-    leads_filled = .!ImageMorphology.imfill(.!leads_branched, 0:1)
+    leads_filled = .!imfill(.!leads_branched, 0:1)
 
-    leads_opened = IceFloeTracker.branch(
-        ImageMorphology.area_opening(
-            leads_filled; min_area=min_area_opening, connectivity=2
-        ),
+    leads_opened = branch(
+        area_opening(leads_filled; min_area=min_area_opening, connectivity=2)
     )
 
-    leads_bothat =
-        IceFloeTracker.bothat(leads_opened, IceFloeTracker.strel_diamond((5, 5))) .> 0.499
+    leads_bothat = bothat(leads_opened, strel_diamond((5, 5))) .> 0.499
 
     leads = convert(BitMatrix, (complement.(leads_bothat) .* leads_opened))
 
-    ImageMorphology.area_opening!(leads, leads; min_area=min_area_opening, connectivity=2)
+    area_opening!(leads, leads; min_area=min_area_opening, connectivity=2)
 
     # dmw: replace multiplication with apply_cloudmask
-    leads_bothat_filled = (IceFloeTracker.fill_holes(leads) .* .!cloudmask)
-    # leads_bothat_filled = apply_cloudmask(IceFloeTracker.fill_holes(leads), cloudmask)
-    floes = IceFloeTracker.branch(leads_bothat_filled)
+    leads_bothat_filled = (fill_holes(leads) .* .!cloudmask)
+    # leads_bothat_filled = apply_cloudmask(fill_holes(leads), cloudmask)
+    floes = branch(leads_bothat_filled)
 
-    floes_opened = IceFloeTracker.opening(floes, centered(IceFloeTracker.se_disk4()))
+    floes_opened = opening(floes, centered(se_disk4()))
 
-    mreconstruct!(IceFloeTracker.dilate, floes_opened, floes, floes_opened)
+    mreconstruct!(dilate, floes_opened, floes, floes_opened)
 
     return floes_opened
 end
@@ -558,7 +597,7 @@ function normalize_image(
     image_reconstructed = mreconstruct(
         dilate, complement.(image_dilated), complement.(image_sharpened)
     )
-    return IceFloeTracker.apply_landmask(image_reconstructed, landmask)
+    return apply_landmask(image_reconstructed, landmask)
 end
 
 function normalize_image(
@@ -584,7 +623,7 @@ See `imsharpen` for a description of the remaining arguments
 function _adjust_histogram(masked_view, nbins, rblocks, cblocks, clip)
     return adjust_histogram(
         masked_view,
-        ImageContrastAdjustment.AdaptiveEqualization(;
+        AdaptiveEqualization(;
             nbins=nbins,
             rblocks=rblocks,
             cblocks=cblocks,
@@ -626,10 +665,10 @@ function imsharpen(
     smoothing_param::Int64=10,
     intensity::Float64=2.0,
 )::Matrix{Float64}
-    input_image = IceFloeTracker.apply_landmask(truecolor_image, landmask_no_dilate)
+    input_image = apply_landmask(truecolor_image, landmask_no_dilate)
 
     pmd = PeronaMalikDiffusion(lambda, kappa, niters, "exponential")
-    input_image .= IceFloeTracker.nonlinear_diffusion(input_image, pmd)
+    input_image .= nonlinear_diffusion(input_image, pmd)
 
     masked_view = Float64.(channelview(input_image))
 
@@ -657,4 +696,6 @@ function imsharpen_gray(
 )::Matrix{Gray{Float64}}
     image_sharpened_landmasked = apply_landmask(imgsharpened, landmask)
     return colorview(Gray, image_sharpened_landmasked)
+end
+
 end
