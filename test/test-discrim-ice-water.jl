@@ -1,6 +1,8 @@
 @testitem "Discriminate Ice-Water" begin
     using Dates: format, now
     using Images: @test_approx_eq_sigma_eps, float64, load
+    import IceFloeTracker.LopezAcosta2019:
+        imsharpen, imsharpen_gray, normalize_image, discriminate_ice_water
 
     include("config.jl")
 
