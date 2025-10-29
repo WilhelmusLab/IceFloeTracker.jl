@@ -16,36 +16,36 @@ end
         LopezAcosta2019Tiling.Segment();
     )
     @test 0.43 ≈ labeled_fraction atol = 0.1
-    @test 0.87 ≤ round(recall, digits=2)
-    @test 0.56 ≤ round(precision, digits=2)
-    @test 0.69 ≤ round(F_score, digits=2)
+    @test 0.87 ≤ round(recall; digits=2)
+    @test 0.56 ≤ round(precision; digits=2)
+    @test 0.69 ≤ round(F_score; digits=2)
 
     (; labeled_fraction, recall, precision, F_score) = run_and_validate_segmentation(
         first(data_loader(c -> (c.case_number == 14 && c.satellite == "aqua"))),
         LopezAcosta2019Tiling.Segment();
     )
     @test 0.33 ≈ labeled_fraction atol = 0.1
-    @test 0.85 ≤ round(recall, digits=2)
-    @test 0.31 ≤ round(precision, digits=2)
-    @test 0.46 ≤ round(F_score, digits=2)
+    @test 0.85 ≤ round(recall; digits=2)
+    @test 0.31 ≤ round(precision; digits=2)
+    @test 0.46 ≤ round(F_score; digits=2)
 
     (; labeled_fraction, recall, precision, F_score) = run_and_validate_segmentation(
         first(data_loader(c -> (c.case_number == 61 && c.satellite == "aqua"))),
         LopezAcosta2019Tiling.Segment();
     )
     @test 0.27 ≈ labeled_fraction atol = 0.1
-    @test 0.71 ≤ round(recall, digits=2)
-    @test 0.67 ≤ round(precision, digits=2)
-    @test 0.70 ≤ round(F_score, digits=2)
+    @test 0.71 ≤ round(recall; digits=2)
+    @test 0.67 ≤ round(precision; digits=2)
+    @test 0.70 ≤ round(F_score; digits=2)
 
     (; labeled_fraction, recall, precision, F_score) = run_and_validate_segmentation(
         first(data_loader(c -> (c.case_number == 63 && c.satellite == "aqua"))),
         LopezAcosta2019Tiling.Segment();
     )
     @test 0.58 ≈ labeled_fraction atol = 0.1
-    @test 0.85 ≤ round(recall, digits=2)
-    @test 0.62 ≤ round(precision, digits=2)
-    @test 0.73 ≤ round(F_score, digits=2)
+    @test 0.85 ≤ round(recall; digits=2)
+    @test 0.62 ≤ round(precision; digits=2)
+    @test 0.73 ≤ round(F_score; digits=2)
 end
 
 @testitem "LopezAcosta2019Tiling.Segment - sample of cases" setup = [Segmentation] begin
