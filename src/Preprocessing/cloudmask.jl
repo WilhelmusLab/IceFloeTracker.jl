@@ -275,13 +275,11 @@ function apply_cloudmask!(
     img::AbstractArray{<:Union{AbstractRGB,TransparentRGB,Gray}},
     cloudmask::AbstractArray{Bool},
 )
-    img[cloudmask] .= 0.0
-    return img
+    return img[cloudmask] .= 0.0
 end
 
 function apply_cloudmask(img::AbstractArray, cloudmask::AbstractArray{Bool})
-    img[cloudmask] .= 0.0
-    return img
+    return img[cloudmask] .= 0.0
 end
 
 # dmw: in the future, we may want the option to use "missing".
