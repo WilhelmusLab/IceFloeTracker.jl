@@ -22,7 +22,8 @@ export IceFloeSegmentationAlgorithm,
     kmeans_segmentation,
     addlatlon!,
     convertcentroid!,
-    converttounits!
+    converttounits!,
+    get_ice_peaks
 
 include("abstract-algorithms.jl")
 include("find-ice-labels.jl")

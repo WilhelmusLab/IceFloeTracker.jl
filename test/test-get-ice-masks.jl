@@ -1,7 +1,7 @@
 
 @testitem "get_ice_labels_mask tests" begin
     import Images: load, float64, Gray
-    import IceFloeTracker.Segmentation: _get_nlabel, get_ice_peaks
+    import IceFloeTracker.Segmentation: _get_nlabel
     import DelimitedFiles: readdlm
 
     include("config.jl")
