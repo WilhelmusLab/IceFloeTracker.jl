@@ -31,6 +31,7 @@ include("Tracking/Tracking.jl")
 using .Tracking
 
 include("segmentation-lopez-acosta-2019-tiling.jl")
+import .LopezAcosta2019Tiling: LopezAcosta2019Tiling
 
 using Clustering
 using DataFrames
@@ -83,7 +84,8 @@ export padnhood,
     IceDetectionThresholdMODIS721,
     IceDetectionFirstNonZeroAlgorithm,
     IceDetectionLopezAcosta2019,
-    tiled_adaptive_binarization
+    tiled_adaptive_binarization,
+    LopezAcosta2019Tiling
 
 # For IFTPipeline
 export addlatlon!, convertcentroid!, converttounits!, dropcols!, latlon
