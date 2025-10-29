@@ -1,84 +1,42 @@
 module IceFloeTracker
 
+using Reexport
+
+# Supporting modules
 include("skimage/skimage.jl")
-using .skimage
 
 include("Utils/Utils.jl")
-using .Utils
+@reexport using .Utils
 
 include("Data/Data.jl")
-using .Data
+@reexport using .Data
 
 include("ImageUtils/ImageUtils.jl")
-using .ImageUtils
+@reexport using .ImageUtils
 
 include("Geospatial/Geospatial.jl")
-using .Geospatial
+@reexport using .Geospatial
 
 include("Morphology/Morphology.jl")
-using .Morphology
+@reexport using .Morphology
 
 include("Filtering/Filtering.jl")
-using .Filtering
+@reexport using .Filtering
 
 include("Preprocessing/Preprocessing.jl")
-using .Preprocessing
+@reexport using .Preprocessing
 
 include("Segmentation/Segmentation.jl")
-using .Segmentation
+@reexport using .Segmentation
 
 include("Tracking/Tracking.jl")
-using .Tracking
+@reexport using .Tracking
+
+# Pipelines
+include("Pipeline/LopezAcosta2019.jl")
+export LopezAcosta2019
 
 include("Pipeline/LopezAcosta2019Tiling.jl")
-include("Pipeline/LopezAcosta2019.jl")
-
-export bridge,
-    branch,
-    @persist,
-    create_cloudmask,
-    LopezAcostaCloudMask,
-    Watkins2025CloudMask,
-    create_landmask,
-    imsharpen,
-    regionprops_table,
-    cropfloe,
-    matchcorr,
-    get_rotation_measurements,
-    IceFloeSegmentationAlgorithm,
-    ValidationDataCase,
-    ValidationDataLoader,
-    ValidationDataSet,
-    Watkins2025GitHub,
-    segmentation_comparison,
-    segmentation_summary,
-    callable_store,
-    binarize_segments,
-    masker,
-    IceDetectionAlgorithm,
-    IceDetectionBrightnessPeaksMODIS721,
-    IceDetectionThresholdMODIS721,
-    IceDetectionFirstNonZeroAlgorithm,
-    IceDetectionLopezAcosta2019,
-    tiled_adaptive_binarization,
-    LopezAcosta2019Tiling,
-    LopezAcosta2019,
-    addlatlon!,
-    convertcentroid!,
-    converttounits!,
-    dropcols!,
-    latlon,
-    addfloemasks!,
-    addlatlon!,
-    add_passtimes!,
-    addψs!,
-    candidate_filter_settings,
-    candidate_matching_settings,
-    distance_threshold,
-    LogLogQuadraticTimeDistanceFunction,
-    long_tracker,
-    LopezAcostaTimeDistanceFunction,
-    register,
-    resample_boundary
+export LopezAcosta2019Tiling
 
 end
