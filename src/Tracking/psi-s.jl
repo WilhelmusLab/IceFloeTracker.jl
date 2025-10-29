@@ -109,7 +109,7 @@ julia> [s psi] # inspect psi-s data
 ```
 """
 function make_psi_s(
-    x::Vector{<:Number}, y::Vector{<:Number}; rangeout::Bool=true, unwrap::Bool=true
+    x::Vector{<:Number}, y::Vector{<:Number}; rangeout::Bool=true, unwrap_phase::Bool=true
 )::Tuple{Vector{Float64},Vector{Float64}}
     # gradient
     dx, dy = grad(x, y)
@@ -121,7 +121,7 @@ function make_psi_s(
         phase = atan.(dy, dx)
     end
 
-    if unwrap
+    if unwrap_phase
         phase = unwrap(phase)
     end
 
