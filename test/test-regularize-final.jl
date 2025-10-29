@@ -1,11 +1,10 @@
 
 @testitem "regularize/get_final" begin
-    import IceFloeTracker.LopezAcosta2019Tiling:
-        regularize_fill_holes, regularize_sharpening, _regularize, get_final
-    import IceFloeTracker: get_tiles, se_disk2
-
     using DelimitedFiles: readdlm
     import Images: strel_diamond
+
+    import IceFloeTracker.LopezAcosta2019Tiling:
+        regularize_fill_holes, regularize_sharpening, _regularize, get_final
 
     se = collect(strel_diamond((3, 3)))
 
