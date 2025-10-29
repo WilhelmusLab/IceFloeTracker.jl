@@ -20,7 +20,7 @@
 
     ## Run function with Matlab inputs
 
-    @time isolated_floes = IceFloeTracker.segmentation_F(
+    @time isolated_floes = LopezAcosta2019.segmentation_F(
         segmentation_B_not_ice_mask[ice_floe_test_region...],
         segmentation_B_ice_intersect[ice_floe_test_region...],
         watershed_intersect[ice_floe_test_region...],
@@ -29,8 +29,8 @@
         landmask[ice_floe_test_region...],
     )
 
-    IceFloeTracker.@persist isolated_floes "./test_outputs/isolated_floes.png" true
-    IceFloeTracker.@persist matlab_BW7[ice_floe_test_region...] "./test_outputs/matlab_isolated_floes.png" true
+    @persist isolated_floes "./test_outputs/isolated_floes.png" true
+    @persist matlab_BW7[ice_floe_test_region...] "./test_outputs/matlab_isolated_floes.png" true
 
     @test test_similarity(matlab_BW7[ice_floe_test_region...], isolated_floes, 0.013)
 end

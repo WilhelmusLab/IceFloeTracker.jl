@@ -87,14 +87,12 @@ end
             ice_labels_matlab = vec(ice_labels_matlab)
 
             @testset "example 1" begin
-                @time ice_labels_julia = IceFloeTracker.find_ice_labels(
-                    falsecolor_image, landmask
-                )
+                @time ice_labels_julia = find_ice_labels(falsecolor_image, landmask)
                 writedlm("ice_labels_julia.csv", ice_labels_julia, ',')
                 @test ice_labels_matlab == ice_labels_julia
             end
             @testset "example 2" begin
-                @time ice_labels_ice_floe_region = IceFloeTracker.find_ice_labels(
+                @time ice_labels_ice_floe_region = find_ice_labels(
                     falsecolor_image[ice_floe_test_region...],
                     landmask[ice_floe_test_region...],
                 )
@@ -192,20 +190,18 @@ end
                 landmask = convert(BitMatrix, load(current_landmask_file)[test_region...])
                 ice_labels_matlab = readdlm("$(test_data_dir)/ice_labels_matlab.csv", ',')
                 ice_labels_matlab = vec(ice_labels_matlab)
-                ice_binary_new = IceFloeTracker.binarize(
+                ice_binary_new = binarize(
                     masker(landmask)(falsecolor_image), IceDetectionLopezAcosta2019()
                 )
-                ice_labels_julia_new = IceFloeTracker.Segmentation.get_ice_labels(
-                    ice_binary_new
-                )
+                ice_labels_julia_new = get_ice_labels(ice_binary_new)
                 @test ice_labels_julia_new == ice_labels_matlab
             end
             @testset "example 2" begin
                 falsecolor_image =
                     float64.(load(falsecolor_test_image_file)[test_region...])
                 landmask = convert(BitMatrix, load(current_landmask_file)[test_region...])
-                ice_labels_ice_floe_region_new = IceFloeTracker.Segmentation.get_ice_labels(
-                    IceFloeTracker.binarize(
+                ice_labels_ice_floe_region_new = get_ice_labels(
+                    binarize(
                         masker(landmask)(falsecolor_image)[ice_floe_test_region...],
                         IceDetectionLopezAcosta2019(),
                     ),

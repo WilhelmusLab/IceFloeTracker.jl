@@ -14,21 +14,21 @@
     )
 
     ## Run function with Matlab inputs
-    @time watershed_B_ice_intersect = IceFloeTracker.watershed_ice_floes(
+    @time watershed_B_ice_intersect = LopezAcosta2019.watershed_ice_floes(
         matlab_ice_intersect
     )
-    @time watershed_B_not_ice = IceFloeTracker.watershed_ice_floes(matlab_not_ice_bit)
-    @time watershed_intersect = IceFloeTracker.watershed_product(
+    @time watershed_B_not_ice = LopezAcosta2019.watershed_ice_floes(matlab_not_ice_bit)
+    @time watershed_intersect = LopezAcosta2019.watershed_product(
         watershed_B_ice_intersect, watershed_B_not_ice
     )
 
-    IceFloeTracker.@persist watershed_B_ice_intersect "./test_outputs/watershed_ice_intersect.png" true
+    @persist watershed_B_ice_intersect "./test_outputs/watershed_ice_intersect.png" true
 
-    IceFloeTracker.@persist watershed_B_not_ice "./test_outputs/watershed_not_ice.png" true
+    @persist watershed_B_not_ice "./test_outputs/watershed_not_ice.png" true
 
-    IceFloeTracker.@persist watershed_intersect "./test_outputs/watershed_intersect.png" true
+    @persist watershed_intersect "./test_outputs/watershed_intersect.png" true
 
-    IceFloeTracker.@persist matlab_not_ice_bit "./test_outputs/matlab_not_ice_bit.png" true
+    @persist matlab_not_ice_bit "./test_outputs/matlab_not_ice_bit.png" true
 
     ## Tests with Matlab inputs
     @test typeof(watershed_B_not_ice) == typeof(matlab_watershed_E)

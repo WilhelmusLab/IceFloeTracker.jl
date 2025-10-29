@@ -1,5 +1,5 @@
 @testitem "Normalize Image" begin
-    using IceFloeTracker: strel_diamond, @test_approx_eq_sigma_eps, PeronaMalikDiffusion
+    using IceFloeTracker: strel_diamond, PeronaMalikDiffusion
     using Images: channelview, colorview, RGB, test_approx_eq_sigma_eps
     using Dates: Dates
 
@@ -24,10 +24,10 @@
     matlab_equalized = float64.(load(matlab_equalized_file))
 
     @info "Process Image - Diffusion"
-    input_landmasked = IceFloeTracker.apply_landmask(input_image, landmask_no_dilate)
+    input_landmasked = apply_landmask(input_image, landmask_no_dilate)
 
     pmd = PeronaMalikDiffusion(0.1, 0.1, 5, "exponential")
-    @time image_diffused = IceFloeTracker.nonlinear_diffusion(input_landmasked, pmd)
+    @time image_diffused = nonlinear_diffusion(input_landmasked, pmd)
 
     @test (@test_approx_eq_sigma_eps image_diffused matlab_diffused [0, 0] 0.0054) ===
         nothing
@@ -42,14 +42,14 @@
         "$(test_output_dir)/diffused_test_image_" *
         Dates.format(Dates.now(), "yyyy-mm-dd-HHMMSS") *
         ".png"
-    IceFloeTracker.@persist image_diffused diffused_image_filename
+    @persist image_diffused diffused_image_filename
 
     @info "Process Image - Equalization"
 
     ## Equalization
     masked_view = (channelview(matlab_diffused))
     eq = [
-        IceFloeTracker._adjust_histogram(masked_view[i, :, :], 255, 10, 10, 0.86) for
+        LopezAcosta2019._adjust_histogram(masked_view[i, :, :], 255, 10, 10, 0.86) for
         i in 1:3
     ]
     image_equalized = colorview(RGB, eq...)
@@ -60,13 +60,13 @@
         "$(test_output_dir)/equalized_test_image_" *
         Dates.format(Dates.now(), "yyyy-mm-dd-HHMMSS") *
         ".png"
-    IceFloeTracker.@persist image_equalized equalized_image_filename
+    @persist image_equalized equalized_image_filename
 
     @info "Process Image - Sharpening"
 
     ## Sharpening
-    @time sharpenedimg = IceFloeTracker.imsharpen(input_image, landmask_no_dilate)
-    @time image_sharpened_gray = IceFloeTracker.imsharpen_gray(
+    @time sharpenedimg = LopezAcosta2019.imsharpen(input_image, landmask_no_dilate)
+    @time image_sharpened_gray = LopezAcosta2019.imsharpen_gray(
         sharpenedimg, landmask_bitmatrix
     )
     @test (@test_approx_eq_sigma_eps image_sharpened_gray matlab_sharpened [0, 0] 0.046) ===
@@ -76,12 +76,12 @@
         "$(test_output_dir)/sharpened_test_image_" *
         Dates.format(Dates.now(), "yyyy-mm-dd-HHMMSS") *
         ".png"
-    IceFloeTracker.@persist image_sharpened_gray sharpened_image_filename
+    @persist image_sharpened_gray sharpened_image_filename
 
     @info "Process Image - Normalization"
 
     ## Normalization
-    @time normalized_image = IceFloeTracker.normalize_image(
+    @time normalized_image = LopezAcosta2019.normalize_image(
         sharpenedimg, image_sharpened_gray, landmask_bitmatrix, struct_elem2
     )
 
@@ -98,5 +98,5 @@
         "$(test_output_dir)/normalized_test_image_" *
         Dates.format(Dates.now(), "yyyy-mm-dd-HHMMSS") *
         ".png"
-    IceFloeTracker.@persist normalized_image normalized_image_filename
+    @persist normalized_image normalized_image_filename
 end

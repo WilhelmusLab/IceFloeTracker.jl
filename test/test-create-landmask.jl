@@ -1,6 +1,7 @@
 @testitem "Create Landmask" begin
     using Dates: Dates
     import DelimitedFiles: readdlm
+    import Images: load
     include("config.jl")
     include("test_error_rate.jl")
 
@@ -17,21 +18,15 @@
     lm_image = load("$(test_data_dir)/landmask.tiff")[lm_test_region...]
 
     # Check whether the built-in strel matches the matlab strel
-    @time landmask_init_strel = IceFloeTracker.create_landmask(
-        lm_image[lm_test_region...], struct_elem
-    )
-    @time landmask_default_strel = IceFloeTracker.create_landmask(
-        lm_image[lm_test_region...]
-    )
+    @time landmask_init_strel = create_landmask(lm_image[lm_test_region...], struct_elem)
+    @time landmask_default_strel = create_landmask(lm_image[lm_test_region...])
 
     @test landmask_default_strel == landmask_init_strel
 
     landmask = landmask_default_strel
 
-    @time masked_image = IceFloeTracker.apply_landmask(test_image, landmask.dilated)
-    @time masked_image_no_dilate = IceFloeTracker.apply_landmask(
-        test_image, landmask.non_dilated
-    )
+    @time masked_image = apply_landmask(test_image, landmask.dilated)
+    @time masked_image_no_dilate = apply_landmask(test_image, landmask.non_dilated)
 
     # test for percent difference in landmask images
     @test test_similarity(
@@ -42,12 +37,12 @@
     ) # flipping the landmask to match the matlab landmask
 
     # test for in-place allocation reduction
-    @time normal_lm = IceFloeTracker.apply_landmask(test_image, landmask.dilated)
-    @time IceFloeTracker.apply_landmask!(test_image, landmask.dilated)
+    @time normal_lm = apply_landmask(test_image, landmask.dilated)
+    @time apply_landmask!(test_image, landmask.dilated)
 
-    x = @allocated IceFloeTracker.apply_landmask(test_image, landmask.dilated)
+    x = @allocated apply_landmask(test_image, landmask.dilated)
     @info("normal allocated: $x")
-    y = @allocated IceFloeTracker.apply_landmask!(test_image, landmask.dilated)
+    y = @allocated apply_landmask!(test_image, landmask.dilated)
     @info("in-place allocated: $y")
     @test x > y
 
@@ -59,29 +54,29 @@
         "$(test_output_dir)/matlab_landmask_test_" *
         Dates.format(Dates.now(), "yyyy-mm-dd-HHMMSS") *
         ".png"
-    IceFloeTracker.@persist matlab_landmask_dilated matlab_landmask_filename
+    @persist matlab_landmask_dilated matlab_landmask_filename
 
     landmask_filename =
         "$(test_output_dir)/landmask_test_" *
         Dates.format(Dates.now(), "yyyy-mm-dd-HHMMSS") *
         ".png"
-    IceFloeTracker.@persist landmask.dilated landmask_filename
+    @persist landmask.dilated landmask_filename
 
     landmask_no_dilate_filename =
         "$(test_output_dir)/landmask_test_no_dilate_" *
         Dates.format(Dates.now(), "yyyy-mm-dd-HHMMSS") *
         ".png"
-    IceFloeTracker.@persist landmask.non_dilated landmask_no_dilate_filename
+    @persist landmask.non_dilated landmask_no_dilate_filename
 
     masked_image_filename =
         "$(test_output_dir)/landmasked_truecolor_test_image_" *
         Dates.format(Dates.now(), "yyyy-mm-dd-HHMMSS") *
         ".png"
-    IceFloeTracker.@persist masked_image masked_image_filename
+    @persist masked_image masked_image_filename
 
     masked_image_no_dilate_filename =
         "$(test_output_dir)/landmasked_truecolor_test_no_dilate_image_" *
         Dates.format(Dates.now(), "yyyy-mm-dd-HHMMSS") *
         ".png"
-    IceFloeTracker.@persist masked_image_no_dilate masked_image_no_dilate_filename
+    @persist masked_image_no_dilate masked_image_no_dilate_filename
 end
