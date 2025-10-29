@@ -30,7 +30,7 @@ using .Segmentation
 include("Tracking/Tracking.jl")
 using .Tracking
 
-include("segmentation-lopez-acosta-2019-tiling.jl")
+include("Pipeline/LopezAcosta2019Tiling.jl")
 
 using Clustering
 using DataFrames
