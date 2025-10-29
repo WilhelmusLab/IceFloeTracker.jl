@@ -1,6 +1,6 @@
 
 @testitem "regularize/get_final" begin
-    using DelimitedFiles: readdlm
+    import DelimitedFiles: readdlm
     import Images: strel_diamond
 
     se = collect(strel_diamond((3, 3)))
