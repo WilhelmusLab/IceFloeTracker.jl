@@ -1,6 +1,6 @@
 @testitem "Segmentation-F" begin
     using DelimitedFiles: readdlm
-    using Images: complement
+    using Images: complement, float64, load
 
     include("config.jl")
     include("test_error_rate.jl")

@@ -1,12 +1,6 @@
 
 @testitem "get_ice_labels_mask tests" begin
-    using IceFloeTracker:
-        get_ice_labels_mask,
-        get_tiles,
-        kmeans_segmentation,
-        get_ice_masks,
-        apply_landmask,
-        tiled_adaptive_binarization
+    import Images: load, float64, Gray
     import IceFloeTracker.Segmentation: _get_nlabel, get_ice_peaks
     import DelimitedFiles: readdlm
 
