@@ -1,8 +1,3 @@
-export @persist, callable_store
-
-"""
-Module for utility functions.
-"""
 module Utils
 
 export @persist, callable_store

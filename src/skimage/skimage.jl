@@ -1,5 +1,3 @@
-"""Wrapper module for scikit-image Python library."""
-
 module skimage
 
 using PyCall

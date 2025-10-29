@@ -1,23 +1,3 @@
-# IceFloeTracker.jl exports:
-export bridge,
-    branch,
-    bwareamaxfilt,
-    fill_holes,
-    hbreak,
-    hbreak!,
-    morph_fill,
-    imextendedmin,
-    imregionalmin,
-    se_disk50,
-    se_disk4,
-    se_disk20,
-    se_disk2,
-    reconstruct,
-    impose_minima
-
-"""
-Module for morphological operations.
-"""
 module Morphology
 
 export bridge,

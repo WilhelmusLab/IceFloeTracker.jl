@@ -1,7 +1,4 @@
 
-"""
-Pipeline from Lopez Acosta et al. (2019) for sea ice floe segmentation with tile-based histogram equalization.
-"""
 module LopezAcosta2019Tiling
 
 import Images:
