@@ -3,9 +3,6 @@
     using DelimitedFiles: readdlm
     import Images: strel_diamond
 
-    import IceFloeTracker.LopezAcosta2019Tiling:
-        regularize_fill_holes, regularize_sharpening, _regularize, get_final
-
     se = collect(strel_diamond((3, 3)))
 
     test_files_dir = joinpath(@__DIR__, "test_inputs/regularize")
@@ -29,15 +26,15 @@
     )
 
     @testset "regularize_fill_holes/sharpening" begin
-        reg_holes_filled = regularize_fill_holes(
+        reg_holes_filled = LopezAcosta2019Tiling.regularize_fill_holes(
             morph_residue, local_maxima_mask, segment_mask, L0mask, 0.3
         )
 
-        reg_sharpened = regularize_sharpening(
+        reg_sharpened = LopezAcosta2019Tiling.regularize_sharpening(
             reg_holes_filled, L0mask, local_maxima_mask, segment_mask, se, 10, 2, 0.5
         )
 
-        reg = _regularize(
+        reg = LopezAcosta2019Tiling._regularize(
             morph_residue,
             local_maxima_mask,
             segment_mask,
@@ -54,7 +51,7 @@
     end
 
     @testset "get_final" begin
-        get_final_output = get_final(
+        get_final_output = LopezAcosta2019Tiling.get_final(
             get_final_input, segment_mask, se_erosion, se_dilation, true
         )
 

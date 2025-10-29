@@ -1,8 +1,8 @@
 
 @testitem "reconstruct" begin
-    using IceFloeTracker: imcomplement, reconstruct, strel_diamond
-    using ZipFile
+    import ZipFile: ZipFile
     import DelimitedFiles: readdlm
+    import Images: strel_diamond, Gray
 
     r = ZipFile.Reader("test_inputs/coins.zip")
     coins = readdlm(r.files[1], ',', Int)

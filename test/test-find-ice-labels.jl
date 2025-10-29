@@ -1,6 +1,6 @@
 
 @testitem "IceDetectionAlgorithm" begin
-    using Images: ARGB, binarize, N0f8, RGB, Gray
+    using Images: ARGB, binarize, N0f8, RGB, Gray, load
 
     @testset "IceDetectionThresholdMODIS721" begin
         f = IceDetectionThresholdMODIS721(0.02, 0.92, 0.92)
@@ -103,7 +103,6 @@ end
         @testset "get_ice_peaks" begin
             using Random
             using Images: build_histogram
-            import IceFloeTracker.Segmentation: get_ice_peaks
             Random.seed!(123)
             img = Gray.(rand(0:255, 10, 10) ./ 255)
             edges, counts = build_histogram(img, 64; minval=0, maxval=1)
