@@ -1,8 +1,10 @@
 
 @testitem "registration" begin
     using Dates
+    using DataFrames: DataFrame
     using LinearAlgebra: dot, det, norm
     using IceFloeTracker: register, imrotate_bin_counterclockwise_radians
+    import DelimitedFiles: readdlm
 
     unit_vector(θ) = [cos(θ); sin(θ)]
     oriented_angle_between_vectors(u, v) = atan(det(hcat(u, v)), dot(u, v))

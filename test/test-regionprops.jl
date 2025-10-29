@@ -1,6 +1,8 @@
 @testitem "regionprops" begin
     using Random
-    
+    import IceFloeTracker.Segmentation: regionprops
+    import DataFrames: DataFrame, nrow
+
     Random.seed!(123)
     bw_img = Bool.(rand([0, 1], 5, 10))
     bw_img[end, 7] = 1
@@ -35,7 +37,7 @@
     @test table == IceFloeTracker.regionprops_table(label_img)
 
     # Tests for regionprops
-    regions = IceFloeTracker.regionprops(label_img, bw_img)
+    regions = regionprops(label_img, bw_img)
 
     # Check some data matches in table
     randnum = rand(1:total_labels)

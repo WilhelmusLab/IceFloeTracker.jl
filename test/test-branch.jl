@@ -1,6 +1,6 @@
 @testitem "branch points tests" begin
     include("config.jl")
-
+    import DelimitedFiles: readdlm
     import Images: erode
 
     dir = joinpath(test_data_dir, "branch")

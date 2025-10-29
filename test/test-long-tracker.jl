@@ -78,6 +78,7 @@ end
     using Random
     using DataFrames
     using IceFloeTracker: candidate_filter_settings, candidate_matching_settings
+    using Serialization: deserialize
 
     """
     addgaps(props)
