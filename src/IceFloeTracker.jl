@@ -31,6 +31,7 @@ include("Tracking/Tracking.jl")
 using .Tracking
 
 include("Pipeline/LopezAcosta2019Tiling.jl")
+include("Pipeline/LopezAcosta2019.jl")
 
 using Clustering
 using DataFrames
@@ -103,7 +104,5 @@ export addfloemasks!,
     LopezAcostaTimeDistanceFunction,
     register,
     resample_boundary
-
-include("Pipeline/LopezAcosta2019.jl")
 
 end
