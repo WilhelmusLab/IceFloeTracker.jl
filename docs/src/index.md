@@ -40,15 +40,15 @@ Lopez-Acosta et al., (2019). Ice Floe Tracker: An algorithm to automatically ret
 ```@autodocs
 Modules = [
     IceFloeTracker,
-    IceFloeTracker.Data,
-    IceFloeTracker.Filtering,
-    IceFloeTracker.Geospatial,
-    IceFloeTracker.ImageUtils,
-    IceFloeTracker.Morphology,
     IceFloeTracker.Pipeline,
-    IceFloeTracker.Processing,
     IceFloeTracker.Segmentation,
     IceFloeTracker.Tracking,
+    IceFloeTracker.Preprocessing,
+    IceFloeTracker.Morphology,
+    IceFloeTracker.Filtering,
+    IceFloeTracker.Data,
+    IceFloeTracker.Geospatial,
+    IceFloeTracker.ImageUtils,
     IceFloeTracker.Utils
 ]
 Private = false
