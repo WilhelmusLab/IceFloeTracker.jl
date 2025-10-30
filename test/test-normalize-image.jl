@@ -73,8 +73,8 @@
 
     ## Sharpening
     @time sharpenedimg = LopezAcosta2019.imsharpen(input_image, landmask_no_dilate)
-    @time image_sharpened_gray = LopezAcosta2019.imsharpen_gray(
-        sharpenedimg, landmask_bitmatrix
+    @time image_sharpened_gray = colorview(
+        Gray, apply_landmask(sharpenedimg, landmask_bitmatrix)
     )
     @test (@test_approx_eq_sigma_eps image_sharpened_gray matlab_sharpened [0, 0] 0.046) ===
         nothing

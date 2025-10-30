@@ -90,8 +90,8 @@ function (p::Segment)(
     # a. apply imsharpen to truecolor image using non-dilated landmask
     sharpened_truecolor_image = imsharpen(truecolor_image, landmask_imgs.non_dilated)
     # b. apply imsharpen to sharpened truecolor img using dilated landmask
-    sharpened_gray_truecolor_image = imsharpen_gray(
-        sharpened_truecolor_image, landmask_imgs.dilated
+    sharpened_gray_truecolor_image = colorview(
+        Gray, apply_landmask(sharpened_truecolor_image, landmask_imgs.dilated)
     )
 
     @info "Normalizing truecolor image"
@@ -581,7 +581,7 @@ Does reconstruction and landmasking to `image_sharpened`.
 
 # Arguments
 - `image_sharpened`: sharpened image (output of `imsharpen`)
-- `image_sharpened_gray`: grayscale, landmasked sharpened image (output of `imsharpen_gray(image_sharpened)`)
+- `image_sharpened_gray`: grayscale, landmasked version of `image_sharpened`
 - `landmask`: landmask for region of interest
 - `struct_elem`: structuring element for dilation
 
@@ -593,7 +593,6 @@ function normalize_image(
     struct_elem;
 )::Matrix{Gray{Float64}} where {T<:AbstractMatrix{Gray{Float64}}}
     image_dilated = dilate(image_sharpened_gray, struct_elem)
-
     image_reconstructed = mreconstruct(
         dilate, complement.(image_dilated), complement.(image_sharpened)
     )
@@ -682,20 +681,6 @@ function imsharpen(
     image_equalized_gray = Gray.(image_equalized)
 
     return unsharp_mask(image_equalized_gray, smoothing_param, intensity)
-end
-
-# TODO: Remove function, replace with direct use of landmask and colorview.
-"""
-    imsharpen_gray(imgsharpened, landmask)
-
-Apply landmask and return Gray type image in colorview for normalization.
-
-"""
-function imsharpen_gray(
-    imgsharpened::Matrix{Float64}, landmask::AbstractArray{Bool}
-)::Matrix{Gray{Float64}}
-    image_sharpened_landmasked = apply_landmask(imgsharpened, landmask)
-    return colorview(Gray, image_sharpened_landmasked)
 end
 
 end
