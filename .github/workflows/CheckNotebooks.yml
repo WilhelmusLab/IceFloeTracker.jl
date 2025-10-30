@@ -66,7 +66,7 @@ jobs:
           EXIT_CODE=0
           for script in $(find docs/src notebooks -name "*.jl"); do
             echo "Running Julia script: $script"
-            cat "$script"
+            cat -n "$script"
             julia "$script" || EXIT_CODE=$?
             echo -e "\n=======\n" # divider between scripts
           done
