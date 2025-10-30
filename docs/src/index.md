@@ -33,7 +33,7 @@ Lopez-Acosta et al., (2019). Ice Floe Tracker: An algorithm to automatically ret
 1. Manucharyan, Lopez-Acosta, and Wilhelmus (2022)\*. Spinning ice floes reveal intensification of mesoscale eddies in the western Arctic Ocean. _Scientific Reports_, **12(7070)**, doi:[10.1038/s41598-022-10712-z](https://doi.org/10.1038/s41598-022-10712-z)
 2. Watkins, Bliss, Hutchings, and Wilhelmus (2023)\*. Evidence of Abrupt Transitions Between Sea Ice Dynamical Regimes in the East Greenland Marginal Ice Zone. _Geophysical Research Letters_, **50(e2023GL103558)**, pp. 1-10, doi:[10.1029/2023GL103558](https://agupubs.onlinelibrary.wiley.com/doi/10.1029/2023GL103558)
 
-\*Papers using data from the Matlab implementation of Ice Floe Tracker.*\
+\*Papers using data from the Matlab implementation of Ice Floe Tracker.
 
 ## API Reference
 
