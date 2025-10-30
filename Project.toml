@@ -38,6 +38,7 @@ TimeZones = "f269a46b-ccf7-5d73-abea-4c690281aa53"
 
 [compat]
 ArchGDAL = "0.10.8"
+CSVFiles = "1.0.2"
 Clustering = "0.15"
 DSP = "0.8"
 DataFrames = "1.5"
@@ -58,7 +59,6 @@ TimeZones = "1.21.3"
 julia = "1"
 
 [extras]
-CSV = "336ed68f-0bac-5ca0-87d4-7b16caf5d00b"
 DelimitedFiles = "8bb1440f-4735-579b-a4ab-409b98df4dab"
 LinearAlgebra = "37e2e46d-f89d-539d-b4ee-838fcccc9c8e"
 Plots = "91a5bcdd-55d7-5caf-9e0b-520d859cae80"
@@ -70,7 +70,7 @@ TestItems = "1c621080-faea-4a02-84b6-bbd5e436b8fe"
 ZipFile = "a5390f91-8eb1-5f08-bee0-b1d1ffed6cea"
 
 [targets]
-notebooks = ["CSV", "Plots"]
+notebooks = ["Plots"]
 test = [
     "DelimitedFiles",
     "LinearAlgebra",
