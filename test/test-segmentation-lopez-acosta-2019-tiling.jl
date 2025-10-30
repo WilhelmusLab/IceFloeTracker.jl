@@ -48,7 +48,9 @@ end
     @test 0.73 ≤ round(F_score; digits=2)
 end
 
-@testitem "LopezAcosta2019Tiling.Segment - sample of cases" setup = [Segmentation] begin
+@testitem "LopezAcosta2019Tiling.Segment - sample of cases" setup = [Segmentation] tags = [
+    :e2e
+] begin
     using StatsBase: mean
     data_loader = Watkins2025GitHub(; ref="a451cd5e62a10309a9640fbbe6b32a236fcebc70")
 
@@ -85,7 +87,7 @@ end
     @show mean_F_score
 end
 
-@testitem "LopezAcosta2019Tiling.Segment - image types" setup = [Segmentation] begin
+@testitem "LopezAcosta2019Tiling.Segment - image types" tags = [:e2e] setup = [Segmentation] begin
     using Images: RGB, RGBA, n0f8, n6f10, n4f12, n2f14, n0f16, float32, float64
     data_loader = Watkins2025GitHub(; ref="a451cd5e62a10309a9640fbbe6b32a236fcebc70")
 
