@@ -74,13 +74,7 @@ cloud_mask_thresholds = (
     ratio_upper=0.75,
 )
 
-diffusion_parameters = (
-    lambda=0.1,
-    kappa=0.1,
-    niters=5,
-    g="exponential"
-)
-
+diffusion_parameters = (lambda=0.1, kappa=0.1, niters=5, g="exponential")
 
 @kwdef struct Segment <: IceFloeSegmentationAlgorithm
     landmask_structuring_element::AbstractMatrix{Bool} = make_landmask_se()
@@ -177,6 +171,9 @@ function (p::Segment)(
 
     # 3. Segmentation
     @info "Segmenting floes part 1/3"
+    # Components: 
+    # - k-means binarization
+    # - morphological cleanup
     segA = segmentation_A(
         segmented_ice_cloudmasking(ice_water_discrim, cloudmask, ice_mask)
     )
@@ -187,8 +184,6 @@ function (p::Segment)(
 
     # Process watershed in parallel using Folds
     @info "Building watersheds"
-    # container_for_watersheds = [landmask_imgs.non_dilated, similar(landmask_imgs.non_dilated)]
-
     watersheds_segB = [
         watershed_ice_floes(segB.not_ice_bit), watershed_ice_floes(segB.ice_intersect)
     ]
@@ -224,7 +219,7 @@ function (p::Segment)(
             ice_mask=ice_mask,
             sharpened_truecolor_image=sharpened_truecolor_image,
             sharpened_gray_truecolor_image=sharpened_grayscale_image,
-            normalized_image=normalized_image,
+            normalized_image=reconstructed_grayscale,
             ice_water_discrim=ice_water_discrim,
             segA=segA,
             segB=segB,
