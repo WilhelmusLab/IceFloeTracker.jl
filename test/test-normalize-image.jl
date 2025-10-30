@@ -1,5 +1,6 @@
 @testitem "Preprocess Image" begin
-    using IceFloeTracker: PeronaMalikDiffusion
+    using IceFloeTracker:
+        PeronaMalikDiffusion, apply_landmask!, apply_to_channels, unsharp_mask
     using Images:
         channelview,
         colorview,
@@ -8,7 +9,12 @@
         test_approx_eq_sigma_eps,
         strel_diamond,
         float64,
-        load
+        load,
+        adjust_histogram,
+        complement,
+        mreconstruct,
+        AdaptiveEqualization,
+        dilate
     using Dates: Dates
 
     include("config.jl")
@@ -18,7 +24,6 @@
     matlab_sharpened_file = "$(test_data_dir)/matlab_sharpened.png"
     matlab_diffused_file = "$(test_data_dir)/matlab_diffused.png"
     matlab_equalized_file = "$(test_data_dir)/matlab_equalized.png"
-    # flip ocean mask to land mask
     landmask_bitmatrix = convert(
         BitMatrix, float64.(load(current_landmask_file)[test_region...])
     )
@@ -86,7 +91,7 @@
             clip=0.86,
         ),
     )
-    sharpened_truecolor_image .= apply_to_channels(image_diffused, f_eq)
+    sharpened_truecolor_image = apply_to_channels(image_diffused, f_eq)
 
     # unsharp masking
     image_sharpened_gray = unsharp_mask(Gray.(sharpened_truecolor_image), 10, 2)
@@ -106,29 +111,25 @@
     ## Normalization
 
     # @info "Grayscale reconstruction of sharpened image"
-    # # input may need to be Gray.(sharpened_truecolor_image) in case the landmask dilation matters
-    # markers = complement.(dilate(sharpened_grayscale_image, p.reconstruct_strel))
-    # mask = complement.(sharpened_grayscale_image)
-    # # reconstruction of the complement: floes are dark, leads are bright
-    # reconstructed_grayscale = mreconstruct(dilate, markers, mask)
-    # apply_landmask!(reconstructed_grayscale, landmask_imgs.dilated)
-
-    @time normalized_image = LopezAcosta2019.normalize_image(
-        sharpenedimg, image_sharpened_gray, landmask_bitmatrix, struct_elem2
-    )
+    # input may need to be Gray.(sharpened_truecolor_image) in case the landmask dilation matters
+    markers = complement.(dilate(image_sharpened_gray, strel_diamond((5, 5))))
+    mask = complement.(image_sharpened_gray)
+    # reconstruction of the complement: floes are dark, leads are bright
+    @time reconst_gray = mreconstruct(dilate, markers, mask, strel_diamond((5, 5)))
+    apply_landmask!(reconst_gray, landmask_bitmatrix)
 
     #test for percent difference in normalized images
-    eps = test_approx_eq_sigma_eps(normalized_image, matlab_norm_image, ones(2), 0.1, true)
+    eps = test_approx_eq_sigma_eps(reconst_gray, matlab_norm_image, ones(2), 0.1, true)
     @info "Epsilon: " * string(eps)
 
-    @test test_approx_eq_sigma_eps(
-        normalized_image, matlab_norm_image, ones(2), 0.1, true
-    ) <= 0.05
+    @test test_approx_eq_sigma_eps(reconst_gray, matlab_norm_image, ones(2), 0.1, true) <=
+        0.05
     nothing
 
     normalized_image_filename =
         "$(test_output_dir)/normalized_test_image_" *
         Dates.format(Dates.now(), "yyyy-mm-dd-HHMMSS") *
         ".png"
-    @persist normalized_image normalized_image_filename
+
+    @persist reconst_gray normalized_image_filename
 end
