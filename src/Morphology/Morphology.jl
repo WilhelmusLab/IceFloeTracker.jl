@@ -3,6 +3,7 @@ module Morphology
 export bridge,
     branch,
     bwareamaxfilt,
+    bwareamaxfilt!,
     bwperim,
     fill_holes,
     hbreak,
@@ -18,7 +19,8 @@ export bridge,
     reconstruct,
     impose_minima,
     get_areas,
-    get_max_label
+    get_max_label,
+    filt_except_label
 
 include("branch.jl")
 include("bridge.jl")
