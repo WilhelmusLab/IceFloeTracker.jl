@@ -88,7 +88,7 @@ end
 
             @testset "example 1" begin
                 @time ice_labels_julia = find_ice_labels(falsecolor_image, landmask)
-                writedlm("ice_labels_julia.csv", ice_labels_julia, ',')
+                writedlm("$(test_output_dir)/ice_labels_julia.csv", ice_labels_julia, ',')
                 @test ice_labels_matlab == ice_labels_julia
             end
             @testset "example 2" begin
@@ -96,7 +96,11 @@ end
                     falsecolor_image[ice_floe_test_region...],
                     landmask[ice_floe_test_region...],
                 )
-                writedlm("ice_labels_floe_region.csv", ice_labels_ice_floe_region, ',')
+                writedlm(
+                    "$(test_output_dir)/ice_labels_floe_region.csv",
+                    ice_labels_ice_floe_region,
+                    ',',
+                )
                 @test ice_labels_ice_floe_region == [84787, 107015]
             end
         end
