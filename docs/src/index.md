@@ -33,71 +33,9 @@ Lopez-Acosta et al., (2019). Ice Floe Tracker: An algorithm to automatically ret
 1. Manucharyan, Lopez-Acosta, and Wilhelmus (2022)\*. Spinning ice floes reveal intensification of mesoscale eddies in the western Arctic Ocean. _Scientific Reports_, **12(7070)**, doi:[10.1038/s41598-022-10712-z](https://doi.org/10.1038/s41598-022-10712-z)
 2. Watkins, Bliss, Hutchings, and Wilhelmus (2023)\*. Evidence of Abrupt Transitions Between Sea Ice Dynamical Regimes in the East Greenland Marginal Ice Zone. _Geophysical Research Letters_, **50(e2023GL103558)**, pp. 1-10, doi:[10.1029/2023GL103558](https://agupubs.onlinelibrary.wiley.com/doi/10.1029/2023GL103558)
 
-\*Papers using data from the Matlab implementation of Ice Floe Tracker.
+\*Papers using data from the Matlab implementation of Ice Floe Tracker.*\
 
-## Functions
-
-### Preprocessing
-
-```@autodocs
-Modules = [IceFloeTracker.Preprocessing]
-Order   = [:function, :macro, :type]
-Private = false
-```
-
-### Segmentation
-
-```@autodocs
-Modules = [IceFloeTracker.Segmentation]
-Order   = [:function, :macro, :type]
-Private = false
-```
-
-### Tracking
-
-```@autodocs
-Modules = [IceFloeTracker.Tracking]
-Order   = [:function, :macro, :type]
-Private = false
-```
-
-### Morphology
-
-```@autodocs
-Modules = [IceFloeTracker.Morphology]
-Order   = [:function, :macro, :type]
-Private = false
-```
-
-### Filtering
-
-```@autodocs
-Modules = [IceFloeTracker.Filtering]
-Order   = [:function, :macro, :type]
-Private = false
-```
-
-### Data
-
-```@autodocs
-Modules = [IceFloeTracker.Data]
-Order   = [:function, :macro, :type]
-Private = false
-```
-
-### Utils
-
-```@autodocs
-Modules = [IceFloeTracker.Utils]
-Order   = [:function, :macro, :type]
-Private = false
-```
-
-### Unsorted Functions
-
-!!! todo "Functions here still need to be sorted"
-    The functions which are shown in this section 
-    will be reorganized into submodules.
+## API Reference
 
 ```@autodocs
 Modules = [IceFloeTracker]
