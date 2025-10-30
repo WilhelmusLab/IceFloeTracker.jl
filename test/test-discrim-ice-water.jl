@@ -1,6 +1,6 @@
 @testitem "Discriminate Ice-Water" begin
     using Dates: format, now
-    using Images: @test_approx_eq_sigma_eps, float64, load
+    using Images: @test_approx_eq_sigma_eps, float64, load, colorview, Gray
 
     include("config.jl")
 
