@@ -52,10 +52,11 @@ jobs:
         run: |
           for script in $(find docs/src notebooks -name "*.jl"); do
             echo "Updating paths in $script"
+            head "$script"
             sed -i 's|^HOME = .*$|HOME = "${{ github.workspace }}"|g' "$script" # replace HOME with path of repo
             sed -i 's|Pkg.add("IceFloeTracker")|Pkg.add(;path="${{ github.workspace }}")|g' "$script"
             sed -i 's|Pkg.add(name="IceFloeTracker".*)|Pkg.add(;path="${{ github.workspace }}")|g' "$script"
-            cat "$script"
+            head "$script"
             echo -e "\n=======\n" # divider between scripts
           done
 
