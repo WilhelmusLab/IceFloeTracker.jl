@@ -1,4 +1,5 @@
-@testitem "Normalize Image" begin
+@testitem "Preprocess Image" begin
+    using IceFloeTracker: PeronaMalikDiffusion
     using Images:
         channelview,
         colorview,
@@ -39,7 +40,6 @@
     @test (@test_approx_eq_sigma_eps image_diffused matlab_diffused [0, 0] 0.0054) ===
         nothing
 
-    # dmw: not sure what these are for
     @test (@test_approx_eq_sigma_eps input_landmasked image_diffused [0, 0] 0.004) ===
         nothing
     @test (@test_approx_eq_sigma_eps input_landmasked matlab_diffused [0, 0] 0.007) ===
@@ -55,7 +55,7 @@
 
     ## Equalization
     masked_view = (channelview(matlab_diffused))
-    eq = [
+    eq = [ # replace with AdaptiveEqualization call
         LopezAcosta2019._adjust_histogram(masked_view[i, :, :], 255, 10, 10, 0.86) for
         i in 1:3
     ]
@@ -72,10 +72,26 @@
     @info "Process Image - Sharpening"
 
     ## Sharpening
-    @time sharpenedimg = LopezAcosta2019.imsharpen(input_image, landmask_no_dilate)
-    @time image_sharpened_gray = LopezAcosta2019.imsharpen_gray(
-        sharpenedimg, landmask_bitmatrix
+    apply_landmask!(image_diffused, landmask_no_dilate)
+
+    # adaptive histogram equalization
+    f_eq(img) = adjust_histogram(
+        img,
+        AdaptiveEqualization(;
+            nbins=256,
+            rblocks=10,
+            cblocks=10,
+            minval=minimum(img),
+            maxval=maximum(img),
+            clip=0.86,
+        ),
     )
+    sharpened_truecolor_image .= apply_to_channels(image_diffused, f_eq)
+
+    # unsharp masking
+    image_sharpened_gray = unsharp_mask(Gray.(sharpened_truecolor_image), 10, 2)
+    apply_landmask!(image_sharpened_gray, landmask_bitmatrix)
+
     @test (@test_approx_eq_sigma_eps image_sharpened_gray matlab_sharpened [0, 0] 0.046) ===
         nothing
 
@@ -88,6 +104,15 @@
     @info "Process Image - Normalization"
 
     ## Normalization
+
+    # @info "Grayscale reconstruction of sharpened image"
+    # # input may need to be Gray.(sharpened_truecolor_image) in case the landmask dilation matters
+    # markers = complement.(dilate(sharpened_grayscale_image, p.reconstruct_strel))
+    # mask = complement.(sharpened_grayscale_image)
+    # # reconstruction of the complement: floes are dark, leads are bright
+    # reconstructed_grayscale = mreconstruct(dilate, markers, mask)
+    # apply_landmask!(reconstructed_grayscale, landmask_imgs.dilated)
+
     @time normalized_image = LopezAcosta2019.normalize_image(
         sharpenedimg, image_sharpened_gray, landmask_bitmatrix, struct_elem2
     )
