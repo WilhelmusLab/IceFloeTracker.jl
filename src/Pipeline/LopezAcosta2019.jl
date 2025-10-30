@@ -1,3 +1,11 @@
+"""
+Sea ice floe segmentation algorithm version 1
+The MATLAB version of this algorithm was developed as an extension of 
+Lopez-Acosta et al. 2019 for Dr. Rosalinda Lopez-Acosta's doctoral research.
+It was used in the production of the IFT Fram Strait Dataset (Lopez-Acosta et al. 2024).
+The workflow here reproduces that result to the extent possible, and allows adaptation
+for differing parameter choices.
+"""
 module LopezAcosta2019
 
 import Images:
@@ -54,8 +62,21 @@ import ..Preprocessing:
     apply_cloudmask
 import ..Segmentation: IceFloeSegmentationAlgorithm, find_ice_mask, kmeans_segmentation
 
-struct Segment <: IceFloeSegmentationAlgorithm
-    landmask_structuring_element::AbstractMatrix{Bool}
+"""
+Sample input parameters expected by the main function
+"""
+cloud_mask_thresholds = (
+    prelim_threshold=110.0 / 255.0,
+    band_7_threshold=200.0 / 255.0,
+    band_2_threshold=190.0 / 255.0,
+    ratio_lower=0.0,
+    ratio_offset=0.0,
+    ratio_upper=0.75,
+)
+
+@kwdef struct Segment <: IceFloeSegmentationAlgorithm
+    landmask_structuring_element::AbstractMatrix{Bool} = make_landmask_se()
+    cloud_mask_algorithm = LopezAcostaCloudMask(cloud_mask_thresholds...)
 end
 
 function Segment(; landmask_structuring_element=make_landmask_se())
@@ -80,7 +101,7 @@ function (p::Segment)(
 
     @info "Building cloudmask"
     # TODO: @hollandjg track down why the cloudmask is different for float32 vs float64 input images
-    cloudmask = create_cloudmask(falsecolor_image)
+    cloudmask = create_cloudmask(falsecolor_image, p.cloud_mask_algorithm)
 
     # 2. Intermediate images
     @info "Finding ice labels"
@@ -343,6 +364,7 @@ function _check_threshold_130(
            (standard_dev > st_dev_thresh_upper)
 end
 
+# TODO: determine a name for this; it's a local function just for this segmentation routine
 """
     segmentation_A(segmented_ice_cloudmasked; min_opening_area)
 
@@ -377,6 +399,8 @@ function segmentation_A(
     return segmented_A
 end
 
+# TODO: Remove this function: in the script, we want the k-means binarization function to be visible. The k-means binarization is
+# expected to be useful elsewhere.
 """
     segmented_ice_cloudmasking(gray_image, cloudmask, ice_labels;)
 
