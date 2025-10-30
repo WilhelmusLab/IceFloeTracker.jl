@@ -34,7 +34,7 @@ jobs:
           for script in $(find docs/src -name "*.ipynb"); do
             echo "Updating paths in $script"
             sed -i 's|^HOME = .*$|HOME = "${{ github.workspace }}"|g' "$script" # replace HOME with path of repo
-            sed -i 's|Pkg.add("IceFloeTracker")|Pkg.add(;path="${{ github.workspace }}")|g' "$script" # replace IceFloeTracker installer with local path
+            sed -i 's|Pkg.add("IceFloeTracker")|Pkg.add(;name="IceFloeTracker", rev="${{ github.ref_name }}")|g' "$script" # replace IceFloeTracker installer with local path
             head "$script"
             echo -e "\n=======\n" # divider between scripts
           done
