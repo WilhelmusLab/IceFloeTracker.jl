@@ -90,7 +90,7 @@ function (p::Segment)(
     # a. apply imsharpen to truecolor image using non-dilated landmask
     sharpened_truecolor_image = imsharpen(truecolor_image, landmask_imgs.non_dilated)
     # b. apply imsharpen to sharpened truecolor img using dilated landmask
-    sharpened_gray_truecolor_image = colorview(
+    sharpened_gray_truecolor_image::Matrix{Gray{Float64}} = colorview(
         Gray, apply_landmask(sharpened_truecolor_image, landmask_imgs.dilated)
     )
 
