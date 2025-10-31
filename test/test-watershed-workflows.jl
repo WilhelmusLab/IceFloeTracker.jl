@@ -16,7 +16,7 @@
     end
 
     @testset "watershed1" begin
-        @test sum(IceFloeTracker.watershed1(build_test_image())) == 1088
+        @test sum(LopezAcosta2019Tiling.watershed1(build_test_image())) == 1088
     end
 
     # TODO: add test for watershed2

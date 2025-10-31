@@ -1,4 +1,5 @@
 @testitem "resample_boundary test" begin
+    import StatsBase: std
     # Create an image with 3 connected components. The test consists of identifying the three closed sequences of border pixels in the image below. We do so using bwtraceboundary.
     A = zeros(Int, 9, 11)
     A[2:6, 2:6] .= 1
@@ -14,10 +15,10 @@
     # 0  0  0  0  0  0  0  0  0  0  0
 
     # get boundary of biggest blob in image
-    boundary = IceFloeTracker.bwtraceboundary(A; P0=(2, 2))
+    boundary = bwtraceboundary(A; P0=(2, 2))
 
     # get resampled set of boundary points
-    resampled_boundary = IceFloeTracker.resample_boundary(boundary)
+    resampled_boundary = resample_boundary(boundary)
 
     # Test 0: Check data type of resampled_boundary is Matrix{Float64}
     @test typeof(resampled_boundary) <: Matrix{Float64}
@@ -39,5 +40,5 @@
     @test d < 0.1
 
     # Test 3: Check distances between a pair of adjacent points is about the same (small standard deviation)
-    IceFloeTracker.std(difs2) < 1.0
-end;
+    std(difs2) < 1.0
+end
