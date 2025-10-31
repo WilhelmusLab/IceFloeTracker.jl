@@ -252,9 +252,9 @@ end
         nbins::Real=155
     )
 
-Generates an image with ice floes apparent after filtering and combining previously processed versions of falsecolor and truecolor images from the same region of interest. Returns an image ready for segmentation to isolate floes.
-
-Note: This function mutates the landmask object to avoid unnecessary memory allocation. If you need the original landmask, make a copy before passing it to this function. Example: `discriminate_ice_water(falsecolor_image, normalized_image, copy(landmask_bitmatrix), cloudmask_bitmatrix)`
+Generates an image with ice floes apparent after filtering and combining previously processed versions
+of falsecolor and truecolor images from the same region of interest. Returns an image ready for segmentation
+to isolate floes.
 
 # Arguments
 - `falsecolor_image`: input image in false color reflectance
@@ -355,16 +355,9 @@ function discriminate_ice_water(
     normalized_image_copy[normalized_image_copy .> THRESH] .= 0
     @. normalized_image_copy = normalized_image - (normalized_image_copy * 3)
 
-    # reusing memory allocated in landmask_bitmatrix
-    # used to be mask_image_clouds
-    @. landmask_bitmatrix = (
-        image_clouds < mask_clouds_lower || image_clouds > mask_clouds_upper
-    )
-
-    # reusing image_cloudless - used to be band7_masked
-    @. image_cloudless = image_cloudless * !landmask_bitmatrix
-
-    # reusing normalized_image_copy - used to be ice_water_discriminated_image
+    lm = deepcopy(landmask_bitmatrix)
+    @. lm = (image_clouds < mask_clouds_lower || image_clouds > mask_clouds_upper)
+    @. image_cloudless = image_cloudless * !lm
     @. normalized_image_copy = clamp01nan(normalized_image_copy - (image_cloudless * 3))
 
     return normalized_image_copy
