@@ -1,3 +1,5 @@
+import Images: centered
+
 """
     imgradientmag(img)
 
