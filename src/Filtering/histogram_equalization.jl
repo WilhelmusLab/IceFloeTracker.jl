@@ -1,12 +1,16 @@
-import Images: Images, RGB, float64, Gray, red, green, blue
+import Images: Images, RGB, float64, Gray, red, green, blue, adjust_histogram, AdaptiveEqualization
 import ..skimage: sk_exposure
-import ..ImageUtils: to_uint8
+import ..ImageUtils: to_uint8, apply_to_channels
 
-# dmw: use multiple dispatch, so that if the 2d function is called 
+# dmw: use multiple dispatch, so that if the 2d function is called it automatically does this
 function adapthisteq(img::Matrix{T}, nbins=256, clip=0.01) where {T}
+    # TODO: Check whether the result is any different than using LinearStretching.
     # Step 1: Normalize the image to [0, 1] based on its own min and max
     image_min, image_max = minimum(img), maximum(img)
     normalized_image = (img .- image_min) / (image_max - image_min)
+
+    # TODO: Consider setting up an AdaptiveEqualizationSKI that wraps the scikit image
+    # adaptive equalization method and lets it be an argument to adjust_histogram.
 
     # Step 2: Apply adaptive histogram equalization. equalize_adapthist handles the tiling to 1/8 of the image size (equivalent to 8x8 blocks in MATLAB)
     equalized_image = sk_exposure.equalize_adapthist(
@@ -15,11 +19,13 @@ function adapthisteq(img::Matrix{T}, nbins=256, clip=0.01) where {T}
         nbins=nbins,         # Number of histogram bins. 255 is used to match the default in MATLAB script
     )
 
+    # TODO: Check whether the result is any different than using LinearStretching.
     # Step 3: Rescale the image back to the original range [image_min, image_max]
     final_image = sk_exposure.rescale_intensity(
         equalized_image; in_range="image", out_range=(image_min, image_max)
     )
 
+    # TODO: Let image types stay normed rather than going to UINT8.
     # Convert back to the original data type if necessary
     final_image = to_uint8(final_image)
 
@@ -39,8 +45,7 @@ An m x n x 3 array the Red, Blue, and Green channels of the input image.
 
 """
 function get_rgb_channels(img)
-    # TODO: might be able to use channelview instead
-    # dmw: find ways to avoid casting to Int
+    # TODO: Use channelview instead and don't cast to int.
     redc = red.(img) * 255
     greenc = green.(img) * 255
     bluec = blue.(img) * 255
@@ -56,8 +61,7 @@ Convert an array of RGB channel data to grayscale in the range [0, 255].
 Identical to MATLAB `rgb2gray` (https://www.mathworks.com/help/matlab/ref/rgb2gray.html).
 """
 function rgb2gray(rgbchannels::Array{Float64,3})
-    # dmw: Can we set this up to return a Gray image instead of an int matrix?
-    # dmw: Check whether the coefficients differ substantially -- we can make it an alternative to the Gray function, like GrayMLB and apply it like Gray.()
+    # TODO: Deprecate function and use Gray.() instead.
     r, g, b = [to_uint8(rgbchannels[:, :, i]) for i in 1:3]
     # Reusing the r array to store the equalized gray image
     r .= to_uint8(0.2989 * r .+ 0.5870 * g .+ 0.1140 * b)
@@ -89,6 +93,7 @@ Performs conditional histogram equalization on a true color image.
 The equalized true color image.
 
 """
+# TODO: Make this a "preprocessing workflow" function or functor.
 function conditional_histeq(
     true_color_image,
     clouds_red,
@@ -103,6 +108,7 @@ function conditional_histeq(
     pmd = PeronaMalikDiffusion(0.1, 0.1, 5, "exponential")
     true_color_diffused = nonlinear_diffusion(float64.(true_color_image), pmd)
 
+    # TODO: Replace the get_rgb_channels method with apply_to_channels
     rgbchannels = get_rgb_channels(true_color_diffused)
 
     # For each tile, compute the entropy in the false color tile, and the fraction of white and black pixels
@@ -140,4 +146,31 @@ Histogram equalization of `img` using `nbins` bins.
 """
 function histeq(img::S; nbins=64)::S where {S<:AbstractArray{<:Integer}}
     return to_uint8(sk_exposure.equalize_hist(img; nbins=nbins) * 255)
+end
+
+"""
+    _channelwise_adapthisteq
+
+    Broadcast adaptive histogram equalization to color channels of an image. Uses the 
+    minimum and maximum value of each channel band instead of the 0 to 1 range from
+    the default AdaptiveEqualization algorithm.
+
+"""
+function _channelwise_adapthisteq(img;
+    nbins=256,
+    rblocks=10,
+    cblocks=10,
+    clip=0.86)
+
+    f_eq(img_channel) = adjust_histogram(img_channel,
+        AdaptiveEqualization(;
+            nbins=nbins,
+            rblocks=rblocks,
+            cblocks=cblocks,
+            minval=minimum(img_channel),
+            maxval=maximum(img_channel),
+            clip=clip
+            )
+        )
+    return apply_to_channels(img, f_eq) 
 end
