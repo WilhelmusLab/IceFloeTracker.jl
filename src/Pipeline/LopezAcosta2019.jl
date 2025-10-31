@@ -573,7 +573,7 @@ function segmentation_F(
 end
 
 """
-    normalize_image(image_sharpened, image_sharpened_gray, landmask, struct_elem;)
+    normalize_image(image_sharpened, image_sharpened_gray, landmask; struct_elem=strel_diamond((5, 5)))
 
 Adjusts sharpened land-masked image to highlight ice floe features.
 
@@ -587,26 +587,16 @@ Does reconstruction and landmasking to `image_sharpened`.
 
 """
 function normalize_image(
-    image_sharpened::Matrix{Float64},
+    image_sharpened::T,
     image_sharpened_gray::T,
-    landmask::BitMatrix,
-    struct_elem;
+    landmask::BitMatrix;
+    struct_elem=strel_diamond((5, 5)),
 )::Matrix{Gray{Float64}} where {T<:AbstractMatrix{Gray{Float64}}}
     image_dilated = dilate(image_sharpened_gray, struct_elem)
     image_reconstructed = mreconstruct(
         dilate, complement.(image_dilated), complement.(image_sharpened)
     )
     return apply_landmask(image_reconstructed, landmask)
-end
-
-function normalize_image(
-    image_sharpened::Matrix{Float64},
-    image_sharpened_gray::Matrix{Gray{Float64}},
-    landmask::BitMatrix,
-)::Matrix{Gray{Float64}}
-    return normalize_image(
-        image_sharpened, image_sharpened_gray, landmask, strel_diamond((5, 5))
-    )
 end
 
 """

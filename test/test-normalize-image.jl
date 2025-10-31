@@ -90,7 +90,7 @@
 
     ## Normalization
     @time normalized_image = LopezAcosta2019.normalize_image(
-        sharpenedimg, image_sharpened_gray, landmask_bitmatrix, struct_elem2
+        sharpenedimg, image_sharpened_gray, landmask_bitmatrix; struct_elem=struct_elem2
     )
 
     #test for percent difference in normalized images
