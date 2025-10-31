@@ -1,8 +1,6 @@
 
 @testitem "Conditional adaptivehisteq" begin
     import IceFloeTracker.Preprocessing: _get_masks
-    using IceFloeTracker:
-        adapthisteq, conditional_histeq, get_tiles, rgb2gray, to_uint8, histeq
     using Images: load, float64, channelview
     using TestImages: testimage
 
@@ -137,7 +135,7 @@
             ],
             # maximum at 255
             [
-                0 0 0
+                000 000 000
                 255 255 255
             ],
         ]
@@ -150,9 +148,9 @@
         expected = [
             [
                 204 204 204 204 204
-                61 204 255 204 61
-                61 255 255 255 61
-                61 204 255 204 61
+                061 204 255 204 061
+                061 255 255 255 061
+                061 204 255 204 061
                 204 204 204 204 204
             ],
             _exp,

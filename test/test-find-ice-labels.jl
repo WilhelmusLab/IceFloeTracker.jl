@@ -1,6 +1,6 @@
 
 @testitem "IceDetectionAlgorithm" begin
-    using Images: ARGB, binarize, N0f8, RGB, Gray
+    using Images: ARGB, binarize, N0f8, RGB, Gray, load
 
     @testset "IceDetectionThresholdMODIS721" begin
         f = IceDetectionThresholdMODIS721(0.02, 0.92, 0.92)
@@ -62,7 +62,7 @@
 end
 
 @testitem "find_ice_labels" begin
-    using Images: binarize, n0f8, float64, n4f12, n0f8, float64, n4f12
+    using Images: binarize, n0f8, float64, n4f12, n0f8, float64, n4f12, load, Gray
     import DelimitedFiles: readdlm, writedlm
 
     include("config.jl")
@@ -87,25 +87,26 @@ end
             ice_labels_matlab = vec(ice_labels_matlab)
 
             @testset "example 1" begin
-                @time ice_labels_julia = IceFloeTracker.find_ice_labels(
-                    falsecolor_image, landmask
-                )
-                writedlm("ice_labels_julia.csv", ice_labels_julia, ',')
+                @time ice_labels_julia = find_ice_labels(falsecolor_image, landmask)
+                writedlm("$(test_output_dir)/ice_labels_julia.csv", ice_labels_julia, ',')
                 @test ice_labels_matlab == ice_labels_julia
             end
             @testset "example 2" begin
-                @time ice_labels_ice_floe_region = IceFloeTracker.find_ice_labels(
+                @time ice_labels_ice_floe_region = find_ice_labels(
                     falsecolor_image[ice_floe_test_region...],
                     landmask[ice_floe_test_region...],
                 )
-                writedlm("ice_labels_floe_region.csv", ice_labels_ice_floe_region, ',')
+                writedlm(
+                    "$(test_output_dir)/ice_labels_floe_region.csv",
+                    ice_labels_ice_floe_region,
+                    ',',
+                )
                 @test ice_labels_ice_floe_region == [84787, 107015]
             end
         end
         @testset "get_ice_peaks" begin
             using Random
             using Images: build_histogram
-            import IceFloeTracker.Segmentation: get_ice_peaks
             Random.seed!(123)
             img = Gray.(rand(0:255, 10, 10) ./ 255)
             edges, counts = build_histogram(img, 64; minval=0, maxval=1)
@@ -192,20 +193,18 @@ end
                 landmask = convert(BitMatrix, load(current_landmask_file)[test_region...])
                 ice_labels_matlab = readdlm("$(test_data_dir)/ice_labels_matlab.csv", ',')
                 ice_labels_matlab = vec(ice_labels_matlab)
-                ice_binary_new = IceFloeTracker.binarize(
+                ice_binary_new = binarize(
                     masker(landmask)(falsecolor_image), IceDetectionLopezAcosta2019()
                 )
-                ice_labels_julia_new = IceFloeTracker.Segmentation.get_ice_labels(
-                    ice_binary_new
-                )
+                ice_labels_julia_new = get_ice_labels(ice_binary_new)
                 @test ice_labels_julia_new == ice_labels_matlab
             end
             @testset "example 2" begin
                 falsecolor_image =
                     float64.(load(falsecolor_test_image_file)[test_region...])
                 landmask = convert(BitMatrix, load(current_landmask_file)[test_region...])
-                ice_labels_ice_floe_region_new = IceFloeTracker.Segmentation.get_ice_labels(
-                    IceFloeTracker.binarize(
+                ice_labels_ice_floe_region_new = get_ice_labels(
+                    binarize(
                         masker(landmask)(falsecolor_image)[ice_floe_test_region...],
                         IceDetectionLopezAcosta2019(),
                     ),

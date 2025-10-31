@@ -3,8 +3,8 @@
     using Dates
     using DataFrames: DataFrame
     using LinearAlgebra: dot, det, norm
-    using IceFloeTracker: register, imrotate_bin_counterclockwise_radians
     import DelimitedFiles: readdlm
+    import Images: imrotate
 
     unit_vector(θ) = [cos(θ); sin(θ)]
     oriented_angle_between_vectors(u, v) = atan(det(hcat(u, v)), dot(u, v))
@@ -2066,7 +2066,7 @@
         @testset "defaults" begin
 
             # Estimate rigid transformation and mismatch
-            mm, rot = IceFloeTracker.mismatch(floe, rotated_floe)
+            mm, rot = mismatch(floe, rotated_floe)
 
             # Test 1: mismatch accuracy
             @test mm < 0.0055
@@ -2077,12 +2077,12 @@
 
         @testset "test_angles" begin
             test_angles = [0, 5, -5, 10, -10, 15, -15, 20, -20, 25, -25]
-            mm, rot = IceFloeTracker.mismatch(floe, rotated_floe, test_angles)
+            mm, rot = mismatch(floe, rotated_floe, test_angles)
             @test mm < 0.0055
             @test abs(rot - rot_angle) < 0.5
         end
         @testset "mxrot, step" begin
-            mm, rot = IceFloeTracker.mismatch(floe, rotated_floe, 25, 5)
+            mm, rot = mismatch(floe, rotated_floe, 25, 5)
             @test mm < 0.0055
             @test abs(rot - rot_angle) < 0.5
         end

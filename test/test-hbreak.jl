@@ -1,6 +1,4 @@
 @testitem "hbreak tests" begin
-    import IceFloeTracker.Morphology: make_hbreak_dict, hbreak
-
     h1, h2 = keys(make_hbreak_dict())
     A = zeros(Bool, 20, 20)
 
