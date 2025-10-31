@@ -52,6 +52,7 @@ Modules = [
     IceFloeTracker.ImageUtils,
     IceFloeTracker.Utils
 ]
+Private = false
 ```
 
 
