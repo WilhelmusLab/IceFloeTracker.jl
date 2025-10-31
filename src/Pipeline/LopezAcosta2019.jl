@@ -637,69 +637,6 @@ function segmentation_F(
 end
 
 """
-    normalize_image(image_sharpened, image_sharpened_gray, landmask, struct_elem;)
-
-Adjusts sharpened land-masked image to highlight ice floe features.
-
-Does reconstruction and landmasking to `image_sharpened`.
-
-# Arguments
-- `image_sharpened`: sharpened image (output of `imsharpen`)
-- `image_sharpened_gray`: grayscale, landmasked sharpened image (output of `imsharpen_gray(image_sharpened)`)
-- `landmask`: landmask for region of interest
-- `struct_elem`: structuring element for dilation
-
-"""
-function normalize_image(
-    image_sharpened::Matrix{Float64},
-    image_sharpened_gray::T,
-    landmask::BitMatrix,
-    struct_elem;
-)::Matrix{Gray{Float64}} where {T<:AbstractMatrix{Gray{Float64}}}
-    image_dilated = dilate(image_sharpened_gray, struct_elem)
-
-    image_reconstructed = mreconstruct(
-        dilate, complement.(image_dilated), complement.(image_sharpened)
-    )
-    return apply_landmask(image_reconstructed, landmask)
-end
-
-function normalize_image(
-    image_sharpened::Matrix{Float64},
-    image_sharpened_gray::Matrix{Gray{Float64}},
-    landmask::BitMatrix,
-)::Matrix{Gray{Float64}}
-    return normalize_image(
-        image_sharpened, image_sharpened_gray, landmask, strel_diamond((5, 5))
-    )
-end
-
-# """
-#     _adjust_histogram(masked_view, nbins, rblocks, cblocks, clip)
-
-# Perform adaptive histogram equalization to a masked image. To be invoked within `imsharpen`.
-
-# # Arguments
-# - `masked_view`: input image in truecolor
-# See `imsharpen` for a description of the remaining arguments
-
-# """
-# # TODO: Broadcast adjust histogram to channels
-# function _adjust_histogram(masked_view, nbins, rblocks, cblocks, clip)
-#     return adjust_histogram(
-#         masked_view,
-#         ImageContrastAdjustment.AdaptiveEqualization(;
-#             nbins=nbins,
-#             rblocks=rblocks,
-#             cblocks=cblocks,
-#             minval=minimum(masked_view),
-#             maxval=maximum(masked_view),
-#             clip=clip,
-#         ),
-#     )
-# end
-
-"""
     imsharpen(truecolor_image, landmask_no_dilate, lambda, kappa, niters, nbins, rblocks, cblocks, clip, smoothing_param, intensity)
 
 Sharpen `truecolor_image`.
