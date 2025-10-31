@@ -13,15 +13,5 @@ using Pkg
 ENV["PYTHON"] = ""
 
 # Build PyCall with the new conda environment
-Pkg.add("PyCall")
+Pkg.add(["PyCall", "Conda"])
 Pkg.build("PyCall")
-
-# Fix an error which occurs for some versions of Conda on Linux
-# where scipy can't be imported.
-# Inspired by:
-# https://discourse.julialang.org/t/version-cxxabi-1-3-15-not-found-when-loading-matplotlib-through-pythoncall/131671/12?page=2
-Pkg.add("Conda")
-using Conda
-if Sys.islinux()
-    Conda.add("libstdcxx<14.0")
-end
