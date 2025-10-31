@@ -92,7 +92,7 @@ end
     @test results_invariant_for(RGB, n0f8; baseline, algorithm, case)
     @test results_invariant_for(RGB, n6f10; baseline, algorithm, case) broken = true
     @test results_invariant_for(RGB, n4f12; baseline, algorithm, case) broken = true
-    @test results_invariant_for(RGB, n2f14; baseline, algorithm, case) broken = true
+    @test results_invariant_for(RGB, n2f14; baseline, algorithm, case)
     @test results_invariant_for(RGB, n0f16; baseline, algorithm, case)
     @test results_invariant_for(RGB, float32; baseline, algorithm, case)
     @test results_invariant_for(RGB, float64; baseline, algorithm, case)
