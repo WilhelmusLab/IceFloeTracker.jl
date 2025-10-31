@@ -90,10 +90,10 @@ function (p::Segment)(
     # a. apply imsharpen to truecolor image using non-dilated landmask
     sharpened_truecolor_image = imsharpen(truecolor_image, landmask_imgs.non_dilated)
     # b. apply imsharpen to sharpened truecolor img using dilated landmask
-    sharpened_gray_truecolor_image::Matrix{Gray{Float64}} = colorview(
-        Gray, apply_landmask(sharpened_truecolor_image, landmask_imgs.dilated)
+    # JGH: remove the explicit cast to Matrix{Gray...} once imsharpen returns the correct type
+    sharpened_gray_truecolor_image = apply_landmask(
+        sharpened_truecolor_image, landmask_imgs.dilated
     )
-
     @info "Normalizing truecolor image"
     normalized_image = normalize_image(
         sharpened_truecolor_image, sharpened_gray_truecolor_image, landmask_imgs.dilated
@@ -663,7 +663,7 @@ function imsharpen(
     clip::Float64=0.86, # matlab default is 0.01 CP
     smoothing_param::Int64=10,
     intensity::Float64=2.0,
-)::Matrix{Float64}
+)
     input_image = apply_landmask(truecolor_image, landmask_no_dilate)
 
     pmd = PeronaMalikDiffusion(lambda, kappa, niters, "exponential")
