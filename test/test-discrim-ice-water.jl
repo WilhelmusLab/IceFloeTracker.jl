@@ -1,6 +1,6 @@
 @testitem "Discriminate Ice-Water" begin
     using Dates: format, now
-    using Images: @test_approx_eq_sigma_eps, float64, load, colorview, Gray
+    using Images: @test_approx_eq_sigma_eps, float64, load
 
     include("config.jl")
 
@@ -16,9 +16,7 @@
         float64.(load("$(test_data_dir)/matlab_ice_water_discrim.png"))
 
     image_sharpened = LopezAcosta2019.imsharpen(input_image, landmask_no_dilate)
-    image_sharpened_gray::Matrix{Gray{Float64}} = colorview(
-        Gray, apply_landmask(image_sharpened, landmask)
-    )
+    image_sharpened_gray = apply_landmask(image_sharpened, landmask)
     normalized_image = LopezAcosta2019.normalize_image(
         image_sharpened, image_sharpened_gray, landmask
     )
