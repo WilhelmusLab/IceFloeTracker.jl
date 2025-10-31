@@ -1,4 +1,6 @@
-@testitem "Normalize Image" begin
+@testitem "Preprocess Image" begin
+    using IceFloeTracker:
+        PeronaMalikDiffusion, apply_landmask!, apply_to_channels, unsharp_mask
     using Images:
         channelview,
         colorview,
@@ -7,8 +9,14 @@
         test_approx_eq_sigma_eps,
         strel_diamond,
         float64,
-        load
+        load,
+        adjust_histogram,
+        complement,
+        mreconstruct,
+        AdaptiveEqualization,
+        dilate
     using Dates: Dates
+    using IceFloeTracker.Filtering: _channelwise_adapthisteq
 
     include("config.jl")
 
@@ -17,7 +25,6 @@
     matlab_sharpened_file = "$(test_data_dir)/matlab_sharpened.png"
     matlab_diffused_file = "$(test_data_dir)/matlab_diffused.png"
     matlab_equalized_file = "$(test_data_dir)/matlab_equalized.png"
-    # flip ocean mask to land mask
     landmask_bitmatrix = convert(
         BitMatrix, float64.(load(current_landmask_file)[test_region...])
     )
@@ -30,6 +37,12 @@
     matlab_diffused = float64.(load(matlab_diffused_file)[test_region...])
     matlab_equalized = float64.(load(matlab_equalized_file))
 
+    falsecolor_image = float64.(load(falsecolor_test_image_file)[test_region...])
+    cloudmask = IceFloeTracker.create_cloudmask(falsecolor_image) # reversed cloudmask
+    matlab_ice_water_discrim =
+        float64.(load("$(test_data_dir)/matlab_ice_water_discrim.png"))
+
+    # diffuse -> equalize -> sharpen -> grayscale
     @info "Process Image - Diffusion"
     input_landmasked = apply_landmask(input_image, landmask_no_dilate)
 
@@ -39,7 +52,6 @@
     @test (@test_approx_eq_sigma_eps image_diffused matlab_diffused [0, 0] 0.0054) ===
         nothing
 
-    # dmw: not sure what these are for
     @test (@test_approx_eq_sigma_eps input_landmasked image_diffused [0, 0] 0.004) ===
         nothing
     @test (@test_approx_eq_sigma_eps input_landmasked matlab_diffused [0, 0] 0.007) ===
@@ -54,12 +66,7 @@
     @info "Process Image - Equalization"
 
     ## Equalization
-    masked_view = (channelview(matlab_diffused))
-    eq = [
-        LopezAcosta2019._adjust_histogram(masked_view[i, :, :], 255, 10, 10, 0.86) for
-        i in 1:3
-    ]
-    image_equalized = colorview(RGB, eq...)
+    image_equalized = _channelwise_adapthisteq(matlab_diffused)
     @test (@test_approx_eq_sigma_eps image_equalized matlab_equalized [0, 0] 0.051) ===
         nothing
 
@@ -72,10 +79,16 @@
     @info "Process Image - Sharpening"
 
     ## Sharpening
-    @time sharpenedimg = LopezAcosta2019.imsharpen(input_image, landmask_no_dilate)
-    @time image_sharpened_gray = LopezAcosta2019.imsharpen_gray(
-        sharpenedimg, landmask_bitmatrix
-    )
+    # The functions here could get wrapped together into a "Preprocessing" functor.
+    # The imsharpen section is diffusion -> adapt hist eq -> unsharp mask -> Gray
+    apply_landmask!(image_diffused, landmask_no_dilate)
+
+    sharpened_truecolor_image = _channelwise_adapthisteq(image_diffused)
+
+    # unsharp masking
+    image_sharpened_gray = unsharp_mask(Gray.(sharpened_truecolor_image), 10, 2)
+    apply_landmask!(image_sharpened_gray, landmask_bitmatrix)
+
     @test (@test_approx_eq_sigma_eps image_sharpened_gray matlab_sharpened [0, 0] 0.046) ===
         nothing
 
@@ -85,25 +98,36 @@
         ".png"
     @persist image_sharpened_gray sharpened_image_filename
 
-    @info "Process Image - Normalization"
-
-    ## Normalization
-    @time normalized_image = LopezAcosta2019.normalize_image(
-        sharpenedimg, image_sharpened_gray, landmask_bitmatrix, struct_elem2
-    )
+    @info "Grayscale Reconstruction"
+    # input may need to be Gray.(sharpened_truecolor_image) in case the landmask dilation matters
+    markers = complement.(dilate(image_sharpened_gray, strel_diamond((5, 5))))
+    mask = complement.(image_sharpened_gray)
+    # reconstruction of the complement: floes are dark, leads are bright
+    @time reconst_gray = mreconstruct(dilate, markers, mask, strel_diamond((5, 5)))
+    apply_landmask!(reconst_gray, landmask_bitmatrix)
 
     #test for percent difference in normalized images
-    eps = test_approx_eq_sigma_eps(normalized_image, matlab_norm_image, ones(2), 0.1, true)
+    eps = test_approx_eq_sigma_eps(reconst_gray, matlab_norm_image, ones(2), 0.1, true)
     @info "Epsilon: " * string(eps)
 
-    @test test_approx_eq_sigma_eps(
-        normalized_image, matlab_norm_image, ones(2), 0.1, true
-    ) <= 0.05
+    @test test_approx_eq_sigma_eps(reconst_gray, matlab_norm_image, ones(2), 0.1, true) <=
+        0.05
     nothing
 
-    normalized_image_filename =
-        "$(test_output_dir)/normalized_test_image_" *
+    @info "Ice-water discrimination"
+
+    ice_water_discrim = IceFloeTracker.discriminate_ice_water(
+        falsecolor_image, reconst_gray, landmask_bitmatrix, cloudmask
+    )
+    @test (@test_approx_eq_sigma_eps ice_water_discrim matlab_ice_water_discrim [0, 0] 0.065) ===
+        nothing
+
+    # Which image should be persisted? Equalized grayscale? Reconstructed? Ice-water discrimination?
+    preprocessed_image_filename =
+        "$(test_output_dir)/preprocessed_test_image_" *
         Dates.format(Dates.now(), "yyyy-mm-dd-HHMMSS") *
         ".png"
-    @persist normalized_image normalized_image_filename
+    @persist reconst_gray preprocessed_image_filename
 end
+
+# TODO: Move discrim ice water here so that we don't waste time re-computing variables.

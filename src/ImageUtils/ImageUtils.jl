@@ -14,12 +14,14 @@ export masker,
     imcomplement,
     to_uint8,
     get_tile_meta,
-    bump_tile
+    bump_tile,
+    apply_to_channels
 
 include("brighten.jl")
 include("imcomplement.jl")
 include("mask.jl")
 include("tiling.jl")
 include("uint8.jl")
+include("misc_image_utils.jl")
 
 end
