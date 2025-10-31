@@ -121,24 +121,20 @@ function (p::Segment)(
         truecolor_image, p.diffusion_algorithm
     )
 
-    # adaptive histogram equalization
-    nbins = p.adapthisteq_params.nbins
-    rblocks = p.adapthisteq_params.rblocks
-    cblocks = p.adapthisteq_params.cblocks
-    clip = p.adapthisteq_params.clip
     function f_eq(img)
         return adjust_histogram(
             img,
             AdaptiveEqualization(;
-                nbins=nbins,
-                rblocks=rblocks,
-                cblocks=cblocks,
+                nbins=p.adapthisteq_params.nbins,
+                rblocks=p.adapthisteq_params.rblocks,
+                cblocks=p.adapthisteq_params.cblocks,
                 minval=minimum(img),
                 maxval=maximum(img),
-                clip=clip,
+                clip=p.adapthisteq_params.clip,
             ),
         )
     end
+
     # q: do we need the unsharpened image anywhere?
     sharpened_truecolor_image .= apply_to_channels(sharpened_truecolor_image, f_eq)
     sharpened_grayscale_image = unsharp_mask(
@@ -678,30 +674,30 @@ function normalize_image(
     )
 end
 
-# TODO: Broadcast adjust histogram to channels
-"""
-    _adjust_histogram(masked_view, nbins, rblocks, cblocks, clip)
+# """
+#     _adjust_histogram(masked_view, nbins, rblocks, cblocks, clip)
 
-Perform adaptive histogram equalization to a masked image. To be invoked within `imsharpen`.
+# Perform adaptive histogram equalization to a masked image. To be invoked within `imsharpen`.
 
-# Arguments
-- `masked_view`: input image in truecolor
-See `imsharpen` for a description of the remaining arguments
+# # Arguments
+# - `masked_view`: input image in truecolor
+# See `imsharpen` for a description of the remaining arguments
 
-"""
-function _adjust_histogram(masked_view, nbins, rblocks, cblocks, clip)
-    return adjust_histogram(
-        masked_view,
-        AdaptiveEqualization(;
-            nbins=nbins,
-            rblocks=rblocks,
-            cblocks=cblocks,
-            minval=minimum(masked_view),
-            maxval=maximum(masked_view),
-            clip=clip,
-        ),
-    )
-end
+# """
+# # TODO: Broadcast adjust histogram to channels
+# function _adjust_histogram(masked_view, nbins, rblocks, cblocks, clip)
+#     return adjust_histogram(
+#         masked_view,
+#         ImageContrastAdjustment.AdaptiveEqualization(;
+#             nbins=nbins,
+#             rblocks=rblocks,
+#             cblocks=cblocks,
+#             minval=minimum(masked_view),
+#             maxval=maximum(masked_view),
+#             clip=clip,
+#         ),
+#     )
+# end
 
 """
     imsharpen(truecolor_image, landmask_no_dilate, lambda, kappa, niters, nbins, rblocks, cblocks, clip, smoothing_param, intensity)

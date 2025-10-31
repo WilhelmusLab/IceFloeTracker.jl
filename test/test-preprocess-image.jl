@@ -16,6 +16,7 @@
         AdaptiveEqualization,
         dilate
     using Dates: Dates
+    using IceFloeTracker.Filtering: _channelwise_adapthisteq
 
     include("config.jl")
 
@@ -36,6 +37,12 @@
     matlab_diffused = float64.(load(matlab_diffused_file)[test_region...])
     matlab_equalized = float64.(load(matlab_equalized_file))
 
+    falsecolor_image = float64.(load(falsecolor_test_image_file)[test_region...])
+    cloudmask = IceFloeTracker.create_cloudmask(falsecolor_image) # reversed cloudmask
+    matlab_ice_water_discrim =
+        float64.(load("$(test_data_dir)/matlab_ice_water_discrim.png"))
+
+    # diffuse -> equalize -> sharpen -> grayscale
     @info "Process Image - Diffusion"
     input_landmasked = apply_landmask(input_image, landmask_no_dilate)
 
@@ -59,12 +66,7 @@
     @info "Process Image - Equalization"
 
     ## Equalization
-    masked_view = (channelview(matlab_diffused))
-    eq = [ # replace with AdaptiveEqualization call
-        LopezAcosta2019._adjust_histogram(masked_view[i, :, :], 255, 10, 10, 0.86) for
-        i in 1:3
-    ]
-    image_equalized = colorview(RGB, eq...)
+    image_equalized = _channelwise_adapthisteq(matlab_diffused)
     @test (@test_approx_eq_sigma_eps image_equalized matlab_equalized [0, 0] 0.051) ===
         nothing
 
@@ -77,21 +79,11 @@
     @info "Process Image - Sharpening"
 
     ## Sharpening
+    # The functions here could get wrapped together into a "Preprocessing" functor.
+    # The imsharpen section is diffusion -> adapt hist eq -> unsharp mask -> Gray
     apply_landmask!(image_diffused, landmask_no_dilate)
 
-    # adaptive histogram equalization
-    f_eq(img) = adjust_histogram(
-        img,
-        AdaptiveEqualization(;
-            nbins=256,
-            rblocks=10,
-            cblocks=10,
-            minval=minimum(img),
-            maxval=maximum(img),
-            clip=0.86,
-        ),
-    )
-    sharpened_truecolor_image = apply_to_channels(image_diffused, f_eq)
+    sharpened_truecolor_image = _channelwise_adapthisteq(image_diffused)
 
     # unsharp masking
     image_sharpened_gray = unsharp_mask(Gray.(sharpened_truecolor_image), 10, 2)
@@ -126,10 +118,20 @@
         0.05
     nothing
 
-    normalized_image_filename =
-        "$(test_output_dir)/normalized_test_image_" *
+    @info "Ice-water discrimination"
+
+    ice_water_discrim = IceFloeTracker.discriminate_ice_water(
+        falsecolor_image, reconst_gray, landmask_bitmatrix, cloudmask
+    )
+    @test (@test_approx_eq_sigma_eps ice_water_discrim matlab_ice_water_discrim [0, 0] 0.065) ===
+        nothing
+
+    # Which image should be persisted? Equalized grayscale? Reconstructed? Ice-water discrimination?
+    preprocessed_image_filename =
+        "$(test_output_dir)/preprocessed_test_image_" *
         Dates.format(Dates.now(), "yyyy-mm-dd-HHMMSS") *
         ".png"
-
-    @persist reconst_gray normalized_image_filename
+    @persist reconst_gray preprocessed_image_filename
 end
+
+# TODO: Move discrim ice water here so that we don't waste time re-computing variables.
