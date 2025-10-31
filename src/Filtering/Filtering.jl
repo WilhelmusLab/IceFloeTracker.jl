@@ -15,12 +15,14 @@ export exponential,
     anisotropic_diffusion_2D,
     adapthisteq,
     imadjust,
-    unsharp_mask
+    unsharp_mask,
+    imgradientmag
 
 include("gradient_functions.jl")
 include("histogram_equalization.jl")
 include("imadjust.jl")
 include("nonlinear_diffusion.jl")
 include("unsharp_mask.jl")
+include("imgradientmag.jl")
 
 end
