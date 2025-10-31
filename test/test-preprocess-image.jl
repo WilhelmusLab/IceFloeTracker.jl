@@ -98,11 +98,7 @@
         ".png"
     @persist image_sharpened_gray sharpened_image_filename
 
-    @info "Process Image - Normalization"
-
-    ## Normalization
-
-    # @info "Grayscale reconstruction of sharpened image"
+    @info "Grayscale Reconstruction"
     # input may need to be Gray.(sharpened_truecolor_image) in case the landmask dilation matters
     markers = complement.(dilate(image_sharpened_gray, strel_diamond((5, 5))))
     mask = complement.(image_sharpened_gray)
