@@ -60,6 +60,7 @@ import ..Segmentation:
     tiled_adaptive_binarization,
     kmeans_segmentation,
     get_ice_masks
+import PythonCall: Py, pyconvert
 
 # Sample input parameters expected by the main function
 cloud_mask_thresholds = (
@@ -188,8 +189,9 @@ function (p::Segment)(
         )
         adjusting_mask =
             equalized_gray_sharpened_reconstructed_adjusted .> agp.gamma_threshold
-        morphed_residue[adjusting_mask] .=
-            to_uint8.(morphed_residue[adjusting_mask] .* agp.gamma_factor)
+        morphed_residue[adjusting_mask] .= to_uint8.(
+            morphed_residue[adjusting_mask] .* agp.gamma_factor
+        )
     end
 
     begin
@@ -490,8 +492,12 @@ function get_final(
 
     #= opening to remove noise while preserving shape/size
     Note the different structuring elements for erosion and dilation =#
-    mask = sk_morphology.erosion(_img, se_erosion)
-    mask .= sk_morphology.dilation(mask, se_dilation)
+    mask = pyconvert(
+        Array, sk_morphology.erosion(Py(_img).to_numpy(), Py(se_erosion).to_numpy())
+    )
+    mask .= pyconvert(
+        Array, sk_morphology.dilation(Py(mask).to_numpy(), Py(se_dilation).to_numpy())
+    )
 
     # Restore shape of floes based on the cleaned up `mask`
     final = mreconstruct(dilate, _img, mask)

@@ -1,14 +1,7 @@
 name = "IceFloeTracker"
 uuid = "04643c7a-9ac6-48c5-822f-2704f9e70bd3"
 version = "0.9.0"
-authors = [
-    "Carlos Paniagua <carlos_paniagua@brown.edu>",
-    "Timothy Divoll <timothy_divoll@brown.edu>",
-    "John Gerrard Holland <john_holland1@brown.edu>",
-    "Bradford Roarr <bradford_roarr@brown.edu>",
-    "Daniel Watkins <daniel_watkins@brown.edu>",
-    "Maria Isabel Restrepo <maria_restrepo@brown.edu>",
-]
+authors = ["Carlos Paniagua <carlos_paniagua@brown.edu>", "Timothy Divoll <timothy_divoll@brown.edu>", "John Gerrard Holland <john_holland1@brown.edu>", "Bradford Roarr <bradford_roarr@brown.edu>", "Daniel Watkins <daniel_watkins@brown.edu>", "Maria Isabel Restrepo <maria_restrepo@brown.edu>"]
 
 [deps]
 ArchGDAL = "c9ce4bd3-c3d5-55b8-8973-c0e20141b8c3"
@@ -28,7 +21,6 @@ Interpolations = "a98d9a8b-a2ab-59e6-89dd-64a1c18fca59"
 OffsetArrays = "6fe1bfb0-de20-5000-8ca7-80f57d26f881"
 Peaks = "18e31ff7-3703-566c-8e60-38913d67486b"
 Proj = "c94c279d-25a6-4763-9509-64d165bea63e"
-PyCall = "438e738f-606a-5dbb-bf0a-cddfbfd45ab0"
 PythonCall = "6099a3de-0909-46bc-b1f4-468b9a2dfc0d"
 Random = "9a3f8284-a2c9-5f02-9a11-845980a1fd5c"
 Reexport = "189a3867-3050-52da-a836-e630ba90ab69"
@@ -51,7 +43,6 @@ Interpolations = "0.16"
 OffsetArrays = "1.12"
 Peaks = "0.5"
 Proj = "1.7.2"
-PyCall = "1.95"
 PythonCall = "0.9.28"
 Reexport = "1.2.2"
 StaticArrays = "1.5"
@@ -75,14 +66,4 @@ ZipFile = "a5390f91-8eb1-5f08-bee0-b1d1ffed6cea"
 
 [targets]
 notebooks = ["CSV", "Plots"]
-test = [
-    "CSV",
-    "DelimitedFiles",
-    "LinearAlgebra",
-    "Serialization",
-    "Test",
-    "TestImages",
-    "TestItemRunner",
-    "TestItems",
-    "ZipFile",
-]
+test = ["CSV", "DelimitedFiles", "LinearAlgebra", "Serialization", "Test", "TestImages", "TestItemRunner", "TestItems", "ZipFile"]

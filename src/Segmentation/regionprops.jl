@@ -2,6 +2,7 @@
 import ..skimage: sk_measure
 import DataFrames: rename!, DataFrame, nrow, select!
 import ..Geospatial: latlon
+import PythonCall: Py, pyconvert
 
 """
     regionprops_table(label_img, intensity_img; properties, connectivity, extra_properties)
@@ -82,11 +83,13 @@ function regionprops_table(
         extra_properties = nothing
     end
 
-    props = DataFrame(
-        sk_measure.regionprops_table(
-            label_img, intensity_img, properties; extra_properties=extra_properties
-        ),
+    props_raw = sk_measure.regionprops_table(
+        Py(label_img).to_numpy(),
+        !isnothing(intensity_img) ? Py(intensity_img).to_numpy() : nothing,
+        properties;
+        extra_properties=extra_properties,
     )
+    props = pyconvert(Dict, props_raw) |> DataFrame
 
     if "bbox" in properties
         bbox_cols = getbboxcolumns(props)

@@ -1,6 +1,7 @@
 import Images: mreconstruct, dilate
 import ..skimage: sk_morphology
 import ..ImageUtils: to_uint8, imcomplement
+import PythonCall: Py, pyconvert
 
 """
     reconstruct(img, se, type, invert)
@@ -14,19 +15,29 @@ Perform closing/opening by reconstruction on `img`.
 - `invert::Bool=true`: Invert marker and mask before reconstruction.
 """
 function reconstruct(img, se, type, invert::Bool=true)
-    !(type == "dilation" || type == "erosion") &&
-        throw(ArgumentError("Invalid type: $type. Must be 'dilation' or 'erosion'."))
+    type == "dilation" && return reconstruct(img, se, Val(:dilation), invert)
+    type == "erosion" && return reconstruct(img, se, Val(:erosion), invert)
+    throw(ArgumentError("Invalid type: $type. Must be 'dilation' or 'erosion'."))
+end
 
-    type == "dilation" &&
-        (morphed = to_uint8(sk_morphology.dilation(img; footprint=collect(se))))
-    type == "erosion" &&
-        (morphed = to_uint8(sk_morphology.erosion(img; footprint=collect(se))))
+function reconstruct(img, se, type::Val{:erosion}, invert::Bool=true)
+    morphed =
+        sk_morphology.erosion(Py(img).to_numpy(); footprint=Py(collect(se)).to_numpy()) |>
+        ((pyimg) -> pyconvert(Array, pyimg)) |>
+        to_uint8
+    invert && (morphed=imcomplement(to_uint8(morphed)); img=imcomplement(img))
+    return pyconvert(
+        Array, sk_morphology.reconstruction(Py(morphed).to_numpy(), Py(img).to_numpy())
+    )
+end
 
-    invert && (morphed = imcomplement(to_uint8(morphed)); img = imcomplement(img))
-
-    type == "dilation" && return mreconstruct(dilate, morphed, img)
-
-    return sk_morphology.reconstruction(morphed, img)
+function reconstruct(img, se, type::Val{:dilation}, invert::Bool=true)
+    morphed =
+        sk_morphology.dilation(Py(img).to_numpy(); footprint=Py(collect(se)).to_numpy()) |>
+        ((pyimg) -> pyconvert(Array, pyimg)) |>
+        to_uint8
+    invert && (morphed=imcomplement(to_uint8(morphed)); img=imcomplement(img))
+    return mreconstruct(dilate, morphed, img)
 end
 
 """
@@ -39,7 +50,9 @@ It supports both integer and grayscale images using different implementations fo
 function impose_minima(I::AbstractArray{T}, BW::AbstractArray{Bool}) where {T<:Integer}
     marker = 255 .* BW
     mask = imcomplement(min.(I .+ 1, 255 .- marker))
-    reconstructed = sk_morphology.reconstruction(marker, mask)
+    reconstructed = pyconvert(
+        Array, sk_morphology.reconstruction(Py(marker).to_numpy(), Py(mask).to_numpy())
+    )
     return imcomplement(Int.(reconstructed))
 end
 
@@ -54,5 +67,8 @@ function impose_minima(
     marker = -Inf * BW .+ (Inf * .!BW)
     mask = min.(I .+ h, marker)
 
-    return 1 .- sk_morphology.reconstruction(1 .- marker, 1 .- mask)
+    return 1 .- pyconvert(
+        Array,
+        sk_morphology.reconstruction(Py(1 .- marker).to_numpy(), Py(1 .- mask).to_numpy()),
+    )
 end

@@ -1,19 +1,17 @@
 module skimage
 
-using PyCall
+using PythonCall
 
 export sk_measure, sk_morphology, sk_exposure
 
-const sk_measure = PyNULL()
-const sk_morphology = PyNULL()
-const sk_exposure = PyNULL()
+const sk_measure = PythonCall.pynew()
+const sk_morphology = PythonCall.pynew()
+const sk_exposure = PythonCall.pynew()
 
 function __init__()
-    skimage = "scikit-image=0.25.1"
-    copy!(sk_measure, pyimport_conda("skimage.measure", skimage))
-    copy!(sk_exposure, pyimport_conda("skimage.exposure", skimage))
-    copy!(sk_morphology, pyimport_conda("skimage.morphology", skimage))
-    return nothing
+    PythonCall.pycopy!(sk_measure, pyimport("skimage.measure"))
+    PythonCall.pycopy!(sk_morphology, pyimport("skimage.morphology"))
+    PythonCall.pycopy!(sk_exposure, pyimport("skimage.exposure"))
 end
 
 end
