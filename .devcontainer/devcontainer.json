@@ -1,9 +1,12 @@
 {
 	"name": "IceFloeTracker.jl (Debian)",
-	"build": {
-		"dockerfile": "Dockerfile"
+	"image": "mcr.microsoft.com/devcontainers/base:trixie",
+	"features": {
+		"ghcr.io/julialang/devcontainer-features/julia:1": {
+			"channel": "release",
+			"additionalChannels": "lts,1.11"
+		}
 	},
-	"features": {},
 	"customizations": {
 		"vscode": {
 			"extensions": [
@@ -15,7 +18,7 @@
 		}
 	},
 	"postCreateCommand": {
- 		"setup-git-hooks": "git config core.hooksPath ./hooks",
+		"setup-git-hooks": "git config core.hooksPath ./hooks",
 		"setup-PyCall": "julia --project=.devcontainer/PyCallSetup.jl .devcontainer/PyCallSetup.jl/setup.jl",
 		"setup-TestEnv": "julia -e 'using Pkg; Pkg.add(\"TestEnv\")'" // Add TestEnv globally to use in PostStart
 	},
