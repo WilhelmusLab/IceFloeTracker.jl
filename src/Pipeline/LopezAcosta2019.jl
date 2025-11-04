@@ -179,9 +179,10 @@ function (p::Segment)(
 
     # Compute k-means clustering and detect ice masks
     # Important: Application of landmask before finding ice labels, to avoid at least some of the brightest landfast ice pixels.
+    fc_landmasked = apply_landmask(falsecolor_image, landmask_imgs.dilated)
     kmeans_result = kmeans_binarization(
         ice_water_discrim,
-        apply_landmask(falsecolor_image, landmask_imgs.dilated);
+        fc_landmasked;
         k=p.kmeans_params.k,
         maxiter=p.kmeans_params.maxiter,
         random_seed=p.kmeans_params.random_seed,
@@ -208,7 +209,7 @@ function (p::Segment)(
         segB.not_ice,
         segB.ice_intersect,
         watersheds_segB_product,
-        ice_mask,
+        fc_landmasked,
         cloudmask,
         landmask_imgs.dilated,
     )
@@ -549,7 +550,7 @@ function segmentation_F(
     segmentation_B_not_ice_mask::Matrix{Gray{Float64}},
     segmentation_B_ice_intersect::BitMatrix,
     segmentation_B_watershed_intersect::BitMatrix,
-    ice_labels::Union{Vector{Int64},BitMatrix,AbstractArray{<:Gray}},
+    falsecolor_image,
     cloudmask::BitMatrix,
     landmask::BitMatrix;
     min_area_opening::Int64=20,
@@ -569,7 +570,7 @@ function segmentation_F(
     reconstructed_leads = (not_ice .* ice_leads) .+ (60 / 255)
 
     leads_segmented =
-        kmeans_segmentation(reconstructed_leads, ice_labels) .*
+        kmeans_binarization(reconstructed_leads, falsecolor_image) .*
         .!segmentation_B_watershed_intersect
     @info("Done with k-means segmentation")
     leads_segmented_broken = hbreak(leads_segmented)
