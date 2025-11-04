@@ -50,17 +50,23 @@ import Images:
 import Peaks: findmaxima
 import StatsBase: kurtosis, skewness
 
-import ..Filtering: nonlinear_diffusion, PeronaMalikDiffusion, unsharp_mask
+import ..Filtering: nonlinear_diffusion, PeronaMalikDiffusion, unsharp_mask, _channelwise_adapthisteq
 import ..Morphology: hbreak, hbreak!, branch, bridge, fill_holes, se_disk4
 import ..Preprocessing:
     make_landmask_se,
     create_landmask,
     create_cloudmask,
+    LopezAcostaCloudMask,
     create_clouds_channel,
     apply_landmask,
     apply_landmask!,
     apply_cloudmask
-import ..Segmentation: IceFloeSegmentationAlgorithm, find_ice_mask, kmeans_segmentation
+import ..Segmentation:
+    IceFloeSegmentationAlgorithm, 
+    IceDetectionLopezAcosta2019,
+    find_ice_mask, 
+    kmeans_segmentation, 
+    kmeans_binarization
 
 """
 Sample input parameters expected by the main function
@@ -76,6 +82,16 @@ cloud_mask_thresholds = (
 
 diffusion_parameters = (lambda=0.1, kappa=0.1, niters=5, g="exponential")
 
+ice_masks_params = (
+    band_7_max=5/255,
+    band_2_min=230/255,
+    band_1_min=240/255,
+    band_7_max_relaxed=10 / 255,
+    band_1_min_relaxed=190 / 255,
+    possible_ice_threshold=75 / 255,
+)
+
+
 @kwdef struct Segment <: IceFloeSegmentationAlgorithm
     landmask_structuring_element::AbstractMatrix{Bool} = make_landmask_se()
     cloud_mask_algorithm = LopezAcostaCloudMask(cloud_mask_thresholds...)
@@ -88,11 +104,13 @@ diffusion_parameters = (lambda=0.1, kappa=0.1, niters=5, g="exponential")
     )
     unsharp_mask_params = (smoothing_param=10, intensity=2)
     reconstruct_strel = strel_diamond((5, 5)) # structuring element used for enhancing foreground/background contrast
+    kmeans_params = (k=4, maxiter=50, random_seed=45)
+    ice_labels_algorithm = IceDetectionLopezAcosta2019(;ice_masks_params...)
 end
 
-function Segment(; landmask_structuring_element=make_landmask_se())
-    return Segment(landmask_structuring_element)
-end
+# function Segment(; landmask_structuring_element=make_landmask_se())
+#     return Segment(landmask_structuring_element)
+# end
 
 function (p::Segment)(
     truecolor::T,
@@ -117,26 +135,18 @@ function (p::Segment)(
     @info "Preprocessing truecolor image"
     # nonlinear diffusion
     apply_landmask!(truecolor_image, landmask_imgs.non_dilated)
-    sharpened_truecolor_image = IceFloeTracker.nonlinear_diffusion(
+    sharpened_truecolor_image = nonlinear_diffusion(
         truecolor_image, p.diffusion_algorithm
     )
 
-    function f_eq(img)
-        return adjust_histogram(
-            img,
-            AdaptiveEqualization(;
-                nbins=p.adapthisteq_params.nbins,
-                rblocks=p.adapthisteq_params.rblocks,
-                cblocks=p.adapthisteq_params.cblocks,
-                minval=minimum(img),
-                maxval=maximum(img),
-                clip=p.adapthisteq_params.clip,
-            ),
-        )
-    end
+    # q: do we need to keep the sharpened truecolor image? or just the grayscale?
+    sharpened_truecolor_image .= _channelwise_adapthisteq(sharpened_truecolor_image;
+        nbins=p.adapthisteq_params.nbins,
+        rblocks=p.adapthisteq_params.rblocks,
+        cblocks=p.adapthisteq_params.cblocks,
+        clip=p.adapthisteq_params.clip
+    )
 
-    # q: do we need the unsharpened image anywhere?
-    sharpened_truecolor_image .= apply_to_channels(sharpened_truecolor_image, f_eq)
     sharpened_grayscale_image = unsharp_mask(
         Gray.(sharpened_truecolor_image),
         p.unsharp_mask_params.smoothing_param,
@@ -152,27 +162,33 @@ function (p::Segment)(
     reconstructed_grayscale = mreconstruct(dilate, markers, mask)
     apply_landmask!(reconstructed_grayscale, landmask_imgs.dilated)
 
-    # Brighten ice floes
-
+    
     # Discriminate ice/water
     @info "Discriminating ice/water"
     ice_water_discrim = discriminate_ice_water(
         falsecolor_image, reconstructed_grayscale, copy(landmask_imgs.dilated), cloudmask
     )
 
-    # 2. Intermediate images
-    @info "Finding bright ice pixels"
-    # TODO: Update find_ice_mask to include changing settings
-    ice_mask = find_ice_mask(falsecolor_image, landmask_imgs.dilated)
-
     # 3. Segmentation
     @info "Segmenting floes part 1/3"
     # Components: 
     # - k-means binarization
     # - morphological cleanup
-    segA = segmentation_A(
-        segmented_ice_cloudmasking(ice_water_discrim, cloudmask, ice_mask)
-    )
+    # - apply cloudmask 
+    # result labeled "segA" is a binarization image
+
+    # Compute k-means clustering and detect ice masks
+    # Important: Application of landmask before finding ice labels, to avoid at least some of the brightest landfast ice pixels.
+    kmeans_result = kmeans_binarization(
+        ice_water_discrim,
+        apply_landmask(falsecolor_image, landmask_imgs.dilated);
+        k=p.kmeans_params.k,
+        maxiter=p.kmeans_params.maxiter,
+        random_seed=p.kmeans_params.random_seed,
+        ice_labels_algorithm=p.ice_labels_algorithm
+        ) |> clean_binary_floes
+
+    segA = apply_cloudmask(kmeans_result, cloudmask)
 
     # segmentation_B
     @info "Segmenting floes part 2/3"
@@ -397,65 +413,20 @@ function _check_threshold_130(
            (standard_dev > st_dev_thresh_upper)
 end
 
-# TODO: determine a name for this; it's a local function just for this segmentation routine
-"""
-    segmentation_A(segmented_ice_cloudmasked; min_opening_area)
-
-Apply k-means segmentation to a gray image to isolate a cluster group representing sea ice. Returns an image segmented and processed as well as an intermediate files needed for downstream functions.
-
-# Arguments
-
-- `segmented_ice_cloudmask`: bitmatrix with open water/clouds = 0, ice = 1, output from `segmented_ice_cloudmasking()`
-- `min_opening_area`: minimum size of pixels to use during morphological opening
-- `fill_range`: range of values dictating the size of holes to fill
 
 """
-function segmentation_A(
-    segmented_ice_cloudmasked::BitMatrix; min_opening_area::Real=50
-)::BitMatrix
-    segmented_ice_opened = area_opening(
-        segmented_ice_cloudmasked; min_area=min_opening_area
-    )
+    clean_binary_floes(bw_img; min_opening_area=50)
 
-    hbreak!(segmented_ice_opened)
+Refine a binarized ice floe image (floes=white, leads/background/water=black) using morphological operations.
 
-    segmented_opened_branched = branch(segmented_ice_opened)
-
-    segmented_bridged = bridge(segmented_opened_branched)
-
-    segmented_ice_filled = fill_holes(segmented_bridged)
-
-    diff_matrix = segmented_ice_opened .!= segmented_ice_filled
-
-    segmented_A = segmented_ice_cloudmasked .|| diff_matrix
-
-    return segmented_A
+"""
+function clean_binary_floes(bw_img; min_opening_area=50)
+    img_opened = area_opening(bw_img; min_area=min_opening_area) |> hbreak
+    img_filled = branch(img_opened) |> bridge |> fill_holes
+    diff_matrix = img_opened .!= img_filled
+    return bw_img .|| diff_matrix
 end
 
-# TODO: Remove this function: in the script, we want the k-means binarization function to be visible. The k-means binarization is
-# expected to be useful elsewhere.
-"""
-    segmented_ice_cloudmasking(gray_image, cloudmask, ice_labels;)
-
-Apply cloudmask to a bitmatrix of segmented ice after kmeans clustering. Returns a bitmatrix with open water/clouds = 0, ice = 1).
-
-# Arguments
-
-- `gray_image`: output image from `ice-water-discrimination.jl` or gray ice floe leads image in `segmentation_f.jl`
-- `cloudmask`: bitmatrix cloudmask for region of interest
-- `ice_labels`: vector if pixel coordinates output from `find_ice_labels.jl`
-
-"""
-function segmented_ice_cloudmasking(
-    gray_image::Matrix{Gray{Float64}},
-    cloudmask::BitMatrix,
-    ice_labels::Union{Vector{Int64},BitMatrix,AbstractArray{<:Gray}},
-)::BitMatrix
-    segmented_ice = kmeans_segmentation(gray_image, ice_labels)
-    segmented_ice_cloudmasked = deepcopy(segmented_ice)
-    segmented_ice_cloudmasked[cloudmask] .= 0
-    return segmented_ice_cloudmasked
-end
 
 """
     segmentation_B(sharpened_image, cloudmask, segmented_a_ice_mask, struct_elem; fill_range, isolation_threshold, alpha_level, adjusted_ice_threshold)
