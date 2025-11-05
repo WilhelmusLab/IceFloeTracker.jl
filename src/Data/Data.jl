@@ -44,36 +44,32 @@ abstract type ValidationDataLoader end
 
 Loader for validated ice floe data from [the Watkins 2025 Ice Floe Validation Dataset](https://github.com/danielmwatkins/ice_floe_validation_dataset).
 
-Struct fields: 
-- `url`: URL of the GitHub repository with the dataset
-- `ref`: `git` ref of the commit from which to load the data
-- `dataset_metadata_path`: path within the repository to a CSV file describing the data
-- `cache_dir`: local path where the data will be stored.
+The loader is initialized with a specific `git` ref (tag or commit ID) from which to load the data.
 
-
-Cacheing: 
-Data are downloaded to the `ref` subdirectory of `cache_dir`, e.g. `/tmp/Watkins2025/main`. 
-If a file of the correct name already exists in that path, if loaded again the cached data will be returned.
-If the data change in the source for that ref, the loader won't load the new data.
-In that case, it's necessary to delete the cached file.
-A better choice is to use a specific revision `ref`: either a tag, or a commit ID.
-
-Function arguments:
-- `case_filter`: function run on each metadata entry; 
-    if it returns true, then the data from that case is returned 
-
-Function returns a named tuple with these fields:
-- `metadata`: DataFrame of the cases which passed the `case_filter`
-- `data`: Generator which returns a `ValidationDataCase` for each case which passed the `case_filter`
-    
-Example:
-```jldoctest; setup = :(using IceFloeTracker)
+```jldoctest Watkins2025GitHub; setup = :(using IceFloeTracker)
 julia> data_loader = Watkins2025GitHub(; ref="a451cd5e62a10309a9640fbbe6b32a236fcebc70")
+```
+
+`Watkins2025GitHub` fields: 
+- `ref`: `git` ref of the commit from which to load the data
+- `cache_dir` (optional): local path where the data will be stored, which defaults to `/tmp/Watkins2025/`.
+- `url` (optional): URL of the GitHub repository with the dataset
+- `dataset_metadata_path` (optional): path within the repository to a CSV file describing the data
+
+The loader is then called with an optional `case_filter` function to filter which cases to load.
+This checks each case's metadata, and if the function returns `true`, the case is included in the returned dataset.
+
+```jldoctest Watkins2025GitHub
 julia> dataset = data_loader(;case_filter=c -> (
                         c.visible_floes == "yes" &&
                         c.cloud_category_manual == "none" &&
                         c.artifacts == "no"
                     ));
+```
+
+The returned `dataset` (a `ValidationDataSet`) has a `metadata` field with a DataFrame of the cases which passed the filter:
+
+```jldoctest Watkins2025GitHub
 julia> dataset.metadata
 8×28 DataFrame
     Row │ case_number  region        start_date  center_lon  center_lat  center_x  center_y  month  sea_ice_fr ⋯
@@ -88,14 +84,72 @@ julia> dataset.metadata
       7 │         128  hudson_bay    2019-04-15    -91.9847     57.853   -2612500  -2437500      4
       8 │         166  laptev_sea    2016-09-04    136.931      79.7507    -37500   1112500      9
                                                                                         20 columns omitted
+```
 
-julia> first(dataset.data)
+The `dataset` contains `ValidationDataCase` objects.
+Each ValidationDataCase has metadata fields including:
+- `name`: name of the case
+- `metadata`: dictionary of metadata for the case, corresponding to a row in the `dataset.metadata` `DataFrame`
+
+Each ValidationDataCase also has data fields including:
+- `modis_truecolor`: MODIS true color image
+- `modis_falsecolor`: MODIS false color image
+- `modis_landmask`: MODIS landmask image
+- `modis_cloudfraction`: MODIS cloud fraction image
+- `masie_landmask`: MASIE landmask image
+- `masie_seaice`: MASIE sea ice image
+
+A ValidationDataCase may have validated data fields including:
+- `validated_binary_floes`: binary image of validated floes
+- `validated_labeled_floes`: labeled image of validated floes
+- `validated_floe_properties`: CSV file of validated floe properties
+
+The `dataset` can be iterated over to get each `ValidationDataCase`:
+Example:
+```jldoctest Watkins2025GitHub
+julia> for case in dataset
+           println("$(case.name): sea ice fraction: $(case.metadata[:sea_ice_fraction]), true color image size: $(size(case.modis_truecolor))")
+       end
+011-baffin_bay-100km-20110702-aqua-250m: sea ice fraction: 0.8, true color image size: (400, 400)
+014-baffin_bay-100km-20220706-terra-250m: sea ice fraction: 1.0, true color image size: (400, 400)
+048-beaufort_sea-100km-20210427-aqua-250m: sea ice fraction: 1.0, true color image size: (400, 400)
+048-beaufort_sea-100km-20210427-terra-250m: sea ice fraction: 1.0, true color image size: (400, 400)
+054-beaufort_sea-100km-20150516-aqua-250m: sea ice fraction: 1.0, true color image size: (400, 400)
+054-beaufort_sea-100km-20150516-terra-250m: sea ice fraction: 1.0, true color image size: (400, 400)
+128-hudson_bay-100km-20190415-aqua-250m: sea ice fraction: 1.0, true color image size: (400, 400)
+166-laptev_sea-100km-20160904-aqua-250m: sea ice fraction: 1.0, true color image size: (400, 400)
+```
+
+!!! info "`dataset` and `dataset.data`" 
+    Iterating over the `dataset` is the same as iterating over `dataset.data`, 
+    so you could also write `for case in dataset.data...`.)
+
+To get the first case in the dataset, you can use `first(...)`:
+
+```jldoctest Watkins2025GitHub
+julia> first(dataset)
 ValidationDataCase("011-baffin_bay-100km-20110702-aqua-250m", Dict{Symbol, Any}(:sea_ice_fraction => 0.8, :vi...
 
-julia> first(dataset.data).validated_labeled_floes
+julia> first(dataset).validated_labeled_floes
 Segmented Image with:
 labels map: 400×400 Matrix{Int64}
 number of labels: 105
+
+julia> first(dataset).modis_truecolor
+400×400 Array{RGBA{N0f8},2} with eltype ColorTypes.RGBA{FixedPointNumbers.N0f8}:
+ RGBA{N0f8}(0.094,0.133,0.169,1.0)  RGBA{N0f8}(0.051,0.094,0.118,1.0) ...
+
+```
+
+!!! tip "Cacheing"
+    Data are downloaded to the `<cache_dir>/<ref>`, e.g. `/tmp/Watkins2025/a451cd5e62a10309a9640fbbe6b32a236fcebc70/`. 
+    If a file of the correct name already exists in that path, if loaded again the cached data will be returned.
+
+    There are no checks to ensure that the cached data are up-to-date, 
+    so if the data change in the source for that `ref`, the loader won't load the new data.
+    In this case, you can clear the cache by deleting the cache directory, 
+    e.g. `rm -r /tmp/Watkins2025/a451cd5e62a10309a9640fbbe6b32a236fcebc70/`.
+
 ```
 """
 @kwdef struct Watkins2025GitHub <: ValidationDataLoader
