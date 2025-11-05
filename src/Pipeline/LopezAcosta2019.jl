@@ -123,6 +123,7 @@ function (p::Segment)(
     # the full range of image formats
     truecolor_image = float64.(truecolor)
     falsecolor_image = float64.(falsecolor)
+    
     landmask_image = float64.(landmask)
 
     @info "building landmask"
@@ -131,6 +132,8 @@ function (p::Segment)(
     @info "Building cloudmask"
     # TODO: @hollandjg track down why the cloudmask is different for float32 vs float64 input images
     cloudmask = create_cloudmask(falsecolor_image, p.cloud_mask_algorithm)
+
+    fc_landmasked = apply_landmask(falsecolor_image, landmask_imgs.dilated)
 
     @info "Preprocessing truecolor image"
     # nonlinear diffusion
@@ -154,32 +157,18 @@ function (p::Segment)(
     )
     apply_landmask!(sharpened_grayscale_image, landmask_imgs.dilated)
 
-    @info "Grayscale reconstruction of sharpened image"
-    # input may need to be Gray.(sharpened_truecolor_image) in case the landmask dilation matters
+    @info "Segmentation method 1: Grayscale reconstruction + k-means binarization"
+    # reconstruction of the complement, producing image with dark floes and bright leads
     markers = complement.(dilate(sharpened_grayscale_image, p.reconstruct_strel))
     mask = complement.(sharpened_grayscale_image)
-    # reconstruction of the complement: floes are dark, leads are bright
     reconstructed_grayscale = mreconstruct(dilate, markers, mask)
     apply_landmask!(reconstructed_grayscale, landmask_imgs.dilated)
 
-    
-    # Discriminate ice/water
-    @info "Discriminating ice/water"
+    # further enhancing darkness of floes and brightness of leads.
     ice_water_discrim = discriminate_ice_water(
-        falsecolor_image, reconstructed_grayscale, copy(landmask_imgs.dilated), cloudmask
+        falsecolor_image, reconstructed_grayscale, landmask_imgs.dilated, cloudmask
     )
 
-    # 3. Segmentation
-    @info "Segmenting floes part 1/3"
-    # Components: 
-    # - k-means binarization
-    # - morphological cleanup
-    # - apply cloudmask 
-    # result labeled "segA" is a binarization image
-
-    # Compute k-means clustering and detect ice masks
-    # Important: Application of landmask before finding ice labels, to avoid at least some of the brightest landfast ice pixels.
-    fc_landmasked = apply_landmask(falsecolor_image, landmask_imgs.dilated)
     kmeans_result = kmeans_binarization(
         ice_water_discrim,
         fc_landmasked;
@@ -190,6 +179,8 @@ function (p::Segment)(
         ) |> clean_binary_floes
 
     segA = apply_cloudmask(kmeans_result, cloudmask)
+
+    @info "Segmentation method 2"
 
     # segmentation_B
     @info "Segmenting floes part 2/3"
