@@ -52,11 +52,13 @@ function kmeans_binarization(
     k::Int64=4,
     maxiter::Int64=50,
     random_seed::Int64=45,
-    ice_labels_algorithm=IceDetectionLopezAcosta2019()
+    ice_labels_algorithm=IceDetectionLopezAcosta2019(),
+    ice_labels_threshold=5
 )::BitMatrix
 
     ice_labels = ice_labels_algorithm(falsecolor_image) .> 0
     isempty(ice_labels) && return falses(size(gray_image))
+    sum(ice_labels) < ice_labels_threshold && return falses(size(gray_image))
 
     segmented = kmeans_segmentation(gray_image; k=k, maxiter=maxiter, random_seed=random_seed)
 

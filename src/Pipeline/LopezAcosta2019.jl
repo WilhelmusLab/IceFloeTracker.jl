@@ -105,13 +105,16 @@ ice_masks_params = (
     unsharp_mask_params = (smoothing_param=10, intensity=2)
     reconstruct_strel = strel_diamond((5, 5)) # structuring element used for enhancing foreground/background contrast
     kmeans_params = (k=4, maxiter=50, random_seed=45)
-    ice_labels_algorithm = IceDetectionLopezAcosta2019(;ice_masks_params...)
+    ice_labels_algorithm = IceDetectionLopezAcosta2019(;ice_masks_params...) # Check parameters that can be sent in
 end
 
 # function Segment(; landmask_structuring_element=make_landmask_se())
 #     return Segment(landmask_structuring_element)
 # end
 
+# dmw: how can we include a pre-generated landmask? if we use map, does the compiler recognize that it's a repeat computation?
+# one option would be to have args landmask_dilated and landmask_nondilated, and a method that would create_landmask if only one landmask
+# is inputted. 
 function (p::Segment)(
     truecolor::T,
     falsecolor::T,
@@ -178,28 +181,34 @@ function (p::Segment)(
         ice_labels_algorithm=p.ice_labels_algorithm
         ) |> clean_binary_floes
 
-    segA = apply_cloudmask(kmeans_result, cloudmask)
+    # check: are there any regions that are nonzero under the cloudmask, since it was applied in discriminate ice water?
+    segA = apply_cloudmask(kmeans_result, cloudmask) 
 
     @info "Segmentation method 2"
+    # segmentation_B parameters
+    struct_elem=strel_diamond((3, 3))
+    isolation_threshold=0.4
 
-    # segmentation_B
-    @info "Segmenting floes part 2/3"
-    segB = segmentation_B(sharpened_grayscale_image, cloudmask, segA)
+    # Brighten ice and set areas darker than a threshold to 0
+    # General purpose with brighten.jl?
+    brightened_image = (sharpened_grayscale_image .* 1.3) .* (sharpened_grayscale_image .> isolation_threshold)
+    clamp!(brightened_image, 0, 1)
+
+    segB = segB_binarize(sharpened_grayscale_image, brightened_image, cloudmask)
+    
+    segAB_intersect = closing(segA, struct_elem) .* segB
 
     # Process watershed in parallel using Folds
-    @info "Building watersheds"
-    watersheds_segB = [
-        watershed_ice_floes(segB.not_ice_bit), watershed_ice_floes(segB.ice_intersect)
-    ]
-    watersheds_segB_product = watershed_product(watersheds_segB...)
+    @info "Watershed product"
+    watersheds_product = watershed_ice_floes(brightened_image .> 0) .* watershed_ice_floes(segAB_intersect)
 
     # segmentation_F
     # TODO: @hollandjg find out why segF is more dilated
     @info "Segmenting floes part 3/3"
     segF = segmentation_F(
-        segB.not_ice,
-        segB.ice_intersect,
-        watersheds_segB_product,
+        brightened_image, # replace with new name
+        segAB_intersect, 
+        watersheds_product,
         fc_landmasked,
         cloudmask,
         landmask_imgs.dilated,
@@ -283,8 +292,8 @@ to isolate floes.
 
 """
 function discriminate_ice_water(
-    falsecolor_image::Matrix{RGB{Float64}},
-    normalized_image::Matrix{Gray{Float64}},
+    falsecolor_image,
+    normalized_image,
     landmask_bitmatrix::T,
     cloudmask_bitmatrix::T,
     floes_threshold::Float64=Float64(100 / 255),
@@ -298,7 +307,7 @@ function discriminate_ice_water(
     clouds_ratio_threshold::Float64=0.02,
     differ_threshold::Float64=0.6,
     nbins::Real=155,
-)::AbstractMatrix where {T<:AbstractArray{Bool}}
+)::AbstractMatrix where {T<:AbstractArray{Bool}} #dmw extend to allow BitMatrix or Bool if that throws an error
     clouds_channel = create_clouds_channel(cloudmask_bitmatrix, falsecolor_image)
     falsecolor_image_band7 = @view(channelview(falsecolor_image)[1, :, :])
 
@@ -419,67 +428,85 @@ function clean_binary_floes(bw_img; min_opening_area=50)
     return bw_img .|| diff_matrix
 end
 
+function segB_binarize(sharpened_image, brightened_image, cloudmask;
+     gamma_factor=2.5, adjusted_ice_threshold=0.05, fill_range=(0, 1), alpha_level=0.5)
 
-"""
-    segmentation_B(sharpened_image, cloudmask, segmented_a_ice_mask, struct_elem; fill_range, isolation_threshold, alpha_level, adjusted_ice_threshold)
-
-Performs image processing and morphological filtering with intermediate files from normalization.jl and segmentation_A to further isolate ice floes, returning a mask of potential ice.
-
-# Arguments
-- `sharpened_image`: non-cloudmasked but sharpened image, output from `normalization.jl`
-- `cloudmask`:  bitmatrix cloudmask for region of interest
-- `segmented_a_ice_mask`: binary cloudmasked ice mask from `segmentation_a_direct.jl`
-- `struct_elem`: structuring element for dilation
-- `fill_range`: range of values dictating the size of holes to fill
-- `isolation_threshold`: threshold used to isolated pixels from `sharpened_image`; between 0-1
-- `alpha_level`: alpha threshold used to adjust contrast
-- `gamma_factor`: amount of gamma adjustment
-- `adjusted_ice_threshold`: threshold used to set ice equal to one after gamma adjustment
-
-"""
-function segmentation_B(
-    sharpened_image::Matrix{Gray{Float64}},
-    cloudmask::BitMatrix,
-    segmented_a_ice_mask::BitMatrix,
-    struct_elem=strel_diamond((3, 3));
-    fill_range::Tuple=(0, 1),
-    isolation_threshold::Float64=0.4,
-    alpha_level::Float64=0.5,
-    gamma_factor::Float64=2.5,
-    adjusted_ice_threshold::Float64=0.05,
-)
-
-    ## Process sharpened image
-    not_ice_mask = deepcopy(sharpened_image)
-    not_ice_mask[not_ice_mask .< isolation_threshold] .= 0
-    not_ice_bit = not_ice_mask .* 0.3
-    not_ice_mask .= not_ice_bit .+ sharpened_image
-    adjusted_sharpened = (
-        (1 - alpha_level) .* sharpened_image .+ alpha_level .* not_ice_mask
-    )
-    gamma_adjusted_sharpened = adjust_histogram(
-        adjusted_sharpened, GammaCorrection(; gamma=gamma_factor)
-    )
-    gamma_adjusted_sharpened_cloudmasked = apply_cloudmask(
-        gamma_adjusted_sharpened, cloudmask
-    )
-    segb_filled =
-        .!imfill(
-            gamma_adjusted_sharpened_cloudmasked .<= adjusted_ice_threshold, fill_range
-        )
-
-    ## Process ice mask
-    segb_ice = closing(segmented_a_ice_mask, struct_elem) .* segb_filled
-
-    ice_intersect = (segb_filled .* segb_ice)
-
-    return (;
-        :not_ice => map(clamp01nan, not_ice_mask)::Matrix{Gray{Float64}},
-        :not_ice_bit => (not_ice_bit .> 0)::BitMatrix,
-        :ice_intersect => ice_intersect::BitMatrix,
-    )
+    adjusted_sharpened = (1 - alpha_level) .* sharpened_image .+ alpha_level .* brightened_image
+    
+    adjust_histogram!(adjusted_sharpened, GammaCorrection(; gamma=gamma_factor))
+    apply_cloudmask!(gamma_adjusted_sharpened, cloudmask)
+    segB = gamma_adjusted_sharpened_cloudmasked .<= adjusted_ice_threshold
+    segb_filled = .!imfill(segB, fill_range)
+    
+    return segb_filled
 end
 
+# """
+#     segmentation_B(sharpened_image, cloudmask, segmented_a_ice_mask, struct_elem; fill_range, isolation_threshold, alpha_level, adjusted_ice_threshold)
+
+# Performs image processing and morphological filtering with intermediate files from normalization.jl and segmentation_A to further isolate ice floes, returning a mask of potential ice.
+
+# # Arguments
+# - `sharpened_image`: non-cloudmasked but sharpened image, output from `normalization.jl`
+# - `cloudmask`:  bitmatrix cloudmask for region of interest
+# - `segmented_a_ice_mask`: binary cloudmasked ice mask from `segmentation_a_direct.jl`
+# - `struct_elem`: structuring element for dilation
+# - `fill_range`: range of values dictating the size of holes to fill
+# - `isolation_threshold`: threshold used to isolated pixels from `sharpened_image`; between 0-1
+# - `alpha_level`: alpha threshold used to adjust contrast
+# - `gamma_factor`: amount of gamma adjustment
+# - `adjusted_ice_threshold`: threshold used to set ice equal to one after gamma adjustment
+
+# """
+# function segmentation_B(
+#     sharpened_image::Matrix{Gray{Float64}},
+#     cloudmask::BitMatrix,
+#     segmented_a_ice_mask::BitMatrix,
+#     struct_elem=strel_diamond((3, 3));
+#     fill_range::Tuple=(0, 1),
+#     isolation_threshold::Float64=0.4,
+#     alpha_level::Float64=0.5,
+#     gamma_factor::Float64=2.5,
+#     adjusted_ice_threshold::Float64=0.05,
+# )
+
+#     ## Process sharpened image
+#     # Set areas lower than isolation threshold to 0, amplify everything else by 30%
+#     bright_img = (sharpened_image .* 1.3) .* (sharpened_image .> isolation_threshold)
+#     clamp!(bright_img, 0, 1)
+
+#     # not_ice_mask = deepcopy(sharpened_image)
+#     # not_ice_mask[not_ice_mask .< isolation_threshold] .= 0
+#     # not_ice_bit = not_ice_mask .* 0.3
+#     # not_ice_mask .= not_ice_bit .+ sharpened_image
+
+#     # Increase the contrast, then apply a threshold and imfill
+#     adjusted_sharpened = (
+#         (1 - alpha_level) .* sharpened_image .+ alpha_level .* bright_img
+#     )
+#     gamma_adjusted_sharpened = adjust_histogram(
+#         adjusted_sharpened, GammaCorrection(; gamma=gamma_factor)
+#     )
+#     gamma_adjusted_sharpened_cloudmasked = apply_cloudmask(
+#         gamma_adjusted_sharpened, cloudmask
+#     )
+#     segb_filled =
+#         .!imfill(
+#             gamma_adjusted_sharpened_cloudmasked .<= adjusted_ice_threshold, fill_range
+#         )
+
+#     ## Process ice mask
+#     # dmw: combined with segA here, so we should think of this as an explicity joining operation.
+#     ice_intersect = closing(segmented_a_ice_mask, struct_elem) .* segb_filled
+
+#     return (;
+#         :bright_ice => map(clamp01nan, not_ice_mask)::Matrix{Gray{Float64}},
+#         # :not_ice_bit => (not_ice_bit .> 0)::BitMatrix,
+#         :ice_intersect => ice_intersect::BitMatrix,
+#     )
+# end
+
+# dmw: add a general purpose watershed function that does the labeling, watershed, and either returns the borders or a SegmentedImage.
 """
     watershed_ice_floes(intermediate_segmentation_image;)
 Performs image processing and watershed segmentation with intermediate files from segmentation_b.jl to further isolate ice floes, returning a binary segmentation mask indicating potential sparse boundaries of ice floes.
@@ -496,22 +523,6 @@ function watershed_ice_floes(intermediate_segmentation_image::BitMatrix)::BitMat
     labels = labels_map(segment)
     borders = isboundary(labels)
     return borders
-end
-
-"""
-    watershed_product(watershed_B_ice_intersect, watershed_B_not_ice;)
-Intersects the outputs of watershed segmentation on intermediate files from segmentation B, indicating potential sparse boundaries of ice floes.
-# Arguments
-- `watershed_B_ice_intersect`: binary segmentation mask from `watershed_ice_floes`
-- `watershed_B_not_ice`: binary segmentation mask from `watershed_ice_floes`
-"""
-function watershed_product(
-    watershed_B_ice_intersect::BitMatrix, watershed_B_not_ice::BitMatrix;
-)::BitMatrix
-
-    ## Intersect the two watershed files
-    watershed_intersect = watershed_B_ice_intersect .* watershed_B_not_ice
-    return watershed_intersect
 end
 
 """
@@ -546,24 +557,24 @@ function segmentation_F(
     landmask::BitMatrix;
     min_area_opening::Int64=20,
 )::BitMatrix
+
+    # compare this workflow to the first instance with the k-means binarization.
+    # How much is literally reused, and how much is just similar? What does "not ice" mean here?
     apply_landmask!(segmentation_B_not_ice_mask, landmask)
-
     ice_leads = .!segmentation_B_watershed_intersect .* segmentation_B_ice_intersect
-
     ice_leads .= .!area_opening(ice_leads; min_area=min_area_opening, connectivity=2)
-
     not_ice = dilate(segmentation_B_not_ice_mask, strel_diamond((5, 5)))
-
     mreconstruct!(
         dilate, not_ice, complement.(not_ice), complement.(segmentation_B_not_ice_mask)
     )
 
-    reconstructed_leads = (not_ice .* ice_leads) .+ (60 / 255)
-
+    # Which step is the slow one here? Multiplication with the mask?
+    reconstructed_leads = (not_ice .* ice_leads) .+ (60 / 255) # where is this number from? should it be LinearStretching instead?
     leads_segmented =
         kmeans_binarization(reconstructed_leads, falsecolor_image) .*
         .!segmentation_B_watershed_intersect
     @info("Done with k-means segmentation")
+
     leads_segmented_broken = hbreak(leads_segmented)
 
     leads_branched = branch(leads_segmented_broken)
@@ -590,58 +601,6 @@ function segmentation_F(
     mreconstruct!(dilate, floes_opened, floes, floes_opened)
 
     return floes_opened
-end
-
-"""
-    imsharpen(truecolor_image, landmask_no_dilate, lambda, kappa, niters, nbins, rblocks, cblocks, clip, smoothing_param, intensity)
-
-Sharpen `truecolor_image`.
-
-# Arguments
-- `truecolor_image`: input image in truecolor
-- `landmask_no_dilate`: landmask for region of interest
-- `lambda`: speed of diffusion (0–0.25)
-- `kappa`: conduction coefficient for diffusion (25–100)
-- `niters`: number of iterations of diffusion
-- `nbins`: number of bins during histogram equalization
-- `rblocks`: number of row blocks to divide input image during equalization
-- `cblocks`: number of column blocks to divide input image during equalization
-- `clip`: Thresholds for clipping histogram bins (0–1); values closer to one minimize contrast enhancement, values closer to zero maximize contrast enhancement
-- `smoothing_param`: pixel radius for gaussian blurring (1–10)
-- `intensity`: amount of sharpening to perform
-"""
-function imsharpen(
-    truecolor_image::Matrix{RGB{Float64}},
-    landmask_no_dilate::BitMatrix,
-    lambda::Real=0.1,
-    kappa::Real=0.1,
-    niters::Int64=5,
-    nbins::Int64=255,
-    rblocks::Int64=10, # matlab default is 8 CP
-    cblocks::Int64=10, # matlab default is 8 CP
-    clip::Float64=0.86, # matlab default is 0.01 CP
-    smoothing_param::Int64=10,
-    intensity::Float64=2.0,
-)::Matrix{Float64}
-    input_image = apply_landmask(truecolor_image, landmask_no_dilate)
-
-    # Diffusion algorithm can be an input to the overall algorithm
-    pmd = PeronaMalikDiffusion(lambda, kappa, niters, "exponential")
-    input_image .= nonlinear_diffusion(input_image, pmd)
-
-    # Channelview -> _adjusthistogram -> colorview as a function.
-    masked_view = Float64.(channelview(input_image))
-
-    eq = [
-        _adjust_histogram(@view(masked_view[i, :, :]), nbins, rblocks, cblocks, clip) for
-        i in 1:3
-    ]
-
-    image_equalized = colorview(RGB, eq...)
-
-    image_equalized_gray = Gray.(image_equalized)
-
-    return unsharp_mask(image_equalized_gray, smoothing_param, intensity)
 end
 
 end

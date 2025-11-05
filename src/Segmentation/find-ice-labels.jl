@@ -134,7 +134,6 @@ function (f::IceDetectionBrightnessPeaksMODIS721)(out, modis_721_image, args...;
     @. out = mask_band_7 * mask_band_2 * mask_band_1 * alpha_binary
 end
 
-# TODO: Add a version of this that requires a minimum number of pixels to stop and return the binary image.
 """
     IceDetectionFirstNonZeroAlgorithm(;
         algorithms::Vector{IceDetectionAlgorithm},
@@ -145,14 +144,16 @@ Runs each algorithm from `algorithms` on the image, and returns the first which 
 """
 @kwdef struct IceDetectionFirstNonZeroAlgorithm <: IceDetectionAlgorithm
     algorithms::Vector{IceDetectionAlgorithm}
+    # threshold::Int64=0
 end
 
+# dmw: args / kwargs not being used yet.
 function (f::IceDetectionFirstNonZeroAlgorithm)(out, img, args...; kwargs...)
     for algorithm in f.algorithms
         @debug algorithm
         result = binarize(img, algorithm)
         ice_sum = sum(result)
-        if 0 < ice_sum
+        if 0 < ice_sum # change to f.threshold when I can
             @. out = result
             return nothing
         end
