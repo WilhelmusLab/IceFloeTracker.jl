@@ -36,13 +36,6 @@
     # check default properties
     @test table == regionprops_table(label_img)
 
-    # Tests for regionprops
-    regions = regionprops(label_img, bw_img)
-
-    # Check some data matches in table
-    randnum = rand(1:total_labels)
-    @test table.area[randnum] == regions[randnum].area
-
     # Check floe masks generation and correct cropping
     addfloemasks!(table, bw_img)
     @test all(

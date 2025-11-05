@@ -2,6 +2,7 @@
 import ..skimage: sk_measure
 import DataFrames: rename!, DataFrame, nrow, select!
 import ..Geospatial: latlon
+import PythonCall: Py, pyconvert
 
 """
     regionprops_table(label_img, intensity_img; properties, connectivity, extra_properties)
@@ -82,11 +83,13 @@ function regionprops_table(
         extra_properties = nothing
     end
 
-    props = DataFrame(
-        sk_measure.regionprops_table(
-            label_img, intensity_img, properties; extra_properties=extra_properties
-        ),
+    props_raw = sk_measure.regionprops_table(
+        Py(label_img).to_numpy(),
+        !isnothing(intensity_img) ? Py(intensity_img).to_numpy() : nothing,
+        properties;
+        extra_properties=extra_properties,
     )
+    props = pyconvert(Dict, props_raw) |> DataFrame
 
     if "bbox" in properties
         bbox_cols = getbboxcolumns(props)
@@ -101,69 +104,6 @@ function regionprops_table(
         renamecols!(props, centroid_cols, ["row_centroid", "col_centroid"])
     end
     return props
-end
-
-# Also adding regionprops as it might be more computationally efficient to get a property for each object on demand than generating the full regionprops_table at once
-
-"""
-    regionprops(label_img, ; properties, connectivity)
-
-A wrapper of the `regionprops` function from the skimage python library.
-    
-See its full documentation at https://scikit-image.org/docs/stable/api/skimage.measure.html#skimage.measure.regionprops.
-    
-# Arguments
-- `label_img`: Image with the labeled objects of interest
-- `intensity_img`: (Optional) Used for generating `extra_properties`, integer/float array from which (presumably) `label_img` was generated
-- `extra_properties`: (Optional) not yet implemented. It will be set to `nothing`
-
-See also [`regionprops_table`](@ref)
-
-# Examples
-
-```jldoctest; setup = :(using IceFloeTracker, Random)
-julia> Random.seed!(123);
-
-julia> bw_img = rand([0, 1], 5, 10)
-5×10 Matrix{Int64}:
- 1  0  1  0  0  0  0  0  0  1
- 1  0  1  1  1  0  0  0  1  1
- 1  1  0  1  1  0  1  0  0  1
- 0  1  0  1  0  0  0  0  1  0
- 1  0  0  0  0  1  0  1  0  1
-
- julia> label_img = Images.label_components(bw_img, trues(3,3))
- 5×10 Matrix{Int64}:
-  1  0  1  0  0  0  0  0  0  4
-  1  0  1  1  1  0  0  0  4  4
-  1  1  0  1  1  0  3  0  0  4
-  0  1  0  1  0  0  0  0  4  0
-  1  0  0  0  0  2  0  4  0  4
-
- julia> regions = regionprops(label_img, bw_img);
-
- julia> for region in regions
-           println(region.area,"\t", region.perimeter)
-        end
-13      11.621320343559642
-1       0.0
-1       0.0
-7       4.621320343559642
-```
-"""
-function regionprops(
-    label_img::Any,
-    intensity_img::Any=nothing;
-    extra_properties::Union{Tuple{Function,Vararg{Function}},Nothing}=nothing,
-)
-    if !isnothing(extra_properties)
-        @error "<extra_properties> not yet implemented in this wrapper; setting it to <nothing>"
-        extra_properties = nothing
-    end
-
-    return sk_measure.regionprops(
-        label_img, intensity_img; extra_properties=extra_properties
-    )
 end
 
 """

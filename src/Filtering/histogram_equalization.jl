@@ -1,6 +1,7 @@
 import Images: Images, RGB, float64, Gray, red, green, blue
 import ..skimage: sk_exposure
 import ..ImageUtils: to_uint8
+import PythonCall: Py, pyconvert
 
 # dmw: use multiple dispatch, so that if the 2d function is called 
 function adapthisteq(img::Matrix{T}, nbins=256, clip=0.01) where {T}
@@ -10,15 +11,16 @@ function adapthisteq(img::Matrix{T}, nbins=256, clip=0.01) where {T}
 
     # Step 2: Apply adaptive histogram equalization. equalize_adapthist handles the tiling to 1/8 of the image size (equivalent to 8x8 blocks in MATLAB)
     equalized_image = sk_exposure.equalize_adapthist(
-        normalized_image;
+        Py(normalized_image).to_numpy();
         clip_limit=clip,  # Equivalent to MATLAB's 'ClipLimit'
         nbins=nbins,         # Number of histogram bins. 255 is used to match the default in MATLAB script
     )
 
     # Step 3: Rescale the image back to the original range [image_min, image_max]
-    final_image = sk_exposure.rescale_intensity(
-        equalized_image; in_range="image", out_range=(image_min, image_max)
-    )
+    final_image =
+        sk_exposure.rescale_intensity(
+            equalized_image; in_range="image", out_range=(image_min, image_max)
+        ) |> (pyimg -> pyconvert(Matrix, pyimg))
 
     # Convert back to the original data type if necessary
     final_image = to_uint8(final_image)
@@ -139,5 +141,7 @@ end
 Histogram equalization of `img` using `nbins` bins.
 """
 function histeq(img::S; nbins=64)::S where {S<:AbstractArray{<:Integer}}
-    return to_uint8(sk_exposure.equalize_hist(img; nbins=nbins) * 255)
+    result_py = sk_exposure.equalize_hist(Py(img).to_numpy(); nbins=nbins) * 255
+    result = pyconvert(Array, result_py) |> to_uint8
+    return result
 end

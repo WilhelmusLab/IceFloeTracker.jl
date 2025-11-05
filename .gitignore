@@ -24,6 +24,7 @@ runall.txt
 soit.txt
 preprocess.txt
 Manifest.toml
+.CondaPkg/
 
 ## Allow
 !test/test_inputs/*.tiff

@@ -33,9 +33,6 @@ jobs:
 
       - uses: julia-actions/cache@v2
       
-      - name: setup PyCall
-        run: julia --project=.devcontainer/PyCallSetup.jl .devcontainer/PyCallSetup.jl/setup.jl
-
       - uses: julia-actions/julia-buildpkg@v1
 
       # Convert notebooks to .jl files using nbconvert
