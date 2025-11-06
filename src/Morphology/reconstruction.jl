@@ -34,6 +34,15 @@ end
 
 Use morphological reconstruction to enforce minima on the input image `I` at the positions where the binary mask `BW` is non-zero.
 """
+<<<<<<< HEAD
+=======
+function impose_minima(I::AbstractArray{T}, BW::AbstractArray{Bool}) where {T<:Integer}
+    marker = 255 .* BW
+    mask = imcomplement(min.(I .+ 1, 255 .- marker))
+    reconstructed = mreconstruct(dilate, marker, mask, strel_box((3, 3)))
+    return imcomplement(Int.(reconstructed))
+end
+>>>>>>> 876ab0f7 (replace sk_morphology with mreconstruct)
 
 function impose_minima(
     I::AbstractArray{T}, BW::AbstractMatrix{Bool}
@@ -45,6 +54,5 @@ function impose_minima(
 
     marker = -Inf * BW .+ (Inf * .!BW)
     mask = min.(I .+ h, marker)
-
-    return 1 .- sk_morphology.reconstruction(1 .- marker, 1 .- mask)
+    return 1 .- mreconstruct(dilate, 1 .- mask, 1 .- marker, strel_box((3, 3)))
 end
