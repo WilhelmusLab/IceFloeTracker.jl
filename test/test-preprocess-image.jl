@@ -5,6 +5,7 @@
         channelview,
         colorview,
         RGB,
+        Gray,
         @test_approx_eq_sigma_eps,
         test_approx_eq_sigma_eps,
         strel_diamond,
