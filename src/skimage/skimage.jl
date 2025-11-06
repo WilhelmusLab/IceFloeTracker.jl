@@ -43,7 +43,7 @@ module measure
         result =
             _measure.regionprops_table(
                 PythonCall.Py(label_img).to_numpy(),
-                PythonCall.Py(intensity_img).to_numpy();
+                intensity_img ? PythonCall.Py(intensity_img).to_numpy() : nothing;
                 properties,
             ) |>
             (x -> PythonCall.pyconvert(Dict, x)) |>
