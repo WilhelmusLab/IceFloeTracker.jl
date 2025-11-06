@@ -39,7 +39,7 @@ It supports both integer and grayscale images using different implementations fo
 function impose_minima(I::AbstractArray{T}, BW::AbstractArray{Bool}) where {T<:Integer}
     marker = 255 .* BW
     mask = imcomplement(min.(I .+ 1, 255 .- marker))
-    reconstructed = sk_morphology.reconstruction(marker, mask)
+    reconstructed = mreconstruct(dilate, marker, mask, strel_box((3, 3)))
     return imcomplement(Int.(reconstructed))
 end
 
@@ -53,6 +53,5 @@ function impose_minima(
 
     marker = -Inf * BW .+ (Inf * .!BW)
     mask = min.(I .+ h, marker)
-
-    return 1 .- sk_morphology.reconstruction(1 .- marker, 1 .- mask)
+    return 1 .- mreconstruct(dilate, 1 .- mask, 1 .- marker, strel_box((3, 3)))
 end
