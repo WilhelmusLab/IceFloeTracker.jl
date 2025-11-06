@@ -31,6 +31,8 @@ import Images:
     local_maxima,
     SegmentedImage,
     segment_mean
+    
+
 import ..skimage: sk_morphology
 import ..ImageUtils: get_brighten_mask, to_uint8, imcomplement, imbrighten, get_tiles
 import ..Filtering: histeq, unsharp_mask, conditional_histeq, rgb2gray
@@ -337,6 +339,7 @@ function watershed1(bw::T) where {T<:Union{BitMatrix,AbstractMatrix{Bool}}}
     w = watershed(seg, cc)
     lmap = labels_map(w)
     return isboundary(lmap) .> 0
+    #dmw: isboundary returns a thick boundary, whereas matlab uses a 1-pixel boundary.
 end
 
 """

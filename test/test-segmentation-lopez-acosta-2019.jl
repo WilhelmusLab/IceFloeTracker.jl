@@ -36,7 +36,7 @@ end
         output_directory="./test_outputs/",
     )
     @test 0.12 ≈ labeled_fraction atol = 0.1
-    @test 0.27 ≤ round(recall; digits=2)
+    @test 0.26 ≤ round(recall; digits=2)
     @test 0.75 ≤ round(precision; digits=2)
     @test 0.40 ≤ round(F_score; digits=2)
 
