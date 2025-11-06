@@ -1,6 +1,8 @@
 @testitem "Preprocess Image" begin
     using IceFloeTracker:
-        PeronaMalikDiffusion, apply_landmask!, apply_to_channels, unsharp_mask
+        PeronaMalikDiffusion,
+        apply_landmask!,
+        unsharp_mask
     using Images:
         channelview,
         colorview,
@@ -18,6 +20,8 @@
         dilate
     using Dates: Dates
     using IceFloeTracker.Filtering: _channelwise_adapthisteq
+    using IceFloeTracker: LopezAcosta2019
+    
 
     include("config.jl")
 
@@ -117,7 +121,7 @@
 
     @info "Ice-water discrimination"
 
-    ice_water_discrim = IceFloeTracker.discriminate_ice_water(
+    ice_water_discrim = LopezAcosta2019.discriminate_ice_water(
         falsecolor_image, reconst_gray, landmask_bitmatrix, cloudmask
     )
     @test (@test_approx_eq_sigma_eps ice_water_discrim matlab_ice_water_discrim [0, 0] 0.065) ===
