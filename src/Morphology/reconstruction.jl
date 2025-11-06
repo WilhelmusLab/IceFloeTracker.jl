@@ -26,7 +26,7 @@ function reconstruct(img, se, type, invert::Bool=true)
 
     type == "dilation" && return mreconstruct(dilate, morphed, img)
 
-    return sk_morphology.reconstruction(morphed, img)
+    return mreconstruct(dilate, morphed, img, strel_box((3, 3)))
 end
 
 """
