@@ -25,6 +25,7 @@ import Images:
     channelview,
     build_histogram,
     adjust_histogram,
+    adjust_histogram!,
     imfill,
     opening,
     closing,
@@ -60,7 +61,8 @@ import ..Preprocessing:
     create_clouds_channel,
     apply_landmask,
     apply_landmask!,
-    apply_cloudmask
+    apply_cloudmask,
+    apply_cloudmask!
 import ..Segmentation:
     IceFloeSegmentationAlgorithm, 
     IceDetectionLopezAcosta2019,
@@ -98,14 +100,14 @@ ice_masks_params = (
     diffusion_algorithm = PeronaMalikDiffusion(diffusion_parameters...)
     adapthisteq_params = (
         nbins=256,
-        rblocks=10, # matlab default is 8 CP
-        cblocks=10, # matlab default is 8 CP
-        clip=0.86,  # matlab default is 0.01 CP
+        rblocks=8, # matlab default is 8 CP
+        cblocks=8, # matlab default is 8 CP
+        clip=0.9,  # matlab default is 0.01 CP
     )
     unsharp_mask_params = (smoothing_param=10, intensity=2)
-    reconstruct_strel = strel_diamond((5, 5)) # structuring element used for enhancing foreground/background contrast
+    reconstruct_strel = strel_diamond((5, 5)) # Structuring element used for enhancing foreground/background contrast
     kmeans_params = (k=4, maxiter=50, random_seed=45)
-    ice_labels_algorithm = IceDetectionLopezAcosta2019(;ice_masks_params...) # Check parameters that can be sent in
+    ice_labels_algorithm = IceDetectionLopezAcosta2019(;ice_masks_params...) # Check parameters that can be sent into the algo.
 end
 
 # function Segment(; landmask_structuring_element=make_landmask_se())
@@ -182,6 +184,7 @@ function (p::Segment)(
         ) |> clean_binary_floes
 
     # check: are there any regions that are nonzero under the cloudmask, since it was applied in discriminate ice water?
+    
     segA = apply_cloudmask(kmeans_result, cloudmask) 
 
     @info "Segmentation method 2"
@@ -196,9 +199,12 @@ function (p::Segment)(
 
     segB = segB_binarize(sharpened_grayscale_image, brightened_image, cloudmask)
     
+    # Is there a better place to formally make the comparison between the segmentation results?
+    # My concern here is that this breaks the independence of the terms being compared in the watershed.
+    # It's also a point of weakness: if one segmentation fails, such as when only 1 pixels has ice labels and it doesn't intersect
+    # with the ice clusters, then the entire image can end up blank. 
     segAB_intersect = closing(segA, struct_elem) .* segB
 
-    # Process watershed in parallel using Folds
     @info "Watershed product"
     watersheds_product = watershed_ice_floes(brightened_image .> 0) .* watershed_ice_floes(segAB_intersect)
 
@@ -206,7 +212,7 @@ function (p::Segment)(
     # TODO: @hollandjg find out why segF is more dilated
     @info "Segmenting floes part 3/3"
     segF = segmentation_F(
-        brightened_image, # replace with new name
+        brightened_image, # Is the algorithm sensitive to using this rather than the sharpened grayscale or adjusted grayscale?
         segAB_intersect, 
         watersheds_product,
         fc_landmasked,
@@ -229,14 +235,14 @@ function (p::Segment)(
             landmask_dilated=landmask_imgs.dilated,
             landmask_non_dilated=landmask_imgs.non_dilated,
             cloudmask=cloudmask,
-            ice_mask=ice_mask,
+            # ice_mask=ice_mask,
             sharpened_truecolor_image=sharpened_truecolor_image,
             sharpened_gray_truecolor_image=sharpened_grayscale_image,
             normalized_image=reconstructed_grayscale,
             ice_water_discrim=ice_water_discrim,
             segA=segA,
             segB=segB,
-            watersheds_segB_product=watersheds_segB_product,
+            watersheds_segB_product=watersheds_product,
             segF=segF,
             labels=labels,
             segment_mean_truecolor=map(
@@ -324,6 +330,8 @@ function discriminate_ice_water(
     floes_band_2_keep = floes_band_2[floes_band_2 .> floes_threshold]
     floes_band_1_keep = floes_band_1[floes_band_1 .> floes_threshold]
 
+    # This will fail if floes_band_2_keep or floes_band_1_keep are empty.
+    # What should be returned in that case?
     _, floes_bin_counts = build_histogram(floes_band_2_keep, nbins)
     _, vals = findmaxima(floes_bin_counts)
 
@@ -336,6 +344,7 @@ function discriminate_ice_water(
     kurt_band_1 = kurtosis(floes_band_1_keep)
     standard_dev = stdmult(⋅, normalized_image)
 
+    # Check how this works: is building a histogram necessary in this case? It's a binary image!
     # find the ratio of clouds in the image to use in threshold filtering
     _, clouds_bin_counts = build_histogram(image_clouds .> 0)
     total_clouds = sum(clouds_bin_counts[51:end])
@@ -430,14 +439,16 @@ end
 
 function segB_binarize(sharpened_image, brightened_image, cloudmask;
      gamma_factor=2.5, adjusted_ice_threshold=0.05, fill_range=(0, 1), alpha_level=0.5)
-
+    # Weighted average between brightened image and sharpened grayscale
     adjusted_sharpened = (1 - alpha_level) .* sharpened_image .+ alpha_level .* brightened_image
-    
+
+    # Gamma correction and cloud masking
     adjust_histogram!(adjusted_sharpened, GammaCorrection(; gamma=gamma_factor))
-    apply_cloudmask!(gamma_adjusted_sharpened, cloudmask)
-    segB = gamma_adjusted_sharpened_cloudmasked .<= adjusted_ice_threshold
+    apply_cloudmask!(adjusted_sharpened, cloudmask) # Should this be happening here?
+
+    # Thresholding and filling small holes (based on fill_range=(min, max))
+    segB = adjusted_sharpened .<= adjusted_ice_threshold
     segb_filled = .!imfill(segB, fill_range)
-    
     return segb_filled
 end
 
