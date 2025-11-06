@@ -144,7 +144,7 @@ Runs each algorithm from `algorithms` on the image, and returns the first which 
 """
 @kwdef struct IceDetectionFirstNonZeroAlgorithm <: IceDetectionAlgorithm
     algorithms::Vector{IceDetectionAlgorithm}
-    # threshold::Int64=0
+    # threshold::Int64=0 # dmw: initial attempt failed, need to check the format to see why
 end
 
 # dmw: args / kwargs not being used yet.
@@ -153,7 +153,8 @@ function (f::IceDetectionFirstNonZeroAlgorithm)(out, img, args...; kwargs...)
         @debug algorithm
         result = binarize(img, algorithm)
         ice_sum = sum(result)
-        if 0 < ice_sum # change to f.threshold when I can
+        thresh = 10 # dmw: temp adjustment to avoid sensitivity to speckle. TBD add as parameter to struct
+        if thresh < ice_sum # change to f.threshold when I can
             @. out = result
             return nothing
         end
