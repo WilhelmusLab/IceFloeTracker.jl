@@ -36,6 +36,7 @@ import Images:
     area_opening,
     area_opening!,
     dilate,
+    erode,
     strel_diamond,
     complement,
     bothat,
@@ -189,31 +190,30 @@ function (p::Segment)(
     # check: are there any regions that are nonzero under the cloudmask, since it was applied in discriminate ice water?
     segA = apply_cloudmask(kmeans_result, cloudmask) 
 
-    @info "Segmentation method 2"
+    @info "Segmentation method 2: Thresholding brightened image"
 
     # Brighten ice and set areas darker than a threshold to 0
     # General purpose with brighten.jl?
     # TODO: determine name for parameter, operation for brightening
-    brightened_image = (sharpened_grayscale_image .* 1.3) .* (sharpened_grayscale_image .> p.segmentation_b_params.isolation_threshold)
+    threshold_mask = sharpened_grayscale_image .> p.segmentation_b_params.isolation_threshold
+    brightened_image = (sharpened_grayscale_image .* 1.3) .* threshold_mask
     clamp!(brightened_image, 0, 1)
-
+  
+    @info "Segmentation method 3: Thresholding brightened image after gamma correction"
+    # The brightening could happen inside the algorithm, since it is so simple.
     segB = segB_binarize(sharpened_grayscale_image, brightened_image, cloudmask)
     
-    # Is there a better place to formally make the comparison between the segmentation results?
-    # My concern here is that this breaks the independence of the terms being compared in the watershed.
-    # It's also a point of weakness: if one segmentation fails, such as when only 1 pixels has ice labels and it doesn't intersect
-    # with the ice clusters, then the entire image can end up blank. 
-    # TODO: determine name for parameter with this closing term
+    @info "Merging segmentation results"
     segAB_intersect = closing(segA, p.segmentation_b_params.struct_elem) .* segB
 
-    @info "Watershed product"
-    watersheds_product = watershed_ice_floes(brightened_image .> 0) .* watershed_ice_floes(segAB_intersect)
+    # Julia's watershed boundaries are larger than in matlab, which may be an issue. Can 
+    # we improve on the boundary identification by only drawing the boundary on the non-background regions?
+    watersheds_product = watershed_ice_floes(threshold_mask) .* watershed_ice_floes(segAB_intersect)
 
     # segmentation_F
-    # TODO: @hollandjg find out why segF is more dilated
     @info "Segmenting floes part 3/3"
     segF = segmentation_F(
-        sharpened_grayscale_image, # Is the algorithm sensitive to using this rather than the sharpened grayscale or adjusted grayscale?
+        brightened_image,
         segAB_intersect, 
         watersheds_product,
         fc_landmasked,
@@ -221,8 +221,17 @@ function (p::Segment)(
         landmask_imgs.dilated,
     )
 
+    binary_cleaned = morphological_cleanup_final(
+        segF,
+        cloudmask;
+        fill_range=(0,1),
+        min_area_opening=20,
+        bothat_strel=strel_diamond((5,5)),
+        opening_strel=centered(se_disk4()), # consider replacement with optimized strel 
+    )
+
     @info "Labeling floes"
-    labels = label_components(segF)
+    labels = label_components(binary_cleaned)
 
     # Return the original truecolor image, segmented
     segments = SegmentedImage(truecolor, labels)
@@ -474,7 +483,7 @@ end
 
 """
     segmentation_F(
-    segmentation_B_not_ice_mask::Matrix{Gray{Float64}},
+    brightened_image::Matrix{Gray{Float64}},
     segmentation_B_ice_intersect::BitMatrix,
     segmentation_B_watershed_intersect::BitMatrix,
     ice_labels::Union{Vector{Int64},BitMatrix},
@@ -486,7 +495,7 @@ end
 Cleans up past segmentation images with morphological operations, and applies the results of prior watershed segmentation, returning the final cleaned image for tracking with ice floes segmented and isolated.
 
 # Arguments
-- `segmentation_B_not_ice_mask`: gray image output from `segmentation_b.jl`
+- `brightened_image`: Brightened grayscale image. Leads and interstitial ice should be dark. 
 - `segmentation_B_ice_intersect`: binary mask output from `segmentation_b.jl`
 - `segmentation_B_watershed_intersect`: ice pixels, output from `segmentation_b.jl`
 - `ice_labels`: vector of pixel coordinates output from `find_ice_labels.jl`
@@ -495,8 +504,8 @@ Cleans up past segmentation images with morphological operations, and applies th
 - `min_area_opening`: threshold used for area opening; pixel groups greater than threshold are retained
 
 """
-function segmentation_F(
-    segmentation_B_not_ice_mask::Matrix{Gray{Float64}},
+function segmentation_F( # rename
+    brightened_image::Matrix{Gray{Float64}},
     segmentation_B_ice_intersect::BitMatrix,
     segmentation_B_watershed_intersect::BitMatrix,
     falsecolor_image,
@@ -506,45 +515,55 @@ function segmentation_F(
 )::BitMatrix
 
     # compare this workflow to the first instance with the k-means binarization.
-    # How much is literally reused, and how much is just similar? What does "not ice" mean here?
-    apply_landmask!(segmentation_B_not_ice_mask, landmask)
-    ice_leads = .!segmentation_B_watershed_intersect .* segmentation_B_ice_intersect
-    ice_leads .= .!area_opening(ice_leads; min_area=min_area_opening, connectivity=2)
-    not_ice = dilate(segmentation_B_not_ice_mask, strel_diamond((5, 5)))
-    mreconstruct!(
-        dilate, not_ice, complement.(not_ice), complement.(segmentation_B_not_ice_mask)
-    )
+    
 
-    # Which step is the slow one here? Multiplication with the mask?
-    reconstructed_leads = (not_ice .* ice_leads) .+ (60 / 255) # where is this number from? should it be LinearStretching instead?
+    # segb_leads = 1 for leads/water, 0 for ice (and bright clouds)
+    segb_leads = .!segmentation_B_watershed_intersect .* segmentation_B_ice_intersect
+    segb_leads .= .!area_opening(segb_leads; min_area=min_area_opening, connectivity=2)
+    
+    # reconstruction by erosion is equivalent to dilation of the complements
+    markers = dilate(brightened_image, strel_diamond((5, 5)))
+    reconstructed_leads = complement.(mreconstruct(erode, markers, brightened_image)) 
+    
+    # multiply with the segb_leads, so if at least one of the two labels it as ice it stays ice
+    reconstructed_leads .*= segb_leads
+    # In the matlab code, 60/255 was added to reconstructed_leads.
     leads_segmented =
         kmeans_binarization(reconstructed_leads, falsecolor_image) .*
         .!segmentation_B_watershed_intersect
-    @info("Done with k-means segmentation")
 
-    leads_segmented_broken = hbreak(leads_segmented)
+    return leads_segmented
+end
+"""
 
-    leads_branched = branch(leads_segmented_broken)
+Series of morphological operations to produce final well-separated ice floes.
 
-    leads_filled = .!imfill(.!leads_branched, 0:1)
-
-    leads_opened = branch(
-        area_opening(leads_filled; min_area=min_area_opening, connectivity=2)
+"""
+function morphological_cleanup_final(
+        binary_ice_img,
+        cloudmask;
+        fill_range=(0,1),
+        min_area_opening=20,
+        bothat_strel=strel_diamond((5,5)),
+        opening_strel=centered(se_disk4()), # consider replacement with optimized strel 
     )
+    
+    img = deepcopy(binary_ice_img)
+    img .= hbreak(img) 
+    img .= branch(img)
 
-    leads_bothat = bothat(leads_opened, strel_diamond((5, 5))) .> 0.499
+    leads_filled = .!imfill(.!img, fill_range)
+    leads_opened = area_opening(leads_filled; min_area=min_area_opening, connectivity=2)
+    leads_opened .= branch(leads_opened)
+    leads_bothat = bothat(leads_opened, bothat_strel) .> 0
 
-    leads = convert(BitMatrix, (complement.(leads_bothat) .* leads_opened))
-
+    leads = (complement.(leads_bothat) .* leads_opened) .> 0
     area_opening!(leads, leads; min_area=min_area_opening, connectivity=2)
-
     # dmw: replace multiplication with apply_cloudmask
     leads_bothat_filled = (fill_holes(leads) .* .!cloudmask)
-    # leads_bothat_filled = apply_cloudmask(fill_holes(leads), cloudmask)
+    
     floes = branch(leads_bothat_filled)
-
-    floes_opened = opening(floes, centered(se_disk4()))
-
+    floes_opened = opening(floes, opening_strel)
     mreconstruct!(dilate, floes_opened, floes, floes_opened)
 
     return floes_opened

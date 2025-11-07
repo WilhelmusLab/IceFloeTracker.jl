@@ -2,6 +2,7 @@
 @testitem "Segmentation-A" begin
     import DelimitedFiles: readdlm
     import Images: float64, load
+    import IceFloeTracker.Segmentation: kmeans_binarization
 
     include("config.jl")
     include("test_error_rate.jl")
@@ -19,16 +20,23 @@
     )
     matlab_segmented_ice_cloudmasked =
         load("$(test_data_dir)/matlab_segmented_ice_cloudmasked.png") .> 0.5
+    fc_image = float64.(load(falsecolor_test_image_file)[test_region...])
+
 
     println("---------- Segment Image - Direct Method ------------")
-    @time segmented_ice_cloudmasked = LopezAcosta2019.segmented_ice_cloudmasking(
-        ice_water_discriminated_image, cloudmask, ice_labels
-    )
 
-    @time segmented_A = LopezAcosta2019.segmentation_A(segmented_ice_cloudmasked)
+    segmented_ice = kmeans_binarization(
+        ice_water_discriminated_image,
+        fc_image;
+        k=4,
+        maxiter=50,
+        random_seed=45,
+        ice_labels_algorithm=IceDetectionLopezAcosta2019()
+        ) 
 
-    @time segmented_ice = kmeans_segmentation(ice_water_discriminated_image, ice_labels)
-
+    # check: are there any regions that are nonzero under the cloudmask, since it was applied in discriminate ice water?
+    segmented_ice_cloudmasked = apply_cloudmask(segmented_ice, cloudmask) 
+    @time segmented_A = LopezAcosta2019.clean_binary_floes(segmented_ice_cloudmasked)
     @test typeof(segmented_A) == typeof(matlab_segmented_A_bitmatrix)
     @test test_similarity(matlab_segmented_A_bitmatrix, segmented_A, 0.039)
 

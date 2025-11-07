@@ -103,6 +103,9 @@
         ".png"
     @persist image_sharpened_gray sharpened_image_filename
 
+
+    # dmw: Note: These two images are used only in the Segmentation A workflow,
+    # so perhaps they should be moved over there.
     @info "Grayscale Reconstruction"
     # input may need to be Gray.(sharpened_truecolor_image) in case the landmask dilation matters
     markers = complement.(dilate(image_sharpened_gray, strel_diamond((5, 5))))
