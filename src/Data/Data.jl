@@ -108,7 +108,9 @@ The `dataset` can be iterated over to get each `ValidationDataCase`:
 Example:
 ```jldoctest Watkins2025GitHub
 julia> for case in dataset
-           println("$(case.name): sea ice fraction: $(case.metadata[:sea_ice_fraction]), true color image size: $(size(case.modis_truecolor))")
+           println(case.name * 
+                   ": sea ice fraction: " * string(case.metadata[:sea_ice_fraction]) *
+                   ", true color image size: " * string(size(case.modis_truecolor)))
        end
 011-baffin_bay-100km-20110702-aqua-250m: sea ice fraction: 0.8, true color image size: (400, 400)
 014-baffin_bay-100km-20220706-terra-250m: sea ice fraction: 1.0, true color image size: (400, 400)
