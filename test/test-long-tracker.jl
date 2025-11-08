@@ -1,6 +1,5 @@
 
 @testitem "Utilities" begin
-    using CSV
     using DataFrames
 
     include("config.jl")
@@ -175,13 +174,13 @@ end
 end
 
 @testitem "Ellipses" begin
-    using CSV
+    using CSVFiles
     using DataFrames
     using IceFloeTracker:
         long_tracker, candidate_filter_settings, candidate_matching_settings
 
     function load_props_from_csv(path; eval_cols=[:mask, :psi])
-        df = DataFrame(CSV.File(path))
+        df = DataFrame(load(path))
         for column in eval_cols
             df[!, column] = eval.(Meta.parse.(df[:, column]))
         end
