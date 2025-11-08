@@ -1,3 +1,6 @@
+"""
+Module for loading validated ice floe data.
+"""
 module Data
 
 export ValidationDataSet, ValidationDataCase, ValidationDataLoader, Watkins2025GitHub
