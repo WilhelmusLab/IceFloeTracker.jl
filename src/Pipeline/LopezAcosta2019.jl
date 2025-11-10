@@ -515,7 +515,12 @@ function segmentation_F( # rename
 )::BitMatrix
 
     # compare this workflow to the first instance with the k-means binarization.
-    
+    ice_leads = .!segmentation_B_watershed_intersect .* segmentation_B_ice_intersect
+    ice_leads .= .!area_opening(ice_leads; min_area=min_area_opening, connectivity=2)
+    not_ice = dilate(segmentation_B_not_ice_mask, strel_diamond((5, 5)))
+    mreconstruct!(
+        dilate, not_ice, complement.(not_ice), complement.(segmentation_B_not_ice_mask)
+    )
 
     # segb_leads = 1 for leads/water, 0 for ice (and bright clouds)
     segb_leads = .!segmentation_B_watershed_intersect .* segmentation_B_ice_intersect
@@ -530,7 +535,7 @@ function segmentation_F( # rename
     # In the matlab code, 60/255 was added to reconstructed_leads.
     leads_segmented =
         kmeans_binarization(reconstructed_leads, falsecolor_image) .*
-        .!segmentation_B_watershed_intersect
+        .!segmentation_B_watershed_intersectß
 
     return leads_segmented
 end
