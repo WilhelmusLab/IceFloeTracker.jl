@@ -58,6 +58,31 @@ function (f::LogLogQuadraticTimeDistanceFunction)(Δx, Δt)
 end
 
 """
+Tests the travel distance and time to a linear estimate of maximum travel distance
+using the formula
+```
+max_dx = max_vel * dt + eps
+```
+Epsilon should be the uncertainty in position, such that if for example the positional
+uncertainty is 250 m, then the maximum distance includes a 250 m buffer. The default maximum
+velocity is 1.5 m/s.
+
+"""
+
+@kwdef struct LinearTimeDistanceFunction <: AbstractTimeDistanceThresholdFunction
+    max_velocity = 1.5
+    epsilon = 250
+end
+
+function (f::LinearTimeDistanceFunction)(Δx, Δt)
+    umax = f.max_velocity
+    eps = f.epsilon
+    dt = seconds(Δt)
+    max_Δx = umax * dt + eps
+    return max_Δx - Δx > 0
+end
+
+"""
 distance_threshold(Δx, Δt, threshold_function)
 
 Time-distance threshold functions are used to identify search regions for floe matching. We include two distance threshold functions:
