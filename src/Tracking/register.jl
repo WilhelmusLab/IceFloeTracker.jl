@@ -70,6 +70,46 @@ function align_centroids(im1::AbstractArray{Bool}, im2::AbstractArray{Bool})
     return im1_padded, im2_padded
 end
 
+
+"""
+    shape_difference(floe1::DataFrameRow, floe2::DataFrameRow)
+    
+    Computes the shape difference between two ice floes using the estimated floe
+    orientation to first align both floes on the same axis. 
+
+"""
+function shape_difference(floe1, floe2)
+    im1 = imrotate_bin_nocrop(floe1.mask, floe1.orientation)
+    im2 = imrotate_bin_nocrop(floe2.mask, floe2.orientation)
+    im1, im2 = align_centroids(im1, im2)
+    a_not_b = im1 .> 0 .&& isequal.(im2, 0)
+    b_not_a = im2 .> 0 .&& isequal.(im1, 0)
+    shape_difference = sum(a_not_b .|| b_not_a)
+    return shape_difference
+end
+
+"""
+    shape_difference(floe1_mask::BitMatrix, floe1_orientation::Float64,
+                     floe2_mask::BitMatrix, floe2_orientation::Float64)
+    
+    Computes the shape difference between two ice floes using the estimated floe
+    orientation to first align both floes on the same axis. Passing the mask and orientation
+    together lets us more efficiently use it for DataFrame transforms.
+    
+"""
+function shape_difference(floe1_mask::BitMatrix, floe1_orientation::Float64,
+                     floe2_mask::BitMatrix, floe2_orientation::Float64)
+    im1 = imrotate_bin_nocrop(floe1_mask, floe1_orientation)
+    im2 = imrotate_bin_nocrop(floe2_mask, floe2_orientation)
+    im1, im2 = align_centroids(im1, im2)
+    a_not_b = im1 .> 0 .&& isequal.(im2, 0)
+    b_not_a = im2 .> 0 .&& isequal.(im1, 0)
+    shape_difference = sum(a_not_b .|| b_not_a)
+    return shape_difference
+end
+
+
+
 """
 Computes the shape difference between im_reference and im_target for each angle in test_angles.
 The reference image is held constant, while the target image is rotated. The test_angles are interpreted
