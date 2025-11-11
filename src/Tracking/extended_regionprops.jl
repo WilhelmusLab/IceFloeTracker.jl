@@ -26,6 +26,40 @@ function add_passtimes!(props, passtimes)
 end
 
 
+"""
+    addψs!(props::Vector{DataFrame})
+
+Add the ψ-s curves to each member of `props`.
+
+Note: each member of `props` must have a `mask` column with a binary image representing the floe. 
+To add floe masks see [`addfloemasks!`](@ref).
+"""
+function addψs!(props::Vector{DataFrame})
+    for prop in props
+        prop.psi = map(buildψs, prop.mask)
+    end
+    return nothing
+end
+
+"""
+    addψs!(props_df::DataFrame})
+
+Add the ψ-s curves to each row of `props_df`.
+
+Note: each member of `props` must have a `mask` column with a binary image representing the floe. 
+To add floe masks see [`addfloemasks!`](@ref).
+"""
+function addψs!(props_df::DataFrame)
+    props_df.psi = map(buildψs, props_df.mask)
+    return nothing
+end
+
+function addfloemasks!(props::Vector{DataFrame}, imgs::Vector{<:FloeLabelsImage})
+    for (img, prop) in zip(imgs, props)
+        addfloemasks!(prop, img)
+    end
+    return nothing
+end
 
 
 # TODO: Update the cropfloes function to use the "label" parameter in the regionprops table.
