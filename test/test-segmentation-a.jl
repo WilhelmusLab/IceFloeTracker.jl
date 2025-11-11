@@ -24,7 +24,6 @@
 
 
     println("---------- Segment Image - Direct Method ------------")
-
     segmented_ice = kmeans_binarization(
         ice_water_discriminated_image,
         fc_image;
