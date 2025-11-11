@@ -174,9 +174,6 @@ function getfloemasks(props::DataFrame, floeimg::FloeLabelsImage)
     return map(i -> cropfloe(floeimg, props, i), 1:nrow(props))
 end
 
-
-
-
 ####### Extend + Threshold Test Functions #######
 # These functions add columns to the candidate matches table and
 # perform tests against threshold functions.

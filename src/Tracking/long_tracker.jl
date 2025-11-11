@@ -55,29 +55,33 @@ function long_tracker(props::Vector{DataFrame}, candidate_filter_settings, candi
     trajectories = props[1]
     _start_new_trajectory!(trajectories)
 
-    for prop in props[2:end]
+    for candidates in props[2:end]
         trajectory_heads = get_trajectory_heads(trajectories)
 
 
+        # TODO: separate find_floe_matches into find_candidate_pairs and resolve_conflicts
         new_matches = find_floe_matches(
-            trajectory_heads, prop, candidate_filter_settings, candidate_matching_settings
+            trajectory_heads, candidates, candidate_filter_settings, candidate_matching_settings
         )
 
         # Get unmatched floes in day 2 (iterations > 2)
         matched_uuids = new_matches.uuid
-        unmatched = filter((f) -> !(f.uuid in matched_uuids), prop)
+        unmatched = filter((f) -> !(f.uuid in matched_uuids), candidates)
         _start_new_trajectory!(unmatched)
 
         # Attach new matches and unmatched floes to trajectories
         trajectories = vcat(trajectories, new_matches, unmatched)
     end
-    trajectories = drop_trajectories_length1(trajectories, :trajectory_uuid)
+    trajectories = _drop_short_trajectories(trajectories, :trajectory_uuid)
     DataFrames.sort!(trajectories, [:trajectory_uuid, :passtime])
     _add_integer_id!(trajectories, :trajectory_uuid, :ID)
     # Move ID columns to the front
     select!(trajectories, :ID, :trajectory_uuid, :head_uuid, :uuid, :)
     return trajectories
 end
+
+# helper functions: all these should start with _ and should be defined in this file
+# _add_integer_id!, drop_trajectories_length1
 
 function _start_new_trajectory!(floes::DataFrame)
     floes[!, :head_uuid] .= missing
@@ -86,6 +90,24 @@ function _start_new_trajectory!(floes::DataFrame)
     floes[!, :corr] .= missing
     return floes
 end
+
+"""
+    drop_trajectories_length1(trajectories::DataFrame, col::Symbol=:ID)
+
+Drop trajectories with only one floe.
+
+# Arguments
+- `trajectories`: dataframe containing floe trajectories.
+- `col`: column name for the floe ID.
+"""
+function _drop_short_trajectories(trajectories::DataFrame, col::Symbol=:ID; min_length=2)
+    trajectories = filter(
+        :count => x -> x >= min_length, transform(groupby(trajectories, col), nrow => :count)
+    )
+    cols = [c for c in names(trajectories) if c ∉ ["count"]]
+    return trajectories[!, cols]
+end
+
 
 """
     find_floe_matches(

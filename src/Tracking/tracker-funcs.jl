@@ -461,6 +461,7 @@ end
 isnotnan(x) = !isnan(x)
 
 # match_corr related functions
+# TODO: check if this should go in rotation or register or where
 
 """
    normalizeangle(revised,t=180)
@@ -471,8 +472,6 @@ function normalizeangle(revised, t=180)
     revised > t ? theta_revised = revised - 360 : theta_revised = revised
     return (theta_revised=theta_revised, ROT=-theta_revised)
 end
-
-
 
 """
     get_unmatched(props, matched)
@@ -573,21 +572,4 @@ end
 function dropcols!(df, colstodrop)
     select!(df, Not(colstodrop))
     return nothing
-end
-
-"""
-    drop_trajectories_length1(trajectories::DataFrame, col::Symbol=:ID)
-
-Drop trajectories with only one floe.
-
-# Arguments
-- `trajectories`: dataframe containing floe trajectories.
-- `col`: column name for the floe ID.
-"""
-function drop_trajectories_length1(trajectories::DataFrame, col::Symbol=:ID)
-    trajectories = filter(
-        :count => x -> x > 1, transform(groupby(trajectories, col), nrow => :count)
-    )
-    cols = [c for c in names(trajectories) if c ∉ ["count"]]
-    return trajectories[!, cols]
 end

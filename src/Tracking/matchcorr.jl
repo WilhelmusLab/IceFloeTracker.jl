@@ -1,3 +1,4 @@
+# dmw: deprecate -- the new workflow will allow each test to be applied in series
 """
     matchcorr(
     f1::T,
@@ -66,6 +67,7 @@ function matchcorr(
     return (mm=mm, c=c)
 end
 
+# dmw: deprecate, this should be taken care of by the area ratio test
 """
     getsizecomparability(s1, s2)
 
