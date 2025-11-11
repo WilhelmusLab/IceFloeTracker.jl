@@ -1,5 +1,5 @@
 import Dates: Millisecond, Second, Minute, Hour, Day
-abstract type AbstractTimeDistanceThresholdFunction end
+abstract type AbstractTimeDistanceThresholdFunction <: Function end
 
 # Minimum in Dates in milliseconds, so I just need to add
 # a function that converts to base units.

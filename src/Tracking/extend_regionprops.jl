@@ -4,6 +4,9 @@ import DataFrames: DataFrame, nrow, DataFrameRow, transform!, ByRow, AbstractDat
 import Images: label_components
 import ..Morphology: bwareamaxfilt
 
+# Do we need to redefine here or can we import it from geometric_thresholds?
+abstract type AbstractThresholdFunction end
+
 FloeLabelsImage = Union{BitMatrix, Matrix{<:Bool}, Matrix{<:Integer}}
 
 
@@ -286,27 +289,29 @@ function shape_difference_test!(
     scale_by=:area,
     area_column=:area
 )
-    sd(mask, orientation) = shape_difference(floe.mask, floe.orientation, mask, orientation)
+    sd(mask, orientation) = round(shape_difference(floe.mask, floe.orientation, mask, orientation), digits=3)
 
     transform!(candidates,  [:mask, :orientation] => 
         ByRow(sd) => :shape_difference
         )
 
     candidates[!, :scaled_shape_difference] = candidates[!, :shape_difference] ./ candidates[!, scale_by]
+    candidates[!, :scaled_shape_difference] .= round.(candidates[!, :scaled_shape_difference], digits=3)
 
     transform!(candidates, [area_column, :scaled_shape_difference] =>
         ByRow(threshold_function) => threshold_column
     )
 end
 
+#TODO: Add option to include the confidence intervals with the normalized cross correlation tests.
 
 """
     psi_s_correlation_test!(floe, candidates;
      threshold_function, threshold_column=:psi_s_correlation_test, area_column=:area)
 
-    Compute the psi-s correlation between a floe and a dataframe of candidate floes. Adds the 
-    psi-s curve, psi-s correlation, and psi-s correlation score (1-corr) to the columns of `candidates`.
-
+   Compute the psi-s correlation between a floe and a dataframe of candidate floes. Adds the 
+   psi-s correlation,  psi-s correlation score (1 - correlation), and the result of the threshold function
+   to the columns of `candidates`.
 """ 
 function psi_s_correlation_test!(
     floe::DataFrameRow,
@@ -315,14 +320,20 @@ function psi_s_correlation_test!(
     threshold_column=:psi_s_correlation_test,
     area_column=:area
 )
-    floe.psi
-    addψs!(candidates)
-    rfloe(p) = normalized_cross_correlation(floe.psi, p)
+    if :psi ∉ names(candidates)
+        p1 = buildψs(floe.mask)
+        addψs!(candidates)
+    else
+        p1 = floe.psi
+    end
+    rfloe(p2) = round(normalized_cross_correlation(p1, p2), digits=3)
     transform!(candidates,  [:psi] => ByRow(rfloe) => :psi_s_correlation)
-    # candidates[!, :psi_s_correlation] = map(rfloe, candidates.psi)
     candidates[!, :psi_s_correlation_score] = 1 .- candidates[!, :psi_s_correlation]
+
+    # Future work: add computation of the confidence intervals for psi-s corr here.
 
     transform!(candidates, [area_column, :psi_s_correlation_score] =>
         ByRow(threshold_function) => threshold_column
     )
+    dropcols!(candidates, :psi)
 end

@@ -149,8 +149,8 @@ end
 
 Alternate method of `buildψs` accepting binary floe mask as input.
 """
-function buildψs(floe::AbstractArray)
-    bd = bwtraceboundary(floe)
+function buildψs(floe_mask::AbstractArray)
+    bd = bwtraceboundary(floe_mask)
     bdres = resample_boundary(bd[1])
     return buildψs(bdres)[1]
 end

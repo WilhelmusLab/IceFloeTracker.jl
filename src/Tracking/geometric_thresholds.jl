@@ -1,4 +1,4 @@
-abstract type AbstractThresholdFunction end
+abstract type AbstractThresholdFunction <: Function end
 
 """
 The piecewise linear threshold function is defined using two (area, value) pairs. For
