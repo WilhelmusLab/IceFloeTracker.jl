@@ -4,11 +4,8 @@ import DataFrames: DataFrame, nrow, DataFrameRow, transform!, ByRow, AbstractDat
 import Images: label_components
 import ..Morphology: bwareamaxfilt
 
-# Do we need to redefine here or can we import it from geometric_thresholds?
-abstract type AbstractThresholdFunction end
-
 FloeLabelsImage = Union{BitMatrix, Matrix{<:Bool}, Matrix{<:Integer}}
-
+abstract type AbstractThresholdFunction <: Function end
 
 
 """

@@ -1,5 +1,3 @@
-abstract type AbstractThresholdFunction <: Function end
-
 """
 The piecewise linear threshold function is defined using two (area, value) pairs. For
 areas below the minimum area, it is constant at minimum value; likewise for above the
