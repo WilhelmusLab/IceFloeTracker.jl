@@ -44,7 +44,7 @@ function matchcorr(
     end
 
     _psi = buildψs.([f1, f2])
-    c = corr(_psi...)
+    c = normalized_cross_correlation(_psi...)
 
     if c < psi
         @warn "correlation too low, c: $c"
@@ -81,12 +81,3 @@ function getsizecomparability(s1::T, s2::T) where {T<:Tuple{Int64,Int64}}
     return abs(a1 - a2) / a1
 end
 
-"""
-    corr(f1,f2)
-
-Return the normalized cross-correlation between the psi-s curves `p1` and `p2`.
-"""
-function corr(p1::T, p2::T) where {T<:AbstractArray}
-    cc, _ = maximum.(crosscorr(p1, p2; normalize=true))
-    return cc
-end

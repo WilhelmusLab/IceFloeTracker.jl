@@ -20,6 +20,7 @@ export addfloemasks!,
     matchcorr,
     mismatch,
     make_psi_s,
+    normalized_cross_correlation,
     LinearTimeDistanceFunction,
     LogLogQuadraticTimeDistanceFunction,
     long_tracker,
@@ -29,8 +30,8 @@ export addfloemasks!,
     relative_error_test!,
     resample_boundary,
     shape_difference_rotation,
-    shape_difference_test!
-    time_distance_test!
+    shape_difference_test!,
+    time_distance_test!,
     _add_suffix,
     norm
 

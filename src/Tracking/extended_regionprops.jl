@@ -6,6 +6,28 @@ import ..Morphology: bwareamaxfilt
 
 FloeLabelsImage = Union{BitMatrix, Matrix{<:Bool}, Matrix{<:Integer}}
 
+
+
+"""
+    add_passtimes!(props, passtimes)
+
+Add a column `passtime` to each DataFrame in `props` containing the time of the image in which the floes were captured.
+
+# Arguments
+- `props`: array of DataFrames containing floe properties.
+- `passtimes`: array of `DateTime` objects containing the time of the image in which the floes were captured.
+
+"""
+function add_passtimes!(props, passtimes)
+    for (i, passtime) in enumerate(passtimes)
+        props[i].passtime .= passtime
+    end
+    return nothing
+end
+
+
+
+
 # TODO: Update the cropfloes function to use the "label" parameter in the regionprops table.
 # This way, we can create a bitmatrix with labeled image == label, and crop that.
 # TODO: Add method to allow SegmentedImage as input
