@@ -1,6 +1,6 @@
 # Functions for adding additional columns to regionprops needed for floe tracking
 
-import DataFrames: DataFrame, nrow, DataFrameRow, transform!, ByRow
+import DataFrames: DataFrame, nrow, DataFrameRow, transform!, ByRow, AbstractDataFrame
 import Images: label_components
 import ..Morphology: bwareamaxfilt
 
@@ -207,33 +207,6 @@ function getfloemasks(props::DataFrame, floeimg::FloeLabelsImage)
     return map(i -> cropfloe(floeimg, props, i), 1:nrow(props))
 end
 
-####### Extend + Threshold Test Functions #######
-# These functions add columns to the candidate matches table and
-# perform tests against threshold functions.
-
-abstract type AbstractThresholdFunction end
-
-# This new function also works for the LopezAcosta2019 functions
-# as long as you allow for some small amount in between the maximum and minimum area.
-"""
-The piecewise linear threshold function is defined using two (area, value) pairs. For
-areas below the minimum area, it is constant at minimum value; likewise for above the
-maximum area. The threshold function is linear in between these two points. A return 
-value `true` indicates that the value is below the threshold. 
-"""
-@kwdef struct PiecewiseLinearThresholdFunction <: AbstractThresholdFunction
-    minimum_area = 100
-    maximum_area = 700
-    minimum_value = 0.4
-    maximum_value = 0.2
-end
-
-function (f::PiecewiseLinearThresholdFunction)(area, value)
-    area < f.minimum_area && return value < f.minimum_value
-    area > f.maximum_area && return value < f.maximum_value
-    slope = (f.maximum_value - f.minimum_value) / (f.maximum_area - f.minimum_area)
-    return value < slope*(area - f.maximum_area) + f.maximum_value
-end
 
 """
     relative_error_test!(floe::DataFrameRow,

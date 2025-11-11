@@ -26,6 +26,7 @@ export addfloemasks!,
     long_tracker,
     LopezAcostaTimeDistanceFunction,
     PiecewiseLinearThresholdFunction,
+    StepwiseLinearThresholdFunction,
     psi_s_correlation_test!,
     register,
     relative_error_test!,
@@ -39,7 +40,8 @@ export addfloemasks!,
 include("distance_thresholds.jl")
 include("bwtraceboundary.jl")
 include("crosscorr.jl")
-include("extended_regionprops.jl")
+include("extend_regionprops.jl")
+include("geometric_thresholds.jl")
 include("long_tracker.jl")
 include("matchcorr.jl")
 include("psi-s.jl")

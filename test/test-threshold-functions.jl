@@ -28,3 +28,12 @@ using Dates: Minute, Hour, Day
     @test !distance_threshold(1e3, Day(10), loglog_quadratic)
 
 end
+
+@testitem "Geometric thresholds" begin
+# LopezAcosta2019 threshold functions
+stepwise = StepwiseLinearThresholdFunction(700, 0.5, 1.0)
+@test stepwise(500, 0.2) && stepwise(800, 0.2)
+@test !stepwise(500, 1.2) && !stepwise(800, 1.2)
+@test !stepwise(200 , 0.7) && stepwise(800, 0.7)
+
+end
