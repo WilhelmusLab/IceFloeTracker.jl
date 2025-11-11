@@ -473,28 +473,6 @@ function normalizeangle(revised, t=180)
 end
 
 
-"""
-    addψs!(props::Vector{DataFrame})
-
-Add the ψ-s curves to each member of `props`.
-
-Note: each member of `props` must have a `mask` column with a binary image representing the floe.
-
-To add floe masks see [`addfloemasks!`](@ref).
-"""
-function addψs!(props::Vector{DataFrame})
-    for prop in props
-        prop.psi = map(buildψs, prop.mask)
-    end
-    return nothing
-end
-
-function addfloemasks!(props::Vector{DataFrame}, imgs::Vector{<:FloeLabelsImage})
-    for (img, prop) in zip(imgs, props)
-        addfloemasks!(prop, img)
-    end
-    return nothing
-end
 
 """
     get_unmatched(props, matched)
