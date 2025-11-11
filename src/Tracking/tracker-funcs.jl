@@ -462,6 +462,8 @@ isnotnan(x) = !isnan(x)
 
 # match_corr related functions
 
+# TODO: Move psi-s functions to the psi-s.jl file, move addpsis to the extended regionprops file
+
 """
     corr(f1,f2)
 

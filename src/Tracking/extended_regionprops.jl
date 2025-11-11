@@ -239,3 +239,28 @@ function shape_difference_test!(
         ByRow(threshold_function) => threshold_column
     )
 end
+
+
+"""
+    psi_s_correlation_test!(floe, candidates;
+     threshold_function, threshold_column=:psi_s_correlation_test, area_column=:area)
+
+    Compute the psi-s correlation between a floe and a dataframe of candidate floes. 
+
+""" 
+function psi_s_correlation_test!(
+    floe::DataFrameRow,
+    candidates::DataFrame;
+    threshold_function::Function,
+    threshold_column=:psi_s_correlation_test,
+    area_column=:area
+)
+    addψs!(candidates)
+
+    candidates[!, :psi_s_correlation] 
+    candidates[!, :psi_s_correlation_score] = 1 .- candidates[!, :psi_s_correlation]
+
+    transform!(candidates, [area_column, :psi_s_correlation_score] =>
+        ByRow(threshold_function) => threshold_column
+    )
+end
