@@ -61,6 +61,39 @@ function addfloemasks!(props::Vector{DataFrame}, imgs::Vector{<:FloeLabelsImage}
     return nothing
 end
 
+_uuid() = randstring(12)
+
+"""
+    adduuid!(df::DataFrame)
+    adduuid!(dfs::Vector{DataFrame})
+
+Assign a unique ID to each floe in a (vector of) table(s) of floe properties.
+"""
+function adduuid!(df::DataFrame)
+    df.uuid = [_uuid() for _ in 1:nrow(df)]
+    return df
+end
+
+function adduuid!(dfs::Vector{DataFrame})
+    for (i, _) in enumerate(dfs)
+        adduuid!(dfs[i])
+    end
+    return dfs
+end
+
+"""
+    _add_integer_id!(df, col, new)
+
+For distinct values in the column `col` of `df`, add a new column `new` to be consecutive integers starting from 1.
+"""
+function _add_integer_id!(df::AbstractDataFrame, col::Symbol, new::Symbol)
+    ids = unique(df[!, col])
+    _map = Dict(ids .=> 1:length(ids))
+    transform!(df, col => ByRow(x -> _map[x]) => new)
+    return nothing
+end
+
+
 
 # TODO: Update the cropfloes function to use the "label" parameter in the regionprops table.
 # This way, we can create a bitmatrix with labeled image == label, and crop that.
