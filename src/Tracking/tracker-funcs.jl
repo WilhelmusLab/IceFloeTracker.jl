@@ -462,18 +462,6 @@ isnotnan(x) = !isnan(x)
 
 # match_corr related functions
 
-# TODO: Move psi-s functions to the psi-s.jl file, move addpsis to the extended regionprops file
-
-"""
-    corr(f1,f2)
-
-Return the correlation between the psi-s curves `p1` and `p2`.
-"""
-function corr(p1, p2)
-    cc, _ = maximum.(crosscorr(p1, p2; normalize=true))
-    return cc
-end
-
 """
    normalizeangle(revised,t=180)
 
@@ -484,11 +472,6 @@ function normalizeangle(revised, t=180)
     return (theta_revised=theta_revised, ROT=-theta_revised)
 end
 
-function buildψs(floe)
-    bd = bwtraceboundary(floe)
-    bdres = resample_boundary(bd[1])
-    return make_psi_s(bdres)[1]
-end
 
 """
     addψs!(props::Vector{DataFrame})

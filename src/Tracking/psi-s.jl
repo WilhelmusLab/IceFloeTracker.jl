@@ -45,7 +45,7 @@ function atan2(y::Number, x::Number)
 end
 
 """
-    make_psi_s(x::Vector{<:Number},
+    buildψs(x::Vector{<:Number},
                y::Vector{<:Number};
                rangeout::Bool=true,
                unwrap::Bool=true)::Tuple{Vector{Float64}, Vector{Float64}}
@@ -80,7 +80,7 @@ julia> y = @. sin(t)*(1-cos(t));
 
 julia> plot(x,y) # visualize the cardioid
 
-julia> psi, s = make_psi_s(x,y);
+julia> psi, s = buildψs(x,y);
 
 julia> [s psi] # inspect psi-s data
 200×2 Matrix{Float64}:
@@ -108,7 +108,7 @@ julia> [s psi] # inspect psi-s data
  julia> plot(s, psi) # inspect psi-s curve -- should be a straight line from (0, 0) to (8, 3π)
 ```
 """
-function make_psi_s(
+function buildψs(
     x::Vector{<:Number}, y::Vector{<:Number}; rangeout::Bool=true, dsp_unwrap::Bool=true
 )::Tuple{Vector{Float64},Vector{Float64}}
     # gradient
@@ -132,13 +132,25 @@ function make_psi_s(
 end
 
 """
-    make_psi_s(XY::Matrix{<:Number};rangeout::Bool=true,
+    buildψs(XY::Matrix{<:Number};rangeout::Bool=true,
     unwrap::Bool=true)
 
-Alternate method of `make_psi_s` accepting input vectors `x` and `y` as a 2-column matrix `[x y]` in order to facillitate workflow (output from `resample_boundary`).
+Alternate method of `buildψs` accepting input vectors `x` and `y` as a 2-column matrix `[x y]`.
 """
-function make_psi_s(XY::Matrix{<:Number}; rangeout::Bool=true, dsp_unwrap::Bool=true)
+function buildψs(XY::Matrix{<:Number}; rangeout::Bool=true, dsp_unwrap::Bool=true)
     x = XY[:, 1]
     y = XY[:, 2]
-    return make_psi_s(x, y; rangeout=rangeout, dsp_unwrap=dsp_unwrap)
+    return buildψs(x, y; rangeout=rangeout, dsp_unwrap=dsp_unwrap)
+end
+
+
+"""
+    buildψs(floe_mask)
+
+Alternate method of `buildψs` accepting binary floe mask as input.
+"""
+function buildψs(floe::AbstractArray)
+    bd = bwtraceboundary(floe)
+    bdres = resample_boundary(bd[1])
+    return buildψs(bdres)[1]
 end

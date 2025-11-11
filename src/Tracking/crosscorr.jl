@@ -1,3 +1,5 @@
+### Wrapper for cross correlation function from DSP ###
+
 import DSP: xcorr
 """
     r, lags = crosscorr(u::Vector{T},
