@@ -301,7 +301,8 @@ end
     psi_s_correlation_test!(floe, candidates;
      threshold_function, threshold_column=:psi_s_correlation_test, area_column=:area)
 
-    Compute the psi-s correlation between a floe and a dataframe of candidate floes. 
+    Compute the psi-s correlation between a floe and a dataframe of candidate floes. Adds the 
+    psi-s curve, psi-s correlation, and psi-s correlation score (1-corr) to the columns of `candidates`.
 
 """ 
 function psi_s_correlation_test!(
@@ -311,9 +312,11 @@ function psi_s_correlation_test!(
     threshold_column=:psi_s_correlation_test,
     area_column=:area
 )
+    floe.psi
     addψs!(candidates)
-
-    candidates[!, :psi_s_correlation] 
+    rfloe(p) = normalized_cross_correlation(floe.psi, p)
+    transform!(candidates,  [:psi] => ByRow(rfloe) => :psi_s_correlation)
+    # candidates[!, :psi_s_correlation] = map(rfloe, candidates.psi)
     candidates[!, :psi_s_correlation_score] = 1 .- candidates[!, :psi_s_correlation]
 
     transform!(candidates, [area_column, :psi_s_correlation_score] =>
