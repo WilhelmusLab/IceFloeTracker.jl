@@ -31,6 +31,8 @@ import Images:
     local_maxima,
     SegmentedImage,
     segment_mean
+    
+
 import ..skimage: sk_morphology
 import ..ImageUtils: get_brighten_mask, to_uint8, imcomplement, imbrighten, get_tiles
 import ..Filtering: histeq, unsharp_mask, conditional_histeq, rgb2gray, imgradientmag
@@ -201,6 +203,9 @@ function (p::Segment)(
                 minimum_window_size=32,
                 threshold_percentage=15,
             ) .> 0
+
+
+        
         prelim_icemask = get_ice_masks(
             ref_image,
             Gray.(morphed_residue / 255),
@@ -291,6 +296,9 @@ function (p::Segment)(
     return segmented
 end
 
+
+
+
 function get_holes(img, min_opening_area=20, se=se_disk4())
     _img = area_opening(img; min_area=min_opening_area)
     hbreak!(_img)
@@ -331,6 +339,7 @@ function watershed1(bw::T) where {T<:Union{BitMatrix,AbstractMatrix{Bool}}}
     w = watershed(seg, cc)
     lmap = labels_map(w)
     return isboundary(lmap) .> 0
+    #dmw: isboundary returns a thick boundary, whereas matlab uses a 1-pixel boundary.
 end
 
 """

@@ -1,4 +1,6 @@
-# dmw: look for ways to avoid using these functions
+# TODO: These functions are mainly needed when we call skimage functions, since skimage uses integer array images.
+# We could potentially use these directly when wrapping the skimage imports.
+
 function to_uint8(arr::AbstractMatrix{T}) where {T<:AbstractFloat}
     img = Int.(round.(arr, RoundNearestTiesAway))
     img = clamp.(img, 0, 255)

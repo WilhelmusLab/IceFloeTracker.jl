@@ -25,13 +25,35 @@ end
 
 Set 0-valued pixels to 1 if they have two nonzero neighbors that are not connected. Note the following exceptions:
 
-0 0 0           0 0 0
-1 0 1  becomes  1 1 1
-0 0 0           0 0 0
+```
+0 0 0
+1 0 1
+0 0 0
+```
 
-1 0 1           1 1 1
-0 0 0  becomes  0 0 0
-0 0 0           0 0 0
+becomes
+
+```
+0 0 0
+1 1 1
+0 0 0
+```
+
+and
+
+```
+1 0 1
+0 0 0
+0 0 0
+```
+
+becomes  
+
+```
+1 1 1
+0 0 0
+0 0 0
+```
 
 The same applies to all their corresponding rotations.
 
