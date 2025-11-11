@@ -26,7 +26,7 @@ export addfloemasks!,
     LopezAcostaTimeDistanceFunction,
     PiecewiseLinearThresholdFunction,
     register,
-    relative_error_test!
+    relative_error_test!,
     resample_boundary,
     shape_difference_rotation,
     shape_difference_test!
