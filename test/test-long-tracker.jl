@@ -1,7 +1,5 @@
 
 @testitem "Utilities" begin
-    using IceFloeTracker:
-        long_tracker, candidate_filter_settings, candidate_matching_settings, get_trajectory_heads
     using CSV
     using DataFrames
 
@@ -102,11 +100,11 @@ end
         _props, _imgs = deepcopy.([_floedata.props, _floedata.imgs])
 
         # This order is important: masks, uuids, passtimes, ψs
-        IceFloeTracker.addfloemasks!(_props, _imgs)
-        IceFloeTracker.addψs!(_props)
-        IceFloeTracker.add_passtimes!(_props, _passtimes)
+        addfloemasks!(_props, _imgs)
+        addψs!(_props)
+        add_passtimes!(_props, _passtimes)
         Random.seed!(123)
-        IceFloeTracker.adduuid!(_props)
+        adduuid!(_props)
     end
 
     begin # Filter out floes with area less than `floe_area_threshold` pixels
@@ -120,7 +118,7 @@ end
     @testset "Case 1" begin
         # Every floe is matched in every day
         props_test_case1 = deepcopy(_props)
-        trajectories = IceFloeTracker.long_tracker(
+        trajectories = long_tracker(
             props_test_case1, candidate_filter_settings, candidate_matching_settings
         )
 
@@ -137,7 +135,7 @@ end
     end
 
     @testset "Case 2" begin
-        trajectories = IceFloeTracker.long_tracker(
+        trajectories = long_tracker(
             props_test_case2, candidate_filter_settings, candidate_matching_settings
         )
 
@@ -152,7 +150,7 @@ end
             Random.seed!(123)
             props = addgaps(_props)
 
-            trajectories = IceFloeTracker.long_tracker(
+            trajectories = long_tracker(
                 props, candidate_filter_settings, candidate_matching_settings
             )
 
@@ -165,7 +163,7 @@ end
             # Add gaps to props_test_case2
             Random.seed!(123)
             props = addgaps(props_test_case2)
-            trajectories = IceFloeTracker.long_tracker(
+            trajectories = long_tracker(
                 props, candidate_filter_settings, candidate_matching_settings
             )
 
@@ -179,7 +177,8 @@ end
 @testitem "Ellipses" begin
     using CSV
     using DataFrames
-    using IceFloeTracker: long_tracker, candidate_filter_settings, candidate_matching_settings
+    using IceFloeTracker:
+        long_tracker, candidate_filter_settings, candidate_matching_settings
 
     function load_props_from_csv(path; eval_cols=[:mask, :psi])
         df = DataFrame(CSV.File(path))
@@ -193,7 +192,9 @@ end
         props = [
             load_props_from_csv(p) for p in readdir(path; join=true) if endswith(p, ".csv")
         ]
-        trajectories_ = long_tracker(props, candidate_filter_settings, candidate_matching_settings)
+        trajectories_ = long_tracker(
+            props, candidate_filter_settings, candidate_matching_settings
+        )
 
         trajectory_lengths = combine(groupby(trajectories_, :trajectory_uuid), nrow)
 
@@ -243,7 +244,9 @@ end
             ),
             large_floe_settings=candidate_filter_settings.large_floe_settings,
         )
-        trajectories_ = long_tracker(props, modified_condition_thresholds, candidate_matching_settings)
+        trajectories_ = long_tracker(
+            props, modified_condition_thresholds, candidate_matching_settings
+        )
 
         @test all(
             modified_condition_thresholds.small_floe_settings.minimumarea .<=

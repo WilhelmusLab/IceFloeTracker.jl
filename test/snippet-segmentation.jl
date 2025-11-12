@@ -1,5 +1,5 @@
 @testsnippet Segmentation begin
-    using Images: labels_map, segment_mean, Colorant, save
+    using Images: labels_map, segment_mean, Colorant, save, RGB, Gray
     using DataFrames: DataFrame
     using Dates: Dates
 

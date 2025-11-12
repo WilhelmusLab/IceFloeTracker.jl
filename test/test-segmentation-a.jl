@@ -1,6 +1,7 @@
 
 @testitem "Segmentation-A" begin
     import DelimitedFiles: readdlm
+    import Images: float64, load
 
     include("config.jl")
     include("test_error_rate.jl")
@@ -20,24 +21,20 @@
         load("$(test_data_dir)/matlab_segmented_ice_cloudmasked.png") .> 0.5
 
     println("---------- Segment Image - Direct Method ------------")
-    @time segmented_ice_cloudmasked = IceFloeTracker.segmented_ice_cloudmasking(
+    @time segmented_ice_cloudmasked = LopezAcosta2019.segmented_ice_cloudmasking(
         ice_water_discriminated_image, cloudmask, ice_labels
     )
 
-    @time segmented_A = IceFloeTracker.segmentation_A(segmented_ice_cloudmasked)
+    @time segmented_A = LopezAcosta2019.segmentation_A(segmented_ice_cloudmasked)
 
-    @time segmented_ice = IceFloeTracker.kmeans_segmentation(
-        ice_water_discriminated_image, ice_labels
-    )
+    @time segmented_ice = kmeans_segmentation(ice_water_discriminated_image, ice_labels)
 
     @test typeof(segmented_A) == typeof(matlab_segmented_A_bitmatrix)
     @test test_similarity(matlab_segmented_A_bitmatrix, segmented_A, 0.039)
 
     @test typeof(segmented_ice_cloudmasked) == typeof(matlab_segmented_ice_cloudmasked)
     @test test_similarity(
-        convert(
-            BitMatrix, IceFloeTracker.apply_landmask(segmented_ice_cloudmasked, landmask)
-        ),
+        convert(BitMatrix, apply_landmask(segmented_ice_cloudmasked, landmask)),
         matlab_segmented_ice_cloudmasked,
         0.051,
     )

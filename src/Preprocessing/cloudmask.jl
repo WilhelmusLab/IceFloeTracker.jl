@@ -1,18 +1,38 @@
-using Images # I think this can be taken out, I have it here for the RGB types
+import ..Morphology: fill_holes
+import Images:
+    AbstractRGB,
+    TransparentRGB,
+    RGB,
+    Gray,
+    red,
+    green,
+    channelview,
+    colorview,
+    StackedView,
+    strel_diamond,
+    strel_box,
+    zeroarray,
+    opening,
+    mreconstruct
+
 abstract type AbstractCloudMaskAlgorithm end
 
 @kwdef struct LopezAcostaCloudMask <: AbstractCloudMaskAlgorithm
-    prelim_threshold::Float64 = 110/255.
-    band_7_threshold::Float64 = 200/255.
-    band_2_threshold::Float64 =190/255.
+    prelim_threshold::Float64 = 110 / 255.0
+    band_7_threshold::Float64 = 200 / 255.0
+    band_2_threshold::Float64 = 190 / 255.0
     ratio_lower::Float64 = 0.0
     ratio_offset::Float64 = 0.0
     ratio_upper::Float64 = 0.75
-    
+
     # enforce all are between 0 and 1 inclusive
     function LopezAcostaCloudMask(
-        prelim_threshold, band_7_threshold, band_2_threshold,
-        ratio_lower, ratio_offset, ratio_upper
+        prelim_threshold,
+        band_7_threshold,
+        band_2_threshold,
+        ratio_lower,
+        ratio_offset,
+        ratio_upper,
     )
         0 ≤ prelim_threshold ≤ 1 || error("$prelim_threshold must be between 0 and 1")
         0 ≤ band_7_threshold ≤ 1 || error("$band_7_threshold must be between 0 and 1")
@@ -20,14 +40,18 @@ abstract type AbstractCloudMaskAlgorithm end
         0 ≤ ratio_lower ≤ 1 || error("$ratio_lower must be between 0 and 1")
         0 ≤ ratio_upper ≤ 1 || error("$ratio_upper must be between 0 and 1")
         return new(
-            prelim_threshold, band_7_threshold, band_2_threshold,
-            ratio_lower, ratio_offset, ratio_upper
+            prelim_threshold,
+            band_7_threshold,
+            band_2_threshold,
+            ratio_lower,
+            ratio_offset,
+            ratio_upper,
         )
     end
 end
 
-
-"""LopezAcostaCloudMask(prelim_threshold, band_7_threshold, band_2_threshold, ratio_lower, ratio_offset, ratio_upper)
+"""
+    LopezAcostaCloudMask(prelim_threshold, band_7_threshold, band_2_threshold, ratio_lower, ratio_offset, ratio_upper)
 
 AbstractCloudMaskAlgorithm implementation of the cloud mask from Lopez-Acosta et al. 2019. Cloud masks algorithms are
 initialized with a set of parameters, then can be supplied to `create_cloudmask` as an argument. The Lopez-Acosta et al.
@@ -106,8 +130,8 @@ end
     ratio_lower::Float64 = 0.0
     ratio_offset::Float64 = 0.0
     ratio_upper::Float64 = 0.52
-    marker_strel = strel_box((7,7))
-    opening_strel = strel_diamond((3,3))
+    marker_strel = strel_box((7, 7))
+    opening_strel = strel_diamond((3, 3))
 end
 
 """Watkins2025CloudMask(prelim_threshold, band_7_threshold, band_2_threshold, ratio_lower, ratio_offset, ratio_upper, marker_strel, opening_strel)
@@ -134,12 +158,16 @@ Gray.(cloud_mask)
 ```
 """
 function (f::Watkins2025CloudMask)(img::AbstractArray{<:Union{AbstractRGB,TransparentRGB}})
-    init_cloud_mask = LopezAcostaCloudMask(f.prelim_threshold,
-                                           f.band_7_threshold,
-                                           f.band_2_threshold,
-                                           f.ratio_lower,
-                                           f.ratio_offset,
-                                           f.ratio_upper)(img)
+    init_cloud_mask = LopezAcostaCloudMask(
+        f.prelim_threshold,
+        f.band_7_threshold,
+        f.band_2_threshold,
+        f.ratio_lower,
+        f.ratio_offset,
+        f.ratio_upper,
+    )(
+        img
+    )
     markers = opening(init_cloud_mask, f.marker_strel)
     reconstructed = mreconstruct(dilate, markers, init_cloud_mask, f.opening_strel)
     smoothed = opening(reconstructed, f.opening_strel)
@@ -205,7 +233,6 @@ function create_cloudmask(
     return f(false_color_image)
 end
 
-
 """
     apply_cloudmask(false_color_image, cloudmask)
 
@@ -248,16 +275,12 @@ function apply_cloudmask!(
     img::AbstractArray{<:Union{AbstractRGB,TransparentRGB,Gray}},
     cloudmask::AbstractArray{Bool},
 )
-    img[cloudmask] .= 0.0
+    return img[cloudmask] .= 0.0
 end
 
-function apply_cloudmask(
-    img::AbstractArray,
-    cloudmask::AbstractArray{Bool},
-)
-    img[cloudmask] .= 0.0
+function apply_cloudmask(img::AbstractArray, cloudmask::AbstractArray{Bool})
+    return img[cloudmask] .= 0.0
 end
-
 
 # dmw: in the future, we may want the option to use "missing".
 # dmw: used only in ice-water-discrimination. could be generalized. compare to similar method in the conditional adaptive histogram

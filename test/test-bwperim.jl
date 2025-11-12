@@ -1,6 +1,5 @@
 @testitem "bwperim" begin
     import Images: label_components
-    import IceFloeTracker.Morphology: bwperim
 
     # Create image with 3 connected components. The test consists of digging the biggests holes for each blob in the foreground using bwperim, thereby creating 3 additional connected components, 6 in total.
     A = zeros(Bool, 13, 16)

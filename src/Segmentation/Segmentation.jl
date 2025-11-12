@@ -1,7 +1,9 @@
 module Segmentation
 
-export find_ice_labels,
+export IceFloeSegmentationAlgorithm,
+    find_ice_labels,
     get_ice_labels_mask,
+    get_ice_labels,
     get_ice_masks,
     find_ice_mask,
     tiled_adaptive_binarization,
@@ -11,6 +13,7 @@ export find_ice_labels,
     IceDetectionFirstNonZeroAlgorithm,
     IceDetectionLopezAcosta2019,
     regionprops_table,
+    regionprops,
     SegmentationComparison,
     segmentation_comparison,
     SegmentationSummary,
@@ -19,8 +22,10 @@ export find_ice_labels,
     kmeans_segmentation,
     addlatlon!,
     convertcentroid!,
-    converttounits!
+    converttounits!,
+    get_ice_peaks
 
+include("abstract-algorithms.jl")
 include("find-ice-labels.jl")
 include("ice-masks.jl")
 include("k-means-segmentation.jl")

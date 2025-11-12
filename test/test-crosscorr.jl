@@ -1,5 +1,5 @@
 @testitem "crosscorr tests" begin
-    
+
     # Compare against matlab xcorr with normalization (standard use case in IceFloeTracker)
     n = 0:15
     x = 0.84 .^ n
@@ -42,7 +42,7 @@
     ]
 
     # Compute normalized cross correlation scores and lags with padding
-    r, lags = IceFloeTracker.crosscorr(x, y; normalize=true)
+    r, lags = crosscorr(x, y; normalize=true)
 
     # Test
     @test all(round.(c_matlab, digits=5) .== round.(r, digits=5))

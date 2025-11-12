@@ -1,14 +1,6 @@
 
 @testitem "Conditional adaptivehisteq" begin
-    using IceFloeTracker:
-        convert_to_255_matrix,
-        adapthisteq,
-        conditional_histeq,
-        get_tiles,
-        rgb2gray,
-        to_uint8,
-        histeq,
-        IceFloeTracker
+    import IceFloeTracker.Preprocessing: _get_masks
     using Images: load, float64, channelview
     using TestImages: testimage
 
@@ -23,7 +15,7 @@
         band_7_threshold=200.0,
         band_2_threshold=190.0,
     )
-        mask_cloud_ice, clouds_view = IceFloeTracker._get_masks(
+        mask_cloud_ice, clouds_view = _get_masks(
             false_color_image;
             prelim_threshold=prelim_threshold / 255.0,
             band_7_threshold=band_7_threshold / 255.0,
@@ -79,6 +71,11 @@
     end
 
     @testset "Adaptive histogram equalization" begin
+        function convert_to_255_matrix(img)::Matrix{Int}
+            img_clamped = clamp.(img, 0.0, 1.0)
+            return round.(Int, img_clamped * 255)
+        end
+
         img = convert_to_255_matrix(testimage("cameraman"))
         img_eq = adapthisteq(img)
         @test sum(img_eq) == 32_387_397
@@ -138,7 +135,7 @@
             ],
             # maximum at 255
             [
-                0 0 0
+                000 000 000
                 255 255 255
             ],
         ]
@@ -151,9 +148,9 @@
         expected = [
             [
                 204 204 204 204 204
-                61 204 255 204 61
-                61 255 255 255 61
-                61 204 255 204 61
+                061 204 255 204 061
+                061 255 255 255 061
+                061 204 255 204 061
                 204 204 204 204 204
             ],
             _exp,
