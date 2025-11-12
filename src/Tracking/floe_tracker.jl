@@ -1,16 +1,19 @@
 import DataFrames: DataFrames, DataFrame, AbstractDataFrame, eachrow, select!
 
 """
-    long_tracker(props, condition_thresholds, mc_thresholds)
+    floe_tracker(props; filter_function, matching_function, minimum_floe_size, maximum_floe_size, maximum_time_step)
 
 Track ice floes over multiple observations.
 
 Trajectories are built as follows:
 - Assume the floes detected in observation 1 are trajectories of length 1.
-- For each subsequent observation:
+- For each subsequent observation at time `t``:
   - Determine the latest observation for each trajectory – these are the "current trajectory heads".
-  - Find matches between the the current trajectory heads and the new observed floes, extending those trajectories.
-  - Any unmatched floe in an observation is added as a new trajectory starting point.
+  - Select the subset of trajectory heads observed within the window `maximum_time_step, t`
+  - Apply the filter function in order to determine possible floe pairings 
+  - Apply the matching function to produce unique pairs of floes
+  - Update the trajectories to include the newly paired floes
+  - Add all unmatched floes as heads for new trajectories.
 
 # Arguments
 - `props::Vector{DataFrame}`: A vector of DataFrames, each containing ice floe properties for a single day. Each DataFrame must have the following columns:
@@ -26,11 +29,11 @@ Trajectories are built as follows:
     - "minor_axis_length"
     - "orientation"
     - "perimeter"
-    - "mask": 2D array of booleans
+    - "mask": 2D boolean array
     - "passtime": A timestamp for the floe
     - "psi": the psi-s curve for the floe
     - "uuid": a universally unique identifier for each segmented floe
-- `candidate_filter_settings`: namedtuple of settings and functions for reducing the number of possible matches. See `IceFloeTracker.candidate_filter_settings` for sample values.
+- `filter_function`: A function that uses
 - `candidate_matching_settings`: settings for area mismatch and psi-s shape correlation. See `IceFloeTracker.candidate_matching_settings` for sample values.
 
 # Returns
@@ -43,29 +46,32 @@ A DataFrame with the above columns, plus extra columns:
 
 Note: the props dataframes are modified in place.
 """
-function long_tracker(props::Vector{DataFrame}, candidate_filter_settings, candidate_matching_settings)
-    # dmw: this can be generalized to have a global area filter setting in the candidate_filter_settings
-    filter_out_small_floes = filter(
-        r -> r.area >= candidate_filter_settings.small_floe_settings.minimumarea
-    )
-    # dmw: we should warn users that props gets mutated in place, or give an option to avoid mutating it
-    props .= filter_out_small_floes.(props)
+function floe_tracker(props::Vector{DataFrame}, filter_function, matching_function; minimum_area=100, maximum_area=90e3, maximum_time_step=1)
 
+    # dmw: give users option to copy props rather than modify in place?
+    floe_size_filter = filter(
+        r -> r.area >= minimum_area && r.area <= maximum_area
+    )
+    props .= floe_size_filter.(props)
+
+    # Start_new_trajectory adds head_uuid and trajectory_uuid columns to props
     # The starting trajectories are just the floes visible and large enough on day 1.
     trajectories = props[1]
     _start_new_trajectory!(trajectories)
 
     for candidates in props[2:end]
-        trajectory_heads = get_trajectory_heads(trajectories)
+        trajectory_heads = _get_trajectory_heads(trajectories)
 
+        candidate_pairs = []
+        for floe in eachrow(trajectory_heads)
+            append!(candidate_pairs, eachrow(filter_function(floe, candidates)))
+        end
+        matched_pairs = DataFrame(candidate_pairs) |> matching_function
 
-        # TODO: separate find_floe_matches into find_candidate_pairs and resolve_conflicts
-        new_matches = find_floe_matches(
-            trajectory_heads, candidates, candidate_filter_settings, candidate_matching_settings
-        )
+        
 
         # Get unmatched floes in day 2 (iterations > 2)
-        matched_uuids = new_matches.uuid
+        matched_uuids = matched_pairs.uuid
         unmatched = filter((f) -> !(f.uuid in matched_uuids), candidates)
         _start_new_trajectory!(unmatched)
 
@@ -81,15 +87,31 @@ function long_tracker(props::Vector{DataFrame}, candidate_filter_settings, candi
 end
 
 # helper functions: all these should start with _ and should be defined in this file
-# _add_integer_id!, drop_trajectories_length1
 
 function _start_new_trajectory!(floes::DataFrame)
     floes[!, :head_uuid] .= missing
     floes[!, :trajectory_uuid] .= [_uuid() for _ in eachrow(floes)]
-    floes[!, :area_mismatch] .= missing
-    floes[!, :corr] .= missing
     return floes
 end
+
+# TODO: replace hardcoded requirement to have the time variable be "passtime", e.g. allowing use of "time" or "observation_time" instead
+"""
+    get_trajectory_heads(pairs)
+
+Return the last row (most recent member) of each group (trajectory) in `pairs` as a dataframe.
+
+This is used for getting the initial floe properties for the next day in search for new pairs.
+""" 
+function _get_trajectory_heads(
+    pairs::T; group_col=:trajectory_uuid, order_col=:passtime
+) where {T<:AbstractDataFrame}
+    gdf = groupby(pairs, group_col)
+    heads = combine(gdf, x -> last(sort(x, order_col)))
+    return heads
+end
+
+
+
 
 """
     drop_trajectories_length1(trajectories::DataFrame, col::Symbol=:ID)

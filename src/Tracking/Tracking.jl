@@ -13,9 +13,7 @@ export addfloemasks!,
     cropfloe,
     crosscorr,
     distance_threshold,
-    dropcols!,
     get_rotation_measurements,
-    get_trajectory_heads,
     grad,
     imrotate_bin_counterclockwise_radians,
     matchcorr,
@@ -42,19 +40,16 @@ include("bwtraceboundary.jl")
 include("crosscorr.jl")
 include("geometric_thresholds.jl")
 include("extend_regionprops.jl")
-include("long_tracker.jl")
+include("floe_tracker.jl")
 include("matchcorr.jl")
 include("psi-s.jl")
 include("register.jl")
 include("resample-boundary.jl")
 include("rotation.jl")
 include("tracker-funcs.jl")
-include("tracker.jl")
 
 ##### Default settings ######
-# TODO: Set these to match the Lopez-Acosta 2019 paper
-# TODO: Replace two-level geometry threshold function with a functor or function
-# TODO: Replace references to condition_thresholds in function documentation
+# TODO: Replace with filter_function
 
 candidate_filter_settings = (
     time_space_threshold_function=LopezAcostaTimeDistanceFunction(),

@@ -93,8 +93,6 @@ function _add_integer_id!(df::AbstractDataFrame, col::Symbol, new::Symbol)
     return nothing
 end
 
-
-
 # TODO: Update the cropfloes function to use the "label" parameter in the regionprops table.
 # This way, we can create a bitmatrix with labeled image == label, and crop that.
 # TODO: Add method to allow SegmentedImage as input
@@ -187,7 +185,6 @@ function cropfloe(floesimg::Matrix{I}, min_row::J, min_col::J, max_row::J, max_c
     return floe_area
 end
 
-
 """
     addfloemasks!(props::DataFrame, floeimg::FloeLabelsImage)
 
@@ -257,12 +254,13 @@ end
 
 """
     time_distance_test(floe, candidates; threshold_function, threshold_column)
-"""
+""" #TODO: have the names of the columns created in the function be named parameters
 function time_distance_test!(
         floe::DataFrameRow,
         candidates::DataFrame;
         threshold_function=LopezAcostaTimeDistanceFunction(),
-        threshold_column=:time_distance_test)
+        threshold_column=:time_distance_test
+        )
     candidates[!, :Δt] = candidates[!, :passtime] .- floe.passtime
     candidates[!, :Δx] = euclidean_distance(floe, candidates)
     transform!(candidates, [:Δx, :Δt] => 
@@ -332,5 +330,5 @@ function psi_s_correlation_test!(
     transform!(candidates, [area_column, :psi_s_correlation_score] =>
         ByRow(threshold_function) => threshold_column
     )
-    dropcols!(candidates, :psi)
+    subset!(candidates, Not(:psi))
 end

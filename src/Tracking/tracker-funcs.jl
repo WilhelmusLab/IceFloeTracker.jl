@@ -489,20 +489,6 @@ function get_unmatched(props, matched)
     return unmatched
 end
 
-"""
-    get_trajectory_heads(pairs)
-
-Return the last row (most recent member) of each group (trajectory) in `pairs` as a dataframe.
-
-This is used for getting the initial floe properties for the next day in search for new pairs.
-"""
-function get_trajectory_heads(
-    pairs::T; group_col=:trajectory_uuid, order_col=:passtime
-) where {T<:AbstractDataFrame}
-    gdf = groupby(pairs, group_col)
-    heads = combine(gdf, x -> last(sort(x, order_col)))
-    return heads
-end
 
 # TODO: use SI units. For times, we should either keep it as a time object, or we should use seconds.
 """
@@ -536,10 +522,4 @@ function get_matches(matched_pairs::MatchedPairs)
     DataFrames.sort!(combined_df, [:head_uuid, :passtime])
 
     return combined_df
-end
-
-#dmw - we can just use the select function directly
-function dropcols!(df, colstodrop)
-    select!(df, Not(colstodrop))
-    return nothing
 end
