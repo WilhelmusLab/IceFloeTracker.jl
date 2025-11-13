@@ -148,7 +148,7 @@ end
 function (f::PsiSCorrelationThresholdFilter)(floe, candidates, _::Val{:raw})
     if :psi ∉ names(candidates)
         p1 = buildψs(floe.mask)
-        addψs!(candidates)
+        add_ψs!(candidates)
     else
         p1 = floe.psi
     end
