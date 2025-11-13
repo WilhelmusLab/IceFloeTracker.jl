@@ -143,7 +143,7 @@ to the columns of `candidates`.
 @kwdef struct PsiSCorrelationThresholdFunction <: AbstractFloeFilterFunction
     area_variable = :area
     threshold_column = :psi_s_correlation_test
-    threshold_function = PiecewiseLinearThresholdFunction(100, 800, 0.8, 0.9)
+    threshold_function = PiecewiseLinearThresholdFunction(100, 800, 0.14, 0.1)
 end
 
 function (f::PsiSCorrelationThresholdFunction)(floe, candidates, _::Val{:raw})
