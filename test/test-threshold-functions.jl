@@ -100,7 +100,7 @@ end
     @test "shape_difference_test" ∈ names(candidates)
     @test candidates[1, :shape_difference] == 268
 
-    ps_test = PsiSCorrelationThresholdFunction()
+    ps_test = PsiSCorrelationThresholdFilter()
     ps_test(floe, candidates, Val(:raw))
     @test "psi_s_correlation" ∈ names(candidates)
     @test candidates[1, :psi_s_correlation] == 0.914

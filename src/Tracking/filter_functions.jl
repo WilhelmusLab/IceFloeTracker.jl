@@ -138,14 +138,14 @@ Compute the psi-s correlation between a floe and a dataframe of candidate floes.
 psi-s correlation,  psi-s correlation score (1 - correlation), and the result of the threshold function
 to the columns of `candidates`.
 """ 
-@kwdef struct PsiSCorrelationThresholdFunction <: AbstractFloeFilterFunction
+@kwdef struct PsiSCorrelationThresholdFilter <: AbstractFloeFilterFunction
     area_variable = :area
     threshold_column = :psi_s_correlation_test
     threshold_function = PiecewiseLinearThresholdFunction(100, 800, 0.14, 0.1)
 end
 
 #TODO: Add option to include the confidence intervals with the normalized cross correlation tests.
-function (f::PsiSCorrelationThresholdFunction)(floe, candidates, _::Val{:raw})
+function (f::PsiSCorrelationThresholdFilter)(floe, candidates, _::Val{:raw})
     if :psi ∉ names(candidates)
         p1 = buildψs(floe.mask)
         addψs!(candidates)

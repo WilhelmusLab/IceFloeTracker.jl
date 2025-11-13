@@ -5,7 +5,13 @@ abstract type AbstractTimeDistanceThresholdFunction <: AbstractThresholdFunction
 # Minimum in Dates in milliseconds, so I just need to add
 # a function that converts to base units.
 
+"""
+    seconds(time_difference)
+
+Convenience function to convert time difference in Millisecond to decimal seconds.
+"""
 function seconds(time_difference)
+    typeof(time_difference) == Dates.Millisecond && return time_difference.value / 1000
     ms = convert(Millisecond, time_difference)
     return ms.value / 1000
 end
