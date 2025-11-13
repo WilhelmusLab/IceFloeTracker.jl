@@ -130,8 +130,6 @@ function (f::ShapeDifferenceThresholdFilter)(floe::DataFrameRow, candidates::Dat
         ByRow(f.threshold_function) => f.threshold_column)
 end
 
-
-
 """
     PsiSCorrelationThresholdFunction(area_variable, threshold_column, threshold_function)
     PsiSCorrelationThresholdFunction(floe, candidates, Val(:raw))
@@ -146,6 +144,7 @@ to the columns of `candidates`.
     threshold_function = PiecewiseLinearThresholdFunction(100, 800, 0.14, 0.1)
 end
 
+#TODO: Add option to include the confidence intervals with the normalized cross correlation tests.
 function (f::PsiSCorrelationThresholdFunction)(floe, candidates, _::Val{:raw})
     if :psi ∉ names(candidates)
         p1 = buildψs(floe.mask)

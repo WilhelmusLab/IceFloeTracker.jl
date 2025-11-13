@@ -203,6 +203,3 @@ Return a vector of cropped floe masks from `floeimg` using the bounding box data
 function getfloemasks(props::DataFrame, floeimg::FloeLabelsImage)
     return map(i -> cropfloe(floeimg, props, i), 1:nrow(props))
 end
-
-
-#TODO: Add option to include the confidence intervals with the normalized cross correlation tests.

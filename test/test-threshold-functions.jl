@@ -38,7 +38,7 @@ stepwise = StepwiseLinearThresholdFunction(700, 0.5, 1.0)
 
 end
 
-@testitem "Extend regionprops threshold tests" begin
+@testitem "Filter function tests" begin
     using IceFloeTracker
     using DataFrames
 
@@ -72,50 +72,36 @@ end
     # psi-s curve test to check if the mask exists already, and only add it if it isn't there.
     greaterthan0(x) = x .> 0
     addfloemasks!(props, greaterthan0.(labeled_images))
+    add_passtimes!(props, passtimes)
     floe = props[1][1, :]
     candidates = props[1][2:end, :]
-    add_passtimes!(props, passtimes)
+    
 
-    shape_difference_test!(
-        floe,
-        candidates;
-        threshold_function = PiecewiseLinearThresholdFunction(100, 700, 0.4, 0.2),
-        threshold_column=:shape_difference_test,
-        scale_by=:area,
-        area_column=:area
-    )
+    n = nrow(candidates)
+    dt_test = DistanceThresholdFilter()
+    dt_test(floe, candidates, Val(:raw))
+    n2 = nrow(candidates)
+    dt_test(floe, candidates)
+    n3 = nrow(candidates)
+    # Check that using the Val(:raw) forces the test to skip the subset step
+    # and that using it with just (floe, candidates) does the subsetting
+    @test (n == n2) && (n >= n3) && ("time_distance_test" ∉ names(candidates))
+
+    candidates = props[1][2:end, :]
+    re_test_area = RelativeErrorThresholdFilter(variable=:area)
+    re_test_area(floe, candidates, Val(:raw))
+    re_test_convex_area = RelativeErrorThresholdFilter(variable=:convex_area)
+    re_test_convex_area(floe, candidates, Val(:raw))
+    # Check that variable names are being passed through correctly
+    @test ("relative_error_area" ∈ names(candidates)) && ("relative_error_convex_area" ∈ names(candidates))
+
+    sd_test = ShapeDifferenceThresholdFilter()
+    sd_test(floe, candidates, Val(:raw))
     @test "shape_difference_test" ∈ names(candidates)
     @test candidates[1, :shape_difference] == 268
 
-    psi_s_correlation_test!(
-        floe, 
-        candidates;
-        threshold_function=PiecewiseLinearThresholdFunction(100, 700, 0.8, 0.9),
-        threshold_column=:psi_s_correlation_test,
-        area_column=:area
-    )
+    ps_test = PsiSCorrelationThresholdFunction()
+    ps_test(floe, candidates, Val(:raw))
     @test "psi_s_correlation" ∈ names(candidates)
     @test candidates[1, :psi_s_correlation] == 0.914
-
-    floe = props[1][1, :]
-    candidates = props[2]
-
-    time_distance_test!(
-            floe,
-            candidates;
-            threshold_function=LopezAcostaTimeDistanceFunction(),
-            threshold_column=:time_distance_test)
-    @test "time_distance_test" ∈ names(candidates)
-    @test candidates[1, :time_distance_test]
-
-    relative_error_test!(
-        floe,
-        candidates;
-        variable=:convex_area,
-        threshold_column=:relative_error_convex_area,
-        area_variable=:area,
-        threshold_function=PiecewiseLinearThresholdFunction(100, 700, 0.4, 0.2)
-        )
-
-    @test "relative_error_convex_area" ∈ names(candidates)
 end 
