@@ -17,7 +17,7 @@ Trajectories are built as follows:
   - Add all unmatched floes as heads for new trajectories.
 
 # Arguments
-- `props::Vector{DataFrame}`: A vector of DataFrames, each containing ice floe properties for a single day. Each DataFrame must have the following columns:
+- `props::Vector{DataFrame}`: A vector of DataFrames, each containing ice floe properties for a single observation time. Each DataFrame must have the following columns:
     - "area"
     - "min_row"
     - "min_col"
@@ -30,16 +30,16 @@ Trajectories are built as follows:
     - "minor_axis_length"
     - "orientation"
     - "perimeter"
-    - "mask": 2D boolean array
+    - "mask": 2D boolean floe image cropped to the floe location
     - "passtime": A timestamp for the floe
     - "psi": the psi-s curve for the floe
     - "uuid": a universally unique identifier for each segmented floe
-- `filter_function`: A function that uses
-- `candidate_matching_settings`: settings for area mismatch and psi-s shape correlation. See `IceFloeTracker.candidate_matching_settings` for sample values.
+- `filter_function`: A function that accepts a `floe::DataFrameRow` and a `candidates::DataFrame` argument, and subsets the candidates dataframe to those rows that are possible matches for `floe`.
+- `matching_function`: A function that takes the dataframe of candidate pairs and resolves conflicts to find at most one match for each floe.
 
 # Returns
 A DataFrame with the above columns, plus extra columns:
-- `area_mismatch` and `corr`, which are the area mismatch and correlation between a floe and the one that preceeds it in the trajectory. 
+- columns added by the filter function, such as similarity measures
 - `head_uuid`, the floe which was best matched by this floe.
 - Trajectories are identified by: 
   - a unique identifier `ID` and the 
@@ -57,19 +57,19 @@ function floe_tracker(props::Vector{DataFrame}, filter_function, matching_functi
 
     # Start_new_trajectory adds head_uuid and trajectory_uuid columns to props
     # The starting trajectories are just the floes visible and large enough on day 1.
+    # TODO: If props[1] is empty, advance the starting index.
     trajectories = props[1]
     _start_new_trajectory!(trajectories)
 
     for candidates in props[2:end]
-        current_time_step = candidates[1, :passtime]
-        trajectory_heads = _get_trajectory_heads(trajectories, current_time_step, maximum_time_step)
+        # Note: assumes each property table comes from a single observation time!
+        trajectory_heads = _get_trajectory_heads(trajectories, candidates[1, :passtime], maximum_time_step)
 
         candidate_pairs = []
         for floe in eachrow(trajectory_heads)
             append!(candidate_pairs, eachrow(filter_function(floe, candidates)))
         end
         
-        # tbd: double check handling for initial and final floe uuid. 
         matched_pairs = DataFrame(candidate_pairs) |> matching_function
 
         # Get unmatched floes in day 2 (iterations > 2)
@@ -109,7 +109,7 @@ function _get_trajectory_heads(
 ) where {T<:AbstractDataFrame}
     gdf = groupby(pairs, group_col)
     heads = combine(gdf, x -> last(sort(x, order_col)))
-    heads[:, :elapsed_time] = current_time_step .- heads[:, :order_col]
+    heads[:, :elapsed_time] = current_time_step .- heads[:, order_col]
     subset!(heads, [:elapsed_time] => r -> r .<= maximum_time_step)
     select!(heads, Not(:elapsed_time))
     return heads
