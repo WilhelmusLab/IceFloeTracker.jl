@@ -34,7 +34,7 @@ Add the ψ-s curves to each member of `props`.
 Note: each member of `props` must have a `mask` column with a binary image representing the floe. 
 To add floe masks see [`addfloemasks!`](@ref).
 """
-function addψs!(props::Vector{DataFrame})
+function add_ψs!(props::Vector{DataFrame})
     for prop in props
         prop.psi = map(buildψs, prop.mask)
     end
@@ -49,14 +49,14 @@ Add the ψ-s curves to each row of `props_df`.
 Note: each member of `props` must have a `mask` column with a binary image representing the floe. 
 To add floe masks see [`addfloemasks!`](@ref).
 """
-function addψs!(props_df::DataFrame)
+function add_ψs!(props_df::DataFrame)
     props_df.psi = map(buildψs, props_df.mask)
     return nothing
 end
 
-function addfloemasks!(props::Vector{DataFrame}, imgs::Vector{<:FloeLabelsImage})
+function add_floemasks!(props::Vector{DataFrame}, imgs::Vector{<:FloeLabelsImage})
     for (img, prop) in zip(imgs, props)
-        addfloemasks!(prop, img)
+        add_floemasks!(prop, img)
     end
     return nothing
 end
@@ -69,14 +69,14 @@ _uuid() = randstring(12)
 
 Assign a unique ID to each floe in a (vector of) table(s) of floe properties.
 """
-function adduuid!(df::DataFrame)
+function add_uuids!(df::DataFrame)
     df.uuid = [_uuid() for _ in 1:nrow(df)]
     return df
 end
 
-function adduuid!(dfs::Vector{DataFrame})
+function add_uuids!(dfs::Vector{DataFrame})
     for (i, _) in enumerate(dfs)
-        adduuid!(dfs[i])
+        add_uuid!(dfs[i])
     end
     return dfs
 end
@@ -180,7 +180,7 @@ end
 
 Add a column to `props` called `floearray` containing the cropped floe masks from `floeimg`.
 """
-function addfloemasks!(props::DataFrame, floeimg::FloeLabelsImage)
+function add_floemasks!(props::DataFrame, floeimg::FloeLabelsImage)
     props.mask = getfloemasks(props, floeimg)
     return nothing
 end
