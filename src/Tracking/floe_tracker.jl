@@ -63,7 +63,7 @@ function floe_tracker(props::Vector{DataFrame}, filter_function, matching_functi
             global init_idx += 1
         end
     end
-trajectories = props[init_idx]
+    trajectories = props[init_idx]
     _start_new_trajectory!(trajectories)
 
     for candidates in props[2:end]
@@ -75,7 +75,6 @@ trajectories = props[init_idx]
             candidates_subset = deepcopy(candidates)
             filter_function(floe, candidates_subset)
             nrow(candidates_subset) > 0 && begin
-                # check this: should it be the trajectory id? the head id?
                 candidates_subset[!, :head_uuid] .= floe.uuid
                 candidates_subset[!, :trajectory_uuid] .= floe.trajectory_uuid
                 append!(candidate_pairs, eachrow(candidates_subset))
@@ -171,87 +170,3 @@ function _add_integer_id!(df::AbstractDataFrame, col::Symbol, new::Symbol)
     transform!(df, col => ByRow(x -> _map[x]) => new)
     return nothing
 end
-
-# """
-#     find_floe_matches(
-#     tracked,
-#     candidate_props,
-#     condition_thresholds,
-#     mc_thresholds
-# )
-
-# Find matches for floes in `tracked` from floes in  `candidate_props`.
-
-# # Arguments
-# - `tracked`: dataframe containing floe trajectories.
-# - `candidate_props`: dataframe containing floe candidate properties.
-# - `candidate_filter_settings`: thresholds for deciding whether to match floe `i` from tracked to floe j from `candidate_props`
-# - `candidate_matching_settings`: thresholds for area mismatch and psi-s shape correlation
-# """
-# function find_floe_matches(
-#     tracked::T, candidate_props::T, candidate_filter_settings, candidate_matching_settings
-# ) where {T<:AbstractDataFrame}
-#     matches = []
-#     for floe1 in eachrow(tracked), floe2 in eachrow(candidate_props)
-#         Δt = floe2.passtime - floe1.passtime
-#         ratios, conditions, dist = compute_ratios_conditions(
-#             floe1, floe2, Δt, candidate_filter_settings
-#         )
-
-#         if callmatchcorr(conditions)
-#             (area_mismatch, corr) = matchcorr(
-#                 floe1.mask, floe2.mask, Δt; candidate_matching_settings.comp...
-#             )
-#             if isfloegoodmatch(conditions, candidate_matching_settings.goodness, area_mismatch, corr)
-#                 @debug "** Found a good match for ", floe1.uuid, "<=", floe2.uuid
-#                 push!(
-#                     matches,
-#                     (;
-#                         Δt,
-#                         measures=(; ratios..., area_mismatch, corr),
-#                         conditions,
-#                         dist,
-#                         floe1,
-#                         floe2,
-#                     ),
-#                 )
-#             end
-#         end
-#     end
-
-#     remaining_matches_df = DataFrame(matches)
-#     best_matches = []
-
-#     for floe2 in eachrow(
-#         sort(candidate_props, :area; rev=true),  # prioritize larger floes
-#     )
-#         matches_involving_floe2_df = filter((r) -> r.floe2 == floe2, remaining_matches_df)
-#         nrow(matches_involving_floe2_df) == 0 && continue
-#         best_match = matches_involving_floe2_df[1, :]
-#         measures_df = DataFrame(matches_involving_floe2_df.measures)
-#         best_match_idx = getidxmostminimumeverything(measures_df) # TODO: Update this to take travel distance into account; potentially add weighing function
-#         best_match = matches_involving_floe2_df[best_match_idx, :]
-#         push!(
-#             best_matches,
-#             (;
-#                 best_match.floe2...,
-#                 area_mismatch=best_match.measures.area_mismatch,
-#                 corr=best_match.measures.corr,
-#                 trajectory_uuid=best_match.floe1.trajectory_uuid,
-#                 head_uuid=best_match.floe1.uuid,
-#             ),
-#         )
-#         # Filter out from the remaining matches any cases involving the matched floe1
-#         remaining_matches_df = filter(
-#             (r) -> !(r.floe1 === best_match.floe1), remaining_matches_df
-#         )
-#         # Filter out from the remaining matches any cases involving the matched floe2
-#         remaining_matches_df = filter(
-#             (r) -> !(r.floe2 === best_match.floe2), remaining_matches_df
-#         )
-#     end
-
-#     best_matches_df = similar(tracked, 0)
-#     append!(best_matches_df, best_matches; promote=true)
-#     return best_matches_df
-# end

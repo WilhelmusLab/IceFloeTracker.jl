@@ -81,8 +81,6 @@ function add_uuids!(dfs::Vector{DataFrame})
     return dfs
 end
 
-
-
 # TODO: Update the cropfloes function to use the "label" parameter in the regionprops table.
 # This way, we can create a bitmatrix with labeled image == label, and crop that.
 # TODO: Add method to allow SegmentedImage as input

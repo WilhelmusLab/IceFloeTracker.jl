@@ -14,6 +14,7 @@ function (f::AbstractFloeFilterFunction)(floe, candidates)
     select!(candidates, Not(f.threshold_column))
 end
 
+# TODO: Update the DistanceThresholdFilter to allow geospatial columns (i.e., call latlon first)
 """
     DistanceThresholdFilter(time_column, dist_column, threshold_function, threshold_column)
     DistanceThresholdFilter(floe, candidates)
@@ -36,14 +37,14 @@ julia> dt_test(floe, candidates)
 will modify `candidates` in place to include only rows in which the `LinearTimeDistanceFunction()` evaluates as true. 
 Passing `Val{:raw}` as the third argument will forgo the subsetting step so that the output of the test can be examined.
 
-"""
+""" 
 @kwdef struct DistanceThresholdFilter <: AbstractFloeFilterFunction
         time_column = :Δt
         dist_column = :Δx
         scaled_dist_column = :scaled_distance
         threshold_function = LinearTimeDistanceFunction()
         threshold_column = :time_distance_test
-        scaling_function = dt -> maximum_linear_distance(dt; umax=2, eps=250)
+        scaling_function = dt -> maximum_linear_distance(dt; umax=1.5, eps=250)
 end
 
 function (f::DistanceThresholdFilter)(floe::DataFrameRow, candidates::DataFrame, _::Val{:raw}) # can we get the same behavior with a less opaque function call?
@@ -167,3 +168,56 @@ function (f::PsiSCorrelationThresholdFilter)(floe, candidates, _::Val{:raw})
     )
 end
 
+"""
+    ChainedFilterFunction(filters::Vector)
+
+Compute the psi-s correlation between a floe and a dataframe of candidate floes. Adds the 
+psi-s correlation,  psi-s correlation score (1 - correlation), and the result of the threshold function
+to the columns of `candidates`. The input is a vector of functions that take a floe and a candidates data
+frame as inputs. The default is to use seven filter functions with the threshold functions as defined
+in Watkins et al. 2026. These filters are:
+    1. DistanceThresholdFilter
+    2-5. RelativeErrorThresholdFilters for area, convex_area, major_axis_length, and minor_axis_length
+    6. ShapeDifferenceThresholdFilter
+    7. PsiSCorrelationThresholdFilter
+Filters 2-7 use a PiecewiseLinearThresholdFunction.
+
+""" 
+@kwdef struct ChainedFilterFunction <: AbstractFloeFilterFunction
+    filters = [
+        DistanceThresholdFilter(),
+        RelativeErrorThresholdFilter(variable=:area),
+        RelativeErrorThresholdFilter(variable=:convex_area),
+        RelativeErrorThresholdFilter(variable=:major_axis_length),
+        RelativeErrorThresholdFilter(variable=:minor_axis_length),
+        ShapeDifferenceThresholdFilter(),
+        PsiSCorrelationThresholdFilter()
+        ]
+end
+
+function (f::ChainedFilterFunction)(floe, candidates)
+    for filter_fun in f.filters
+        filter_fun(floe, candidates)
+    end
+end
+
+
+"""
+    LopezAcosta2019ChainedFilterFunction(floe, candidates)
+
+The LopezAcosta2019ChainedFilterFunction is a special case of ChainedFilterFunction
+with parameters and threshold functions set based on Lopez-Acosta et al. 2019. The set
+of threshold filters is the same as in the default ChainedFilterFunction, but using
+stepwise threshold functions instead of piecewise.
+"""
+LopezAcosta2019ChainedFilterFunction = ChainedFilterFunction(
+    filters=[
+        DistanceThresholdFilter(threshold_function=LopezAcostaTimeDistanceFunction()),
+        RelativeErrorThresholdFilter(variable=:area), # use the step functions
+        RelativeErrorThresholdFilter(variable=:convex_area),
+        RelativeErrorThresholdFilter(variable=:major_axis_length),
+        RelativeErrorThresholdFilter(variable=:minor_axis_length),
+        ShapeDifferenceThresholdFilter(),
+        PsiSCorrelationThresholdFilter()
+        ]
+)

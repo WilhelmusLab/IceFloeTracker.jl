@@ -9,6 +9,7 @@ export add_floemasks!,
     bwtraceboundary,
     candidate_filter_settings,
     candidate_matching_settings,
+    ChainedFilterFunction,
     compute_centroid,
     cropfloe,
     crosscorr,
@@ -18,6 +19,7 @@ export add_floemasks!,
     grad,
     imrotate_bin_counterclockwise_radians,
     matchcorr,
+    MinimumWeightMatchingFunction,
     mismatch,
     norm,
     normalized_cross_correlation,
@@ -43,7 +45,7 @@ include("extend_regionprops.jl")
 include("geometric_thresholds.jl")
 include("filter_functions.jl")
 include("floe_tracker.jl")
-include("matchcorr.jl")
+include("matching_functions.jl")
 include("psi-s.jl")
 include("register.jl")
 include("resample-boundary.jl")
