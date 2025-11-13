@@ -1,3 +1,5 @@
+# TODO: Update to take square root of area (parameterized in terms of length scale)
+
 """
 The piecewise linear threshold function is defined using two (area, value) pairs. For
 areas below the minimum area, it is constant at minimum value; likewise for above the

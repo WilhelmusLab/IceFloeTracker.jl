@@ -13,33 +13,35 @@ export addfloemasks!,
     cropfloe,
     crosscorr,
     distance_threshold,
+    DistanceThresholdFilter,
     get_rotation_measurements,
     grad,
     imrotate_bin_counterclockwise_radians,
     matchcorr,
     mismatch,
+    norm,
     normalized_cross_correlation,
     LinearTimeDistanceFunction,
     LogLogQuadraticTimeDistanceFunction,
     long_tracker,
     LopezAcostaTimeDistanceFunction,
     PiecewiseLinearThresholdFunction,
-    StepwiseLinearThresholdFunction,
-    psi_s_correlation_test!,
+    PsiSCorrelationThresholdFunction,
     register,
-    relative_error_test!,
+    RelativeErrorThresholdFilter,
     resample_boundary,
     shape_difference_rotation,
-    shape_difference_test!,
+    ShapeDifferenceThresholdFilter,
+    StepwiseLinearThresholdFunction,
     time_distance_test!,
-    _add_suffix,
-    norm
+    _add_suffix
 
 include("distance_thresholds.jl")
 include("bwtraceboundary.jl")
 include("crosscorr.jl")
-include("geometric_thresholds.jl")
 include("extend_regionprops.jl")
+include("geometric_thresholds.jl")
+include("filter_functions.jl")
 include("floe_tracker.jl")
 include("matchcorr.jl")
 include("psi-s.jl")

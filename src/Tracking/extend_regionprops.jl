@@ -204,69 +204,6 @@ function getfloemasks(props::DataFrame, floeimg::FloeLabelsImage)
     return map(i -> cropfloe(floeimg, props, i), 1:nrow(props))
 end
 
-
-"""
-    relative_error_test!(floe::DataFrameRow,
-     candidates::DataFrame,
-     variable::Union{Symbol,String},
-     new_column::Union{Symbol,String},
-     area_variable::Union{Symbol,String},
-     theshold_function::Function
-    )
-
-Compute and test (absolute) relative error for `variable`. The relative error
-between scalar variables X and Y is defined as 
-```
-err = abs(X - Y)/mean(X, Y)
-```
-This function takes a scalar `<variable>` (which must be a named column in 
-the `candidates` DataFrame) and computes the relative error. It adds a new
-column with the pattern `relative_error_<variable>` and uses a threshold function
-to determine if the relative error is small enough given the floe area. Mutates
-the candidate dataframe in place.
-
-"""
-function relative_error_test!(
-     floe::DataFrameRow,
-     candidates::DataFrame;
-     variable::Union{Symbol,String},
-     threshold_column::Union{Symbol,String},
-     area_variable::Union{Symbol,String},
-     threshold_function::Union{Function, AbstractThresholdFunction}
-    )
-    new_variable = Symbol(:relative_error_, variable)
-    X = floe[variable]
-    Y = candidates[!, variable]
-    candidates[!, new_variable] = abs.(X .- Y) ./ (0.5 .* (X .+ Y))
-    transform!(candidates, [area_variable, new_variable] => ByRow(threshold_function) => threshold_column)
-end
-
-"""
-    euclidean_distance(x, Y; r)
-
-Compute Euclidean distance between a floe and a dataframe of candidate floes assuming pixels of size `r`.
-Each column needs to have centroids calculated already.
-"""
-function euclidean_distance(floe, candidates; r = 250)
-    return sqrt.((floe.row_centroid .- candidates.row_centroid).^2 .+ 
-    (floe.col_centroid .- candidates.col_centroid).^2) * r
-end
-
-"""
-    time_distance_test(floe, candidates; threshold_function, threshold_column)
-""" #TODO: have the names of the columns created in the function be named parameters
-function time_distance_test!(
-        floe::DataFrameRow,
-        candidates::DataFrame;
-        threshold_function=LopezAcostaTimeDistanceFunction(),
-        threshold_column=:time_distance_test
-        )
-    candidates[!, :Δt] = candidates[!, :passtime] .- floe.passtime
-    candidates[!, :Δx] = euclidean_distance(floe, candidates)
-    transform!(candidates, [:Δx, :Δt] => 
-        ByRow(threshold_function) => threshold_column)
-end
-
 """
     shape_difference_test(floe, candidates;
      threshold_function, threshold_column=:shape_difference_test, scale_by=:area, area_column=:area)
