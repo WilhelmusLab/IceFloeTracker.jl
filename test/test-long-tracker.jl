@@ -100,11 +100,11 @@ end
         _props, _imgs = deepcopy.([_floedata.props, _floedata.imgs])
 
         # This order is important: masks, uuids, passtimes, ψs
-        addfloemasks!(_props, _imgs)
-        addψs!(_props)
+        add_floemasks!(_props, _imgs)
+        add_ψs!(_props)
         add_passtimes!(_props, _passtimes)
         Random.seed!(123)
-        adduuid!(_props)
+        add_uuid!(_props)
     end
 
     begin # Filter out floes with area less than `floe_area_threshold` pixels

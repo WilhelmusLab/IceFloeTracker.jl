@@ -40,16 +40,20 @@ Passing `Val{:raw}` as the third argument will forgo the subsetting step so that
 @kwdef struct DistanceThresholdFilter <: AbstractFloeFilterFunction
         time_column = :Δt
         dist_column = :Δx
+        scaled_dist_column = :scaled_distance
         threshold_function = LinearTimeDistanceFunction()
         threshold_column = :time_distance_test
+        scaling_function = dt -> maximum_linear_distance(dt; umax=2, eps=250)
 end
 
 function (f::DistanceThresholdFilter)(floe::DataFrameRow, candidates::DataFrame, _::Val{:raw}) # can we get the same behavior with a less opaque function call?
     candidates[!, f.time_column] = candidates[!, :passtime] .- floe.passtime
     candidates[!, f.dist_column] = euclidean_distance(floe, candidates)
+    candidates[!, f.scaled_dist_column] = candidates[!, f.dist_column] ./ f.scaling_function.(candidates[!, f.time_column])
     transform!(candidates, [f.dist_column, f.time_column] => 
         ByRow(f.threshold_function) => f.threshold_column)
 end
+
 
 """
     euclidean_distance(floe, candidates; r=250)

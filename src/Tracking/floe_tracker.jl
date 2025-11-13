@@ -57,8 +57,13 @@ function floe_tracker(props::Vector{DataFrame}, filter_function, matching_functi
 
     # Start_new_trajectory adds head_uuid and trajectory_uuid columns to props
     # The starting trajectories are just the floes visible and large enough on day 1.
-    # TODO: If props[1] is empty, advance the starting index.
-    trajectories = props[1]
+    init_idx = 1
+    nrow(props[init_idx]) == 0 && begin
+        while nrow(props[init_idx]) == 0 && init_idx < length(props)
+            global init_idx += 1
+        end
+    end
+trajectories = props[init_idx]
     _start_new_trajectory!(trajectories)
 
     for candidates in props[2:end]
@@ -67,18 +72,30 @@ function floe_tracker(props::Vector{DataFrame}, filter_function, matching_functi
 
         candidate_pairs = []
         for floe in eachrow(trajectory_heads)
-            append!(candidate_pairs, eachrow(filter_function(floe, candidates)))
+            candidates_subset = deepcopy(candidates)
+            filter_function(floe, candidates_subset)
+            nrow(candidates_subset) > 0 && begin
+                # check this: should it be the trajectory id? the head id?
+                candidates_subset[!, :head_uuid] .= floe.uuid
+                candidates_subset[!, :trajectory_uuid] .= floe.trajectory_uuid
+                append!(candidate_pairs, eachrow(candidates_subset))
+            end
         end
-        
+
+        # matching function will find best pairs (head_uuid, uuid)
+        # and ensure that all pairs are unique
         matched_pairs = DataFrame(candidate_pairs) |> matching_function
 
         # Get unmatched floes in day 2 (iterations > 2)
+        # This should handle the case where there are no trajectory heads available
         matched_uuids = matched_pairs.uuid
         unmatched = filter((f) -> !(f.uuid in matched_uuids), candidates)
         _start_new_trajectory!(unmatched)
+        _update_cols_to_match!(unmatched, matched_pairs)
+        _update_cols_to_match!(trajectories, matched_pairs)
 
         # Attach new matches and unmatched floes to trajectories
-        trajectories = vcat(trajectories, new_matches, unmatched)
+        trajectories = vcat(trajectories, matched_pairs, unmatched)
     end
     trajectories = _drop_short_trajectories(trajectories, :trajectory_uuid)
     DataFrames.sort!(trajectories, [:trajectory_uuid, :passtime])
@@ -89,7 +106,11 @@ function floe_tracker(props::Vector{DataFrame}, filter_function, matching_functi
 end
 
 # helper functions: all these should start with _ and should be defined in this file
+"""
+    _start_new_trajectory!(floes)
 
+Initialize trajectory by adding empty `head_uuid` column and adding uuids to each row for `trajectory_uuid`.
+"""
 function _start_new_trajectory!(floes::DataFrame)
     floes[!, :head_uuid] .= missing
     floes[!, :trajectory_uuid] .= [_uuid() for _ in eachrow(floes)]
@@ -130,6 +151,13 @@ function _drop_short_trajectories(trajectories::DataFrame, col::Symbol=:ID; min_
     )
     select!(trajectories, Not("count"))
     return trajectories
+end
+
+function _update_cols_to_match!(target::DataFrame, source::DataFrame; fill_value=missing)
+    missing_cols = [c for c ∈ names(source) if c ∉ names(target)]
+    for c in missing_cols
+        target[!, c] .= fill_value
+    end
 end
 
 """

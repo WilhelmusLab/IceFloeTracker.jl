@@ -82,12 +82,21 @@ velocity is 1.5 m/s.
 end
 
 function (f::LinearTimeDistanceFunction)(Δx, Δt)
-    umax = f.max_velocity
-    eps = f.epsilon
-    dt = seconds(Δt)
-    max_Δx = umax * dt + eps
-    return max_Δx - Δx > 0
+    max_Δx = maximum_linear_distance(Δt; umax=f.max_velocity, eps=f.epsilon)
+    return max_Δx > Δx
 end
+
+"""
+    maximum_linear_distance(Δt; umax=2, eps=250)
+
+Compute the maximum travel distance based on travel time Δt (a Time Period) based on
+the maximum velocity `umax` and an additive uncertainty of `eps` meters.
+"""
+function maximum_linear_distance(Δt; umax=2, eps=250)
+    s = seconds(Δt)
+    return s*umax + eps
+end
+
 
 """
 distance_threshold(Δx, Δt, threshold_function)

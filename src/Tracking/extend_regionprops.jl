@@ -76,7 +76,7 @@ end
 
 function add_uuids!(dfs::Vector{DataFrame})
     for (i, _) in enumerate(dfs)
-        add_uuid!(dfs[i])
+        add_uuids!(dfs[i])
     end
     return dfs
 end
