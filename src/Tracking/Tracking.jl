@@ -1,9 +1,9 @@
 module Tracking
 
-export addfloemasks!,
+export add_floemasks!,
     add_passtimes!,
-    addψs!,
-    adduuid!,
+    add_ψs!,
+    add_uuids!,
     align_centroids,
     buildψs,
     bwtraceboundary,
