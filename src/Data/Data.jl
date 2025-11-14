@@ -54,7 +54,7 @@ julia> data_loader = Watkins2025GitHub(; ref="a451cd5e62a10309a9640fbbe6b32a236f
 ```
 
 `Watkins2025GitHub` fields: 
-- `ref`: `git` ref of the commit from which to load the data
+- `ref` (optional): `git` permalink of the commit from which to load the data
 - `cache_dir` (optional): local path where the data will be stored, which defaults to `/tmp/Watkins2025/`.
 - `url` (optional): URL of the GitHub repository with the dataset
 - `dataset_metadata_path` (optional): path within the repository to a CSV file describing the data
@@ -158,7 +158,7 @@ julia> first(dataset).modis_truecolor
 ```
 """
 @kwdef struct Watkins2025GitHub <: ValidationDataLoader
-    ref::AbstractString
+    ref::AbstractString = "b865acc62f223d6ff14a073a297d682c4c034e5d"
     url::AbstractString = "https://github.com/danielmwatkins/ice_floe_validation_dataset/"
     dataset_metadata_path::AbstractString = "data/validation_dataset/validation_dataset.csv"
     cache_dir::AbstractString = "/tmp/Watkins2025"

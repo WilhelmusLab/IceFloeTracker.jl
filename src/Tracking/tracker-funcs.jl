@@ -461,16 +461,7 @@ end
 isnotnan(x) = !isnan(x)
 
 # match_corr related functions
-
-"""
-    corr(f1,f2)
-
-Return the correlation between the psi-s curves `p1` and `p2`.
-"""
-function corr(p1, p2)
-    cc, _ = maximum.(crosscorr(p1, p2; normalize=true))
-    return cc
-end
+# TODO: check if this should go in rotation or register or where
 
 """
    normalizeangle(revised,t=180)
@@ -480,35 +471,6 @@ Normalize angle to be between -180 and 180 degrees.
 function normalizeangle(revised, t=180)
     revised > t ? theta_revised = revised - 360 : theta_revised = revised
     return (theta_revised=theta_revised, ROT=-theta_revised)
-end
-
-function buildψs(floe)
-    bd = bwtraceboundary(floe)
-    bdres = resample_boundary(bd[1])
-    return make_psi_s(bdres)[1]
-end
-
-"""
-    addψs!(props::Vector{DataFrame})
-
-Add the ψ-s curves to each member of `props`.
-
-Note: each member of `props` must have a `mask` column with a binary image representing the floe.
-
-To add floe masks see [`addfloemasks!`](@ref).
-"""
-function addψs!(props::Vector{DataFrame})
-    for prop in props
-        prop.psi = map(buildψs, prop.mask)
-    end
-    return nothing
-end
-
-function addfloemasks!(props::Vector{DataFrame}, imgs::Vector{<:FloeLabelsImage})
-    for (img, prop) in zip(imgs, props)
-        addfloemasks!(prop, img)
-    end
-    return nothing
 end
 
 """
@@ -527,20 +489,6 @@ function get_unmatched(props, matched)
     return unmatched
 end
 
-"""
-    get_trajectory_heads(pairs)
-
-Return the last row (most recent member) of each group (trajectory) in `pairs` as a dataframe.
-
-This is used for getting the initial floe properties for the next day in search for new pairs.
-"""
-function get_trajectory_heads(
-    pairs::T; group_col=:trajectory_uuid, order_col=:passtime
-) where {T<:AbstractDataFrame}
-    gdf = groupby(pairs, group_col)
-    heads = combine(gdf, x -> last(sort(x, order_col)))
-    return heads
-end
 
 # TODO: use SI units. For times, we should either keep it as a time object, or we should use seconds.
 """
@@ -552,37 +500,7 @@ function get_dt(floe1, floe2)
     return (floe2.passtime - floe1.passtime) / Minute(1)
 end
 
-_uuid() = randstring(12)
 
-"""
-    adduuid!(df::DataFrame)
-    adduuid!(dfs::Vector{DataFrame})
-
-Assign a unique ID to each floe in a (vector of) table(s) of floe properties.
-"""
-function adduuid!(df::DataFrame)
-    df.uuid = [_uuid() for _ in 1:nrow(df)]
-    return df
-end
-
-function adduuid!(dfs::Vector{DataFrame})
-    for (i, _) in enumerate(dfs)
-        adduuid!(dfs[i])
-    end
-    return dfs
-end
-
-"""
-    _add_integer_id!(df, col, new)
-
-For distinct values in the column `col` of `df`, add a new column `new` to be consecutive integers starting from 1.
-"""
-function _add_integer_id!(df::AbstractDataFrame, col::Symbol, new::Symbol)
-    ids = unique(df[!, col])
-    _map = Dict(ids .=> 1:length(ids))
-    transform!(df, col => ByRow(x -> _map[x]) => new)
-    return nothing
-end
 
 """
     get_matches(matched_pairs)
@@ -604,27 +522,4 @@ function get_matches(matched_pairs::MatchedPairs)
     DataFrames.sort!(combined_df, [:head_uuid, :passtime])
 
     return combined_df
-end
-
-#dmw - we can just use the select function directly
-function dropcols!(df, colstodrop)
-    select!(df, Not(colstodrop))
-    return nothing
-end
-
-"""
-    drop_trajectories_length1(trajectories::DataFrame, col::Symbol=:ID)
-
-Drop trajectories with only one floe.
-
-# Arguments
-- `trajectories`: dataframe containing floe trajectories.
-- `col`: column name for the floe ID.
-"""
-function drop_trajectories_length1(trajectories::DataFrame, col::Symbol=:ID)
-    trajectories = filter(
-        :count => x -> x > 1, transform(groupby(trajectories, col), nrow => :count)
-    )
-    cols = [c for c in names(trajectories) if c ∉ ["count"]]
-    return trajectories[!, cols]
 end
