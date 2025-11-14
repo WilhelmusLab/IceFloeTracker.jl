@@ -97,8 +97,8 @@ end
     together lets us more efficiently use it for DataFrame transforms.
     
 """
-function shape_difference(floe1_mask::BitMatrix, floe1_orientation::Float64,
-                     floe2_mask::BitMatrix, floe2_orientation::Float64)
+function shape_difference(floe1_mask::AbstractArray{Bool}, floe1_orientation::Real,
+                     floe2_mask::AbstractArray{Bool}, floe2_orientation::Real)
     im1 = imrotate_bin_nocrop(floe1_mask, floe1_orientation)
     im2 = imrotate_bin_nocrop(floe2_mask, floe2_orientation)
     im1, im2 = align_centroids(im1, im2)

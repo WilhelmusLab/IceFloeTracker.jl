@@ -68,6 +68,7 @@ function floe_tracker(props::Vector{DataFrame}, filter_function, matching_functi
 
     for candidates in props[2:end]
         # Note: assumes each property table comes from a single observation time!
+        nrow(candidates) > 0 && continue
         trajectory_heads = _get_trajectory_heads(trajectories, candidates[1, :passtime], maximum_time_step)
 
         candidate_pairs = []
