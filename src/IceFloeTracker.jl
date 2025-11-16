@@ -1,120 +1,42 @@
 module IceFloeTracker
 
+using Reexport
+
+# Supporting modules
 include("skimage/skimage.jl")
-using .skimage
-
-include("ImageUtils/ImageUtils.jl")
-using .ImageUtils
-
-include("Geospatial/Geospatial.jl")
-using .Geospatial
-
-include("Morphology/Morphology.jl")
-using .Morphology
-
-include("Filtering/Filtering.jl")
-using .Filtering
-
-include("Preprocessing/Preprocessing.jl")
-using .Preprocessing
-
-include("Segmentation/Segmentation.jl")
-using .Segmentation
-
-include("Tracking/Tracking.jl")
-using .Tracking
 
 include("Utils/Utils.jl")
-using .Utils
+@reexport using .Utils
 
 include("Data/Data.jl")
-using .Data
+@reexport using .Data
 
-using Clustering
-using DataFrames
-using Dates
-using DSP
-using Images
-using Interpolations
-using OffsetArrays: centered
-using Peaks
-using Random
-using StaticArrays
-using StatsBase
-using TiledIteration
+include("ImageUtils/ImageUtils.jl")
+@reexport using .ImageUtils
 
-export padnhood,
-    bridge,
-    branch,
-    @persist,
-    load,
-    cloudmask,
-    create_cloudmask,
-    LopezAcostaCloudMask,
-    Watkins2025CloudMask,
-    check_landmask_path,
-    create_landmask,
-    RGB,
-    Gray,
-    float64,
-    imsharpen,
-    label_components,
-    regionprops_table,
-    cropfloe,
-    loadimg,
-    matchcorr,
-    centered,
-    imrotate,
-    get_rotation_measurements,
-    IceFloeSegmentationAlgorithm,
-    LopezAcosta2019,
-    ValidationDataCase,
-    ValidationDataLoader,
-    ValidationDataSet,
-    Watkins2025GitHub,
-    segmentation_comparison,
-    segmentation_summary,
-    LopezAcosta2019Tiling,
-    callable_store,
-    binarize_segments,
-    masker,
-    IceDetectionAlgorithm,
-    IceDetectionBrightnessPeaksMODIS721,
-    IceDetectionThresholdMODIS721,
-    IceDetectionFirstNonZeroAlgorithm,
-    IceDetectionLopezAcosta2019,
-    tiled_adaptive_binarization
+include("Geospatial/Geospatial.jl")
+@reexport using .Geospatial
 
-# For IFTPipeline
-export addlatlon!, convertcentroid!, converttounits!, dropcols!, latlon
+include("Morphology/Morphology.jl")
+@reexport using .Morphology
 
-# For the tracker
-export addfloemasks!,
-    addlatlon!,
-    add_passtimes!,
-    addψs!,
-    candidate_filter_settings,
-    candidate_matching_settings,
-    distance_threshold,
-    LogLogQuadraticTimeDistanceFunction,
-    long_tracker,
-    LopezAcostaTimeDistanceFunction,
-    register,
-    resample_boundary
+include("Filtering/Filtering.jl")
+@reexport using .Filtering
 
-include("utils.jl")
-include("cloudmask.jl")
-include("normalization.jl")
-include("ice-water-discrimination.jl")
-include("tilingutils.jl")
-include("watershed.jl")
-include("brighten.jl")
-include("regularize-final.jl")
-include("segmentation-lopez-acosta-2019.jl")
-include("segmentation_a_direct.jl")
-include("segmentation_b.jl")
-include("segmentation_watershed.jl")
-include("segmentation_f.jl")
-include("segmentation-lopez-acosta-2019-tiling.jl")
+include("Preprocessing/Preprocessing.jl")
+@reexport using .Preprocessing
+
+include("Segmentation/Segmentation.jl")
+@reexport using .Segmentation
+
+include("Tracking/Tracking.jl")
+@reexport using .Tracking
+
+# Pipelines
+include("Pipeline/LopezAcosta2019.jl")
+export LopezAcosta2019
+
+include("Pipeline/LopezAcosta2019Tiling.jl")
+export LopezAcosta2019Tiling
 
 end

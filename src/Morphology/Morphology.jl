@@ -3,9 +3,12 @@ module Morphology
 export bridge,
     branch,
     bwareamaxfilt,
+    bwareamaxfilt!,
+    bwperim,
     fill_holes,
     hbreak,
     hbreak!,
+    make_hbreak_dict,
     morph_fill,
     imextendedmin,
     imregionalmin,
@@ -13,7 +16,11 @@ export bridge,
     se_disk4,
     se_disk20,
     se_disk2,
-    reconstruct
+    reconstruct,
+    impose_minima,
+    get_areas,
+    get_max_label,
+    filt_except_label
 
 include("branch.jl")
 include("bridge.jl")

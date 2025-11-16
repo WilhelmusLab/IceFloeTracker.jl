@@ -1,6 +1,6 @@
 # This file is machine-generated - editing it directly is not advised
 
-julia_version = "1.11.6"
+julia_version = "1.11.7"
 manifest_format = "2.0"
 project_hash = "fec839447ce31a63ec0af4d18c884bbbe540a017"
 
@@ -654,18 +654,6 @@ git-tree-sha1 = "ea9eff9cfef5f45b771096e5c2de3de0eab937c3"
 uuid = "818ab7a1-5177-5f44-ba99-6e845030c6cb"
 version = "4.3.2+0"
 
-[[deps.HDF5]]
-deps = ["Compat", "HDF5_jll", "Libdl", "MPIPreferences", "Mmap", "Preferences", "Printf", "Random", "Requires", "UUIDs"]
-git-tree-sha1 = "e856eef26cf5bf2b0f95f8f4fc37553c72c8641c"
-uuid = "f67ccb44-e63f-5c2f-98bd-6dc0ccc4ba2f"
-version = "0.17.2"
-
-    [deps.HDF5.extensions]
-    MPIExt = "MPI"
-
-    [deps.HDF5.weakdeps]
-    MPI = "da04e1cc-30fd-572f-bb4f-1f8673147195"
-
 [[deps.HDF5_jll]]
 deps = ["Artifacts", "CompilerSupportLibraries_jll", "JLLWrappers", "LazyArtifacts", "LibCURL_jll", "Libdl", "MPICH_jll", "MPIPreferences", "MPItrampoline_jll", "MicrosoftMPI_jll", "OpenMPI_jll", "OpenSSL_jll", "TOML", "Zlib_jll", "libaec_jll"]
 git-tree-sha1 = "e94f84da9af7ce9c6be049e9067e511e17ff89ec"
@@ -726,7 +714,7 @@ uuid = "b5f81e59-6552-4d32-b1f0-c071b021bf89"
 version = "0.2.5"
 
 [[deps.IceFloeTracker]]
-deps = ["ArchGDAL", "CSVFiles", "Clustering", "DSP", "DataFrames", "Dates", "DelimitedFiles", "Distributed", "Downloads", "FileIO", "HDF5", "ImageBinarization", "ImageSegmentation", "Images", "Interpolations", "OffsetArrays", "Peaks", "Pkg", "Proj", "PyCall", "Random", "Serialization", "StaticArrays", "StatsBase", "TOML", "TiffImages", "TiledIteration", "TimeZones"]
+deps = ["ArchGDAL", "CSVFiles", "Clustering", "DSP", "DataFrames", "Dates", "Distributed", "Downloads", "FileIO", "ImageBinarization", "ImageSegmentation", "Images", "Interpolations", "OffsetArrays", "Peaks", "Proj", "PyCall", "Random", "Reexport", "StaticArrays", "StatsBase", "TiffImages", "TiledIteration", "TimeZones"]
 path = ".."
 uuid = "04643c7a-9ac6-48c5-822f-2704f9e70bd3"
 version = "0.9.0"
@@ -2417,7 +2405,7 @@ uuid = "8e850ede-7688-5339-a07c-302acd2aaf8d"
 version = "1.59.0+0"
 
 [[deps.oneTBB_jll]]
-deps = ["Artifacts", "JLLWrappers", "Libdl"]
+deps = ["Artifacts", "JLLWrappers", "LazyArtifacts", "Libdl"]
 git-tree-sha1 = "d5a767a3bb77135a99e433afe0eb14cd7f6914c3"
 uuid = "1317d2d5-d96f-522e-a858-c73665f53c3e"
 version = "2022.0.0+0"

@@ -1,12 +1,12 @@
 @testitem "regionprops" begin
     using Random
-    import IceFloeTracker.Segmentation: regionprops
     import DataFrames: DataFrame, nrow
+    import Images: label_components
 
     Random.seed!(123)
     bw_img = Bool.(rand([0, 1], 5, 10))
     bw_img[end, 7] = 1
-    label_img = IceFloeTracker.label_components(bw_img, trues(3, 3))
+    label_img = label_components(bw_img, trues(3, 3))
     properties = (
         "centroid",
         "area",
@@ -18,7 +18,7 @@
         "orientation",
     )
     extra_props = nothing
-    table = IceFloeTracker.regionprops_table(label_img, bw_img; properties=properties)
+    table = regionprops_table(label_img, bw_img; properties=properties)
     total_labels = maximum(label_img)
 
     # Tests for regionprops_table
@@ -34,7 +34,7 @@
     @test all(Matrix(table[:, ["row_centroid", "col_centroid"]] .> 0))
 
     # check default properties
-    @test table == IceFloeTracker.regionprops_table(label_img)
+    @test table == regionprops_table(label_img)
 
     # Tests for regionprops
     regions = regionprops(label_img, bw_img)
@@ -44,7 +44,7 @@
     @test table.area[randnum] == regions[randnum].area
 
     # Check floe masks generation and correct cropping
-    IceFloeTracker.addfloemasks!(table, bw_img)
+    addfloemasks!(table, bw_img)
     @test all(
         [
             length(unique(label_components(table.mask[i], trues(3, 3)))) for

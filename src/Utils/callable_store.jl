@@ -1,42 +1,3 @@
-# Helper functions
-
-"""
-    impose_minima(I::AbstractArray{T}, BW::AbstractArray{Bool}) where {T<:Integer}
-
-Use morphological reconstruction to enforce minima on the input image `I` at the positions where the binary mask `BW` is non-zero.
-
-It supports both integer and grayscale images using different implementations for each.
-"""
-function impose_minima(I::AbstractArray{T}, BW::AbstractArray{Bool}) where {T<:Integer}
-    marker = 255 .* BW
-    mask = imcomplement(min.(I .+ 1, 255 .- marker))
-    reconstructed = sk_morphology.reconstruction(marker, mask)
-    return IceFloeTracker.imcomplement(Int.(reconstructed))
-end
-
-function impose_minima(
-    I::AbstractArray{T}, BW::AbstractMatrix{Bool}
-) where {T<:AbstractFloat}
-    # compute shift
-    a, b = extrema(I)
-    rng = b - a
-    h = rng == 0 ? 0.1 : rng / 1000
-
-    marker = -Inf * BW .+ (Inf * .!BW)
-    mask = min.(I .+ h, marker)
-
-    return 1 .- sk_morphology.reconstruction(1 .- marker, 1 .- mask)
-end
-
-"""
-    bwdist(bwimg)
-
-Distance transform for binary image `bwdist`.
-"""
-function bwdist(bwimg::AbstractArray{Bool})::AbstractArray{Float64}
-    return Images.distance_transform(Images.feature_transform(bwimg))
-end
-
 """
     callable_store()
 
@@ -65,7 +26,7 @@ A real-world use case is to extract data from a segmentation algorithm run:
 ```julia-repl
 julia> intermediate_results, intermediate_results_callback = callable_store()
 julia> data = first(Watkins2025GitHub(; ref="a451cd5e62a10309a9640fbbe6b32a236fcebc70")());
-julia> segments = LopezAcosta2019Tiling()(
+julia> segments = LopezAcosta2019Tiling.Segment()(
     data.modis_truecolor,
     data.modis_falsecolor,
     data.modis_landmask;
