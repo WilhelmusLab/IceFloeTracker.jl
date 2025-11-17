@@ -1,22 +1,27 @@
 
 
 """
-    MinimumWeightedMatchingFunction(candidate_pairs; weight_columns)
+    MinimumWeightMatchingFunction(columns=[:scaled_distance, :relative_error_area, ...])
+    MinimumWeightedMatchingFunction(candidate_pairs)
 
 Function to identify a best matching between pairs of ice floes in the DataFrame `candidate_pairs`. The
-`weight_columns` is a list of columns in `candidate_pairs` to sum to form the weight assigned to each
-pairing. Then, a best set of unique pairs is found by carrying out two grouped minimizations: first 
-grouping by the first floe, identified by the `head_uuid` column, and finding the floe with the smallest weight,
-then grouping by the second floe, identified by the `uuid` column, and again finding the floe with the smallest
-weight. Finally, only pairs that exist in both the forward and backward grouped minizations are identified as
-likely true matches.
+`columns` variable is instantiated by the first functor call and is used to select a list of columns in `candidate_pairs`
+to sum. The result of the sum is the weight assigned to each pairing. Then, a best set of unique pairs is found by
+carrying out two grouped minimizations: first grouping by the first floe, identified by the `head_uuid` column, and
+finding the floe with the smallest weight, then grouping by the second floe, identified by the `uuid` column, and again 
+finding the floe with the smallest weight. Finally, only pairs that exist in both the forward and backward grouped minizations
+are identified as likely true matches.
 """
-function MinimumWeightMatchingFunction(candidate_pairs;
-     weight_columns=[:scaled_distance, :relative_error_area, :relative_error_convex_area, 
+@kwdef struct MinimumWeightMatchingFunction <: AbstractFloeFilterFunction
+    columns=[:scaled_distance, :relative_error_area, :relative_error_convex_area, 
                     :relative_error_major_axis_length, :relative_error_minor_axis_length,
-                    :psi_s_correlation_score, :scaled_shape_difference])
+                    :psi_s_correlation_score, :scaled_shape_difference]
+end
 
-    candidate_pairs[!, :w] = sum.(eachrow(candidate_pairs[:, weight_columns]))
+function (f::MinimumWeightMatchingFunction)(candidate_pairs::DataFrame);
+     
+    # Potential future updates: replace sum with a weighted
+    candidate_pairs[!, :w] = sum.(eachrow(candidate_pairs[:, f.columns]))
 
     # Forward: f -> {g}, find minimum dx over set {g}
     matches_fwd = combine(sdf -> sdf[argmin(sdf.w), :], groupby(candidate_pairs, :head_uuid));
