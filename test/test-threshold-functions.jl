@@ -73,6 +73,7 @@ end
     greaterthan0(x) = x .> 0
     add_floemasks!(props, greaterthan0.(labeled_images))
     add_passtimes!(props, passtimes)
+    add_ψs!(props)
     floe = props[1][1, :]
     candidates = props[1][2:end, :]
     

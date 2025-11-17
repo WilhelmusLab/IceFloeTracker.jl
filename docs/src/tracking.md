@@ -1,2 +1,8 @@
 # Tracking
-Ice floe tracking links objects in images pairwise.
+Floe tracking in Ice Floe Tracker is based on object shapes and locations. Given a series of segmented images, the goal is to identify shapes that persist across images, subject to constraints on object similarity and maximum displacements. The algorithm has three main components: (1) the main `floe_tracker` algorithm, which keeps track of the most recent floe in each trajectory (trajectory heads) and the set of candidate matches in the next image, (2) a "floe filter" function which identifies all the possible pairs between a trajectory head and floes in the candidate set, and (3) a "floe matching" algorithm which identifies a set of unique pairs. By designing and customizing the filter functions and matching functions, the `floe_tracker` function provides a flexible and powerful platform for developing floe tracking workflows.
+
+## Preparing data for tracking
+The `floe_tracker` takes three positional arguments: a list of DataFrames, a filter function, and a matching function, as well as optional keyword arguments to specify the minimum and maximum floe sizes (in pixels) and the maximum time step in between floe pairs. Assuming that a set of images `segmented_images` has already been produced, the `regionprops_table` function produces a DataFrame where each row corresponds to a floe, and each column is some measurement or attribute of the floe. DataFrames are highly flexible--entries in the dataframe are not limited to words and numbers, but can include vectors and matrices as well. At the very least, the property tables will need to include the floe area and an associated observation time.
+
+## Floe Filter Functions
+

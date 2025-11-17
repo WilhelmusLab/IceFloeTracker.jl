@@ -1,4 +1,4 @@
-
+abstract type AbstractFloeMatchingFunction end
 
 """
     MinimumWeightMatchingFunction(columns=[:scaled_distance, :relative_error_area, ...])
@@ -12,7 +12,7 @@ finding the floe with the smallest weight, then grouping by the second floe, ide
 finding the floe with the smallest weight. Finally, only pairs that exist in both the forward and backward grouped minizations
 are identified as likely true matches.
 """
-@kwdef struct MinimumWeightMatchingFunction <: AbstractFloeFilterFunction
+@kwdef struct MinimumWeightMatchingFunction <: AbstractFloeMatchingFunction
     columns=[:scaled_distance, :relative_error_area, :relative_error_convex_area, 
                     :relative_error_major_axis_length, :relative_error_minor_axis_length,
                     :psi_s_correlation_score, :scaled_shape_difference]
@@ -34,6 +34,8 @@ function (f::MinimumWeightMatchingFunction)(candidate_pairs::DataFrame);
     return innerjoin(matches_fwd[:, [:head_uuid, :uuid]], matches_bwd, on = [:head_uuid, :uuid]);
 end
 
+# TODO: Use the commented-out code below to construct a MostMinimumEverythingMatchingFunction
+# that uses the prior method for finding a best match. 
 
 # """
 #     find_floe_matches(
