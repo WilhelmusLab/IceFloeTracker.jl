@@ -151,14 +151,14 @@ end
 
 #TODO: Add option to include the confidence intervals with the normalized cross correlation tests.
 function (f::PsiSCorrelationThresholdFilter)(floe, candidates, _::Val{:raw})
-    if :psi ∉ names(candidates)
-        p1 = buildψs(floe.mask)
-        add_ψs!(candidates)
-    else
-        p1 = floe.psi
-    end
+    # if :psi ∉ names(candidates)
+    #     p1 = buildψs(floe.mask)
+    #     add_ψs!(candidates)
+    # else
+    #     p1 = floe.psi
+    # end
     
-    rfloe(p2) = round(normalized_cross_correlation(p1, p2), digits=3)
+    rfloe(p2) = round(normalized_cross_correlation(floe.psi, p2), digits=3)
     transform!(candidates,  [:psi] => ByRow(rfloe) => :psi_s_correlation)
     candidates[!, :psi_s_correlation_score] = 1 .- candidates[!, :psi_s_correlation]
 

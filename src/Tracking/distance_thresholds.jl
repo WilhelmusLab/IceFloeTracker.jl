@@ -103,7 +103,7 @@ distance_threshold(Δx, Δt, threshold_function)
 
 Time-distance threshold functions are used to identify search regions for floe matching. We include two distance threshold functions:
 LopezAcostaTimeDistanceFunction, based on the stepwise method in Lopez-Acosta et al. 2019, and LogLogQuadraticTimeDistanceFunction, 
-which is defined in Watkins et al. 2025 and is based on fitting a quadratic function to log-transformed displacements calculated from
+which is based on fitting a quadratic function to log-transformed displacements calculated from
 drifting buoy data.
 
 Example usage:

@@ -189,7 +189,7 @@ end
         ]
         # TODO: Check types for the ShapeDifference function. What's different about these props tables?
         trajectories_ = floe_tracker(
-            props, ChainedFilterFunction, MinimumWeightMatchingFunction
+            props, ChainedFilterFunction(), MinimumWeightMatchingFunction
         )
 
         trajectory_lengths = combine(groupby(trajectories_, :trajectory_uuid), nrow)
