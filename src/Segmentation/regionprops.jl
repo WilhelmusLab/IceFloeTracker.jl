@@ -66,6 +66,7 @@ function regionprops_table(
     label_img::Union{Matrix{Int64},SegmentedImage},
     intensity_img::Union{Nothing,AbstractMatrix}=nothing;
     properties::Union{Vector{<:AbstractString},Tuple{String,Vararg{String}}}=(
+        "label",
         "centroid",
         "area",
         "major_axis_length",
