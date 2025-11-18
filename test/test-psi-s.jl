@@ -4,7 +4,7 @@
     x = @. cos(t) * (1 - cos(t))
     y = @. (1 - cos(t)) * sin(t)
 
-    ψ, s = make_psi_s(x, y)
+    ψ, s = buildψs(x, y)
 
     # Test 0: Continuity for smooth curves (except initial/final point for cardioid)
     @test all((ψ[2:end] - ψ[1:(end - 1)]) .< 0.05)
@@ -13,15 +13,15 @@
     @test all([ψ[1] < 0.05, abs(ψ[end] - 3pi) < 0.05])
 
     # Test 2: Option unwrap=false; cardioid will have one discontinuity
-    θ, s = make_psi_s(x, y; rangeout=true, dsp_unwrap=false)
+    θ, s = buildψs(x, y; rangeout=true, dsp_unwrap=false)
     @test sum((abs.(θ[2:end] - θ[1:(end - 1)])) .> 0.05) == 1
 
     # Test 3: Option rangeout=false, unwrap=false. There will be negative phase values.
-    p_wrapped, _ = make_psi_s(x, y; rangeout=false, dsp_unwrap=false)
+    p_wrapped, _ = buildψs(x, y; rangeout=false, dsp_unwrap=false)
     @test !all(p_wrapped .>= 0)
 
     # Test 4: Return arclength; compare against theoretical total arclength = 8
-    _, s = make_psi_s(x, y; rangeout=true)
+    _, s = buildψs(x, y; rangeout=true)
     @test abs(s[end] - 8) < 0.005
 
     # Test 5: Auxiliary functions
@@ -39,5 +39,5 @@
     @test grad(x, y) == grad(A)
 
     # Test 6: Alternate method of make_psi_s with 2-column matrix as input
-    @test make_psi_s(x, y) == make_psi_s([x y])
+    @test buildψs(x, y) == buildψs([x y])
 end

@@ -1,10 +1,17 @@
 import Dates: Millisecond, Second, Minute, Hour, Day
-abstract type AbstractTimeDistanceThresholdFunction end
+abstract type AbstractThresholdFunction <: Function end
+abstract type AbstractTimeDistanceThresholdFunction <: AbstractThresholdFunction end
 
 # Minimum in Dates in milliseconds, so I just need to add
 # a function that converts to base units.
 
+"""
+    seconds(time_difference)
+
+Convenience function to convert time difference in Millisecond to decimal seconds.
+"""
 function seconds(time_difference)
+    typeof(time_difference) == Dates.Millisecond && return time_difference.value / 1000
     ms = convert(Millisecond, time_difference)
     return ms.value / 1000
 end
@@ -58,11 +65,45 @@ function (f::LogLogQuadraticTimeDistanceFunction)(Δx, Δt)
 end
 
 """
+Tests the travel distance and time to a linear estimate of maximum travel distance
+using the formula
+```
+max_dx = max_vel * dt + eps
+```
+Epsilon should be the uncertainty in position, such that if for example the positional
+uncertainty is 250 m, then the maximum distance includes a 250 m buffer. The default maximum
+velocity is 1.5 m/s.
+
+"""
+
+@kwdef struct LinearTimeDistanceFunction <: AbstractTimeDistanceThresholdFunction
+    max_velocity = 1.5
+    epsilon = 250
+end
+
+function (f::LinearTimeDistanceFunction)(Δx, Δt)
+    max_Δx = maximum_linear_distance(Δt; umax=f.max_velocity, eps=f.epsilon)
+    return max_Δx > Δx
+end
+
+"""
+    maximum_linear_distance(Δt; umax=2, eps=250)
+
+Compute the maximum travel distance based on travel time Δt (a Time Period) based on
+the maximum velocity `umax` and an additive uncertainty of `eps` meters.
+"""
+function maximum_linear_distance(Δt; umax=2, eps=250)
+    s = seconds(Δt)
+    return s*umax + eps
+end
+
+
+"""
 distance_threshold(Δx, Δt, threshold_function)
 
 Time-distance threshold functions are used to identify search regions for floe matching. We include two distance threshold functions:
 LopezAcostaTimeDistanceFunction, based on the stepwise method in Lopez-Acosta et al. 2019, and LogLogQuadraticTimeDistanceFunction, 
-which is defined in Watkins et al. 2025 and is based on fitting a quadratic function to log-transformed displacements calculated from
+which is based on fitting a quadratic function to log-transformed displacements calculated from
 drifting buoy data.
 
 Example usage:
