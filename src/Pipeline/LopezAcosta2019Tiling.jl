@@ -35,7 +35,7 @@ import Images:
 
 import ..skimage: sk_morphology
 import ..ImageUtils: get_brighten_mask, to_uint8, imcomplement, imbrighten, get_tiles
-import ..Filtering: histeq, unsharp_mask, conditional_histeq, rgb2gray
+import ..Filtering: histeq, unsharp_mask, conditional_histeq, rgb2gray, imgradientmag
 import ..Preprocessing:
     apply_landmask,
     apply_landmask!,
@@ -381,20 +381,6 @@ function watershed2(morph_residue, segment_mask, ice_mask)
     w = watershed(morph_residue, cc)
     lmap = labels_map(w)
     return (fgm=mr_reconst, L0mask=isboundary(lmap) .> 0)
-end
-
-"""
-    imgradientmag(img)
-
-Compute the gradient magnitude of an image using the Sobel operator.
-"""
-function imgradientmag(img)
-    h = centered([-1 0 1; -2 0 2; -1 0 1]')
-    Gx_future = Threads.@spawn imfilter(img, h', "replicate")
-    Gy_future = Threads.@spawn imfilter(img, h, "replicate")
-    Gx = fetch(Gx_future)
-    Gy = fetch(Gy_future)
-    return hypot.(Gx, Gy)
 end
 
 """
