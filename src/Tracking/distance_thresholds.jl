@@ -23,7 +23,6 @@ Stepwise time delta function based on Lopez-Acosta et al. 2019. The time thresho
 must be time objects so that conversion to seconds is possible. Displacement distances are assumed to
 be in meters. The final dx value is the maximum displacement.
 """
-
 @kwdef struct LopezAcostaTimeDistanceFunction <: AbstractTimeDistanceThresholdFunction
     dt=(Minute(20), Minute(90), Hour(24))
     dx=(3.75e3, 7.5e3, 30e3, 60e3)
@@ -43,7 +42,6 @@ Tests the travel distance and time in log-log space against an empirically fitte
 function is constrained by minimum and maximum times. Times less than the minimum are subject to the maximum 1-hour travel
 distance, while times larger than the maximum fail automatically. See Watkins et al. 2025 for details.
 """
-
 @kwdef struct LogLogQuadraticTimeDistanceFunction <: AbstractTimeDistanceThresholdFunction
     llq_params=[0.403, 0.988, -0.05]
     min_time=Hour(1)
@@ -75,7 +73,6 @@ uncertainty is 250 m, then the maximum distance includes a 250 m buffer. The def
 velocity is 1.5 m/s.
 
 """
-
 @kwdef struct LinearTimeDistanceFunction <: AbstractTimeDistanceThresholdFunction
     max_velocity = 0.75
     epsilon = 250
@@ -110,7 +107,6 @@ Example usage:
 ```
 distance_threshold(100, Hour(12), LopezAcostaTimeDistanceFunction())
 ```
-
 """
 # TODO: require dt to be milliseconds (or at least a timedelta), so we can do e.g. = Dates.seconds(passtimes[2] - passtimes[1])
 function distance_threshold(Δx, Δt, threshold_function::AbstractTimeDistanceThresholdFunction)
