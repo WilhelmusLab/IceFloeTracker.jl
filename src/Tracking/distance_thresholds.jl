@@ -77,7 +77,7 @@ velocity is 1.5 m/s.
 """
 
 @kwdef struct LinearTimeDistanceFunction <: AbstractTimeDistanceThresholdFunction
-    max_velocity = 1.5
+    max_velocity = 0.75
     epsilon = 250
 end
 
@@ -92,7 +92,7 @@ end
 Compute the maximum travel distance based on travel time Δt (a Time Period) based on
 the maximum velocity `umax` and an additive uncertainty of `eps` meters.
 """
-function maximum_linear_distance(Δt; umax=2, eps=250)
+function maximum_linear_distance(Δt; umax=0.75, eps=250)
     s = seconds(Δt)
     return s*umax + eps
 end

@@ -181,12 +181,18 @@ Filters 2-7 use a PiecewiseLinearThresholdFunction.
 @kwdef struct ChainedFilterFunction <: AbstractFloeFilterFunction
     filters = [
         DistanceThresholdFilter(),
-        RelativeErrorThresholdFilter(variable=:area),
-        RelativeErrorThresholdFilter(variable=:convex_area),
-        RelativeErrorThresholdFilter(variable=:major_axis_length),
-        RelativeErrorThresholdFilter(variable=:minor_axis_length),
-        ShapeDifferenceThresholdFilter(),
-        PsiSCorrelationThresholdFilter()
+        RelativeErrorThresholdFilter(variable=:area,
+             threshold_function=PiecewiseLinearThresholdFunction(minimum_value=0.43, maximum_value=0.17)),
+        RelativeErrorThresholdFilter(variable=:convex_area, 
+            threshold_function=PiecewiseLinearThresholdFunction(minimum_value=0.44, maximum_value=0.25)),
+        RelativeErrorThresholdFilter(variable=:major_axis_length, 
+            threshold_function=PiecewiseLinearThresholdFunction(minimum_value=0.27, maximum_value=0.13)),
+        RelativeErrorThresholdFilter(variable=:minor_axis_length, 
+            threshold_function=PiecewiseLinearThresholdFunction(minimum_value=0.28, maximum_value=0.1)),
+        ShapeDifferenceThresholdFilter(
+            threshold_function=PiecewiseLinearThresholdFunction(minimum_value=0.47, maximum_value=0.31)),
+        PsiSCorrelationThresholdFilter(
+            threshold_function=PiecewiseLinearThresholdFunction(minimum_value=0.86, maximum_value=0.96))
         ]
 end
 
