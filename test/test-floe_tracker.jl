@@ -66,10 +66,9 @@ end
 @testitem "Basic cases" begin
     using Random
     using DataFrames
-    using IceFloeTracker: floe_tracker, ChainedFilterFunction, MinimumWeightMatchingFunction
+    using IceFloeTracker: floe_tracker, FilterFunction, MinimumWeightMatchingFunction
     using Serialization: deserialize
 
-    # TODO: How does the addgaps function actually affect the props table?
     """
     addgaps(props)
 
@@ -111,7 +110,7 @@ end
         # Every floe is matched in every day
         props_test_case1 = deepcopy(_props)
         trajectories = floe_tracker(
-            props_test_case1, ChainedFilterFunction(), MinimumWeightMatchingFunction()
+            props_test_case1, FilterFunction, MinimumWeightMatchingFunction()
         )
 
         # Expected: 5 trajectories, all of which have length 3
@@ -128,7 +127,7 @@ end
 
     @testset "Case 2" begin
         trajectories = IceFloeTracker.floe_tracker(
-            props_test_case2, IceFloeTracker.ChainedFilterFunction(), IceFloeTracker.MinimumWeightMatchingFunction()
+            props_test_case2, FilterFunction, IceFloeTracker.MinimumWeightMatchingFunction()
         )
 
         # Expected: 5 trajectories, 3 of which have length 3 and 2 of which have length 2
@@ -144,7 +143,7 @@ end
             props = addgaps(_props)
 
             trajectories = IceFloeTracker.floe_tracker(
-                props, ChainedFilterFunction(), MinimumWeightMatchingFunction()
+                props, FilterFunction, MinimumWeightMatchingFunction()
             )
 
             # Expected: 5 trajectories, all of which have length 3 as in test case 1
@@ -159,7 +158,7 @@ end
             Random.seed!(123)
             props = addgaps(props_test_case2)
             trajectories = IceFloeTracker.floe_tracker(
-                props, IceFloeTracker.ChainedFilterFunction(), IceFloeTracker.MinimumWeightMatchingFunction()
+                props, FilterFunction, IceFloeTracker.MinimumWeightMatchingFunction()
             )
 
             # Expected: 5 trajectories, 3 of which have length 3 and 2 of which have length 2 as in test case 2
@@ -173,7 +172,7 @@ end
     using CSV
     using DataFrames
     using IceFloeTracker:
-        floe_tracker, ChainedFilterFunction, MinimumWeightMatchingFunction
+        floe_tracker, FilterFunction, MinimumWeightMatchingFunction
 
     function load_props_from_csv(path; eval_cols=[:mask, :psi])
         df = DataFrame(CSV.File(path))
@@ -189,7 +188,7 @@ end
         ]
         # TODO: Check types for the ShapeDifference function. What's different about these props tables?
         trajectories_ = floe_tracker(
-            props, ChainedFilterFunction(), MinimumWeightMatchingFunction()
+            props, FilterFunction, MinimumWeightMatchingFunction()
         )
 
         trajectory_lengths = combine(groupby(trajectories_, :trajectory_uuid), nrow)
@@ -234,7 +233,7 @@ end
         ]
 
         trajectories_ = floe_tracker(
-            props, ChainedFilterFunction(), MinimumWeightMatchingFunction(); minimum_area=1200
+            props, FilterFunction, MinimumWeightMatchingFunction(); minimum_area=1200
         )
 
         @test all(
