@@ -173,17 +173,8 @@ end
 Add a column to `props` called `floearray` containing the cropped floe masks from `floeimg`.
 """
 function add_floemasks!(props::DataFrame, floeimg::FloeLabelsImage)
-    props.mask = getfloemasks(props, floeimg)
+    props.mask = map(i -> cropfloe(floeimg, props, i), 1:nrow(props))
     return nothing
-end
-
-"""
-    getfloemasks(props::DataFrame, floeimg::BitMatrix)
-
-Return a vector of cropped floe masks from `floeimg` using the bounding box data in `props`.
-"""
-function getfloemasks(props::DataFrame, floeimg::FloeLabelsImage)
-    return map(i -> cropfloe(floeimg, props, i), 1:nrow(props))
 end
 
 function add_floemasks!(
