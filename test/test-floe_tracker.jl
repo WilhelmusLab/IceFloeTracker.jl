@@ -93,7 +93,7 @@ end
 
         # This order is important: masks, uuids, passtimes, ψs
         add_floemasks!(_props, _imgs)
-        add_ψs!(_props)
+        add_ψs!.(_props)
         add_passtimes!(_props, _passtimes)
         Random.seed!(123)
         add_uuids!(_props)
