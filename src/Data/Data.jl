@@ -54,7 +54,7 @@ julia> data_loader = Watkins2025GitHub(; ref="a451cd5e62a10309a9640fbbe6b32a236f
 ```
 
 `Watkins2025GitHub` fields: 
-- `ref` (optional): `git` permalink of the commit from which to load the data
+- `ref` (optional): `git` tag, commit-id or branch from which to load the data
 - `cache_dir` (optional): local path where the data will be stored, which defaults to `/tmp/Watkins2025/`.
 - `url` (optional): URL of the GitHub repository with the dataset
 - `dataset_metadata_path` (optional): path within the repository to a CSV file describing the data
