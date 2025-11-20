@@ -54,13 +54,6 @@ function add_ψs!(props_df::DataFrame)
     return nothing
 end
 
-function add_floemasks!(props::Vector{DataFrame}, imgs::Vector{<:FloeLabelsImage})
-    for (img, prop) in zip(imgs, props)
-        add_floemasks!(prop, img)
-    end
-    return nothing
-end
-
 _uuid() = randstring(12)
 
 """
@@ -174,7 +167,8 @@ function cropfloe(floesimg::Matrix{I}, min_row::J, min_col::J, max_row::J, max_c
 end
 
 """
-    addfloemasks!(props::DataFrame, floeimg::FloeLabelsImage)
+    add_floemasks!(props::DataFrame, floeimg::FloeLabelsImage)
+    add_floemasks!.(props::Vector{DataFrame}, floeimgs::Vector{FloeLabelsImage})
 
 Add a column to `props` called `floearray` containing the cropped floe masks from `floeimg`.
 """
