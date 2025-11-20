@@ -9,7 +9,6 @@
 
     @testset "get_trajectory_heads" begin
         @testset "basic case" begin
-            
             test_time0 = DateTime("2020-01-01 0:00", "y-m-d H:M")
             test_time1 = DateTime("2020-01-01 1:00", "y-m-d H:M")
             test_time2 = DateTime("2020-01-01 2:00", "y-m-d H:M")
@@ -28,7 +27,9 @@
             # Check that we only get two heads
             current_time_step = test_time5
             maximum_time_step = Day(5)
-            heads = _get_trajectory_heads(df, current_time_step, maximum_time_step; group_col=:group_id)
+            heads = _get_trajectory_heads(
+                df, current_time_step, maximum_time_step; group_col=:group_id
+            )
             @test nrow(heads) == 2
 
             # Check that the heads we get are the ones we want, 
@@ -52,7 +53,9 @@
             # Check that we get a head for every row
             current_time_step = test_time1
             maximum_time_step = Day(1)
-            heads = _get_trajectory_heads(df, current_time_step, maximum_time_step; group_col=:group_id)
+            heads = _get_trajectory_heads(
+                df, current_time_step, maximum_time_step; group_col=:group_id
+            )
             @test nrow(heads) == 8
 
             # Check that each head appears once
@@ -61,7 +64,6 @@
     end
 end
 # TODO: Include tests for other floe_tracker utilities
-
 
 @testitem "Basic cases" begin
     using Random
@@ -96,7 +98,7 @@ end
         add_ψs!(_props)
         add_passtimes!(_props, _passtimes)
         Random.seed!(123)
-        add_uuids!(_props)
+        add_uuids!.(_props)
     end
 
     begin # Filter out floes with area less than `floe_area_threshold` pixels
@@ -128,11 +130,13 @@ end
 
     @testset "Case 2" begin
         trajectories = IceFloeTracker.floe_tracker(
-            props_test_case2, IceFloeTracker.ChainedFilterFunction(), IceFloeTracker.MinimumWeightMatchingFunction()
+            props_test_case2,
+            IceFloeTracker.ChainedFilterFunction(),
+            IceFloeTracker.MinimumWeightMatchingFunction(),
         )
 
         # Expected: 5 trajectories, 3 of which have length 3 and 2 of which have length 2
-        
+
         counts = combine(groupby(trajectories, [:ID]), nrow => :count)
         @test sum(counts[:, :count] .== 3) == 3 && sum(counts[:, :count] .== 2) == 2
     end
@@ -159,7 +163,9 @@ end
             Random.seed!(123)
             props = addgaps(props_test_case2)
             trajectories = IceFloeTracker.floe_tracker(
-                props, IceFloeTracker.ChainedFilterFunction(), IceFloeTracker.MinimumWeightMatchingFunction()
+                props,
+                IceFloeTracker.ChainedFilterFunction(),
+                IceFloeTracker.MinimumWeightMatchingFunction(),
             )
 
             # Expected: 5 trajectories, 3 of which have length 3 and 2 of which have length 2 as in test case 2
@@ -172,8 +178,7 @@ end
 @testitem "Ellipses" begin
     using CSV
     using DataFrames
-    using IceFloeTracker:
-        floe_tracker, ChainedFilterFunction, MinimumWeightMatchingFunction
+    using IceFloeTracker: floe_tracker, ChainedFilterFunction, MinimumWeightMatchingFunction
 
     function load_props_from_csv(path; eval_cols=[:mask, :psi])
         df = DataFrame(CSV.File(path))
@@ -234,11 +239,12 @@ end
         ]
 
         trajectories_ = floe_tracker(
-            props, ChainedFilterFunction(), MinimumWeightMatchingFunction(); minimum_area=1200
+            props,
+            ChainedFilterFunction(),
+            MinimumWeightMatchingFunction();
+            minimum_area=1200,
         )
 
-        @test all(
-            1200 .<= trajectories_.area,
-        )
+        @test all(1200 .<= trajectories_.area)
     end
 end
