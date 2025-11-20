@@ -10,7 +10,7 @@ abstract type AbstractTimeDistanceThresholdFunction <: AbstractThresholdFunction
 
 Convenience function to convert time difference in Millisecond to decimal seconds.
 """
-function seconds(time_difference)
+function seconds(time_difference::Union{Period,CompoundPeriod})
     typeof(time_difference) == Dates.Millisecond && return time_difference.value / 1000
     ms = convert(Millisecond, time_difference)
     return ms.value / 1000
