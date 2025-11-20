@@ -25,7 +25,7 @@ function _pairfloes(
     # Assign a unique ID to each floe in each image
     adduuid!(props)
 
-    add_passtimes!(props, passtimes)
+    add_passtimes!.(props, passtimes)
 
     # Initialize container for props of matched pairs of floes, their similarity ratios, and their distances between their centroids
     tracked = Tracked()

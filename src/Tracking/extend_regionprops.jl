@@ -7,9 +7,9 @@ import ..Morphology: bwareamaxfilt
 FloeLabelsImage = Union{BitMatrix, Matrix{<:Bool}, Matrix{<:Integer}}
 abstract type AbstractThresholdFunction <: Function end
 
-
 """
-    add_passtimes!(props, passtimes)
+    add_passtimes!(props::DataFrame, passtimes::DateTime)
+    add_passtimes!.(props::Vector{DataFrame}, passtimes::Vector{DateTime})
 
 Add a column `passtime` to each DataFrame in `props` containing the time of the image in which the floes were captured.
 
@@ -18,13 +18,10 @@ Add a column `passtime` to each DataFrame in `props` containing the time of the 
 - `passtimes`: array of `DateTime` objects containing the time of the image in which the floes were captured.
 
 """
-function add_passtimes!(props, passtimes)
-    for (i, passtime) in enumerate(passtimes)
-        props[i].passtime .= passtime
-    end
+function add_passtimes!(props_df::DataFrame, passtime::DateTime)
+    props_df.passtime .= passtime
     return nothing
 end
-
 
 """
     addψs!(props::Vector{DataFrame})
