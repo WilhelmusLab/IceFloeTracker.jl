@@ -11,7 +11,7 @@ props = regionprops_table.(segmented_images)
 We include helper functions to add unique IDs to each row and to add image observation times. Assuming `passtimes` is a list of DateTimes of the same length as `segmented_images`, we run
 
 ```julia
-add_uuids!(props)
+add_uuids!.(props)
 add_passtimes!(props, passtimes)
 ```
 
