@@ -1,4 +1,4 @@
-import Dates: Millisecond, Second, Minute, Hour, Day
+import Dates: Period, CompoundPeriod, Millisecond, Second, Minute, Hour, Day
 abstract type AbstractThresholdFunction <: Function end
 abstract type AbstractTimeDistanceThresholdFunction <: AbstractThresholdFunction end
 
