@@ -10,7 +10,7 @@ import Dates: format
 import Images: SegmentedImage, Colorant, Gray
 import FileIO: load, save
 import CSVFiles: CSVFile
-import DataFrames: DataFrame
+import DataFrames: DataFrame, nrow
 
 @kwdef struct ValidationDataSet
     data::Base.Generator
@@ -18,6 +18,7 @@ import DataFrames: DataFrame
 end
 Base.iterate(iter::ValidationDataSet) = iterate(iter.data)
 Base.iterate(iter::ValidationDataSet, state) = iterate(iter.data, state)
+Base.length(iter::ValidationDataSet) = nrow(iter.metadata)
 
 @kwdef struct ValidationDataCase
     name::AbstractString = nothing

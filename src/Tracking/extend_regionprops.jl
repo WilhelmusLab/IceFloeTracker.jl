@@ -1,7 +1,7 @@
 # Functions for adding additional columns to regionprops needed for floe tracking
 
 import DataFrames: DataFrame, nrow, DataFrameRow, transform!, ByRow, AbstractDataFrame
-import Images: label_components
+import Images: label_components, SegmentedImage, labels_map
 import ..Morphology: bwareamaxfilt
 
 FloeLabelsImage = Union{BitMatrix, Matrix{<:Bool}, Matrix{<:Integer}}
@@ -190,4 +190,21 @@ Return a vector of cropped floe masks from `floeimg` using the bounding box data
 """
 function getfloemasks(props::DataFrame, floeimg::FloeLabelsImage)
     return map(i -> cropfloe(floeimg, props, i), 1:nrow(props))
+end
+
+function add_floemasks!(
+    props::DataFrame, segmented_image::SegmentedImage; label_column::Symbol=:label
+)
+    floeimg = labels_map(segmented_image)
+    props[!, :mask] = missings(BitMatrix, nrow(props))
+
+    for i in 1:nrow(props)
+        label = props[i, label_column]
+        min_row = props[i, :min_row]
+        min_col = props[i, :min_col]
+        max_row = props[i, :max_row]
+        max_col = props[i, :max_col]
+        props.mask[i] = cropfloe(floeimg, min_row, min_col, max_row, max_col, label)
+    end
+    return props
 end
