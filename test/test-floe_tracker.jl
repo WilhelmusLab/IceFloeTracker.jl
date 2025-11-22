@@ -1,6 +1,5 @@
 
 @testitem "Utilities" begin
-    using CSV
     using DataFrames
     import IceFloeTracker.Tracking: _get_trajectory_heads
     using Dates
@@ -169,13 +168,13 @@ end
 end
 
 @testitem "Ellipses" begin
-    using CSV
+    using CSVFiles
     using DataFrames
     using IceFloeTracker:
         floe_tracker, FilterFunction, MinimumWeightMatchingFunction
 
     function load_props_from_csv(path; eval_cols=[:mask, :psi])
-        df = DataFrame(CSV.File(path))
+        df = DataFrame(load(path))
         for column in eval_cols
             df[!, column] = eval.(Meta.parse.(df[:, column]))
         end
