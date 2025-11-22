@@ -44,7 +44,7 @@
     @test table.area[randnum] == regions[randnum].area
 
     # Check floe masks generation and correct cropping
-    addfloemasks!(table, bw_img)
+    add_floemasks!(table, bw_img)
     @test all(
         [
             length(unique(label_components(table.mask[i], trues(3, 3)))) for

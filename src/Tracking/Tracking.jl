@@ -1,51 +1,60 @@
 module Tracking
 
-export addfloemasks!,
+export add_floemasks!,
     add_passtimes!,
-    addψs!,
-    adduuid!,
+    add_ψs!,
+    add_uuids!,
     align_centroids,
+    buildψs,
     bwtraceboundary,
     candidate_filter_settings,
     candidate_matching_settings,
+    ChainedFilterFunction,
     compute_centroid,
     cropfloe,
     crosscorr,
     distance_threshold,
-    dropcols!,
+    DistanceThresholdFilter,
+    FilterFunction,
+    floe_tracker,
     get_rotation_measurements,
-    get_trajectory_heads,
     grad,
     imrotate_bin_counterclockwise_radians,
     matchcorr,
+    MinimumWeightMatchingFunction,
     mismatch,
-    make_psi_s,
+    norm,
+    normalized_cross_correlation,
+    LinearTimeDistanceFunction,
     LogLogQuadraticTimeDistanceFunction,
-    long_tracker,
     LopezAcostaTimeDistanceFunction,
+    PiecewiseLinearThresholdFunction,
+    PsiSCorrelationThresholdFilter,
     register,
+    RelativeErrorThresholdFilter,
     resample_boundary,
     shape_difference_rotation,
-    _add_suffix,
-    norm
+    ShapeDifferenceThresholdFilter,
+    StepwiseLinearThresholdFunction,
+    time_distance_test!,
+    _add_suffix
 
 include("distance_thresholds.jl")
 include("bwtraceboundary.jl")
 include("crosscorr.jl")
-include("extended_regionprops.jl")
-include("long_tracker.jl")
-include("matchcorr.jl")
+include("extend_regionprops.jl")
+include("geometric_thresholds.jl")
+include("filter_functions.jl")
+include("floe_tracker.jl")
+include("matching_functions.jl")
 include("psi-s.jl")
 include("register.jl")
 include("resample-boundary.jl")
 include("rotation.jl")
 include("tracker-funcs.jl")
-include("tracker.jl")
 
 ##### Default settings ######
-# TODO: Set these to match the Lopez-Acosta 2019 paper
-# TODO: Replace two-level geometry threshold function with a functor or function
-# TODO: Replace references to condition_thresholds in function documentation
+# TODO: Replace with filter_function
 
 candidate_filter_settings = (
     time_space_threshold_function=LopezAcostaTimeDistanceFunction(),

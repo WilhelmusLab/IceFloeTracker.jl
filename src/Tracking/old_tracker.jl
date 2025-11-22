@@ -1,21 +1,4 @@
 """
-    add_passtimes!(props, passtimes)
-
-Add a column `passtime` to each DataFrame in `props` containing the time of the image in which the floes were captured.
-
-# Arguments
-- `props`: array of DataFrames containing floe properties.
-- `passtimes`: array of `DateTime` objects containing the time of the image in which the floes were captured.
-
-"""
-function add_passtimes!(props, passtimes)
-    for (i, passtime) in enumerate(passtimes)
-        props[i].passtime .= passtime
-    end
-    return nothing
-end
-
-"""
     sort_floes_by_area!(props)
 
 Sort floes in `props` by area in descending order.

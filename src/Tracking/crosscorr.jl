@@ -1,3 +1,5 @@
+### Wrapper for cross correlation function from DSP ###
+
 import DSP: xcorr
 """
     r, lags = crosscorr(u::Vector{T},
@@ -108,4 +110,14 @@ function crosscorr(
         radius = length(u) + length(v) - 1
         return c, Vector(1:radius)
     end
+end
+
+"""
+    normalized_cross_corr(f1,f2)
+
+Return the normalized cross-correlation between the psi-s curves `p1` and `p2`.
+"""
+function normalized_cross_correlation(p1::T, p2::T) where {T<:AbstractArray}
+    cc, _ = maximum.(crosscorr(p1, p2; normalize=true, padmode=:longest))
+    return cc
 end
