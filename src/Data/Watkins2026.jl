@@ -76,20 +76,36 @@ function metadata(case::Case)::AbstractDict
     return case.metadata
 end
 
-@kwdef struct Dataset
-    loader::AbstractLoader = GitHubLoader(;
+struct Dataset
+    loader::AbstractLoader
+    metadata_path::AbstractString
+    _metadata::DataFrame
+    function Dataset(loader, metadata_path)
+        return new(loader, metadata_path, _load_metadata(loader, metadata_path))
+    end
+    function Dataset(loader, metadata_path, metadata)
+        return new(loader, metadata_path, metadata)
+    end
+end
+
+function _load_metadata(loader, path)
+    df = path |> loader |> load |> DataFrame
+    return df
+end
+
+function Dataset(;
+    loader=GitHubLoader(;
         url="https://github.com/danielmwatkins/ice_floe_validation_dataset/",
         ref="b865acc62f223d6ff14a073a297d682c4c034e5d",
         cache_dir="/tmp/Watkins2026",
-    )
-    dataset_metadata_path::AbstractString = "data/validation_dataset/validation_dataset.csv"
+    ),
+    dataset_metadata_path="data/validation_dataset/validation_dataset.csv",
+)
+    return Dataset(loader, dataset_metadata_path)
 end
 
 function metadata(ds::Dataset)::DataFrame
-    csv_path = ds.loader(ds.dataset_metadata_path)
-    csv = load(csv_path)
-    df = DataFrame(csv)
-    return df
+    return ds._metadata
 end
 
 function cases(ds::Dataset)::Vector{Case}
