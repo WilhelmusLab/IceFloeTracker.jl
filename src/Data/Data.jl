@@ -298,6 +298,7 @@ function _get_file(file_url, file_path)
     @debug "looking for file at $(file_path). File exists: $(isfile(file_path))"
     if !isfile(file_path)
         try
+            mkpath(dirname(file_path))
             download(file_url, file_path)
         catch e
             if isa(e, RequestError)

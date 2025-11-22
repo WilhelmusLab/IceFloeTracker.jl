@@ -11,6 +11,8 @@ include("Utils/Utils.jl")
 include("Data/Data.jl")
 @reexport using .Data
 
+include("Data/Watkins2026.jl")
+
 include("ImageUtils/ImageUtils.jl")
 @reexport using .ImageUtils
 
