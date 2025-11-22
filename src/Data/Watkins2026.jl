@@ -44,7 +44,7 @@ export Dataset, Case, metadata
 
 import ..GitHubData: Loader as GitHubLoader, AbstractLoader
 import FileIO: load, save
-import DataFrames: DataFrame, DataFrameRow, nrow, eachrow
+import DataFrames: DataFrames, DataFrame, DataFrameRow, nrow, eachrow, subset
 import Dates: format
 
 @kwdef struct Case
@@ -100,6 +100,17 @@ end
 Base.length(ds::Dataset)::Int = length(cases(ds))
 Base.iterate(ds::Dataset) = iterate(cases(ds))
 Base.iterate(ds::Dataset, state) = iterate(cases(ds), state)
+Base.filter(f::Function, ds::Dataset)::Dataset =
+    Dataset(ds.loader, filter(row -> f(row), ds.metadata))
+subset(ds::Dataset, args...; kwargs...)::Dataset =
+    Dataset(ds.loader, subset(ds.metadata, args...; kwargs...))
+
+function modis_truecolor(case::Case; ext="tiff")
+    m = case.metadata
+    file = "data/modis/truecolor/$(m[:case_number])-$(m[:region])-$(m[:image_side_length])-$(m[:date]).$(m[:satellite]).truecolor.$(m[:pixel_scale]).$(ext)"
+    img = file |> case.loader |> load
+    return img
+end
 
 function metadata(vcs::Vector{Case})::DataFrame
     return DataFrame(metadata.(vcs))
