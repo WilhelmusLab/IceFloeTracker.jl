@@ -50,26 +50,17 @@ import Dates: format
 @kwdef struct Case
     loader::GitHubLoader
     metadata::AbstractDict
-
-    case_number::AbstractString
-    region::AbstractString
-    date::AbstractString
-    satellite::AbstractString
-    pixel_scale::AbstractString
-    image_side_length::AbstractString
 end
 
 function Case(dfr::DataFrameRow, loader::AbstractLoader)
-    return Case(;
-        loader,
-        metadata=Dict(Symbol(k) => v for (k, v) in pairs(dfr)),
-        case_number=lpad(dfr.case_number, 3, "0"),
-        region=dfr.region,
-        date=format(dfr.start_date, "yyyymmdd"),
-        satellite=dfr.satellite,
-        pixel_scale="250m",
-        image_side_length="100km",
-    )
+    metadata = Dict(Symbol(k) => v for (k, v) in pairs(dfr))
+    metadata[:case_number] = lpad(dfr.case_number, 3, "0")
+    metadata[:region] = dfr.region
+    metadata[:date] = format(dfr.start_date, "yyyymmdd")
+    metadata[:satellite] = dfr.satellite
+    metadata[:pixel_scale] = "250m"
+    metadata[:image_side_length] = "100km"
+    return Case(; loader, metadata)
 end
 
 function metadata(case::Case)::AbstractDict
@@ -78,14 +69,7 @@ end
 
 struct Dataset
     loader::AbstractLoader
-    metadata_path::AbstractString
-    _metadata::DataFrame
-    function Dataset(loader, metadata_path)
-        return new(loader, metadata_path, _load_metadata(loader, metadata_path))
-    end
-    function Dataset(loader, metadata_path, metadata)
-        return new(loader, metadata_path, metadata)
-    end
+    metadata::DataFrame
 end
 
 function _load_metadata(loader, path)
@@ -99,24 +83,23 @@ function Dataset(;
         ref="b865acc62f223d6ff14a073a297d682c4c034e5d",
         cache_dir="/tmp/Watkins2026",
     ),
-    dataset_metadata_path="data/validation_dataset/validation_dataset.csv",
+    metadata_path="data/validation_dataset/validation_dataset.csv",
 )
-    return Dataset(loader, dataset_metadata_path)
+    return Dataset(loader, _load_metadata(loader, metadata_path))
 end
 
 function metadata(ds::Dataset)::DataFrame
-    return ds._metadata
+    return ds.metadata
 end
 
 function cases(ds::Dataset)::Vector{Case}
-    df = metadata(ds)
-    vcs = Case.(eachrow(df), Ref(ds.loader))
+    vcs = Case.(eachrow(metadata(ds)), Ref(ds.loader))
     return vcs
 end
 
 Base.length(ds::Dataset)::Int = length(cases(ds))
-Base.iterate(ds::Dataset)::Vector{Case} = iterate(cases(ds))
-Base.iterate(ds::Dataset, state)::Vector{Case} = iterate(cases(ds), state)
+Base.iterate(ds::Dataset) = iterate(cases(ds))
+Base.iterate(ds::Dataset, state) = iterate(cases(ds), state)
 
 function metadata(vcs::Vector{Case})::DataFrame
     return DataFrame(metadata.(vcs))

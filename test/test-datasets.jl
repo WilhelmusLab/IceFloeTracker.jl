@@ -10,24 +10,23 @@
 
     cases_ = cases(dataset)
     @test length(cases_) == 378
-    dump(cases_[1])
+    @info(cases_[1])
     @test cases_[1] isa Case
     @test cases_[end] isa Case
     @test metadata(cases_[1]) isa AbstractDict
     @test metadata(cases_) isa DataFrame
-    @info metadata(cases_)
 
     # filtered_dataset = Dataset(c -> c.case_number in (1, 2))
     # @test filtered_dataset isa Dataset
     # @test length(filtered_dataset) == 4
 
-    # for case in cases(dataset)
-    #     @info case
-    #     # @test case isa Case
-    #     # @test modis_truecolor(case) isa AbstractArray{RGBA{N0f8},2}
-    #     # @test modis_falsecolor(case) isa AbstractArray{RGBA{N0f8},2}
-    #     # @test metadata(case) isa AbstractDict
-    # end
+    for case in dataset
+        @info case
+        #     # @test case isa Case
+        #     # @test modis_truecolor(case) isa AbstractArray{RGBA{N0f8},2}
+        #     # @test modis_falsecolor(case) isa AbstractArray{RGBA{N0f8},2}
+        #     # @test metadata(case) isa AbstractDict
+    end
 
     # @test nrow(metadata(loader)) == 180
 
