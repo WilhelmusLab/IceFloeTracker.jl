@@ -67,6 +67,10 @@ function metadata(case::Case)::AbstractDict
     return case.metadata
 end
 
+function metadata(vcs::Vector{Case})::DataFrame
+    return DataFrame(metadata.(vcs))
+end
+
 struct Dataset
     loader::AbstractLoader
     metadata::DataFrame
@@ -112,8 +116,58 @@ function modis_truecolor(case::Case; ext="tiff")
     return img
 end
 
-function metadata(vcs::Vector{Case})::DataFrame
-    return DataFrame(metadata.(vcs))
+function modis_falsecolor(case::Case; ext="tiff")
+    m = case.metadata
+    file = "data/modis/falsecolor/$(m[:case_number])-$(m[:region])-$(m[:image_side_length])-$(m[:date]).$(m[:satellite]).falsecolor.$(m[:pixel_scale]).$(ext)"
+    img = file |> case.loader |> load
+    return img
+end
+function modis_landmask(case::Case; ext="tiff")
+    m = case.metadata
+    file = "data/modis/landmask/$(m[:case_number])-$(m[:region])-$(m[:image_side_length])-$(m[:date]).$(m[:satellite]).landmask.$(m[:pixel_scale]).$(ext)"
+    img = file |> case.loader |> load
+    return img
+end
+function modis_cloudfraction(case::Case; ext="tiff")
+    m = case.metadata
+    file = "data/modis/cloudfraction/$(m[:case_number])-$(m[:region])-$(m[:image_side_length])-$(m[:date]).$(m[:satellite]).cloudfraction.$(m[:pixel_scale]).$(ext)"
+    img = file |> case.loader |> load
+
+    return img
+end
+function masie_landmask(case::Case; ext="tiff")
+    m = case.metadata
+    file = "data/masie/landmask/$(m[:case_number])-$(m[:region])-$(m[:image_side_length])-$(m[:date]).masie.landmask.$(m[:pixel_scale]).$(ext)"
+    img = file |> case.loader |> load
+
+    return img
+end
+function masie_seaice(case::Case; ext="tiff")
+    m = case.metadata
+    file = "data/masie/seaice/$(m[:case_number])-$(m[:region])-$(m[:image_side_length])-$(m[:date]).masie.seaice.$(m[:pixel_scale]).$(ext)"
+    img = file |> case.loader |> load
+
+    return img
+end
+function validated_binary_floes(case::Case)
+    m = case.metadata
+    file = "data/validation_dataset/binary_floes/$(m[:case_number])-$(m[:region])-$(m[:date])-$(m[:satellite])-binary_floes.png"
+    img = file |> case.loader |> load
+
+    return img
+end
+function validated_labeled_floes(case::Case; ext="tiff")
+    m = case.metadata
+    file = "data/validation_dataset/labeled_floes/$(m[:case_number])-$(m[:region])-$(m[:date])-$(m[:satellite])-labeled_floes.$(ext)"
+    img = file |> case.loader |> load
+    return img
+end
+function validated_floe_properties(case::Case)::DataFrame
+    m = case.metadata
+    file = "data/validation_dataset/property_tables/$(m[:satellite])/$(m[:case_number])-$(m[:region])-$(m[:date])-$(m[:satellite])-floe_properties.csv"
+    img = file |> case.loader |> load |> DataFrame
+
+    return img
 end
 
 end
