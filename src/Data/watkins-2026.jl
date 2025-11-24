@@ -30,7 +30,7 @@ julia> dataset = Watkins2026Dataset(; ref="b865acc62f223d6ff14a073a297d682c4c034
 ```
 
 `Watkins2026Dataset` fields: 
-- `ref` (optional): `git` permalink of the commit from which to load the data
+- `ref` (optional): `git` tag, commit-id or branch from which to load the data
 - `cache_dir` (optional): local path where the data will be stored, which defaults to `/tmp/Watkins2026/`.
 - `url` (optional): URL of the GitHub repository with the dataset
 - `dataset_metadata_path` (optional): path within the repository to a CSV file describing the data
