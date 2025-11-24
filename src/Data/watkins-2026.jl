@@ -46,7 +46,7 @@ julia> dataset = filter(c -> (
                     ), dataset);
 ```
 
-The returned `dataset` (a `ValidationDataSet`) has a `metadata` field with a DataFrame of the cases which passed the filter:
+The returned `dataset` (a `Dataset`) has a `metadata` accessor which returns a DataFrame of the cases which passed the filter:
 
 ```jldoctest Watkins2026Dataset
 julia> metadata(dataset)
@@ -65,25 +65,23 @@ julia> metadata(dataset)
                                                                                         20 columns omitted
 ```
 
-The `dataset` contains `ValidationDataCase` objects.
-Each ValidationDataCase has metadata fields including:
+The `dataset` contains `Case` objects.
+Each Case has metadata fields including:
 - `name`: name of the case
 - `metadata`: dictionary of metadata for the case, corresponding to a row in the `dataset.metadata` `DataFrame`
 
-Each ValidationDataCase also has data fields including:
+Each Case has functions to access its contents:
 - `modis_truecolor`: MODIS true color image
 - `modis_falsecolor`: MODIS false color image
 - `modis_landmask`: MODIS landmask image
 - `modis_cloudfraction`: MODIS cloud fraction image
 - `masie_landmask`: MASIE landmask image
 - `masie_seaice`: MASIE sea ice image
-
-A ValidationDataCase may have validated data fields including:
 - `validated_binary_floes`: binary image of validated floes
 - `validated_labeled_floes`: labeled image of validated floes
 - `validated_floe_properties`: CSV file of validated floe properties
 
-The `dataset` can be iterated over to get each `ValidationDataCase`:
+The `dataset` can be iterated over to get each `Case`:
 Example:
 ```jldoctest Watkins2026Dataset
 julia> for case in dataset

@@ -40,14 +40,14 @@
 
     """
         run_and_validate_segmentation(
-            case::ValidationDataCase,
+            case::Case,
             algorithm::IceFloeSegmentationAlgorithm;
             output_directory::Union{AbstractString,Nothing}=nothing,
         )
 
     Run the `algorithm::IceFloeSegmentationAlgorithm` on the `case` and return a NamedTuple of the validation results.
 
-    - `case`: ValidationDataCase to be processed by the algorithm
+    - `case`: case to be processed by the algorithm
     - `algorithm`: an instantiated `IceFloeSegmentationAlgorithm` which will be called on each case
     - `output_directory`: optional – path to save intermediate and final outputs
 
@@ -112,7 +112,7 @@
             target_type::Union{Function,Type},
             baseline::NamedTuple,
             algorithm::IceFloeSegmentationAlgorithm,
-            case::ValidationDataCase,
+            case::Case,
         )::Bool
         
     Runs `algorithm` on `case` using `target_type` to cast images; returns true if results are within 1% of the `baseline`.
@@ -123,7 +123,7 @@
         target_type::Union{Function,Type}...;
         baseline::NamedTuple,
         algorithm::IceFloeSegmentationAlgorithm,
-        case::ValidationDataCase,
+        case::Case,
         output_directory::AbstractString="./test_outputs",
         rtol::Real=0.01,
     )::Bool
@@ -174,7 +174,7 @@
     """
         save_results_callback(
             directory::AbstractString,
-            case::ValidationDataCase,
+            case::Case,
             algorithm::IceFloeSegmentationAlgorithm;
             extension::AbstractString=".png",
         )::Function
@@ -184,12 +184,12 @@
 
     Inputs:
     - `directory`: base directory where images will be stored
-    - `case`: ValidationDataCase with metadata which are used to name a subdirectory
+    - `case`: Case with metadata which are used to name a subdirectory
     - `algorithm`: IceFloeSegmentationAlgorithm which is used in the subdirectory name.
     """
     function save_results_callback(
         directory::AbstractString,
-        case::ValidationDataCase,
+        case::Case,
         algorithm::IceFloeSegmentationAlgorithm;
         extension::AbstractString=".png",
     )::Function
