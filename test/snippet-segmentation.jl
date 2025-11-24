@@ -66,8 +66,8 @@
         algorithm::IceFloeSegmentationAlgorithm;
         output_directory::Union{AbstractString,Nothing}=nothing,
     )
-        let name, datestamp, validated, measured, success, error, comparison
-            name = name(case)
+        let case_name, datestamp, validated, measured, success, error, comparison
+            case_name = name(case)
             validated = validated_labeled_floes(case)
             if !isnothing(output_directory)
                 intermediate_results_callback = save_results_callback(
@@ -83,7 +83,7 @@
                     modis_landmask(case);
                     intermediate_results_callback,
                 )
-                @info "$(name) succeeded"
+                @info "$(case_name) succeeded"
                 success = true
                 error = nothing
             catch error
@@ -94,7 +94,10 @@
             summary = segmentation_summary(measured)
             comparison = segmentation_comparison(; validated, measured)
             results = merge(
-                (; name, success, error), comparison, summary, NamedTuple(metadata(case))
+                (; case_name, success, error),
+                comparison,
+                summary,
+                NamedTuple(metadata(case)),
             )
             if !isnothing(intermediate_results_callback) && !isnothing(validated)
                 intermediate_results_callback(;
