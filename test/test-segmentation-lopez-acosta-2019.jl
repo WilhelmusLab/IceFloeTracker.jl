@@ -10,7 +10,7 @@
         RGB.(modis_landmask(case)),
     )
     @show segments
-    expected_segment_count = case.validated_floe_properties |> DataFrame |> nrow
+    expected_segment_count = validated_floe_properties(case) |> DataFrame |> nrow
     @test length(segments.segment_labels) ≈ expected_segment_count rtol = 0.7
 end
 

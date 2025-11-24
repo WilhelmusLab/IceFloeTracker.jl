@@ -4,9 +4,9 @@
     dataset = Watkins2026Dataset(; ref="a451cd5e62a10309a9640fbbe6b32a236fcebc70")
     case = first(filter(c -> (c.case_number == 6 && c.satellite == "terra"), dataset))
     segments = LopezAcosta2019Tiling.Segment()(
-        case.modis_truecolor, case.modis_falsecolor, case.modis_landmask
+        modis_truecolor(case), modis_falsecolor(case), modis_landmask(case)
     )
-    expected_segment_count = case.validated_floe_properties |> DataFrame |> nrow
+    expected_segment_count = validated_floe_properties(case) |> DataFrame |> nrow
     @test length(segments.segment_labels) ≈ expected_segment_count rtol = 1.0
 end
 @testitem "LopezAcosta2019Tiling.Segment - detailed" setup = [Segmentation] tags = [:e2e] begin
