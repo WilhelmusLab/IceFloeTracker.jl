@@ -66,11 +66,6 @@ struct Dataset
     metadata::DataFrame
 end
 
-function _load_metadata(loader, path)
-    df = path |> loader |> load |> DataFrame
-    return df
-end
-
 function Dataset(;
     loader=GitHubLoader(;
         url="https://github.com/danielmwatkins/ice_floe_validation_dataset/",
@@ -79,7 +74,8 @@ function Dataset(;
     ),
     metadata_path="data/validation_dataset/validation_dataset.csv",
 )
-    return Dataset(loader, _load_metadata(loader, metadata_path))
+    metadata = metadata_path |> loader |> load |> DataFrame
+    return Dataset(loader, metadata)
 end
 
 function metadata(ds::Dataset)::DataFrame
