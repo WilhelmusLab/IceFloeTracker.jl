@@ -193,6 +193,7 @@ function modis_cloudfraction(case::Case; ext="tiff")
 end
 
 function validated_binary_floes(case::Case)
+    metadata(case).fl_analyst == "" && return nothing
     (; case_number, region, date, satellite) = _filename_parts(case)
     file = "data/validation_dataset/binary_floes/$(case_number)-$(region)-$(date)-$(satellite)-binary_floes.png"
     img = file |> case.loader |> load .|> Gray |> (x -> x .> 0.5) .|> Gray
@@ -200,6 +201,7 @@ function validated_binary_floes(case::Case)
 end
 
 function validated_labeled_floes(case::Case; ext="tiff")
+    metadata(case).fl_analyst == "" && return nothing
     (; case_number, region, date, satellite) = _filename_parts(case)
     file = "data/validation_dataset/labeled_floes/$(case_number)-$(region)-$(date)-$(satellite)-labeled_floes.$(ext)"
     labels = file |> case.loader |> load .|> Int
@@ -208,6 +210,7 @@ function validated_labeled_floes(case::Case; ext="tiff")
 end
 
 function validated_floe_properties(case::Case)::DataFrame
+    metadata(case).fl_analyst == "" && return nothing
     (; case_number, region, date, satellite) = _filename_parts(case)
     file = "data/validation_dataset/property_tables/$(satellite)/$(case_number)-$(region)-$(date)-$(satellite)-floe_properties.csv"
     img = file |> case.loader |> load |> DataFrame
