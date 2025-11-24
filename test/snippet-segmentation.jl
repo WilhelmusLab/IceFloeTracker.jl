@@ -135,9 +135,9 @@
         )
         casting_function = ∘(target_type...)
         segments = algorithm(
-            casting_function.(case.modis_truecolor),
-            casting_function.(case.modis_falsecolor),
-            casting_function.(case.modis_landmask);
+            casting_function.(modis_truecolor(case)),
+            casting_function.(modis_falsecolor(case)),
+            casting_function.(modis_landmask(case));
             intermediate_results_callback,
         )
         (; segment_count, labeled_fraction) = segmentation_summary(segments)
