@@ -6,7 +6,7 @@
 
 The root type for the candidate filter functions.
 """
-abstract type AbstractFloeFilterFunction end
+abstract type AbstractFloeFilterFunction <: Function end
 
 function (f::AbstractFloeFilterFunction)(floe, candidates)
     f(floe, candidates, Val(:raw))
@@ -164,21 +164,41 @@ function (f::PsiSCorrelationThresholdFilter)(floe, candidates, _::Val{:raw})
 end
 
 """
-    ChainedFilterFunction(filters::Vector)
+    ChainedFilterFunction(filters::Vector{AbstractFloeFilterFunction})
 
-Compute the psi-s correlation between a floe and a dataframe of candidate floes. Adds the 
-psi-s correlation,  psi-s correlation score (1 - correlation), and the result of the threshold function
-to the columns of `candidates`. The input is a vector of functions that take a floe and a candidates data
-frame as inputs. The default is to use seven filter functions with the threshold functions as defined
-in Watkins et al. 2026. These filters are:
+A ChainedFilterFunction is a composite function based on a set of AbstractFloeFilterFunctions. Each is
+applied in sequence. Thus a filter function based on the DistanceThresholdFilter and area relative error 
+could be made as
+
+```julia
+filter_function = ChainedFilterFunction(
+    filters=[DistanceThresholdFilter(), RelativeErrorThresholdFilter(variable=:area)]
+)
+```
+
+""" 
+@kwdef struct ChainedFilterFunction <: AbstractFloeFilterFunction
+    filters::Vector{AbstractFloeFilterFunction}
+end
+
+function (f::ChainedFilterFunction)(floe, candidates)
+    for filter_fun in f.filters
+        filter_fun(floe, candidates)
+    end
+end
+
+"""FilterFunction()
+
+The default filter function for the FloeTracker. The function is an instance of ChainedFilterFunction,
+applying 7 individual AbstractFloeFilterFunctions in sequence:
     1. DistanceThresholdFilter
     2-5. RelativeErrorThresholdFilters for area, convex_area, major_axis_length, and minor_axis_length
     6. ShapeDifferenceThresholdFilter
     7. PsiSCorrelationThresholdFilter
-Filters 2-7 use a PiecewiseLinearThresholdFunction.
-
-""" 
-@kwdef struct ChainedFilterFunction <: AbstractFloeFilterFunction
+Filters 2-7 use PiecewiseLinearThresholdFunctions for thresholds, while Filter 1 uses a LinearTimeDistanceFunction.
+The default values and settings are derived in Watkins et al. 2026.
+"""
+FilterFunction = ChainedFilterFunction(
     filters = [
         DistanceThresholdFilter(),
         RelativeErrorThresholdFilter(variable=:area,
@@ -193,22 +213,14 @@ Filters 2-7 use a PiecewiseLinearThresholdFunction.
             threshold_function=PiecewiseLinearThresholdFunction(minimum_value=0.47, maximum_value=0.31)),
         PsiSCorrelationThresholdFilter(
             threshold_function=PiecewiseLinearThresholdFunction(minimum_value=0.86, maximum_value=0.96))
-        ]
-end
-
-function (f::ChainedFilterFunction)(floe, candidates)
-    for filter_fun in f.filters
-        filter_fun(floe, candidates)
-    end
-end
-
+        ])
 
 """
     LopezAcosta2019ChainedFilterFunction(floe, candidates)
 
 The LopezAcosta2019ChainedFilterFunction is a special case of ChainedFilterFunction
 with parameters and threshold functions set based on Lopez-Acosta et al. 2019. The set
-of threshold filters is the same as in the default ChainedFilterFunction, but using
+of threshold filters is the same as in the default FilterFunction, but using
 stepwise threshold functions instead of piecewise.
 """
 LopezAcosta2019ChainedFilterFunction = ChainedFilterFunction(
