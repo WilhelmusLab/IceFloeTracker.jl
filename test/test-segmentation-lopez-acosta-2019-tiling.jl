@@ -55,7 +55,7 @@ end
     dataset = Watkins2026Dataset(; ref="a451cd5e62a10309a9640fbbe6b32a236fcebc70")
 
     results = run_and_validate_segmentation(
-        dataset(case -> (case.case_number % 17 == 0)),
+        filter(case -> (case.case_number % 17 == 0), dataset),
         LopezAcosta2019Tiling.Segment();
         output_directory="./test_outputs/",
     )
