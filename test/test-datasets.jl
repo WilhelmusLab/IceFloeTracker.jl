@@ -1,23 +1,9 @@
-@testitem "Watkins2026" begin
-    using IceFloeTracker.Watkins2026:
-        Dataset,
-        Case,
-        metadata,
-        cases,
-        modis_truecolor,
-        modis_falsecolor,
-        modis_landmask,
-        modis_cloudfraction,
-        masie_landmask,
-        masie_seaice,
-        validated_binary_floes,
-        validated_labeled_floes,
-        validated_floe_properties
-
+@testitem "Data" begin
     using Images: RGBA, N0f8, Colorant, SegmentedImage, Gray
     using DataFrames: nrow, DataFrame, DataFrameRow, subset
+    using IceFloeTracker: Case, Dataset, metadata, loader, Watkins2026Dataset
 
-    dataset = Dataset()
+    dataset = Watkins2026Dataset(; ref="b865acc62f223d6ff14a073a297d682c4c034e5d")
 
     @testset "Dataset" begin
         @test dataset isa Dataset
@@ -35,7 +21,6 @@
         filtered_dataset = filter(c -> c.case_number in (1, 2), dataset)
         @test filtered_dataset isa Dataset
         @test length(filtered_dataset) == 4
-        
         subsetted_dataset = subset(dataset, :case_number => c -> c .<= 2)
         @test subsetted_dataset isa Dataset
         @test length(subsetted_dataset) == 4

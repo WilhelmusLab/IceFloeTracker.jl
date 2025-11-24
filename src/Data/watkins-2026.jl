@@ -107,7 +107,7 @@ julia> for case in dataset
 
 To get the first case in the dataset, you can use `first(...)`:
 
-```jldoctest Watkins2025GitHub
+```jldoctest Watkins2026Dataset
 julia> first(dataset)
 Case(GitHubLoader("https://github.com/danielmwatkins/ice_floe_validation_dataset/", "b865acc62f223d6ff14a073a297d682c4c034e5d", "/tmp/Watkins2026"), DataFrameRow
  Row │        case_number  region      start_date  center_lon  center_lat  center_x  center_y  month  sea_ice_fraction  mean_sea_ice_concentration  init_case_number  satellite  visible_sea_ice  visible_la ⋯
