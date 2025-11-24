@@ -29,7 +29,7 @@
         @info metadata(dataset)
         results = []
         for case in dataset
-            @info "starting $(case.name)"
+            @info "starting $(name(case))"
             results_row = run_and_validate_segmentation(case, algorithm; output_directory)
             push!(results, results_row)
         end
@@ -196,7 +196,9 @@
         datestamp = Dates.format(Dates.now(), "yyyy-mm-dd-HHMMSS")
         case_name = name(case)
         return save_results_callback(
-            joinpath(directory, "segmentation-$(typeof(algorithm))-$(case_name)-$(datestamp)");
+            joinpath(
+                directory, "segmentation-$(typeof(algorithm))-$(case_name)-$(datestamp)"
+            );
             extension,
         )
     end
