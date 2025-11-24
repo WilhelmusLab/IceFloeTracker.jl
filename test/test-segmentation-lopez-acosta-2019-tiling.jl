@@ -91,7 +91,7 @@ end
     using Images: RGB, RGBA, n0f8, n6f10, n4f12, n2f14, n0f16, float32, float64
     dataset = Watkins2026Dataset(; ref="a451cd5e62a10309a9640fbbe6b32a236fcebc70")
 
-    case = first(filter(c -> (c.case_number == 6 && c.satellite == "terra")), dataset)
+    case = first(filter(c -> (c.case_number == 6 && c.satellite == "terra"), dataset))
     algorithm = LopezAcosta2019Tiling.Segment()
     baseline = run_and_validate_segmentation(
         case, algorithm; output_directory="./test_outputs/"
