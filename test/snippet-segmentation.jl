@@ -5,7 +5,7 @@
 
     """
         run_and_validate_segmentation(
-            dataset::ValidationDataSet,
+            dataset::Dataset,
             algorithm::IceFloeSegmentationAlgorithm;
             output_directory::Union{AbstractString,Nothing}=nothing,
         )
@@ -13,7 +13,7 @@
     Run the `algorithm::IceFloeSegmentationAlgorithm` over each of the cases in `dataset` and return a DataFrame of the results.
 
     Inputs:
-    - `dataset`: a ValidationDataSet
+    - `dataset`: a Dataset
     - `algorithm`: an instantiated `IceFloeSegmentationAlgorithm` which will be called on each case
     - `output_directory`: optional – path to save intermediate and final outputs
 
@@ -22,13 +22,13 @@
 
     """
     function run_and_validate_segmentation(
-        dataset::ValidationDataSet,
+        dataset::Dataset,
         algorithm::IceFloeSegmentationAlgorithm;
         output_directory::Union{AbstractString,Nothing}=nothing,
     )::DataFrame
-        @info dataset.metadata
+        @info metadata(dataset)
         results = []
-        for case::ValidationDataCase in dataset
+        for case in dataset
             @info "starting $(case.name)"
             results_row = run_and_validate_segmentation(case, algorithm; output_directory)
             push!(results, results_row)
@@ -62,13 +62,13 @@
 
     """
     function run_and_validate_segmentation(
-        case::ValidationDataCase,
+        case::Case,
         algorithm::IceFloeSegmentationAlgorithm;
         output_directory::Union{AbstractString,Nothing}=nothing,
     )
         let name, datestamp, validated, measured, success, error, comparison
-            name = case.name
-            validated = case.validated_labeled_floes
+            name = name(case)
+            validated = validated_labeled_floes(case)
             if !isnothing(output_directory)
                 intermediate_results_callback = save_results_callback(
                     output_directory, case, algorithm;
@@ -78,9 +78,9 @@
             end
             try
                 measured = algorithm(
-                    RGB.(case.modis_truecolor),
-                    RGB.(case.modis_falsecolor),
-                    case.modis_landmask;
+                    RGB.(modis_truecolor(case)),
+                    RGB.(modis_falsecolor(case)),
+                    modis_landmask(case);
                     intermediate_results_callback,
                 )
                 @info "$(name) succeeded"
@@ -94,7 +94,7 @@
             summary = segmentation_summary(measured)
             comparison = segmentation_comparison(; validated, measured)
             results = merge(
-                (; name, success, error), comparison, summary, NamedTuple(case.metadata)
+                (; name, success, error), comparison, summary, NamedTuple(metadata(case))
             )
             if !isnothing(intermediate_results_callback) && !isnothing(validated)
                 intermediate_results_callback(;
