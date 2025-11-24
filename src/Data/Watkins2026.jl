@@ -46,6 +46,7 @@ import ..GitHubData: Loader as GitHubLoader, AbstractLoader
 import FileIO: load, save
 import DataFrames: DataFrames, DataFrame, DataFrameRow, nrow, eachrow, subset
 import Dates: format
+import Images: Gray, rawview, channelview, SegmentedImage
 
 @kwdef struct Case
     loader::GitHubLoader
@@ -125,7 +126,7 @@ end
 function modis_landmask(case::Case; ext="tiff")
     m = case.metadata
     file = "data/modis/landmask/$(m[:case_number])-$(m[:region])-$(m[:image_side_length])-$(m[:date]).$(m[:satellite]).landmask.$(m[:pixel_scale]).$(ext)"
-    img = file |> case.loader |> load
+    img = file |> case.loader |> load .|> Gray .|> (x -> x .> 0.5) .|> Gray
     return img
 end
 function modis_cloudfraction(case::Case; ext="tiff")
@@ -138,28 +139,28 @@ end
 function masie_landmask(case::Case; ext="tiff")
     m = case.metadata
     file = "data/masie/landmask/$(m[:case_number])-$(m[:region])-$(m[:image_side_length])-$(m[:date]).masie.landmask.$(m[:pixel_scale]).$(ext)"
-    img = file |> case.loader |> load
-
+    img = file |> case.loader |> load |> (x -> x .> 0.5) .|> Gray
     return img
 end
 function masie_seaice(case::Case; ext="tiff")
     m = case.metadata
     file = "data/masie/seaice/$(m[:case_number])-$(m[:region])-$(m[:image_side_length])-$(m[:date]).masie.seaice.$(m[:pixel_scale]).$(ext)"
-    img = file |> case.loader |> load
+    img = file |> case.loader |> load |> (x -> x .> 0.5) .|> Gray
 
     return img
 end
 function validated_binary_floes(case::Case)
     m = case.metadata
     file = "data/validation_dataset/binary_floes/$(m[:case_number])-$(m[:region])-$(m[:date])-$(m[:satellite])-binary_floes.png"
-    img = file |> case.loader |> load
+    img = file |> case.loader |> load .|> Gray |> (x -> x .> 0.5) .|> Gray
 
     return img
 end
 function validated_labeled_floes(case::Case; ext="tiff")
     m = case.metadata
     file = "data/validation_dataset/labeled_floes/$(m[:case_number])-$(m[:region])-$(m[:date])-$(m[:satellite])-labeled_floes.$(ext)"
-    img = file |> case.loader |> load
+    labels = file |> case.loader |> load .|> Int
+    img = SegmentedImage(modis_truecolor(case), labels)
     return img
 end
 function validated_floe_properties(case::Case)::DataFrame
