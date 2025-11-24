@@ -142,7 +142,7 @@
         )
         (; segment_count, labeled_fraction) = segmentation_summary(segments)
         (; recall, precision, F_score) = segmentation_comparison(
-            case.validated_labeled_floes, segments
+            validated_labeled_floes(case), segments
         )
 
         segment_count_pass = ≈(segment_count, baseline.segment_count; rtol)
@@ -194,9 +194,9 @@
         extension::AbstractString=".png",
     )::Function
         datestamp = Dates.format(Dates.now(), "yyyy-mm-dd-HHMMSS")
-        name = case.name
+        case_name = name(case)
         return save_results_callback(
-            joinpath(directory, "segmentation-$(typeof(algorithm))-$(name)-$(datestamp)");
+            joinpath(directory, "segmentation-$(typeof(algorithm))-$(case_name)-$(datestamp)");
             extension,
         )
     end
