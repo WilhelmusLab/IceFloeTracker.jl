@@ -49,27 +49,16 @@ import Dates: format
 import Images: Gray, rawview, channelview, SegmentedImage
 
 @kwdef struct Case
-    loader::GitHubLoader
-    metadata::AbstractDict
+    loader::AbstractLoader
+    metadata::DataFrameRow
 end
 
-function Case(dfr::DataFrameRow, loader::AbstractLoader)
-    metadata = Dict(Symbol(k) => v for (k, v) in pairs(dfr))
-    metadata[:case_number] = lpad(dfr.case_number, 3, "0")
-    metadata[:region] = dfr.region
-    metadata[:date] = format(dfr.start_date, "yyyymmdd")
-    metadata[:satellite] = dfr.satellite
-    metadata[:pixel_scale] = "250m"
-    metadata[:image_side_length] = "100km"
-    return Case(; loader, metadata)
-end
-
-function metadata(case::Case)::AbstractDict
+function metadata(case::Case)::DataFrameRow
     return case.metadata
 end
 
-function metadata(vcs::Vector{Case})::DataFrame
-    return DataFrame(metadata.(vcs))
+function loader(case::Case)::AbstractLoader
+    return case.loader
 end
 
 struct Dataset
@@ -97,11 +86,6 @@ function metadata(ds::Dataset)::DataFrame
     return ds.metadata
 end
 
-function cases(ds::Dataset)::Vector{Case}
-    vcs = Case.(eachrow(metadata(ds)), Ref(ds.loader))
-    return vcs
-end
-
 Base.length(ds::Dataset)::Int = length(cases(ds))
 Base.iterate(ds::Dataset) = iterate(cases(ds))
 Base.iterate(ds::Dataset, state) = iterate(cases(ds), state)
@@ -111,68 +95,98 @@ Base.getindex(ds::Dataset, i::Int)::Case = Case(ds.loader, ds.metadata[i, :])
 subset(ds::Dataset, args...; kwargs...)::Dataset =
     Dataset(ds.loader, subset(ds.metadata, args...; kwargs...))
 
+function cases(ds::Dataset)::Vector{Case}
+    vcs = Case.(Ref(ds.loader), eachrow(metadata(ds)))
+    return vcs
+end
+
+function metadata(vcs::Vector{Case})::DataFrame
+    return DataFrame(metadata.(vcs))
+end
+
 function modis_truecolor(case::Case; ext="tiff")
-    m = case.metadata
-    file = "data/modis/truecolor/$(m[:case_number])-$(m[:region])-$(m[:image_side_length])-$(m[:date]).$(m[:satellite]).truecolor.$(m[:pixel_scale]).$(ext)"
+    (; case_number, region, date, satellite, pixel_scale, image_scale) = _filename_parts(
+        case
+    )
+    file = "data/modis/truecolor/$(case_number)-$(region)-$(image_scale)-$(date).$(satellite).truecolor.$(pixel_scale).$(ext)"
     img = file |> case.loader |> load
     return img
 end
 
 function modis_falsecolor(case::Case; ext="tiff")
-    m = case.metadata
-    file = "data/modis/falsecolor/$(m[:case_number])-$(m[:region])-$(m[:image_side_length])-$(m[:date]).$(m[:satellite]).falsecolor.$(m[:pixel_scale]).$(ext)"
+    (; case_number, region, date, satellite, pixel_scale, image_scale) = _filename_parts(
+        case
+    )
+    file = "data/modis/falsecolor/$(case_number)-$(region)-$(image_scale)-$(date).$(satellite).falsecolor.$(pixel_scale).$(ext)"
     img = file |> case.loader |> load
     return img
 end
 
 function modis_landmask(case::Case; ext="tiff")
-    m = case.metadata
-    file = "data/modis/landmask/$(m[:case_number])-$(m[:region])-$(m[:image_side_length])-$(m[:date]).$(m[:satellite]).landmask.$(m[:pixel_scale]).$(ext)"
+    (; case_number, region, date, satellite, pixel_scale, image_scale) = _filename_parts(
+        case
+    )
+    file = "data/modis/landmask/$(case_number)-$(region)-$(image_scale)-$(date).$(satellite).landmask.$(pixel_scale).$(ext)"
     img = file |> case.loader |> load .|> Gray .|> (x -> x .> 0.1) .|> Gray
     return img
 end
 
 function modis_cloudfraction(case::Case; ext="tiff")
-    m = case.metadata
-    file = "data/modis/cloudfraction/$(m[:case_number])-$(m[:region])-$(m[:image_side_length])-$(m[:date]).$(m[:satellite]).cloudfraction.$(m[:pixel_scale]).$(ext)"
+    (; case_number, region, date, satellite, pixel_scale, image_scale) = _filename_parts(
+        case
+    )
+    file = "data/modis/cloudfraction/$(case_number)-$(region)-$(image_scale)-$(date).$(satellite).cloudfraction.$(pixel_scale).$(ext)"
     img = file |> case.loader |> load
     return img
 end
 
-function masie_landmask(case::Case; ext="tiff")
-    m = case.metadata
-    file = "data/masie/landmask/$(m[:case_number])-$(m[:region])-$(m[:image_side_length])-$(m[:date]).masie.landmask.$(m[:pixel_scale]).$(ext)"
-    img = file |> case.loader |> load #|> (x -> x .> 0.5) .|> Gray
-    return img
-end
-
-function masie_seaice(case::Case; ext="tiff")
-    m = case.metadata
-    file = "data/masie/seaice/$(m[:case_number])-$(m[:region])-$(m[:image_side_length])-$(m[:date]).masie.seaice.$(m[:pixel_scale]).$(ext)"
-    img = file |> case.loader |> load #|> (x -> x .> 0.5) .|> Gray
-    return img
-end
-
 function validated_binary_floes(case::Case)
-    m = case.metadata
-    file = "data/validation_dataset/binary_floes/$(m[:case_number])-$(m[:region])-$(m[:date])-$(m[:satellite])-binary_floes.png"
+    (; case_number, region, date, satellite) = _filename_parts(case)
+    file = "data/validation_dataset/binary_floes/$(case_number)-$(region)-$(date)-$(satellite)-binary_floes.png"
     img = file |> case.loader |> load .|> Gray |> (x -> x .> 0.5) .|> Gray
     return img
 end
 
 function validated_labeled_floes(case::Case; ext="tiff")
-    m = case.metadata
-    file = "data/validation_dataset/labeled_floes/$(m[:case_number])-$(m[:region])-$(m[:date])-$(m[:satellite])-labeled_floes.$(ext)"
+    (; case_number, region, date, satellite) = _filename_parts(case)
+    file = "data/validation_dataset/labeled_floes/$(case_number)-$(region)-$(date)-$(satellite)-labeled_floes.$(ext)"
     labels = file |> case.loader |> load .|> Int
     img = SegmentedImage(modis_truecolor(case), labels)
     return img
 end
 
 function validated_floe_properties(case::Case)::DataFrame
-    m = case.metadata
-    file = "data/validation_dataset/property_tables/$(m[:satellite])/$(m[:case_number])-$(m[:region])-$(m[:date])-$(m[:satellite])-floe_properties.csv"
+    (; case_number, region, date, satellite) = _filename_parts(case)
+    file = "data/validation_dataset/property_tables/$(satellite)/$(case_number)-$(region)-$(date)-$(satellite)-floe_properties.csv"
     img = file |> case.loader |> load |> DataFrame
     return img
+end
+
+function masie_landmask(case::Case; ext="tiff")
+    @warn "MASIE landmask data is all zeroes."
+    (; case_number, region, date, pixel_scale, image_scale) = _filename_parts(case)
+    file = "data/masie/landmask/$(case_number)-$(region)-$(image_scale)-$(date).masie.landmask.$(pixel_scale).$(ext)"
+    img = file |> case.loader |> load
+    return img
+end
+
+function masie_seaice(case::Case; ext="tiff")
+    @warn "MASIE sea ice data is all zeroes."
+    (; case_number, region, date, pixel_scale, image_scale) = _filename_parts(case)
+    file = "data/masie/seaice/$(case_number)-$(region)-$(image_scale)-$(date).masie.seaice.$(pixel_scale).$(ext)"
+    img = file |> case.loader |> load
+    return img
+end
+
+function _filename_parts(case::Case)
+    m = metadata(case)
+    case_number = lpad(m.case_number, 3, "0")
+    region = m.region
+    date = format(m.start_date, "yyyymmdd")
+    satellite = m.satellite
+    pixel_scale = "250m"
+    image_scale = "100km"
+    return (; case_number, region, date, satellite, pixel_scale, image_scale)
 end
 
 end

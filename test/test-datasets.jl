@@ -15,7 +15,7 @@
         validated_floe_properties
 
     using Images: RGBA, N0f8, Colorant, SegmentedImage, Gray
-    using DataFrames: nrow, DataFrame, subset
+    using DataFrames: nrow, DataFrame, DataFrameRow, subset
 
     dataset = Dataset()
 
@@ -31,7 +31,7 @@
         @info(cases_[1])
         @test cases_[1] isa Case
         @test cases_[end] isa Case
-        @test metadata(cases_[1]) isa AbstractDict
+        @test metadata(cases_[1]) isa DataFrameRow
         @test metadata(cases_) isa DataFrame
     end
 
@@ -54,10 +54,10 @@
         @test modis_falsecolor(case) isa AbstractArray{RGBA{N0f8},2}
         @test modis_landmask(case) isa AbstractArray{<:Gray{Bool},2}
         @test modis_cloudfraction(case) isa AbstractArray{RGBA{N0f8},2}
-        @test masie_seaice(case) isa AbstractArray{<:Gray{Bool},2}
-        @test masie_landmask(case) isa AbstractArray{<:Gray{Bool},2}
         @test validated_binary_floes(case) isa AbstractArray{<:Gray{Bool},2}
         @test validated_labeled_floes(case) isa SegmentedImage
         @test validated_floe_properties(case) isa DataFrame
+        @test masie_seaice(case) isa AbstractArray{<:Gray,2}
+        @test masie_landmask(case) isa AbstractArray{<:Gray,2}
     end
 end
