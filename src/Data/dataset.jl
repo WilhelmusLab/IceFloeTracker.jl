@@ -1,3 +1,5 @@
+export Case, Dataset, loader, metadata
+
 import DataFrames: DataFrame, DataFrameRow, nrow, eachrow, subset
 import FileIO: load, save
 

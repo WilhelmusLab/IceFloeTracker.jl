@@ -1,4 +1,6 @@
 
+export AbstractLoader, GitHubLoader
+
 abstract type AbstractLoader end
 
 import Downloads: RequestError, download
