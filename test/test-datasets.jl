@@ -19,33 +19,26 @@
 
     dataset = Dataset()
 
-    @testset "Watkins2026 Dataset" begin
-        # Dataset interface
+    @testset "Dataset" begin
         @test dataset isa Dataset
         @test length(dataset) == 378
         @test nrow(metadata(dataset)) == 378
+        @test metadata(dataset) isa DataFrame
+    end
 
-        # Cases interface
-        cases_ = cases(dataset)
-        @test length(cases_) == 378
-        @info(cases_[1])
-        @test cases_[1] isa Case
-        @test cases_[end] isa Case
-        @test metadata(cases_[1]) isa DataFrameRow
-        @test metadata(cases_) isa DataFrame
+    @testset "Case" begin
+        @test dataset[1] isa Case
+        @test metadata(dataset[1]) isa DataFrameRow
     end
 
     @testset "Filtering and Subsetting" begin
-        # Filtering interface
         filtered_dataset = filter(c -> c.case_number in (1, 2), dataset)
         @test filtered_dataset isa Dataset
         @test length(filtered_dataset) == 4
-        @info filtered_dataset
-
+        
         subsetted_dataset = subset(dataset, :case_number => c -> c .<= 2)
         @test subsetted_dataset isa Dataset
         @test length(subsetted_dataset) == 4
-        @info subsetted_dataset
     end
 
     @testset "Watkins2026 Case Data" begin

@@ -86,23 +86,20 @@ function metadata(ds::Dataset)::DataFrame
     return ds.metadata
 end
 
-Base.length(ds::Dataset)::Int = length(cases(ds))
-Base.iterate(ds::Dataset) = iterate(cases(ds))
-Base.iterate(ds::Dataset, state) = iterate(cases(ds), state)
+function loader(ds::Dataset)::AbstractLoader
+    return ds.loader
+end
+
+Base.length(ds::Dataset)::Int = nrow(metadata(ds))
+Base.iterate(ds::Dataset) = iterate(Case.(Ref(ds.loader), eachrow(metadata(ds))))
+function Base.iterate(ds::Dataset, state)
+    return iterate(Case.(Ref(loader(ds)), eachrow(metadata(ds))), state)
+end
 Base.filter(f::Function, ds::Dataset)::Dataset =
     Dataset(ds.loader, filter(row -> f(row), ds.metadata))
 Base.getindex(ds::Dataset, i::Int)::Case = Case(ds.loader, ds.metadata[i, :])
 subset(ds::Dataset, args...; kwargs...)::Dataset =
     Dataset(ds.loader, subset(ds.metadata, args...; kwargs...))
-
-function cases(ds::Dataset)::Vector{Case}
-    vcs = Case.(Ref(ds.loader), eachrow(metadata(ds)))
-    return vcs
-end
-
-function metadata(vcs::Vector{Case})::DataFrame
-    return DataFrame(metadata.(vcs))
-end
 
 function modis_truecolor(case::Case; ext="tiff")
     (; case_number, region, date, satellite, pixel_scale, image_scale) = _filename_parts(
