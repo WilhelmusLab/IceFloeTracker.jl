@@ -21,9 +21,9 @@ import Images: Gray, SegmentedImage
     Watkins2026Dataset()
     Watkins2026Dataset(; [ref, url, dataset_metadata_path, cache_dir])
 
-Loader for validated ice floe data from [the Watkins 2026 Ice Floe Validation Dataset](https://github.com/danielmwatkins/ice_floe_validation_dataset).
+Validated ice floe data from [the Watkins 2026 Ice Floe Validation Dataset](https://github.com/danielmwatkins/ice_floe_validation_dataset).
 
-The loader is initialized with a specific `git` ref (tag or commit ID) from which to load the data.
+The dataset is initialized with a specific `git` tag, branch or commit ID from which to load the data.
 
 ```jldoctest Watkins2026Dataset; setup = :(using IceFloeTracker)
 julia> dataset = Watkins2026Dataset(; ref="b865acc62f223d6ff14a073a297d682c4c034e5d")
@@ -35,7 +35,7 @@ julia> dataset = Watkins2026Dataset(; ref="b865acc62f223d6ff14a073a297d682c4c034
 - `url` (optional): URL of the GitHub repository with the dataset
 - `dataset_metadata_path` (optional): path within the repository to a CSV file describing the data
 
-The loader is then called with an optional `case_filter` function to filter which cases to load.
+The dataset can be filtered using `Base.filter` or `DataFrames.subset`.
 This checks each case's metadata, and if the function returns `true`, the case is included in the returned dataset.
 
 ```jldoctest Watkins2026Dataset
@@ -44,6 +44,15 @@ julia> dataset = filter(c -> (
                         c.cloud_category_manual == "none" &&
                         c.artifacts == "no"
                     ), dataset);
+```
+
+Equivalently:
+```jldoctest Watkins2026Dataset
+julia> dataset = subset(dataset, 
+                        :visible_floes => c -> c .== "yes",
+                        :cloud_category_manual => c -> c .== "none",
+                        :artifacts => c -> c .== "no",
+                    );
 ```
 
 The returned `dataset` (a `Dataset`) has a `metadata` accessor which returns a DataFrame of the cases which passed the filter:
