@@ -35,13 +35,13 @@
         case = first(filter(c -> (c.case_number == 12 && c.satellite == "terra"), dataset))
 
         # There is only one pixel in this image marked as peak
-        single_floe = case.modis_falsecolor[225:260, 110:160]
+        single_floe = modis_falsecolor(case)[225:260, 110:160]
         @test sum(binarize(single_floe, f)) == 77 # Changed from 1, new method picks up more ice
 
-        just_water = case.modis_falsecolor[1:50, 350:400]
+        just_water = modis_falsecolor(case)[1:50, 350:400]
         @test sum(binarize(just_water, f)) == 2 # Changed from 0, there are some ice pixels in the top of the image
 
-        masked_land = masker(case.modis_landmask, case.modis_falsecolor)[1:50, 1:50]
+        masked_land = masker(modis_landmask(case), modis_falsecolor(case))[1:50, 1:50]
         @test sum(binarize(masked_land, f)) == 0
     end
 
