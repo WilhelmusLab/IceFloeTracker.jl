@@ -4,6 +4,7 @@ Module for loading validated ice floe data.
 module GitHubData
 
 abstract type AbstractLoader end
+import Downloads: RequestError, download
 
 @kwdef struct Loader <: AbstractLoader
     url::AbstractString
@@ -12,7 +13,6 @@ abstract type AbstractLoader end
 end
 
 function (p::Loader)(file::AbstractString)::AbstractString
-    @info file
     source = joinpath(p.url, "raw", p.ref, file)
     target = joinpath(p.cache_dir, p.ref, file)
     data = _get_file(source, target)
@@ -20,7 +20,7 @@ function (p::Loader)(file::AbstractString)::AbstractString
 end
 
 function _get_file(file_url::AbstractString, file_path::AbstractString)::AbstractString
-    @info "looking for file at $(file_path). File exists: $(isfile(file_path))"
+    @debug "looking for file at $(file_path). File exists: $(isfile(file_path))"
     if !isfile(file_path)
         try
             mkpath(dirname(file_path))
@@ -107,6 +107,7 @@ Base.iterate(ds::Dataset) = iterate(cases(ds))
 Base.iterate(ds::Dataset, state) = iterate(cases(ds), state)
 Base.filter(f::Function, ds::Dataset)::Dataset =
     Dataset(ds.loader, filter(row -> f(row), ds.metadata))
+Base.getindex(ds::Dataset, i::Int)::Case = Case(ds.loader, ds.metadata[i, :])
 subset(ds::Dataset, args...; kwargs...)::Dataset =
     Dataset(ds.loader, subset(ds.metadata, args...; kwargs...))
 
@@ -123,39 +124,42 @@ function modis_falsecolor(case::Case; ext="tiff")
     img = file |> case.loader |> load
     return img
 end
+
 function modis_landmask(case::Case; ext="tiff")
     m = case.metadata
     file = "data/modis/landmask/$(m[:case_number])-$(m[:region])-$(m[:image_side_length])-$(m[:date]).$(m[:satellite]).landmask.$(m[:pixel_scale]).$(ext)"
-    img = file |> case.loader |> load .|> Gray .|> (x -> x .> 0.5) .|> Gray
+    img = file |> case.loader |> load .|> Gray .|> (x -> x .> 0.1) .|> Gray
     return img
 end
+
 function modis_cloudfraction(case::Case; ext="tiff")
     m = case.metadata
     file = "data/modis/cloudfraction/$(m[:case_number])-$(m[:region])-$(m[:image_side_length])-$(m[:date]).$(m[:satellite]).cloudfraction.$(m[:pixel_scale]).$(ext)"
     img = file |> case.loader |> load
-
     return img
 end
+
 function masie_landmask(case::Case; ext="tiff")
     m = case.metadata
     file = "data/masie/landmask/$(m[:case_number])-$(m[:region])-$(m[:image_side_length])-$(m[:date]).masie.landmask.$(m[:pixel_scale]).$(ext)"
-    img = file |> case.loader |> load |> (x -> x .> 0.5) .|> Gray
+    img = file |> case.loader |> load #|> (x -> x .> 0.5) .|> Gray
     return img
 end
+
 function masie_seaice(case::Case; ext="tiff")
     m = case.metadata
     file = "data/masie/seaice/$(m[:case_number])-$(m[:region])-$(m[:image_side_length])-$(m[:date]).masie.seaice.$(m[:pixel_scale]).$(ext)"
-    img = file |> case.loader |> load |> (x -> x .> 0.5) .|> Gray
-
+    img = file |> case.loader |> load #|> (x -> x .> 0.5) .|> Gray
     return img
 end
+
 function validated_binary_floes(case::Case)
     m = case.metadata
     file = "data/validation_dataset/binary_floes/$(m[:case_number])-$(m[:region])-$(m[:date])-$(m[:satellite])-binary_floes.png"
     img = file |> case.loader |> load .|> Gray |> (x -> x .> 0.5) .|> Gray
-
     return img
 end
+
 function validated_labeled_floes(case::Case; ext="tiff")
     m = case.metadata
     file = "data/validation_dataset/labeled_floes/$(m[:case_number])-$(m[:region])-$(m[:date])-$(m[:satellite])-labeled_floes.$(ext)"
@@ -163,11 +167,11 @@ function validated_labeled_floes(case::Case; ext="tiff")
     img = SegmentedImage(modis_truecolor(case), labels)
     return img
 end
+
 function validated_floe_properties(case::Case)::DataFrame
     m = case.metadata
     file = "data/validation_dataset/property_tables/$(m[:satellite])/$(m[:case_number])-$(m[:region])-$(m[:date])-$(m[:satellite])-floe_properties.csv"
     img = file |> case.loader |> load |> DataFrame
-
     return img
 end
 
