@@ -114,6 +114,28 @@
     end
 end
 
+@testitem "_get_false_color_cloudmasked (data loader)" setup = [FalseColorCloudmask] begin
+    dataset = Watkins2025GitHub()(;
+        case_filter=c -> c.case_number == 161 && c.satellite == "terra"
+    )
+    case = first(dataset)
+    false_color_image = case.modis_falsecolor
+
+    false_color_cloudmasked = _get_false_color_cloudmasked(;
+        false_color_image=false_color_image,
+        prelim_threshold=110.0,
+        band_7_threshold=200.0,
+        band_2_threshold=190.0,
+    )
+
+    tolerance_fraction = 0.01
+    @info [sum(false_color_cloudmasked[i, :, :]) for i in 1:3]
+    checksums = [10_350_341, 17_029_014, 17_159_247]
+    @test all(
+        [abs(1 - sum(false_color_cloudmasked[i, :, :]) / checksums[i]) for i in 1:3] .< tolerance_fraction,
+    )
+end
+
 @testitem "adapthisteq" begin
     using TestImages: testimage
     function convert_to_255_matrix(img)::Matrix{Int}
