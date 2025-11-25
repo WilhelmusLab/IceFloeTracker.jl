@@ -92,7 +92,6 @@ end
     )
 
     tolerance_fraction = 0.01
-    @info [sum(false_color_cloudmasked[i, :, :]) for i in 1:3]
     checksums = [10_350_341, 17_029_014, 17_159_247]
     @test all(
         [abs(1 - sum(false_color_cloudmasked[i, :, :]) / checksums[i]) for i in 1:3] .< tolerance_fraction,
