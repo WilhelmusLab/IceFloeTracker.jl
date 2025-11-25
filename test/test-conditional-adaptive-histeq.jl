@@ -91,11 +91,9 @@ end
         band_2_threshold=190.0,
     )
 
-    tolerance_fraction = 0.01
-    checksums = [10_350_341, 17_029_014, 17_159_247]
-    @test all(
-        [abs(1 - sum(false_color_cloudmasked[i, :, :]) / checksums[i]) for i in 1:3] .< tolerance_fraction,
-    )
+    @test sum(false_color_cloudmasked[1,:,:]) ≈ 10_350_341 rtol = 0.01
+    @test sum(false_color_cloudmasked[2,:,:]) ≈ 17_029_014 rtol = 0.01
+    @test sum(false_color_cloudmasked[3,:,:]) ≈ 17_159_247 rtol = 0.01
 end
 
 @testitem "adapthisteq" begin
