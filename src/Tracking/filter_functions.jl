@@ -198,7 +198,7 @@ applying 7 individual AbstractFloeFilterFunctions in sequence:
 Filters 2-7 use PiecewiseLinearThresholdFunctions for thresholds, while Filter 1 uses a LinearTimeDistanceFunction.
 The default values and settings are derived in Watkins et al. 2026.
 """
-FilterFunction = ChainedFilterFunction(
+FilterFunction() = ChainedFilterFunction(;
     filters = [
         DistanceThresholdFilter(),
         RelativeErrorThresholdFilter(variable=:area,
