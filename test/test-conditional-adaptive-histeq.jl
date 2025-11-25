@@ -117,46 +117,40 @@
         g = rgb2gray(true_color_image)
         @test g[1000, 1000] == 92 && g[2000, 2000] == 206
     end
+end
 
-    @testset "histeq" begin
-        imgs = [
-            [
-                4 4 4 4 4
-                3 4 5 4 3
-                3 5 5 5 3
-                3 4 5 4 3
-                4 4 4 4 4
-            ],
-            # Edge cases
-            # maximum a power of 2
-            [
-                0 0 0
-                2 2 2
-            ],
-            # maximum at 255
-            [
-                000 000 000
-                255 255 255
-            ],
+@testitem "histeq" begin
+    @testset "normal cases" begin
+        @test histeq([
+            4 4 4 4 4
+            3 4 5 4 3
+            3 5 5 5 3
+            3 4 5 4 3
+            4 4 4 4 4
+        ]) == [
+            204 204 204 204 204
+            061 204 255 204 061
+            061 255 255 255 061
+            061 204 255 204 061
+            204 204 204 204 204
         ]
+    end
 
-        _exp = [
+    @testset "edge cases" begin
+        @test histeq([
+            0 0 0
+            2 2 2
+        ]) == [
             128 128 128
             255 255 255
         ]
 
-        expected = [
-            [
-                204 204 204 204 204
-                061 204 255 204 061
-                061 255 255 255 061
-                061 204 255 204 061
-                204 204 204 204 204
-            ],
-            _exp,
-            _exp,
+        @test histeq([
+            000 000 000
+            255 255 255
+        ]) == [
+            128 128 128
+            255 255 255
         ]
-
-        @test all(histeq(imgs[i]) == expected[i] for i in 1:3)
     end
 end
