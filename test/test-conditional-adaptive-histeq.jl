@@ -114,6 +114,48 @@
     end
 end
 
+@testitem "conditional adaptivehisteq (data loader)" setup = [FalseColorCloudmask] begin
+    dataset = Watkins2025GitHub()(;
+        case_filter=c -> c.case_number == 161 && c.satellite == "terra"
+    )
+    case = first(dataset)
+    false_color_image = case.modis_falsecolor
+    true_color_image = case.modis_truecolor
+    landmask = case.modis_landmask
+
+    clouds = _get_false_color_cloudmasked(;
+        false_color_image=false_color_image,
+        prelim_threshold=110.0,
+        band_7_threshold=200.0,
+        band_2_threshold=190.0,
+    )
+    clouds_red = clouds[1, :, :]
+
+    dilated_landmask = create_landmask(landmask).dilated
+
+    clouds_red[dilated_landmask] .= 0
+    tolerance_fraction = 0.01
+    @test sum(clouds_red) ≈ 10_350_341 rtol = 0.01
+
+    @info "Getting tiles..."
+    tiles = get_tiles(true_color_image; rblocks=2, cblocks=2)
+
+    @info "Applying conditional adaptive histogram equalization..."
+    true_color_eq = conditional_histeq(true_color_image, clouds_red, tiles)
+
+    # This differs from MATLAB script due to disparity in the implementations
+    # of the adaptive histogram equalization / diffusion functions
+    # For the moment testing for regression
+    @info "Testing conditional adaptive histogram equalization output..."
+    @test sum(to_uint8(true_color_eq[:, :, 1])) ≈ 27_422_448 rtol = 0.003
+
+    # Use custom tile size
+    side_length = size(true_color_eq, 1) ÷ 8
+    tiles = get_tiles(true_color_image, side_length)
+    true_color_eq = conditional_histeq(true_color_image, clouds_red, tiles)
+    @test sum(to_uint8(true_color_eq[:, :, 1])) ≈ 27_446_614 rtol = 0.003
+end
+
 @testitem "_get_false_color_cloudmasked (data loader)" setup = [FalseColorCloudmask] begin
     dataset = Watkins2025GitHub()(;
         case_filter=c -> c.case_number == 161 && c.satellite == "terra"
