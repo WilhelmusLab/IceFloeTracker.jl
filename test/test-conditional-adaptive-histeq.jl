@@ -92,7 +92,6 @@ end
     )
 
     tolerance_fraction = 0.01
-    @info [sum(false_color_cloudmasked[i, :, :]) for i in 1:3]
     checksums = [10_350_341, 17_029_014, 17_159_247]
     @test all(
         [abs(1 - sum(false_color_cloudmasked[i, :, :]) / checksums[i]) for i in 1:3] .< tolerance_fraction,
@@ -113,7 +112,6 @@ end
 
 @testitem "rgb2gray" begin
     using Images: load, float64
-    @info "Testing RGB to grayscale conversion..."
     path_true_color_image = joinpath(
         @__DIR__, "test_inputs/", "beaufort-chukchi-seas_truecolor.2020162.aqua.250m.tiff"
     true_color_image = float64.(load(path_true_color_image))
