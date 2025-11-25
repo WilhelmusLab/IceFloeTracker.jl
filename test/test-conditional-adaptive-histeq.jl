@@ -112,7 +112,6 @@ end
 
 @testitem "rgb2gray" begin
     using Images: load, float64
-    @info "Testing RGB to grayscale conversion..."
     path_true_color_image = joinpath(
         joinpath(@__DIR__, "test_inputs/"),
         "beaufort-chukchi-seas_truecolor.2020162.aqua.250m.tiff",
