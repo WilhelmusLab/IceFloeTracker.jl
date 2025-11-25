@@ -1,4 +1,4 @@
-abstract type AbstractFloeMatchingFunction end
+abstract type AbstractFloeMatchingFunction <: Function end
 
 """
     MinimumWeightMatchingFunction(columns=[:scaled_distance, :relative_error_area, ...])
