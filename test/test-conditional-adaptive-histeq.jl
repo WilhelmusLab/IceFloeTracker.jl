@@ -55,7 +55,6 @@ end
     dilated_landmask = create_landmask(landmask).dilated
 
     clouds_red[dilated_landmask] .= 0
-    tolerance_fraction = 0.01
     @test sum(clouds_red) ≈ 10_350_341 rtol = 0.01
 
     tiles = get_tiles(true_color_image; rblocks=2, cblocks=2)
