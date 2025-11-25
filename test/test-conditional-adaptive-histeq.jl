@@ -58,16 +58,13 @@ end
     tolerance_fraction = 0.01
     @test sum(clouds_red) ≈ 10_350_341 rtol = 0.01
 
-    @info "Getting tiles..."
     tiles = get_tiles(true_color_image; rblocks=2, cblocks=2)
 
-    @info "Applying conditional adaptive histogram equalization..."
     true_color_eq = conditional_histeq(true_color_image, clouds_red, tiles)
 
     # This differs from MATLAB script due to disparity in the implementations
     # of the adaptive histogram equalization / diffusion functions
     # For the moment testing for regression
-    @info "Testing conditional adaptive histogram equalization output..."
     @test sum(to_uint8(true_color_eq[:, :, 1])) ≈ 27_422_448 rtol = 0.003
 
     # Use custom tile size
