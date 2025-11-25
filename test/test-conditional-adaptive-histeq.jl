@@ -1,11 +1,7 @@
 
-@testitem "Conditional adaptivehisteq" begin
+@testsnippet FalseColorCloudmask begin
     import IceFloeTracker.Preprocessing: _get_masks
-    using Images: load, float64, channelview
-    using TestImages: testimage
-
-    include("config.jl")
-
+    using Images: channelview
     """
     Private function for testing the conditional adaptive histogram equalization workflow.
     """
@@ -37,6 +33,14 @@
 
         return channels
     end
+end
+
+@testitem "Conditional adaptivehisteq" setup = [FalseColorCloudmask] begin
+    import IceFloeTracker.Preprocessing: _get_masks
+    using Images: load, float64, channelview
+    using TestImages: testimage
+
+    include("config.jl")
 
     begin
         datadir = joinpath(@__DIR__, "test_inputs/")
