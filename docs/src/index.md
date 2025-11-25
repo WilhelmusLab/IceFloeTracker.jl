@@ -35,75 +35,26 @@ Lopez-Acosta et al., (2019). Ice Floe Tracker: An algorithm to automatically ret
 
 \*Papers using data from the Matlab implementation of Ice Floe Tracker.
 
-## Functions
-
-### Preprocessing
+## API Reference
 
 ```@autodocs
-Modules = [IceFloeTracker.Preprocessing]
-Order   = [:function, :macro, :type]
+Modules = [
+    IceFloeTracker, 
+    IceFloeTracker.LopezAcosta2019,
+    IceFloeTracker.LopezAcosta2019Tiling,
+    IceFloeTracker.Segmentation,
+    IceFloeTracker.Tracking,
+    IceFloeTracker.Preprocessing, 
+    IceFloeTracker.Morphology,
+    IceFloeTracker.Filtering, 
+    IceFloeTracker.Data, 
+    IceFloeTracker.Geospatial, 
+    IceFloeTracker.ImageUtils,
+    IceFloeTracker.Utils
+]
 Private = false
 ```
 
-### Segmentation
-
-```@autodocs
-Modules = [IceFloeTracker.Segmentation]
-Order   = [:function, :macro, :type]
-Private = false
-```
-
-### Tracking
-
-```@autodocs
-Modules = [IceFloeTracker.Tracking]
-Order   = [:function, :macro, :type]
-Private = false
-```
-
-### Morphology
-
-```@autodocs
-Modules = [IceFloeTracker.Morphology]
-Order   = [:function, :macro, :type]
-Private = false
-```
-
-### Filtering
-
-```@autodocs
-Modules = [IceFloeTracker.Filtering]
-Order   = [:function, :macro, :type]
-Private = false
-```
-
-### Data
-
-```@autodocs
-Modules = [IceFloeTracker.Data]
-Order   = [:function, :macro, :type]
-Private = false
-```
-
-### Utils
-
-```@autodocs
-Modules = [IceFloeTracker.Utils]
-Order   = [:function, :macro, :type]
-Private = false
-```
-
-### Unsorted Functions
-
-!!! todo "Functions here still need to be sorted"
-    The functions which are shown in this section 
-    will be reorganized into submodules.
-
-```@autodocs
-Modules = [IceFloeTracker]
-Order   = [:module, :function, :macro, :type]
-Private = false
-```
 
 ## Index
 ```@index
