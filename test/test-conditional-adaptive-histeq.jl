@@ -115,9 +115,7 @@ end
     using Images: load, float64
     @info "Testing RGB to grayscale conversion..."
     path_true_color_image = joinpath(
-        joinpath(@__DIR__, "test_inputs/"),
-        "beaufort-chukchi-seas_truecolor.2020162.aqua.250m.tiff",
-    )
+        @__DIR__, "test_inputs/", "beaufort-chukchi-seas_truecolor.2020162.aqua.250m.tiff"
     true_color_image = float64.(load(path_true_color_image))
     g = rgb2gray(true_color_image)
     @test g[1000, 1000] == 92 && g[2000, 2000] == 206
