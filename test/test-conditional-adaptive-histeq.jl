@@ -105,13 +105,11 @@ end
 end
 
 @testitem "rgb2gray" begin
-    using Images: load, float64
-    path_true_color_image = joinpath(
-        @__DIR__, "test_inputs/", "beaufort-chukchi-seas_truecolor.2020162.aqua.250m.tiff"
-    )
-    true_color_image = float64.(load(path_true_color_image))
-    g = rgb2gray(true_color_image)
-    @test g[1000, 1000] == 92 && g[2000, 2000] == 206
+    using Images: RGB, N0f8, float64
+    pixels = float64.([RGB{N0f8}(0.345, 0.361, 0.404) RGB{N0f8}(0.808, 0.808, 0.8);])
+    h = rgb2gray(pixels)
+    @test h[1, 1] == 92
+    @test h[1, 2] == 206
 end
 
 @testitem "histeq" begin
