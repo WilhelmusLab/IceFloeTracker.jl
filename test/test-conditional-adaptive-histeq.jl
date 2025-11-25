@@ -87,9 +87,9 @@ end
         band_2_threshold=190.0,
     )
 
-    @test sum(false_color_cloudmasked[1,:,:]) ≈ 10_350_341 rtol = 0.01
-    @test sum(false_color_cloudmasked[2,:,:]) ≈ 17_029_014 rtol = 0.01
-    @test sum(false_color_cloudmasked[3,:,:]) ≈ 17_159_247 rtol = 0.01
+    @test sum(false_color_cloudmasked[1, :, :]) ≈ 10_350_341 rtol = 0.01
+    @test sum(false_color_cloudmasked[2, :, :]) ≈ 17_029_014 rtol = 0.01
+    @test sum(false_color_cloudmasked[3, :, :]) ≈ 17_159_247 rtol = 0.01
 end
 
 @testitem "adapthisteq" begin
@@ -108,6 +108,7 @@ end
     using Images: load, float64
     path_true_color_image = joinpath(
         @__DIR__, "test_inputs/", "beaufort-chukchi-seas_truecolor.2020162.aqua.250m.tiff"
+    )
     true_color_image = float64.(load(path_true_color_image))
     g = rgb2gray(true_color_image)
     @test g[1000, 1000] == 92 && g[2000, 2000] == 206
