@@ -49,15 +49,11 @@ subset!(ds::Dataset, args...; kwargs...) = subset!(ds.info, args...; kwargs...)
 function Base.sort(ds::Dataset, args...; kwargs...)
     return Dataset(ds.loader, sort(ds.info, args...; kwargs...))
 end
-function Base.sort(ds::Dataset, args...; kwargs...)
-    return Dataset(ds.loader, sort(ds.info, args...; kwargs...))
-end
 function Base.sort(cols::Vector{Symbol}, ds::Dataset; kwargs...)
-    return Dataset(ds.loader, sort(cols, ds.info; kwargs...))
+    return Dataset(ds.loader, sort(ds.info, cols; kwargs...))
 end
 Base.sort!(cols::Vector{Symbol}, ds::Dataset; kwargs...) = sort!(ds.info, cols; kwargs...)
 Base.sort!(ds::Dataset, args...; kwargs...) = sort!(ds.info, args...; kwargs...)
 
 Base.reverse(ds::Dataset) = Dataset(ds.loader, reverse(ds.info))
 Base.reverse!(ds::Dataset) = reverse!(ds.info)
-
