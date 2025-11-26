@@ -1,11 +1,90 @@
 # Functions for adding additional columns to regionprops needed for floe tracking
 
-import DataFrames: DataFrame, nrow
+import DataFrames: DataFrame, nrow, DataFrameRow, transform!, ByRow, AbstractDataFrame
 import Images: label_components
 import ..Morphology: bwareamaxfilt
 
 FloeLabelsImage = Union{BitMatrix, Matrix{<:Bool}, Matrix{<:Integer}}
+abstract type AbstractThresholdFunction <: Function end
 
+
+"""
+    add_passtimes!(props, passtimes)
+
+Add a column `passtime` to each DataFrame in `props` containing the time of the image in which the floes were captured.
+
+# Arguments
+- `props`: array of DataFrames containing floe properties.
+- `passtimes`: array of `DateTime` objects containing the time of the image in which the floes were captured.
+
+"""
+function add_passtimes!(props, passtimes)
+    for (i, passtime) in enumerate(passtimes)
+        props[i].passtime .= passtime
+    end
+    return nothing
+end
+
+
+"""
+    addψs!(props::Vector{DataFrame})
+
+Add the ψ-s curves to each member of `props`.
+
+Note: each member of `props` must have a `mask` column with a binary image representing the floe. 
+To add floe masks see [`addfloemasks!`](@ref).
+"""
+function add_ψs!(props::Vector{DataFrame})
+    for prop in props
+        prop.psi = map(buildψs, prop.mask)
+    end
+    return nothing
+end
+
+"""
+    addψs!(props_df::DataFrame})
+
+Add the ψ-s curves to each row of `props_df`.
+
+Note: each member of `props` must have a `mask` column with a binary image representing the floe. 
+To add floe masks see [`addfloemasks!`](@ref).
+"""
+function add_ψs!(props_df::DataFrame)
+    props_df.psi = map(buildψs, props_df.mask)
+    return nothing
+end
+
+function add_floemasks!(props::Vector{DataFrame}, imgs::Vector{<:FloeLabelsImage})
+    for (img, prop) in zip(imgs, props)
+        add_floemasks!(prop, img)
+    end
+    return nothing
+end
+
+_uuid() = randstring(12)
+
+"""
+    adduuid!(df::DataFrame)
+    adduuid!(dfs::Vector{DataFrame})
+
+Assign a unique ID to each floe in a (vector of) table(s) of floe properties.
+"""
+function add_uuids!(df::DataFrame)
+    df.uuid = [_uuid() for _ in 1:nrow(df)]
+    return df
+end
+
+function add_uuids!(dfs::Vector{DataFrame})
+    for (i, _) in enumerate(dfs)
+        add_uuids!(dfs[i])
+    end
+    return dfs
+end
+
+# TODO: Update the cropfloes function to use the "label" parameter in the regionprops table.
+# This way, we can create a bitmatrix with labeled image == label, and crop that.
+# TODO: Add method to allow SegmentedImage as input
+# TODO: bbox and label names as keyword arguments
 """
     cropfloe(floesimg, props, i)
 
@@ -94,13 +173,12 @@ function cropfloe(floesimg::Matrix{I}, min_row::J, min_col::J, max_row::J, max_c
     return floe_area
 end
 
-
 """
     addfloemasks!(props::DataFrame, floeimg::FloeLabelsImage)
 
 Add a column to `props` called `floearray` containing the cropped floe masks from `floeimg`.
 """
-function addfloemasks!(props::DataFrame, floeimg::FloeLabelsImage)
+function add_floemasks!(props::DataFrame, floeimg::FloeLabelsImage)
     props.mask = getfloemasks(props, floeimg)
     return nothing
 end
