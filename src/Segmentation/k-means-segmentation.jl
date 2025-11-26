@@ -52,7 +52,7 @@ function kmeans_binarization(
     k::Int64=4,
     maxiter::Int64=50,
     random_seed::Int64=45,
-    ice_labels_threshold=1
+    ice_labels_threshold=1 # TODO: Make the test FirstNonZero algo more robust, case 14 succeeds with only 1 or 2 pixels which is not stable.
 )::BitMatrix
 
     ice_labels = ice_labels_algorithm(falsecolor_image) .> 0
