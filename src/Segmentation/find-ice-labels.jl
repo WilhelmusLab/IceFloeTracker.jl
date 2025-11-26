@@ -144,17 +144,15 @@ Runs each algorithm from `algorithms` on the image, and returns the first which 
 """
 @kwdef struct IceDetectionFirstNonZeroAlgorithm <: IceDetectionAlgorithm
     algorithms::Vector{IceDetectionAlgorithm}
-    # threshold::Int64=0 # dmw: initial attempt failed, need to check the format to see why
 end
 
 # dmw: args / kwargs not being used yet.
-function (f::IceDetectionFirstNonZeroAlgorithm)(out, img, args...; kwargs...)
+function (f::IceDetectionFirstNonZeroAlgorithm)(out, img, args...; threshold=10, kwargs...)
     for algorithm in f.algorithms
         @debug algorithm
         result = binarize(img, algorithm)
         ice_sum = sum(result)
-        thresh = 10 # dmw: temp adjustment to avoid sensitivity to speckle. TBD add as parameter to struct
-        if thresh < ice_sum # change to f.threshold when I can
+        if threshold < ice_sum # change to f.threshold when I can
             @. out = result
             return nothing
         end
@@ -165,43 +163,7 @@ function (f::IceDetectionFirstNonZeroAlgorithm)(out, img, args...; kwargs...)
 end
 
 # TODO: These two next algorithms should go into the respective Pipeline modules
-"""
-    IceDetectionLopezAcosta2019(;
-        band_7_threshold::Float64=Float64(5 / 255),
-        band_2_threshold::Float64=Float64(230 / 255),
-        band_1_threshold::Float64=Float64(240 / 255),
-        band_7_threshold_relaxed::Float64=Float64(10 / 255),
-        band_1_threshold_relaxed::Float64=Float64(190 / 255),
-        possible_ice_threshold::Float64=Float64(75 / 255),
-    )
 
-Returns the first non-zero result of two threshold-based and one brightness-peak based ice detections.
-
-Default thresholds are defined in the published Ice Floe Tracker article: Remote Sensing of the Environment 234 (2019) 111406.
-
-"""
-function IceDetectionLopezAcosta2019(;
-    band_7_max::Float64=Float64(5 / 255),
-    band_2_min::Float64=Float64(230 / 255),
-    band_1_min::Float64=Float64(240 / 255),
-    band_7_max_relaxed::Float64=Float64(10 / 255),
-    band_1_min_relaxed::Float64=Float64(190 / 255),
-    possible_ice_threshold::Float64=Float64(75 / 255),
-)
-    return IceDetectionFirstNonZeroAlgorithm([
-        IceDetectionThresholdMODIS721(;
-            band_7_max=band_7_max, band_2_min=band_2_min, band_1_min=band_1_min
-        ),
-        IceDetectionThresholdMODIS721(;
-            band_7_max=band_7_max_relaxed,
-            band_2_min=band_2_min,
-            band_1_min=band_1_min_relaxed,
-        ),
-        IceDetectionBrightnessPeaksMODIS721(;
-            band_7_max=band_7_max, possible_ice_threshold=possible_ice_threshold
-        ),
-    ])
-end
 
 """
     IceDetectionLopezAcosta2019Tiling(;
@@ -234,7 +196,7 @@ function IceDetectionLopezAcosta2019Tiling(;
         ),
         IceDetectionThresholdMODIS721(;
             band_7_max=band_7_max_relaxed,
-            band_2_min=band_2_threshold,
+            band_2_min=band_2_min,
             band_1_min=band_1_min_relaxed,
         ),
         IceDetectionBrightnessPeaksMODIS721(;

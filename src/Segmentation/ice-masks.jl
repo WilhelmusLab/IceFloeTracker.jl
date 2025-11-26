@@ -31,6 +31,7 @@ function _get_nlabel(
     return StatsBase.mode(segmented_image_indexmap[ice_labels])
 end
 
+# TODO: This function is to be replaced with the kmeans binarization tiling version
 """
     get_ice_masks(
         falsecolor_image,
@@ -91,11 +92,11 @@ function get_ice_masks( #tbd: rename to kmeans_binarization?
     for tile in tiles
         @debug "Processing tile: $tile"
         mrt = morph_residue[tile...]
-        segmented_image_indexmap = kmeans_segmentation(mrt; k=k)
+        segmented_image = kmeans_segmentation(mrt; k=k)
 
         floes_label = _get_nlabel(
             fc_landmasked[tile...],
-            segmented_image_indexmap;
+            segmented_image.image_indexmap .> 0;
             band_7_threshold=band_7_threshold,
             band_2_threshold=band_2_threshold,
             band_1_threshold=band_1_threshold,
@@ -106,7 +107,7 @@ function get_ice_masks( #tbd: rename to kmeans_binarization?
 
         # dmw: warning! this method can produce discontinuities as tile boundaries.
         # A fix is in progress.
-        ice_mask[tile...] .= (segmented_image_indexmap .== floes_label)
+        ice_mask[tile...] .= (segmented_image.image_indexmap .== floes_label)
     end
     return ice_mask
 end

@@ -24,6 +24,33 @@
 
 
     println("---------- Segment Image - Direct Method ------------")
+
+    # Set up the ice detection algorithm (can this be imported, instead?)
+    band_7_max=Float64(5 / 255)
+    band_2_min=Float64(230 / 255)
+    band_1_min=Float64(240 / 255)
+    band_7_max_relaxed=Float64(10 / 255)
+    band_1_min_relaxed=Float64(190 / 255)
+    possible_ice_threshold=Float64(75 / 255)
+
+    IceDetectionLopezAcosta2019 = IceDetectionFirstNonZeroAlgorithm([
+            IceDetectionThresholdMODIS721(;
+                band_7_max=band_7_max,
+                band_2_min=band_2_min,
+                band_1_min=band_1_min
+            ),
+            IceDetectionThresholdMODIS721(;
+                band_7_max=band_7_max_relaxed,
+                band_2_min=band_2_min,
+                band_1_min=band_1_min_relaxed,
+            ),
+            IceDetectionBrightnessPeaksMODIS721(;
+                band_7_max=band_7_max,
+                possible_ice_threshold=possible_ice_threshold
+            ),
+        ])
+
+
     segmented_ice = kmeans_binarization(
         ice_water_discriminated_image,
         fc_image;

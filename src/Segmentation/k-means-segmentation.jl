@@ -4,12 +4,11 @@ import Random: Random
 import Clustering: Clustering, assignments, kmeans
 
 """
-    kmeans_segmentation(img; k=4, maxiter=50, random_seed=45)
+    kmeans_segmentation(img; k=4, maxiter=50, random_seed=45, k_offset=0)
 
 Wrapper for Clustering.kmeans which accepts a grayscale image and returns a SegmentedImage object. Optionally,
 one can specify the number of clusters `k``, the maximum number of iterations `maxiter`, and the seed for the
-random number generator, `random_seed`. Returns a SegmentedImage object.
-
+random number generator, `random_seed`. Returns a SegmentedImage object. 
 """
 function kmeans_segmentation(
     gray_image::AbstractArray{<:AbstractGray}; 
@@ -41,18 +40,18 @@ containing the largest fraction of bright ice pixels. If no bright ice pixels ar
 - `falsecolor_image`: MODIS 7-2-1 falsecolor image, to be sent to the specified `ice_labels_algorithm`. It is recommended that this image be landmasked.
 
 # Keyword arguments
+- `ice_labels_algorithm`: Binarization function to find sea ice pixels
 - `k`: Number of k-means clusters
 - `maxiter`: Maximum number of iterations for k-means algorithm
 - `random_seed`: Seed for the random number generator
-- `ice_labels_algorithm`: Binarization function to find sea ice pixels
 """
 function kmeans_binarization(
     gray_image,
     falsecolor_image;
+    ice_labels_algorithm,
     k::Int64=4,
     maxiter::Int64=50,
     random_seed::Int64=45,
-    ice_labels_algorithm=IceDetectionLopezAcosta2019(),
     ice_labels_threshold=5
 )::BitMatrix
 
@@ -90,10 +89,15 @@ function kmeans_binarization(
     k::Int64=4,
     maxiter::Int64=50,
     random_seed::Int64=45,
-    ice_labels_algorithm=IceDetectionLopezAcosta2019()
+    ice_labels_algorithm
 )::BitMatrix
 
     out = falses(size(gray_image))
+
+    # This part will be updated soon. This method results in discontinuities at tile boundaries.
+    # To avoid this, we can stitch segmented images first, so that boundary clusters are relabled
+    # to match, and then the binarization can be applied using the mode for each tile, allowing overlaps.
+    
     for tile in tiles
         out[tile...] .= kmeans_binarization(gray_image[tile...], falsecolor_image[tile...];
                             k=k,

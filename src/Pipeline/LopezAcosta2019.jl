@@ -49,9 +49,9 @@ import Images:
     ⋅, # dot operator
     GammaCorrection,
     centered
+
 import Peaks: findmaxima
 import StatsBase: kurtosis, skewness
-
 import ..Filtering: nonlinear_diffusion, PeronaMalikDiffusion, unsharp_mask, _channelwise_adapthisteq
 import ..Morphology: hbreak, hbreak!, branch, bridge, fill_holes, se_disk4
 import ..Preprocessing:
@@ -66,7 +66,9 @@ import ..Preprocessing:
     apply_cloudmask!
 import ..Segmentation:
     IceFloeSegmentationAlgorithm, 
-    IceDetectionLopezAcosta2019,
+    IceDetectionThresholdMODIS721,
+    IceDetectionFirstNonZeroAlgorithm,
+    IceDetectionBrightnessPeaksMODIS721,
     find_ice_mask, 
     kmeans_segmentation, 
     kmeans_binarization
@@ -94,6 +96,34 @@ ice_masks_params = (
     possible_ice_threshold=75 / 255,
 )
 
+# Ice label algorithm -- identifies bright ice pixels for use in selecting the 
+# k-means cluster which corresponds to the brightest floes.
+
+function IceDetectionLopezAcosta2019(;
+    band_7_max::Float64=Float64(5 / 255),
+    band_2_min::Float64=Float64(230 / 255),
+    band_1_min::Float64=Float64(240 / 255),
+    band_7_max_relaxed::Float64=Float64(10 / 255),
+    band_1_min_relaxed::Float64=Float64(190 / 255),
+    possible_ice_threshold::Float64=Float64(75 / 255),
+)
+    return IceDetectionFirstNonZeroAlgorithm([
+        IceDetectionThresholdMODIS721(;
+            band_7_max=band_7_max,
+            band_2_min=band_2_min,
+            band_1_min=band_1_min
+        ),
+        IceDetectionThresholdMODIS721(;
+            band_7_max=band_7_max_relaxed,
+            band_2_min=band_2_min,
+            band_1_min=band_1_min_relaxed,
+        ),
+        IceDetectionBrightnessPeaksMODIS721(;
+            band_7_max=band_7_max,
+            possible_ice_threshold=possible_ice_threshold
+        ),
+    ])
+end
 
 @kwdef struct Segment <: IceFloeSegmentationAlgorithm
     landmask_structuring_element::AbstractMatrix{Bool} = make_landmask_se()
@@ -103,12 +133,12 @@ ice_masks_params = (
         nbins=256,
         rblocks=8, # matlab default is 8 CP
         cblocks=8, # matlab default is 8 CP
-        clip=0.9,  # matlab default is 0.01 CP
+        clip=0.9,  # matlab default is 0.01 CP, which should be the same as clip=0.99
     )
     unsharp_mask_params = (smoothing_param=10, intensity=2)
     reconstruct_strel = strel_diamond((5, 5)) # Structuring element used for enhancing foreground/background contrast
     kmeans_params = (k=4, maxiter=50, random_seed=45)
-    ice_labels_algorithm = IceDetectionLopezAcosta2019(;ice_masks_params...) # Check parameters that can be sent into the algo.
+    ice_labels_algorithm = IceDetectionLopezAcosta2019()
     segmentation_b_params = (isolation_threshold=0.4, struct_elem=strel_diamond((3, 3)))
 end
 

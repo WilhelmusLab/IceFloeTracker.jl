@@ -54,6 +54,7 @@ julia> boundary[3]
  12.0357  13.5859
  10.5859  15.0357
  10.0     13.0
+```
 """
 function resample_boundary(
     bd_points::Vector{<:CartesianIndex}, reduc_factor::Int64=2, bd::String="natural"
