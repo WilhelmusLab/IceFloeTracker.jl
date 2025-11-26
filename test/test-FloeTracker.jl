@@ -1,14 +1,14 @@
 @testitem "FloeTracker" begin
     import Dates: DateTime
-    data_loader = Watkins2026Dataset(; ref="v0.1")
+    dataset = Watkins2026Dataset(; ref="v0.1")
 
     @testset "Basic functionality" begin
-        cases = data_loader(c -> c.case_number == 6)
+        cases = filter(c -> c.case_number == 6, dataset)
         segmenter = LopezAcosta2019Tiling.Segment()
-        segmentation_results = [
-            segmenter(c.modis_truecolor, c.modis_falsecolor, c.modis_landmask) for
-            c in cases
-        ]
+        segmentation_results =
+            segmenter.(
+                modis_truecolor.(cases), modis_falsecolor.(cases), modis_landmask.(cases)
+            )
         @info segmentation_results
 
         tracker = FloeTracker(;
