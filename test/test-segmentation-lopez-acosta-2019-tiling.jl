@@ -47,7 +47,7 @@ end
     @test 0.62 ≤ round(precision; digits=2)
     @test 0.73 ≤ round(F_score; digits=2)
 end
-
+# Segmentation fault with case 102???
 @testitem "LopezAcosta2019Tiling.Segment - sample of cases" setup = [Segmentation] tags = [
     :e2e
 ] begin
