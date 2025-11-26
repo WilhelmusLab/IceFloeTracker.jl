@@ -70,8 +70,7 @@ end
 
     # Adding floe masks: it may be that we need a step in the shape difference and the
     # psi-s curve test to check if the mask exists already, and only add it if it isn't there.
-    greaterthan0(x) = x .> 0
-    add_floemasks!(props, greaterthan0.(labeled_images))
+    add_floemasks!(props, labeled_images)
     add_passtimes!(props, passtimes)
     add_ψs!(props)
     floe = props[1][1, :]
