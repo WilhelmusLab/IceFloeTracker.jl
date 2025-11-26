@@ -9,14 +9,14 @@
     segmentation_B_not_ice_mask = float64.(load("$(test_data_dir)/matlab_I.png"))
     segmentation_B_ice_intersect = convert(BitMatrix, load(segmented_c_test_file))
     matlab_BW7 = load("$(test_data_dir)/matlab_BW7.png") .> 0.499
-
+    fc_image = load("$(test_data_dir)/beaufort-chukchi-seas_falsecolor.2020162.aqua.250m.tiff")[test_region...]
     ## Load function arg files
 
-    cloudmask = convert(BitMatrix, load(cloudmask_test_file))
+    cloudmask = .!convert(BitMatrix, load(cloudmask_test_file))
     # convert ocean mask into land mask, so land=1
     landmask = convert(BitMatrix, load(current_landmask_file)[test_region...])
     watershed_intersect = load(watershed_test_file) .> 0.499
-    ice_labels = Int64.(vec(readdlm("$(test_data_dir)/ice_labels_floe_region.csv", ',')))
+    # ice_labels = Int64.(vec(readdlm("$(test_data_dir)/ice_labels_floe_region.csv", ',')))
 
     ## Run function with Matlab inputs
 
@@ -24,8 +24,8 @@
         segmentation_B_not_ice_mask[ice_floe_test_region...],
         segmentation_B_ice_intersect[ice_floe_test_region...],
         watershed_intersect[ice_floe_test_region...],
-        ice_labels,
-        .!cloudmask[ice_floe_test_region...],
+        fc_image[ice_floe_test_region...],
+        cloudmask[ice_floe_test_region...],
         landmask[ice_floe_test_region...],
     )
 
