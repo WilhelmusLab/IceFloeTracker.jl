@@ -12,7 +12,7 @@
         @info segmentation_results
 
         tracker = FloeTracker(;
-            filter_function=ChainedFilterFunction(),
+            filter_function=FilterFunction(),
             matching_function=MinimumWeightMatchingFunction(),
         )
         tracking_results = tracker(
