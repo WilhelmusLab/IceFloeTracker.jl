@@ -33,10 +33,14 @@ end
 # Test creation and application of multiple cloudmask types
 @testitem "Cloudmask Customization" begin
     using IceFloeTracker:
-        Watkins2025GitHub, LopezAcostaCloudMask, Watkins2025CloudMask, create_cloudmask
+        Watkins2026Dataset,
+        LopezAcostaCloudMask,
+        Watkins2025CloudMask,
+        create_cloudmask,
+        modis_falsecolor
 
-    data_loader = Watkins2025GitHub(; ref="a451cd5e62a10309a9640fbbe6b32a236fcebc70")
-    case = first(data_loader(c -> (c.case_number == 6 && c.satellite == "terra")))
+    dataset = Watkins2026Dataset(; ref="v0.1")
+    case = first(filter(c -> (c.case_number == 6 && c.satellite == "terra"), dataset))
 
     # Settings from Watkins et al. 2025
     cloud_mask_settings = (
@@ -51,7 +55,7 @@ end
     cmask_orig = LopezAcostaCloudMask(cloud_mask_settings...)
     cmask_morpho = Watkins2025CloudMask()
 
-    cmask_orig_img = create_cloudmask(case.modis_falsecolor, cmask_orig)
-    cmask_morpho_img = create_cloudmask(case.modis_falsecolor, cmask_morpho)
+    cmask_orig_img = create_cloudmask(modis_falsecolor(case), cmask_orig)
+    cmask_morpho_img = create_cloudmask(modis_falsecolor(case), cmask_morpho)
     @test sum(cmask_orig_img) >= sum(cmask_morpho_img)
 end
