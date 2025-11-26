@@ -1,38 +1,24 @@
-import Images: Gray, Float64
+import Images: Gray, Float64, SegmentedImage
 import StatsBase: StatsBase
 import Random: Random
-import Clustering: Clustering, assignments
+import Clustering: Clustering, assignments, kmeans
 
 """
-    kmeans_segmentation(gray_image, ice_labels;)
+    kmeans_segmentation(img; k=4, maxiter=50, random_seed=45, k_offset=0)
 
-Apply k-means segmentation to a gray image to isolate a cluster group representing sea ice. Returns a binary image with ice segmented from background.
-
-# Arguments
-- `gray_image`: output image from `ice-water-discrimination.jl` or gray ice floe leads image in `segmentation_f.jl`
-- `ice_labels`: vector if pixel coordinates output from `find_ice_labels.jl`
-
+Wrapper for Clustering.kmeans which accepts a grayscale image and returns a SegmentedImage object. Optionally,
+one can specify the number of clusters `k``, the maximum number of iterations `maxiter`, and the seed for the
+random number generator, `random_seed`. Returns a SegmentedImage object. 
 """
 function kmeans_segmentation(
-    gray_image::Matrix{Gray{Float64}},
-    ice_labels::Union{Vector{Int64},BitMatrix,AbstractArray{<:Gray}},
+    gray_image::AbstractArray{<:AbstractGray}; 
     k::Int64=4,
     maxiter::Int64=50,
-)::BitMatrix
-    segmented = kmeans_segmentation(gray_image; k=k, maxiter=maxiter)
-
-    ## Isolate ice floes and contrast from background
-    segmented_ice = get_segmented_ice(segmented, ice_labels)
-    return segmented_ice
-end
-
-function kmeans_segmentation(
-    gray_image::Matrix{Gray{Float64}}; k::Int64=4, maxiter::Int64=50, random_seed::Int64=45
+    random_seed::Int64=45
 )
     Random.seed!(random_seed)
 
-    ## NOTE(tjd): this clusters into k classes and solves iteratively with a max of maxiter iterations
-    feature_classes = Clustering.kmeans(
+    feature_classes = kmeans(
         vec(gray_image), k; maxiter=maxiter, display=:none, init=:kmpp
     )
 
@@ -40,20 +26,84 @@ function kmeans_segmentation(
 
     segmented = reshape(class_assignments, size(gray_image))
 
-    return segmented
+    return SegmentedImage(gray_image, segmented)
 end
 
-function get_segmented_ice(
-    segmented::Matrix{Int64}, ice_labels::Union{Vector{Int64},BitMatrix}
-)
-    ## Same principle as the get_nlabels function
-    ## Has the weakness that only one segment can ever be chosen.
-    isempty(ice_labels) && return falses(size(segmented))
-    return segmented .== StatsBase.mode(segmented[ice_labels])
+"""
+    kmeans_binarization(gray_image, false_color_image; kwargs...)
+
+Produce a binarized image by identifying pixels of bright ice, performing k-means clustering, and then selecting the k-means cluster
+containing the largest fraction of bright ice pixels. If no bright ice pixels are detected, then a blank matrix is returned. 
+
+# Positional Arguments
+- `gray_image`: Grayscale image to segment using k-means.
+- `falsecolor_image`: MODIS 7-2-1 falsecolor image, to be sent to the specified `ice_labels_algorithm`. It is recommended that this image be landmasked.
+
+# Keyword arguments
+- `ice_labels_algorithm`: Binarization function to find sea ice pixels
+- `k`: Number of k-means clusters
+- `maxiter`: Maximum number of iterations for k-means algorithm
+- `random_seed`: Seed for the random number generator
+"""
+function kmeans_binarization(
+    gray_image,
+    falsecolor_image;
+    ice_labels_algorithm,
+    k::Int64=4,
+    maxiter::Int64=50,
+    random_seed::Int64=45,
+    ice_labels_threshold=1
+)::BitMatrix
+
+    ice_labels = ice_labels_algorithm(falsecolor_image) .> 0
+    isempty(ice_labels) && return falses(size(gray_image))
+    sum(ice_labels) < ice_labels_threshold && return falses(size(gray_image))
+
+    segmented = kmeans_segmentation(gray_image; k=k, maxiter=maxiter, random_seed=random_seed)
+
+    return segmented.image_indexmap .== StatsBase.mode(segmented.image_indexmap[ice_labels])
 end
 
-function get_segmented_ice(segmented::Matrix{Int64}, ice_labels::AbstractArray{<:Gray})
-    boolean_map = ice_labels .|> Bool
-    !(any(boolean_map)) && return falses(size(segmented))
-    return segmented .== StatsBase.mode(segmented[boolean_map])
+"""
+    kmeans_binarization(gray_image, false_color_image, tiles; kwargs...)
+
+Produce a binarized image tilewise by identifying pixels of bright ice, performing k-means clustering, and then selecting the k-means cluster
+containing the largest fraction of bright ice pixels. If no bright ice pixels are detected, then a blank matrix is returned.
+
+Warning: Tilewise processing may result in discontinuities at tile boundaries.
+
+# Positional Arguments
+- `gray_image`: output image from `ice-water-discrimination.jl` or gray ice floe leads image in `segmentation_f.jl`
+- `ice_labels`: vector if pixel coordinates output from `find_ice_labels.jl`
+
+# Keyword arguments
+- `k`: Number of k-means clusters
+- `maxiter`: Maximum number of iterations for k-means algorithm
+- `random_seed`: Seed for the random number generator
+- `ice_labels_algorithm`: Binarization function to find sea ice pixels
+"""
+function kmeans_binarization(
+    gray_image,
+    falsecolor_image,
+    tiles;
+    k::Int64=4,
+    maxiter::Int64=50,
+    random_seed::Int64=45,
+    ice_labels_algorithm
+)::BitMatrix
+
+    out = falses(size(gray_image))
+
+    # This part will be updated soon. This method results in discontinuities at tile boundaries.
+    # To avoid this, we can stitch segmented images first, so that boundary clusters are relabled
+    # to match, and then the binarization can be applied using the mode for each tile, allowing overlaps.
+    
+    for tile in tiles
+        out[tile...] .= kmeans_binarization(gray_image[tile...], falsecolor_image[tile...];
+                            k=k,
+                            maxiter=maxiter,
+                            random_seed=random_seed,
+                            ice_labels_algorithm=ice_labels_algorithm)
+    end
+    return out
 end
