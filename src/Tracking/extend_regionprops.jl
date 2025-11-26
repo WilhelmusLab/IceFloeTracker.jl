@@ -2,9 +2,10 @@
 
 import DataFrames: DataFrame, nrow, DataFrameRow, transform!, ByRow, AbstractDataFrame
 import Images: label_components, SegmentedImage, labels_map
+import Dates: DateTime
 import ..Morphology: bwareamaxfilt
 
-FloeLabelsImage = Union{BitMatrix,Matrix{<:Bool},Matrix{<:Integer}}
+FloeLabelsImage = Union{BitMatrix,Matrix{<:Bool},Matrix{<:Integer},<:SegmentedImage}
 abstract type AbstractThresholdFunction <: Function end
 
 """
