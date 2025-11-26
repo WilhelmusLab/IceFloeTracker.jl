@@ -31,28 +31,28 @@
     @testset "IceDetectionBrightnessPeaksMODIS721" begin
         f = IceDetectionBrightnessPeaksMODIS721(5 / 255, 75 / 255)
 
-        data_loader = Watkins2025GitHub(; ref="a451cd5e62a10309a9640fbbe6b32a236fcebc70")
-        case = first(data_loader(c -> (c.case_number == 12 && c.satellite == "terra")))
+        dataset = Watkins2026Dataset(; ref="v0.1")
+        case = first(filter(c -> (c.case_number == 12 && c.satellite == "terra"), dataset))
 
         # There is only one pixel in this image marked as peak
-        single_floe = case.modis_falsecolor[225:260, 110:160]
+        single_floe = modis_falsecolor(case)[225:260, 110:160]
         @test sum(binarize(single_floe, f)) == 77 # Changed from 1, new method picks up more ice
 
-        just_water = case.modis_falsecolor[1:50, 350:400]
+        just_water = modis_falsecolor(case)[1:50, 350:400]
         @test sum(binarize(just_water, f)) == 2 # Changed from 0, there are some ice pixels in the top of the image
 
-        masked_land = masker(case.modis_landmask, case.modis_falsecolor)[1:50, 1:50]
+        masked_land = masker(modis_landmask(case), modis_falsecolor(case))[1:50, 1:50]
         @test sum(binarize(masked_land, f)) == 0
     end
 
     @testset "IceDetectionLopezAcosta2019" begin
         fc = IceDetectionLopezAcosta2019()
 
-        data_loader = Watkins2025GitHub(; ref="a451cd5e62a10309a9640fbbe6b32a236fcebc70")
-        case = first(data_loader(c -> (c.case_number == 12 && c.satellite == "terra")))
+        dataset = Watkins2026Dataset(; ref="v0.1")
+        case = first(filter(c -> (c.case_number == 12 && c.satellite == "terra"), dataset))
 
-        bc = binarize(case.modis_falsecolor, fc)
-        individual_results = [binarize(case.modis_falsecolor, f) for f in fc.algorithms]
+        bc = binarize(modis_falsecolor(case), fc)
+        individual_results = [binarize(modis_falsecolor(case), f) for f in fc.algorithms]
         # Regardless of the input, the output should be identical to one of the algorithms
         @test any(bc == bi for bi in individual_results)
         # The first non-zero output should be the same as the return value
@@ -69,12 +69,12 @@ end
 
     @testset "interface checks" begin
         @testset "functor version" begin
-            data_loader = Watkins2025GitHub(;
-                ref="a451cd5e62a10309a9640fbbe6b32a236fcebc70"
+            dataset = Watkins2026Dataset(; ref="v0.1")
+            case = first(
+                filter(c -> (c.case_number == 12 && c.satellite == "terra"), dataset)
             )
-            case = first(data_loader(c -> (c.case_number == 12 && c.satellite == "terra")))
-            landmask = case.modis_landmask
-            falsecolor = case.modis_falsecolor
+            landmask = modis_landmask(case)
+            falsecolor = modis_falsecolor(case)
             algorithm = IceDetectionLopezAcosta2019()
             @test binarize(falsecolor, algorithm) == algorithm(falsecolor)
         end
@@ -213,12 +213,12 @@ end
             end
         end
         @testset "validated data" begin
-            data_loader = Watkins2025GitHub(;
-                ref="a451cd5e62a10309a9640fbbe6b32a236fcebc70"
+            dataset = Watkins2026Dataset(; ref="v0.1")
+            case = first(
+                filter(c -> (c.case_number == 12 && c.satellite == "terra"), dataset)
             )
-            case = first(data_loader(c -> (c.case_number == 12 && c.satellite == "terra")))
-            landmask = case.modis_landmask
-            falsecolor = case.modis_falsecolor
+            landmask = modis_landmask(case)
+            falsecolor = modis_falsecolor(case)
             baseline = binarize(falsecolor, IceDetectionLopezAcosta2019())
             baseline_mask = binarize(
                 masker(landmask)(falsecolor), IceDetectionLopezAcosta2019()

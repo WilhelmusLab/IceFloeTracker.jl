@@ -1,5 +1,5 @@
 @testitem "Time-Distance Thresholds" begin
-using Dates: Minute, Hour, Day
+    using Dates: Minute, Hour, Day
     # Test short and long times
 
     lopez_acosta_dist = LopezAcostaTimeDistanceFunction()
@@ -13,7 +13,6 @@ using Dates: Minute, Hour, Day
     @test distance_threshold(1, Minute(1), linear)
     @test !distance_threshold(1e3, Minute(1), linear)
 
-
     @test distance_threshold(1e3, Hour(15), lopez_acosta_dist)
     @test !distance_threshold(1e5, Hour(15), lopez_acosta_dist)
     @test distance_threshold(1e3, Hour(15), loglog_quadratic)
@@ -26,26 +25,24 @@ using Dates: Minute, Hour, Day
     # LogLogQuadratic has a default maximum time of 7 days
     @test !distance_threshold(1, Day(10), loglog_quadratic)
     @test !distance_threshold(1e3, Day(10), loglog_quadratic)
-
 end
 
 @testitem "Geometric thresholds" begin
-# LopezAcosta2019 threshold functions
-stepwise = StepwiseLinearThresholdFunction(700, 0.5, 1.0)
-@test stepwise(500, 0.2) && stepwise(800, 0.2)
-@test !stepwise(500, 1.2) && !stepwise(800, 1.2)
-@test !stepwise(200 , 0.7) && stepwise(800, 0.7)
-
+    # LopezAcosta2019 threshold functions
+    stepwise = StepwiseLinearThresholdFunction(700, 0.5, 1.0)
+    @test stepwise(500, 0.2) && stepwise(800, 0.2)
+    @test !stepwise(500, 1.2) && !stepwise(800, 1.2)
+    @test !stepwise(200, 0.7) && stepwise(800, 0.7)
 end
 
 @testitem "Filter function tests" begin
     using IceFloeTracker
     using DataFrames
 
-    data_loader = Watkins2025GitHub(; ref="25ba4d46814a5423b65ad675aaec05633d17a37e")
-    dataset = data_loader(c-> c.case_number == 9)
-    cases = [x for x in dataset.data]
-    if occursin("terra", cases[1].name)
+    dataset = Watkins2026Dataset(; ref="v0.1")
+    dataset = filter(c -> c.case_number == 9, dataset)
+    cases = [x for x in dataset]
+    if occursin("terra", name(cases[1]))
         terra = cases[1]
         aqua = cases[2]
     else
@@ -53,30 +50,31 @@ end
         terra = cases[2]
     end
 
-    if aqua.metadata[:pass_time] < terra.metadata[:pass_time]
+    if info(aqua)[:pass_time] < info(terra)[:pass_time]
         order = ["aqua", "terra"]
-        labeled_images = [aqua.validated_labeled_floes.image_indexmap,
-                    terra.validated_labeled_floes.image_indexmap]
-        passtimes = [aqua.metadata[:pass_time], terra.metadata[:pass_time]] # True time delta
+        labeled_images = [
+            validated_labeled_floes(aqua).image_indexmap,
+            validated_labeled_floes(terra).image_indexmap,
+        ]
+        passtimes = [info(aqua)[:pass_time], info(terra)[:pass_time]] # True time delta
 
     else
         order = ["terra", "aqua"]
-        labeled_images = [terra.validated_labeled_floes.image_indexmap,
-                    aqua.validated_labeled_floes.image_indexmap]
-        passtimes = [terra.metadata[:pass_time], aqua.metadata[:pass_time]] # True time delta
-
+        labeled_images = [
+            validated_labeled_floes(terra).image_indexmap,
+            validated_labeled_floes(aqua).image_indexmap,
+        ]
+        passtimes = [info(terra)[:pass_time], info(aqua)[:pass_time]] # True time delta
     end
-    props = IceFloeTracker.regionprops_table.(labeled_images);
+    props = IceFloeTracker.regionprops_table.(labeled_images)
 
     # Adding floe masks: it may be that we need a step in the shape difference and the
     # psi-s curve test to check if the mask exists already, and only add it if it isn't there.
-    greaterthan0(x) = x .> 0
-    add_floemasks!.(props, greaterthan0.(labeled_images))
-    add_passtimes!(props, passtimes)
-    add_ψs!(props)
+    add_floemasks!.(props, labeled_images)
+    add_passtimes!.(props, passtimes)
+    add_ψs!.(props)
     floe = props[1][1, :]
     candidates = props[1][2:end, :]
-    
 
     n = nrow(candidates)
     dt_test = DistanceThresholdFilter()
@@ -89,12 +87,13 @@ end
     @test (n == n2) && (n >= n3) && ("time_distance_test" ∉ names(candidates))
 
     candidates = props[1][2:end, :]
-    re_test_area = RelativeErrorThresholdFilter(variable=:area)
+    re_test_area = RelativeErrorThresholdFilter(; variable=:area)
     re_test_area(floe, candidates, Val(:raw))
-    re_test_convex_area = RelativeErrorThresholdFilter(variable=:convex_area)
+    re_test_convex_area = RelativeErrorThresholdFilter(; variable=:convex_area)
     re_test_convex_area(floe, candidates, Val(:raw))
     # Check that variable names are being passed through correctly
-    @test ("relative_error_area" ∈ names(candidates)) && ("relative_error_convex_area" ∈ names(candidates))
+    @test ("relative_error_area" ∈ names(candidates)) &&
+        ("relative_error_convex_area" ∈ names(candidates))
 
     sd_test = ShapeDifferenceThresholdFilter()
     sd_test(floe, candidates, Val(:raw))
@@ -105,4 +104,4 @@ end
     ps_test(floe, candidates, Val(:raw))
     @test "psi_s_correlation" ∈ names(candidates)
     @test candidates[1, :psi_s_correlation] == 0.914
-end 
+end

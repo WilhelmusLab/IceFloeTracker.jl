@@ -8,7 +8,6 @@
 
     @testset "get_trajectory_heads" begin
         @testset "basic case" begin
-            
             test_time0 = DateTime("2020-01-01 0:00", "y-m-d H:M")
             test_time1 = DateTime("2020-01-01 1:00", "y-m-d H:M")
             test_time2 = DateTime("2020-01-01 2:00", "y-m-d H:M")
@@ -27,7 +26,9 @@
             # Check that we only get two heads
             current_time_step = test_time5
             maximum_time_step = Day(5)
-            heads = _get_trajectory_heads(df, current_time_step, maximum_time_step; group_col=:group_id)
+            heads = _get_trajectory_heads(
+                df, current_time_step, maximum_time_step; group_col=:group_id
+            )
             @test nrow(heads) == 2
 
             # Check that the heads we get are the ones we want, 
@@ -51,7 +52,9 @@
             # Check that we get a head for every row
             current_time_step = test_time1
             maximum_time_step = Day(1)
-            heads = _get_trajectory_heads(df, current_time_step, maximum_time_step; group_col=:group_id)
+            heads = _get_trajectory_heads(
+                df, current_time_step, maximum_time_step; group_col=:group_id
+            )
             @test nrow(heads) == 8
 
             # Check that each head appears once
@@ -60,7 +63,6 @@
     end
 end
 # TODO: Include tests for other floe_tracker utilities
-
 
 @testitem "Basic cases" begin
     using Random
@@ -91,10 +93,10 @@ end
 
         # This order is important: masks, uuids, passtimes, ψs
         add_floemasks!.(_props, _imgs)
-        add_ψs!(_props)
-        add_passtimes!(_props, _passtimes)
+        add_ψs!.(_props)
+        add_passtimes!.(_props, _passtimes)
         Random.seed!(123)
-        add_uuids!(_props)
+        add_uuids!.(_props)
     end
 
     begin # Filter out floes with area less than `floe_area_threshold` pixels
@@ -109,7 +111,7 @@ end
         # Every floe is matched in every day
         props_test_case1 = deepcopy(_props)
         trajectories = floe_tracker(
-            props_test_case1, FilterFunction, MinimumWeightMatchingFunction()
+            props_test_case1, FilterFunction(), MinimumWeightMatchingFunction()
         )
 
         # Expected: 5 trajectories, all of which have length 3
@@ -126,11 +128,13 @@ end
 
     @testset "Case 2" begin
         trajectories = IceFloeTracker.floe_tracker(
-            props_test_case2, FilterFunction, IceFloeTracker.MinimumWeightMatchingFunction()
+            props_test_case2,
+            FilterFunction(),
+            IceFloeTracker.MinimumWeightMatchingFunction(),
         )
 
         # Expected: 5 trajectories, 3 of which have length 3 and 2 of which have length 2
-        
+
         counts = combine(groupby(trajectories, [:ID]), nrow => :count)
         @test sum(counts[:, :count] .== 3) == 3 && sum(counts[:, :count] .== 2) == 2
     end
@@ -142,7 +146,7 @@ end
             props = addgaps(_props)
 
             trajectories = IceFloeTracker.floe_tracker(
-                props, FilterFunction, MinimumWeightMatchingFunction()
+                props, FilterFunction(), MinimumWeightMatchingFunction()
             )
 
             # Expected: 5 trajectories, all of which have length 3 as in test case 1
@@ -157,7 +161,7 @@ end
             Random.seed!(123)
             props = addgaps(props_test_case2)
             trajectories = IceFloeTracker.floe_tracker(
-                props, FilterFunction, IceFloeTracker.MinimumWeightMatchingFunction()
+                props, FilterFunction(), IceFloeTracker.MinimumWeightMatchingFunction()
             )
 
             # Expected: 5 trajectories, 3 of which have length 3 and 2 of which have length 2 as in test case 2
@@ -187,7 +191,7 @@ end
         ]
         # TODO: Check types for the ShapeDifference function. What's different about these props tables?
         trajectories_ = floe_tracker(
-            props, FilterFunction, MinimumWeightMatchingFunction()
+            props, FilterFunction(), MinimumWeightMatchingFunction()
         )
 
         trajectory_lengths = combine(groupby(trajectories_, :trajectory_uuid), nrow)
@@ -232,11 +236,9 @@ end
         ]
 
         trajectories_ = floe_tracker(
-            props, FilterFunction, MinimumWeightMatchingFunction(); minimum_area=1200
+            props, FilterFunction(), MinimumWeightMatchingFunction(); minimum_area=1200
         )
 
-        @test all(
-            1200 .<= trajectories_.area,
-        )
+        @test all(1200 .<= trajectories_.area)
     end
 end

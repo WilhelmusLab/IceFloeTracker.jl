@@ -1,24 +1,24 @@
 @testitem "FloeTracker" begin
     import Dates: DateTime
-    data_loader = Watkins2025GitHub(; ref="a451cd5e62a10309a9640fbbe6b32a236fcebc70")
+    import DataFrames: DataFrame
+    dataset = Watkins2026Dataset(; ref="v0.1")
 
     @testset "Basic functionality" begin
-        cases = data_loader(c -> c.case_number == 6)
+        filter!(c -> c.case_number == 6, dataset)
+        sort!([:pass_time], dataset)
         segmenter = LopezAcosta2019Tiling.Segment()
-        segmentation_results = [
-            segmenter(c.modis_truecolor, c.modis_falsecolor, c.modis_landmask) for
-            c in cases
-        ]
-        @info segmentation_results
-
+        segmentation_results =
+            segmenter.(
+                modis_truecolor.(dataset),
+                modis_falsecolor.(dataset),
+                modis_landmask.(dataset),
+            )
         tracker = FloeTracker(;
-            filter_function=ChainedFilterFunction(),
+            filter_function=FilterFunction(),
             matching_function=MinimumWeightMatchingFunction(),
         )
-        tracking_results = tracker(
-            segmentation_results,
-            DateTime.(cases.metadata.start_date), # TODO: return a DateTime from the data loader
-        )
-        @info tracking_results
+        tracking_results = tracker(segmentation_results, info(dataset).pass_time)
+        @test isa(tracking_results, DataFrame)
+        @test "trajectory_uuid" in names(tracking_results)
     end
 end
