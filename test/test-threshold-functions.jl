@@ -53,16 +53,16 @@ end
     if info(aqua)[:pass_time] < info(terra)[:pass_time]
         order = ["aqua", "terra"]
         labeled_images = [
-            aqua.validated_labeled_floes.image_indexmap,
-            terra.validated_labeled_floes.image_indexmap,
+            validated_labeled_floes(aqua).image_indexmap,
+            validated_labeled_floes(terra).image_indexmap,
         ]
         passtimes = [info(aqua)[:pass_time], info(terra)[:pass_time]] # True time delta
 
     else
         order = ["terra", "aqua"]
         labeled_images = [
-            terra.validated_labeled_floes.image_indexmap,
-            aqua.validated_labeled_floes.image_indexmap,
+            validated_labeled_floes(terra).image_indexmap,
+            validated_labeled_floes(aqua).image_indexmap,
         ]
         passtimes = [info(terra)[:pass_time], info(aqua)[:pass_time]] # True time delta
     end
