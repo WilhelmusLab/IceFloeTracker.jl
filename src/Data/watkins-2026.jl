@@ -26,7 +26,7 @@ Validated ice floe data from [the Watkins 2026 Ice Floe Validation Dataset](http
 The dataset is initialized with a specific `git` tag, branch or commit ID from which to load the data.
 
 ```jldoctest Watkins2026Dataset; setup = :(using IceFloeTracker)
-julia> dataset = Watkins2026Dataset(; ref="b865acc62f223d6ff14a073a297d682c4c034e5d")
+julia> dataset = Watkins2026Dataset(; ref="v0.1")
 ```
 
 `Watkins2026Dataset` fields: 
@@ -116,7 +116,7 @@ To get the first case in the dataset, you can use `first(...)`:
 
 ```jldoctest Watkins2026Dataset
 julia> first(dataset)
-Case(GitHubLoader("https://github.com/danielmwatkins/ice_floe_validation_dataset/", "b865acc62f223d6ff14a073a297d682c4c034e5d", "/tmp/Watkins2026"), DataFrameRow
+Case(GitHubLoader("https://github.com/danielmwatkins/ice_floe_validation_dataset/", "v0.1", "/tmp/Watkins2026"), DataFrameRow
  Row │        case_number  region      start_date  center_lon  center_lat  center_x  center_y  month  sea_ice_fraction  mean_sea_ice_concentration  init_case_number  satellite  visible_sea_ice  visible_la ⋯
      │ Int64  Int64        String      Dates.Date  Float64     Float64     Int64     Int64     Int64  Float64           Float64                     Int64             String     String           String     ⋯
 ─────┼────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
@@ -135,19 +135,19 @@ julia> modis_truecolor(first(dataset))
 ```
 
 !!! tip "Cacheing"
-    Data are downloaded to the `<cache_dir>/<ref>`, e.g. `/tmp/Watkins2026/b865acc62f223d6ff14a073a297d682c4c034e5d/`. 
+    Data are downloaded to the `<cache_dir>/<ref>`, e.g. `/tmp/Watkins2026/v0.1/`. 
     If a file of the correct name already exists in that path, if loaded again the cached data will be returned.
 
     There are no checks to ensure that the cached data are up-to-date, 
     so if the data change in the source for that `ref`, the loader won't load the new data.
     In this case, you can clear the cache by deleting the cache directory, 
-    e.g. `rm -r /tmp/Watkins2026/b865acc62f223d6ff14a073a297d682c4c034e5d/`.
+    e.g. `rm -r /tmp/Watkins2026/v0.1/`.
 
 ```
 """
 function Watkins2026Dataset(;
     url="https://github.com/danielmwatkins/ice_floe_validation_dataset/",
-    ref="b865acc62f223d6ff14a073a297d682c4c034e5d",
+    ref="v0.1",
     cache_dir="/tmp/Watkins2026",
     metadata_path="data/validation_dataset/validation_dataset.csv",
 )::Dataset
