@@ -2,11 +2,8 @@
 @testitem "Segmentation-A" begin
     import DelimitedFiles: readdlm
     import Images: float64, load
-<<<<<<< HEAD
     import IceFloeTracker.Segmentation: kmeans_binarization
-=======
     import IceFloeTracker.LopezAcosta2019: IceDetectionLopezAcosta2019
->>>>>>> 3c43da72 (update function calls in tests)
 
     include("config.jl")
     include("test_error_rate.jl")
@@ -28,14 +25,11 @@
 
 
     println("---------- Segment Image - Direct Method ------------")
-<<<<<<< HEAD
-=======
     fc_image = load("$(test_data_dir)/beaufort-chukchi-seas_falsecolor.2020162.aqua.250m.tiff")[test_region...]
     fc_landmasked = apply_landmask(fc_image, landmask)
     @time segmented_ice_cloudmasked = LopezAcosta2019.segmented_ice_cloudmasking(
         ice_water_discriminated_image, fc_landmasked, cloudmask
     )
->>>>>>> 3c43da72 (update function calls in tests)
 
     # Set up the ice detection algorithm (can this be imported, instead?)
     band_7_max=Float64(5 / 255)
@@ -45,27 +39,8 @@
     band_1_min_relaxed=Float64(190 / 255)
     possible_ice_threshold=Float64(75 / 255)
 
-<<<<<<< HEAD
-    IceDetectionLopezAcosta2019 = IceDetectionFirstNonZeroAlgorithm([
-            IceDetectionThresholdMODIS721(;
-                band_7_max=band_7_max,
-                band_2_min=band_2_min,
-                band_1_min=band_1_min
-            ),
-            IceDetectionThresholdMODIS721(;
-                band_7_max=band_7_max_relaxed,
-                band_2_min=band_2_min,
-                band_1_min=band_1_min_relaxed,
-            ),
-            IceDetectionBrightnessPeaksMODIS721(;
-                band_7_max=band_7_max,
-                possible_ice_threshold=possible_ice_threshold
-            ),
-        ])
-=======
     @time segmented_ice = kmeans_binarization(ice_water_discriminated_image, fc_landmasked;
         ice_labels_algorithm=IceDetectionLopezAcosta2019())
->>>>>>> 3c43da72 (update function calls in tests)
 
 
     segmented_ice = kmeans_binarization(
