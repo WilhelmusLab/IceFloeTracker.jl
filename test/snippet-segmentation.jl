@@ -18,7 +18,7 @@
     - `output_directory`: optional – path to save intermediate and final outputs
 
     Returns:
-    - A DataFrame with the results including a :success boolean, any :error messages, and the original metadata.
+    - A DataFrame with the results including a :success boolean, any :error messages, and the original info.
 
     """
     function run_and_validate_segmentation(
@@ -26,7 +26,7 @@
         algorithm::IceFloeSegmentationAlgorithm;
         output_directory::Union{AbstractString,Nothing}=nothing,
     )::DataFrame
-        @info metadata(dataset)
+        @info info(dataset)
         results = []
         for case in dataset
             @info "starting $(name(case))"
@@ -97,7 +97,7 @@
                 (; case_name, success, error),
                 comparison,
                 summary,
-                NamedTuple(metadata(case)),
+                NamedTuple(info(case)),
             )
             if !isnothing(intermediate_results_callback) && !isnothing(validated)
                 intermediate_results_callback(;
@@ -187,7 +187,7 @@
 
     Inputs:
     - `directory`: base directory where images will be stored
-    - `case`: Case with metadata which are used to name a subdirectory
+    - `case`: Case with info which are used to name a subdirectory
     - `algorithm`: IceFloeSegmentationAlgorithm which is used in the subdirectory name.
     """
     function save_results_callback(

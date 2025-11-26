@@ -1,20 +1,20 @@
 @testitem "Data" begin
     using Images: RGBA, N0f8, SegmentedImage, Gray
     using DataFrames: nrow, DataFrame, DataFrameRow, subset
-    using IceFloeTracker: Case, Dataset, metadata, loader, Watkins2026Dataset
+    using IceFloeTracker: Case, Dataset, info, loader, Watkins2026Dataset
 
     @testset "Watkins2026Dataset" begin
         dataset = Watkins2026Dataset(; ref="b865acc62f223d6ff14a073a297d682c4c034e5d")
         @testset "Dataset Properties" begin
             @test dataset isa Dataset
             @test length(dataset) == 378
-            @test nrow(metadata(dataset)) == 378
-            @test metadata(dataset) isa DataFrame
+            @test nrow(info(dataset)) == 378
+            @test info(dataset) isa DataFrame
         end
         @testset "Case" begin
             dataset = Watkins2026Dataset(; ref="b865acc62f223d6ff14a073a297d682c4c034e5d")
             @test dataset[1] isa Case
-            @test metadata(dataset[1]) isa DataFrameRow
+            @test info(dataset[1]) isa DataFrameRow
         end
         @testset "Filtering and Subsetting" begin
             dataset = Watkins2026Dataset(; ref="b865acc62f223d6ff14a073a297d682c4c034e5d")

@@ -1,5 +1,5 @@
 export Watkins2026Dataset,
-    metadata,
+    info,
     name,
     modis_truecolor,
     modis_falsecolor,
@@ -36,7 +36,7 @@ julia> dataset = Watkins2026Dataset(; ref="b865acc62f223d6ff14a073a297d682c4c034
 - `dataset_metadata_path` (optional): path within the repository to a CSV file describing the data
 
 The dataset can be filtered using `Base.filter` or `DataFrames.subset`.
-This checks each case's metadata, and if the function returns `true`, the case is included in the returned dataset.
+This checks each case's info, and if the function returns `true`, the case is included in the returned dataset.
 
 ```jldoctest Watkins2026Dataset
 julia> dataset = filter(c -> (
@@ -55,10 +55,10 @@ julia> dataset = subset(dataset,
                     );
 ```
 
-The returned `dataset` (a `Dataset`) has a `metadata` accessor which returns a DataFrame of the cases which passed the filter:
+The returned `dataset` (a `Dataset`) has an `info` accessor which returns a DataFrame of the cases which passed the filter:
 
 ```jldoctest Watkins2026Dataset
-julia> metadata(dataset)
+julia> info(dataset)
 8×28 DataFrame
     Row │ case_number  region        start_date  center_lon  center_lat  center_x  center_y  month  sea_ice_fr ⋯
         │ Int64        String31      Date        Float64     Float64     Int64     Int64     Int64  Float64    ⋯
@@ -75,9 +75,9 @@ julia> metadata(dataset)
 ```
 
 The `dataset` contains `Case` objects.
-Each Case has metadata fields including:
+Each Case has info fields including:
 - `name`: name of the case
-- `metadata`: dictionary of metadata for the case, corresponding to a row in the `dataset.metadata` `DataFrame`
+- `info`: metadata for the case, corresponding to a row in the `dataset.info` `DataFrame`
 
 Each Case has functions to access its contents:
 - `modis_truecolor`: MODIS true color image
@@ -95,7 +95,7 @@ Example:
 ```jldoctest Watkins2026Dataset
 julia> for case in dataset
            println(name(case) * 
-                   ": sea ice fraction: " * string(metadata(case).sea_ice_fraction) *
+                   ": sea ice fraction: " * string(info(case).sea_ice_fraction) *
                    ", true color image size: " * string(size(modis_truecolor(case))))
        end
 011-baffin_bay-100km-20110702-aqua-250m: sea ice fraction: 0.8, true color image size: (400, 400)
@@ -152,8 +152,8 @@ function Watkins2026Dataset(;
     metadata_path="data/validation_dataset/validation_dataset.csv",
 )::Dataset
     loader = GitHubLoader(; url, ref, cache_dir)
-    metadata = metadata_path |> loader |> load |> DataFrame
-    return Dataset(loader, metadata)
+    info = metadata_path |> loader |> load |> DataFrame
+    return Dataset(loader, info)
 end
 
 function modis_truecolor(case::Case; ext="tiff")
@@ -193,7 +193,7 @@ function modis_cloudfraction(case::Case; ext="tiff")
 end
 
 function validated_binary_floes(case::Case)
-    metadata(case).fl_analyst == "" && return nothing
+    info(case).fl_analyst == "" && return nothing
     (; case_number, region, date, satellite) = _filename_parts(case)
     file = "data/validation_dataset/binary_floes/$(case_number)-$(region)-$(date)-$(satellite)-binary_floes.png"
     img = file |> case.loader |> load .|> Gray |> (x -> x .> 0.5) .|> Gray
@@ -201,7 +201,7 @@ function validated_binary_floes(case::Case)
 end
 
 function validated_labeled_floes(case::Case; ext="tiff")
-    metadata(case).fl_analyst == "" && return nothing
+    info(case).fl_analyst == "" && return nothing
     (; case_number, region, date, satellite) = _filename_parts(case)
     file = "data/validation_dataset/labeled_floes/$(case_number)-$(region)-$(date)-$(satellite)-labeled_floes.$(ext)"
     labels = file |> case.loader |> load .|> Int
@@ -210,7 +210,7 @@ function validated_labeled_floes(case::Case; ext="tiff")
 end
 
 function validated_floe_properties(case::Case)::DataFrame
-    metadata(case).fl_analyst == "" && return nothing
+    info(case).fl_analyst == "" && return nothing
     (; case_number, region, date, satellite) = _filename_parts(case)
     file = "data/validation_dataset/property_tables/$(satellite)/$(case_number)-$(region)-$(date)-$(satellite)-floe_properties.csv"
     img = file |> case.loader |> load |> DataFrame
@@ -241,7 +241,7 @@ function name(case::Case)::String
 end
 
 function _filename_parts(case::Case)
-    m = metadata(case)
+    m = info(case)
     case_number = lpad(m.case_number, 3, "0")
     region = m.region
     date = format(m.start_date, "yyyymmdd")

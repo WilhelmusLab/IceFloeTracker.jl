@@ -1,15 +1,15 @@
-export Case, Dataset, loader, metadata
+export Case, Dataset, loader, info
 
-import DataFrames: DataFrame, DataFrameRow, nrow, eachrow, subset
+import DataFrames: DataFrames, DataFrame, DataFrameRow, nrow, eachrow, subset
 import FileIO: load, save
 
 @kwdef struct Case
     loader::AbstractLoader
-    metadata::DataFrameRow
+    info::DataFrameRow
 end
 
-function metadata(case::Case)::DataFrameRow
-    return case.metadata
+function info(case::Case)::DataFrameRow
+    return case.info
 end
 
 function loader(case::Case)::AbstractLoader
@@ -18,24 +18,24 @@ end
 
 struct Dataset
     loader::AbstractLoader
-    metadata::DataFrame
+    info::DataFrame
 end
 
-function metadata(ds::Dataset)::DataFrame
-    return ds.metadata
+function info(ds::Dataset)::DataFrame
+    return ds.info
 end
 
 function loader(ds::Dataset)::AbstractLoader
     return ds.loader
 end
 
-Base.length(ds::Dataset)::Int = nrow(metadata(ds))
-Base.iterate(ds::Dataset) = iterate(Case.(Ref(ds.loader), eachrow(metadata(ds))))
+Base.length(ds::Dataset)::Int = nrow(info(ds))
+Base.iterate(ds::Dataset) = iterate(Case.(Ref(ds.loader), eachrow(info(ds))))
 function Base.iterate(ds::Dataset, state)
-    return iterate(Case.(Ref(loader(ds)), eachrow(metadata(ds))), state)
+    return iterate(Case.(Ref(loader(ds)), eachrow(info(ds))), state)
 end
 Base.filter(f::Function, ds::Dataset)::Dataset =
-    Dataset(ds.loader, filter(row -> f(row), ds.metadata))
-Base.getindex(ds::Dataset, i::Int)::Case = Case(ds.loader, ds.metadata[i, :])
+    Dataset(ds.loader, filter(row -> f(row), ds.info))
+Base.getindex(ds::Dataset, i::Int)::Case = Case(ds.loader, ds.info[i, :])
 subset(ds::Dataset, args...; kwargs...)::Dataset =
-    Dataset(ds.loader, subset(ds.metadata, args...; kwargs...))
+    Dataset(ds.loader, subset(ds.info, args...; kwargs...))
