@@ -62,12 +62,12 @@ Example:
 
 ```
 using IceFloeTracker
-using IceFloeTracker: Watkins2025GitHub
+using IceFloeTracker: Watkins2026Dataset
 
-data_loader = Watkins2025GitHub(; ref="a451cd5e62a10309a9640fbbe6b32a236fcebc70")
-case = first(data_loader(c -> (c.case_number == 6 && c.satellite == "terra")))
+dataset = Watkins2026Dataset(; ref="v0.1")
+case = first(filter(c -> (c.case_number == 6 && c.satellite == "terra"), dataset))
 cm_algo = LopezAcostaCloudMask()
-cloud_mask = create_cloudmask(case.modis_falsecolor, cm_algo)
+cloud_mask = create_cloudmask(modis_falsecolor(case), cm_algo)
 
 # show image:
 Gray.(cloud_mask)
@@ -146,12 +146,12 @@ Example:
 
 ```
 using IceFloeTracker
-using IceFloeTracker: Watkins2025GitHub
+using IceFloeTracker: Watkins2026Dataset
 
-data_loader = Watkins2025GitHub(; ref="a451cd5e62a10309a9640fbbe6b32a236fcebc70")
-case = first(data_loader(c -> (c.case_number == 6 && c.satellite == "terra")))
+dataset = Watkins2026Dataset(; ref="v0.1")
+case = first(filter(c -> (c.case_number == 6 && c.satellite == "terra"), dataset))
 cm_algo = Watkins2025CloudMask()
-cloud_mask = create_cloudmask(case.modis_falsecolor, cm_algo)
+cloud_mask = create_cloudmask(modis_falsecolor(case), cm_algo)
 
 # show image:
 Gray.(cloud_mask)
