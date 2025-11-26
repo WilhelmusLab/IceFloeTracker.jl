@@ -31,7 +31,7 @@
     @testset "IceDetectionBrightnessPeaksMODIS721" begin
         f = IceDetectionBrightnessPeaksMODIS721(5 / 255, 75 / 255)
 
-        dataset = Watkins2026Dataset(; ref="a451cd5e62a10309a9640fbbe6b32a236fcebc70")
+        dataset = Watkins2026Dataset(; ref="v0.1")
         case = first(filter(c -> (c.case_number == 12 && c.satellite == "terra"), dataset))
 
         # There is only one pixel in this image marked as peak
@@ -48,7 +48,7 @@
     @testset "IceDetectionLopezAcosta2019" begin
         fc = IceDetectionLopezAcosta2019()
 
-        dataset = Watkins2026Dataset(; ref="a451cd5e62a10309a9640fbbe6b32a236fcebc70")
+        dataset = Watkins2026Dataset(; ref="v0.1")
         case = first(filter(c -> (c.case_number == 12 && c.satellite == "terra"), dataset))
 
         bc = binarize(modis_falsecolor(case), fc)
@@ -69,7 +69,7 @@ end
 
     @testset "interface checks" begin
         @testset "functor version" begin
-            dataset = Watkins2026Dataset(; ref="a451cd5e62a10309a9640fbbe6b32a236fcebc70")
+            dataset = Watkins2026Dataset(; ref="v0.1")
             case = first(
                 filter(c -> (c.case_number == 12 && c.satellite == "terra"), dataset)
             )
@@ -213,7 +213,7 @@ end
             end
         end
         @testset "validated data" begin
-            dataset = Watkins2026Dataset(; ref="a451cd5e62a10309a9640fbbe6b32a236fcebc70")
+            dataset = Watkins2026Dataset(; ref="v0.1")
             case = first(
                 filter(c -> (c.case_number == 12 && c.satellite == "terra"), dataset)
             )

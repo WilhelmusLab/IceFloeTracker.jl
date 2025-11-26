@@ -1,7 +1,7 @@
 @testitem "LopezAcosta2019.Segment – simple case" tags = [:e2e, :smoke] begin
     import DataFrames: DataFrame, nrow
     import Images: RGB
-    dataset = Watkins2026Dataset(; ref="a451cd5e62a10309a9640fbbe6b32a236fcebc70")
+    dataset = Watkins2026Dataset(; ref="v0.1")
 
     case = first(filter(c -> (c.case_number == 6 && c.satellite == "terra"), dataset))
     segments = LopezAcosta2019.Segment()(
@@ -15,7 +15,7 @@
 end
 
 @testitem "LopezAcosta2019.Segment – sample of cases" setup = [Segmentation] tags = [:e2e] begin
-    dataset = Watkins2026Dataset(; ref="a451cd5e62a10309a9640fbbe6b32a236fcebc70")
+    dataset = Watkins2026Dataset(; ref="v0.1")
     passing = c -> c.case_number % 17 == 0
     broken = c -> (c.case_number == 4 || (c.case_number == 39 && c.satellite == "aqua"))
     formerly_broken = c -> false  # `broken_cases` once fixed, for regression testing
@@ -29,7 +29,7 @@ end
 end
 
 @testitem "LopezAcosta2019.Segment – detailed tests" setup = [Segmentation] tags = [:e2e] begin
-    dataset = Watkins2026Dataset(; ref="a451cd5e62a10309a9640fbbe6b32a236fcebc70")
+    dataset = Watkins2026Dataset(; ref="v0.1")
     (; labeled_fraction, recall, precision, F_score) = run_and_validate_segmentation(
         first(filter(c -> (c.case_number == 6 && c.satellite == "terra"), dataset)),
         LopezAcosta2019.Segment();
@@ -73,7 +73,7 @@ end
 
 @testitem "LopezAcosta2019.Segment – image types" setup = [Segmentation] tags = [:e2e] begin
     import Images: RGB, n0f8, n6f10, n4f12, n2f14, n0f16, float32, float64
-    dataset = Watkins2026Dataset(; ref="a451cd5e62a10309a9640fbbe6b32a236fcebc70")
+    dataset = Watkins2026Dataset(; ref="v0.1")
     case::Case = first(filter(c -> (c.case_number == 6 && c.satellite == "terra"), dataset))
     algorithm = LopezAcosta2019.Segment()
     baseline = run_and_validate_segmentation(

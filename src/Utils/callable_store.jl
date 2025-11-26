@@ -25,7 +25,7 @@ Dict{Any, Any} with 1 entry:
 A real-world use case is to extract data from a segmentation algorithm run:
 ```julia-repl
 julia> intermediate_results, intermediate_results_callback = callable_store()
-julia> data = first(Watkins2026Dataset(; ref="a451cd5e62a10309a9640fbbe6b32a236fcebc70")());
+julia> data = first(Watkins2026Dataset(; ref="v0.1")());
 julia> segments = LopezAcosta2019Tiling.Segment()(
     modis_truecolor(data),
     modis_falsecolor(data),
