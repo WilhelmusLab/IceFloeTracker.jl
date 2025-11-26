@@ -1,6 +1,6 @@
 @testitem "FloeTracker" begin
     import Dates: DateTime
-    data_loader = Watkins2025GitHub(; ref="a451cd5e62a10309a9640fbbe6b32a236fcebc70")
+    data_loader = Watkins2026Dataset(; ref="v0.1")
 
     @testset "Basic functionality" begin
         cases = data_loader(c -> c.case_number == 6)
@@ -15,10 +15,7 @@
             filter_function=FilterFunction(),
             matching_function=MinimumWeightMatchingFunction(),
         )
-        tracking_results = tracker(
-            segmentation_results,
-            DateTime.(cases.metadata.start_date), # TODO: return a DateTime from the data loader
-        )
+        tracking_results = tracker(segmentation_results, info(cases).pass_time)
         @info tracking_results
     end
 end
