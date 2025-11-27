@@ -19,9 +19,7 @@
         matlab_ice_intersect
     )
     @time watershed_B_not_ice = LopezAcosta2019.watershed_ice_floes(matlab_not_ice_bit)
-    @time watershed_intersect = LopezAcosta2019.watershed_product(
-        watershed_B_ice_intersect, watershed_B_not_ice
-    )
+    @time watershed_intersect = watershed_B_ice_intersect .* watershed_B_not_ice
 
     @persist watershed_B_ice_intersect "./test_outputs/watershed_ice_intersect.png" true
 
