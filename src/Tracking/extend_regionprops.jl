@@ -6,7 +6,6 @@ import Dates: DateTime
 import ..Morphology: bwareamaxfilt
 
 FloeLabelsImage = Union{BitMatrix,Matrix{<:Bool},Matrix{<:Integer},<:SegmentedImage}
-abstract type AbstractThresholdFunction <: Function end
 
 """
     add_passtimes!(props::DataFrame, passtimes::DateTime)
