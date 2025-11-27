@@ -31,8 +31,8 @@ function _pairfloes(
     tracked = Tracked()
 
     # Crop floes from the images using the bounding box data in `props`.
-    addfloemasks!(props, segmented_imgs)
-    addψs!(props)
+    add_floemasks!.(props, segmented_imgs)
+    add_ψs!.(props)
 
     numdays = length(segmented_imgs) - 1
 
