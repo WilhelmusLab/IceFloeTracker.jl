@@ -2,6 +2,7 @@
 import ..skimage: sk_measure
 import DataFrames: rename!, DataFrame, nrow, select!
 import ..Geospatial: latlon
+import Images: SegmentedImage, labels_map
 
 """
     regionprops_table(label_img, intensity_img; properties, connectivity, extra_properties)
@@ -63,9 +64,10 @@ julia> properties = ["area", "perimeter"]
 ```
 """
 function regionprops_table(
-    label_img::Matrix{Int64},
+    label_img::Union{Matrix{Int64},SegmentedImage},
     intensity_img::Union{Nothing,AbstractMatrix}=nothing;
     properties::Union{Vector{<:AbstractString},Tuple{String,Vararg{String}}}=(
+        "label",
         "centroid",
         "area",
         "major_axis_length",
@@ -77,6 +79,10 @@ function regionprops_table(
     ),
     extra_properties::Union{Tuple{Function,Vararg{Function}},Nothing}=nothing,
 )::DataFrame
+    if label_img isa SegmentedImage
+        label_img = labels_map(label_img)
+    end
+
     if !isnothing(extra_properties)
         @error "extra_properties not yet implemented in this wrapper; setting it to `nothing`"
         extra_properties = nothing

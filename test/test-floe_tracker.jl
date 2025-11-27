@@ -8,7 +8,6 @@
 
     @testset "get_trajectory_heads" begin
         @testset "basic case" begin
-            
             test_time0 = DateTime("2020-01-01 0:00", "y-m-d H:M")
             test_time1 = DateTime("2020-01-01 1:00", "y-m-d H:M")
             test_time2 = DateTime("2020-01-01 2:00", "y-m-d H:M")
@@ -27,7 +26,9 @@
             # Check that we only get two heads
             current_time_step = test_time5
             maximum_time_step = Day(5)
-            heads = _get_trajectory_heads(df, current_time_step, maximum_time_step; group_col=:group_id)
+            heads = _get_trajectory_heads(
+                df, current_time_step, maximum_time_step; group_col=:group_id
+            )
             @test nrow(heads) == 2
 
             # Check that the heads we get are the ones we want, 
@@ -51,7 +52,9 @@
             # Check that we get a head for every row
             current_time_step = test_time1
             maximum_time_step = Day(1)
-            heads = _get_trajectory_heads(df, current_time_step, maximum_time_step; group_col=:group_id)
+            heads = _get_trajectory_heads(
+                df, current_time_step, maximum_time_step; group_col=:group_id
+            )
             @test nrow(heads) == 8
 
             # Check that each head appears once
@@ -60,7 +63,6 @@
     end
 end
 # TODO: Include tests for other floe_tracker utilities
-
 
 @testitem "Basic cases" begin
     using Random
@@ -90,11 +92,11 @@ end
         _props, _imgs = deepcopy.([_floedata.props, _floedata.imgs])
 
         # This order is important: masks, uuids, passtimes, ψs
-        add_floemasks!(_props, _imgs)
-        add_ψs!(_props)
-        add_passtimes!(_props, _passtimes)
+        add_floemasks!.(_props, _imgs)
+        add_ψs!.(_props)
+        add_passtimes!.(_props, _passtimes)
         Random.seed!(123)
-        add_uuids!(_props)
+        add_uuids!.(_props)
     end
 
     begin # Filter out floes with area less than `floe_area_threshold` pixels
@@ -132,7 +134,7 @@ end
         )
 
         # Expected: 5 trajectories, 3 of which have length 3 and 2 of which have length 2
-        
+
         counts = combine(groupby(trajectories, [:ID]), nrow => :count)
         @test sum(counts[:, :count] .== 3) == 3 && sum(counts[:, :count] .== 2) == 2
     end
@@ -237,8 +239,6 @@ end
             props, FilterFunction(), MinimumWeightMatchingFunction(); minimum_area=1200
         )
 
-        @test all(
-            1200 .<= trajectories_.area,
-        )
+        @test all(1200 .<= trajectories_.area)
     end
 end
