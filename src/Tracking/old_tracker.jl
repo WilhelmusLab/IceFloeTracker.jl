@@ -23,16 +23,16 @@ function _pairfloes(
     sort_floes_by_area!(props)
 
     # Assign a unique ID to each floe in each image
-    adduuid!(props)
+    add_uuids!.(props)
 
-    add_passtimes!(props, passtimes)
+    add_passtimes!.(props, passtimes)
 
     # Initialize container for props of matched pairs of floes, their similarity ratios, and their distances between their centroids
     tracked = Tracked()
 
     # Crop floes from the images using the bounding box data in `props`.
-    addfloemasks!(props, segmented_imgs)
-    addψs!(props)
+    add_floemasks!.(props, segmented_imgs)
+    add_ψs!.(props)
 
     numdays = length(segmented_imgs) - 1
 

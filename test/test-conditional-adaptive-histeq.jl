@@ -36,13 +36,13 @@
 end
 
 @testitem "conditional adaptivehisteq (data loader)" setup = [FalseColorCloudmask] begin
-    dataset = Watkins2025GitHub()(;
-        case_filter=c -> c.case_number == 161 && c.satellite == "terra"
+    dataset = filter(
+        c -> c.case_number == 161 && c.satellite == "terra", Watkins2026Dataset()
     )
     case = first(dataset)
-    false_color_image = case.modis_falsecolor
-    true_color_image = case.modis_truecolor
-    landmask = case.modis_landmask
+    false_color_image = modis_falsecolor(case)
+    true_color_image = modis_truecolor(case)
+    landmask = modis_landmask(case)
 
     clouds = _get_false_color_cloudmasked(;
         false_color_image=false_color_image,
@@ -74,11 +74,11 @@ end
 end
 
 @testitem "_get_false_color_cloudmasked (data loader)" setup = [FalseColorCloudmask] begin
-    dataset = Watkins2025GitHub()(;
-        case_filter=c -> c.case_number == 161 && c.satellite == "terra"
+    dataset = filter(
+        c -> c.case_number == 161 && c.satellite == "terra", Watkins2026Dataset()
     )
     case = first(dataset)
-    false_color_image = case.modis_falsecolor
+    false_color_image = modis_falsecolor(case)
 
     false_color_cloudmasked = _get_false_color_cloudmasked(;
         false_color_image=false_color_image,
