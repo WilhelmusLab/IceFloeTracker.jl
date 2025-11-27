@@ -23,7 +23,7 @@ function _pairfloes(
     sort_floes_by_area!(props)
 
     # Assign a unique ID to each floe in each image
-    adduuid!(props)
+    add_uuids!.(props)
 
     add_passtimes!.(props, passtimes)
 
