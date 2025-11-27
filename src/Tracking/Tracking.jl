@@ -37,7 +37,8 @@ export add_floemasks!,
     ShapeDifferenceThresholdFilter,
     StepwiseLinearThresholdFunction,
     time_distance_test!,
-    _add_suffix
+    _add_suffix,
+    FloeTracker
 
 include("distance_thresholds.jl")
 include("bwtraceboundary.jl")
@@ -52,6 +53,7 @@ include("register.jl")
 include("resample-boundary.jl")
 include("rotation.jl")
 include("tracker-funcs.jl")
+include("functor.jl")
 
 ##### Default settings ######
 # TODO: Replace with filter_function
