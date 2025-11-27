@@ -165,7 +165,7 @@ end
     add_floemasks!(props::DataFrame, floeimg::FloeLabelsImage)
     add_floemasks!.(props::Vector{DataFrame}, floeimgs::Vector{FloeLabelsImage})
 
-Add a column to `props` called `floearray` containing the cropped floe masks from `floeimg`.
+Add a column to `props` called `mask` containing the cropped floe masks from `floeimg`.
 """
 function add_floemasks!(props::DataFrame, floeimg::FloeLabelsImage)
     props.mask = getfloemasks(props, floeimg)

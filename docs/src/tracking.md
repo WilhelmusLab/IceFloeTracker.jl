@@ -18,7 +18,7 @@ add_passtimes!.(props, passtimes)
 The default filter functions include calculations based on binary floe shapes (floe masks) and associated $\psi$-s curves. We include helper functions for these as well. For the floe masks, we also need a list with binary images associated with each segmented image.
 ```julia
 add_floemasks!.(props, binary_images)
-add_ψs(props)
+add_ψs!.(props)
 ```
 
 ## Floe Filter Functions
