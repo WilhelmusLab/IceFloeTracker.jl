@@ -1,5 +1,5 @@
 import Images: SegmentedImage
-import Dates: DateTime
+import Dates: DateTime, Period, Day
 import ..Segmentation: regionprops_table
 
 abstract type AbstractTracker end
