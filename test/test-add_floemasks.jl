@@ -61,7 +61,6 @@
         props = regionprops_table.(seg_imgs)
         add_floemasks!.(props, seg_imgs)
 
-        @info props
 
         @test props[1][1, :].label == 2
         @test props[1][1, :].mask == BitMatrix([

@@ -6,7 +6,6 @@ import Dates: DateTime
 import ..Morphology: bwareamaxfilt
 
 FloeLabelsImage = Union{BitMatrix,Matrix{<:Bool},Matrix{<:Integer},<:SegmentedImage}
-abstract type AbstractThresholdFunction <: Function end
 
 """
     add_passtimes!(props::DataFrame, passtimes::DateTime)
@@ -25,23 +24,8 @@ function add_passtimes!(props_df::DataFrame, passtime::DateTime)
 end
 
 """
-    addψs!(props::Vector{DataFrame})
-
-Add the ψ-s curves to each member of `props`.
-
-Note: each member of `props` must have a `mask` column with a binary image representing the floe. 
-To add floe masks see [`addfloemasks!`](@ref).
-"""
-function add_ψs!(props::Vector{DataFrame})
-    for prop in props
-        prop.psi = map(buildψs, prop.mask)
-    end
-    return nothing
-end
-
-"""
-    addψs!(props_df::DataFrame})
-    addψs!.(props_dfs::Vector{DataFrame})
+    add_ψs!(props_df::DataFrame})
+    add_ψs!.(props_dfs::Vector{DataFrame})
 
 Add the ψ-s curves to each row of `props_df`.
 
@@ -165,7 +149,7 @@ end
     add_floemasks!(props::DataFrame, floeimg::FloeLabelsImage)
     add_floemasks!.(props::Vector{DataFrame}, floeimgs::Vector{FloeLabelsImage})
 
-Add a column to `props` called `floearray` containing the cropped floe masks from `floeimg`.
+Add a column to `props` called `mask` containing the cropped floe masks from `floeimg`.
 """
 function add_floemasks!(props::DataFrame, floeimg::FloeLabelsImage)
     props.mask = map(i -> cropfloe(floeimg, props, i), 1:nrow(props))

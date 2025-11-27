@@ -24,8 +24,7 @@
 
     # Tests for regionprops_table
     @test typeof(table) <: DataFrame # check correct data type
-    nrow(table) == (total_labels) # check correct table size
-    @info names(table)
+    @test nrow(table) == (total_labels) # check correct table size
     @test all(
         [
             "area",
