@@ -2,6 +2,9 @@ module LopezAcosta2019
 
 import Images:
     Images,
+    AbstractGray,
+    AbstractRGB,
+    TransparentRGB,
     mreconstruct!,
     mreconstruct,
     feature_transform,
@@ -99,15 +102,10 @@ function (p::Segment)(
         sharpened_truecolor_image, landmask_imgs.dilated
     )
 
-    @info "Normalizing truecolor image"
-    normalized_image = normalize_image(
-        sharpened_truecolor_image, sharpened_gray_truecolor_image, landmask_imgs.dilated
-    )
-
     # Discriminate ice/water
     @info "Discriminating ice/water"
     ice_water_discrim = discriminate_ice_water(
-        falsecolor_image, normalized_image, copy(landmask_imgs.dilated), cloudmask
+        sharpened_gray_truecolor_image, falsecolor_image, copy(landmask_imgs.dilated), cloudmask
     )
 
     # 3. Segmentation
@@ -159,7 +157,6 @@ function (p::Segment)(
             ice_mask=IceDetectionLopezAcosta2019()(fc_masked),
             sharpened_truecolor_image=sharpened_truecolor_image,
             sharpened_gray_truecolor_image=sharpened_gray_truecolor_image,
-            normalized_image=normalized_image,
             ice_water_discrim=ice_water_discrim,
             segA=segA,
             segB=segB,
@@ -179,10 +176,10 @@ end
 
 """
     discriminate_ice_water(
-        falsecolor_image::Matrix{RGB{Float64}},
-        normalized_image::Matrix{Gray{Float64}},
-        landmask_bitmatrix::T,
-        cloudmask_bitmatrix::T,
+        sharpened_grayscale_image,
+        falsecolor_image,
+        dilated_landmask::T,
+        cloudmask::T,
         floes_threshold::Float64=Float64(100 / 255),
         mask_clouds_lower::Float64=Float64(17 / 255),
         mask_clouds_upper::Float64=Float64(30 / 255),
@@ -198,14 +195,13 @@ end
 
 Generates an image with ice floes apparent after filtering and combining previously processed versions of falsecolor and truecolor images from the same region of interest. Returns an image ready for segmentation to isolate floes.
 
-Note: This function mutates the landmask object to avoid unnecessary memory allocation. If you need the original landmask, make a copy before passing it to this function. Example: `discriminate_ice_water(falsecolor_image, normalized_image, copy(landmask_bitmatrix), cloudmask_bitmatrix)`
 
 # Arguments
-- `falsecolor_image`: input image in false color reflectance
-- `normalized_image`: normalized version of true color image
-- `landmask_bitmatrix`: landmask for region of interest
-- `cloudmask_bitmatrix`: cloudmask for region of interest
-- `floes_threshold`: heuristic applied to original false color image
+- `sharpened_grayscale_image`: Grayscale image after preprocessing
+- `falsecolor_image`: MODIS 7-2-1 falsecolor image
+- `dilated_landmask`: Dilated land mask
+- `cloudmask`: Cloud mask
+- `floes_threshold`: Minimum band 2 and band 1 brightness for possible ice floes
 - `mask_clouds_lower`: lower heuristic applied to mask out clouds
 - `mask_clouds_upper`: upper heuristic applied to mask out clouds
 - `kurt_thresh_lower`: lower heuristic used to set pixel value threshold based on kurtosis in histogram
@@ -219,10 +215,10 @@ Note: This function mutates the landmask object to avoid unnecessary memory allo
 
 """
 function discriminate_ice_water(
-    falsecolor_image::Matrix{RGB{Float64}},
-    normalized_image::Matrix{Gray{Float64}},
-    landmask_bitmatrix::T,
-    cloudmask_bitmatrix::T,
+    sharpened_grayscale_image, #::AbstractArray{AbstractGray}, #dmw: discrim-ice-water test fails here
+    falsecolor_image, #::AbstractArray{<:Union{AbstractRGB,TransparentRGB}},
+    dilated_landmask::T,
+    cloudmask::T,
     floes_threshold::Float64=Float64(100 / 255),
     mask_clouds_lower::Float64=Float64(17 / 255),
     mask_clouds_upper::Float64=Float64(30 / 255),
@@ -235,13 +231,21 @@ function discriminate_ice_water(
     differ_threshold::Float64=0.6,
     nbins::Real=155,
 )::AbstractMatrix where {T<:AbstractArray{Bool}}
-    clouds_channel = create_clouds_channel(cloudmask_bitmatrix, falsecolor_image)
+
+    # rename this
+    normalized_image = _reconstruct(sharpened_grayscale_image, dilated_landmask)
+
+    # so many variables with basically the same data!
+    fc_landmasked = apply_landmask(falsecolor_image, dilated_landmask)
+
+
+    clouds_channel = create_clouds_channel(cloudmask, falsecolor_image)
     falsecolor_image_band7 = @view(channelview(falsecolor_image)[1, :, :])
 
     # first define all of the image variations
-    image_clouds = apply_landmask(clouds_channel, landmask_bitmatrix) # output during cloudmask apply, landmasked
-    image_cloudless = apply_landmask(falsecolor_image_band7, landmask_bitmatrix) # channel 1 (band 7) from source falsecolor image, landmasked
-    image_floes = apply_landmask(falsecolor_image, landmask_bitmatrix) # source false color reflectance, landmasked
+    image_clouds = apply_landmask(clouds_channel, dilated_landmask) # output during cloudmask apply, landmasked
+    image_cloudless = apply_landmask(falsecolor_image_band7, dilated_landmask) # channel 1 (band 7) from source falsecolor image, landmasked
+    image_floes = apply_landmask(falsecolor_image, dilated_landmask) # source false color reflectance, landmasked
     image_floes_view = channelview(image_floes)
 
     floes_band_2 = @view(image_floes_view[2, :, :])
@@ -299,14 +303,13 @@ function discriminate_ice_water(
     normalized_image_copy[normalized_image_copy .> THRESH] .= 0
     @. normalized_image_copy = normalized_image - (normalized_image_copy * 3)
 
-    # reusing memory allocated in landmask_bitmatrix
-    # used to be mask_image_clouds
-    @. landmask_bitmatrix = (
+    _cloud_threshold = (
         image_clouds < mask_clouds_lower || image_clouds > mask_clouds_upper
     )
 
     # reusing image_cloudless - used to be band7_masked
-    @. image_cloudless = image_cloudless * !landmask_bitmatrix
+    @. image_cloudless = image_cloudless * !_cloud_threshold
+
 
     # reusing normalized_image_copy - used to be ice_water_discriminated_image
     @. normalized_image_copy = clamp01nan(normalized_image_copy - (image_cloudless * 3))
@@ -347,6 +350,25 @@ function _check_threshold_130(
     return (clouds_ratio .< clouds_ratio_threshold && standard_dev > st_dev_thresh_lower) ||
            (standard_dev > st_dev_thresh_upper)
 end
+
+
+"""_reconstruct(sharpened_grayscale_image, strel, dilated_mask)
+
+Convenience function for reconstruction by dilation using the complement
+of an image. Markers are computed by dilating the input image by the 
+structuring element `strel` and taking the complement. The dilated landmask
+is applied at the end to prevent bright regions from bleeding into the land mask.
+Defaults to using a radius 5 diamond mask.
+
+"""
+function _reconstruct(sharpened_grayscale_image, dilated_mask; strel=strel_diamond((5, 5)))
+    markers = complement.(dilate(sharpened_grayscale_image, strel))
+    mask = complement.(sharpened_grayscale_image)
+    reconstructed_grayscale = mreconstruct(dilate, markers, mask)
+    apply_landmask!(reconstructed_grayscale, dilated_mask)
+    return reconstructed_grayscale
+end
+
 
 """
     segmentation_A(segmented_ice_cloudmasked; min_opening_area)
@@ -581,44 +603,6 @@ function segmentation_F(
     mreconstruct!(dilate, floes_opened, floes, floes_opened)
 
     return floes_opened
-end
-
-"""
-    normalize_image(image_sharpened, image_sharpened_gray, landmask, struct_elem;)
-
-Adjusts sharpened land-masked image to highlight ice floe features.
-
-Does reconstruction and landmasking to `image_sharpened`.
-
-# Arguments
-- `image_sharpened`: sharpened image (output of `imsharpen`)
-- `image_sharpened_gray`: grayscale, landmasked sharpened image (output of `imsharpen_gray(image_sharpened)`)
-- `landmask`: landmask for region of interest
-- `struct_elem`: structuring element for dilation
-
-"""
-function normalize_image(
-    image_sharpened::Matrix{Float64},
-    image_sharpened_gray::T,
-    landmask::BitMatrix,
-    struct_elem;
-)::Matrix{Gray{Float64}} where {T<:AbstractMatrix{Gray{Float64}}}
-    image_dilated = dilate(image_sharpened_gray, struct_elem)
-
-    image_reconstructed = mreconstruct(
-        dilate, complement.(image_dilated), complement.(image_sharpened)
-    )
-    return apply_landmask(image_reconstructed, landmask)
-end
-
-function normalize_image(
-    image_sharpened::Matrix{Float64},
-    image_sharpened_gray::Matrix{Gray{Float64}},
-    landmask::BitMatrix,
-)::Matrix{Gray{Float64}}
-    return normalize_image(
-        image_sharpened, image_sharpened_gray, landmask, strel_diamond((5, 5))
-    )
 end
 
 """
