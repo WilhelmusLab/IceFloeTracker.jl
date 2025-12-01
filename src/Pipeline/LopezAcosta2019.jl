@@ -42,7 +42,9 @@ import Images:
     ⋅, # dot operator
     GammaCorrection,
     centered,
-    red
+    red,
+    green,
+    blue
 
 import Peaks: findmaxima
 import StatsBase: kurtosis, skewness
@@ -235,37 +237,29 @@ function discriminate_ice_water(
 )::AbstractMatrix where {T<:AbstractArray{Bool}}
 
     # rename this
-    normalized_image = _reconstruct(sharpened_grayscale_image, landmask)
+    morphed_grayscale = _reconstruct(sharpened_grayscale_image, landmask)
 
     # so many variables with basically the same data!
     fc_landmasked = apply_landmask(falsecolor_image, landmask)
-    b7_landmasked = Gray.(red.(fc_landmasked)) # formerly falsecolor_image_band7 -> image_cloudless (but it has clouds???)
+    b7_landmasked = Gray.(red.(fc_landmasked)) # formerly falsecolor_image_band7 -> image_cloudless (but it does have clouds???)
     b7_landmasked_cloudmasked = apply_cloudmask(b7_landmasked, cloudmask) # formerly clouds_channel -> image_clouds
 
+    # Select pixels greater than intensity 100 in bands 2 and 1
+    b2_landmasked = green.(fc_landmasked)
+    b1_landmasked = blue.(fc_landmasked)
+    b2_subset = b2_landmasked[b2_landmasked .> floes_threshold]
+    b1_subset = b1_landmasked[b1_landmasked .> floes_threshold]
 
-    # first define all of the image variations
-    image_floes = apply_landmask(falsecolor_image, landmask) # source false color reflectance, landmasked
-    image_floes_view = channelview(image_floes)
-
-    # this is just green.() and blue.()
-    floes_band_2 = @view(image_floes_view[2, :, :])
-    floes_band_1 = @view(image_floes_view[3, :, :])
-
-    # keep pixels greater than intensity 100 in bands 2 and 1
-    floes_band_2_keep = floes_band_2[floes_band_2 .> floes_threshold]
-    floes_band_1_keep = floes_band_1[floes_band_1 .> floes_threshold]
-
-    _, floes_bin_counts = build_histogram(floes_band_2_keep, nbins)
+    _, floes_bin_counts = build_histogram(b2_subset, nbins)
     _, vals = findmaxima(floes_bin_counts)
-
     differ = vals / (maximum(vals))
     proportional_intensity = sum(differ .> differ_threshold) / length(differ) # finds the proportional intensity of the peaks in the histogram
 
     # compute kurtosis, skewness, and standard deviation to use in threshold filtering
-    kurt_band_2 = kurtosis(floes_band_2_keep)
-    skew_band_2 = skewness(floes_band_2_keep)
-    kurt_band_1 = kurtosis(floes_band_1_keep)
-    standard_dev = stdmult(⋅, normalized_image)
+    kurt_band_2 = kurtosis(b2_subset)
+    skew_band_2 = skewness(b2_subset)
+    kurt_band_1 = kurtosis(b1_subset)
+    standard_dev = stdmult(⋅, morphed_grayscale)
 
     # find the ratio of clouds in the image to use in threshold filtering
     _, clouds_bin_counts = build_histogram(b7_landmasked_cloudmasked .> 0)
@@ -299,9 +293,9 @@ function discriminate_ice_water(
         THRESH = 80 / 255 #intensity value of 80
     end
 
-    normalized_image_copy = copy(normalized_image)
-    normalized_image_copy[normalized_image_copy .> THRESH] .= 0
-    @. normalized_image_copy = normalized_image - (normalized_image_copy * 3)
+    morphed_image_copy = copy(morphed_grayscale)
+    morphed_image_copy[morphed_grayscale .> THRESH] .= 0
+    @. morphed_image_copy = morphed_grayscale - (morphed_image_copy * 3)
 
     _cloud_threshold = (
         b7_landmasked_cloudmasked .< mask_clouds_lower .|| b7_landmasked_cloudmasked .> mask_clouds_upper
@@ -314,9 +308,9 @@ function discriminate_ice_water(
 
 
     # reusing normalized_image_copy - used to be ice_water_discriminated_image
-    @. normalized_image_copy = clamp01nan(normalized_image_copy - (b7_landmasked * 3))
+    @. morphed_image_copy = clamp01nan(morphed_image_copy - (b7_landmasked * 3))
 
-    return normalized_image_copy
+    return morphed_image_copy
 end
 
 function _check_threshold_50(
