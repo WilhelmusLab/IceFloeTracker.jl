@@ -47,7 +47,7 @@ import Images:
     blue
 
 import Peaks: findmaxima
-import StatsBase: kurtosis, skewness
+import StatsBase: kurtosis, skewness, mean
 
 import ..Filtering: nonlinear_diffusion, PeronaMalikDiffusion, unsharp_mask
 import ..Morphology: hbreak, hbreak!, branch, bridge, fill_holes, se_disk4
@@ -107,8 +107,11 @@ function (p::Segment)(
         sharpened_truecolor_image, landmask_imgs.dilated
     )
 
-    # Discriminate ice/water
+    # Heighten differences between floes and background ice/water.
+    # Currently set to return the morphed grayscale image if band 2 / band 1 have nothing greater than
+    # the threshold of 100. May be better to return blank image instead.
     @info "Discriminating ice/water"
+    # This
     ice_water_discrim = discriminate_ice_water(
         sharpened_gray_truecolor_image, fc_masked, landmask_imgs.dilated, cloudmask
     )
@@ -254,10 +257,12 @@ function discriminate_ice_water(
     # question is whether we should return a blank image, or if we should return the unmodified grayscale image
     length(b2_subset) < 10 && return morphed_grayscale
 
+    # Compute "proportional intensity", a measure of the prominence of a peak
+    # Basically it's the fraction that are within
     _, floes_bin_counts = build_histogram(b2_subset, nbins)
     _, vals = findmaxima(floes_bin_counts)
     differ = vals / (maximum(vals))
-    proportional_intensity = sum(differ .> differ_threshold) / length(differ) # finds the proportional intensity of the peaks in the histogram
+    proportional_intensity = sum(differ .> differ_threshold) / length(differ) 
 
     # compute kurtosis, skewness, and standard deviation to use in threshold filtering
     kurt_band_2 = kurtosis(b2_subset)
@@ -265,11 +270,7 @@ function discriminate_ice_water(
     kurt_band_1 = kurtosis(b1_subset)
     standard_dev = stdmult(⋅, morphed_grayscale)
 
-    # find the ratio of clouds in the image to use in threshold filtering
-    _, clouds_bin_counts = build_histogram(b7_landmasked_cloudmasked .> 0)
-    total_clouds = sum(clouds_bin_counts[51:end])
-    total_all = sum(clouds_bin_counts)
-    clouds_ratio = total_clouds / total_all
+    clouds_ratio = mean(b7_landmasked_cloudmasked .> 0)
 
     threshold_50_check = _check_threshold_50(
         kurt_band_1,
