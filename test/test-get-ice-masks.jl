@@ -1,6 +1,6 @@
 
 @testitem "get_ice_labels_mask tests" begin
-    import Images: load, float64, Gray
+    import Images: load, float64, Gray, labels_map
     import IceFloeTracker.Segmentation: _get_nlabel
     import DelimitedFiles: readdlm
 
@@ -32,7 +32,7 @@
         foo = get_ice_labels_mask(ref_image[tile...], thresholds)
         @test sum(foo) == 0
 
-        morph_residue_seglabels = kmeans_segmentation(morph_residue[tile...]).image_indexmap
+        morph_residue_seglabels = labels_map(kmeans_segmentation(morph_residue[tile...]))
         @test _get_nlabel(ref_image_landmasked[tile...], morph_residue_seglabels) == 3
     end
 
