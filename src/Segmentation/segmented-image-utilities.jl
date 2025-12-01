@@ -85,7 +85,7 @@ intensity is less than `grayscale_threshold`, the objects are merged. The functi
 function stitch_clusters(segmented_image, tiles, minimum_overlap=4, grayscale_threshold=0.1) 
     grayscale_magnitude(c) = Float64(Gray(c))
     
-    idxmap = deepcopy(segmented_image.image_indexmap)
+    idxmap = deepcopy(labels_map(segmented_image))
     n, m = size(idxmap)
     
     for tile in tiles

@@ -402,7 +402,7 @@ function segmented_ice_cloudmasking(
     #### Update K-Means Segmentation ####
     segmented_ice = kmeans_binarization(
         gray_image, falsecolor_image; 
-        ice_labels_algorithm=IceDetectionLopezAcosta2019())
+        cluster_selection_algorithm=IceDetectionLopezAcosta2019())
     segmented_ice_cloudmasked = deepcopy(segmented_ice)
     segmented_ice_cloudmasked[cloudmask] .= 0
     return segmented_ice_cloudmasked
@@ -552,7 +552,7 @@ function segmentation_F(
 
     leads_segmented =
         kmeans_binarization(reconstructed_leads, falsecolor_image;
-            ice_labels_algorithm=IceDetectionLopezAcosta2019()) .*
+            cluster_selection_algorithm=IceDetectionLopezAcosta2019()) .*
         .!segmentation_B_watershed_intersect
     @info("Done with k-means segmentation")
     leads_segmented_broken = hbreak(leads_segmented)
