@@ -243,7 +243,6 @@ function discriminate_ice_water(
     fc_landmasked = landmasked_falsecolor_image # shorten name for convenience
     morphed_grayscale = _reconstruct(sharpened_grayscale_image, landmask)
 
-    # so many variables with basically the same data!
     b7_landmasked = Gray.(red.(fc_landmasked)) # formerly falsecolor_image_band7 -> image_cloudless (but it does have clouds???)
     b7_landmasked_cloudmasked = apply_cloudmask(b7_landmasked, cloudmask) # formerly clouds_channel -> image_clouds
 
@@ -254,7 +253,8 @@ function discriminate_ice_water(
     b1_subset = b1_landmasked[b1_landmasked .> floes_threshold]
 
     # if b2_subset, b1_subset are empty, then there are no floes to find and we could end the algorithm right there.
-    # question is whether we should return a blank image, or if we should return the unmodified grayscale image
+    # question is whether we should return a blank image, or if we should return the unmodified grayscale image.
+    # Also, in this case, is blank an image of 1s or an image of 0s?
     length(b2_subset) < 10 && return morphed_grayscale
 
     # Compute "proportional intensity", a measure of the prominence of a peak
@@ -302,6 +302,7 @@ function discriminate_ice_water(
     morphed_image_copy[morphed_grayscale .> THRESH] .= 0
     @. morphed_image_copy = morphed_grayscale - (morphed_image_copy * 3)
 
+    # Is this right? b7_landmasked
     _cloud_threshold = (
         b7_landmasked_cloudmasked .< mask_clouds_lower .|| b7_landmasked_cloudmasked .> mask_clouds_upper
     )
