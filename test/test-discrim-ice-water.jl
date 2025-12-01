@@ -17,9 +17,9 @@
 
     image_sharpened = LopezAcosta2019.imsharpen(input_image, landmask_no_dilate)
     image_sharpened_gray = LopezAcosta2019.imsharpen_gray(image_sharpened, landmask)
-    
+    fc_masked = apply_landmask(falsecolor_image, landmask)
     ice_water_discrim = LopezAcosta2019.discriminate_ice_water(
-        image_sharpened_gray, falsecolor_image, landmask, cloudmask
+        image_sharpened_gray, fc_masked, landmask, cloudmask
     )
     @test (@test_approx_eq_sigma_eps ice_water_discrim matlab_ice_water_discrim [0, 0] 0.065) ===
         nothing

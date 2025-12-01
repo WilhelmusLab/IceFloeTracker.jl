@@ -17,8 +17,9 @@ end
 @testitem "LopezAcosta2019.Segment – sample of cases" setup = [Segmentation] tags = [:e2e] begin
     dataset = Watkins2026Dataset(; ref="v0.1")
     passing = c -> c.case_number % 17 == 0
-    broken = c -> (c.case_number == 4 || (c.case_number == 39 && c.satellite == "aqua"))
-    formerly_broken = c -> false  # `broken_cases` once fixed, for regression testing
+    # Case 4 has only very small floes, while case 39 is missing data from Aqua.
+    formerly_broken = c -> (c.case_number == 4 || (c.case_number == 39 && c.satellite == "aqua"))
+    broken = c -> false  # `broken_cases` once fixed, for regression testing
     results = run_and_validate_segmentation(
         filter(c -> (passing(c) || formerly_broken(c) || broken(c)), dataset),
         LopezAcosta2019.Segment();

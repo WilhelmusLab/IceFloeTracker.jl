@@ -93,6 +93,7 @@ function (p::Segment)(
 
     @info "Building cloudmask"
     # TODO: @hollandjg track down why the cloudmask is different for float32 vs float64 input images
+        # dmw: I suspect it's likely it's roundoff error with the comparison to the ratio threshold, that's where I've seen differences
     cloudmask = create_cloudmask(falsecolor_image)
 
     # 2. Intermediate images
@@ -109,7 +110,7 @@ function (p::Segment)(
     # Discriminate ice/water
     @info "Discriminating ice/water"
     ice_water_discrim = discriminate_ice_water(
-        sharpened_gray_truecolor_image, falsecolor_image, copy(landmask_imgs.dilated), cloudmask
+        sharpened_gray_truecolor_image, fc_masked, landmask_imgs.dilated, cloudmask
     )
 
     # 3. Segmentation
@@ -182,7 +183,7 @@ end
     discriminate_ice_water(
         sharpened_grayscale_image,
         falsecolor_image,
-        dilated_landmask::T,
+        landmask::T,
         cloudmask::T,
         floes_threshold::Float64=Float64(100 / 255),
         mask_clouds_lower::Float64=Float64(17 / 255),
@@ -202,8 +203,8 @@ Generates an image with ice floes apparent after filtering and combining previou
 
 # Arguments
 - `sharpened_grayscale_image`: Grayscale image after preprocessing
-- `falsecolor_image`: MODIS 7-2-1 falsecolor image
-- `dilated_landmask`: Dilated land mask
+- `falsecolor_landmasked`: MODIS 7-2-1 falsecolor image after application of landmask
+- `landmask`: Landmask to be used in the reconstruction function
 - `cloudmask`: Cloud mask
 - `floes_threshold`: Minimum band 2 and band 1 brightness for possible ice floes
 - `mask_clouds_lower`: lower heuristic applied to mask out clouds
@@ -220,8 +221,8 @@ Generates an image with ice floes apparent after filtering and combining previou
 """
 function discriminate_ice_water(
     sharpened_grayscale_image, #::AbstractArray{AbstractGray}, #dmw: discrim-ice-water test fails here
-    falsecolor_image, #::AbstractArray{<:Union{AbstractRGB,TransparentRGB}},
-    landmask::T, # Recommended to use the dilated landmask here
+    landmasked_falsecolor_image, #::AbstractArray{<:Union{AbstractRGB,TransparentRGB}},
+    landmask::T,
     cloudmask::T,
     floes_threshold::Float64=Float64(100 / 255),
     mask_clouds_lower::Float64=Float64(17 / 255),
@@ -236,11 +237,10 @@ function discriminate_ice_water(
     nbins::Real=155,
 )::AbstractMatrix where {T<:AbstractArray{Bool}}
 
-    # rename this
+    fc_landmasked = landmasked_falsecolor_image # shorten name for convenience
     morphed_grayscale = _reconstruct(sharpened_grayscale_image, landmask)
 
     # so many variables with basically the same data!
-    fc_landmasked = apply_landmask(falsecolor_image, landmask)
     b7_landmasked = Gray.(red.(fc_landmasked)) # formerly falsecolor_image_band7 -> image_cloudless (but it does have clouds???)
     b7_landmasked_cloudmasked = apply_cloudmask(b7_landmasked, cloudmask) # formerly clouds_channel -> image_clouds
 
@@ -249,6 +249,10 @@ function discriminate_ice_water(
     b1_landmasked = blue.(fc_landmasked)
     b2_subset = b2_landmasked[b2_landmasked .> floes_threshold]
     b1_subset = b1_landmasked[b1_landmasked .> floes_threshold]
+
+    # if b2_subset, b1_subset are empty, then there are no floes to find and we could end the algorithm right there.
+    # question is whether we should return a blank image, or if we should return the unmodified grayscale image
+    length(b2_subset) < 10 && return morphed_grayscale
 
     _, floes_bin_counts = build_histogram(b2_subset, nbins)
     _, vals = findmaxima(floes_bin_counts)
