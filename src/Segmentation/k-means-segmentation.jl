@@ -48,20 +48,20 @@ containing the largest fraction of bright ice pixels. If no bright ice pixels ar
 function kmeans_binarization(
     gray_image,
     falsecolor_image;
-    ice_labels_algorithm,
+    cluster_selection_algorithm,
     k::Int64=4,
     maxiter::Int64=50,
     random_seed::Int64=45,
-    ice_labels_threshold=1 # TODO: Make the test FirstNonZero algo more robust, case 14 succeeds with only 1 or 2 pixels which is not stable.
+    threshold=1 # TODO: Make the test FirstNonZero algo more robust, case 14 succeeds with only 1 or 2 pixels which is not stable.
 )::BitMatrix
 
-    ice_labels = ice_labels_algorithm(falsecolor_image) .> 0
-    isempty(ice_labels) && return falses(size(gray_image))
-    sum(ice_labels) < ice_labels_threshold && return falses(size(gray_image))
+    selected_labels = cluster_selection_algorithm(falsecolor_image) .> 0
+    isempty(selected_labels) && return falses(size(gray_image))
+    sum(selected_labels) < threshold && return falses(size(gray_image))
 
     segmented = kmeans_segmentation(gray_image; k=k, maxiter=maxiter, random_seed=random_seed)
 
-    return segmented.image_indexmap .== StatsBase.mode(segmented.image_indexmap[ice_labels])
+    return segmented.image_indexmap .== StatsBase.mode(segmented.image_indexmap[selected_labels])
 end
 
 """
@@ -73,14 +73,14 @@ containing the largest fraction of bright ice pixels. If no bright ice pixels ar
 Warning: Tilewise processing may result in discontinuities at tile boundaries.
 
 # Positional Arguments
-- `gray_image`: output image from `ice-water-discrimination.jl` or gray ice floe leads image in `segmentation_f.jl`
-- `ice_labels`: vector if pixel coordinates output from `find_ice_labels.jl`
+- `gray_image`: Grayscale image to segment using k-means. 
+- `falsecolor_image`: MODIS 721 false color image to be supplied to the cluster selection algorithm.
 
 # Keyword arguments
-- `k`: Number of k-means clusters
-- `maxiter`: Maximum number of iterations for k-means algorithm
-- `random_seed`: Seed for the random number generator
-- `ice_labels_algorithm`: Binarization function to find sea ice pixels
+- `k`: Number of k-means clusters. Default 4.
+- `maxiter`: Maximum number of iterations for k-means algorithm. Default 50.
+- `random_seed`: Seed for the random number generator. Default 45.
+- `cluster_selection_algorithm`: Binarization function to find the k-means cluster to set to 1; all other clusters set to 0.
 """
 function kmeans_binarization(
     gray_image,
@@ -89,7 +89,8 @@ function kmeans_binarization(
     k::Int64=4,
     maxiter::Int64=50,
     random_seed::Int64=45,
-    ice_labels_algorithm
+    cluster_selection_algorithm,
+    threshold=1
 )::BitMatrix
 
     out = falses(size(gray_image))
@@ -97,13 +98,15 @@ function kmeans_binarization(
     # This part will be updated soon. This method results in discontinuities at tile boundaries.
     # To avoid this, we can stitch segmented images first, so that boundary clusters are relabled
     # to match, and then the binarization can be applied using the mode for each tile, allowing overlaps.
+    # See the test case for stitch_clusters for an example.
     
     for tile in tiles
         out[tile...] .= kmeans_binarization(gray_image[tile...], falsecolor_image[tile...];
                             k=k,
                             maxiter=maxiter,
                             random_seed=random_seed,
-                            ice_labels_algorithm=ice_labels_algorithm)
+                            cluster_selection_algorithm=cluster_selection_algorithm,
+                            threshold=threshold)
     end
     return out
 end

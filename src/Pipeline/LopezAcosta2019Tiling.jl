@@ -210,7 +210,7 @@ function (p::Segment)(
             Gray.(morphed_residue / 255),
             fc_landmasked,
             tiles;
-            ice_labels_algorithm=IceDetectionLopezAcosta2019Tiling(; ice_masks_params...), # Initialize this with ice_masks_params
+            cluster_selection_algorithm=IceDetectionLopezAcosta2019Tiling(; ice_masks_params...), # Initialize this with ice_masks_params
             k=4
         )
     end
@@ -243,21 +243,13 @@ function (p::Segment)(
 
     begin
         @debug "Step 13: Get improved icemask"
-        #### Update k-means ####
         icemask = kmeans_binarization(
             Gray.(prelim_icemask2 ./ 255),
             fc_landmasked,
             tiles;
-            ice_labels_algorithm=IceDetectionLopezAcosta2019Tiling(;ice_masks_params...),
+            cluster_selection_algorithm=IceDetectionLopezAcosta2019Tiling(;ice_masks_params...),
             k=3
         )
-        # icemask = get_ice_masks(
-        #     ref_image,
-        #     Gray.(prelim_icemask2 ./ 255),
-        #     _landmask.dilated,
-        #     tiles;
-        #     ice_masks_params...,
-        # )
     end
 
     begin

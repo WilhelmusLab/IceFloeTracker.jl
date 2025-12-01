@@ -562,7 +562,8 @@ function segmentation_F( # rename
     reconstructed_leads .*= segb_leads
     # In the matlab code, 60/255 was added to reconstructed_leads.
     leads_segmented =
-        kmeans_binarization(reconstructed_leads, falsecolor_image; cluster_selection_algorithm=cluster_selection_algorithm) .*
+        kmeans_binarization(reconstructed_leads, falsecolor_image;
+            cluster_selection_algorithm=IceDetectionLopezAcosta2019()) .*
         .!segmentation_B_watershed_intersect
 
     return leads_segmented
