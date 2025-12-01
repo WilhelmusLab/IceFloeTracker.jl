@@ -40,7 +40,7 @@
     possible_ice_threshold=Float64(75 / 255)
 
     @time segmented_ice = kmeans_binarization(ice_water_discriminated_image, fc_landmasked;
-        ice_labels_algorithm=IceDetectionLopezAcosta2019())
+        cluster_selection_algorithm=IceDetectionLopezAcosta2019())
 
 
     segmented_ice = kmeans_binarization(
