@@ -33,7 +33,7 @@
         @test sum(foo) == 0
 
         morph_residue_seglabels = kmeans_segmentation(morph_residue[tile...])
-        @test _get_nlabel(ref_image_landmasked[tile...], morph_residue_seglabels) == 3
+        @test _get_nlabel(ref_image_landmasked[tile...], morph_residue_seglabels.image_indexmap) == 3
     end
 
     begin # first relaxation
@@ -50,7 +50,7 @@
 
     begin
         morph_residue_seglabels = kmeans_segmentation(morph_residue[tile...])
-        @test _get_nlabel(ref_image_landmasked[tile...], morph_residue_seglabels) == 3
+        @test _get_nlabel(ref_image_landmasked[tile...], morph_residue_seglabels.image_indexmap) == 3
     end
 
     begin
@@ -79,7 +79,7 @@
 
     begin
         morph_residue_seglabels = kmeans_segmentation(morph_residue[tile...]; k=3)
-        @test _get_nlabel(ref_image_landmasked[tile...], morph_residue_seglabels) == 1
+        @test _get_nlabel(ref_image_landmasked[tile...], morph_residue_seglabels.image_indexmap) == 1
     end
 
     ice_mask = get_ice_masks(ref_image, morph_residue, landmask, tiles; k=3)

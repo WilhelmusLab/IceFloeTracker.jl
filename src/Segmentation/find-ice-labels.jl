@@ -146,12 +146,13 @@ Runs each algorithm from `algorithms` on the image, and returns the first which 
     algorithms::Vector{IceDetectionAlgorithm}
 end
 
-function (f::IceDetectionFirstNonZeroAlgorithm)(out, img, args...; kwargs...)
+# dmw: args / kwargs not being used yet.
+function (f::IceDetectionFirstNonZeroAlgorithm)(out, img, args...; threshold=10, kwargs...)
     for algorithm in f.algorithms
         @debug algorithm
         result = binarize(img, algorithm)
         ice_sum = sum(result)
-        if 0 < ice_sum
+        if threshold < ice_sum # change to f.threshold when I can
             @. out = result
             return nothing
         end
@@ -161,8 +162,11 @@ function (f::IceDetectionFirstNonZeroAlgorithm)(out, img, args...; kwargs...)
     return nothing
 end
 
+# TODO: These two next algorithms should go into the respective Pipeline modules
+
+
 """
-    IceDetectionLopezAcosta2019(;
+    IceDetectionLopezAcosta2019Tiling(;
         band_7_threshold::Float64=Float64(5 / 255),
         band_2_threshold::Float64=Float64(230 / 255),
         band_1_threshold::Float64=Float64(240 / 255),
@@ -176,7 +180,7 @@ Returns the first non-zero result of two threshold-based and one brightness-peak
 Default thresholds are defined in the published Ice Floe Tracker article: Remote Sensing of the Environment 234 (2019) 111406.
 
 """
-function IceDetectionLopezAcosta2019(;
+function IceDetectionLopezAcosta2019Tiling(;
     band_7_max::Float64=Float64(5 / 255),
     band_2_min::Float64=Float64(230 / 255),
     band_1_min::Float64=Float64(240 / 255),
@@ -186,7 +190,9 @@ function IceDetectionLopezAcosta2019(;
 )
     return IceDetectionFirstNonZeroAlgorithm([
         IceDetectionThresholdMODIS721(;
-            band_7_max=band_7_max, band_2_min=band_2_min, band_1_min=band_1_min
+            band_7_max=band_7_max,
+            band_2_min=band_2_min,
+            band_1_min=band_1_min,
         ),
         IceDetectionThresholdMODIS721(;
             band_7_max=band_7_max_relaxed,
@@ -196,8 +202,12 @@ function IceDetectionLopezAcosta2019(;
         IceDetectionBrightnessPeaksMODIS721(;
             band_7_max=band_7_max, possible_ice_threshold=possible_ice_threshold
         ),
+        IceDetectionThresholdMODIS721(;
+            band_7_max=1.0, band_2_min=band_2_min, band_1_min=0.0
+        ),
     ])
 end
+
 
 """
     find_ice_labels(falsecolor_image, landmask; band_7_threshold, band_2_threshold, band_1_threshold, band_7_relaxed_threshold, band_1_relaxed_threshold, possible_ice_threshold)
