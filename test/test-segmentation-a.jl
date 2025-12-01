@@ -31,7 +31,7 @@
     @time segmented_A = LopezAcosta2019.segmentation_A(segmented_ice_cloudmasked)
 
     @time segmented_ice = kmeans_binarization(ice_water_discriminated_image, fc_landmasked;
-        ice_labels_algorithm=IceDetectionLopezAcosta2019())
+        cluster_selection_algorithm=IceDetectionLopezAcosta2019())
 
     @test typeof(segmented_A) == typeof(matlab_segmented_A_bitmatrix)
     @test test_similarity(matlab_segmented_A_bitmatrix, segmented_A, 0.039)
