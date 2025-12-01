@@ -52,7 +52,13 @@ import ..Preprocessing:
     apply_landmask,
     apply_landmask!,
     apply_cloudmask
-import ..Segmentation: IceFloeSegmentationAlgorithm, find_ice_mask, kmeans_segmentation
+import ..Segmentation: 
+    IceFloeSegmentationAlgorithm, 
+    find_ice_mask, 
+    kmeans_binarization,
+    IceDetectionFirstNonZeroAlgorithm,
+    IceDetectionBrightnessPeaksMODIS721,
+    IceDetectionThresholdMODIS721
 
 struct Segment <: IceFloeSegmentationAlgorithm
     landmask_structuring_element::AbstractMatrix{Bool}
@@ -83,8 +89,7 @@ function (p::Segment)(
     cloudmask = create_cloudmask(falsecolor_image)
 
     # 2. Intermediate images
-    @info "Finding ice labels"
-    ice_mask = find_ice_mask(falsecolor_image, landmask_imgs.dilated)
+    fc_masked = apply_landmask(falsecolor_image, landmask_imgs.dilated)
 
     @info "Sharpening truecolor image"
     # a. apply imsharpen to truecolor image using non-dilated landmask
@@ -108,7 +113,7 @@ function (p::Segment)(
     # 3. Segmentation
     @info "Segmenting floes part 1/3"
     segA = segmentation_A(
-        segmented_ice_cloudmasking(ice_water_discrim, cloudmask, ice_mask)
+        segmented_ice_cloudmasking(ice_water_discrim, fc_masked, cloudmask)
     )
 
     # segmentation_B
@@ -131,7 +136,7 @@ function (p::Segment)(
         segB.not_ice,
         segB.ice_intersect,
         watersheds_segB_product,
-        ice_mask,
+        fc_masked,
         cloudmask,
         landmask_imgs.dilated,
     )
@@ -151,7 +156,7 @@ function (p::Segment)(
             landmask_dilated=landmask_imgs.dilated,
             landmask_non_dilated=landmask_imgs.non_dilated,
             cloudmask=cloudmask,
-            ice_mask=ice_mask,
+            ice_mask=IceDetectionLopezAcosta2019()(fc_masked),
             sharpened_truecolor_image=sharpened_truecolor_image,
             sharpened_gray_truecolor_image=sharpened_gray_truecolor_image,
             normalized_image=normalized_image,
@@ -391,10 +396,13 @@ Apply cloudmask to a bitmatrix of segmented ice after kmeans clustering. Returns
 """
 function segmented_ice_cloudmasking(
     gray_image::Matrix{Gray{Float64}},
+    falsecolor_image,
     cloudmask::BitMatrix,
-    ice_labels::Union{Vector{Int64},BitMatrix,AbstractArray{<:Gray}},
 )::BitMatrix
-    segmented_ice = kmeans_segmentation(gray_image, ice_labels)
+    #### Update K-Means Segmentation ####
+    segmented_ice = kmeans_binarization(
+        gray_image, falsecolor_image; 
+        cluster_selection_algorithm=IceDetectionLopezAcosta2019())
     segmented_ice_cloudmasked = deepcopy(segmented_ice)
     segmented_ice_cloudmasked[cloudmask] .= 0
     return segmented_ice_cloudmasked
@@ -521,7 +529,7 @@ function segmentation_F(
     segmentation_B_not_ice_mask::Matrix{Gray{Float64}},
     segmentation_B_ice_intersect::BitMatrix,
     segmentation_B_watershed_intersect::BitMatrix,
-    ice_labels::Union{Vector{Int64},BitMatrix,AbstractArray{<:Gray}},
+    falsecolor_image,
     cloudmask::BitMatrix,
     landmask::BitMatrix;
     min_area_opening::Int64=20,
@@ -540,8 +548,11 @@ function segmentation_F(
 
     reconstructed_leads = (not_ice .* ice_leads) .+ (60 / 255)
 
+    #### Update K-Means Segmentation ####
+
     leads_segmented =
-        kmeans_segmentation(reconstructed_leads, ice_labels) .*
+        kmeans_binarization(reconstructed_leads, falsecolor_image;
+            cluster_selection_algorithm=IceDetectionLopezAcosta2019()) .*
         .!segmentation_B_watershed_intersect
     @info("Done with k-means segmentation")
     leads_segmented_broken = hbreak(leads_segmented)
@@ -696,6 +707,38 @@ function imsharpen_gray(
 )::Matrix{Gray{Float64}}
     image_sharpened_landmasked = apply_landmask(imgsharpened, landmask)
     return colorview(Gray, image_sharpened_landmasked)
+end
+
+
+"""IceDetectionLopezAcosta2019
+
+Application of the IceDetectionFirstNonZeroAlgorithm using two passes of 
+the IceDetectionThresholdMODIS721 and one application of the IceDetectionBrightnessPeaksMODIS721.
+"""
+function IceDetectionLopezAcosta2019(;
+    band_7_max::Float64=Float64(5 / 255),
+    band_2_min::Float64=Float64(230 / 255),
+    band_1_min::Float64=Float64(240 / 255),
+    band_7_max_relaxed::Float64=Float64(10 / 255),
+    band_1_min_relaxed::Float64=Float64(190 / 255),
+    possible_ice_threshold::Float64=Float64(75 / 255),
+)
+    return IceDetectionFirstNonZeroAlgorithm([
+        IceDetectionThresholdMODIS721(;
+            band_7_max=band_7_max,
+            band_2_min=band_2_min,
+            band_1_min=band_1_min
+        ),
+        IceDetectionThresholdMODIS721(;
+            band_7_max=band_7_max_relaxed,
+            band_2_min=band_2_min,
+            band_1_min=band_1_min_relaxed,
+        ),
+        IceDetectionBrightnessPeaksMODIS721(;
+            band_7_max=band_7_max,
+            possible_ice_threshold=possible_ice_threshold
+        ),
+    ])
 end
 
 end
