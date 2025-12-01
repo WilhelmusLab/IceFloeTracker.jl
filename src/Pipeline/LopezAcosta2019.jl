@@ -41,7 +41,9 @@ import Images:
     stdmult,
     ⋅, # dot operator
     GammaCorrection,
-    centered
+    centered,
+    red
+
 import Peaks: findmaxima
 import StatsBase: kurtosis, skewness
 
@@ -217,7 +219,7 @@ Generates an image with ice floes apparent after filtering and combining previou
 function discriminate_ice_water(
     sharpened_grayscale_image, #::AbstractArray{AbstractGray}, #dmw: discrim-ice-water test fails here
     falsecolor_image, #::AbstractArray{<:Union{AbstractRGB,TransparentRGB}},
-    dilated_landmask::T,
+    landmask::T, # Recommended to use the dilated landmask here
     cloudmask::T,
     floes_threshold::Float64=Float64(100 / 255),
     mask_clouds_lower::Float64=Float64(17 / 255),
@@ -233,21 +235,19 @@ function discriminate_ice_water(
 )::AbstractMatrix where {T<:AbstractArray{Bool}}
 
     # rename this
-    normalized_image = _reconstruct(sharpened_grayscale_image, dilated_landmask)
+    normalized_image = _reconstruct(sharpened_grayscale_image, landmask)
 
     # so many variables with basically the same data!
-    fc_landmasked = apply_landmask(falsecolor_image, dilated_landmask)
+    fc_landmasked = apply_landmask(falsecolor_image, landmask)
+    b7_landmasked = Gray.(red.(fc_landmasked)) # formerly falsecolor_image_band7 -> image_cloudless (but it has clouds???)
+    b7_landmasked_cloudmasked = apply_cloudmask(b7_landmasked, cloudmask) # formerly clouds_channel -> image_clouds
 
-
-    clouds_channel = create_clouds_channel(cloudmask, falsecolor_image)
-    falsecolor_image_band7 = @view(channelview(falsecolor_image)[1, :, :])
 
     # first define all of the image variations
-    image_clouds = apply_landmask(clouds_channel, dilated_landmask) # output during cloudmask apply, landmasked
-    image_cloudless = apply_landmask(falsecolor_image_band7, dilated_landmask) # channel 1 (band 7) from source falsecolor image, landmasked
-    image_floes = apply_landmask(falsecolor_image, dilated_landmask) # source false color reflectance, landmasked
+    image_floes = apply_landmask(falsecolor_image, landmask) # source false color reflectance, landmasked
     image_floes_view = channelview(image_floes)
 
+    # this is just green.() and blue.()
     floes_band_2 = @view(image_floes_view[2, :, :])
     floes_band_1 = @view(image_floes_view[3, :, :])
 
@@ -268,7 +268,7 @@ function discriminate_ice_water(
     standard_dev = stdmult(⋅, normalized_image)
 
     # find the ratio of clouds in the image to use in threshold filtering
-    _, clouds_bin_counts = build_histogram(image_clouds .> 0)
+    _, clouds_bin_counts = build_histogram(b7_landmasked_cloudmasked .> 0)
     total_clouds = sum(clouds_bin_counts[51:end])
     total_all = sum(clouds_bin_counts)
     clouds_ratio = total_clouds / total_all
@@ -304,15 +304,17 @@ function discriminate_ice_water(
     @. normalized_image_copy = normalized_image - (normalized_image_copy * 3)
 
     _cloud_threshold = (
-        image_clouds < mask_clouds_lower || image_clouds > mask_clouds_upper
+        b7_landmasked_cloudmasked .< mask_clouds_lower .|| b7_landmasked_cloudmasked .> mask_clouds_upper
     )
 
     # reusing image_cloudless - used to be band7_masked
-    @. image_cloudless = image_cloudless * !_cloud_threshold
+    # I think the names were backwards: image_cloudless had not been cloudmasked, and image_clouds had been.
+    # So the question is if they're swapped in 305 and 311 also.
+    @. b7_landmasked = b7_landmasked * !_cloud_threshold
 
 
     # reusing normalized_image_copy - used to be ice_water_discriminated_image
-    @. normalized_image_copy = clamp01nan(normalized_image_copy - (image_cloudless * 3))
+    @. normalized_image_copy = clamp01nan(normalized_image_copy - (b7_landmasked * 3))
 
     return normalized_image_copy
 end
@@ -352,7 +354,7 @@ function _check_threshold_130(
 end
 
 
-"""_reconstruct(sharpened_grayscale_image, strel, dilated_mask)
+"""_reconstruct(sharpened_grayscale_image, dilated_mask; strel)
 
 Convenience function for reconstruction by dilation using the complement
 of an image. Markers are computed by dilating the input image by the 
