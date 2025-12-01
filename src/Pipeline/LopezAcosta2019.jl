@@ -89,8 +89,6 @@ function (p::Segment)(
     cloudmask = create_cloudmask(falsecolor_image)
 
     # 2. Intermediate images
-    # @info "Finding ice labels"
-    # ice_mask = find_ice_mask(falsecolor_image, landmask_imgs.dilated)
     fc_masked = apply_landmask(falsecolor_image, landmask_imgs.dilated)
 
     @info "Sharpening truecolor image"
