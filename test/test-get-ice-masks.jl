@@ -1,6 +1,6 @@
 
 @testitem "get_ice_labels_mask tests" begin
-    import Images: load, float64, Gray
+    import Images: load, float64, Gray, labels_map
     import IceFloeTracker.Segmentation: _get_nlabel
     import DelimitedFiles: readdlm
 
