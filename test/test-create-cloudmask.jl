@@ -18,6 +18,7 @@
 
     # test for create_clouds_channel
     clouds_channel_expected = load(clouds_channel_test_file)
+
     clds_channel = apply_cloudmask(Gray.(red.(ref_image)), cloudmask)
     @test (@test_approx_eq_sigma_eps (clds_channel) (clouds_channel_expected) [0, 0] 0.005) ===
         nothing
