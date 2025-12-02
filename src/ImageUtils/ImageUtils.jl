@@ -21,5 +21,6 @@ include("imcomplement.jl")
 include("mask.jl")
 include("tiling.jl")
 include("uint8.jl")
+include("misc_image_utils.jl")
 
 end
