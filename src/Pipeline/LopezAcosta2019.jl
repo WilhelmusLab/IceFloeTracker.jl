@@ -175,7 +175,6 @@ function (p::Segment)(
     ice_water_discrim = discriminate_ice_water(
         sharpened_grayscale_image, fc_masked, landmask_imgs.dilated, cloudmask
     )
-
     # 3. Segmentation
     @info "Segmenting floes part 1/3"
     # The first segmentation step is k-means binarization followed by morphological clean-up.
