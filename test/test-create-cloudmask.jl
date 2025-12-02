@@ -1,6 +1,6 @@
 
 @testitem "Create Cloudmask" begin
-    using Images: RGBA, N0f8, @test_approx_eq_sigma_eps, float64, load
+    using Images: RGBA, N0f8, @test_approx_eq_sigma_eps, float64, load, Gray, red
     include("config.jl")
 
     # define constants, maybe move to test config file
@@ -18,7 +18,7 @@
 
     # test for create_clouds_channel
     clouds_channel_expected = load(clouds_channel_test_file)
-    clds_channel = create_clouds_channel(cloudmask, ref_image)
+    clds_channel = apply_cloudmask(Gray.(red.(ref_image)), cloudmask)
     @test (@test_approx_eq_sigma_eps (clds_channel) (clouds_channel_expected) [0, 0] 0.005) ===
         nothing
 
