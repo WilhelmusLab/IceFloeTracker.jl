@@ -275,9 +275,10 @@ function discriminate_ice_water(
 
 
     # Change that wouldn't preserve exact matches to the matlab code:
-    # clouds ratio, if used, should only be calculated on the non
+    # clouds ratio, if used, should only be calculated on the non-landmasked pixels.
+    # 
 
-    clouds_ratio = mean(b7_landmasked_cloudmasked .> 0)
+    clouds_ratio = mean(b7_landmasked_cloudmasked[.!landmask] .> 0)
 
     threshold_50_check = _check_threshold_50(
         kurt_band_1,
