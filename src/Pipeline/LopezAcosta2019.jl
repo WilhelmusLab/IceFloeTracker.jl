@@ -38,8 +38,6 @@ import Images:
     Gray,
     AbstractRGB,
     RGB,
-    stdmult,
-    ⋅, # dot operator
     GammaCorrection,
     centered,
     red,
@@ -47,7 +45,7 @@ import Images:
     blue
 
 import Peaks: findmaxima
-import StatsBase: kurtosis, skewness, mean
+import StatsBase: kurtosis, skewness, mean, std
 
 import ..Filtering: nonlinear_diffusion, PeronaMalikDiffusion, unsharp_mask
 import ..Morphology: hbreak, hbreak!, branch, bridge, fill_holes, se_disk4
@@ -236,13 +234,16 @@ function discriminate_ice_water(
     st_dev_thresh_lower::Float64=Float64(84 / 255),
     st_dev_thresh_upper::Float64=Float64(98.9 / 255),
     clouds_ratio_threshold::Float64=0.02,
-    differ_threshold::Float64=0.6,
-    nbins::Real=155,
+    differ_threshold::Float64=0.6
 )::AbstractMatrix where {T<:AbstractArray{Bool}}
 
     fc_landmasked = landmasked_falsecolor_image # shorten name for convenience
     morphed_grayscale = _reconstruct(sharpened_grayscale_image, landmask)
 
+
+    # This next section is all here to find a threshold value for masking. Only three levels are selected,
+    # which makes me think that we'd do better to use a percentile function or otherwise continuous estimate
+    # of a threshold from the data, rather than 3 fixed steps.
     b7_landmasked = Gray.(red.(fc_landmasked)) # formerly falsecolor_image_band7 -> image_cloudless (but it does have clouds???)
     b7_landmasked_cloudmasked = apply_cloudmask(b7_landmasked, cloudmask) # formerly clouds_channel -> image_clouds
 
@@ -258,7 +259,8 @@ function discriminate_ice_water(
     length(b2_subset) < 10 && return morphed_grayscale
 
     # Compute "proportional intensity", a measure of the prominence of a peak
-    # Basically it's the fraction that are within
+    # The nbins value is just the number of gray levels larger than the floes threshold.
+    nbins = round(Int64, 255*(1 - floes_threshold))
     _, floes_bin_counts = build_histogram(b2_subset, nbins)
     _, vals = findmaxima(floes_bin_counts)
     differ = vals / (maximum(vals))
@@ -268,7 +270,12 @@ function discriminate_ice_water(
     kurt_band_2 = kurtosis(b2_subset)
     skew_band_2 = skewness(b2_subset)
     kurt_band_1 = kurtosis(b1_subset)
-    standard_dev = stdmult(⋅, morphed_grayscale)
+    standard_dev = std(vec(morphed_grayscale))
+
+
+
+    # Change that wouldn't preserve exact matches to the matlab code:
+    # clouds ratio, if used, should only be calculated on the non
 
     clouds_ratio = mean(b7_landmasked_cloudmasked .> 0)
 
@@ -299,10 +306,15 @@ function discriminate_ice_water(
     end
 
     morphed_image_copy = copy(morphed_grayscale)
-    morphed_image_copy[morphed_grayscale .> THRESH] .= 0
-    @. morphed_image_copy = morphed_grayscale - (morphed_image_copy * 3)
+    morphed_image_copy[morphed_grayscale .<= THRESH] .= 0
 
-    # Is this right? b7_landmasked
+    # The next section *does not affect the tests* which makes me wonder if we need it.
+    # What's happening here is that the cloud_threshold variable is selecting anything darker than
+    # clouds lower, or brighter than clouds lower.
+    # So the b7_landmasked getting multiplied by not(cloud_threshold) means that we're selecting all
+    # the intermediate values: anything between mask_clouds_lower and mask_clouds_upper.
+    # 
+
     _cloud_threshold = (
         b7_landmasked_cloudmasked .< mask_clouds_lower .|| b7_landmasked_cloudmasked .> mask_clouds_upper
     )
@@ -311,7 +323,6 @@ function discriminate_ice_water(
     # I think the names were backwards: image_cloudless had not been cloudmasked, and image_clouds had been.
     # So the question is if they're swapped in 305 and 311 also.
     @. b7_landmasked = b7_landmasked * !_cloud_threshold
-
 
     # reusing normalized_image_copy - used to be ice_water_discriminated_image
     @. morphed_image_copy = clamp01nan(morphed_image_copy - (b7_landmasked * 3))
@@ -469,6 +480,7 @@ function segmentation_B(
     adjusted_sharpened = (
         (1 - alpha_level) .* sharpened_image .+ alpha_level .* not_ice_mask
     )
+
     gamma_adjusted_sharpened = adjust_histogram(
         adjusted_sharpened, GammaCorrection(; gamma=gamma_factor)
     )
