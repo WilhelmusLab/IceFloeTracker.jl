@@ -47,13 +47,12 @@ import Images:
 import Peaks: findmaxima
 import StatsBase: kurtosis, skewness, mean, std
 
-import ..Filtering: nonlinear_diffusion, PeronaMalikDiffusion, unsharp_mask
+import ..Filtering: nonlinear_diffusion, PeronaMalikDiffusion, unsharp_mask, channelwise_adapthisteq
 import ..Morphology: hbreak, hbreak!, branch, bridge, fill_holes, se_disk4
 import ..Preprocessing:
     make_landmask_se,
     create_landmask,
     create_cloudmask,
-    create_clouds_channel,
     apply_landmask,
     apply_landmask!,
     apply_cloudmask,
@@ -132,12 +131,12 @@ function (p::Segment)(
     )
 
     # q: do we need to keep the sharpened truecolor image? or just the grayscale?
-    sharpened_truecolor_image .= _channelwise_adapthisteq(sharpened_truecolor_image;
+    sharpened_truecolor_image .= channelwise_adapthisteq(sharpened_truecolor_image;
         nbins=p.adapthisteq_params.nbins,
         rblocks=p.adapthisteq_params.rblocks,
         cblocks=p.adapthisteq_params.cblocks,
         clip=p.adapthisteq_params.clip
-    )
+    ) 
 
     sharpened_grayscale_image = unsharp_mask(
         Gray.(sharpened_truecolor_image),
@@ -153,7 +152,7 @@ function (p::Segment)(
     @info "Discriminating ice/water"
     # This
     ice_water_discrim = discriminate_ice_water(
-        sharpened_gray_truecolor_image, fc_masked, landmask_imgs.dilated, cloudmask
+        sharpened_grayscale_image, fc_masked, landmask_imgs.dilated, cloudmask
     )
 
     # 3. Segmentation
@@ -164,7 +163,7 @@ function (p::Segment)(
 
     # segmentation_B
     @info "Segmenting floes part 2/3"
-    segB = segmentation_B(sharpened_gray_truecolor_image, cloudmask, segA)
+    segB = segmentation_B(sharpened_grayscale_image, cloudmask, segA)
 
     # Process watershed in parallel using Folds
     @info "Building watersheds"
@@ -203,7 +202,7 @@ function (p::Segment)(
             landmask_non_dilated=landmask_imgs.non_dilated,
             cloudmask=cloudmask,
             ice_mask=IceDetectionLopezAcosta2019()(fc_masked),
-            sharpened_gray_truecolor_image=sharpened_gray_truecolor_image,
+            sharpened_grayscale_image=sharpened_grayscale_image,
             ice_water_discrim=ice_water_discrim,
             segA=segA,
             segB=segB,
