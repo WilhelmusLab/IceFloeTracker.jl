@@ -235,8 +235,7 @@ end
         st_dev_thresh_lower::Float64=Float64(84 / 255),
         st_dev_thresh_upper::Float64=Float64(98.9 / 255),
         clouds_ratio_threshold::Float64=0.02,
-        differ_threshold::Float64=0.6,
-        nbins::Real=155
+        differ_threshold::Float64=0.6
     )
 
 Generates an image with ice floes apparent after filtering and combining previously processed versions of falsecolor and truecolor images from the same region of interest. Returns an image ready for segmentation to isolate floes.
@@ -257,8 +256,6 @@ Generates an image with ice floes apparent after filtering and combining previou
 - `st_dev_thresh_upper`: upper heuristic used to set pixel value threshold based on standard deviation in histogram
 - `clouds2_threshold`: heuristic used to set pixel value threshold based on ratio of clouds
 - `differ_threshold`: heuristic used to calculate proportional intensity in histogram
-- `nbins`: number of bins during histogram build
-
 """
 function discriminate_ice_water(
     sharpened_grayscale_image, #::AbstractArray{AbstractGray}, #dmw: discrim-ice-water test fails here
@@ -465,7 +462,7 @@ Apply cloudmask to a bitmatrix of segmented ice after kmeans clustering. Returns
 
 """
 function segmented_ice_cloudmasking(
-    gray_image::Matrix{Gray{Float64}},
+    gray_image, #::Matrix{Gray{Float64}}
     falsecolor_image,
     cloudmask::BitMatrix,
 )::BitMatrix
