@@ -195,8 +195,7 @@ end
         st_dev_thresh_lower::Float64=Float64(84 / 255),
         st_dev_thresh_upper::Float64=Float64(98.9 / 255),
         clouds_ratio_threshold::Float64=0.02,
-        differ_threshold::Float64=0.6,
-        nbins::Real=155
+        differ_threshold::Float64=0.6
     )
 
 Generates an image with ice floes apparent after filtering and combining previously processed versions of falsecolor and truecolor images from the same region of interest. Returns an image ready for segmentation to isolate floes.
