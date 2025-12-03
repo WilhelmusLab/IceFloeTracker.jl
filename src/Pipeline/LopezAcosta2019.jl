@@ -53,7 +53,6 @@ import ..Preprocessing:
     make_landmask_se,
     create_landmask,
     create_cloudmask,
-    create_clouds_channel,
     apply_landmask,
     apply_landmask!,
     apply_cloudmask
