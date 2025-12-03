@@ -1,6 +1,6 @@
-import Images: Images, RGB, float64, Gray, red, green, blue
+import Images: Images, RGB, float64, Gray, red, green, blue, adjust_histogram, AdaptiveEqualization
 import ..skimage: sk_exposure
-import ..ImageUtils: to_uint8
+import ..ImageUtils: to_uint8, apply_to_channels
 
 # dmw: use multiple dispatch, so that if the 2d function is called 
 function adapthisteq(img::Matrix{T}, nbins=256, clip=0.01) where {T}
@@ -140,4 +140,32 @@ Histogram equalization of `img` using `nbins` bins.
 """
 function histeq(img::S; nbins=64)::S where {S<:AbstractArray{<:Integer}}
     return to_uint8(sk_exposure.equalize_hist(img; nbins=nbins) * 255)
+end
+
+
+"""
+    channelwise_adapthisteq
+
+    Broadcast adaptive histogram equalization to color channels of an image. Uses the 
+    minimum and maximum value of each channel band instead of the 0 to 1 range from
+    the default AdaptiveEqualization algorithm.
+
+"""
+function channelwise_adapthisteq(img;
+    nbins=256,
+    rblocks=10,
+    cblocks=10,
+    clip=0.86)
+
+    f_eq(img_channel) = adjust_histogram(img_channel,
+        AdaptiveEqualization(;
+            nbins=nbins,
+            rblocks=rblocks,
+            cblocks=cblocks,
+            minval=minimum(img_channel),
+            maxval=maximum(img_channel),
+            clip=clip
+            )
+        )
+    return apply_to_channels(img, f_eq) 
 end
