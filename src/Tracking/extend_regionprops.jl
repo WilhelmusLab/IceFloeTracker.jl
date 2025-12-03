@@ -1,11 +1,59 @@
 # Functions for adding additional columns to regionprops needed for floe tracking
 
-import DataFrames: DataFrame, nrow
-import Images: label_components
+import DataFrames: DataFrame, nrow, DataFrameRow, transform!, ByRow, AbstractDataFrame
+import Images: label_components, SegmentedImage, labels_map
+import Dates: DateTime
 import ..Morphology: bwareamaxfilt
 
-FloeLabelsImage = Union{BitMatrix, Matrix{<:Bool}, Matrix{<:Integer}}
+FloeLabelsImage = Union{BitMatrix,Matrix{<:Bool},Matrix{<:Integer},<:SegmentedImage}
 
+"""
+    add_passtimes!(props::DataFrame, passtimes::DateTime)
+    add_passtimes!.(props::Vector{DataFrame}, passtimes::Vector{DateTime})
+
+Add a column `passtime` to each DataFrame in `props` containing the time of the image in which the floes were captured.
+
+# Arguments
+- `props`: array of DataFrames containing floe properties.
+- `passtimes`: array of `DateTime` objects containing the time of the image in which the floes were captured.
+
+"""
+function add_passtimes!(props_df::DataFrame, passtime::DateTime)
+    props_df.passtime .= passtime
+    return nothing
+end
+
+"""
+    add_ψs!(props_df::DataFrame})
+    add_ψs!.(props_dfs::Vector{DataFrame})
+
+Add the ψ-s curves to each row of `props_df`.
+
+Note: each member of `props` must have a `mask` column with a binary image representing the floe. 
+To add floe masks see [`addfloemasks!`](@ref).
+"""
+function add_ψs!(props_df::DataFrame)
+    props_df.psi = map(buildψs, props_df.mask)
+    return nothing
+end
+
+_uuid() = randstring(12)
+
+"""
+    add_uuids!(df::DataFrame)
+    add_uuids!.(dfs::Vector{DataFrame})
+
+Assign a unique ID to each floe in a (vector of) table(s) of floe properties.
+"""
+function add_uuids!(df::DataFrame)
+    df.uuid = [_uuid() for _ in 1:nrow(df)]
+    return df
+end
+
+# TODO: Update the cropfloes function to use the "label" parameter in the regionprops table.
+# This way, we can create a bitmatrix with labeled image == label, and crop that.
+# TODO: Add method to allow SegmentedImage as input
+# TODO: bbox and label names as keyword arguments
 """
     cropfloe(floesimg, props, i)
 
@@ -28,13 +76,13 @@ function cropfloe(floesimg::FloeLabelsImage, props::DataFrame, i::Integer)
 
     if issubset(bbox_label_column_names, colnames)
         return cropfloe(
-                floesimg,
-                props_row.min_row,
-                props_row.min_col,
-                props_row.max_row,
-                props_row.max_col,
-                props_row.label
-            )
+            floesimg,
+            props_row.min_row,
+            props_row.min_col,
+            props_row.max_row,
+            props_row.max_col,
+            props_row.label,
+        )
 
     elseif issubset(bbox_column_names, colnames)
         floesimg_bitmatrix = floesimg .> 0
@@ -43,12 +91,11 @@ function cropfloe(floesimg::FloeLabelsImage, props::DataFrame, i::Integer)
             props_row.min_row,
             props_row.min_col,
             props_row.max_row,
-            props_row.max_col
+            props_row.max_col,
         )
-    
+
     elseif issubset(label_column_names, colnames)
         return cropfloe(floesimg, props_row.label)
-    
     end
 end
 
@@ -57,7 +104,9 @@ end
 
 Crops the floe delimited by `min_row`, `min_col`, `max_row`, `max_col`, from the floe image `floesimg`.
 """
-function cropfloe(floesimg::BitMatrix, min_row::I, min_col::I, max_row::I, max_col::I) where {I<:Integer}
+function cropfloe(
+    floesimg::BitMatrix, min_row::I, min_col::I, max_row::I, max_col::I
+) where {I<:Integer}
     #= 
     Crop the floe using bounding box data in props.
     Note: Using a view of the cropped floe was considered but if there were multiple components in the cropped floe, the source array with the floes would be modified. =#
@@ -79,7 +128,9 @@ end
 
 Crops the floe from `floesimg` with the label `label`, returning the region bounded by `min_row`, `min_col`, `max_row`, `max_col`, and converting to a BitMatrix.
 """
-function cropfloe(floesimg::Matrix{I}, min_row::J, min_col::J, max_row::J, max_col::J, label::I)  where {I<:Integer, J<:Integer}
+function cropfloe(
+    floesimg::Matrix{I}, min_row::J, min_col::J, max_row::J, max_col::J, label::I
+) where {I<:Integer,J<:Integer}
     #= 
     Crop the floe using bounding box data in props.
     Note: Using a view of the cropped floe was considered but if there were multiple components in the cropped floe, the source array with the floes would be modified. =#
@@ -94,22 +145,30 @@ function cropfloe(floesimg::Matrix{I}, min_row::J, min_col::J, max_row::J, max_c
     return floe_area
 end
 
-
 """
-    addfloemasks!(props::DataFrame, floeimg::FloeLabelsImage)
+    add_floemasks!(props::DataFrame, floeimg::FloeLabelsImage)
+    add_floemasks!.(props::Vector{DataFrame}, floeimgs::Vector{FloeLabelsImage})
 
-Add a column to `props` called `floearray` containing the cropped floe masks from `floeimg`.
+Add a column to `props` called `mask` containing the cropped floe masks from `floeimg`.
 """
-function addfloemasks!(props::DataFrame, floeimg::FloeLabelsImage)
-    props.mask = getfloemasks(props, floeimg)
+function add_floemasks!(props::DataFrame, floeimg::FloeLabelsImage)
+    props.mask = map(i -> cropfloe(floeimg, props, i), 1:nrow(props))
     return nothing
 end
 
-"""
-    getfloemasks(props::DataFrame, floeimg::BitMatrix)
+function add_floemasks!(
+    props::DataFrame, segmented_image::SegmentedImage; label_column::Symbol=:label
+)
+    floeimg = labels_map(segmented_image)
+    props[!, :mask] = missings(BitMatrix, nrow(props))
 
-Return a vector of cropped floe masks from `floeimg` using the bounding box data in `props`.
-"""
-function getfloemasks(props::DataFrame, floeimg::FloeLabelsImage)
-    return map(i -> cropfloe(floeimg, props, i), 1:nrow(props))
+    for i in 1:nrow(props)
+        label = props[i, label_column]
+        min_row = props[i, :min_row]
+        min_col = props[i, :min_col]
+        max_row = props[i, :max_row]
+        max_col = props[i, :max_col]
+        props.mask[i] = cropfloe(floeimg, min_row, min_col, max_row, max_col, label)
+    end
+    return props
 end

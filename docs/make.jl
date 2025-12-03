@@ -113,7 +113,10 @@ makedocs(;
         "preprocessing.md",
         "segmentation.md",
         "tracking.md",
-        "Tutorials" => ["tutorials/lopez-acosta-2019-workflow.md"],
+        "Tutorials" => [
+            "tutorials/lopez-acosta-2019-workflow.md",
+            "tutorials/segmentation-tracking.md",
+        ],
     ],
 )
 

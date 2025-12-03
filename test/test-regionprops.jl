@@ -8,6 +8,7 @@
     bw_img[end, 7] = 1
     label_img = label_components(bw_img, trues(3, 3))
     properties = (
+        "label",
         "centroid",
         "area",
         "major_axis_length",
@@ -22,10 +23,26 @@
     total_labels = maximum(label_img)
 
     # Tests for regionprops_table
-
-    @test typeof(table) <: DataFrame && # check correct data type
-        6 == sum([p in names(table) for p in properties]) && # check correct set of properties
-        size(table) == (total_labels, length(properties) + 4) # check correct table size
+    @test typeof(table) <: DataFrame # check correct data type
+    @test nrow(table) == (total_labels) # check correct table size
+    @test all(
+        [
+            "area",
+            "min_row",
+            "min_col",
+            "max_row",
+            "max_col",
+            "row_centroid",
+            "col_centroid",
+            "convex_area",
+            "label",
+            "major_axis_length",
+            "minor_axis_length",
+            "orientation",
+            "perimeter",
+        ] ⊆ names(table),
+    )
+    # check all requested properties are present
 
     # Check no value in bbox cols is 0 (zero indexing from skimage)
     @test all(Matrix(table[:, ["min_row", "min_col", "max_row", "max_col"]] .> 0))
@@ -44,7 +61,7 @@
     @test table.area[randnum] == regions[randnum].area
 
     # Check floe masks generation and correct cropping
-    addfloemasks!(table, bw_img)
+    add_floemasks!(table, label_img)
     @test all(
         [
             length(unique(label_components(table.mask[i], trues(3, 3)))) for

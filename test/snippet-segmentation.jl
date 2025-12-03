@@ -5,7 +5,7 @@
 
     """
         run_and_validate_segmentation(
-            dataset::ValidationDataSet,
+            dataset::Dataset,
             algorithm::IceFloeSegmentationAlgorithm;
             output_directory::Union{AbstractString,Nothing}=nothing,
         )
@@ -13,23 +13,23 @@
     Run the `algorithm::IceFloeSegmentationAlgorithm` over each of the cases in `dataset` and return a DataFrame of the results.
 
     Inputs:
-    - `dataset`: a ValidationDataSet
+    - `dataset`: a Dataset
     - `algorithm`: an instantiated `IceFloeSegmentationAlgorithm` which will be called on each case
     - `output_directory`: optional – path to save intermediate and final outputs
 
     Returns:
-    - A DataFrame with the results including a :success boolean, any :error messages, and the original metadata.
+    - A DataFrame with the results including a :success boolean, any :error messages, and the original info.
 
     """
     function run_and_validate_segmentation(
-        dataset::ValidationDataSet,
+        dataset::Dataset,
         algorithm::IceFloeSegmentationAlgorithm;
         output_directory::Union{AbstractString,Nothing}=nothing,
     )::DataFrame
-        @info dataset.metadata
+        @info info(dataset)
         results = []
-        for case::ValidationDataCase in dataset
-            @info "starting $(case.name)"
+        for case in dataset
+            @info "starting $(name(case))"
             results_row = run_and_validate_segmentation(case, algorithm; output_directory)
             push!(results, results_row)
         end
@@ -40,14 +40,14 @@
 
     """
         run_and_validate_segmentation(
-            case::ValidationDataCase,
+            case::Case,
             algorithm::IceFloeSegmentationAlgorithm;
             output_directory::Union{AbstractString,Nothing}=nothing,
         )
 
     Run the `algorithm::IceFloeSegmentationAlgorithm` on the `case` and return a NamedTuple of the validation results.
 
-    - `case`: ValidationDataCase to be processed by the algorithm
+    - `case`: case to be processed by the algorithm
     - `algorithm`: an instantiated `IceFloeSegmentationAlgorithm` which will be called on each case
     - `output_directory`: optional – path to save intermediate and final outputs
 
@@ -62,13 +62,13 @@
 
     """
     function run_and_validate_segmentation(
-        case::ValidationDataCase,
+        case::Case,
         algorithm::IceFloeSegmentationAlgorithm;
         output_directory::Union{AbstractString,Nothing}=nothing,
     )
-        let name, datestamp, validated, measured, success, error, comparison
-            name = case.name
-            validated = case.validated_labeled_floes
+        let case_name, datestamp, validated, measured, success, error, comparison
+            case_name = name(case)
+            validated = validated_labeled_floes(case)
             if !isnothing(output_directory)
                 intermediate_results_callback = save_results_callback(
                     output_directory, case, algorithm;
@@ -78,12 +78,12 @@
             end
             try
                 measured = algorithm(
-                    RGB.(case.modis_truecolor),
-                    RGB.(case.modis_falsecolor),
-                    case.modis_landmask;
+                    RGB.(modis_truecolor(case)),
+                    RGB.(modis_falsecolor(case)),
+                    modis_landmask(case);
                     intermediate_results_callback,
                 )
-                @info "$(name) succeeded"
+                @info "$(case_name) succeeded"
                 success = true
                 error = nothing
             catch error
@@ -94,7 +94,10 @@
             summary = segmentation_summary(measured)
             comparison = segmentation_comparison(; validated, measured)
             results = merge(
-                (; name, success, error), comparison, summary, NamedTuple(case.metadata)
+                (; case_name, success, error),
+                comparison,
+                summary,
+                NamedTuple(info(case)),
             )
             if !isnothing(intermediate_results_callback) && !isnothing(validated)
                 intermediate_results_callback(;
@@ -112,7 +115,7 @@
             target_type::Union{Function,Type},
             baseline::NamedTuple,
             algorithm::IceFloeSegmentationAlgorithm,
-            case::ValidationDataCase,
+            case::Case,
         )::Bool
         
     Runs `algorithm` on `case` using `target_type` to cast images; returns true if results are within 1% of the `baseline`.
@@ -123,7 +126,7 @@
         target_type::Union{Function,Type}...;
         baseline::NamedTuple,
         algorithm::IceFloeSegmentationAlgorithm,
-        case::ValidationDataCase,
+        case::Case,
         output_directory::AbstractString="./test_outputs",
         rtol::Real=0.01,
     )::Bool
@@ -135,14 +138,14 @@
         )
         casting_function = ∘(target_type...)
         segments = algorithm(
-            casting_function.(case.modis_truecolor),
-            casting_function.(case.modis_falsecolor),
-            casting_function.(case.modis_landmask);
+            casting_function.(modis_truecolor(case)),
+            casting_function.(modis_falsecolor(case)),
+            casting_function.(modis_landmask(case));
             intermediate_results_callback,
         )
         (; segment_count, labeled_fraction) = segmentation_summary(segments)
         (; recall, precision, F_score) = segmentation_comparison(
-            case.validated_labeled_floes, segments
+            validated_labeled_floes(case), segments
         )
 
         segment_count_pass = ≈(segment_count, baseline.segment_count; rtol)
@@ -174,7 +177,7 @@
     """
         save_results_callback(
             directory::AbstractString,
-            case::ValidationDataCase,
+            case::Case,
             algorithm::IceFloeSegmentationAlgorithm;
             extension::AbstractString=".png",
         )::Function
@@ -184,19 +187,21 @@
 
     Inputs:
     - `directory`: base directory where images will be stored
-    - `case`: ValidationDataCase with metadata which are used to name a subdirectory
+    - `case`: Case with info which are used to name a subdirectory
     - `algorithm`: IceFloeSegmentationAlgorithm which is used in the subdirectory name.
     """
     function save_results_callback(
         directory::AbstractString,
-        case::ValidationDataCase,
+        case::Case,
         algorithm::IceFloeSegmentationAlgorithm;
         extension::AbstractString=".png",
     )::Function
         datestamp = Dates.format(Dates.now(), "yyyy-mm-dd-HHMMSS")
-        name = case.name
+        case_name = name(case)
         return save_results_callback(
-            joinpath(directory, "segmentation-$(typeof(algorithm))-$(name)-$(datestamp)");
+            joinpath(
+                directory, "segmentation-$(typeof(algorithm))-$(case_name)-$(datestamp)"
+            );
             extension,
         )
     end

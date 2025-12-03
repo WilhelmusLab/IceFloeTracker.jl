@@ -1,21 +1,4 @@
 """
-    add_passtimes!(props, passtimes)
-
-Add a column `passtime` to each DataFrame in `props` containing the time of the image in which the floes were captured.
-
-# Arguments
-- `props`: array of DataFrames containing floe properties.
-- `passtimes`: array of `DateTime` objects containing the time of the image in which the floes were captured.
-
-"""
-function add_passtimes!(props, passtimes)
-    for (i, passtime) in enumerate(passtimes)
-        props[i].passtime .= passtime
-    end
-    return nothing
-end
-
-"""
     sort_floes_by_area!(props)
 
 Sort floes in `props` by area in descending order.
@@ -40,16 +23,16 @@ function _pairfloes(
     sort_floes_by_area!(props)
 
     # Assign a unique ID to each floe in each image
-    adduuid!(props)
+    add_uuids!.(props)
 
-    add_passtimes!(props, passtimes)
+    add_passtimes!.(props, passtimes)
 
     # Initialize container for props of matched pairs of floes, their similarity ratios, and their distances between their centroids
     tracked = Tracked()
 
     # Crop floes from the images using the bounding box data in `props`.
-    addfloemasks!(props, segmented_imgs)
-    addψs!(props)
+    add_floemasks!.(props, segmented_imgs)
+    add_ψs!.(props)
 
     numdays = length(segmented_imgs) - 1
 
