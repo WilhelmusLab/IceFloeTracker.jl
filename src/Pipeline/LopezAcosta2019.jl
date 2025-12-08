@@ -81,6 +81,11 @@ cloud_mask_thresholds = (
 diffusion_parameters = (lambda=0.1, kappa=0.1, niters=5, g="exponential")
 
 
+# TODO: Make it possible to set the block_size_pixels instead of rblocks/cblocks
+# so that the user doesn't need to be checking image dimensions as much. 
+# TODO: Make it possible to supply a pre-generate landmask and dilated landmask, so that
+# it isn't calculated for every single image when broadcasting.
+# TODO: Expose the discrim ice/water settings to the main struct.
 
 @kwdef struct Segment <: IceFloeSegmentationAlgorithm
     landmask_structuring_element::AbstractMatrix{Bool} = make_landmask_se()
@@ -94,10 +99,6 @@ diffusion_parameters = (lambda=0.1, kappa=0.1, niters=5, g="exponential")
     )
     unsharp_mask_params = (smoothing_param=10, intensity=2)
 end
-
-# TODO: Make it possible to supply a pre-generate landmask and dilated landmask, so that
-# it isn't calculated for every single image when broadcasting.
-
 
 function (p::Segment)(
     truecolor::T,
