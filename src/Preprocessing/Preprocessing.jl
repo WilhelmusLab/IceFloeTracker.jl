@@ -9,8 +9,7 @@ export make_landmask_se,
     Watkins2025CloudMask,
     create_cloudmask,
     apply_cloudmask,
-    apply_cloudmask!,
-    create_clouds_channel
+    apply_cloudmask!
 
 include("cloudmask.jl")
 include("landmask.jl")
