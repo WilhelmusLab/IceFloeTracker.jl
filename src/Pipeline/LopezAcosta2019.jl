@@ -150,13 +150,16 @@ function (p::Segment)(
     # Currently set to return the morphed grayscale image if band 2 / band 1 have nothing greater than
     # the threshold of 100. May be better to return blank image instead.
     @info "Discriminating ice/water"
-    # This
+    
+    # This step is a grayscale morphology operation. Reconstruction by dilation of the image complement
+    # followed by thresholding.
     ice_water_discrim = discriminate_ice_water(
         sharpened_grayscale_image, fc_masked, landmask_imgs.dilated, cloudmask
     )
 
     # 3. Segmentation
     @info "Segmenting floes part 1/3"
+    # The first segmentation step is k-means binarization followed by morphological clean-up.
     segA = segmentation_A(
         segmented_ice_cloudmasking(ice_water_discrim, fc_masked, cloudmask)
     )
@@ -274,12 +277,17 @@ function discriminate_ice_water(
     differ_threshold::Float64=0.6
 )::AbstractMatrix where {T<:AbstractArray{Bool}}
 
+    # First step: Grayscale reconstruction, creating an inverted and smoothed image.
     fc_landmasked = landmasked_falsecolor_image # shorten name for convenience
     morphed_grayscale = _reconstruct(sharpened_grayscale_image, landmask)
 
-    # This next section is all here to find a threshold value for masking. Only three levels are selected,
-    # which makes me think that we'd do better to use a percentile function or otherwise continuous estimate
-    # of a threshold from the data, rather than 3 fixed steps.
+
+    # Second step: Find a threshold value to mask. There are only three levels considered,
+    # which makes me think that we'd do better to use a percentile function or otherwise 
+    # continuous estimate of a threshold from the data, rather than 3 fixed steps.
+    # The language is confusing because image_clouds / image_cloudless are backwards: image_clouds has had the image
+    # masked by the cloud mask, while image_cloudless has not been cloudmasked.
+
     b7_landmasked = Gray.(red.(fc_landmasked)) # formerly falsecolor_image_band7 -> image_cloudless (but it does have clouds???)
     b7_landmasked_cloudmasked = apply_cloudmask(b7_landmasked, cloudmask) # formerly clouds_channel -> image_clouds
 
@@ -308,9 +316,15 @@ function discriminate_ice_water(
     kurt_band_1 = kurtosis(b1_subset)
     standard_dev = std(vec(morphed_grayscale))
 
-    # Compute fraction of non-zero band 7 data using the ocean pixels
+
+    # The clouds ratio was computed on the whole area, which means that 
+    # there will be errors near the land mask. Correcting this may make it 
+    # have different results than the Matlab version.
     clouds_ratio = mean(b7_landmasked_cloudmasked[.!landmask] .> 0)
 
+    # It may be worthwhile to take a random sample of scenes and test what the kurtosis, skew, and intensity are.
+    # These values are likely to vary with the size of the image. Both band 1 and band 2 are used, though they 
+    # are highly correlated with each other.
     threshold_50_check = _check_threshold_50(
         kurt_band_1,
         kurt_band_2,
@@ -321,6 +335,7 @@ function discriminate_ice_water(
         proportional_intensity,
     )
 
+    # This method uses standard deviation of the grayscale image instead of the band 1 / band 2 values.
     threshold_130_check = _check_threshold_130(
         clouds_ratio,
         clouds_ratio_threshold,
@@ -329,6 +344,7 @@ function discriminate_ice_water(
         st_dev_thresh_upper,
     )
 
+    # If neither check passes, then a middle value is used (not exactly the middle, but close).
     if threshold_50_check
         THRESH = 50 / 255
     elseif threshold_130_check
@@ -337,15 +353,16 @@ function discriminate_ice_water(
         THRESH = 80 / 255 #intensity value of 80
     end
 
+    # Values less than the threshold are set to 0. Essentially, it's flattening out the "ice" portion of the image.
     morphed_image_copy = copy(morphed_grayscale)
     morphed_image_copy[morphed_grayscale .<= THRESH] .= 0
 
-    # The next section *does not affect the tests* which makes me wonder if we need it.
+    # Finally, there is a mask applied to a narrow band of band7 values. Removing
+    # the next section *does not affect the tests* which makes me wonder if we need it.
     # What's happening here is that the cloud_threshold variable is selecting anything darker than
-    # clouds lower, or brighter than clouds lower.
-    # So the b7_landmasked getting multiplied by not(cloud_threshold) means that we're selecting all
-    # the intermediate values: anything between mask_clouds_lower and mask_clouds_upper.
-    # This is essentially speckle noise, and has minimal effect on the results.
+    # clouds lower, or brighter than clouds lower. So the b7_landmasked getting multiplied by 
+    # not(cloud_threshold) means that we're selecting all the intermediate values: anything between 
+    # mask_clouds_lower and mask_clouds_upper.
 
     _cloud_threshold = (
         b7_landmasked_cloudmasked .< mask_clouds_lower .|| b7_landmasked_cloudmasked .> mask_clouds_upper
@@ -466,7 +483,6 @@ function segmented_ice_cloudmasking(
     falsecolor_image,
     cloudmask::BitMatrix,
 )::BitMatrix
-    #### Update K-Means Segmentation ####
     segmented_ice = kmeans_binarization(
         gray_image, falsecolor_image; 
         cluster_selection_algorithm=IceDetectionLopezAcosta2019())
