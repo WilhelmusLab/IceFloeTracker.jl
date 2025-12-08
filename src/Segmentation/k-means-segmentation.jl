@@ -52,7 +52,7 @@ function kmeans_binarization(
     k::Int64=4,
     maxiter::Int64=50,
     random_seed::Int64=45,
-    ice_labels_threshold=5
+    ice_labels_threshold=1
 )::BitMatrix
 
     ice_labels = ice_labels_algorithm(falsecolor_image) .> 0

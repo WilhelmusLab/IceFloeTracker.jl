@@ -138,7 +138,7 @@ end
     unsharp_mask_params = (smoothing_param=10, intensity=2)
     reconstruct_strel = strel_diamond((5, 5)) # Structuring element used for enhancing foreground/background contrast
     kmeans_params = (k=4, maxiter=50, random_seed=45)
-    ice_labels_algorithm = IceDetectionLopezAcosta2019()
+    cluster_selection_algorithm = IceDetectionLopezAcosta2019()
     segmentation_b_params = (isolation_threshold=0.4, struct_elem=strel_diamond((3, 3)))
 end
 
@@ -214,7 +214,7 @@ function (p::Segment)(
         k=p.kmeans_params.k,
         maxiter=p.kmeans_params.maxiter,
         random_seed=p.kmeans_params.random_seed,
-        ice_labels_algorithm=p.ice_labels_algorithm
+        cluster_selection_algorithm=p.cluster_selection_algorithm
         ) |> clean_binary_floes
 
     # check: are there any regions that are nonzero under the cloudmask, since it was applied in discriminate ice water?
@@ -242,13 +242,15 @@ function (p::Segment)(
 
     # segmentation_F
     @info "Segmenting floes part 3/3"
+    # rename
     segF = segmentation_F(
         brightened_image,
         segAB_intersect, 
         watersheds_product,
         fc_landmasked,
-        cloudmask,
-        landmask_imgs.dilated,
+        cloudmask, # potentially unused
+        landmask_imgs.dilated; # potentially unused
+        cluster_selection_algorithm=p.cluster_selection_algorithm
     )
 
     binary_cleaned = morphological_cleanup_final(
@@ -275,7 +277,7 @@ function (p::Segment)(
             landmask_dilated=landmask_imgs.dilated,
             landmask_non_dilated=landmask_imgs.non_dilated,
             cloudmask=cloudmask,
-            # ice_mask=ice_mask,
+            ice_mask=IceDetectionLopezAcosta2019()(fc_masked),
             sharpened_truecolor_image=sharpened_truecolor_image,
             sharpened_gray_truecolor_image=sharpened_grayscale_image,
             normalized_image=reconstructed_grayscale,
@@ -541,11 +543,12 @@ function segmentation_F( # rename
     falsecolor_image,
     cloudmask::BitMatrix,
     landmask::BitMatrix;
+    cluster_selection_algorithm,
     min_area_opening::Int64=20,
 )::BitMatrix
 
     # compare this workflow to the first instance with the k-means binarization.
-    
+    # Where were the cloudmask and landmasked used?    
 
     # segb_leads = 1 for leads/water, 0 for ice (and bright clouds)
     segb_leads = .!segmentation_B_watershed_intersect .* segmentation_B_ice_intersect
@@ -559,7 +562,7 @@ function segmentation_F( # rename
     reconstructed_leads .*= segb_leads
     # In the matlab code, 60/255 was added to reconstructed_leads.
     leads_segmented =
-        kmeans_binarization(reconstructed_leads, falsecolor_image) .*
+        kmeans_binarization(reconstructed_leads, falsecolor_image; cluster_selection_algorithm=cluster_selection_algorithm) .*
         .!segmentation_B_watershed_intersect
 
     return leads_segmented
