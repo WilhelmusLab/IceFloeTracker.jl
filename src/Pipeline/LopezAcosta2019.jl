@@ -281,7 +281,6 @@ function discriminate_ice_water(
     fc_landmasked = landmasked_falsecolor_image # shorten name for convenience
     morphed_grayscale = _reconstruct(sharpened_grayscale_image, landmask)
 
-
     # Second step: Find a threshold value to mask. There are only three levels considered,
     # which makes me think that we'd do better to use a percentile function or otherwise 
     # continuous estimate of a threshold from the data, rather than 3 fixed steps.
@@ -315,7 +314,6 @@ function discriminate_ice_water(
     skew_band_2 = skewness(b2_subset)
     kurt_band_1 = kurtosis(b1_subset)
     standard_dev = std(vec(morphed_grayscale))
-
 
     # The clouds ratio was computed on the whole area, which means that 
     # there will be errors near the land mask. Correcting this may make it 
@@ -373,7 +371,7 @@ function discriminate_ice_water(
     # So the question is if they're swapped in 305 and 311 also.
     @. b7_landmasked = b7_landmasked * !_cloud_threshold
 
-    # reusing normalized_image_copy - used to be ice_water_discriminated_image
+    # Check to see if selecting indices to set to 0 would be equivalent
     @. morphed_image_copy = clamp01nan(morphed_image_copy - (b7_landmasked * 3))
 
     return morphed_image_copy
@@ -421,7 +419,6 @@ of an image. Markers are computed by dilating the input image by the
 structuring element `strel` and taking the complement. The dilated landmask
 is applied at the end to prevent bright regions from bleeding into the land mask.
 Defaults to using a radius 5 diamond mask.
-
 """
 function _reconstruct(sharpened_grayscale_image, dilated_mask; strel=strel_diamond((5, 5)))
     markers = complement.(dilate(sharpened_grayscale_image, strel))
