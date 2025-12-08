@@ -88,9 +88,9 @@ diffusion_parameters = (lambda=0.1, kappa=0.1, niters=5, g="exponential")
     diffusion_algorithm = PeronaMalikDiffusion(diffusion_parameters...)
     adapthisteq_params = (
         nbins=256,
-        rblocks=8, # matlab default is 8 CP
-        cblocks=8, # matlab default is 8 CP
-        clip=0.9,  # matlab default is 0.01 CP, which should be the same as clip=0.99
+        rblocks=10, # matlab default is 8 CP
+        cblocks=10, # matlab default is 8 CP
+        clip=0.86,  # matlab default is 0.01 CP, which should be the same as clip=0.99
     )
     unsharp_mask_params = (smoothing_param=10, intensity=2)
 end
