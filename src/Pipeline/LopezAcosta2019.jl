@@ -99,9 +99,6 @@ diffusion_parameters = (lambda=0.1, kappa=0.1, niters=5, g="exponential")
     unsharp_mask_params = (smoothing_param=10, intensity=2)
 end
 
-# TODO: Make it possible to supply a pre-generate landmask and dilated landmask, so that
-# it isn't calculated for every single image when broadcasting.
-
 function (p::Segment)(
     truecolor::T,
     falsecolor::T,
