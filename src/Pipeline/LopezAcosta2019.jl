@@ -87,7 +87,7 @@ diffusion_parameters = (lambda=0.1, kappa=0.1, niters=5, g="exponential")
 # TODO: Expose the discrim ice/water settings to the main struct.
 
 @kwdef struct Segment <: IceFloeSegmentationAlgorithm
-    landmask_structuring_element::AbstractMatrix{Bool} = make_landmask_se()
+    coastal_buffer_structuring_element::AbstractMatrix{Bool}
     cloud_mask_algorithm = LopezAcostaCloudMask(cloud_mask_thresholds...)
     diffusion_algorithm = PeronaMalikDiffusion(diffusion_parameters...)
     adapthisteq_params = (
@@ -99,21 +99,42 @@ diffusion_parameters = (lambda=0.1, kappa=0.1, niters=5, g="exponential")
     unsharp_mask_params = (smoothing_param=10, intensity=2)
 end
 
+function Segment(; coastal_buffer_structuring_element=make_landmask_se())
+    return Segment(coastal_buffer_structuring_element)
+end
+
 function (p::Segment)(
     truecolor::T,
     falsecolor::T,
     landmask::U;
     intermediate_results_callback::Union{Nothing,Function}=nothing,
 ) where {T<:AbstractMatrix{<:AbstractRGB},U<:AbstractMatrix}
+    @info "building landmask and coastal buffer mask"
+    landmask, coastal_buffer_mask = create_landmask(
+        float64.(landmask), p.coastal_buffer_structuring_element
+    )
+    return p(
+        p,
+        truecolor,
+        falsecolor,
+        landmask,
+        coastal_buffer_mask;
+        intermediate_results_callback=intermediate_results_callback,
+    )
+end
+
+function (p::Segment)(
+    truecolor::T,
+    falsecolor::T,
+    landmask::U,
+    coastal_buffer_mask::U;
+    intermediate_results_callback::Union{Nothing,Function}=nothing,
+) where {T<:AbstractMatrix{<:AbstractRGB},U<:BitMatrix}
 
     # Move these conversions down through the function as each step gets support for 
     # the full range of image formats
     truecolor_image = float64.(truecolor)
     falsecolor_image = float64.(falsecolor)
-    landmask_image = float64.(landmask)
-
-    @info "building landmask"
-    landmask_imgs = create_landmask(landmask_image, p.landmask_structuring_element)
 
     @info "Building cloudmask"
     # TODO: @hollandjg track down why the cloudmask is different for float32 vs float64 input images
@@ -121,7 +142,7 @@ function (p::Segment)(
     cloudmask = create_cloudmask(falsecolor_image)
 
     # 2. Intermediate images
-    fc_masked = apply_landmask(falsecolor_image, landmask_imgs.dilated)
+    fc_masked = apply_landmask(falsecolor_image, coastal_buffer_mask)
 
     @info "Preprocessing truecolor image"
     # nonlinear diffusion
@@ -170,8 +191,6 @@ function (p::Segment)(
 
     # Process watershed in parallel using Folds
     @info "Building watersheds"
-    # container_for_watersheds = [landmask_imgs.non_dilated, similar(landmask_imgs.non_dilated)]
-
     watersheds_segB = [
         watershed_ice_floes(segB.not_ice_bit), watershed_ice_floes(segB.ice_intersect)
     ]
@@ -186,7 +205,7 @@ function (p::Segment)(
         watersheds_segB_product,
         fc_masked,
         cloudmask,
-        landmask_imgs.dilated,
+        coastal_buffer_mask,
     )
 
     @info "Labeling floes"
@@ -201,9 +220,9 @@ function (p::Segment)(
         intermediate_results_callback(;
             truecolor,
             falsecolor,
-            landmask_dilated=landmask_imgs.dilated,
-            landmask_non_dilated=landmask_imgs.non_dilated,
-            cloudmask=cloudmask,
+            landmask,
+            coastal_buffer_mask,
+            cloudmask,
             ice_mask=IceDetectionLopezAcosta2019()(fc_masked),
             sharpened_grayscale_image=sharpened_grayscale_image,
             ice_water_discrim=ice_water_discrim,
