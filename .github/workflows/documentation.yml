@@ -19,7 +19,7 @@ jobs:
       - uses: actions/checkout@v6
       - uses: julia-actions/setup-julia@v2
         with:
-          version: '1.11'
+          version: '1.12'
       - uses: julia-actions/cache@v2
       - name: setup PyCall
         run: julia --project=.devcontainer/PyCallSetup.jl .devcontainer/PyCallSetup.jl/setup.jl
