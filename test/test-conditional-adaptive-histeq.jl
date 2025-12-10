@@ -36,7 +36,7 @@
 end
 
 @testitem "conditional adaptivehisteq (data loader)" setup = [FalseColorCloudmask] begin
-    dataset = Watkins2026GitHub()(;
+    dataset = Watkins2026Dataset()(;
         case_filter=c -> c.case_number == 161 && c.satellite == "terra"
     )
     case = first(dataset)
