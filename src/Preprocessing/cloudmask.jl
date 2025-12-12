@@ -62,12 +62,12 @@ Example:
 
 ```
 using IceFloeTracker
-using IceFloeTracker: Watkins2025GitHub
+using IceFloeTracker: Watkins2026Dataset
 
-data_loader = Watkins2025GitHub(; ref="a451cd5e62a10309a9640fbbe6b32a236fcebc70")
-case = first(data_loader(c -> (c.case_number == 6 && c.satellite == "terra")))
+dataset = Watkins2026Dataset(; ref="v0.1")
+case = first(filter(c -> (c.case_number == 6 && c.satellite == "terra"), dataset))
 cm_algo = LopezAcostaCloudMask()
-cloud_mask = create_cloudmask(case.modis_falsecolor, cm_algo)
+cloud_mask = create_cloudmask(modis_falsecolor(case), cm_algo)
 
 # show image:
 Gray.(cloud_mask)
@@ -146,12 +146,12 @@ Example:
 
 ```
 using IceFloeTracker
-using IceFloeTracker: Watkins2025GitHub
+using IceFloeTracker: Watkins2026Dataset
 
-data_loader = Watkins2025GitHub(; ref="a451cd5e62a10309a9640fbbe6b32a236fcebc70")
-case = first(data_loader(c -> (c.case_number == 6 && c.satellite == "terra")))
+dataset = Watkins2026Dataset(; ref="v0.1")
+case = first(filter(c -> (c.case_number == 6 && c.satellite == "terra"), dataset))
 cm_algo = Watkins2025CloudMask()
-cloud_mask = create_cloudmask(case.modis_falsecolor, cm_algo)
+cloud_mask = create_cloudmask(modis_falsecolor(case), cm_algo)
 
 # show image:
 Gray.(cloud_mask)
@@ -280,15 +280,4 @@ end
 
 function apply_cloudmask(img::AbstractArray, cloudmask::AbstractArray{Bool})
     return img[cloudmask] .= 0.0
-end
-
-# dmw: in the future, we may want the option to use "missing".
-# dmw: used only in ice-water-discrimination. could be generalized. compare to similar method in the conditional adaptive histogram
-# is this not equivalent to something like apply_cloudmask(red.(img), cloudmask)? also note that this function still has the clouds=0 
-# sense for the mask.
-function create_clouds_channel(
-    cloudmask::AbstractArray{Bool}, false_color_image::Matrix{RGB{Float64}}
-)::Matrix{Gray{Float64}}
-    # dmw: trying out a simpler approach
-    return apply_cloudmask(Gray.(red.(false_color_image)), cloudmask)
 end

@@ -98,3 +98,23 @@ end
     test_segmentation_properties([1 1 0], [1 1 1]; recall=1, precision=2 / 3)
     test_segmentation_properties([1 1 1], [1 1 1]; recall=1, precision=1.0)
 end
+
+@testitem "Stitch clusters" begin
+
+    # test stitch_clusters by creating an image indexmap with
+    # a rectangle divided into 4 clusters, and use the stitch_clusters
+    # function to put it back together again
+
+    import IceFloeTracker: get_tiles, stitch_clusters
+    import Images: SegmentedImage
+
+    test_im = zeros(Int64, (10, 10))
+    test_im[2:5, 2:5] .= 1
+    test_im[6:9, 2:5] .= 2
+    test_im[2:5, 6:9] .= 3
+    test_im[6:9, 6:9] .= 4
+    tiles = get_tiles(test_im, 5) # divide into 4 tiles
+    segments = SegmentedImage(ones(size(test_im)), test_im)
+    stitched_segments = stitch_clusters(segments, tiles)
+    @test all(stitched_segments[2:9, 2:9] .== 1)
+end

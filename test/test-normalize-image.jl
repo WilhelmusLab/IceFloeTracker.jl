@@ -88,8 +88,8 @@
     @info "Process Image - Normalization"
 
     ## Normalization
-    @time normalized_image = LopezAcosta2019.normalize_image(
-        sharpenedimg, image_sharpened_gray, landmask_bitmatrix, struct_elem2
+    @time normalized_image = LopezAcosta2019._reconstruct(
+        image_sharpened_gray, landmask_bitmatrix; strel=struct_elem2
     )
 
     #test for percent difference in normalized images
