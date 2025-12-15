@@ -16,8 +16,8 @@ function adapthisteq(img::Matrix{T}, nbins=256, clip=0.01) where {T}
     )
 
     # Step 3: Rescale the image back to the original range [image_min, image_max]
-    final_image = sk_exposure.rescale_intensity(
-        equalized_image; in_range="image", out_range=(image_min, image_max)
+    final_image = adjust_histogram(
+        equalized_image, LinearStretching(nothing => (image_min, image_max))
     )
 
     # Convert back to the original data type if necessary
