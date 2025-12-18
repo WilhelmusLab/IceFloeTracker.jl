@@ -6,6 +6,7 @@ import Images:
     component_boxes, 
     component_centroids, 
     component_lengths, 
+    component_indices,
     erode,
     Fill,
     labels_map, 
@@ -507,7 +508,7 @@ function regionprops_table(
     minimum_area=1,
 )::DataFrame
 
-    typeof(label_img) == SegmentedImage ? (labels = labels_map(label_img)) : labels = deepcopy(label_img)
+    isa(label_img, SegmentedImage) ? (labels = labels_map(label_img)) : labels = deepcopy(label_img)
     eltype(properties) == String && (properties = [Symbol(a) for a in properties])
 
     data = Dict{Symbol,Any}()
@@ -528,15 +529,63 @@ function regionprops_table(
         push!(data, :area => map(s -> areas[s], img_labels))
     end
 
-    :mask ∈ properties && begin
-        floe_masks = component_floes(labels_map(label_img); minimum_area=minimum_area)
-        push!(data, :mask => map(s -> floe_masks[s], img_labels))
+    # Centroid, major/minor axis, and orientation all come from the image moments.
+    compute_moments = any([:centroid ∈ properties,
+                          :major_axis_length ∈ properties,
+                          :minor_axis_length ∈ properties,
+                          :orientation ∈ properties])
+    compute_moments && begin
+        centroids = component_centroids(labels)
+        row_centroid = first.(centroids)
+        col_centroid = last.(centroids)
+        push!(data, :row_centroid => map(s -> row_centroid[s], img_labels))
+        push!(data, :col_centroid => map(s -> col_centroid[s], img_labels))
+
+        indices = component_indices(CartesianIndex, labels)
+        moment_measures = []
+        for s in img_labels
+            X = getindex.(indices[s], 1)
+            Y = getindex.(indices[s], 2);
+            xc = row_centroid[s]
+            yc = col_centroid[s]
+            
+            mu11 = _central_moment(X, Y, xc, yc, 1, 1)
+            mu20 = _central_moment(X, Y, xc, yc, 2, 0)
+            mu02 = _central_moment(X, Y, xc, yc, 0, 2)
+            theta = 0.5 * atan(2*mu11, mu20 - mu02)
+            
+            λ0 = (mu20 + mu02 + sqrt((mu20 - mu02)^2 + 4*mu11^2))/2
+            λ1 = (mu20 + mu02 - sqrt((mu20 - mu02)^2 + 4*mu11^2))/2
+            
+            ## 
+            ra = 4*(λ0/areas[s])^0.5 
+            rb = 4*(λ1/areas[s])^0.5
+            append!(moment_measures, [[ra, rb, theta]])
+        end
+        moment_measures = stack(moment_measures)
+        push!(data, :major_axis_length => moment_measures[1,:])
+        push!(data, :minor_axis_length => moment_measures[2,:])
+        push!(data, :orientation => moment_measures[3,:])
     end
+
+    :bbox ∈ properties && begin
+        bboxes_init =  component_boxes(labels)
+        bboxes = stack(_get_bounds.(bboxes_init[s] for s in img_labels))
+        push!(data, :min_row => bboxes[1,:]) 
+        push!(data, :max_row => bboxes[2,:]) 
+        push!(data, :min_col => bboxes[3,:]) 
+        push!(data, :max_col => bboxes[4,:]) 
+    end 
 
     :perimeter ∈ properties && begin
         # future option: allow component perimeters to take the floe masks as an argument to save compute time
-        floe_perims = component_perimeters(labels_map(label_img); minimum_area=minimum_area)
+        floe_perims = component_perimeters(labels; minimum_area=minimum_area)
         push!(data, :perimeter => map(s -> floe_perims[s], img_labels)) 
+    end
+    # psi-s needs masks, so this can get called first
+    :mask ∈ properties && begin
+        floe_masks = component_floes(labels; minimum_area=minimum_area)
+        push!(data, :mask => map(s -> floe_masks[s], img_labels))
     end
 
 
@@ -548,5 +597,42 @@ function regionprops_table(
     # get convex_area
     # bounding boxes
 
-    return DataFrame(data)[:, properties]
+    # replace :bbox in list with min_row, max_row, min_col,  max_col
+    # tbd: replace :centroid with row_centroid, col_centroid
+    updated_properties = []
+    for p in properties
+        if p == :bbox
+            append!(updated_properties, [:min_row, :max_row, :min_col, :max_col])
+        elseif p == :centroid
+            append!(updated_properties, [:row_centroid, :col_centroid])
+        else
+            append!(updated_properties, [p])
+        end
+    end
+
+    return DataFrame(data)[:, updated_properties]
+end
+
+"""_get_bounds(box)
+
+Helper function to extract the min row, max row, min col, and max col
+from a vector of CartesianIndex ranges
+"""
+function _get_bounds(box)
+    upper_left = first(collect(box))
+    lower_right = last(collect(box))
+    minrow = getindex(upper_left, 1)
+    mincol = getindex(upper_left, 2)
+    maxrow = getindex(lower_right, 1)
+    maxcol = getindex(lower_right, 2)
+return minrow, maxrow, mincol, maxcol
+end
+
+"""_central_moment(x, y, xc, yc, p, q)
+Compute the central moments based on the index vectors
+x and y, the centroid xc, yc, and the exponents p and q.
+"""
+function _central_moment(x, y, xc, yc, p, q)
+    mu = sum((x .- xc).^p .* (y .- yc).^q)
+    return mu
 end
