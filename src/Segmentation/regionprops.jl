@@ -2,7 +2,18 @@
 import ..skimage: sk_measure
 import DataFrames: rename!, DataFrame, nrow, select!
 import ..Geospatial: latlon
-import Images: SegmentedImage, labels_map, component_boxes, component_centroids, component_lengths
+import Images: 
+    component_boxes, 
+    component_centroids, 
+    component_lengths, 
+    erode,
+    Fill,
+    labels_map, 
+    padarray,
+    SegmentedImage,
+    strel_diamond,
+    strel_box
+
 import DSP: conv
 
 """
@@ -64,51 +75,51 @@ julia> properties = ["area", "perimeter"]
     4 │     7    4.62132
 ```
 """
-function regionprops_table(
-    label_img::Union{Matrix{Int64},SegmentedImage},
-    intensity_img::Union{Nothing,AbstractMatrix}=nothing;
-    properties::Union{Vector{<:AbstractString},Tuple{String,Vararg{String}}}=(
-        "label",
-        "centroid",
-        "area",
-        "major_axis_length",
-        "minor_axis_length",
-        "convex_area",
-        "bbox",
-        "perimeter",
-        "orientation",
-    ),
-    extra_properties::Union{Tuple{Function,Vararg{Function}},Nothing}=nothing,
-)::DataFrame
-    if label_img isa SegmentedImage
-        label_img = labels_map(label_img)
-    end
+# function regionprops_table(
+#     label_img::Union{Matrix{Int64},SegmentedImage},
+#     intensity_img::Union{Nothing,AbstractMatrix}=nothing;
+#     properties::Union{Vector{<:AbstractString},Tuple{String,Vararg{String}}}=(
+#         "label",
+#         "centroid",
+#         "area",
+#         "major_axis_length",
+#         "minor_axis_length",
+#         "convex_area",
+#         "bbox",
+#         "perimeter",
+#         "orientation",
+#     ),
+#     extra_properties::Union{Tuple{Function,Vararg{Function}},Nothing}=nothing,
+# )::DataFrame
+#     if label_img isa SegmentedImage
+#         label_img = labels_map(label_img)
+#     end
 
-    if !isnothing(extra_properties)
-        @error "extra_properties not yet implemented in this wrapper; setting it to `nothing`"
-        extra_properties = nothing
-    end
+#     if !isnothing(extra_properties)
+#         @error "extra_properties not yet implemented in this wrapper; setting it to `nothing`"
+#         extra_properties = nothing
+#     end
 
-    props = DataFrame(
-        sk_measure.regionprops_table(
-            label_img, intensity_img, properties; extra_properties=extra_properties
-        ),
-    )
+#     props = DataFrame(
+#         sk_measure.regionprops_table(
+#             label_img, intensity_img, properties; extra_properties=extra_properties
+#         ),
+#     )
 
-    if "bbox" in properties
-        bbox_cols = getbboxcolumns(props)
-        fixzeroindexing!(props, bbox_cols[1:2])
-        renamecols!(props, bbox_cols, ["min_row", "min_col", "max_row", "max_col"])
-    end
+#     if "bbox" in properties
+#         bbox_cols = getbboxcolumns(props)
+#         fixzeroindexing!(props, bbox_cols[1:2])
+#         renamecols!(props, bbox_cols, ["min_row", "min_col", "max_row", "max_col"])
+#     end
 
-    if "centroid" in properties
-        centroid_cols = getcentroidcolumns(props)
-        roundtoint!(props, centroid_cols)
-        fixzeroindexing!(props, centroid_cols)
-        renamecols!(props, centroid_cols, ["row_centroid", "col_centroid"])
-    end
-    return props
-end
+#     if "centroid" in properties
+#         centroid_cols = getcentroidcolumns(props)
+#         roundtoint!(props, centroid_cols)
+#         fixzeroindexing!(props, centroid_cols)
+#         renamecols!(props, centroid_cols, ["row_centroid", "col_centroid"])
+#     end
+#     return props
+# end
 
 # Also adding regionprops as it might be more computationally efficient to get a property for each object on demand than generating the full regionprops_table at once
 
@@ -413,8 +424,8 @@ function benkrid_crookes(edge_array)
         val > 33 && continue
         perim += type_vals[val] * val_counts[val]
     end
-    print(perim)
-    return results
+    
+    return perim
 end
 
 
@@ -481,7 +492,7 @@ julia> properties = ["area", "perimeter"]
 function regionprops_table(
     label_img::Union{Matrix{Int64},SegmentedImage},
     intensity_img::Union{Nothing,AbstractMatrix}=nothing;
-    properties::Union{Vector{<:AbstractString},Tuple{String,Vararg{String}}, Vector{<:Symbol}}=(
+    properties::Union{Vector{<:AbstractString}, Vector{<:Symbol}}=[
         :label,
         :centroid,
         :area,
@@ -491,29 +502,43 @@ function regionprops_table(
         :bbox,
         :perimeter,
         :orientation,
-    ),
+    ],
     extra_properties::Union{Tuple{Function,Vararg{Function}},Nothing}=nothing,
     minimum_area=1,
 )::DataFrame
 
+    typeof(label_img) == SegmentedImage ? (labels = labels_map(label_img)) : labels = deepcopy(label_img)
+    eltype(properties) == String && (properties = [Symbol(a) for a in properties])
+
     data = Dict{Symbol,Any}()
+    
+    # Begin by extracting the set of labels that meet the minimum area criterion
+    # We also get a sorted list of image labels, so all the dictionary entries can 
+    # be placed in the same order.
+    areas = segment_pixel_count(label_img)
     img_labels = segment_labels(label_img)
     img_labels = img_labels[img_labels .!= 0]
     sort!(img_labels)
-
-    areas = segment_pixel_count(img)
     img_labels = img_labels[[areas[s] > minimum_area for s in img_labels]]
 
     :label ∈ properties && push!(data, :label => img_labels)
+
+    # re-use the computed areas
     :area ∈ properties && begin
-        areas = segment_pixel_count(img)
-        push!(data, :area => map(s -> counts[s], img_labels))
+        push!(data, :area => map(s -> areas[s], img_labels))
     end
 
     :mask ∈ properties && begin
-        floe_masks = component_floes(img.image_indexmap; minimum_area=minimum_area)
+        floe_masks = component_floes(labels_map(label_img); minimum_area=minimum_area)
         push!(data, :mask => map(s -> floe_masks[s], img_labels))
     end
+
+    :perimeter ∈ properties && begin
+        # future option: allow component perimeters to take the floe masks as an argument to save compute time
+        floe_perims = component_perimeters(labels_map(label_img); minimum_area=minimum_area)
+        push!(data, :perimeter => map(s -> floe_perims[s], img_labels)) 
+    end
+
 
     # TODO measurements
     # get centroid and convert to row_centroid, col_centroid
@@ -521,6 +546,7 @@ function regionprops_table(
     # get orientation
     # get perimeter
     # get convex_area
+    # bounding boxes
 
     return DataFrame(data)[:, properties]
 end
