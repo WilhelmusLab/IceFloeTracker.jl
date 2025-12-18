@@ -582,7 +582,7 @@ function regionprops_table(
         :area,
         :major_axis_length,
         :minor_axis_length,
-        # :convex_area,
+        :convex_area,
         :bbox,
         :perimeter,
         :orientation,
