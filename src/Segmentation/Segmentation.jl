@@ -2,6 +2,7 @@ module Segmentation
 
 export IceFloeSegmentationAlgorithm,
     component_floes,
+    component_perimeters,
     find_ice_labels,
     get_ice_labels_mask,
     get_ice_labels,
