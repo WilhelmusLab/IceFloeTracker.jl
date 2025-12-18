@@ -2,7 +2,7 @@
 import ..skimage: sk_measure
 import DataFrames: rename!, DataFrame, nrow, select!
 import ..Geospatial: latlon
-import Images: SegmentedImage, labels_map
+import Images: SegmentedImage, labels_map, component_boxes, component_centroids, component_lengths
 
 """
     regionprops_table(label_img, intensity_img; properties, connectivity, extra_properties)
@@ -296,4 +296,63 @@ function converttounits!(propdf, latlondata, colstodrop)
     propdf.major_axis_length .= convertlength(propdf.major_axis_length)
     propdf.perimeter .= convertlength(propdf.perimeter)
     return nothing
+end
+
+"""component_floes(indexmap; minimum_area=1)
+
+Given a labeled array, produce a dictionary where each entry is a binary array cropped to the
+location of the label.
+
+Examples:
+```jldoctest; setup = :(using IceFloeTracker)
+
+julia> A = zeros(Int, 8, 6); A[2:6, 1:2] .= 1; A[3:7, 4:5] .= 2; A[4:6, 3:6] .= 2;
+julia> A
+8×6 Matrix{Int64}:
+ 0  0  0  0  0  0
+ 1  1  0  0  0  0
+ 1  1  0  2  2  0
+ 1  1  2  2  2  2
+ 1  1  2  2  2  2
+ 1  1  2  2  2  2
+ 0  0  0  2  2  0
+ 0  0  0  0  0  0
+
+julia> masks = component_floes(A)
+julia> Dict{Any, Any} with 3 entries:
+  0 => Bool[1 1 … 1 1; 0 0 … 1 1; … ; 1 1 … 0 1; 1 1 … 1 1]
+  2 => Bool[0 1 1 0; 1 1 1 1; … ; 1 1 1 1; 0 1 1 0]
+  1 => Bool[1 1; 1 1; … ; 1 1; 1 1]
+julia> masks[2]
+5×4 BitMatrix:
+ 0  1  1  0
+ 1  1  1  1
+ 1  1  1  1
+ 1  1  1  1
+ 0  1  1  0
+julia> masks[1]
+5×2 BitMatrix:
+ 1  1
+ 1  1
+ 1  1
+ 1  1
+ 1  1
+```
+
+"""
+function component_floes(indexmap; minimum_area=1)
+    labels = unique(indexmap)
+    boxes = component_boxes(indexmap)
+    mn, mx = extrema(indexmap)
+    if !(mn == 0 || mn == 1)
+        throw(ArgumentError("The input labeled array should contain background label `0` as the minimum value"))
+    end
+    areas = component_lengths(indexmap)
+    floe_masks = Dict()
+    for i in labels
+        if areas[i] > minimum_area
+            floe_masks[i] = indexmap[boxes[i]] .== i
+        end
+    end
+    return floe_masks
 end
