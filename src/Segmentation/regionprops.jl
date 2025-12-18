@@ -3,6 +3,7 @@ import ..skimage: sk_measure
 import DataFrames: rename!, DataFrame, nrow, select!
 import ..Geospatial: latlon
 import Images: SegmentedImage, labels_map, component_boxes, component_centroids, component_lengths
+import DSP: conv
 
 """
     regionprops_table(label_img, intensity_img; properties, connectivity, extra_properties)
@@ -338,7 +339,6 @@ julia> masks[1]
  1  1
  1  1
 ```
-
 """
 function component_floes(indexmap; minimum_area=1)
     labels = unique(indexmap)
@@ -355,4 +355,172 @@ function component_floes(indexmap; minimum_area=1)
         end
     end
     return floe_masks
+end
+
+"""component_perimeter(indexmap; minimum_area=1, algorithm="benkrid_crookes")
+
+Estimate the perimeter of the labeled regions in `indexmap` using the specified algorithm.
+Algorithm options = "benkrid_crookes" (only option currently, will add crofton in future release)
+
+
+"""
+function component_perimeters(
+    indexmap;
+    minimum_area=1, 
+    algorithm="benkrid_crookes",
+    connectivity=4)
+    masks = component_floes(indexmap)
+    perims = Dict()
+    algorithm ∉ ["benkrid_crookes"] && begin
+        print("Unsupported Algorithm, defaulting to Benkrid-Crookes")
+        algorithm = "benkrid_crookes"
+    end
+
+    algorithm_functions = Dict("benkrid_crookes" => benkrid_crookes)
+
+    for label in keys(masks)
+        n, m = size(masks[label])
+        n * m == 1 && continue
+        label == 0 && (masks[label] = 0; continue)
+        
+        # Shape needs to have a border of zeros for erode to work here    
+        mpad = padarray(masks[label], Fill(0, (1, 1)))
+        connectivity == 4 ? (strel = strel_diamond((3,3))) : (strel = strel_box((3,3)))
+        epad = mpad .- erode(mpad, strel)
+        e = epad[1:n, 1:m]
+        perims[label] = algorithm_functions[algorithm](e)
+    end
+    return perims
+end
+
+function benkrid_crookes(edge_array)
+    type_vals = zeros(33)
+    type_vals[[5, 7, 15, 17, 25, 27]] .= 1
+    type_vals[[21, 33]] .= sqrt(2)
+    type_vals[[13, 23]] .= (1 + sqrt(2)) / 2
+
+    conv_arr = [10 2 10; 2 1 2; 10 2 10]
+    results = conv(edge_array, conv_arr; algorithm=:direct)
+
+    val_counts = Dict()
+    for val in vec(results)
+        val ∉ keys(val_counts) && (val_counts[val] = 0)
+        val_counts[val] += 1
+    end
+    perim = 0
+    for val in keys(val_counts)
+        val == 0 && continue
+        val > 33 && continue
+        perim += type_vals[val] * val_counts[val]
+    end
+    print(perim)
+    return results
+end
+
+
+# TODO: Make the new function work with the old docstring and example intact
+"""
+    regionprops_table(label_img, intensity_img; properties, connectivity, extra_properties)
+
+A wrapper of the `regionprops_table` function from the skimage python library.
+    
+See its full documentation at https://scikit-image.org/docs/stable/api/skimage.measure.html#regionprops-table.
+    
+# Arguments
+- `label_img`: Image with the labeled objects of interest. May be an integer array or a SegmentedImage.
+- `intensity_img`: (Optional) Used for generating `extra_properties`, such as a color image to use for calculating mean color in segments.
+- `properties`: List (`Vector` or `Tuple`) of properties to be generated for each connected component in `label_img`
+- `extra_properties`: (Optional) not yet implemented. It will be set to `nothing`
+
+# Notes
+- Zero indexing has been corrected for the `bbox` and `centroid` properties
+- `bbox` data (`max_col` and `max_row`) are inclusive
+- `centroid` data are rounded to the nearest integer
+
+See also [`regionprops`](@ref)
+
+# Examples
+
+```jldoctest; setup = :(using IceFloeTracker, Random, Images)
+julia> using IceFloeTracker, Random, Images
+
+julia> Random.seed!(123);
+
+julia> bw_img = rand([0, 1], 5, 10)
+5×10 Matrix{Int64}:
+ 1  0  1  0  0  0  0  0  0  1
+ 1  0  1  1  1  0  0  0  1  1
+ 1  1  0  1  1  0  1  0  0  1
+ 0  1  0  1  0  0  0  0  1  0
+ 1  0  0  0  0  1  0  1  0  1
+
+julia> label_img = label_components(bw_img, trues(3,3))
+5×10 Matrix{Int64}:
+ 1  0  1  0  0  0  0  0  0  4
+ 1  0  1  1  1  0  0  0  4  4
+ 1  1  0  1  1  0  3  0  0  4
+ 0  1  0  1  0  0  0  0  4  0
+ 1  0  0  0  0  2  0  4  0  4
+
+julia> properties = ["area", "perimeter"]
+2-element Vector{String}:
+ "area"
+ "perimeter"
+
+ julia> regionprops_table(label_img, bw_img, properties = properties)
+ 4×2 DataFrame
+  Row │ area   perimeter 
+      │ Int32  Float64   
+ ─────┼──────────────────
+    1 │    13   11.6213
+    2 │     1    0.0
+    3 │     1    0.0
+    4 │     7    4.62132
+```
+"""
+function regionprops_table(
+    label_img::Union{Matrix{Int64},SegmentedImage},
+    intensity_img::Union{Nothing,AbstractMatrix}=nothing;
+    properties::Union{Vector{<:AbstractString},Tuple{String,Vararg{String}}, Vector{<:Symbol}}=(
+        :label,
+        :centroid,
+        :area,
+        :major_axis_length,
+        :minor_axis_length,
+        :convex_area,
+        :bbox,
+        :perimeter,
+        :orientation,
+    ),
+    extra_properties::Union{Tuple{Function,Vararg{Function}},Nothing}=nothing,
+    minimum_area=1,
+)::DataFrame
+
+    data = Dict{Symbol,Any}()
+    img_labels = segment_labels(label_img)
+    img_labels = img_labels[img_labels .!= 0]
+    sort!(img_labels)
+
+    areas = segment_pixel_count(img)
+    img_labels = img_labels[[areas[s] > minimum_area for s in img_labels]]
+
+    :label ∈ properties && push!(data, :label => img_labels)
+    :area ∈ properties && begin
+        areas = segment_pixel_count(img)
+        push!(data, :area => map(s -> counts[s], img_labels))
+    end
+
+    :mask ∈ properties && begin
+        floe_masks = component_floes(img.image_indexmap; minimum_area=minimum_area)
+        push!(data, :mask => map(s -> floe_masks[s], img_labels))
+    end
+
+    # TODO measurements
+    # get centroid and convert to row_centroid, col_centroid
+    # get major/minor axis
+    # get orientation
+    # get perimeter
+    # get convex_area
+
+    return DataFrame(data)[:, properties]
 end
