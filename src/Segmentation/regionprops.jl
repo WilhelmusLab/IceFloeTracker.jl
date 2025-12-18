@@ -7,6 +7,7 @@ import Images:
     component_centroids, 
     component_lengths, 
     component_indices,
+    convexhull,
     erode,
     Fill,
     labels_map, 
@@ -430,6 +431,88 @@ function benkrid_crookes(edge_array)
 end
 
 
+"""component_convex_area(A; method="pixels")
+
+Compute the convex area of labeled regions. Two methods available: "pixel" and "polygon".
+The polygon method uses Green's theorem to find the area of a polygon through its line integral, 
+while the pixel method uses a point-in-pixel calculation to determine if pixels are inside the
+convex hull. In general the polygon area will be smaller than the pixel area.
+"""
+function component_convex_area(A::AbstractArray{T}; method="pixel") where {T<:Integer}
+    mn, mx = extrema(A)
+    if !(mn == 0 || mn == 1)
+        throw(ArgumentError("The input labeled array should contain background label `0` as the minimum value"))
+    end
+    areas = component_lengths(A)
+    
+    if method=="polygon"
+        convex_areas = zeros(Float64, 0:mx)
+        for i in unique(A)
+            i == 0 && begin 
+                convex_areas[i] = NaN
+                continue
+            end
+
+            # revist this: is it necessary to drop these?
+            areas[i] < 10 && begin
+                convex_areas[i] = NaN
+                continue
+            end
+
+            chull = convexhull(A .== i)
+            N = length(chull)
+
+            ca = 0
+            for j in 1:N
+                x0, y0 = Tuple(chull[j])
+                x1, y1 = Tuple(chull[(j % N) + 1])
+                ca += x0*y1 - y0*x1
+            end
+            ca *= 0.5
+            convex_areas[i] = ca
+        end
+        return convex_areas
+    elseif method=="pixel"
+        Aconvex = deepcopy(A)
+        # convex_areas = zeros(Float64, 0:mx)
+        indices = component_indices(CartesianIndex, A)
+        for i in unique(A)
+            i == 0 && continue
+
+            chull = convexhull(A .== i)
+            N = length(chull)
+            
+            x = getindex.(indices[i], 1)
+            y = getindex.(indices[i], 2);
+            for xi in x
+                for yi in y
+                    if A[xi, yi] == 0
+                        in_polygon = true
+                        for j in 1:N
+                            x0, y0 = Tuple(chull[j])
+                            x1, y1 = Tuple(chull[(j % N) + 1])
+                            if (yi - y0)*(x1 - x0) - (xi - x0)*(y1 - y0) > 0
+                                # positive means the point is to the right
+                                continue
+                            else
+                                in_polygon = false
+                                break
+                            end
+                        end
+                        # all points positive -> point is inside polygon
+                        in_polygon && (Aconvex[xi, yi] = i)
+                    end
+                end
+            end
+        end
+        return component_lengths(Aconvex)
+    else
+        print("Method not implemented")
+    end
+end
+
+
+
 # TODO: Make the new function work with the old docstring and example intact
 """
     regionprops_table(label_img, intensity_img; properties, connectivity, extra_properties)
@@ -499,7 +582,7 @@ function regionprops_table(
         :area,
         :major_axis_length,
         :minor_axis_length,
-        :convex_area,
+        # :convex_area,
         :bbox,
         :perimeter,
         :orientation,
@@ -516,8 +599,8 @@ function regionprops_table(
     # Begin by extracting the set of labels that meet the minimum area criterion
     # We also get a sorted list of image labels, so all the dictionary entries can 
     # be placed in the same order.
-    areas = segment_pixel_count(label_img)
-    img_labels = segment_labels(label_img)
+    areas = component_lengths(labels)
+    img_labels = unique(labels)
     img_labels = img_labels[img_labels .!= 0]
     sort!(img_labels)
     img_labels = img_labels[[areas[s] > minimum_area for s in img_labels]]
@@ -582,6 +665,13 @@ function regionprops_table(
         floe_perims = component_perimeters(labels; minimum_area=minimum_area)
         push!(data, :perimeter => map(s -> floe_perims[s], img_labels)) 
     end
+
+    :convex_area ∈ properties && begin
+        convex_areas = component_convex_area(labels; method="pixel")
+        push!(data, :convex_area => map(s -> convex_areas[s], img_labels))
+    end
+
+
     # psi-s needs masks, so this can get called first
     :mask ∈ properties && begin
         floe_masks = component_floes(labels; minimum_area=minimum_area)
@@ -590,15 +680,10 @@ function regionprops_table(
 
 
     # TODO measurements
-    # get centroid and convert to row_centroid, col_centroid
-    # get major/minor axis
-    # get orientation
-    # get perimeter
     # get convex_area
-    # bounding boxes
 
     # replace :bbox in list with min_row, max_row, min_col,  max_col
-    # tbd: replace :centroid with row_centroid, col_centroid
+    # and replace :centroid with row_centroid, col_centroid
     updated_properties = []
     for p in properties
         if p == :bbox
