@@ -3,7 +3,7 @@ import ..skimage: sk_exposure
 import ..ImageUtils: to_uint8
 
 # dmw: use multiple dispatch, so that if the 2d function is called 
-function adapthisteq(img::Matrix{T}, nbins=256, clip=0.01) where {T}
+function adapthisteq(img::Matrix{T}; clip=0.01, kwargs...) where {T}
     # Step 1: Normalize the image to [0, 1] based on its own min and max
     image_min, image_max = minimum(img), maximum(img)
     normalized_image = (img .- image_min) / (image_max - image_min)
