@@ -324,7 +324,7 @@ for larger shapes.
 end
 
 function (f::PixelConvexArea)(A)
-    _, mx = extrema(A)
+    mx = maximum(A)
     convex_areas = zeros(Float64, 0:mx)
     areas = component_lengths(A)
     bboxes = component_boxes(A)
