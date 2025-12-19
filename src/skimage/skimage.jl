@@ -2,7 +2,6 @@ module skimage
 
 using PyCall
 
-# export sk_measure, sk_morphology, sk_exposure
 export sk_morphology, sk_exposure
 
 const sk_morphology = PyNULL()
