@@ -83,7 +83,6 @@ function (p::Segment)(
         float64.(landmask), p.coastal_buffer_structuring_element
     )
     return p(
-        p,
         truecolor,
         falsecolor,
         landmask,
