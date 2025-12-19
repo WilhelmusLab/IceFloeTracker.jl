@@ -390,15 +390,14 @@ function component_perimeters(
     end
 
     algorithm_functions = Dict("benkrid_crookes" => benkrid_crookes)
-
+    connectivity == 4 ? (strel = strel_diamond((3,3))) : (strel = strel_box((3,3)))
     for label in keys(masks)
         n, m = size(masks[label])
         n * m == 1 && continue
         label == 0 && (masks[label] = 0; continue)
         
         # Shape needs to have a border of zeros for erode to work here    
-        mpad = padarray(masks[label], Fill(0, (1, 1)))
-        connectivity == 4 ? (strel = strel_diamond((3,3))) : (strel = strel_box((3,3)))
+        mpad = padarray(masks[label], Fill(0, (1, 1)))    
         epad = mpad .- erode(mpad, strel)
         e = epad[1:n, 1:m]
         perims[label] = algorithm_functions[algorithm](e)
