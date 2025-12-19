@@ -34,7 +34,7 @@ function adapthisteq_py(img::Matrix{T}, nbins=256, clip=0.01) where {T}
     )
 
     # Convert back to the original data type if necessary
-    final_image = to_uint8(final_image)
+    # final_image = to_uint8(final_image)
 
     return final_image
 end
