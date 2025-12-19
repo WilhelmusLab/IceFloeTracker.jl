@@ -415,8 +415,7 @@ function benkrid_crookes(edge_array)
     end
     perim = 0
     for val in keys(val_counts)
-        val == 0 && continue
-        val > 33 && continue
+        (val == 0 || val > 33) && continue
         perim += type_vals[val] * val_counts[val]
     end
     
