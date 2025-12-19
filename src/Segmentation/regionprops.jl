@@ -199,10 +199,9 @@ function component_perimeters(
     return perims
 end
 
-# TODO: Implement correction factor (multiply B-K perimeter by 0.95 if larger than some factor.)
-# TODO: Carry out the erosion and padding within the function.
+# TODO: Test and implement correction factor (multiply B-K perimeter by 0.95 if larger than some factor.)
 
-"""BenkridCrookes(strel)
+"""BenkridCrookes(connectivity=4)
    
 Functor producing a BenkridCrookes PerimeterEstimationAlgorithm. The connectivity
 used for the erosion is the only parameter. The algorithm uses strel_diamond((3,3)) for 4-connectivity and
