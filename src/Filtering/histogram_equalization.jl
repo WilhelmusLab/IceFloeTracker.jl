@@ -5,23 +5,14 @@ import ..ImageUtils: to_uint8
 # dmw: use multiple dispatch, so that if the 2d function is called 
 function adapthisteq(img::Matrix{T}; clip=0.01, kwargs...) where {T}
     # Step 1: Normalize the image to [0, 1] based on its own min and max
-    image_min, image_max = minimum(img), maximum(img)
-    normalized_image = (img .- image_min) / (image_max - image_min)
+    minval, maxval = minimum(img), maximum(img)
 
     # Step 2: Apply adaptive histogram equalization. equalize_adapthist handles the tiling to 1/8 of the image size (equivalent to 8x8 blocks in MATLAB)
     equalized_image = adjust_histogram(
-        normalized_image, AdaptiveEqualization(; clip=(1 - clip), nbins)
+        img, AdaptiveEqualization(; clip=(1 - clip), minval, maxval, kwargs...)
     )
 
-    # Step 3: Rescale the image back to the original range [image_min, image_max]
-    final_image = adjust_histogram(
-        equalized_image, LinearStretching(nothing => (image_min, image_max))
-    )
-
-    # Convert back to the original data type if necessary
-    final_image = to_uint8(final_image)
-
-    return final_image
+    return equalized_image
 end
 
 # TODO: delete adapthisteq_py after verifying that adapthisteq is close enough to the python
