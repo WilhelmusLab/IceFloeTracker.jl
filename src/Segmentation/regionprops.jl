@@ -285,7 +285,7 @@ for larger shapes.
 end
 
 function (f::PolygonConvexArea)(A)
-    mn, mx = extrema(A)
+    mx = maximum(A)
     areas = component_lengths(A)
 
     convex_areas = zeros(Float64, 0:mx)
