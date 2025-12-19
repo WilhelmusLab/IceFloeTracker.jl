@@ -58,7 +58,6 @@
         ]
         seg_imgs = SegmentedImage.(labels, labels)
         props = regionprops_table.(seg_imgs; properties=[:label, :mask])
-        # add_floemasks!.(props, seg_imgs)
 
 
         @test props[1][1, :].label == 2
