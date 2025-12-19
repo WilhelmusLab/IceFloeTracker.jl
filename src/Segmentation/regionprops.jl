@@ -653,7 +653,7 @@ function regionprops_table(
 
     :perimeter ∈ properties && begin
         # future option: allow component perimeters to take the floe masks as an argument to save compute time
-        floe_perims = component_perimeters(labels; minimum_area=minimum_area)
+        floe_perims = component_perimeters(labels)
         push!(data, :perimeter => map(s -> floe_perims[s], img_labels)) 
     end
 
