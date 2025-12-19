@@ -680,7 +680,7 @@ version = "76.2.0+0"
 
 [[deps.IceFloeTracker]]
 deps = ["ArchGDAL", "CSVFiles", "Clustering", "DSP", "DataFrames", "Dates", "Distributed", "Downloads", "FileIO", "ImageBinarization", "ImageSegmentation", "Images", "Interpolations", "OffsetArrays", "Peaks", "Proj", "PyCall", "Random", "Reexport", "StaticArrays", "StatsBase", "TiffImages", "TiledIteration", "TimeZones"]
-git-tree-sha1 = "78d6c7175faec4a1773b79f66d1f6d0330705ab6"
+git-tree-sha1 = "ba5885463bac779b7f26c4567c4da58d85137d7a"
 repo-rev = "main"
 repo-url = "https://github.com/WilhelmusLab/IceFloeTracker.jl.git"
 uuid = "04643c7a-9ac6-48c5-822f-2704f9e70bd3"
