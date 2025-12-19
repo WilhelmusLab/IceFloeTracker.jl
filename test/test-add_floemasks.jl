@@ -11,7 +11,6 @@
         ]
         seg_img = SegmentedImage(labels, labels)
         props = regionprops_table(seg_img; properties=[:label, :mask])
-        # add_floemasks!(props, seg_img)
 
         @test props[1, :].label == 2
         @test props[1, :].mask == BitMatrix([
