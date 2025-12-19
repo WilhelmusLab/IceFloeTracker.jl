@@ -256,9 +256,9 @@ function (f::BenkridCrookes)(shape_array)
 end
 
 
-"""component_convex_area(A; method="pixels")
+"""component_convex_area(A; algorithm=PixelConvexArea()")
 
-Compute the convex area of labeled regions. Two methods available: "pixel" and "polygon".
+Compute the convex area of labeled regions. Two methods available: "PixelConvexArea" and "PolygonConvexArea".
 The polygon method uses Green's theorem to find the area of a polygon through its line integral, 
 while the pixel method uses a point-in-pixel calculation to determine if pixels are inside the
 convex hull. In general the polygon area will be smaller than the pixel area.
@@ -287,30 +287,30 @@ end
 function (f::PolygonConvexArea)(A)
     mn, mx = extrema(A)
     areas = component_lengths(A)
-    if method=="polygon"
-        convex_areas = zeros(Float64, 0:mx)
-        for i in unique(A)
-            # treat convex area background and too-small objects as undefined
-            (i == 0) || (areas[i] < f.minimum_area) && begin
-                convex_areas[i] = NaN
-                continue
-            end
 
-            chull = convexhull(A .== i)
-            N = length(chull)
-
-            ca = 0
-            for j in 1:N
-                x0, y0 = Tuple(chull[j])
-                x1, y1 = Tuple(chull[(j % N) + 1])
-                ca += x0*y1 - y0*x1
-            end
-            ca *= 0.5
-            convex_areas[i] = ca
+    convex_areas = zeros(Float64, 0:mx)
+    for i in unique(A)
+        # treat convex area background and too-small objects as undefined
+        (i == 0) || (areas[i] < f.minimum_area) && begin
+            convex_areas[i] = NaN
+            continue
         end
+
+        chull = convexhull(A .== i)
+        N = length(chull)
+
+        ca = 0
+        for j in 1:N
+            x0, y0 = Tuple(chull[j])
+            x1, y1 = Tuple(chull[(j % N) + 1])
+            ca += x0*y1 - y0*x1
+        end
+        ca *= 0.5
+        convex_areas[i] = ca
+    end
     return convex_areas
 end
-end
+
 
 """PixelConvexArea()
 
@@ -430,8 +430,15 @@ function regionprops_table(
     ],
     extra_properties::Union{Tuple{Function,Vararg{Function}},Nothing}=nothing,
     minimum_area=1,
+    perimeter_algorithm=BenkridCrookes(),
+    convex_area_algorithm=PixelConvexArea()
 )::DataFrame
-    data = regionprops(label_img, intensity_img; properties=properties, extra_properties=extra_properties, minimum_area=minimum_area)
+    data = regionprops(label_img, intensity_img;
+        properties=properties,
+        extra_properties=extra_properties,
+        minimum_area=minimum_area,
+        perimeter_algorithm=perimeter_algorithm,
+        convex_area_algorithm=convex_area_algorithm)
     return DataFrame(data)
 end
 
