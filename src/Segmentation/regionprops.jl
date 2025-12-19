@@ -266,7 +266,8 @@ convex hull. In general the polygon area will be smaller than the pixel area.
 function component_convex_area(A;
     algorithm::ConvexAreaEstimationAlgorithm=PixelConvexArea()
     ) 
-    mn, mx = extrema(A)
+    mn = minimum(A)
+
     if !(mn == 0 || mn == 1)
         throw(ArgumentError("The input labeled array should contain background label `0` as the minimum value"))
     end
@@ -501,7 +502,7 @@ function regionprops(
     convex_area_algorithm=PixelConvexArea()
 )
 
-    isa(label_img, SegmentedImage) ? (labels = labels_map(label_img)) : labels = deepcopy(label_img)
+    isa(label_img, SegmentedImage) ? (labels = labels_map(label_img)) : labels = label_img
     eltype(properties) == String && (properties = [Symbol(a) for a in properties])
 
     data = Dict{Symbol,Any}()
