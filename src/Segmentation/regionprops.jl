@@ -374,7 +374,6 @@ Algorithm options = "benkrid_crookes" (only option currently, will add crofton i
 """
 function component_perimeters(
     indexmap;
-    minimum_area=1, 
     algorithm="benkrid_crookes",
     connectivity=4)
     masks = component_floes(indexmap)
