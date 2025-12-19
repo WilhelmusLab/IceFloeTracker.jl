@@ -5,7 +5,6 @@ using PyCall
 # export sk_measure, sk_morphology, sk_exposure
 export sk_morphology, sk_exposure
 
-# const sk_measure = PyNULL()
 const sk_morphology = PyNULL()
 const sk_exposure = PyNULL()
 
