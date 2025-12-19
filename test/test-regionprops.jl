@@ -2,6 +2,7 @@
     using Random
     import DataFrames: DataFrame, nrow
     import Images: label_components
+    import IceFloeTracker: PixelConvexArea, PolygonConvexArea
 
     Random.seed!(123)
     bw_img = Bool.(rand([0, 1], 5, 10))
@@ -56,4 +57,10 @@
             i in 1:nrow(table)
         ] .== [2, 2],
     )
+
+    # Test that algorithm options at least run
+    _ = regionprops(label_img; properties=["perimeter"], perimeter_algorithm=BenkridCrookes())
+    _ = regionprops(label_img; properties=["convex_area"], convex_area_algorithm=PolygonConvexArea())
+    _ = regionprops(label_img; properties=["convex_area"], convex_area_algorithm=PixelConvexArea())
+
 end
