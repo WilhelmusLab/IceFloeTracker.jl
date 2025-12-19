@@ -361,12 +361,7 @@ function component_floes(indexmap; minimum_area=1)
         throw(ArgumentError("The input labeled array should contain background label `0` as the minimum value"))
     end
     areas = component_lengths(indexmap)
-    floe_masks = Dict()
-    for i in labels
-        if areas[i] > minimum_area
-            floe_masks[i] = indexmap[boxes[i]] .== i
-        end
-    end
+    floe_masks = Dict(i => indexmap[boxes[i]] .== i for i in labels if areas[i] > minimum_area)
     return floe_masks
 end
 
