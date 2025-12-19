@@ -1,6 +1,7 @@
 module Segmentation
 
 export IceFloeSegmentationAlgorithm,
+    BenkridCrookes,
     component_floes,
     component_perimeters,
     find_ice_labels,
