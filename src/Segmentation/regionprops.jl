@@ -18,112 +18,6 @@ import Images:
 
 import DSP: conv
 
-"""
-    regionprops_table(label_img, intensity_img; properties, connectivity, extra_properties)
-
-A wrapper of the `regionprops_table` function from the skimage python library.
-    
-See its full documentation at https://scikit-image.org/docs/stable/api/skimage.measure.html#regionprops-table.
-    
-# Arguments
-- `label_img`: Image with the labeled objects of interest
-- `intensity_img`: (Optional) Used for generating `extra_properties`, integer/float array from which (presumably) `label_img` was generated 
-- `properties`: List (`Vector` or `Tuple`) of properties to be generated for each connected component in `label_img`
-- `extra_properties`: (Optional) not yet implemented. It will be set to `nothing`
-
-# Notes
-- Zero indexing has been corrected for the `bbox` and `centroid` properties
-- `bbox` data (`max_col` and `max_row`) are inclusive
-- `centroid` data are rounded to the nearest integer
-
-See also [`regionprops`](@ref)
-
-# Examples
-
-```jldoctest; setup = :(using IceFloeTracker, Random, Images)
-julia> using IceFloeTracker, Random, Images
-
-julia> Random.seed!(123);
-
-julia> bw_img = rand([0, 1], 5, 10)
-5×10 Matrix{Int64}:
- 1  0  1  0  0  0  0  0  0  1
- 1  0  1  1  1  0  0  0  1  1
- 1  1  0  1  1  0  1  0  0  1
- 0  1  0  1  0  0  0  0  1  0
- 1  0  0  0  0  1  0  1  0  1
-
-julia> label_img = label_components(bw_img, trues(3,3))
-5×10 Matrix{Int64}:
- 1  0  1  0  0  0  0  0  0  4
- 1  0  1  1  1  0  0  0  4  4
- 1  1  0  1  1  0  3  0  0  4
- 0  1  0  1  0  0  0  0  4  0
- 1  0  0  0  0  2  0  4  0  4
-
-julia> properties = ["area", "perimeter"]
-2-element Vector{String}:
- "area"
- "perimeter"
-
- julia> regionprops_table(label_img, bw_img, properties = properties)
- 4×2 DataFrame
-  Row │ area   perimeter 
-      │ Int32  Float64   
- ─────┼──────────────────
-    1 │    13   11.6213
-    2 │     1    0.0
-    3 │     1    0.0
-    4 │     7    4.62132
-```
-"""
-# function regionprops_table(
-#     label_img::Union{Matrix{Int64},SegmentedImage},
-#     intensity_img::Union{Nothing,AbstractMatrix}=nothing;
-#     properties::Union{Vector{<:AbstractString},Tuple{String,Vararg{String}}}=(
-#         "label",
-#         "centroid",
-#         "area",
-#         "major_axis_length",
-#         "minor_axis_length",
-#         "convex_area",
-#         "bbox",
-#         "perimeter",
-#         "orientation",
-#     ),
-#     extra_properties::Union{Tuple{Function,Vararg{Function}},Nothing}=nothing,
-# )::DataFrame
-#     if label_img isa SegmentedImage
-#         label_img = labels_map(label_img)
-#     end
-
-#     if !isnothing(extra_properties)
-#         @error "extra_properties not yet implemented in this wrapper; setting it to `nothing`"
-#         extra_properties = nothing
-#     end
-
-#     props = DataFrame(
-#         sk_measure.regionprops_table(
-#             label_img, intensity_img, properties; extra_properties=extra_properties
-#         ),
-#     )
-
-#     if "bbox" in properties
-#         bbox_cols = getbboxcolumns(props)
-#         fixzeroindexing!(props, bbox_cols[1:2])
-#         renamecols!(props, bbox_cols, ["min_row", "min_col", "max_row", "max_col"])
-#     end
-
-#     if "centroid" in properties
-#         centroid_cols = getcentroidcolumns(props)
-#         roundtoint!(props, centroid_cols)
-#         fixzeroindexing!(props, centroid_cols)
-#         renamecols!(props, centroid_cols, ["row_centroid", "col_centroid"])
-#     end
-#     return props
-# end
-
-# Also adding regionprops as it might be more computationally efficient to get a property for each object on demand than generating the full regionprops_table at once
 
 """
     regionprops(label_img, ; properties, connectivity)
@@ -447,8 +341,8 @@ function component_convex_area(A::AbstractArray{T}; method="pixel") where {T<:In
                 continue
             end
 
-            # revist this: is it necessary to drop these?
-            areas[i] < 10 && begin
+            # convexhull requires minimum area of 3
+            areas[i] < 3 && begin
                 convex_areas[i] = NaN
                 continue
             end
@@ -472,6 +366,11 @@ function component_convex_area(A::AbstractArray{T}; method="pixel") where {T<:In
         indices = component_indices(CartesianIndex, A)
         for i in unique(A)
             i == 0 && continue
+
+            # convexhull requires minimum area of 3
+            areas[i] < 3 && begin
+                continue
+            end
 
             chull = convexhull(A .== i)
             N = length(chull)
@@ -506,15 +405,13 @@ function component_convex_area(A::AbstractArray{T}; method="pixel") where {T<:In
 end
 
 
-
 # TODO: Make the new function work with the old docstring and example intact
 """
     regionprops_table(label_img, intensity_img; properties, connectivity, extra_properties)
 
-A wrapper of the `regionprops_table` function from the skimage python library.
-    
-See its full documentation at https://scikit-image.org/docs/stable/api/skimage.measure.html#regionprops-table.
-    
+Compute measures of labeled regions in label_img and return as a DataFrame. Optionally, include an
+extra image or array associated with the labels.
+        
 # Arguments
 - `label_img`: Image with the labeled objects of interest. May be an integer array or a SegmentedImage.
 - `intensity_img`: (Optional) Used for generating `extra_properties`, such as a color image to use for calculating mean color in segments.
@@ -522,9 +419,7 @@ See its full documentation at https://scikit-image.org/docs/stable/api/skimage.m
 - `extra_properties`: (Optional) not yet implemented. It will be set to `nothing`
 
 # Notes
-- Zero indexing has been corrected for the `bbox` and `centroid` properties
 - `bbox` data (`max_col` and `max_row`) are inclusive
-- `centroid` data are rounded to the nearest integer
 
 See also [`regionprops`](@ref)
 
@@ -584,6 +479,31 @@ function regionprops_table(
     extra_properties::Union{Tuple{Function,Vararg{Function}},Nothing}=nothing,
     minimum_area=1,
 )::DataFrame
+    data = regionprops(label_img, intensity_img; properties=properties, extra_properties=extra_properties, minimum_area=minimum_area)
+    return DataFrame(data)
+end
+
+"""regionprops(label_img, intensity_img; properties, extra_properties, minimum_area)
+
+
+"""
+function regionprops(
+    label_img::Union{Matrix{Int64},SegmentedImage},
+    intensity_img::Union{Nothing,AbstractMatrix}=nothing;
+    properties::Union{Vector{<:AbstractString}, Vector{<:Symbol}}=[
+        :label,
+        :centroid,
+        :area,
+        :major_axis_length,
+        :minor_axis_length,
+        :convex_area,
+        :bbox,
+        :perimeter,
+        :orientation,
+    ],
+    extra_properties::Union{Tuple{Function,Vararg{Function}},Nothing}=nothing,
+    minimum_area=1,
+)
 
     isa(label_img, SegmentedImage) ? (labels = labels_map(label_img)) : labels = deepcopy(label_img)
     eltype(properties) == String && (properties = [Symbol(a) for a in properties])
@@ -612,37 +532,14 @@ function regionprops_table(
                           :minor_axis_length ∈ properties,
                           :orientation ∈ properties])
     compute_moments && begin
-        centroids = component_centroids(labels)
-        row_centroid = first.(centroids)
-        col_centroid = last.(centroids)
-        push!(data, :row_centroid => map(s -> row_centroid[s], img_labels))
-        push!(data, :col_centroid => map(s -> col_centroid[s], img_labels))
-
-        indices = component_indices(CartesianIndex, labels)
-        moment_measures = []
-        for s in img_labels
-            X = getindex.(indices[s], 1)
-            Y = getindex.(indices[s], 2);
-            xc = row_centroid[s]
-            yc = col_centroid[s]
-            
-            mu11 = _central_moment(X, Y, xc, yc, 1, 1)
-            mu20 = _central_moment(X, Y, xc, yc, 2, 0)
-            mu02 = _central_moment(X, Y, xc, yc, 0, 2)
-            theta = 0.5 * atan(2*mu11, mu20 - mu02)
-            
-            λ0 = (mu20 + mu02 + sqrt((mu20 - mu02)^2 + 4*mu11^2))/2
-            λ1 = (mu20 + mu02 - sqrt((mu20 - mu02)^2 + 4*mu11^2))/2
-            
-            ## 
-            ra = 4*(λ0/areas[s])^0.5 
-            rb = 4*(λ1/areas[s])^0.5
-            append!(moment_measures, [[ra, rb, theta]])
-        end
-        moment_measures = stack(moment_measures)
-        push!(data, :major_axis_length => moment_measures[1,:])
-        push!(data, :minor_axis_length => moment_measures[2,:])
-        push!(data, :orientation => moment_measures[3,:])
+        data_moments = _component_moment_measures(labels, img_labels)
+        :centroid ∈ properties && begin
+            push!(data, :row_centroid => data_moments[:row_centroid])
+            push!(data, :col_centroid => data_moments[:col_centroid])
+        end 
+        :major_axis_length ∈ properties && push!(data, :major_axis_length => data_moments[:major_axis_length])
+        :minor_axis_length ∈ properties && push!(data, :minor_axis_length => data_moments[:minor_axis_length])
+        :orientation ∈ properties  && push!(data, :orientation => data_moments[:orientation])
     end
 
     :bbox ∈ properties && begin
@@ -688,8 +585,7 @@ function regionprops_table(
             append!(updated_properties, [p])
         end
     end
-
-    return DataFrame(data)[:, updated_properties]
+    return Dict(prop => data[prop] for prop in updated_properties)
 end
 
 """_get_bounds(box)
@@ -715,3 +611,56 @@ function _central_moment(x, y, xc, yc, p, q)
     mu = sum((x .- xc).^p .* (y .- yc).^q)
     return mu
 end
+
+"""_component_moment_measures(labels, label_list)
+
+Compute standard image measures which rely on calculation of image moments. Returns
+a dictionary
+
+# Arguments
+- labels: Matrix with integer-labeled regions
+- label_list: List of labels to compute measures for
+
+# Outputs
+- Dictionary with entries "row_centroid", "col_centroid", "major_axis_length", "minor_axis_length", 
+and "orientation" where each entry is a vector ordered by label_list.
+"""
+function _component_moment_measures(labels, label_list)
+    data = Dict()
+    centroids = component_centroids(labels)
+    areas = component_lengths(labels)
+    indices = component_indices(CartesianIndex, labels)
+
+    row_centroid = first.(centroids)
+    col_centroid = last.(centroids)
+    push!(data, :row_centroid => map(s -> row_centroid[s], label_list))
+    push!(data, :col_centroid => map(s -> col_centroid[s], label_list))
+
+    moment_measures = []
+    for s in label_list
+        X = getindex.(indices[s], 1)
+        Y = getindex.(indices[s], 2);
+        xc = row_centroid[s]
+        yc = col_centroid[s]
+        
+        mu11 = _central_moment(X, Y, xc, yc, 1, 1)
+        mu20 = _central_moment(X, Y, xc, yc, 2, 0)
+        mu02 = _central_moment(X, Y, xc, yc, 0, 2)
+        theta = 0.5 * atan(2*mu11, mu20 - mu02)
+        
+        λ0 = (mu20 + mu02 + sqrt((mu20 - mu02)^2 + 4*mu11^2))/2
+        λ1 = (mu20 + mu02 - sqrt((mu20 - mu02)^2 + 4*mu11^2))/2
+        
+        ## 
+        ra = 4*(λ0/areas[s])^0.5 
+        rb = 4*(λ1/areas[s])^0.5
+        append!(moment_measures, [[ra, rb, theta]])
+    end
+    moment_measures = stack(moment_measures)
+    push!(data, :major_axis_length => moment_measures[1,:])
+    push!(data, :minor_axis_length => moment_measures[2,:])
+    push!(data, :orientation => moment_measures[3,:])
+    return data
+end
+
+
