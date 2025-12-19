@@ -411,8 +411,7 @@ function benkrid_crookes(edge_array)
 
     val_counts = Dict()
     for val in vec(results)
-        val ∉ keys(val_counts) && (val_counts[val] = 0)
-        val_counts[val] += 1
+        val_counts[val] = get(val_counts, val, 0) + 1
     end
     perim = 0
     for val in keys(val_counts)
