@@ -18,98 +18,7 @@ import Images:
 
 import DSP: conv
 
-
-"""
-    regionprops(label_img, ; properties, connectivity)
-
-A wrapper of the `regionprops` function from the skimage python library.
-    
-See its full documentation at https://scikit-image.org/docs/stable/api/skimage.measure.html#skimage.measure.regionprops.
-    
-# Arguments
-- `label_img`: Image with the labeled objects of interest
-- `intensity_img`: (Optional) Used for generating `extra_properties`, integer/float array from which (presumably) `label_img` was generated
-- `extra_properties`: (Optional) not yet implemented. It will be set to `nothing`
-
-See also [`regionprops_table`](@ref)
-
-# Examples
-
-```jldoctest; setup = :(using IceFloeTracker, Random)
-julia> Random.seed!(123);
-
-julia> bw_img = rand([0, 1], 5, 10)
-5×10 Matrix{Int64}:
- 1  0  1  0  0  0  0  0  0  1
- 1  0  1  1  1  0  0  0  1  1
- 1  1  0  1  1  0  1  0  0  1
- 0  1  0  1  0  0  0  0  1  0
- 1  0  0  0  0  1  0  1  0  1
-
- julia> label_img = Images.label_components(bw_img, trues(3,3))
- 5×10 Matrix{Int64}:
-  1  0  1  0  0  0  0  0  0  4
-  1  0  1  1  1  0  0  0  4  4
-  1  1  0  1  1  0  3  0  0  4
-  0  1  0  1  0  0  0  0  4  0
-  1  0  0  0  0  2  0  4  0  4
-
- julia> regions = regionprops(label_img, bw_img);
-
- julia> for region in regions
-           println(region.area,"\t", region.perimeter)
-        end
-13      11.621320343559642
-1       0.0
-1       0.0
-7       4.621320343559642
-```
-"""
-function regionprops(
-    label_img::Any,
-    intensity_img::Any=nothing;
-    extra_properties::Union{Tuple{Function,Vararg{Function}},Nothing}=nothing,
-)
-    if !isnothing(extra_properties)
-        @error "<extra_properties> not yet implemented in this wrapper; setting it to <nothing>"
-        extra_properties = nothing
-    end
-
-    return sk_measure.regionprops(
-        label_img, intensity_img; extra_properties=extra_properties
-    )
-end
-
-"""
-    getcentroidcolumns(props::DataFrame)
-
-Returns the column names of the centroid columns in `props`.
-"""
-function getcentroidcolumns(props::DataFrame)
-    return filter(col -> occursin(r"^centroid-\d$", col), names(props))
-end
-
-"""
-    getbboxcolumns(props::DataFrame)
-
-Return the column names of the bounding box columns in `props`.
-"""
-function getbboxcolumns(props::DataFrame)
-    return filter(col -> occursin(r"^bbox-\d$", col), names(props))
-end
-
-"""
-    fixzeroindexing!(props::DataFrame, props_to_fix::Vector{T}) where T<:Union{Symbol,String}
-
-Fix the zero-indexing of the `props_to_fix` columns in `props` by adding 1 to each element.
-"""
-function fixzeroindexing!(
-    props::DataFrame, props_to_fix::Vector{T}
-) where {T<:Union{Symbol,String}}
-    props[:, props_to_fix] .+= 1
-    return nothing
-end
-
+# TODO: Determine if this function is needed, since rename! is a standard function for DataFrames.jl.
 """
     renamecols!(props::DataFrame, oldnames::Vector{T}, newnames::Vector{T}) where T<:Union{Symbol,String}
 
@@ -122,6 +31,7 @@ function renamecols!(
     return nothing
 end
 
+# TODO: Check if we can drop this function. It's actually useful to keep the decimals in the row/col centroids.
 """
     roundtoint!(props::DataFrame, colnames::Vector{T}) where T<:Union{Symbol,String}
 
@@ -149,11 +59,13 @@ function addlatlon!(pairedfloesdf::DataFrame, refimage::AbstractString)
 end
 
 ## LatLon functions originally from IFTPipeline.jl
-
+# TODO: Add example with reference geotiff image.
 """
     convertcentroid!(propdf, latlondata, colstodrop)
 
-Convert the centroid coordinates from row and column to latitude and longitude dropping unwanted columns specified in `colstodrop` for the output data structure. Addionally, add columns `x` and `y` with the pixel coordinates of the centroid.
+Convert the centroid coordinates from row and column to latitude and longitude dropping unwanted
+columns specified in `colstodrop` for the output data structure. Addionally, add columns `x` and `y`
+with the pixel coordinates of the centroid.
 """
 function convertcentroid!(propdf, latlondata, colstodrop)
     latitude, longitude = [
@@ -295,6 +207,13 @@ function component_perimeters(
     return perims
 end
 
+# TODO: Implement correction factor (multiply B-K perimeter by 0.95 if larger than some factor.)
+# TODO: Carry out the erosion and padding within the function.
+"""benkrid_crookes(edge_array)
+
+Compute the perimeter of object boundary `edge_array` following 
+Benkrid and Crookes (2000).
+"""
 function benkrid_crookes(edge_array)
     type_vals = zeros(33)
     type_vals[[5, 7, 15, 17, 25, 27]] .= 1
@@ -485,7 +404,40 @@ end
 
 """regionprops(label_img, intensity_img; properties, extra_properties, minimum_area)
 
+Core function returning a dictionary with an entry for each returned property.
 
+See also [`regionprops_table`](@ref)
+
+# Examples
+```jldoctest; setup = :(using IceFloeTracker, Random)
+julia> Random.seed!(123);
+
+julia> bw_img = rand([0, 1], 5, 10)
+5×10 Matrix{Int64}:
+ 1  0  1  0  0  0  0  0  0  1
+ 1  0  1  1  1  0  0  0  1  1
+ 1  1  0  1  1  0  1  0  0  1
+ 0  1  0  1  0  0  0  0  1  0
+ 1  0  0  0  0  1  0  1  0  1
+
+ julia> label_img = Images.label_components(bw_img, trues(3,3))
+ 5×10 Matrix{Int64}:
+  1  0  1  0  0  0  0  0  0  4
+  1  0  1  1  1  0  0  0  4  4
+  1  1  0  1  1  0  3  0  0  4
+  0  1  0  1  0  0  0  0  4  0
+  1  0  0  0  0  2  0  4  0  4
+
+ julia> measures = regionprops(label_img, bw_img);
+
+ julia> for s in unique(label_img)
+           println(region.area[s],"\t", region.perimeter[s])
+        end
+13      11.621320343559642
+1       0.0
+1       0.0
+7       4.621320343559642
+```
 """
 function regionprops(
     label_img::Union{Matrix{Int64},SegmentedImage},

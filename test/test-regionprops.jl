@@ -43,14 +43,10 @@
     )
     # check all requested properties are present
 
-    # check default properties
-    # TODO: verify that this test was needed. It doesn't seem useful to me.
-    # @test table == regionprops_table(label_img)
-
     # Tests for regionprops
     regions = regionprops(label_img, bw_img)
-
-    @test table.area[1] == regions[1].area
+    print(keys(regions))
+    @test table.area[2] == regions[:area][2]
 
     # Check floe masks generation and correct cropping
     add_floemasks!(table, label_img)
