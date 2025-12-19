@@ -375,7 +375,9 @@ Algorithm options = "benkrid_crookes" (only option currently, will add crofton i
 function component_perimeters(
     indexmap;
     algorithm="benkrid_crookes",
-    connectivity=4)
+    connectivity=4
+    )
+
     masks = component_floes(indexmap)
     perims = Dict()
     algorithm ∉ ["benkrid_crookes"] && begin
@@ -388,7 +390,7 @@ function component_perimeters(
     for label in keys(masks)
         n, m = size(masks[label])
         n * m == 1 && continue
-        label == 0 && (masks[label] = 0; continue)
+        label == 0 && (perims[label] = 0; continue)
         
         # Shape needs to have a border of zeros for erode to work here    
         mpad = padarray(masks[label], Fill(0, (1, 1)))    
@@ -413,6 +415,7 @@ function benkrid_crookes(edge_array)
         val_counts[val] = get(val_counts, val, 0) + 1
     end
     perim = 0
+
     for val in keys(val_counts)
         (val == 0 || val > 33) && continue
         perim += type_vals[val] * val_counts[val]
