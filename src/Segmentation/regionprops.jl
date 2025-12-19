@@ -370,6 +370,9 @@ extra image or array associated with the labels.
 - `intensity_img`: (Optional) Used for generating `extra_properties`, such as a color image to use for calculating mean color in segments.
 - `properties`: List (`Vector` or `Tuple`) of properties to be generated for each connected component in `label_img`
 - `extra_properties`: (Optional) not yet implemented. It will be set to `nothing`
+- `minimum_area`: Smallest region to calculate measures on
+- `perimeter_algorithm`: PerimeterEstimationAlgorithm. Currently only available is BenkridCrookes.
+- `convex_area_algorithm`: ConvexAreaEstimationAlgorithm. Options are PolygonConvexArea or PixelConvexArea, default is pixel.
 
 # Notes
 - `bbox` data (`max_col` and `max_row`) are inclusive
@@ -450,6 +453,16 @@ end
 Core function returning a dictionary with an entry for each returned property.
 
 See also [`regionprops_table`](@ref)
+
+# Arguments
+- `label_img`: Image with the labeled objects of interest. May be an integer array or a SegmentedImage.
+- `intensity_img`: (Optional) Used for generating `extra_properties`, such as a color image to use for calculating mean color in segments.
+- `properties`: List (`Vector` or `Tuple`) of properties to be generated for each connected component in `label_img`
+- `extra_properties`: (Optional) not yet implemented. It will be set to `nothing`
+- `minimum_area`: Smallest region to calculate measures on
+- `perimeter_algorithm`: PerimeterEstimationAlgorithm. Currently only available is BenkridCrookes.
+- `convex_area_algorithm`: ConvexAreaEstimationAlgorithm. Options are PolygonConvexArea or PixelConvexArea, default is pixel.
+
 
 # Examples
 ```jldoctest; setup = :(using IceFloeTracker, Random)
