@@ -18,6 +18,9 @@ import Images:
 
 import DSP: conv
 
+abstract type PerimeterEstimationAlgorithm <: Function end
+
+
 # TODO: Determine if this function is needed, since rename! is a standard function for DataFrames.jl.
 """
     renamecols!(props::DataFrame, oldnames::Vector{T}, newnames::Vector{T}) where T<:Union{Symbol,String}
@@ -175,54 +178,69 @@ end
 
 Estimate the perimeter of the labeled regions in `indexmap` using the specified algorithm.
 Algorithm options = "benkrid_crookes" (only option currently, will add crofton in future release)
-
-
+Defaults to using connectivity 4.
 """
 function component_perimeters(
     indexmap;
-    algorithm="benkrid_crookes",
-    connectivity=4
+    algorithm::PerimeterEstimationAlgorithm=BenkridCrookes(),
     )
-
     masks = component_floes(indexmap)
     perims = Dict()
-    algorithm ∉ ["benkrid_crookes"] && begin
-        print("Unsupported Algorithm, defaulting to Benkrid-Crookes")
-        algorithm = "benkrid_crookes"
-    end
 
-    algorithm_functions = Dict("benkrid_crookes" => benkrid_crookes)
-    connectivity == 4 ? (strel = strel_diamond((3,3))) : (strel = strel_box((3,3)))
+    
     for label in keys(masks)
         n, m = size(masks[label])
         n * m == 1 && continue
         label == 0 && (perims[label] = 0; continue)
         
         # Shape needs to have a border of zeros for erode to work here    
-        mpad = padarray(masks[label], Fill(0, (1, 1)))    
-        epad = mpad .- erode(mpad, strel)
-        e = epad[1:n, 1:m]
-        perims[label] = algorithm_functions[algorithm](e)
+        perims[label] = algorithm
     end
     return perims
 end
 
 # TODO: Implement correction factor (multiply B-K perimeter by 0.95 if larger than some factor.)
 # TODO: Carry out the erosion and padding within the function.
-"""benkrid_crookes(edge_array)
 
-Compute the perimeter of object boundary `edge_array` following 
-Benkrid and Crookes (2000).
+"""BenkridCrookes(strel)
+   
+Functor producing a BenkridCrookes PerimeterEstimationAlgorithm. The connectivity
+used for the erosion is the only parameter. The algorithm uses strel_diamond((3,3)) for 4-connectivity and
+strel_box((3,3)) for 8-connectivity. The resulting function operates on a binary array, which 
+is assumed to contain a single object.
+
+# Examples
+```
+julia> benkrid_crookes = BenkridCrookes(connectivity=4)
+julia> A = [1 1 1; 1 1 1; 1 1 1]
+julia> benkrid_crookes(A)
+8.0
+```
 """
-function benkrid_crookes(edge_array)
+@kwdef struct BenkridCrookes <: PerimeterEstimationAlgorithm
+    connectivity = 4
+end
+
+function (f::BenkridCrookes)(shape_array)
+    f.connectivity == 4 ? (strel = strel_diamond((3,3))) : (strel = strel_box((3,3)))
+    # Get border using the strel
+    # Shape needs to have a border of zeros for erode to work here    
+    mpad = padarray(shape_array, Fill(0, (1, 1)))    
+    epad = mpad .- erode(mpad, strel)
+    e = epad[1:n, 1:m]
+
+    # Set up lookup table for computing perimeter
     type_vals = zeros(33)
     type_vals[[5, 7, 15, 17, 25, 27]] .= 1
     type_vals[[21, 33]] .= sqrt(2)
     type_vals[[13, 23]] .= (1 + sqrt(2)) / 2
 
+    # Convolution array for classifying boundary pixel type
     conv_arr = [10 2 10; 2 1 2; 10 2 10]
-    results = conv(edge_array, conv_arr; algorithm=:direct)
 
+    results = conv(e, conv_arr; algorithm=:direct)
+
+    # Count instances of boundary types and multiply to get the perimeter
     val_counts = Dict()
     for val in vec(results)
         val_counts[val] = get(val_counts, val, 0) + 1
@@ -521,12 +539,7 @@ function regionprops(
         push!(data, :mask => map(s -> floe_masks[s], img_labels))
     end
 
-
-    # TODO measurements
-    # get convex_area
-
-    # replace :bbox in list with min_row, max_row, min_col,  max_col
-    # and replace :centroid with row_centroid, col_centroid
+    # TODO add psi-s curve generation as an option
     updated_properties = []
     for p in properties
         if p == :bbox
