@@ -19,6 +19,7 @@ import Images:
 import DSP: conv
 
 abstract type PerimeterEstimationAlgorithm <: Function end
+abstract type ConvexAreaEstimationAlgorithm <: Function end
 
 
 # TODO: Determine if this function is needed, since rename! is a standard function for DataFrames.jl.
@@ -262,23 +263,35 @@ The polygon method uses Green's theorem to find the area of a polygon through it
 while the pixel method uses a point-in-pixel calculation to determine if pixels are inside the
 convex hull. In general the polygon area will be smaller than the pixel area.
 """
-function component_convex_area(A::AbstractArray{T}; method="pixel") where {T<:Integer}
+function component_convex_area(A;
+    algorithm::ConvexAreaEstimationAlgorithm=PixelConvexArea()
+    ) 
     mn, mx = extrema(A)
     if !(mn == 0 || mn == 1)
         throw(ArgumentError("The input labeled array should contain background label `0` as the minimum value"))
     end
+    return algorithm(A)
+end
+
+"""PolygonConvexArea(minimum_area=4)
+
+Estimate the convex area by integrating the area of the convex hull polygon.
+Uses the convexhull function from ImageMorphology, which raises an error if the
+area of the segment is less than or equal to 3. In general, the error should be smaller
+for larger shapes.
+"""
+@kwdef struct PolygonConvexArea <: ConvexAreaEstimationAlgorithm
+    minimum_area = 4
+end
+
+function (f::PolygonConvexArea)(A)
+    mn, mx = extrema(A)
     areas = component_lengths(A)
-    
     if method=="polygon"
         convex_areas = zeros(Float64, 0:mx)
         for i in unique(A)
-            i == 0 && begin 
-                convex_areas[i] = NaN
-                continue
-            end
-
-            # convexhull requires minimum area of 3
-            areas[i] < 3 && begin
+            # treat convex area background and too-small objects as undefined
+            (i == 0) || (areas[i] < f.minimum_area) && begin
                 convex_areas[i] = NaN
                 continue
             end
@@ -295,53 +308,56 @@ function component_convex_area(A::AbstractArray{T}; method="pixel") where {T<:In
             ca *= 0.5
             convex_areas[i] = ca
         end
-        return convex_areas
-    elseif method=="pixel"
-        Aconvex = deepcopy(A)
-        # convex_areas = zeros(Float64, 0:mx)
-        indices = component_indices(CartesianIndex, A)
-        for i in unique(A)
-            i == 0 && continue
-
-            # convexhull requires minimum area of 3
-            areas[i] < 3 && begin
-                continue
-            end
-
-            chull = convexhull(A .== i)
-            N = length(chull)
-            
-            x = getindex.(indices[i], 1)
-            y = getindex.(indices[i], 2);
-            for xi in x
-                for yi in y
-                    if A[xi, yi] == 0
-                        in_polygon = true
-                        for j in 1:N
-                            x0, y0 = Tuple(chull[j])
-                            x1, y1 = Tuple(chull[(j % N) + 1])
-                            if (yi - y0)*(x1 - x0) - (xi - x0)*(y1 - y0) > 0
-                                # positive means the point is to the right
-                                continue
-                            else
-                                in_polygon = false
-                                break
-                            end
-                        end
-                        # all points positive -> point is inside polygon
-                        in_polygon && (Aconvex[xi, yi] = i)
-                    end
-                end
-            end
-        end
-        return component_lengths(Aconvex)
-    else
-        print("Method not implemented")
-    end
+    return convex_areas
+end
 end
 
+"""PixelConvexArea()
 
-# TODO: Make the new function work with the old docstring and example intact
+Estimate the convex area by integrating the area of the convex hull polygon.
+Uses the convexhull function from ImageMorphology, which raises an error if the
+area of the segment is less than or equal to 3. In general, the error should be smaller
+for larger shapes.
+"""
+@kwdef struct PixelConvexArea <: ConvexAreaEstimationAlgorithm
+    minimum_area = 4
+end
+
+function (f::PixelConvexArea)(A)
+    _, mx = extrema(A)
+    convex_areas = zeros(Float64, 0:mx)
+    areas = component_lengths(A)
+    bboxes = component_boxes(A)
+    labels = unique(A)
+    for i in labels
+        
+        # treat convex area background and too-small objects as undefined
+        (i == 0) || (areas[i] < f.minimum_area) && begin
+            convex_areas[i] = NaN
+            continue
+        end
+            
+        chull = convexhull(A .== i)
+        N = length(chull)
+        x = getindex.(collect(bboxes[i]), 1)
+        y = getindex.(collect(bboxes[i]), 2)
+        
+        for idx in 1:length(x)
+            xi = x[idx]
+            yi = y[idx]
+            A[xi, yi] .== i && (convex_areas[i] += 1, continue)
+            checkvals = zeros(N)
+            for j in 1:N
+                x0, y0 = Tuple(chull[j])
+                x1, y1 = Tuple(chull[(j % N) + 1])
+                checkvals[j] = (yi - y0)*(x1 - x0) - (xi - x0)*(y1 - y0)
+            end
+            all(checkvals .>= 0) && (convex_areas[i] += 1) 
+            end
+        end    
+    return convex_areas
+end
+
 """
     regionprops_table(label_img, intensity_img; properties, connectivity, extra_properties)
 
@@ -419,6 +435,8 @@ function regionprops_table(
     return DataFrame(data)
 end
 
+# TODO: Updated regionprops_table and regionprops to enable customizing the algorithms.
+
 """regionprops(label_img, intensity_img; properties, extra_properties, minimum_area)
 
 Core function returning a dictionary with an entry for each returned property.
@@ -472,6 +490,8 @@ function regionprops(
     ],
     extra_properties::Union{Tuple{Function,Vararg{Function}},Nothing}=nothing,
     minimum_area=1,
+    perimeter_algorithm=BenkridCrookes(),
+    convex_area_algorithm=PixelConvexArea()
 )
 
     isa(label_img, SegmentedImage) ? (labels = labels_map(label_img)) : labels = deepcopy(label_img)
@@ -514,6 +534,7 @@ function regionprops(
     :bbox ∈ properties && begin
         bboxes_init =  component_boxes(labels)
         bboxes = stack(_get_bounds.(bboxes_init[s] for s in img_labels))
+
         push!(data, :min_row => bboxes[1,:]) 
         push!(data, :max_row => bboxes[2,:]) 
         push!(data, :min_col => bboxes[3,:]) 
@@ -521,13 +542,12 @@ function regionprops(
     end 
 
     :perimeter ∈ properties && begin
-        # future option: allow component perimeters to take the floe masks as an argument to save compute time
-        floe_perims = component_perimeters(labels)
+        floe_perims = component_perimeters(labels; algorithm=perimeter_algorithm)
         push!(data, :perimeter => map(s -> floe_perims[s], img_labels)) 
     end
 
     :convex_area ∈ properties && begin
-        convex_areas = component_convex_area(labels; method="pixel")
+        convex_areas = component_convex_area(labels; algorithm=convex_area_algorithm)
         push!(data, :convex_area => map(s -> convex_areas[s], img_labels))
     end
 
