@@ -473,7 +473,7 @@ julia> bw_img = rand([0, 1], 5, 10)
  julia> measures = regionprops(label_img, bw_img);
 
  julia> for s in unique(label_img)
-           println(region.area[s],"\t", region.perimeter[s])
+           println(measures.area[s],"\t", measures.perimeter[s])
         end
 13      11.621320343559642
 1       0.0
