@@ -65,11 +65,11 @@ import ..Segmentation:
     IceDetectionThresholdMODIS721
 
 struct Segment <: IceFloeSegmentationAlgorithm
-    landmask_structuring_element::AbstractMatrix{Bool}
+    coastal_buffer_structuring_element::AbstractMatrix{Bool}
 end
 
-function Segment(; landmask_structuring_element=make_landmask_se())
-    return Segment(landmask_structuring_element)
+function Segment(; coastal_buffer_structuring_element=make_landmask_se())
+    return Segment(coastal_buffer_structuring_element)
 end
 
 function (p::Segment)(
@@ -78,15 +78,31 @@ function (p::Segment)(
     landmask::U;
     intermediate_results_callback::Union{Nothing,Function}=nothing,
 ) where {T<:AbstractMatrix{<:AbstractRGB},U<:AbstractMatrix}
+    @info "building landmask and coastal buffer mask"
+    landmask, coastal_buffer_mask = create_landmask(
+        float64.(landmask), p.coastal_buffer_structuring_element
+    )
+    return p(
+        truecolor,
+        falsecolor,
+        landmask,
+        coastal_buffer_mask;
+        intermediate_results_callback=intermediate_results_callback,
+    )
+end
+
+function (p::Segment)(
+    truecolor::T,
+    falsecolor::T,
+    landmask::U,
+    coastal_buffer_mask::U;
+    intermediate_results_callback::Union{Nothing,Function}=nothing,
+) where {T<:AbstractMatrix{<:AbstractRGB},U<:BitMatrix}
 
     # Move these conversions down through the function as each step gets support for 
     # the full range of image formats
     truecolor_image = float64.(truecolor)
     falsecolor_image = float64.(falsecolor)
-    landmask_image = float64.(landmask)
-
-    @info "building landmask"
-    landmask_imgs = create_landmask(landmask_image, p.landmask_structuring_element)
 
     @info "Building cloudmask"
     # TODO: @hollandjg track down why the cloudmask is different for float32 vs float64 input images
@@ -94,14 +110,14 @@ function (p::Segment)(
     cloudmask = create_cloudmask(falsecolor_image)
 
     # 2. Intermediate images
-    fc_masked = apply_landmask(falsecolor_image, landmask_imgs.dilated)
+    fc_masked = apply_landmask(falsecolor_image, coastal_buffer_mask)
 
     @info "Sharpening truecolor image"
     # a. apply imsharpen to truecolor image using non-dilated landmask
-    sharpened_truecolor_image = imsharpen(truecolor_image, landmask_imgs.non_dilated)
+    sharpened_truecolor_image = imsharpen(truecolor_image, landmask)
     # b. apply imsharpen to sharpened truecolor img using dilated landmask
     sharpened_gray_truecolor_image = imsharpen_gray(
-        sharpened_truecolor_image, landmask_imgs.dilated
+        sharpened_truecolor_image, coastal_buffer_mask
     )
 
     # Heighten differences between floes and background ice/water.
@@ -112,7 +128,7 @@ function (p::Segment)(
     # This step is a grayscale morphology operation. Reconstruction by dilation of the image complement
     # followed by thresholding.
     ice_water_discrim = discriminate_ice_water(
-        sharpened_gray_truecolor_image, fc_masked, landmask_imgs.dilated, cloudmask
+        sharpened_gray_truecolor_image, fc_masked, coastal_buffer_mask, cloudmask
     )
 
     # 3. Segmentation
@@ -128,8 +144,6 @@ function (p::Segment)(
 
     # Process watershed in parallel using Folds
     @info "Building watersheds"
-    # container_for_watersheds = [landmask_imgs.non_dilated, similar(landmask_imgs.non_dilated)]
-
     watersheds_segB = [
         watershed_ice_floes(segB.not_ice_bit), watershed_ice_floes(segB.ice_intersect)
     ]
@@ -144,7 +158,7 @@ function (p::Segment)(
         watersheds_segB_product,
         fc_masked,
         cloudmask,
-        landmask_imgs.dilated,
+        coastal_buffer_mask,
     )
 
     @info "Labeling floes"
@@ -159,9 +173,9 @@ function (p::Segment)(
         intermediate_results_callback(;
             truecolor,
             falsecolor,
-            landmask_dilated=landmask_imgs.dilated,
-            landmask_non_dilated=landmask_imgs.non_dilated,
-            cloudmask=cloudmask,
+            landmask,
+            coastal_buffer_mask,
+            cloudmask,
             ice_mask=IceDetectionLopezAcosta2019()(fc_masked),
             sharpened_truecolor_image=sharpened_truecolor_image,
             sharpened_gray_truecolor_image=sharpened_gray_truecolor_image,
