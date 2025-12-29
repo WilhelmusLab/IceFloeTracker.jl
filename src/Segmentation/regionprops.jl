@@ -29,8 +29,10 @@ abstract type ConvexAreaEstimationAlgorithm <: Function end
 Rename the `oldnames` columns in `props` to `newnames`.
 """
 function renamecols!(
-    props::DataFrame, oldnames::Vector{T}, newnames::Vector{T}
-) where {T<:Union{Symbol,String}}
+    props::DataFrame,
+    oldnames::Vector{Union{Symbol,String}},
+    newnames::Vector{Union{Symbol,String}}
+    )
     rename!(props, Dict(zip(oldnames, newnames)))
     return nothing
 end
@@ -41,7 +43,10 @@ end
 
 Round the `colnames` columns in `props` to `Int`.
 """
-function roundtoint!(props::DataFrame, colnames::Vector{T}) where {T<:Union{Symbol,String}}
+function roundtoint!(
+    props::DataFrame,
+    colnames::Vector{Union{Symbol,String}}
+    )
     props[!, colnames] = (x -> convert.(Int, x))(round.(Int, props[!, colnames]))
     return nothing
 end
@@ -55,7 +60,10 @@ Add columns `latitude`, `longitude`, and pixel coordinates `x`, `y` to `pairedfl
 - `pairedfloesdf`: dataframe containing floe tracking data.
 - `refimage`: path to reference image.
 """
-function addlatlon!(pairedfloesdf::DataFrame, refimage::AbstractString)
+function addlatlon!(
+    pairedfloesdf::DataFrame,
+    refimage::AbstractString
+    )
     latlondata = latlon(refimage)
     colstodrop = [:row_centroid, :col_centroid, :min_row, :min_col, :max_row, :max_col]
     converttounits!(pairedfloesdf, latlondata, colstodrop)
@@ -166,7 +174,7 @@ julia> masks[1]
 function component_floes(indexmap; minimum_area=1)
     labels = unique(indexmap)
     boxes = component_boxes(indexmap)
-    mn, mx = extrema(indexmap)
+    mn = minimum(indexmap)
     if !(mn == 0 || mn == 1)
         throw(ArgumentError("The input labeled array should contain background label `0` as the minimum value"))
     end
@@ -271,6 +279,7 @@ function component_convex_area(A;
     if !(mn == 0 || mn == 1)
         throw(ArgumentError("The input labeled array should contain background label `0` as the minimum value"))
     end
+
     return algorithm(A)
 end
 
@@ -436,7 +445,8 @@ function regionprops_table(
     minimum_area=1,
     perimeter_algorithm=BenkridCrookes(),
     convex_area_algorithm=PixelConvexArea()
-)::DataFrame
+    )::DataFrame
+
     data = regionprops(label_img, intensity_img;
         properties=properties,
         extra_properties=extra_properties,
@@ -605,7 +615,7 @@ function _get_bounds(box)
     mincol = getindex(upper_left, 2)
     maxrow = getindex(lower_right, 1)
     maxcol = getindex(lower_right, 2)
-return minrow, maxrow, mincol, maxcol
+    return minrow, maxrow, mincol, maxcol
 end
 
 """_central_moment(x, y, xc, yc, p, q)
@@ -665,7 +675,6 @@ function _component_moment_measures(labels, label_list)
     push!(data, :major_axis_length => moment_measures[1,:])
     push!(data, :minor_axis_length => moment_measures[2,:])
     push!(data, :orientation => moment_measures[3,:])
+
     return data
 end
-
-
