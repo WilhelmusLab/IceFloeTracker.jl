@@ -590,7 +590,7 @@ function regionprops(
     end
 
     # TODO add psi-s curve generation as an option
-    updated_properties = []
+    updated_properties = Symbol[]
     for p in properties
         if p == :bbox
             append!(updated_properties, [:min_row, :max_row, :min_col, :max_col])
