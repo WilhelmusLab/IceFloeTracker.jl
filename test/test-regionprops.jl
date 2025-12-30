@@ -25,7 +25,7 @@
     
     # Tests for regionprops_table
     @test typeof(table) <: DataFrame # check correct data type
-    @test nrow(table) == (total_labels - 1) # One point has area 1, we exclude that point intentionally
+    @test nrow(table) == total_labels - 1 # One point has area 1, we exclude that point intentionally
     @test all(
         [
             "area",
