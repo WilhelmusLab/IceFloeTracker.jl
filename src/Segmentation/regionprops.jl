@@ -183,7 +183,7 @@ function component_floes(indexmap; minimum_area=1)
     return floe_masks
 end
 
-"""component_perimeter(indexmap; minimum_area=1, algorithm="benkrid_crookes")
+"""component_perimeters(indexmap; minimum_area=1, algorithm="benkrid_crookes")
 
 Estimate the perimeter of the labeled regions in `indexmap` using the specified algorithm.
 Algorithm options = "benkrid_crookes" (only option currently, will add crofton in future release)
@@ -196,14 +196,13 @@ function component_perimeters(
     masks = component_floes(indexmap)
     perims = Dict()
 
-    
     for label in keys(masks)
         n, m = size(masks[label])
         n * m == 1 && continue
         label == 0 && (perims[label] = 0; continue)
         
         # Shape needs to have a border of zeros for erode to work here    
-        perims[label] = algorithm
+        perims[label] = algorithm(masks[label])
     end
     return perims
 end
@@ -233,6 +232,7 @@ function (f::BenkridCrookes)(shape_array)
     f.connectivity == 4 ? (strel = strel_diamond((3,3))) : (strel = strel_box((3,3)))
     # Get border using the strel
     # Shape needs to have a border of zeros for erode to work here    
+    n, m = shape(shape_array)
     mpad = padarray(shape_array, Fill(0, (1, 1)))    
     epad = mpad .- erode(mpad, strel)
     e = epad[1:n, 1:m]
@@ -658,17 +658,17 @@ function _component_moment_measures(labels, label_list)
         xc = row_centroid[s]
         yc = col_centroid[s]
         
-        mu11 = _central_moment(X, Y, xc, yc, 1, 1)
-        mu20 = _central_moment(X, Y, xc, yc, 2, 0)
-        mu02 = _central_moment(X, Y, xc, yc, 0, 2)
-        theta = 0.5 * atan(2*mu11, mu20 - mu02)
+        μ11 = _central_moment(X, Y, xc, yc, 1, 1)
+        μ20 = _central_moment(X, Y, xc, yc, 2, 0)
+        μ02 = _central_moment(X, Y, xc, yc, 0, 2)
+        θ = 0.5 * atan(2*μ11, μ20 - μ02)
         
-        λ0 = (mu20 + mu02 + sqrt((mu20 - mu02)^2 + 4*mu11^2))/2
-        λ1 = (mu20 + mu02 - sqrt((mu20 - mu02)^2 + 4*mu11^2))/2
+        λ0 = (μ20 + mu02 + sqrt((μ20 - μ02)^2 + 4*μ11^2))/2
+        λ1 = (μ20 + mu02 - sqrt((μ20 - μ02)^2 + 4*μ11^2))/2
         
         ra = 4*(λ0/areas[s])^0.5 
         rb = 4*(λ1/areas[s])^0.5
-        append!(moment_measures, [[ra, rb, theta]])
+        append!(moment_measures, [[ra, rb, θ]])
     end
     moment_measures = stack(moment_measures)
     push!(data, :major_axis_length => moment_measures[1,:])
