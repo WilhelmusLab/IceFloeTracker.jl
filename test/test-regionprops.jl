@@ -46,7 +46,6 @@
 
     # Tests for regionprops
     regions = regionprops(label_img, bw_img)
-    print(keys(regions))
     @test table.area[2] == regions[:area][2]
 
     # Check floe masks generation and correct cropping
