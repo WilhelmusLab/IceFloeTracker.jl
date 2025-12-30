@@ -59,8 +59,8 @@
     )
 
     # Test that algorithm options at least run
-    _ = regionprops(label_img; properties=["perimeter"], perimeter_algorithm=BenkridCrookes())
-    _ = regionprops(label_img; properties=["convex_area"], convex_area_algorithm=PolygonConvexArea())
-    _ = regionprops(label_img; properties=["convex_area"], convex_area_algorithm=PixelConvexArea())
+    regionprops(label_img; properties=["perimeter"], perimeter_algorithm=BenkridCrookes())
+    regionprops(label_img; properties=["convex_area"], convex_area_algorithm=PolygonConvexArea())
+    regionprops(label_img; properties=["convex_area"], convex_area_algorithm=PixelConvexArea())
 
 end
