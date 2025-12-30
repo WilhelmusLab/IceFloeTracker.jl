@@ -666,7 +666,6 @@ function _component_moment_measures(labels, label_list)
         λ0 = (mu20 + mu02 + sqrt((mu20 - mu02)^2 + 4*mu11^2))/2
         λ1 = (mu20 + mu02 - sqrt((mu20 - mu02)^2 + 4*mu11^2))/2
         
-        ## 
         ra = 4*(λ0/areas[s])^0.5 
         rb = 4*(λ1/areas[s])^0.5
         append!(moment_measures, [[ra, rb, theta]])
