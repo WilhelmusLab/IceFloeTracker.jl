@@ -232,7 +232,7 @@ function (f::BenkridCrookes)(shape_array)
     f.connectivity == 4 ? (strel = strel_diamond((3,3))) : (strel = strel_box((3,3)))
     # Get border using the strel
     # Shape needs to have a border of zeros for erode to work here    
-    n, m = shape(shape_array)
+    n, m = size(shape_array)
     mpad = padarray(shape_array, Fill(0, (1, 1)))    
     epad = mpad .- erode(mpad, strel)
     e = epad[1:n, 1:m]
