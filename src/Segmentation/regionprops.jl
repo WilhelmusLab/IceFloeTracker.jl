@@ -663,8 +663,8 @@ function _component_moment_measures(labels, label_list)
         μ02 = _central_moment(X, Y, xc, yc, 0, 2)
         θ = 0.5 * atan(2*μ11, μ20 - μ02)
         
-        λ0 = (μ20 + mu02 + sqrt((μ20 - μ02)^2 + 4*μ11^2))/2
-        λ1 = (μ20 + mu02 - sqrt((μ20 - μ02)^2 + 4*μ11^2))/2
+        λ0 = (μ20 + μ02 + sqrt((μ20 - μ02)^2 + 4*μ11^2))/2
+        λ1 = (μ20 + μ02 - sqrt((μ20 - μ02)^2 + 4*μ11^2))/2
         
         ra = 4*(λ0/areas[s])^0.5 
         rb = 4*(λ1/areas[s])^0.5
