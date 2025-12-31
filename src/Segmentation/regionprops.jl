@@ -322,10 +322,11 @@ function (f::PolygonConvexArea)(A)
 end
 
 
-"""PixelConvexArea()
+"""PixelConvexArea(minimum_area)
+   PixelConvexArea(A)
 
-Estimate the convex area by integrating the area of the convex hull polygon.
-Uses the convexhull function from ImageMorphology, which raises an error if the
+Estimate the convex area by summing the number of pixels with indices falling within the
+polygon formed by the convex hull. Uses the convexhull function from ImageMorphology, which raises an error if the
 area of the segment is less than or equal to 3. In general, the error should be smaller
 for larger shapes.
 """
