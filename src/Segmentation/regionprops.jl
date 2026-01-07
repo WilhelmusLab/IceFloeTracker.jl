@@ -347,9 +347,8 @@ function (f::PixelConvexArea)(A)
         x = getindex.(collect(bboxes[i]), 1)
         y = getindex.(collect(bboxes[i]), 2)
         
-        for idx in 1:length(x)
-            xi = x[idx]
-            yi = y[idx]
+        for idx in eachindex(x)
+            xi, yi = x[idx], y[idx]
             A[xi, yi] .== i && (convex_areas[i] += 1, continue)
             checkvals = zeros(N)
             for j in 1:N
