@@ -346,8 +346,8 @@ function (f::PixelConvexArea)(A)
             
         chull = convexhull(A .== i)
         N = length(chull)
-        x = getindex.(collect(bboxes[i]), 1)
-        y = getindex.(collect(bboxes[i]), 2)
+        x = getindex.(bboxes[i], 1)
+        y = getindex.(bboxes[i], 2)
         
         for idx in eachindex(x)
             xi, yi = x[idx], y[idx]
