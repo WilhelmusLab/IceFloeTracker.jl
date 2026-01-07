@@ -250,12 +250,9 @@ function (f::BenkridCrookes)(shape_array)
     for val in vec(results)
         val_counts[val] = get(val_counts, val, 0) + 1
     end
-    perim = 0
-
-    for val in keys(val_counts)
-        (val == 0 || val > 33) && continue
-        perim += type_vals[val] * val_counts[val]
-    end
+    perim = sum(
+        type_vals[val] * count for (val, count) in pairs(val_counts) if val > 0 && val <= 33
+    )
     
     return perim
 end
