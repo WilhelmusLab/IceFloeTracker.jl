@@ -212,10 +212,13 @@ is assumed to contain a single object.
 
 # Examples
 ```
-julia> benkrid_crookes = BenkridCrookes(connectivity=4)
-julia> A = [1 1 1; 1 1 1; 1 1 1]
-julia> benkrid_crookes(A)
-8.0
+julia> A = [0 1 1; 1 1 1; 1 1 1];
+
+julia> BenkridCrookes(connectivity=4)(A)
+7.414213562373095
+
+julia> BenkridCrookes(connectivity=8)(A)
+7.0
 ```
 """
 @kwdef struct BenkridCrookes <: PerimeterEstimationAlgorithm
