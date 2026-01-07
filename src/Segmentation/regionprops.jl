@@ -194,16 +194,10 @@ function component_perimeters(
     algorithm::PerimeterEstimationAlgorithm=BenkridCrookes(),
     )
     masks = component_floes(indexmap)
-    perims = Dict()
-
-    for label in keys(masks)
-        n, m = size(masks[label])
-        n * m == 1 && continue
-        label == 0 && (perims[label] = 0; continue)
-        
-        # Shape needs to have a border of zeros for erode to work here    
-        perims[label] = algorithm(masks[label])
-    end
+    perims = Dict(
+        label => (label == 0 ? 0 : algorithm(masks[label])) for
+        label in keys(masks) if prod(size(masks[label])) > 1
+    )
     return perims
 end
 
