@@ -270,9 +270,11 @@ function component_convex_area(A;
     ) 
     mn = minimum(A)
 
-    if !(mn == 0 || mn == 1)
-        throw(ArgumentError("The input labeled array should contain background label `0` as the minimum value"))
-    end
+    (mn != 0 && mn != 1) && throw(
+        ArgumentError(
+            "The input labeled array should contain background label `0` as the minimum value",
+        ),
+    )
 
     return algorithm(A)
 end
