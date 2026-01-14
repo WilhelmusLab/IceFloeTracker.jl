@@ -92,13 +92,6 @@ end
     @test sum(false_color_cloudmasked[3, :, :]) ≈ 17_159_247 rtol = 0.01
 end
 
-@testitem "adapthisteq" begin
-    using TestImages: testimage
-    img = testimage("cameraman")
-    img_eq = adapthisteq(img)
-    @test sum(img_eq) ≈ 32_387_397 rtol = 0.05
-end
-
 @testitem "rgb2gray" begin
     using Images: RGB, N0f8, float64
     pixels = float64.([RGB{N0f8}(0.345, 0.361, 0.404) RGB{N0f8}(0.808, 0.808, 0.8);])

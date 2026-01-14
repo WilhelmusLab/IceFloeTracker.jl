@@ -1,44 +1,7 @@
 import Images: Images, RGB, float64, Gray, red, green, blue, AdaptiveEqualization
 import ..skimage: sk_exposure
 import ..ImageUtils: to_uint8
-import CLAHE: ContrastLimitedAdaptiveHistogramEqualization
-
-# dmw: use multiple dispatch, so that if the 2d function is called 
-function adapthisteq(img::Matrix{T}; clip=0.99, kwargs...) where {T}
-    # Step 1: Normalize the image to [0, 1] based on its own min and max
-    minval, maxval = minimum(img), maximum(img)
-
-    # Step 2: Apply adaptive histogram equalization. equalize_adapthist handles the tiling to 1/8 of the image size (equivalent to 8x8 blocks in MATLAB)
-    equalized_image = adjust_histogram(
-        img, ContrastLimitedAdaptiveHistogramEqualization(; clip, minval, maxval, kwargs...)
-    )
-
-    return equalized_image
-end
-
-# TODO: delete adapthisteq_py after verifying that adapthisteq is close enough to the python
-function adapthisteq_py(img::Matrix{T}, nbins=256, clip=0.01) where {T}
-    # Step 1: Normalize the image to [0, 1] based on its own min and max
-    image_min, image_max = minimum(img), maximum(img)
-    normalized_image = (img .- image_min) / (image_max - image_min)
-
-    # Step 2: Apply adaptive histogram equalization. equalize_adapthist handles the tiling to 1/8 of the image size (equivalent to 8x8 blocks in MATLAB)
-    equalized_image = sk_exposure.equalize_adapthist(
-        normalized_image;
-        clip_limit=clip,  # Equivalent to MATLAB's 'ClipLimit'
-        nbins=nbins,         # Number of histogram bins. 255 is used to match the default in MATLAB script
-    )
-
-    # Step 3: Rescale the image back to the original range [image_min, image_max]
-    final_image = adjust_histogram(
-        equalized_image, LinearStretching(nothing => (image_min, image_max))
-    )
-
-    # Convert back to the original data type if necessary
-    # final_image = to_uint8(final_image)
-
-    return final_image
-end
+import CLAHE: ContrastLimitedAdaptiveHistogramEqualization, adjust_histogram!
 
 """
     get_rgb_channels(img)
@@ -117,7 +80,7 @@ function conditional_histeq(
     pmd = PeronaMalikDiffusion(0.1, 0.1, 5, "exponential")
     true_color_diffused = nonlinear_diffusion(float64.(true_color_image), pmd)
 
-    rgbchannels = get_rgb_channels(true_color_diffused)
+    channels = channelview(true_color_diffused)
 
     # For each tile, compute the entropy in the false color tile, and the fraction of white and black pixels
     for tile in tiles
@@ -128,13 +91,15 @@ function conditional_histeq(
         # If the entropy is above a threshold, and the fraction of white pixels is above a threshold, then apply histogram equalization to the tiles of each channel of the true color image. Otherwise, keep the original tiles.
         if entropy > entropy_threshold && whitefraction > white_fraction_threshold
             for i in 1:3
-                eqhist = adapthisteq(rgbchannels[:, :, i][tile...])
-                @view(rgbchannels[:, :, i])[tile...] .= eqhist
+                adjust_histogram!(
+                    channels[:, :, i][tile...],
+                    ContrastLimitedAdaptiveHistogramEqualization(; clip=2),
+                )
             end
         end
     end
 
-    return rgbchannels
+    return rgbchannels(channels)
 end
 
 """
