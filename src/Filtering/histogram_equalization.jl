@@ -1,7 +1,7 @@
 import Images: Images, RGB, float64, Gray, red, green, blue, AdaptiveEqualization
 import ..skimage: sk_exposure
 import ..ImageUtils: to_uint8
-import CLAHE: ContrastLimitedAdaptiveHistogramEqualization, adjust_histogram!
+import CLAHE: ContrastLimitedAdaptiveHistogramEqualization, adjust_histogram
 
 """
     get_rgb_channels(img)
@@ -80,7 +80,7 @@ function conditional_histeq(
     pmd = PeronaMalikDiffusion(0.1, 0.1, 5, "exponential")
     true_color_diffused = nonlinear_diffusion(float64.(true_color_image), pmd)
 
-    channels = channelview(true_color_diffused)
+    rgbchannels = get_rgb_channels(true_color_diffused)
 
     # For each tile, compute the entropy in the false color tile, and the fraction of white and black pixels
     for tile in tiles
@@ -91,15 +91,16 @@ function conditional_histeq(
         # If the entropy is above a threshold, and the fraction of white pixels is above a threshold, then apply histogram equalization to the tiles of each channel of the true color image. Otherwise, keep the original tiles.
         if entropy > entropy_threshold && whitefraction > white_fraction_threshold
             for i in 1:3
-                adjust_histogram!(
-                    channels[:, :, i][tile...],
-                    ContrastLimitedAdaptiveHistogramEqualization(; clip=2),
+                eqhist = adjust_histogram(
+                    rgbchannels[:, :, i][tile...] / 255.0,
+                    ContrastLimitedAdaptiveHistogramEqualization(; clip=2.0),
                 )
+                @view(rgbchannels[:, :, i])[tile...] .= eqhist .* 255
             end
         end
     end
 
-    return rgbchannels(channels)
+    return rgbchannels
 end
 
 """
