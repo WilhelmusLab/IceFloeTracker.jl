@@ -20,7 +20,7 @@ end
 end
 
 @testitem "No crash for different image sizes" begin
-    using Images
+    using Images, TestImages
     f = ContrastLimitedAdaptiveHistogramEqualization()
     image = "cameraman" # Grayscale
     for xsz in [63, 64, 65, 96, 128, 256, 300, 512],
@@ -34,7 +34,7 @@ end
 end
 
 @testitem "No crash for different image types" begin
-    using Images
+    using Images, TestImages
     f = ContrastLimitedAdaptiveHistogramEqualization()
     image = "cameraman"
     img = testimage(image)
