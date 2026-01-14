@@ -1,4 +1,4 @@
-import Images: Images, RGB, float64, Gray, red, green, blue, AdaptiveEqualization
+import Images: Images, RGB, float64, Gray, red, green, blue
 import ..skimage: sk_exposure
 import ..ImageUtils: to_uint8
 
