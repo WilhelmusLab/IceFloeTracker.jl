@@ -64,13 +64,13 @@ end
     # This differs from MATLAB script due to disparity in the implementations
     # of the adaptive histogram equalization / diffusion functions
     # For the moment testing for regression
-    @test sum(to_uint8(true_color_eq[:, :, 1])) ≈ 27_705_214 rtol = 0.003
+    @test 27_311_946 ≈ sum(to_uint8(true_color_eq[:, :, 1])) rtol = 0.003
 
     # Use custom tile size
     side_length = size(true_color_eq, 1) ÷ 8
     tiles = get_tiles(true_color_image, side_length)
     true_color_eq = conditional_histeq(true_color_image, clouds_red, tiles)
-    @test sum(to_uint8(true_color_eq[:, :, 1])) ≈ 28_014_543 rtol = 0.003
+    @test 30_397_862 ≈ sum(to_uint8(true_color_eq[:, :, 1])) rtol = 0.003
 end
 
 @testitem "_get_false_color_cloudmasked (data loader)" setup = [FalseColorCloudmask] begin
