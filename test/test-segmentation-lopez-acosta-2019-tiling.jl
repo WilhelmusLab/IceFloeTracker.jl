@@ -17,8 +17,8 @@ end
     )
     @test 0.43 ≈ labeled_fraction atol = 0.1
     @test 0.87 ≤ round(recall; digits=2)
-    @test 0.53 ≤ round(precision; digits=2)
-    @test 0.67 ≤ round(F_score; digits=2)
+    @test 0.56 ≤ round(precision; digits=2)
+    @test 0.69 ≤ round(F_score; digits=2)
 
     (; labeled_fraction, recall, precision, F_score) = run_and_validate_segmentation(
         first(filter(c -> (c.case_number == 14 && c.satellite == "aqua"), dataset)),
@@ -107,7 +107,7 @@ end
     @test results_invariant_for(RGB, float64; baseline, algorithm, case)
     @test results_invariant_for(RGBA; baseline, algorithm, case)
     @test results_invariant_for(RGBA, n0f8; baseline, algorithm, case)
-    @test results_invariant_for(RGBA, n6f10; baseline, algorithm, case) 
+    @test results_invariant_for(RGBA, n6f10; baseline, algorithm, case)
     @test results_invariant_for(RGBA, n4f12; baseline, algorithm, case) broken = true
     @test results_invariant_for(RGBA, n2f14; baseline, algorithm, case)
     @test results_invariant_for(RGBA, n0f16; baseline, algorithm, case)
