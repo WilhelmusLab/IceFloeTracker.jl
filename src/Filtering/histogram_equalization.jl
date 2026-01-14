@@ -1,15 +1,16 @@
 import Images: Images, RGB, float64, Gray, red, green, blue, AdaptiveEqualization
 import ..skimage: sk_exposure
 import ..ImageUtils: to_uint8
+import CLAHE: ContrastLimitedAdaptiveHistogramEqualization
 
 # dmw: use multiple dispatch, so that if the 2d function is called 
-function adapthisteq(img::Matrix{T}; clip=0.01, kwargs...) where {T}
+function adapthisteq(img::Matrix{T}; clip=0.99, kwargs...) where {T}
     # Step 1: Normalize the image to [0, 1] based on its own min and max
     minval, maxval = minimum(img), maximum(img)
 
     # Step 2: Apply adaptive histogram equalization. equalize_adapthist handles the tiling to 1/8 of the image size (equivalent to 8x8 blocks in MATLAB)
     equalized_image = adjust_histogram(
-        img, AdaptiveEqualization(; clip=(1 - clip), minval, maxval, kwargs...)
+        img, ContrastLimitedAdaptiveHistogramEqualization(; clip, minval, maxval, kwargs...)
     )
 
     return equalized_image
