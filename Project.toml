@@ -12,7 +12,6 @@ version = "0.9.0"
 
 [deps]
 ArchGDAL = "c9ce4bd3-c3d5-55b8-8973-c0e20141b8c3"
-CLAHE = "6c2d17af-c44a-4bcc-8d98-2becef92ce1b"
 CSVFiles = "5d742f6a-9f54-50ce-8119-2520741973ca"
 Clustering = "aaaa29a8-35af-508c-8bc3-b662a17a0fe5"
 DSP = "717857b8-e6f2-59f4-9121-6e50c889abd2"
@@ -36,9 +35,6 @@ StatsBase = "2913bbd2-ae8a-5f71-8c99-4fb6c76f3a91"
 TiffImages = "731e570b-9d59-4bfa-96dc-6df516fadf69"
 TiledIteration = "06e1c1a7-607b-532d-9fad-de7d9aa2abac"
 TimeZones = "f269a46b-ccf7-5d73-abea-4c690281aa53"
-
-[sources]
-CLAHE = { url = "https://github.com/brown-ccv/CLAHE.jl", rev = "main" }
 
 [compat]
 ArchGDAL = "0.10.8"
@@ -75,13 +71,4 @@ ZipFile = "a5390f91-8eb1-5f08-bee0-b1d1ffed6cea"
 
 [targets]
 notebooks = ["Plots"]
-test = [
-    "DelimitedFiles",
-    "LinearAlgebra",
-    "Serialization",
-    "Test",
-    "TestImages",
-    "TestItemRunner",
-    "TestItems",
-    "ZipFile",
-]
+test = ["DelimitedFiles", "LinearAlgebra", "Serialization", "Test", "TestImages", "TestItemRunner", "TestItems", "ZipFile"]

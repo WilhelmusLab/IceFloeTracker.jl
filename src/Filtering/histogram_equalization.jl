@@ -1,7 +1,6 @@
 import Images: Images, RGB, float64, Gray, red, green, blue, AdaptiveEqualization
 import ..skimage: sk_exposure
 import ..ImageUtils: to_uint8
-import CLAHE: ContrastLimitedAdaptiveHistogramEqualization, adjust_histogram
 
 """
     get_rgb_channels(img)
