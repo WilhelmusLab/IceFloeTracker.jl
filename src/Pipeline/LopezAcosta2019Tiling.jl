@@ -34,7 +34,7 @@ import Images:
     Equalization
 import ..skimage: sk_morphology
 import ..ImageUtils: get_brighten_mask, to_uint8, imcomplement, imbrighten, get_tiles
-import ..Filtering: histeq, unsharp_mask, conditional_histeq, rgb2gray, imgradientmag
+import ..Filtering: unsharp_mask, conditional_histeq, rgb2gray, imgradientmag
 import ..Preprocessing:
     apply_landmask,
     apply_landmask!,

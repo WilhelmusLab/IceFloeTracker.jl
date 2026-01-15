@@ -1,5 +1,4 @@
 import Images: Images, RGB, float64, Gray, red, green, blue
-import ..skimage: sk_exposure
 import ..ImageUtils: to_uint8
 
 """
@@ -112,12 +111,3 @@ function rgb2gray(img::Matrix{RGB{Float64}})
     return round.(Int, Gray.(img) * 255)
 end
 
-"""
-    histeq(img)
-    histeq(img; nbins=64)
-
-Histogram equalization of `img` using `nbins` bins.
-"""
-function histeq(img::S; nbins=64)::S where {S<:AbstractArray{<:Integer}}
-    return to_uint8(sk_exposure.equalize_hist(img; nbins=nbins) * 255)
-end
