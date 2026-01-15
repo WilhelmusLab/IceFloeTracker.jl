@@ -71,4 +71,13 @@ ZipFile = "a5390f91-8eb1-5f08-bee0-b1d1ffed6cea"
 
 [targets]
 notebooks = ["Plots"]
-test = ["DelimitedFiles", "LinearAlgebra", "Serialization", "Test", "TestImages", "TestItemRunner", "TestItems", "ZipFile"]
+test = [
+    "DelimitedFiles",
+    "LinearAlgebra",
+    "Serialization",
+    "Test",
+    "TestImages",
+    "TestItemRunner",
+    "TestItems",
+    "ZipFile",
+]

@@ -1,4 +1,4 @@
-import Images: Images, RGB, float64, Gray, red, green, blue, AdaptiveEqualization
+import Images: Images, RGB, float64, Gray, red, green, blue
 import ..skimage: sk_exposure
 import ..ImageUtils: to_uint8
 
@@ -90,11 +90,12 @@ function conditional_histeq(
         # If the entropy is above a threshold, and the fraction of white pixels is above a threshold, then apply histogram equalization to the tiles of each channel of the true color image. Otherwise, keep the original tiles.
         if entropy > entropy_threshold && whitefraction > white_fraction_threshold
             for i in 1:3
-                eqhist = adjust_histogram(
-                    rgbchannels[:, :, i][tile...] / 255.0,
-                    ContrastLimitedAdaptiveHistogramEqualization(; clip=2.0),
-                )
-                @view(rgbchannels[:, :, i])[tile...] .= eqhist .* 255
+                eqhist =
+                    adjust_histogram(
+                        rgbchannels[:, :, i][tile...] / 255.0,
+                        ContrastLimitedAdaptiveHistogramEqualization(; clip=2.0),
+                    ) .* 255
+                @view(rgbchannels[:, :, i])[tile...] .= eqhist
             end
         end
     end
