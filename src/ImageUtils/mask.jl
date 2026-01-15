@@ -116,7 +116,6 @@ julia> masker(rgb_mask, img)
 2×3 Array{ARGB{N0f8},2} with eltype ARGB{N0f8}:
  ARGB{N0f8}(1.0,0.0,0.0,0.0)  ARGB{N0f8}(0.0,0.502,0.0,0.0)  ARGB{N0f8}(0.0,0.0,1.0,1.0)
  ARGB{N0f8}(0.0,1.0,1.0,1.0)  ARGB{N0f8}(1.0,0.0,1.0,0.0)    ARGB{N0f8}(1.0,1.0,0.0,0.0)
-
 ```
 
 Where the mask is an array of Real numbers,
@@ -133,7 +132,8 @@ julia> real_mask = [1.0 0.5 0.1; 0.1 0.2 1.0]
 julia> masker(real_mask, img)
 2×3 Array{ARGB{N0f8},2} with eltype ARGB{N0f8}:
  ARGB{N0f8}(1.0,0.0,0.0,0.0)    ARGB{N0f8}(0.0,0.502,0.0,0.502)  ARGB{N0f8}(0.0,0.0,1.0,0.902)
- ARGB{N0f8}(0.0,1.0,1.0,0.902)  ARGB{N0f8}(1.0,0.0,1.0,0.8)      ARGB{N0f8}(1.0,1.0,0.0,0.0)```
+ ARGB{N0f8}(0.0,1.0,1.0,0.902)  ARGB{N0f8}(1.0,0.0,1.0,0.8)      ARGB{N0f8}(1.0,1.0,0.0,0.0)
+```
 
 Where values are outside of the range [0, 1], 
 they are clamped to whichever of 0 and 1 is nearer:
@@ -146,7 +146,8 @@ julia> out_of_range_mask = [5 2 0.75; -1 -2 1]
 julia> masker(out_of_range_mask, img)
 2×3 Array{ARGB{N0f8},2} with eltype ARGB{N0f8}:
  ARGB{N0f8}(1.0,0.0,0.0,0.0)  ARGB{N0f8}(0.0,0.502,0.0,0.0)  ARGB{N0f8}(0.0,0.0,1.0,0.251)
- ARGB{N0f8}(0.0,1.0,1.0,1.0)  ARGB{N0f8}(1.0,0.0,1.0,1.0)    ARGB{N0f8}(1.0,1.0,0.0,0.0)```
+ ARGB{N0f8}(0.0,1.0,1.0,1.0)  ARGB{N0f8}(1.0,0.0,1.0,1.0)    ARGB{N0f8}(1.0,1.0,0.0,0.0)
+```
 
 
 """

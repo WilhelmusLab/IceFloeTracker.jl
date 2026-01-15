@@ -33,7 +33,7 @@ import Images:
     segment_mean
 import ..skimage: sk_morphology
 import ..ImageUtils: get_brighten_mask, to_uint8, imcomplement, imbrighten, get_tiles
-import ..Filtering: histeq, unsharp_mask, conditional_histeq, rgb2gray
+import ..Filtering: histeq, unsharp_mask, conditional_histeq, rgb2gray, imgradientmag
 import ..Preprocessing:
     apply_landmask,
     apply_landmask!,
@@ -58,8 +58,10 @@ import ..Morphology:
 import ..Segmentation:
     IceFloeSegmentationAlgorithm,
     tiled_adaptive_binarization,
-    kmeans_segmentation,
-    get_ice_masks
+    kmeans_binarization,
+    IceDetectionFirstNonZeroAlgorithm,
+    IceDetectionBrightnessPeaksMODIS721,
+    IceDetectionThresholdMODIS721
 
 # Sample input parameters expected by the main function
 cloud_mask_thresholds = (
@@ -86,13 +88,12 @@ unsharp_mask_params = (radius=10, amount=2.0, factor=255.0)
 brighten_factor = 0.1
 
 ice_masks_params = (
-    band_7_threshold=5 / 255,
-    band_2_threshold=230 / 255,
-    band_1_threshold=240 / 255,
-    band_7_threshold_relaxed=10 / 255,
-    band_1_threshold_relaxed=190 / 255,
-    possible_ice_threshold=75 / 255,
-    k=3, # number of clusters for kmeans segmentation
+    band_7_max=5 / 255,
+    band_2_min=230 / 255,
+    band_1_min=240 / 255,
+    band_7_max_relaxed=10 / 255,
+    band_1_min_relaxed=190 / 255,
+    possible_ice_threshold=75 / 255
 )
 
 prelim_icemask_params = (radius=10, amount=2, factor=0.5)
@@ -107,18 +108,39 @@ prelim_icemask_params = (radius=10, amount=2, factor=0.5)
     ice_masks_params = ice_masks_params
     prelim_icemask_params = prelim_icemask_params
     brighten_factor = brighten_factor
+    coastal_buffer_structuring_element = centered(strel_box((3, 3)))
 end
 
 function (p::Segment)(
-    truecolor::AbstractArray{<:Union{AbstractRGB,TransparentRGB}},
-    falsecolor::AbstractArray{<:Union{AbstractRGB,TransparentRGB}},
-    landmask::AbstractArray{<:Union{AbstractGray,AbstractRGB,TransparentRGB}};
+    truecolor::T,
+    falsecolor::T,
+    landmask::U;
     intermediate_results_callback::Union{Nothing,Function}=nothing,
-)
-    _landmask = create_landmask(landmask, strel_box((3, 3))) # smaller strel than in some test cases
+) where {T<:AbstractMatrix{<:Union{AbstractRGB,TransparentRGB}},U<:AbstractMatrix}
+    @info "building landmask and coastal buffer mask"
+    landmask, coastal_buffer_mask = create_landmask(
+        float64.(landmask), p.coastal_buffer_structuring_element
+    )
+    return p(
+        truecolor,
+        falsecolor,
+        landmask,
+        coastal_buffer_mask;
+        intermediate_results_callback=intermediate_results_callback,
+    )
+end
+
+function (p::Segment)(
+    truecolor::T,
+    falsecolor::T,
+    landmask::U,
+    coastal_buffer_mask::U;
+    intermediate_results_callback::Union{Nothing,Function}=nothing,
+) where {T<:AbstractMatrix{<:Union{AbstractRGB,TransparentRGB}},U<:BitMatrix}
     tiles = get_tiles(truecolor; p.tile_settings...)
 
     ref_image = RGB.(falsecolor)  # TODO: remove this typecast
+    fc_landmasked = apply_landmask(ref_image, coastal_buffer_mask)
     true_color_image = RGB.(truecolor)  # TODO: remove this typecast
 
     begin
@@ -133,7 +155,7 @@ function (p::Segment)(
     begin
         @debug "Step 3: Tiled adaptive histogram equalization"
         clouds_red = to_uint8(float64.(red.(ref_img_cloudmasked) .* 255))
-        clouds_red[_landmask.dilated] .= 0
+        clouds_red[coastal_buffer_mask] .= 0
 
         rgbchannels = conditional_histeq(
             true_color_image, clouds_red, tiles; adapthisteq_params...
@@ -156,25 +178,25 @@ function (p::Segment)(
         equalized_gray_sharpened_reconstructed = reconstruct(
             sharpened, structuring_elements.se_disk1, "dilation", true
         )
-        equalized_gray_sharpened_reconstructed[_landmask.dilated] .= 0
+        equalized_gray_sharpened_reconstructed[coastal_buffer_mask] .= 0
     end
 
     # TODO: Steps 6 and 7 can be done in parallel as they are independent
     begin
         @debug "Step 6: Repeat step 5 with equalized_gray (landmasking, no sharpening)"
         equalized_gray_reconstructed = deepcopy(equalized_gray)
-        apply_landmask!(equalized_gray_reconstructed, _landmask.dilated)
+        apply_landmask!(equalized_gray_reconstructed, coastal_buffer_mask)
 
         equalized_gray_reconstructed = reconstruct(
             equalized_gray_reconstructed, structuring_elements.se_disk1, "dilation", true
         )
-        apply_landmask!(equalized_gray_reconstructed, _landmask.dilated)
+        apply_landmask!(equalized_gray_reconstructed, coastal_buffer_mask)
     end
 
     begin
         @debug "Step 7: Brighten equalized_gray"
         brighten = get_brighten_mask(equalized_gray_reconstructed, gammagreen)
-        apply_landmask!(equalized_gray, _landmask.dilated)
+        apply_landmask!(equalized_gray, coastal_buffer_mask)
         equalized_gray .= imbrighten(equalized_gray, brighten, brighten_factor)
     end
 
@@ -201,12 +223,13 @@ function (p::Segment)(
                 minimum_window_size=32,
                 threshold_percentage=15,
             ) .> 0
-        prelim_icemask = get_ice_masks(
-            ref_image,
+
+        prelim_icemask = kmeans_binarization(
             Gray.(morphed_residue / 255),
-            _landmask.dilated,
+            fc_landmasked,
             tiles;
-            ice_masks_params...,
+            cluster_selection_algorithm=IceDetectionLopezAcosta2019Tiling(; ice_masks_params...), # Initialize this with ice_masks_params
+            k=4
         )
     end
 
@@ -238,12 +261,12 @@ function (p::Segment)(
 
     begin
         @debug "Step 13: Get improved icemask"
-        icemask = get_ice_masks(
-            ref_image,
+        icemask = kmeans_binarization(
             Gray.(prelim_icemask2 ./ 255),
-            _landmask.dilated,
+            fc_landmasked,
             tiles;
-            ice_masks_params...,
+            cluster_selection_algorithm=IceDetectionLopezAcosta2019Tiling(;ice_masks_params...),
+            k=3
         )
     end
 
@@ -269,6 +292,7 @@ function (p::Segment)(
             truecolor,
             ref_img_cloudmasked,
             gammagreen,
+            coastal_buffer_mask,
             equalized_gray,
             equalized_gray_sharpened_reconstructed,
             equalized_gray_reconstructed,
@@ -372,20 +396,6 @@ function watershed2(morph_residue, segment_mask, ice_mask)
     w = watershed(morph_residue, cc)
     lmap = labels_map(w)
     return (fgm=mr_reconst, L0mask=isboundary(lmap) .> 0)
-end
-
-"""
-    imgradientmag(img)
-
-Compute the gradient magnitude of an image using the Sobel operator.
-"""
-function imgradientmag(img)
-    h = centered([-1 0 1; -2 0 2; -1 0 1]')
-    Gx_future = Threads.@spawn imfilter(img, h', "replicate")
-    Gy_future = Threads.@spawn imfilter(img, h, "replicate")
-    Gx = fetch(Gx_future)
-    Gy = fetch(Gy_future)
-    return hypot.(Gx, Gy)
 end
 
 """
@@ -511,6 +521,42 @@ function adjustgamma(img, gamma=1.5, asuint8=true)
     end
 
     return adjusted
+end
+
+
+"""IceDetectionLopezAcosta2019Tiling
+
+Application of the IceDetectionFirstNonZeroAlgorithm using two passes of 
+the IceDetectionThresholdMODIS721 and one application of the IceDetectionBrightnessPeaksMODIS721,
+then finally running IceDetectionBrightnessPeaksMODIS721 with only applying the band 2 threshold.
+"""
+function IceDetectionLopezAcosta2019Tiling(;
+    band_7_max::Float64=Float64(5 / 255),
+    band_2_min::Float64=Float64(230 / 255),
+    band_1_min::Float64=Float64(240 / 255),
+    band_7_max_relaxed::Float64=Float64(10 / 255),
+    band_1_min_relaxed::Float64=Float64(190 / 255),
+    possible_ice_threshold::Float64=Float64(75 / 255),
+)
+    return IceDetectionFirstNonZeroAlgorithm([
+        IceDetectionThresholdMODIS721(;
+            band_7_max=band_7_max,
+            band_2_min=band_2_min,
+            band_1_min=band_1_min
+        ),
+        IceDetectionThresholdMODIS721(;
+            band_7_max=band_7_max_relaxed,
+            band_2_min=band_2_min,
+            band_1_min=band_1_min_relaxed,
+        ),
+        IceDetectionBrightnessPeaksMODIS721(;
+            band_7_max=band_7_max,
+            possible_ice_threshold=possible_ice_threshold
+        ),
+        IceDetectionThresholdMODIS721(;
+            band_7_max=1.0, band_2_min=band_2_min, band_1_min=0.0
+        ),
+    ])
 end
 
 end

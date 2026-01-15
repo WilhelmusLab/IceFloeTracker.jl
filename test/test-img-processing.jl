@@ -1,7 +1,6 @@
 
 @testitem "misc. image processing" begin
-    using IceFloeTracker.LopezAcosta2019Tiling:
-        imgradientmag, adjustgamma, get_holes, impose_minima
+    using IceFloeTracker.LopezAcosta2019Tiling: adjustgamma, get_holes
     using Images
     using ZipFile
     import DelimitedFiles: readdlm
@@ -27,12 +26,5 @@
     @testset "get_holes" begin
         bw = coins .> 100
         @test sum(get_holes(bw)) == 2536
-    end
-
-    @testset "impose_minima" begin
-        img = readdlm("test_inputs/imposemin.csv", ',', Int)
-        marker = falses(size(img))
-        marker[65:70, 65:70] .= true
-        @test sum(impose_minima(img, marker)) == 7675653
     end
 end

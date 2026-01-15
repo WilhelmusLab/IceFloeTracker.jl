@@ -33,16 +33,7 @@ end
     impose_minima(I::AbstractArray{T}, BW::AbstractArray{Bool}) where {T<:Integer}
 
 Use morphological reconstruction to enforce minima on the input image `I` at the positions where the binary mask `BW` is non-zero.
-
-It supports both integer and grayscale images using different implementations for each.
 """
-function impose_minima(I::AbstractArray{T}, BW::AbstractArray{Bool}) where {T<:Integer}
-    marker = 255 .* BW
-    mask = imcomplement(min.(I .+ 1, 255 .- marker))
-    reconstructed = mreconstruct(dilate, marker, mask, strel_box((3, 3)))
-    return imcomplement(Int.(reconstructed))
-end
-
 function impose_minima(
     I::AbstractArray{T}, BW::AbstractMatrix{Bool}
 ) where {T<:AbstractFloat}
