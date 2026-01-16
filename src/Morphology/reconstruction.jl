@@ -26,7 +26,7 @@ function reconstruct(img, se, type, invert::Bool=true)
 
     type == "dilation" && return mreconstruct(dilate, morphed, img)
 
-    return mreconstruct(dilate, morphed, img, strel_box((3, 3)))
+    return mreconstruct(dilate, morphed, img)
 end
 
 """
@@ -44,5 +44,5 @@ function impose_minima(
 
     marker = -Inf * BW .+ (Inf * .!BW)
     mask = min.(I .+ h, marker)
-    return 1 .- mreconstruct(dilate, 1 .- mask, 1 .- marker, strel_box((3, 3)))
+    return 1 .- mreconstruct(dilate, 1 .- marker, 1 .- mask)
 end
