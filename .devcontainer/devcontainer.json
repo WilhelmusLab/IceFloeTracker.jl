@@ -1,22 +1,23 @@
 {
-	"name": "IceFloeTracker.jl (Debian)",
-	"build": {
-		"dockerfile": "Dockerfile"
+	"name": "Ubuntu",
+	"image": "mcr.microsoft.com/devcontainers/base:noble",
+	"features": {
+		"ghcr.io/julialang/devcontainer-features/julia:1": {}
 	},
-	"features": {},
+	"postCreateCommand": {
+		"setup-TestEnv": "julia -e 'using Pkg; Pkg.add(\"TestEnv\")'" // Add TestEnv globally to use in PostStart
+	},
+	"postStartCommand": "julia --project=. -e 'using TestEnv; TestEnv.activate(); include(\"test/runtests-smoke.jl\")'",
 	"customizations": {
 		"vscode": {
 			"extensions": [
-				"GitHub.vscode-github-actions",
-				"ms-azuretools.vscode-containers",
-				"julialang.language-julia",
+				"github.vscode-github-actions",
+				"GitHub.vscode-pull-request-github",
 				"tamasfe.even-better-toml"
-			]
+			],
+			"settings": {
+				"editor.formatOnSave": true
+			}
 		}
-	},
-	"postCreateCommand": {
- 		"setup-git-hooks": "git config core.hooksPath ./hooks",
-		"setup-TestEnv": "julia -e 'using Pkg; Pkg.add(\"TestEnv\")'" // Add TestEnv globally to use in PostStart
-	},
-	"postStartCommand": "julia --project=. -e 'using TestEnv; TestEnv.activate(); include(\"test/runtests-smoke.jl\")'"
+	}
 }
