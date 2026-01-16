@@ -64,13 +64,13 @@ end
     # This differs from MATLAB script due to disparity in the implementations
     # of the adaptive histogram equalization / diffusion functions
     # For the moment testing for regression
-    @test sum(to_uint8(true_color_eq[:, :, 1])) ≈ 27_422_448 rtol = 0.003
+    @test 27_311_946 ≈ sum(to_uint8(true_color_eq[:, :, 1])) rtol = 0.003
 
     # Use custom tile size
     side_length = size(true_color_eq, 1) ÷ 8
     tiles = get_tiles(true_color_image, side_length)
     true_color_eq = conditional_histeq(true_color_image, clouds_red, tiles)
-    @test sum(to_uint8(true_color_eq[:, :, 1])) ≈ 27_446_614 rtol = 0.003
+    @test 30_397_862 ≈ sum(to_uint8(true_color_eq[:, :, 1])) rtol = 0.003
 end
 
 @testitem "_get_false_color_cloudmasked (data loader)" setup = [FalseColorCloudmask] begin
@@ -92,58 +92,10 @@ end
     @test sum(false_color_cloudmasked[3, :, :]) ≈ 17_159_247 rtol = 0.01
 end
 
-@testitem "adapthisteq" begin
-    using TestImages: testimage
-    function convert_to_255_matrix(img)::Matrix{Int}
-        img_clamped = clamp.(img, 0.0, 1.0)
-        return round.(Int, img_clamped * 255)
-    end
-
-    img = convert_to_255_matrix(testimage("cameraman"))
-    img_eq = adapthisteq(img)
-    @test sum(img_eq) == 32_387_397
-end
-
 @testitem "rgb2gray" begin
     using Images: RGB, N0f8, float64
     pixels = float64.([RGB{N0f8}(0.345, 0.361, 0.404) RGB{N0f8}(0.808, 0.808, 0.8);])
     h = rgb2gray(pixels)
     @test h[1, 1] == 92
     @test h[1, 2] == 206
-end
-
-@testitem "histeq" begin
-    @testset "normal cases" begin
-        @test histeq([
-            4 4 4 4 4
-            3 4 5 4 3
-            3 5 5 5 3
-            3 4 5 4 3
-            4 4 4 4 4
-        ]) == [
-            204 204 204 204 204
-            061 204 255 204 061
-            061 255 255 255 061
-            061 204 255 204 061
-            204 204 204 204 204
-        ]
-    end
-
-    @testset "edge cases" begin
-        @test histeq([
-            0 0 0
-            2 2 2
-        ]) == [
-            128 128 128
-            255 255 255
-        ]
-
-        @test histeq([
-            000 000 000
-            255 255 255
-        ]) == [
-            128 128 128
-            255 255 255
-        ]
-    end
 end

@@ -118,6 +118,7 @@ Adjust the tile dimensions by adding extra rows and columns.
 ```julia
 julia> bump_tile((1:3, 1:4), (1, 1))
 (1:4, 1:5)
+```
 """
 function bump_tile(tile::Tuple{UnitRange{S},UnitRange{S}}, dims::Tuple{S,S}) where {S<:Int}
     extrarows, extracols = dims
@@ -142,6 +143,7 @@ Calculate the dimensions of a tile.
 ```julia
 julia> get_tile_dims((1:3, 1:4))
 (4, 3)
+```
 """
 function get_tile_dims(tile)
     a, b, c, d = get_tile_meta(tile)

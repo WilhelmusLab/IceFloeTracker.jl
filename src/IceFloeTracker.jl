@@ -2,9 +2,6 @@ module IceFloeTracker
 
 using Reexport
 
-# Supporting modules
-include("skimage/skimage.jl")
-
 include("Utils/Utils.jl")
 @reexport using .Utils
 

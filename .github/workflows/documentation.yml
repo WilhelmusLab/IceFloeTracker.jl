@@ -21,8 +21,6 @@ jobs:
         with:
           version: '1.12'
       - uses: julia-actions/cache@v2
-      - name: setup PyCall
-        run: julia --project=.devcontainer/PyCallSetup.jl .devcontainer/PyCallSetup.jl/setup.jl
       - name: Install dependencies
         shell: julia --color=yes --project=docs {0}
         run: |
