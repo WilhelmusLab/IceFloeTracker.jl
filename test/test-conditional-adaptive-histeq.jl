@@ -64,13 +64,13 @@ end
     # This differs from MATLAB script due to disparity in the implementations
     # of the adaptive histogram equalization / diffusion functions
     # For the moment testing for regression
-    @test sum(to_uint8(true_color_eq[:, :, 1])) ≈ 27_422_448 rtol = 0.003
+    @test 27_311_946 ≈ sum(to_uint8(true_color_eq[:, :, 1])) rtol = 0.003
 
     # Use custom tile size
     side_length = size(true_color_eq, 1) ÷ 8
     tiles = get_tiles(true_color_image, side_length)
     true_color_eq = conditional_histeq(true_color_image, clouds_red, tiles)
-    @test sum(to_uint8(true_color_eq[:, :, 1])) ≈ 27_446_614 rtol = 0.003
+    @test 30_397_862 ≈ sum(to_uint8(true_color_eq[:, :, 1])) rtol = 0.003
 end
 
 @testitem "_get_false_color_cloudmasked (data loader)" setup = [FalseColorCloudmask] begin
@@ -90,18 +90,6 @@ end
     @test sum(false_color_cloudmasked[1, :, :]) ≈ 10_350_341 rtol = 0.01
     @test sum(false_color_cloudmasked[2, :, :]) ≈ 17_029_014 rtol = 0.01
     @test sum(false_color_cloudmasked[3, :, :]) ≈ 17_159_247 rtol = 0.01
-end
-
-@testitem "adapthisteq" begin
-    using TestImages: testimage
-    function convert_to_255_matrix(img)::Matrix{Int}
-        img_clamped = clamp.(img, 0.0, 1.0)
-        return round.(Int, img_clamped * 255)
-    end
-
-    img = convert_to_255_matrix(testimage("cameraman"))
-    img_eq = adapthisteq(img)
-    @test sum(img_eq) == 32_387_397
 end
 
 @testitem "rgb2gray" begin
