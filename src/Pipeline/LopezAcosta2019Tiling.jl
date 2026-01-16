@@ -16,6 +16,7 @@ import Images:
     TransparentRGB,
     AbstractGray,
     dilate,
+    erode,
     mreconstruct,
     RGB,
     Gray,
@@ -32,7 +33,6 @@ import Images:
     SegmentedImage,
     segment_mean,
     Equalization
-import ..skimage: sk_morphology
 import ..ImageUtils: get_brighten_mask, to_uint8, imcomplement, imbrighten, get_tiles
 import ..Filtering: unsharp_mask, conditional_histeq, rgb2gray, imgradientmag
 import ..Preprocessing:
@@ -503,8 +503,8 @@ function get_final(
 
     #= opening to remove noise while preserving shape/size
     Note the different structuring elements for erosion and dilation =#
-    mask = sk_morphology.erosion(_img, se_erosion)
-    mask .= sk_morphology.dilation(mask, se_dilation)
+    mask = erode(_img, se_erosion)
+    mask .= dilate(mask, se_dilation)
 
     # Restore shape of floes based on the cleaned up `mask`
     final = mreconstruct(dilate, _img, mask)

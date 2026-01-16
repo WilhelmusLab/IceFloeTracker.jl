@@ -38,13 +38,6 @@ install the dependencies:
 - [libgdal-dev](https://gdal.org/)
 - [git](https://git-scm.com/) version 2.9 or later
 
-The PyCall dependency of IceFloeTracker.jl often causes issues when installing the package. 
-To set up PyCall and its Conda environment correctly after installing Julia, 
-run:
-```shell
-julia --project=.devcontainer/PyCallSetup.jl .devcontainer/PyCallSetup.jl/setup.jl
-```
-
 Git hooks are used to run common developer tasks on commits (e.g. code formatting, tests, etc.). 
 Run the following from the root of the project to enable git hooks:
 ```shell
