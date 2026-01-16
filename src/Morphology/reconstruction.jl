@@ -26,7 +26,7 @@ function reconstruct(img, se, type, invert::Bool=true)
 
     type == "dilation" && return mreconstruct(dilate, morphed, img)
 
-    return sk_morphology.reconstruction(morphed, img)
+    return mreconstruct(dilate, morphed, img)
 end
 
 """
@@ -34,7 +34,6 @@ end
 
 Use morphological reconstruction to enforce minima on the input image `I` at the positions where the binary mask `BW` is non-zero.
 """
-
 function impose_minima(
     I::AbstractArray{T}, BW::AbstractMatrix{Bool}
 ) where {T<:AbstractFloat}
@@ -45,6 +44,5 @@ function impose_minima(
 
     marker = -Inf * BW .+ (Inf * .!BW)
     mask = min.(I .+ h, marker)
-
-    return 1 .- sk_morphology.reconstruction(1 .- marker, 1 .- mask)
+    return 1 .- mreconstruct(dilate, 1 .- marker, 1 .- mask)
 end
