@@ -11,7 +11,6 @@ function (p::IceFloeSegmentationAlgorithm)(
     intermediates_directory::Union{Nothing,AbstractString}=nothing,
     intermediates_targets::Vector{<:AbstractString}=AbstractString[],
 )
-    @info "in IceFloeSegmentationAlgorithm"
     intermediate_results_callback = intermediate_results_saver_factory(
         intermediates_directory, intermediates_targets
     )
@@ -41,10 +40,7 @@ function intermediate_results_saver_factory(
 
     function save_intermediate_results(; kwargs...)
         for name in targets
-            @info name
             root = Symbol(splitext(name)[1])
-            @info "Saving intermediate result for $(root)"
-            @info "found the key: $(haskey(kwargs, root))"
             if haskey(kwargs, root)
                 mkpath(directory)
                 save(joinpath(directory, name), kwargs[root])
