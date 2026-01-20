@@ -15,7 +15,7 @@ using Images.ImageCore
 ```
 
 Performs Contrast Limited Adaptive Histogram Equalisation (CLAHE) on the input
-image. 
+image.
 
 This version is based on the code in:
 GraphicsGems IV, "Contrast Limited Adaptive Histogram Equalization".
