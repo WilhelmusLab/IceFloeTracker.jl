@@ -5,29 +5,6 @@ module CLI
 using ..Segmentation
 using Images
 
-function intermediate_results_saver_factory(
-    directory::Union{Nothing,AbstractString}, targets::Vector{<:AbstractString}
-)
-    if isnothing(directory)
-        return (; kwargs...) -> nothing
-    end
-
-    function save_intermediate_results(; kwargs...)
-        for name in targets
-            @info name
-            root = Symbol(splitext(name)[1])
-            @info "Saving intermediate result for $(root)"
-            @info "found the key: $(haskey(kwargs, root))"
-            if haskey(kwargs, root)
-                mkpath(directory)
-                save(joinpath(directory, name), kwargs[root])
-            end
-        end
-    end
-
-    return save_intermediate_results
-end
-
 function (p::IceFloeSegmentationAlgorithm)(
     outpath::AbstractString,
     args::AbstractString...;
@@ -53,6 +30,29 @@ function (p::IceFloeSegmentationAlgorithm)(
 
     save(outpath, reinterpret(Gray{N0f64}, labels_map(output)))
     return output
+end
+
+function intermediate_results_saver_factory(
+    directory::Union{Nothing,AbstractString}, targets::Vector{<:AbstractString}
+)
+    if isnothing(directory)
+        return (; kwargs...) -> nothing
+    end
+
+    function save_intermediate_results(; kwargs...)
+        for name in targets
+            @info name
+            root = Symbol(splitext(name)[1])
+            @info "Saving intermediate result for $(root)"
+            @info "found the key: $(haskey(kwargs, root))"
+            if haskey(kwargs, root)
+                mkpath(directory)
+                save(joinpath(directory, name), kwargs[root])
+            end
+        end
+    end
+
+    return save_intermediate_results
 end
 
 end # module CLI
