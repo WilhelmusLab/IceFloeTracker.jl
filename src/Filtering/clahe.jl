@@ -172,9 +172,7 @@ function redistribute_histogram(
 ) where {T<:Integer}
     n_excess = sum(max(0, count - clip_limit) for count in counts)
     n_bins = length(counts)
-    if n_excess == 0
-        return counts
-    end
+    n_excess == 0 && return counts
     increment, remainder = divrem(n_excess, n_bins)
     new_counts = similar(counts)
     for i in eachindex(counts)
