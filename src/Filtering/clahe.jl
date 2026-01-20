@@ -44,7 +44,7 @@ function (f::ContrastLimitedAdaptiveHistogramEqualization)(
     # If necessary, resize the image so that the requested number of blocks fit exactly.
     resized_height = ceil(Int, height / (2 * f.rblocks)) * 2 * f.rblocks
     resized_width = ceil(Int, width / (2 * f.cblocks)) * 2 * f.cblocks
-    must_resize = (resized_height != height) || (resized_width != width) ? true : false
+    must_resize = (resized_height != height) || (resized_width != width)
     if must_resize
         img_tmp = imresize(img, (resized_height, resized_width))
         out_tmp = copy(img_tmp)
