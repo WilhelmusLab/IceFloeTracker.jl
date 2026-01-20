@@ -29,6 +29,9 @@ include("Segmentation/Segmentation.jl")
 include("Tracking/Tracking.jl")
 @reexport using .Tracking
 
+include("CLI/CLI.jl")
+@reexport using .CLI
+
 # Pipelines
 include("Pipeline/LopezAcosta2019.jl")
 export LopezAcosta2019
