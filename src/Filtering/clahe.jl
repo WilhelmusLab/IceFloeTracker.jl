@@ -98,29 +98,10 @@ function (f::ContrastLimitedAdaptiveHistogramEqualization)(
             idLc, idRc = cblock - 1, cblock
         end
 
-        if rblock ∈ [1, f.rblocks + 1]
-            rblockpix = rsize / 2
-        else
-            rblockpix = rsize
-        end
-
-        if rblock == 1
-            rblockoffset = 0
-        else
-            rblockoffset = -(rsize / 2)
-        end
-
-        if cblock ∈ [1, f.cblocks + 1]
-            cblockpix = csize / 2
-        else
-            cblockpix = csize
-        end
-
-        if cblock == 1
-            cblockoffset = 0
-        else
-            cblockoffset = -(csize / 2)
-        end
+        rblockpix = rblock ∈ [1, f.rblocks + 1] ? rsize / 2 : rsize
+        rblockoffset = rblock == 1 ? 0 : -rsize / 2
+        cblockpix = cblock ∈ [1, f.cblocks + 1] ? csize / 2 : csize
+        cblockoffset = cblock == 1 ? 0 : -csize / 2
 
         histUL, histUR = histograms[idUr, idLc], histograms[idUr, idRc]
         histBL, histBR = histograms[idBr, idLc], histograms[idBr, idRc]
