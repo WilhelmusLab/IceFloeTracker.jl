@@ -4,10 +4,6 @@ from datetime import datetime, timedelta
 configfile: "workflow/config.yaml"
 workdir: "workflow-results"
 
-# Helper function to get date without dashes
-def date_without_dashes(date_str):
-    return date_str.replace("-", "")
-
 # ============================================================================
 # INIT RULES
 # ============================================================================
@@ -61,33 +57,38 @@ envvars:
 
 rule get_region_overpass_times:
     output: 
-        "{region}.{year}.overpass-times.csv"
+        "{region}.{year}.overpasses.csv"
     params:
-        # SPACEUSER=os.environ["SPACEUSER"],
-        # SPACEPSWD=os.environ["SPACEPSWD"],
+        SPACEUSER=os.environ["SPACEUSER"],
+        SPACEPSWD=os.environ["SPACEPSWD"],
         start="{year}-01-01",
         end="{year}-12-31",
         centroid_lat=lambda wc: config["regions"][wc.region]["CENTROID_LAT"],
-        centroid_lon=lambda wc: config["regions"][wc.region]["CENTROID_LON"]
+        centroid_lon=lambda wc: config["regions"][wc.region]["CENTROID_LON"],
     shell:
         "{config[PASS_TIME]} --csvoutpath {output} "
         "--startdate {params.start} --enddate {params.end} "
         "--centroid-lat {params.centroid_lat} --centroid-lon {params.centroid_lon} "
-        "--SPACEUSER {os.environ[SPACEUSER]} --SPACEPSWD {os.environ[SPACEPSWD]}"
+        "--SPACEUSER {params.SPACEUSER} --SPACEPSWD {params.SPACEPSWD}"
 
 rule get_single_overpass_time:
     input:
-        "{region}.{year}.overpass-times.csv"
+        "{region}.{year}.overpasses.csv"
     output:
-        "{region}.{date}.{satellite}-overpass.txt"
+        "{region}.{year}{month}{day}.{satellite}.overpass.txt"
+    wildcard_constraints:
+        year="[0-9]{4}",
+        month="[0-9]{2}",
+        day="[0-9]{2}"
+    params:
+        date=lambda wc: f"{wc.year}-{wc.month}-{wc.day}"
     run:
-        
         import csv; 
         overpass_time = None
         with open(input[0]) as f:
             csvfile = csv.reader(f)
             for row in csvfile:
-                if row and row[0] == wildcards.date and row[1] == wildcards.satellite:
+                if row and row[0] == params.date and row[1] == wildcards.satellite:
                     overpass_time = row[2]
                     break
         with open(output[0], "w") as f:
@@ -109,7 +110,6 @@ rule load_truecolor:
         "{config[FSDPROC]} load {output} --kind truecolor "
         "--crs {params.crs} --bbox {params.bbox} --scale {wildcards.scale} "
         "--datetime {params.date_with_dashes} --satellite {wildcards.satellite}"
-
 
 rule load_falsecolor:
     output:
