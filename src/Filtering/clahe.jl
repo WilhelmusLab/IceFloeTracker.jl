@@ -208,7 +208,8 @@ function (f::ContrastLimitedAdaptiveHistogramEqualization)(
     y = comp1.(yiq)
     adjust_histogram!(y, f)
     yiq_view[1, :, :] .= y
-    return out .= convert.(T, yiq)
+    out .= convert.(T, yiq)
+    return out
 end
 
 export ContrastLimitedAdaptiveHistogramEqualization, adjust_histogram, adjust_histogram!
