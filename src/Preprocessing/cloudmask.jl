@@ -290,14 +290,3 @@ function apply_cloudmask!(img::AbstractArray, cloudmask::AbstractArray{Bool}
     img[cloudmask] .= 0.0
     return img
 end
-
-# dmw: in the future, we may want the option to use "missing".
-# dmw: used only in ice-water-discrimination. could be generalized. compare to similar method in the conditional adaptive histogram
-# is this not equivalent to something like apply_cloudmask(red.(img), cloudmask)? also note that this function still has the clouds=0 
-# sense for the mask.
-function create_clouds_channel(
-    cloudmask::AbstractArray{Bool}, false_color_image::Matrix{RGB{Float64}}
-)::Matrix{Gray{Float64}}
-    # dmw: trying out a simpler approach
-    return apply_cloudmask(Gray.(red.(false_color_image)), cloudmask)
-end

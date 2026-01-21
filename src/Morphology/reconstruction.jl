@@ -1,4 +1,4 @@
-import Images: mreconstruct, dilate
+import Images: mreconstruct, dilate, erode
 import ..skimage: sk_morphology
 import ..ImageUtils: to_uint8, imcomplement
 
@@ -17,32 +17,21 @@ function reconstruct(img, se, type, invert::Bool=true)
     !(type == "dilation" || type == "erosion") &&
         throw(ArgumentError("Invalid type: $type. Must be 'dilation' or 'erosion'."))
 
-    type == "dilation" &&
-        (morphed = to_uint8(sk_morphology.dilation(img; footprint=collect(se))))
-    type == "erosion" &&
-        (morphed = to_uint8(sk_morphology.erosion(img; footprint=collect(se))))
+    type == "dilation" && (morphed = to_uint8(dilate(img, collect(se))))
+    type == "erosion" && (morphed = to_uint8(erode(img, collect(se))))
 
     invert && (morphed = imcomplement(to_uint8(morphed)); img = imcomplement(img))
 
     type == "dilation" && return mreconstruct(dilate, morphed, img)
 
-    return sk_morphology.reconstruction(morphed, img)
+    return mreconstruct(dilate, morphed, img)
 end
 
 """
     impose_minima(I::AbstractArray{T}, BW::AbstractArray{Bool}) where {T<:Integer}
 
 Use morphological reconstruction to enforce minima on the input image `I` at the positions where the binary mask `BW` is non-zero.
-
-It supports both integer and grayscale images using different implementations for each.
 """
-function impose_minima(I::AbstractArray{T}, BW::AbstractArray{Bool}) where {T<:Integer}
-    marker = 255 .* BW
-    mask = imcomplement(min.(I .+ 1, 255 .- marker))
-    reconstructed = sk_morphology.reconstruction(marker, mask)
-    return imcomplement(Int.(reconstructed))
-end
-
 function impose_minima(
     I::AbstractArray{T}, BW::AbstractMatrix{Bool}
 ) where {T<:AbstractFloat}
@@ -53,6 +42,5 @@ function impose_minima(
 
     marker = -Inf * BW .+ (Inf * .!BW)
     mask = min.(I .+ h, marker)
-
-    return 1 .- sk_morphology.reconstruction(1 .- marker, 1 .- mask)
+    return 1 .- mreconstruct(dilate, 1 .- marker, 1 .- mask)
 end

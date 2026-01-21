@@ -16,6 +16,7 @@ import Images:
     TransparentRGB,
     AbstractGray,
     dilate,
+    erode,
     mreconstruct,
     RGB,
     Gray,
@@ -110,19 +111,39 @@ prelim_icemask_params = (radius=10, amount=2, factor=0.5)
     ice_masks_params = ice_masks_params
     prelim_icemask_params = prelim_icemask_params
     brighten_factor = brighten_factor
+    coastal_buffer_structuring_element = centered(strel_box((3, 3)))
 end
 
 function (p::Segment)(
-    truecolor::AbstractArray{<:Union{AbstractRGB,TransparentRGB}},
-    falsecolor::AbstractArray{<:Union{AbstractRGB,TransparentRGB}},
-    landmask::AbstractArray{<:Union{AbstractGray,AbstractRGB,TransparentRGB}};
+    truecolor::T,
+    falsecolor::T,
+    landmask::U;
     intermediate_results_callback::Union{Nothing,Function}=nothing,
-)
-    _landmask = create_landmask(landmask, strel_box((3, 3))) # smaller strel than in some test cases
+) where {T<:AbstractMatrix{<:Union{AbstractRGB,TransparentRGB}},U<:AbstractMatrix}
+    @info "building landmask and coastal buffer mask"
+    landmask, coastal_buffer_mask = create_landmask(
+        float64.(landmask), p.coastal_buffer_structuring_element
+    )
+    return p(
+        truecolor,
+        falsecolor,
+        landmask,
+        coastal_buffer_mask;
+        intermediate_results_callback=intermediate_results_callback,
+    )
+end
+
+function (p::Segment)(
+    truecolor::T,
+    falsecolor::T,
+    landmask::U,
+    coastal_buffer_mask::U;
+    intermediate_results_callback::Union{Nothing,Function}=nothing,
+) where {T<:AbstractMatrix{<:Union{AbstractRGB,TransparentRGB}},U<:BitMatrix}
     tiles = get_tiles(truecolor; p.tile_settings...)
 
     ref_image = RGB.(falsecolor)  # TODO: remove this typecast
-    fc_landmasked = apply_landmask(ref_image, _landmask.dilated)
+    fc_landmasked = apply_landmask(ref_image, coastal_buffer_mask)
     true_color_image = RGB.(truecolor)  # TODO: remove this typecast
 
     begin
@@ -137,7 +158,7 @@ function (p::Segment)(
     begin
         @debug "Step 3: Tiled adaptive histogram equalization"
         clouds_red = to_uint8(float64.(red.(ref_img_cloudmasked) .* 255))
-        clouds_red[_landmask.dilated] .= 0
+        clouds_red[coastal_buffer_mask] .= 0
 
         rgbchannels = conditional_histeq(
             true_color_image, clouds_red, tiles; adapthisteq_params...
@@ -160,25 +181,25 @@ function (p::Segment)(
         equalized_gray_sharpened_reconstructed = reconstruct(
             sharpened, structuring_elements.se_disk1, "dilation", true
         )
-        equalized_gray_sharpened_reconstructed[_landmask.dilated] .= 0
+        equalized_gray_sharpened_reconstructed[coastal_buffer_mask] .= 0
     end
 
     # TODO: Steps 6 and 7 can be done in parallel as they are independent
     begin
         @debug "Step 6: Repeat step 5 with equalized_gray (landmasking, no sharpening)"
         equalized_gray_reconstructed = deepcopy(equalized_gray)
-        apply_landmask!(equalized_gray_reconstructed, _landmask.dilated)
+        apply_landmask!(equalized_gray_reconstructed, coastal_buffer_mask)
 
         equalized_gray_reconstructed = reconstruct(
             equalized_gray_reconstructed, structuring_elements.se_disk1, "dilation", true
         )
-        apply_landmask!(equalized_gray_reconstructed, _landmask.dilated)
+        apply_landmask!(equalized_gray_reconstructed, coastal_buffer_mask)
     end
 
     begin
         @debug "Step 7: Brighten equalized_gray"
         brighten = get_brighten_mask(equalized_gray_reconstructed, gammagreen)
-        apply_landmask!(equalized_gray, _landmask.dilated)
+        apply_landmask!(equalized_gray, coastal_buffer_mask)
         equalized_gray .= imbrighten(equalized_gray, brighten, brighten_factor)
     end
 
@@ -274,6 +295,7 @@ function (p::Segment)(
             truecolor,
             ref_img_cloudmasked,
             gammagreen,
+            coastal_buffer_mask,
             equalized_gray,
             equalized_gray_sharpened_reconstructed,
             equalized_gray_reconstructed,
@@ -485,8 +507,8 @@ function get_final(
 
     #= opening to remove noise while preserving shape/size
     Note the different structuring elements for erosion and dilation =#
-    mask = sk_morphology.erosion(_img, se_erosion)
-    mask .= sk_morphology.dilation(mask, se_dilation)
+    mask = erode(_img, se_erosion)
+    mask .= dilate(mask, se_dilation)
 
     # Restore shape of floes based on the cleaned up `mask`
     final = mreconstruct(dilate, _img, mask)
