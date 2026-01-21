@@ -69,25 +69,27 @@ envvars:
     "SPACEUSER",
     "SPACEPSWD"
 
-rule get_all_overpass_times:
-    input:
-        "init-soit.txt"
+rule get_region_overpass_times:
     output: 
-        "overpass-times.csv"
+        "{region}.{year}.overpass-times.csv"
     params:
-        SPACEUSER=os.environ["SPACEUSER"],
-        SPACEPSWD=os.environ["SPACEPSWD"]
+        # SPACEUSER=os.environ["SPACEUSER"],
+        # SPACEPSWD=os.environ["SPACEPSWD"],
+        start="{year}-01-01",
+        end="{year}-12-31",
+        centroid_lat=lambda wc: config["regions"][wc.region]["CENTROID_LAT"],
+        centroid_lon=lambda wc: config["regions"][wc.region]["CENTROID_LON"]
     shell:
         "{config[PASS_TIME]} --csvoutpath {output} "
-        "--startdate {config[START]} --enddate {config[END]} "
-        "--centroid-lat {config[CENTROID_LAT]} --centroid-lon {config[CENTROID_LON]} "
-        "--SPACEUSER {params.SPACEUSER} --SPACEPSWD {params.SPACEPSWD}"
+        "--startdate {params.start} --enddate {params.end} "
+        "--centroid-lat {params.centroid_lat} --centroid-lon {params.centroid_lon} "
+        "--SPACEUSER {os.environ[SPACEUSER]} --SPACEPSWD {os.environ[SPACEPSWD]}"
 
 rule get_single_overpass_time:
     input:
-        "overpass-times.csv"
+        "{region}.{year}.overpass-times.csv"
     output:
-        "{date}-{satellite}-overpass.txt"
+        "{region}.{date}.{satellite}-overpass.txt"
     run:
         
         import csv; 
