@@ -11,7 +11,7 @@ def daterange(start_date, end_date):
     for n in range(int((end - start).days) + 1):
         yield (start + timedelta(n)).strftime("%Y%m%d")
 
-DATES = list(daterange(config["START"], config["END"]))
+# DATES = list(daterange(config["START"], config["END"]))
 SATELLITES = config["SATELLITES"]
 
 # Helper function to get date without dashes
@@ -112,9 +112,10 @@ rule load_truecolor:
     params:
         date_with_dashes=lambda wc: f"{wc.date[:4]}-{wc.date[4:6]}-{wc.date[6:8]}",
         bbox=lambda wc: config["regions"][wc.region]["BBOX"],
+        crs=lambda wc: config["regions"][wc.region]["CRS"]
     shell:
         "{config[FSDPROC]} load {output} --kind truecolor "
-        "--crs {config[CRS]} --bbox {params.bbox} --scale {wildcards.scale} "
+        "--crs {params.crs} --bbox {params.bbox} --scale {wildcards.scale} "
         "--datetime {params.date_with_dashes} --satellite {wildcards.satellite}"
 
 
@@ -124,9 +125,10 @@ rule load_falsecolor:
     params:
         date_with_dashes=lambda wc: f"{wc.date[:4]}-{wc.date[4:6]}-{wc.date[6:8]}",
         bbox=lambda wc: config["regions"][wc.region]["BBOX"],
+        crs=lambda wc: config["regions"][wc.region]["CRS"]
     shell:
         "{config[FSDPROC]} load {output} --kind bands721 "
-        "--crs {config[CRS]} --bbox {params.bbox} --scale {wildcards.scale} "
+        "--crs {params.crs} --bbox {params.bbox} --scale {wildcards.scale} "
         "--datetime {params.date_with_dashes} --satellite {wildcards.satellite}"
 
 rule load_cloud:
@@ -135,9 +137,10 @@ rule load_cloud:
     params:
         date_with_dashes=lambda wc: f"{wc.date[:4]}-{wc.date[4:6]}-{wc.date[6:8]}",
         bbox=lambda wc: config["regions"][wc.region]["BBOX"],
+        crs=lambda wc: config["regions"][wc.region]["CRS"]
     shell:
         "{config[FSDPROC]} load {output} --kind cloud "
-        "--crs {config[CRS]} --bbox {params.bbox} --scale {wildcards.scale} "
+        "--crs {params.crs} --bbox {params.bbox} --scale {wildcards.scale} "
         "--datetime {params.date_with_dashes} --satellite {wildcards.satellite}"
 
 rule load_landmask:
@@ -148,9 +151,10 @@ rule load_landmask:
     params:
         date_with_dashes=lambda wc: f"{wc.date[:4]}-{wc.date[4:6]}-{wc.date[6:8]}",
         bbox=lambda wc: config["regions"][wc.region]["BBOX"],
+        crs=lambda wc: config["regions"][wc.region]["CRS"]
     shell:
         "{config[FSDPROC]} load {output} --kind landmask "
-        "--crs {config[CRS]} --bbox {params.bbox} --scale {wildcards.scale} "
+        "--crs {params.crs} --bbox {params.bbox} --scale {wildcards.scale} "
         "--datetime {params.date_with_dashes} --satellite {wildcards.satellite}"
 
 # ============================================================================
@@ -197,7 +201,9 @@ rule preprocess_lopez_tiling:
             "{input.landmask}"\
         )'
         """
-        
+
+
+
 # ============================================================================
 # UTILITY RULES
 # ============================================================================
@@ -210,3 +216,4 @@ rule colorize_labeled:
         colorized="{stem}labels_map.colorized.tiff"
     shell:
         "{config[COLORIZE]} {input.labeled} {output.colorized}"
+
