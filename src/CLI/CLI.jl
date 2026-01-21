@@ -19,6 +19,8 @@ function (p::IceFloeSegmentationAlgorithm)(
         input = load(name)
         if occursin("landmask", name)
             input = load(name) .|> Gray .|> (x -> x .> 0.1) .|> Gray
+        elseif occursin("labels_map", name)
+            input = reinterpret(Int64, load(name))
         else
             input = load(name)
         end
