@@ -18,6 +18,7 @@ images/
 output/
 oscar-env/
 docs/build/
+workflow-results/
 .DS_Store
 .vs*
 runall.txt

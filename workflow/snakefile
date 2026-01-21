@@ -1,0 +1,209 @@
+import os
+from datetime import datetime, timedelta
+
+configfile: "workflow/config.yaml"
+workdir: "workflow-results"
+
+# Generate list of dates between START and END
+def daterange(start_date, end_date):
+    start = datetime.strptime(start_date, "%Y-%m-%d")
+    end = datetime.strptime(end_date, "%Y-%m-%d")
+    for n in range(int((end - start).days) + 1):
+        yield (start + timedelta(n)).strftime("%Y%m%d")
+
+DATES = list(daterange(config["START"], config["END"]))
+SATELLITES = config["SATELLITES"]
+
+# Helper function to get date without dashes
+def date_without_dashes(date_str):
+    return date_str.replace("-", "")
+
+# ============================================================================
+# INIT RULES
+# ============================================================================
+
+rule init:
+    input:
+        "init-soit.txt",
+        "init-fsdproc.txt",
+        "init-colorize.txt",
+        "init-csvjoin.txt",
+        "init-IFTP.txt",
+
+rule init_soit:
+    output:
+        "init-soit.txt"
+    shell:
+        "{config[PASS_TIME]} --help > {output}"
+
+rule init_fsdproc:
+    output:
+        "init-fsdproc.txt"
+    shell:
+        "{config[FSDPROC]} --help > {output}"
+
+rule init_colorize:
+    output:
+        "init-colorize.txt"
+    shell:
+        "{config[COLORIZE]} --help > {output}"
+
+rule init_csvjoin:
+    output:
+        "init-csvjoin.txt"
+    shell:
+        "{config[CSVJOIN]} --help > {output}"
+
+rule init_iftp:
+    output:
+        "init-IFTP.txt"
+    shell:
+        "{config[IFT]} -e '' > {output}"
+
+
+# ============================================================================
+# OVERPASS TIME RULES
+# ============================================================================
+
+envvars:
+    "SPACEUSER",
+    "SPACEPSWD"
+
+rule get_all_overpass_times:
+    input:
+        "init-soit.txt"
+    output: 
+        "overpass-times.csv"
+    params:
+        SPACEUSER=os.environ["SPACEUSER"],
+        SPACEPSWD=os.environ["SPACEPSWD"]
+    shell:
+        "{config[PASS_TIME]} --csvoutpath {output} "
+        "--startdate {config[START]} --enddate {config[END]} "
+        "--centroid-lat {config[CENTROID_LAT]} --centroid-lon {config[CENTROID_LON]} "
+        "--SPACEUSER {params.SPACEUSER} --SPACEPSWD {params.SPACEPSWD}"
+
+rule get_single_overpass_time:
+    input:
+        "overpass-times.csv"
+    output:
+        "{date}-{satellite}-overpass.txt"
+    run:
+        
+        import csv; 
+        overpass_time = None
+        with open(input[0]) as f:
+            csvfile = csv.reader(f)
+            for row in csvfile:
+                if row and row[0] == wildcards.date and row[1] == wildcards.satellite:
+                    overpass_time = row[2]
+                    break
+        with open(output[0], "w") as f:
+            f.write(overpass_time + "\n")
+
+
+# ============================================================================
+# IMAGE LOADING RULES
+# ============================================================================
+
+rule load_truecolor:
+    input:
+        "init-fsdproc.txt"
+    output:
+        "{date}.{scale}m.{satellite}/truecolor.tiff"
+    params:
+        date_with_dashes=lambda wc: f"{wc.date[:4]}-{wc.date[4:6]}-{wc.date[6:8]}"
+    shell:
+        "{config[FSDPROC]} load {output} --kind truecolor "
+        "--crs {config[CRS]} --bbox {config[BBOX]} --scale {wildcards.scale} "
+        "--datetime {params.date_with_dashes} --satellite {wildcards.satellite}"
+
+
+rule load_falsecolor:
+    input:
+        "init-fsdproc.txt"
+    output:
+        "{date}.{scale}m.{satellite}/falsecolor.tiff"
+    params:
+        date_with_dashes=lambda wc: f"{wc.date[:4]}-{wc.date[4:6]}-{wc.date[6:8]}"
+    shell:
+        "{config[FSDPROC]} load {output} --kind bands721 "
+        "--crs {config[CRS]} --bbox {config[BBOX]} --scale {wildcards.scale} "
+        "--datetime {params.date_with_dashes} --satellite {wildcards.satellite}"
+
+rule load_cloud:
+    input:
+        "init-fsdproc.txt"
+    output:
+        "{date}.{scale}m.{satellite}/cloud.tiff"
+    params:
+        date_with_dashes=lambda wc: f"{wc.date[:4]}-{wc.date[4:6]}-{wc.date[6:8]}"
+    shell:
+        "{config[FSDPROC]} load {output} --kind cloud "
+        "--crs {config[CRS]} --bbox {config[BBOX]} --scale {wildcards.scale} "
+        "--datetime {params.date_with_dashes} --satellite {wildcards.satellite}"
+
+rule load_landmask:
+    input:
+        "init-fsdproc.txt"
+    output:
+        "{date}.{scale}m.{satellite}/landmask.tiff"
+    params:
+        date_with_dashes=lambda wc: f"{wc.date[:4]}-{wc.date[4:6]}-{wc.date[6:8]}"
+    shell:
+        "{config[FSDPROC]} load {output} --kind landmask "
+        "--crs {config[CRS]} --bbox {config[BBOX]} --scale {wildcards.scale} "
+        "--datetime {params.date_with_dashes} --satellite {wildcards.satellite}"
+
+# ============================================================================
+# PREPROCESSING RULES
+# ============================================================================
+
+rule preprocess_lopez:
+    input:
+        truecolor="{stem}truecolor.tiff",
+        falsecolor="{stem}falsecolor.tiff",
+        landmask="{stem}landmask.tiff",
+        init="init-IFTP.txt"
+    output:
+        labeled="{stem}lopez.labels_map.tiff"
+    shell:
+        """
+        {config[IFT]} -e 'using IceFloeTracker; LopezAcosta2019.Segment()(\
+            "{output.labeled}",\
+            "{input.truecolor}",\
+            "{input.falsecolor}",\
+            "{input.landmask}"\
+        )'
+        """
+
+rule preprocess_lopez_tiling:
+    input:
+        truecolor="{stem}truecolor.tiff",
+        falsecolor="{stem}falsecolor.tiff",
+        landmask="{stem}landmask.tiff",
+        init="init-IFTP.txt"
+    output:
+        labeled="{stem}lopeztiling.labels_map.tiff"
+    shell:
+        """
+        {config[IFT]} -e 'using IceFloeTracker; LopezAcosta2019Tiling.Segment()(\
+            "{output.labeled}",\
+            "{input.truecolor}",\
+            "{input.falsecolor}",\
+            "{input.landmask}"\
+        )'
+        """
+        
+# ============================================================================
+# UTILITY RULES
+# ============================================================================
+
+rule colorize_labeled:
+    input:
+        labeled="{stem}labels_map.tiff",
+        init="init-colorize.txt"
+    output:
+        colorized="{stem}labels_map.colorized.tiff"
+    shell:
+        "{config[COLORIZE]} {input.labeled} {output.colorized}"
