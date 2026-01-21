@@ -161,7 +161,7 @@ function (p::Segment)(
             landmask,
             coastal_buffer_mask,
             cloudmask,
-            ice_mask=IceDetectionLopezAcosta2019()(fc_masked),
+            icemask=IceDetectionLopezAcosta2019()(fc_masked),
             sharpened_truecolor_image=sharpened_truecolor_image,
             sharpened_gray_truecolor_image=sharpened_gray_truecolor_image,
             ice_water_discrim=ice_water_discrim,
