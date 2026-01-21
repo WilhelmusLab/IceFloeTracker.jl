@@ -107,8 +107,6 @@ rule get_single_overpass_time:
 # ============================================================================
 
 rule load_truecolor:
-    input:
-        "init-fsdproc.txt"
     output:
         "{date}.{scale}m.{satellite}/truecolor.tiff"
     params:
@@ -120,8 +118,6 @@ rule load_truecolor:
 
 
 rule load_falsecolor:
-    input:
-        "init-fsdproc.txt"
     output:
         "{date}.{scale}m.{satellite}/falsecolor.tiff"
     params:
@@ -132,8 +128,6 @@ rule load_falsecolor:
         "--datetime {params.date_with_dashes} --satellite {wildcards.satellite}"
 
 rule load_cloud:
-    input:
-        "init-fsdproc.txt"
     output:
         "{date}.{scale}m.{satellite}/cloud.tiff"
     params:
@@ -164,7 +158,6 @@ rule preprocess_lopez:
         truecolor="{stem}truecolor.tiff",
         falsecolor="{stem}falsecolor.tiff",
         landmask="{stem}landmask.tiff",
-        init="init-IFTP.txt"
     output:
         labeled="{stem}lopez.labels_map.tiff"
     shell:
@@ -182,7 +175,6 @@ rule preprocess_lopez_tiling:
         truecolor="{stem}truecolor.tiff",
         falsecolor="{stem}falsecolor.tiff",
         landmask="{stem}landmask.tiff",
-        init="init-IFTP.txt"
     output:
         labeled="{stem}lopeztiling.labels_map.tiff"
     shell:
