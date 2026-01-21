@@ -214,4 +214,4 @@ end
 
 export ContrastLimitedAdaptiveHistogramEqualization, adjust_histogram, adjust_histogram!
 
-end # module CLAHE
+end
