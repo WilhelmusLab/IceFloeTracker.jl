@@ -152,6 +152,13 @@ rule load_landmask:
 # ============================================================================
 # PREPROCESSING RULES
 # ============================================================================
+# TODO: add intermediate outputs
+# In all cases, add intermediate outputs for:
+# - Cloud mask
+# - Ice-water discrimination
+# - preprocessed image masked with cloud and land-mask
+# - preprocessed image
+# - K-means result
 
 rule preprocess_lopez:
     input:
