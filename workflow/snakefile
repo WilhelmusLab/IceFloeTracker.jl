@@ -169,11 +169,11 @@ rule preprocess_lopez:
         labeled="{stem}lopez.labels_map.tiff"
     shell:
         """
-        {config[IFT]} -e 'using IceFloeTracker; LopezAcosta2019.Segment()(\
-            "{output.labeled}",\
-            "{input.truecolor}",\
-            "{input.falsecolor}",\
-            "{input.landmask}"\
+        {config[IFT]} -e 'using IceFloeTracker; LopezAcosta2019.Segment()(
+            "{output.labeled}",
+            "{input.truecolor}",
+            "{input.falsecolor}",
+            "{input.landmask}"
         )'
         """
 
@@ -186,11 +186,11 @@ rule preprocess_lopez_tiling:
         labeled="{stem}lopeztiling.labels_map.tiff"
     shell:
         """
-        {config[IFT]} -e 'using IceFloeTracker; LopezAcosta2019Tiling.Segment()(\
-            "{output.labeled}",\
-            "{input.truecolor}",\
-            "{input.falsecolor}",\
-            "{input.landmask}"\
+        {config[IFT]} -e 'using IceFloeTracker; LopezAcosta2019Tiling.Segment()(
+            "{output.labeled}",
+            "{input.truecolor}",
+            "{input.falsecolor}",
+            "{input.landmask}"
         )'
         """
 
