@@ -28,16 +28,18 @@
     save(truecolor_path, truecolor)
     save(falsecolor_path, falsecolor)
     save(landmask_path, landmask)
-    @testset "Run segmentation using file paths" begin
-        seg = LopezAcosta2019Tiling.Segment()
+
+    function test_algorithm(seg)
         segmented = seg(output_path, truecolor_path, falsecolor_path, landmask_path)
         # Check output type and shape
-        @test typeof(segmented) <: Images.SegmentedImage
-        @test size(labels_map(segmented)) == size(truecolor)
+        return typeof(segmented) <: Images.SegmentedImage &&
+               size(labels_map(segmented)) == size(truecolor)
     end
 
-    @testset "Include an intermediate results callback" begin
-        seg = LopezAcosta2019Tiling.Segment()
+    @test test_algorithm(LopezAcosta2019.Segment())
+    @test test_algorithm(LopezAcosta2019Tiling.Segment())
+
+    function test_algorithm_with_callback(seg)
         segmented = seg(
             output_path,
             truecolor_path,
@@ -46,9 +48,17 @@
             intermediates_directory=tempdir,
             intermediates_targets=["icemask.tiff"],
         )
-        # Check output type and shape
-        @test typeof(segmented) <: Images.SegmentedImage
-        @test size(labels_map(segmented)) == size(truecolor)
-        @test isfile(joinpath(tempdir, "icemask.tiff"))
+        result = (;
+            imageType=typeof(segmented) <: Images.SegmentedImage,
+            imageSize=size(labels_map(segmented)) == size(truecolor),
+            icemaskExists=isfile(joinpath(tempdir, "icemask.tiff")),
+        )
+        if !all(values(result))
+            @warn "Intermediate results callback test failed" result = result
+        end
+        return result
     end
+
+    @test all(test_algorithm_with_callback(LopezAcosta2019.Segment()))
+    @test all(test_algorithm_with_callback(LopezAcosta2019Tiling.Segment()))
 end
