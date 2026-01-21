@@ -108,45 +108,49 @@ rule get_single_overpass_time:
 
 rule load_truecolor:
     output:
-        "{date}.{scale}m.{satellite}/truecolor.tiff"
+        "{region}.{date}.{scale}m.{satellite}/truecolor.tiff"
     params:
-        date_with_dashes=lambda wc: f"{wc.date[:4]}-{wc.date[4:6]}-{wc.date[6:8]}"
+        date_with_dashes=lambda wc: f"{wc.date[:4]}-{wc.date[4:6]}-{wc.date[6:8]}",
+        bbox=lambda wc: config["regions"][wc.region]["BBOX"],
     shell:
         "{config[FSDPROC]} load {output} --kind truecolor "
-        "--crs {config[CRS]} --bbox {config[BBOX]} --scale {wildcards.scale} "
+        "--crs {config[CRS]} --bbox {params.bbox} --scale {wildcards.scale} "
         "--datetime {params.date_with_dashes} --satellite {wildcards.satellite}"
 
 
 rule load_falsecolor:
     output:
-        "{date}.{scale}m.{satellite}/falsecolor.tiff"
+        "{region}.{date}.{scale}m.{satellite}/falsecolor.tiff"
     params:
-        date_with_dashes=lambda wc: f"{wc.date[:4]}-{wc.date[4:6]}-{wc.date[6:8]}"
+        date_with_dashes=lambda wc: f"{wc.date[:4]}-{wc.date[4:6]}-{wc.date[6:8]}",
+        bbox=lambda wc: config["regions"][wc.region]["BBOX"],
     shell:
         "{config[FSDPROC]} load {output} --kind bands721 "
-        "--crs {config[CRS]} --bbox {config[BBOX]} --scale {wildcards.scale} "
+        "--crs {config[CRS]} --bbox {params.bbox} --scale {wildcards.scale} "
         "--datetime {params.date_with_dashes} --satellite {wildcards.satellite}"
 
 rule load_cloud:
     output:
-        "{date}.{scale}m.{satellite}/cloud.tiff"
+        "{region}.{date}.{scale}m.{satellite}/cloud.tiff"
     params:
-        date_with_dashes=lambda wc: f"{wc.date[:4]}-{wc.date[4:6]}-{wc.date[6:8]}"
+        date_with_dashes=lambda wc: f"{wc.date[:4]}-{wc.date[4:6]}-{wc.date[6:8]}",
+        bbox=lambda wc: config["regions"][wc.region]["BBOX"],
     shell:
         "{config[FSDPROC]} load {output} --kind cloud "
-        "--crs {config[CRS]} --bbox {config[BBOX]} --scale {wildcards.scale} "
+        "--crs {config[CRS]} --bbox {params.bbox} --scale {wildcards.scale} "
         "--datetime {params.date_with_dashes} --satellite {wildcards.satellite}"
 
 rule load_landmask:
     input:
         "init-fsdproc.txt"
     output:
-        "{date}.{scale}m.{satellite}/landmask.tiff"
+        "{region}.{date}.{scale}m.{satellite}/landmask.tiff"
     params:
-        date_with_dashes=lambda wc: f"{wc.date[:4]}-{wc.date[4:6]}-{wc.date[6:8]}"
+        date_with_dashes=lambda wc: f"{wc.date[:4]}-{wc.date[4:6]}-{wc.date[6:8]}",
+        bbox=lambda wc: config["regions"][wc.region]["BBOX"],
     shell:
         "{config[FSDPROC]} load {output} --kind landmask "
-        "--crs {config[CRS]} --bbox {config[BBOX]} --scale {wildcards.scale} "
+        "--crs {config[CRS]} --bbox {params.bbox} --scale {wildcards.scale} "
         "--datetime {params.date_with_dashes} --satellite {wildcards.satellite}"
 
 # ============================================================================
