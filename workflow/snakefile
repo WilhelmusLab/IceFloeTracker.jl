@@ -4,16 +4,6 @@ from datetime import datetime, timedelta
 configfile: "workflow/config.yaml"
 workdir: "workflow-results"
 
-# Generate list of dates between START and END
-def daterange(start_date, end_date):
-    start = datetime.strptime(start_date, "%Y-%m-%d")
-    end = datetime.strptime(end_date, "%Y-%m-%d")
-    for n in range(int((end - start).days) + 1):
-        yield (start + timedelta(n)).strftime("%Y%m%d")
-
-# DATES = list(daterange(config["START"], config["END"]))
-SATELLITES = config["SATELLITES"]
-
 # Helper function to get date without dashes
 def date_without_dashes(date_str):
     return date_str.replace("-", "")
