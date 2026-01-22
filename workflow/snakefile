@@ -1,8 +1,17 @@
 import os
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, date
 
 configfile: "workflow/config.yaml"
 workdir: "workflow-results"
+
+
+def daterange(start_date, end_date):
+    """Generates dates from start_date to end_date (inclusive)."""
+    date = start_date
+    while date <= end_date:
+        yield date
+        date += timedelta(days=1)
+
 
 # ============================================================================
 # INIT RULES
@@ -72,10 +81,10 @@ rule get_region_overpass_times:
         "--SPACEUSER {params.SPACEUSER} --SPACEPSWD {params.SPACEPSWD}"
 
 rule get_single_overpass_time:
+    output:
+        "{region}.{year}-{month}-{day}.{satellite}.overpass.txt"
     input:
         "{region}.{year}.overpasses.csv"
-    output:
-        "{region}.{year}{month}{day}.{satellite}.overpass.txt"
     wildcard_constraints:
         year="[0-9]{4}",
         month="[0-9]{2}",
@@ -101,53 +110,47 @@ rule get_single_overpass_time:
 
 rule load_truecolor:
     output:
-        "{region}.{date}.{scale}m.{satellite}/truecolor.tiff"
+        "{region}.{scale}m.{satellite}.{date}/truecolor.tiff"
     params:
-        date_with_dashes=lambda wc: f"{wc.date[:4]}-{wc.date[4:6]}-{wc.date[6:8]}",
         bbox=lambda wc: config["regions"][wc.region]["BBOX"],
         crs=lambda wc: config["regions"][wc.region]["CRS"]
     shell:
         "{config[FSDPROC]} load {output} --kind truecolor "
         "--crs {params.crs} --bbox {params.bbox} --scale {wildcards.scale} "
-        "--datetime {params.date_with_dashes} --satellite {wildcards.satellite}"
+        "--datetime {wildcards.date} --satellite {wildcards.satellite}"
 
 rule load_falsecolor:
     output:
-        "{region}.{date}.{scale}m.{satellite}/falsecolor.tiff"
+        "{region}.{scale}m.{satellite}.{date}/falsecolor.tiff"
     params:
-        date_with_dashes=lambda wc: f"{wc.date[:4]}-{wc.date[4:6]}-{wc.date[6:8]}",
         bbox=lambda wc: config["regions"][wc.region]["BBOX"],
         crs=lambda wc: config["regions"][wc.region]["CRS"]
     shell:
         "{config[FSDPROC]} load {output} --kind bands721 "
         "--crs {params.crs} --bbox {params.bbox} --scale {wildcards.scale} "
-        "--datetime {params.date_with_dashes} --satellite {wildcards.satellite}"
+        "--datetime {wildcards.date} --satellite {wildcards.satellite}"
 
 rule load_cloud:
     output:
-        "{region}.{date}.{scale}m.{satellite}/cloud.tiff"
+        "{region}.{scale}m.{satellite}.{date}/cloud.tiff"
     params:
-        date_with_dashes=lambda wc: f"{wc.date[:4]}-{wc.date[4:6]}-{wc.date[6:8]}",
         bbox=lambda wc: config["regions"][wc.region]["BBOX"],
         crs=lambda wc: config["regions"][wc.region]["CRS"]
     shell:
         "{config[FSDPROC]} load {output} --kind cloud "
         "--crs {params.crs} --bbox {params.bbox} --scale {wildcards.scale} "
-        "--datetime {params.date_with_dashes} --satellite {wildcards.satellite}"
+        "--datetime {wildcards.date} --satellite {wildcards.satellite}"
 
 rule load_landmask:
-    input:
-        "init-fsdproc.txt"
     output:
-        "{region}.{date}.{scale}m.{satellite}/landmask.tiff"
+        "{region}.{scale}m.{satellite}.{date}/landmask.tiff"
     params:
-        date_with_dashes=lambda wc: f"{wc.date[:4]}-{wc.date[4:6]}-{wc.date[6:8]}",
         bbox=lambda wc: config["regions"][wc.region]["BBOX"],
         crs=lambda wc: config["regions"][wc.region]["CRS"]
     shell:
         "{config[FSDPROC]} load {output} --kind landmask "
         "--crs {params.crs} --bbox {params.bbox} --scale {wildcards.scale} "
-        "--datetime {params.date_with_dashes} --satellite {wildcards.satellite}"
+        "--datetime {wildcards.date} --satellite {wildcards.satellite}"
 
 # ============================================================================
 # PREPROCESSING RULES
@@ -161,16 +164,16 @@ rule load_landmask:
 # - K-means result
 
 rule preprocess_lopez:
+    output:
+        labels_map="{stem}lopez.labels_map.tiff"
     input:
         truecolor="{stem}truecolor.tiff",
         falsecolor="{stem}falsecolor.tiff",
         landmask="{stem}landmask.tiff",
-    output:
-        labeled="{stem}lopez.labels_map.tiff"
     shell:
         """
         {config[IFT]} -e 'using IceFloeTracker; LopezAcosta2019.Segment()(
-            "{output.labeled}",
+            "{output.labels_map}",
             "{input.truecolor}",
             "{input.falsecolor}",
             "{input.landmask}"
@@ -178,22 +181,39 @@ rule preprocess_lopez:
         """
 
 rule preprocess_lopez_tiling:
+    output:
+        labels_map="{stem}lopeztiling.labels_map.tiff"
     input:
         truecolor="{stem}truecolor.tiff",
         falsecolor="{stem}falsecolor.tiff",
         landmask="{stem}landmask.tiff",
-    output:
-        labeled="{stem}lopeztiling.labels_map.tiff"
     shell:
         """
         {config[IFT]} -e 'using IceFloeTracker; LopezAcosta2019Tiling.Segment()(
-            "{output.labeled}",
+            "{output.labels_map}",
             "{input.truecolor}",
             "{input.falsecolor}",
             "{input.landmask}"
         )'
         """
 
+rule tracking:
+    output:
+        tracked="{region}.{scale}m.{start}.{end}.{seg}.tracked.csv"
+    input:
+        labels_maps = lambda wc: expand("{region}.{scale}m.{satellite}.{date}/{seg}.labels_map.tiff", 
+            satellite=config["SATELLITES"], 
+            date=daterange(date.fromisoformat(wc.start), date.fromisoformat(wc.end)), 
+            **wc
+        ),
+        overpasses = lambda wc: expand("{region}.{date}.{satellite}.overpass.txt", 
+            satellite=config["SATELLITES"], 
+            date=daterange(date.fromisoformat(wc.start), date.fromisoformat(wc.end)), 
+            **wc
+        )
+    shell:
+        "touch {output.tracked}"
+    
 # ============================================================================
 # UTILITY RULES
 # ============================================================================
