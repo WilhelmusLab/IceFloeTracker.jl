@@ -49,7 +49,7 @@
     end
 
     begin
-        morph_residue_seglabels = kmeans_segmentation(morph_residue[tile...]).image_indexmap
+        morph_residue_seglabels = labels_map(kmeans_segmentation(morph_residue[tile...]))
         @test _get_nlabel(ref_image_landmasked[tile...], morph_residue_seglabels) == 3
     end
 
@@ -78,7 +78,7 @@
     end
 
     begin
-        morph_residue_seglabels = kmeans_segmentation(morph_residue[tile...]; k=3).image_indexmap
+        morph_residue_seglabels = labels_map(kmeans_segmentation(morph_residue[tile...]; k=3))
         @test _get_nlabel(ref_image_landmasked[tile...], morph_residue_seglabels) == 1
     end
 

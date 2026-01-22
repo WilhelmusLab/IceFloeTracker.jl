@@ -16,30 +16,22 @@ function _get_nlabel(
     band_1_threshold_relaxed::T=190 / 255,
     possible_ice_threshold::T=75 / 255,
 ) where {T<:Float64}
-    f = IceDetectionFirstNonZeroAlgorithm([
-        IceDetectionThresholdMODIS721(;
-            band_7_max=band_7_threshold,
-            band_2_min=band_2_threshold,
-            band_1_min=band_1_threshold,
-        ),
-        IceDetectionThresholdMODIS721(;
-            band_7_max=band_7_threshold_relaxed,
-            band_2_min=band_2_threshold,
-            band_1_min=band_1_threshold_relaxed,
-        ),
-        IceDetectionBrightnessPeaksMODIS721(;
-            band_7_max=band_7_threshold, possible_ice_threshold=possible_ice_threshold
-        ),
-        IceDetectionThresholdMODIS721(;
-            band_7_max=1.0, band_2_min=band_2_threshold, band_1_min=0.0
-        ),
-    ])
+
+    f = IceDetectionLopezAcosta2019Tiling(;
+    band_7_max=band_7_threshold,
+    band_2_min=band_2_threshold,
+    band_1_min=band_1_threshold,
+    band_7_max_relaxed=band_7_threshold_relaxed,
+    band_1_min_relaxed=band_1_threshold_relaxed,
+    possible_ice_threshold=possible_ice_threshold,
+)
 
     ice_labels = binarize(falsecolor_img, f) .> 0
     (isempty(ice_labels) || sum(ice_labels) == 0) && return -1
     return StatsBase.mode(segmented_image_indexmap[ice_labels])
 end
 
+# TODO: This function is to be replaced with the kmeans binarization tiling version
 """
     get_ice_masks(
         falsecolor_image,
@@ -100,11 +92,11 @@ function get_ice_masks( #tbd: rename to kmeans_binarization?
     for tile in tiles
         @debug "Processing tile: $tile"
         mrt = morph_residue[tile...]
-        segmented_image_indexmap = kmeans_segmentation(mrt; k=k)
+        segmented_image = kmeans_segmentation(mrt; k=k)
 
         floes_label = _get_nlabel(
             fc_landmasked[tile...],
-            segmented_image_indexmap;
+            segmented_image.image_indexmap .> 0;
             band_7_threshold=band_7_threshold,
             band_2_threshold=band_2_threshold,
             band_1_threshold=band_1_threshold,
@@ -113,7 +105,9 @@ function get_ice_masks( #tbd: rename to kmeans_binarization?
             possible_ice_threshold=possible_ice_threshold,
         )
 
-        ice_mask[tile...] .= (segmented_image_indexmap .== floes_label)
+        # dmw: warning! this method can produce discontinuities as tile boundaries.
+        # A fix is in progress.
+        ice_mask[tile...] .= (segmented_image.image_indexmap .== floes_label)
     end
     return ice_mask
 end
