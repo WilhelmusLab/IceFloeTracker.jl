@@ -4,14 +4,9 @@ PASS_TIME: "pipx run --spec git+https://github.com/wilhelmuslab/ice-floe-tracker
 COLORIZE: "pipx run --spec git+https://github.com/wilhelmuslab/ice-floe-tracker-pipeline@v2.3.1#subdirectory=label-colorizer colorize"
 CSVJOIN: "pipx run --spec git+https://github.com/wilhelmuslab/ice-floe-tracker-pipeline@v2.3.1#subdirectory=csvjoin csvjoin"
 
-
-
 #--------------------------------------------------
-# Date, Time, Location, Satellites
+# Regions, Satellites
 #--------------------------------------------------
-START: "2019-03-20"
-END: "2019-03-21"
-SCALE: 250
 SATELLITES: ["aqua", "terra"]
 
 regions: {
@@ -30,34 +25,3 @@ regions: {
 # Username and password for Space-Track.org (don't commit!)
 SPACEUSER: ""
 SPACEPSWD: ""
-
-#--------------------------------------------------
-# Julia
-#--------------------------------------------------
-JULIA_DEBUG: ""
-
-#--------------------------------------------------
-# IFTPipeline.jl Command Line Interface
-#--------------------------------------------------
-
-#--------------------------------------------------
-# Buckley Floe Size Distribution Tool
-#--------------------------------------------------
-
-#--------------------------------------------------
-# Floe Colorizer
-#--------------------------------------------------
-
-#--------------------------------------------------
-# CSV Joiner
-#--------------------------------------------------
-
-#--------------------------------------------------
-# Preprocessing Options
-#--------------------------------------------------
-
-PREPROCESSING: "Lopez"
-
-# Lopez Preprocessing Options
-# for PREPROCESSING: "Lopez" or "LopezTiling"
-#--------------------------------------------------
