@@ -494,6 +494,7 @@ function get_final(
     _img = hbreak(img)
 
     # slow for big images
+    # dmw: likely can replace with .!imfill(.!_img, (0,1)) for speedup.
     _img .= morph_fill(_img)
 
     # TODO: decide on criteria for applying segment mask
