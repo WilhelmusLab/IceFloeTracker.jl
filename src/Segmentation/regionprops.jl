@@ -194,16 +194,10 @@ function component_perimeters(
     algorithm::PerimeterEstimationAlgorithm=BenkridCrookes(),
     )
     masks = component_floes(indexmap)
-    perims = Dict()
-
-    for label in keys(masks)
-        n, m = size(masks[label])
-        n * m == 1 && continue
-        label == 0 && (perims[label] = 0; continue)
-        
-        # Shape needs to have a border of zeros for erode to work here    
-        perims[label] = algorithm(masks[label])
-    end
+    perims = Dict(
+        label => (label == 0 ? 0 : algorithm(masks[label])) for
+        label in keys(masks) if prod(size(masks[label])) > 1
+    )
     return perims
 end
 
@@ -218,10 +212,13 @@ is assumed to contain a single object.
 
 # Examples
 ```
-julia> benkrid_crookes = BenkridCrookes(connectivity=4)
-julia> A = [1 1 1; 1 1 1; 1 1 1]
-julia> benkrid_crookes(A)
-8.0
+julia> A = [0 1 1; 1 1 1; 1 1 1];
+
+julia> BenkridCrookes(connectivity=4)(A)
+7.414213562373095
+
+julia> BenkridCrookes(connectivity=8)(A)
+7.0
 ```
 """
 @kwdef struct BenkridCrookes <: PerimeterEstimationAlgorithm
@@ -253,12 +250,9 @@ function (f::BenkridCrookes)(shape_array)
     for val in vec(results)
         val_counts[val] = get(val_counts, val, 0) + 1
     end
-    perim = 0
-
-    for val in keys(val_counts)
-        (val == 0 || val > 33) && continue
-        perim += type_vals[val] * val_counts[val]
-    end
+    perim = sum(
+        type_vals[val] * count for (val, count) in pairs(val_counts) if val > 0 && val <= 33
+    )
     
     return perim
 end
@@ -276,9 +270,11 @@ function component_convex_area(A;
     ) 
     mn = minimum(A)
 
-    if !(mn == 0 || mn == 1)
-        throw(ArgumentError("The input labeled array should contain background label `0` as the minimum value"))
-    end
+    (mn != 0 && mn != 1) && throw(
+        ArgumentError(
+            "The input labeled array should contain background label `0` as the minimum value",
+        ),
+    )
 
     return algorithm(A)
 end
@@ -350,12 +346,11 @@ function (f::PixelConvexArea)(A)
             
         chull = convexhull(A .== i)
         N = length(chull)
-        x = getindex.(collect(bboxes[i]), 1)
-        y = getindex.(collect(bboxes[i]), 2)
+        x = getindex.(bboxes[i], 1)
+        y = getindex.(bboxes[i], 2)
         
-        for idx in 1:length(x)
-            xi = x[idx]
-            yi = y[idx]
+        for idx in eachindex(x)
+            xi, yi = x[idx], y[idx]
             A[xi, yi] .== i && (convex_areas[i] += 1, continue)
             checkvals = zeros(N)
             for j in 1:N
