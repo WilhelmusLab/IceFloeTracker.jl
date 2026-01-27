@@ -13,7 +13,8 @@ import Images:
     strel_box,
     zeroarray,
     opening,
-    mreconstruct
+    mreconstruct,
+    imfill
 
 abstract type AbstractCloudMaskAlgorithm end
 
@@ -132,15 +133,20 @@ end
     ratio_upper::Float64 = 0.52
     marker_strel = strel_box((7, 7))
     opening_strel = strel_diamond((3, 3))
+    max_fill_size = 1e4
 end
 
-"""Watkins2025CloudMask(prelim_threshold, band_7_threshold, band_2_threshold, ratio_lower, ratio_offset, ratio_upper, marker_strel, opening_strel)
+"""Watkins2025CloudMask(prelim_threshold, band_7_threshold, band_2_threshold,
+                        ratio_lower, ratio_offset, ratio_upper, marker_strel,
+                        opening_strel, max_fill_size)
 
 Extension of the Lopez-Acosta et al. 2019 with parameters calibrated to the Ice Floe Validation Dataset.
 The Lopez-Acosta et al. cloudmask creates a piecewise linear bifurcation of band 2 and band 7 brightness 
 in a MODIS 7-2-1 false color image using a sequence of thresholds on band 2 and band 7 and on the ratio of
 band 7 to band 2 brightness. This extension first creates a cloud mask using the LopezAcostaCloudMask, then
-applies morphological operations to remove speckle and smooth boundaries.
+applies morphological operations to remove speckle and smooth boundaries. Larger `marker_strel` sizes result in
+larger minimum cloud fragment size. The `opening_strel` is used to smooth the boundaries of cloud regions. Finally,
+the `max_fill_size` is passed to the imfill algorithm for filling holes that remain in the mask.
 
 Example:
 
@@ -171,7 +177,7 @@ function (f::Watkins2025CloudMask)(img::AbstractArray{<:Union{AbstractRGB,Transp
     markers = opening(init_cloud_mask, f.marker_strel)
     reconstructed = mreconstruct(dilate, markers, init_cloud_mask, f.opening_strel)
     smoothed = opening(reconstructed, f.opening_strel)
-    filled = fill_holes(smoothed)
+    filled = .!imfill(.!smoothed, (0, f.max_fill_size))
     return filled
 end
 
