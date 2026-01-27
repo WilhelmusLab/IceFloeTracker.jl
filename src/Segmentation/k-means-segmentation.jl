@@ -29,6 +29,28 @@ function kmeans_segmentation(
     return SegmentedImage(gray_image, segmented)
 end
 
+function kmeans_segmentation(
+    gray_image::AbstractArray{<:AbstractGray},
+    tiles; 
+    k::Int64=4,
+    maxiter::Int64=50,
+    random_seed::Int64=45,
+    minimum_overlap=4,
+    grayscale_threshold=0.1
+)
+
+    indexmap = zeros(Int64, size(gray_image))
+    for (offset, tile) in enumerate(tiles)
+        indexmap[tile...] .= labels_map(kmeans_segmentation(gray_image[tile...]; k=k, maxiter=maxiter, random_seed=random_seed))
+        indexmap[tile...] .+= k * offset
+        offset += 1
+    end
+
+    indexmap .= stitch_clusters(SegmentedImage(gray_image, indexmap), tiles, minimum_overlap, grayscale_threshold) 
+    return SegmentedImage(gray_image, indexmap)
+end
+
+
 """
     kmeans_binarization(gray_image, false_color_image; kwargs...)
 
