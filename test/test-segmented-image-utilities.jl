@@ -99,7 +99,7 @@ end
     test_segmentation_properties([1 1 1], [1 1 1]; recall=1, precision=1.0)
 end
 
-@testitem "Stitch clusters" begin
+@testitem "stitch_clusters" begin
 
     # test stitch_clusters by creating an image indexmap with
     # a rectangle divided into 4 clusters, and use the stitch_clusters
@@ -117,4 +117,5 @@ end
     segments = SegmentedImage(ones(size(test_im)), test_im)
     stitched_segments = stitch_clusters(segments, tiles)
     @test all(stitched_segments[2:9, 2:9] .== 1)
+
 end
