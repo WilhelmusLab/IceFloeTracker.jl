@@ -16,13 +16,17 @@ export exponential,
     adapthisteq,
     imadjust,
     unsharp_mask,
-    imgradientmag
+    imgradientmag,
+    ContrastLimitedAdaptiveHistogramEqualization
 
+include("clahe.jl")
 include("gradient_functions.jl")
 include("histogram_equalization.jl")
 include("imadjust.jl")
 include("nonlinear_diffusion.jl")
 include("unsharp_mask.jl")
 include("imgradientmag.jl")
+
+using .CLAHE
 
 end
