@@ -145,18 +145,26 @@ function stitch_clusters(segmented_image, tiles, minimum_overlap=4, grayscale_th
     return idxmap
 end
 
-#### Convenience functions for viewing segmentation results
-function get_random_color(seed)
+"""_get_random_color(seed)
+Convenience function to produce a random RGB color.
+"""
+function _get_random_color(seed)
     Random.seed!(seed)
     rand(RGB{N0f8})
 end
 
-# Produce an image by replacing values inside a segment with the segment mean color
+"""view_seg_random(s::SegmentedImage)
+Produce an array with the segment mean mapped to each segment label.
+If the SegmentedImage was produced with color type (e.g., RGB, Gray), then
+the result will be an image.
+"""
 function view_seg(s)
     map(i->segment_mean(s,i), labels_map(s))
 end
 
-# Assign random colors to each segment (useful if viewing cluster results)
+"""view_seg_random(s::SegmentedImage)
+Produce an RGB image with a random color for each unique segment in `s`.
+"""
 function view_seg_random(s)
-    map(i->get_random_color(i), labels_map(s))
+    map(i->_get_random_color(i), labels_map(s))
 end
