@@ -4,7 +4,7 @@ import Random: Random
 import Clustering: Clustering, assignments, kmeans
 
 """
-    kmeans_segmentation(img; k=4, maxiter=50, random_seed=45, k_offset=0)
+    kmeans_segmentation(img; k=4, maxiter=50, random_seed=45)
 
 Wrapper for Clustering.kmeans which accepts a grayscale image and returns a SegmentedImage object. Optionally,
 one can specify the number of clusters `k``, the maximum number of iterations `maxiter`, and the seed for the
