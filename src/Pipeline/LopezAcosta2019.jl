@@ -99,9 +99,8 @@ diffusion_parameters = (lambda=0.1, kappa=0.1, niters=5, g="exponential")
     unsharp_mask_params = (smoothing_param=10, intensity=2)
 end
 
-function Segment(; coastal_buffer_structuring_element=make_landmask_se())
-    return Segment(coastal_buffer_structuring_element)
-end
+# TODO: Make it possible to supply a pre-generate landmask and dilated landmask, so that
+# it isn't calculated for every single image when broadcasting.
 
 function (p::Segment)(
     truecolor::T,
@@ -299,12 +298,9 @@ function discriminate_ice_water(
     fc_landmasked = landmasked_falsecolor_image # shorten name for convenience
     morphed_grayscale = _reconstruct(sharpened_grayscale_image, landmask)
 
-    # Second step: Find a threshold value to mask. There are only three levels considered,
-    # which makes me think that we'd do better to use a percentile function or otherwise 
-    # continuous estimate of a threshold from the data, rather than 3 fixed steps.
-    # The language is confusing because image_clouds / image_cloudless are backwards: image_clouds has had the image
-    # masked by the cloud mask, while image_cloudless has not been cloudmasked.
-
+    # This next section is all here to find a threshold value for masking. Only three levels are selected,
+    # which makes me think that we'd do better to use a percentile function or otherwise continuous estimate
+    # of a threshold from the data, rather than 3 fixed steps.
     b7_landmasked = Gray.(red.(fc_landmasked)) # formerly falsecolor_image_band7 -> image_cloudless (but it does have clouds???)
     b7_landmasked_cloudmasked = apply_cloudmask(b7_landmasked, cloudmask) # formerly clouds_channel -> image_clouds
 
@@ -333,9 +329,7 @@ function discriminate_ice_water(
     kurt_band_1 = kurtosis(b1_subset)
     standard_dev = std(vec(morphed_grayscale))
 
-    # The clouds ratio was computed on the whole area, which means that 
-    # there will be errors near the land mask. Correcting this may make it 
-    # have different results than the Matlab version.
+    # Compute fraction of non-zero band 7 data using the ocean pixels
     clouds_ratio = mean(b7_landmasked_cloudmasked[.!landmask] .> 0)
 
     # It may be worthwhile to take a random sample of scenes and test what the kurtosis, skew, and intensity are.
@@ -376,9 +370,10 @@ function discriminate_ice_water(
     # Finally, there is a mask applied to a narrow band of band7 values. Removing
     # the next section *does not affect the tests* which makes me wonder if we need it.
     # What's happening here is that the cloud_threshold variable is selecting anything darker than
-    # clouds lower, or brighter than clouds lower. So the b7_landmasked getting multiplied by 
-    # not(cloud_threshold) means that we're selecting all the intermediate values: anything between 
-    # mask_clouds_lower and mask_clouds_upper.
+    # clouds lower, or brighter than clouds lower.
+    # So the b7_landmasked getting multiplied by not(cloud_threshold) means that we're selecting all
+    # the intermediate values: anything between mask_clouds_lower and mask_clouds_upper.
+    # This is essentially speckle noise, and has minimal effect on the results.
 
     _cloud_threshold = (
         b7_landmasked_cloudmasked .< mask_clouds_lower .|| b7_landmasked_cloudmasked .> mask_clouds_upper
