@@ -4,7 +4,7 @@ import Random: Random
 import Clustering: Clustering, assignments, kmeans
 
 """
-    kmeans_segmentation(img; k=4, maxiter=50, random_seed=45)
+    kmeans_segmentation(gray_image; k=4, maxiter=50, random_seed=45)
 
 Wrapper for Clustering.kmeans which accepts a grayscale image and returns a SegmentedImage object. Optionally,
 one can specify the number of clusters `k``, the maximum number of iterations `maxiter`, and the seed for the
@@ -120,7 +120,7 @@ function kmeans_binarization(
     grayscale_threshold=0.1
 )::BitMatrix
     out = falses(size(gray_image))
-    kseg = kmeans_segmentation(img, tiles;
+    kseg = kmeans_segmentation(gray_image, tiles;
                 k=k, random_seed=random_seed,
                 maxiter=maxiter,
                 minimum_overlap=minimum_overlap,
