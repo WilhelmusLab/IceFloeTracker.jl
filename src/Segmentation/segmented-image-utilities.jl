@@ -1,5 +1,6 @@
 import ImageSegmentation: SegmentedImage, labels_map, segment_labels, segment_mean, segment_pixel_count
 using DataFrames 
+using Random
 
 """
 Results of a segmentation comparison
@@ -142,4 +143,20 @@ function stitch_clusters(segmented_image, tiles, minimum_overlap=4, grayscale_th
         end    
     end
     return idxmap
+end
+
+#### Convenience functions for viewing segmentation results
+function get_random_color(seed)
+    Random.seed!(seed)
+    rand(RGB{N0f8})
+end
+
+# Produce an image by replacing values inside a segment with the segment mean color
+function view_seg(s)
+    map(i->segment_mean(s,i), labels_map(s))
+end
+
+# Assign random colors to each segment (useful if viewing cluster results)
+function view_seg_random(s)
+    map(i->get_random_color(i), labels_map(s))
 end
