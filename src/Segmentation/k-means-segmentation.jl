@@ -90,19 +90,22 @@ end
     kmeans_binarization(gray_image, false_color_image, tiles; kwargs...)
 
 Produce a binarized image tilewise by identifying pixels of bright ice, performing k-means clustering, and then selecting the k-means cluster
-containing the largest fraction of bright ice pixels. If no bright ice pixels are detected, then a blank matrix is returned.
+containing the largest fraction of bright ice pixels in each tile. If less than a threshold number of bright ice pixels are detected, then a blank matrix is returned.
 
-Warning: Tilewise processing may result in discontinuities at tile boundaries.
 
 # Positional Arguments
 - `gray_image`: Grayscale image to segment using k-means. 
 - `falsecolor_image`: MODIS 721 false color image to be supplied to the cluster selection algorithm.
+- `tiles`: Tiled iterator (e.g. from `IceFloeTracker.get_tiles()`)
 
 # Keyword arguments
 - `k`: Number of k-means clusters. Default 4.
 - `maxiter`: Maximum number of iterations for k-means algorithm. Default 50.
 - `random_seed`: Seed for the random number generator. Default 45.
 - `cluster_selection_algorithm`: Binarization function to find the k-means cluster to set to 1; all other clusters set to 0.
+- `threshold`: Minimum number of ice pixels to trigger selection of k cluster
+- `minimum_overlap`: Argument to `stitch_clusters`, minimum number of pixels on boundary for merge
+- `grayscale_threshold`: Argument to `stitch_clusters`, maximum grayscale difference for merge
 """
 function kmeans_binarization(
     gray_image,
@@ -112,23 +115,25 @@ function kmeans_binarization(
     maxiter::Int64=50,
     random_seed::Int64=45,
     cluster_selection_algorithm,
-    threshold=1
+    ice_pixels_threshold=1,
+    minimum_overlap=4,
+    grayscale_threshold=0.1
 )::BitMatrix
-
     out = falses(size(gray_image))
-
-    # This part will be updated soon. This method results in discontinuities at tile boundaries.
-    # To avoid this, we can stitch segmented images first, so that boundary clusters are relabled
-    # to match, and then the binarization can be applied using the mode for each tile, allowing overlaps.
-    # See the test case for stitch_clusters for an example.
-    
+    kseg = kmeans_segmentation(img, tiles;
+                k=k, random_seed=random_seed,
+                maxiter=maxiter,
+                minimum_overlap=minimum_overlap,
+                grayscale_threshold=grayscale_threshold)
+    labels = labels_map(kseg)
+    ice = cluster_selection_algorithm(falsecolor_image) .> 0
+        
     for tile in tiles
-        out[tile...] .= kmeans_binarization(gray_image[tile...], falsecolor_image[tile...];
-                            k=k,
-                            maxiter=maxiter,
-                            random_seed=random_seed,
-                            cluster_selection_algorithm=cluster_selection_algorithm,
-                            threshold=threshold)
+        if sum(ice[tile...]) > ice_pixels_threshold
+            k = StatsBase.mode(labels[tile...][ice[tile...]])
+            out[tile...] .= labels[tile...] .== k
+        end
     end
+
     return out
 end
