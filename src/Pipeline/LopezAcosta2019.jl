@@ -325,7 +325,9 @@ function discriminate_ice_water(
     kurt_band_1 = kurtosis(b1_subset)
     standard_dev = std(vec(morphed_grayscale))
 
-    # Compute fraction of non-zero band 7 data using the ocean pixels
+    # The clouds ratio was computed on the whole area, which means that 
+    # there will be errors near the land mask. Correcting this may make it 
+    # have different results than the Matlab version.
     clouds_ratio = mean(b7_landmasked_cloudmasked[.!landmask] .> 0)
 
     # It may be worthwhile to take a random sample of scenes and test what the kurtosis, skew, and intensity are.
