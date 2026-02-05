@@ -146,6 +146,8 @@ function (p::Segment)(
         truecolor_image, p.diffusion_algorithm
     )
 
+    #  testing option: using the Python adaptive histogram function
+
     # q: do we need to keep the sharpened truecolor image? or just the grayscale?
     sharpened_truecolor_image .= channelwise_adapthisteq(sharpened_truecolor_image;
         nbins=p.adapthisteq_params.nbins,
