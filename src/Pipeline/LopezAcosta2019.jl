@@ -106,9 +106,11 @@ function (p::Segment)(
     intermediate_results_callback::Union{Nothing,Function}=nothing,
 ) where {T<:AbstractMatrix{<:AbstractRGB},U<:AbstractMatrix}
     @info "building landmask and coastal buffer mask"
-    landmask, coastal_buffer_mask = create_landmask(
+    _landmask_temp = create_landmask(
         float64.(landmask), p.coastal_buffer_structuring_element
     )
+    landmask = _landmask_temp.non_dilated
+    coastal_buffer_mask = _landmask_temp.dilated
     return p(
         truecolor,
         falsecolor,
