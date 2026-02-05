@@ -94,7 +94,7 @@ diffusion_parameters = (lambda=0.1, kappa=0.1, niters=5, g="exponential")
         nbins=256,
         rblocks=8, # matlab default is 8 CP
         cblocks=8, # matlab default is 8 CP
-        clip=0.99,  # matlab default is 0.01 CP, which should be the same as clip=0.99
+        clip=0.95,  # matlab default is 0.01 CP, which should be the same as clip=0.99
     )
     unsharp_mask_params = (smoothing_param=10, intensity=2)
 end
@@ -141,7 +141,7 @@ function (p::Segment)(
 
     @info "Preprocessing truecolor image"
     # nonlinear diffusion
-    apply_landmask!(truecolor_image, landmask_imgs.non_dilated)
+    apply_landmask!(truecolor_image, landmask)
     sharpened_truecolor_image = nonlinear_diffusion(
         truecolor_image, p.diffusion_algorithm
     )
@@ -159,7 +159,7 @@ function (p::Segment)(
         p.unsharp_mask_params.smoothing_param,
         p.unsharp_mask_params.intensity,
     )
-    apply_landmask!(sharpened_grayscale_image, landmask_imgs.dilated)
+    apply_landmask!(sharpened_grayscale_image, coastal_buffer_mask)
 
 
     # Heighten differences between floes and background ice/water.
@@ -170,7 +170,7 @@ function (p::Segment)(
     # This step is a grayscale morphology operation. Reconstruction by dilation of the image complement
     # followed by thresholding.
     ice_water_discrim = discriminate_ice_water(
-        sharpened_grayscale_image, fc_masked, landmask_imgs.dilated, cloudmask
+        sharpened_grayscale_image, fc_masked, coastal_buffer_mask, cloudmask
     )
     # 3. Segmentation
     @info "Segmenting floes part 1/3"

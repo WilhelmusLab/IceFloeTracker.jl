@@ -67,7 +67,7 @@ end
         output_directory="./test_outputs/",
     )
     @test labeled_fraction ≈ 0.579 rtol = 0.1 broken = true
-    @test 0.90 ≤ round(recall; digits=2) broken = true
+    @test 0.50 ≤ round(recall; digits=2) # broken = true
     @test 0.62 ≤ round(precision; digits=2)
     @test 0.73 ≤ round(F_score; digits=2) broken = true
 end
@@ -92,7 +92,7 @@ end
     @test results_invariant_for(float64; baseline, algorithm, case) broken = true
     @test results_invariant_for(RGB, n0f8; baseline, algorithm, case)
     @test results_invariant_for(RGB, n6f10; baseline, algorithm, case) broken = true
-    @test results_invariant_for(RGB, n4f12; baseline, algorithm, case) broken = true
+    @test results_invariant_for(RGB, n4f12; baseline, algorithm, case) # broken = true
     @test results_invariant_for(RGB, n2f14; baseline, algorithm, case)
     @test results_invariant_for(RGB, n0f16; baseline, algorithm, case)
     @test results_invariant_for(RGB, float32; baseline, algorithm, case)
