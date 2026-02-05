@@ -87,7 +87,7 @@ diffusion_parameters = (lambda=0.1, kappa=0.1, niters=5, g="exponential")
 # TODO: Expose the discrim ice/water settings to the main struct.
 
 @kwdef struct Segment <: IceFloeSegmentationAlgorithm
-    coastal_buffer_structuring_element::AbstractMatrix{Bool}
+    coastal_buffer_structuring_element::AbstractMatrix{Bool} = make_landmask_se()
     cloud_mask_algorithm = LopezAcostaCloudMask(cloud_mask_thresholds...)
     diffusion_algorithm = PeronaMalikDiffusion(diffusion_parameters...)
     adapthisteq_params = (
