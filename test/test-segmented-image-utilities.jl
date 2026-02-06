@@ -99,7 +99,7 @@ end
     test_segmentation_properties([1 1 1], [1 1 1]; recall=1, precision=1.0)
 end
 
-@testitem "Stitch clusters" begin
+@testitem "stitch_clusters" begin
 
     # test stitch_clusters by creating an image indexmap with
     # a rectangle divided into 4 clusters, and use the stitch_clusters
@@ -117,4 +117,26 @@ end
     segments = SegmentedImage(ones(size(test_im)), test_im)
     stitched_segments = stitch_clusters(segments, tiles)
     @test all(stitched_segments[2:9, 2:9] .== 1)
+
+end
+
+@testitem "segmentation_visualization" begin
+    import IceFloeTracker
+    import IceFloeTracker: view_seg, view_seg_random
+    import Images: SegmentedImage, Gray, N0f8, RGB
+    
+    test_im = zeros(Int64, (10, 10))
+    test_im[2:5, 2:5] .= 1
+    test_im[6:9, 2:5] .= 2
+    test_im[2:5, 6:9] .= 3
+    test_im[6:9, 6:9] .= 4
+
+    segments = SegmentedImage(Gray.(ones(size(test_im))), test_im)
+    cview = view_seg(segments)
+    @test typeof(cview) == Matrix{Gray{Float64}}
+    @test length(unique(cview)) == 1
+
+    cview = view_seg_random(segments)
+    @test typeof(cview) == Matrix{RGB{N0f8}}
+    @test length(unique(cview)) == 5
 end

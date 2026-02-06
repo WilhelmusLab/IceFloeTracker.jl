@@ -34,7 +34,9 @@ export
     segmentation_comparison,
     SegmentationSummary,
     segmentation_summary,
-    stitch_clusters
+    stitch_clusters,
+    view_seg,
+    view_seg_random
 
 include("abstract-algorithms.jl")
 include("find-ice-labels.jl")
