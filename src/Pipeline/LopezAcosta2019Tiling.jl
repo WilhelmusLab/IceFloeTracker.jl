@@ -32,6 +32,8 @@ import Images:
     local_maxima,
     SegmentedImage,
     segment_mean
+    
+
 import ..skimage: sk_morphology
 import ..ImageUtils: get_brighten_mask, to_uint8, imcomplement, imbrighten, get_tiles
 import ..Filtering: histeq, unsharp_mask, conditional_histeq, rgb2gray, imgradientmag
@@ -316,6 +318,9 @@ function (p::Segment)(
     return segmented
 end
 
+
+
+
 function get_holes(img, min_opening_area=20, se=se_disk4())
     _img = area_opening(img; min_area=min_opening_area)
     hbreak!(_img)
@@ -356,6 +361,7 @@ function watershed1(bw::T) where {T<:Union{BitMatrix,AbstractMatrix{Bool}}}
     w = watershed(seg, cc)
     lmap = labels_map(w)
     return isboundary(lmap) .> 0
+    #dmw: isboundary returns a thick boundary, whereas matlab uses a 1-pixel boundary.
 end
 
 """
@@ -488,6 +494,7 @@ function get_final(
     _img = hbreak(img)
 
     # slow for big images
+    # dmw: likely can replace with .!imfill(.!_img, (0,1)) for speedup.
     _img .= morph_fill(_img)
 
     # TODO: decide on criteria for applying segment mask
