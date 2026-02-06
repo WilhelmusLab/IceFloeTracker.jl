@@ -4,6 +4,7 @@ export
     addlatlon!,
     BenkridCrookes,
     binarize_segments,
+    component_convex_areas,
     component_floes,
     component_perimeters,
     convertcentroid!,
