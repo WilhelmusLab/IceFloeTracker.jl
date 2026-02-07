@@ -134,8 +134,7 @@ function (p::Segment)(
     falsecolor_image = float64.(falsecolor)
 
     @info "Building cloudmask"
-    # TODO: @hollandjg track down why the cloudmask is different for float32 vs float64 input images
-        # dmw: I suspect it's likely it's roundoff error with the comparison to the ratio threshold, that's where I've seen differences
+    # TODO: Make sure tests aren't over-sensitive to roundoff errors for Float32 vs Float64
     cloudmask = create_cloudmask(falsecolor_image)
 
     # 2. Intermediate images
@@ -148,9 +147,6 @@ function (p::Segment)(
         truecolor_image, p.diffusion_algorithm
     )
 
-    #  testing option: using the Python adaptive histogram function
-
-    # q: do we need to keep the sharpened truecolor image? or just the grayscale?
     sharpened_truecolor_image .= channelwise_adapthisteq(sharpened_truecolor_image;
         nbins=p.adapthisteq_params.nbins,
         rblocks=p.adapthisteq_params.rblocks,
