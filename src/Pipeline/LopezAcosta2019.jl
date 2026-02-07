@@ -56,6 +56,7 @@ import ..Preprocessing:
     apply_landmask,
     apply_landmask!,
     apply_cloudmask,
+    apply_cloudmask!,
     LopezAcostaCloudMask
 
 import ..Segmentation: 
@@ -206,7 +207,7 @@ function (p::Segment)(
     @info "Segmenting floes part 1/3"
     kmeans_result = kmeans_binarization(
             ice_water_discrim,
-            fc_landmasked;
+            fc_masked;
             k=p.kmeans_params.k,
             maxiter=p.kmeans_params.maxiter,
             random_seed=p.kmeans_params.random_seed,
@@ -214,21 +215,14 @@ function (p::Segment)(
             ) |> clean_binary_floes
 
     # check: are there any regions that are nonzero under the cloudmask, since it was applied in discriminate ice water?
-    segA = apply_cloudmask(kmeans_result, cloudmask) 
+    apply_cloudmask!(kmeans_result, cloudmask)
 
     # The clean binary floes method has an aggressive fill_holes algorithm. Potentially merging with the
     # ice brightness threshold can prevent some of the interstitial water areas from being filled.
 
-
-
-    # The first segmentation step is k-means binarization followed by morphological clean-up.
-    segA = segmentation_A(
-        segmented_ice_cloudmasking(ice_water_discrim, fc_masked, cloudmask)
-    )
-
     # segmentation_B
     @info "Segmenting floes part 2/3"
-    segB = segmentation_B(sharpened_grayscale_image, cloudmask, segA)
+    segB = segmentation_B(sharpened_grayscale_image, cloudmask, kmeans_result)
 
     # Process watershed in parallel using Folds
     @info "Building watersheds"
@@ -267,7 +261,7 @@ function (p::Segment)(
             ice_mask=IceDetectionLopezAcosta2019()(fc_masked),
             sharpened_grayscale_image=sharpened_grayscale_image,
             ice_water_discrim=ice_water_discrim,
-            segA=segA,
+            segA=kmeans_result,
             segB=segB,
             watersheds_segB_product=watersheds_segB_product,
             segF=segF,
@@ -487,39 +481,39 @@ function _reconstruct(sharpened_grayscale_image, dilated_mask; strel=strel_diamo
 end
 
 
-"""
-    segmentation_A(segmented_ice_cloudmasked; min_opening_area)
+# """
+#     segmentation_A(segmented_ice_cloudmasked; min_opening_area)
 
-Apply k-means segmentation to a gray image to isolate a cluster group representing sea ice. Returns an image segmented and processed as well as an intermediate files needed for downstream functions.
+# Apply k-means segmentation to a gray image to isolate a cluster group representing sea ice. Returns an image segmented and processed as well as an intermediate files needed for downstream functions.
 
-# Arguments
+# # Arguments
 
-- `segmented_ice_cloudmask`: bitmatrix with open water/clouds = 0, ice = 1, output from `segmented_ice_cloudmasking()`
-- `min_opening_area`: minimum size of pixels to use during morphological opening
-- `fill_range`: range of values dictating the size of holes to fill
+# - `segmented_ice_cloudmask`: bitmatrix with open water/clouds = 0, ice = 1, output from `segmented_ice_cloudmasking()`
+# - `min_opening_area`: minimum size of pixels to use during morphological opening
+# - `fill_range`: range of values dictating the size of holes to fill
 
-"""
-function segmentation_A(
-    segmented_ice_cloudmasked::BitMatrix; min_opening_area::Real=50
-)::BitMatrix
-    segmented_ice_opened = area_opening(
-        segmented_ice_cloudmasked; min_area=min_opening_area
-    )
+# """
+# function segmentation_A(
+#     segmented_ice_cloudmasked::BitMatrix; min_opening_area::Real=50
+# )::BitMatrix
+#     segmented_ice_opened = area_opening(
+#         segmented_ice_cloudmasked; min_area=min_opening_area
+#     )
 
-    hbreak!(segmented_ice_opened)
+#     hbreak!(segmented_ice_opened)
 
-    segmented_opened_branched = branch(segmented_ice_opened)
+#     segmented_opened_branched = branch(segmented_ice_opened)
 
-    segmented_bridged = bridge(segmented_opened_branched)
+#     segmented_bridged = bridge(segmented_opened_branched)
 
-    segmented_ice_filled = fill_holes(segmented_bridged)
+#     segmented_ice_filled = fill_holes(segmented_bridged)
 
-    diff_matrix = segmented_ice_opened .!= segmented_ice_filled
+#     diff_matrix = segmented_ice_opened .!= segmented_ice_filled
 
-    segmented_A = segmented_ice_cloudmasked .|| diff_matrix
+#     segmented_A = segmented_ice_cloudmasked .|| diff_matrix
 
-    return segmented_A
-end
+#     return segmented_A
+# end
 
 
 """
