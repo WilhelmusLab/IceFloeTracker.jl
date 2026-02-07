@@ -202,7 +202,7 @@ function component_perimeters(
 end
 
 # TODO: Test and implement correction factor (multiply B-K perimeter by 0.95 if larger than some factor.)
-
+# TODO: Implement the crofton perimeter algorithm
 """BenkridCrookes(connectivity=4)
    
 Functor producing a BenkridCrookes PerimeterEstimationAlgorithm. The connectivity
@@ -265,7 +265,7 @@ The polygon method uses Green's theorem to find the area of a polygon through it
 while the pixel method uses a point-in-pixel calculation to determine if pixels are inside the
 convex hull. In general the polygon area will be smaller than the pixel area.
 """
-function component_convex_area(A;
+function component_convex_areas(A;
     algorithm::ConvexAreaEstimationAlgorithm=PixelConvexArea()
     ) 
     mn = minimum(A)
@@ -574,7 +574,7 @@ function regionprops(
     end
 
     :convex_area ∈ properties && begin
-        convex_areas = component_convex_area(labels; algorithm=convex_area_algorithm)
+        convex_areas = component_convex_areas(labels; algorithm=convex_area_algorithm)
         push!(data, :convex_area => map(s -> convex_areas[s], img_labels))
     end
 
