@@ -82,9 +82,37 @@ diffusion_parameters = (lambda=0.1, kappa=0.1, niters=5, g="exponential")
 
 # TODO: Make it possible to set the block_size_pixels instead of rblocks/cblocks
 # so that the user doesn't need to be checking image dimensions as much. 
-# TODO: Make it possible to supply a pre-generate landmask and dilated landmask, so
-# that it isn't calculated for every single image when broadcasting.
 # TODO: Expose the discrim ice/water settings to the main struct.
+
+# TODO: Add parameters to this IceDetectionAlgorithm so that the window size and 
+# minimum prominence are exposed.
+# TODO: Add threshold parameter for the IceDetectionFirstNonZeroAlgorithm
+function IceDetectionLopezAcosta2019(;
+    band_7_max::Float64=Float64(5 / 255),
+    band_2_min::Float64=Float64(230 / 255),
+    band_1_min::Float64=Float64(240 / 255),
+    band_7_max_relaxed::Float64=Float64(10 / 255),
+    band_1_min_relaxed::Float64=Float64(190 / 255),
+    possible_ice_threshold::Float64=Float64(75 / 255),
+)
+    return IceDetectionFirstNonZeroAlgorithm([
+        IceDetectionThresholdMODIS721(;
+            band_7_max=band_7_max,
+            band_2_min=band_2_min,
+            band_1_min=band_1_min
+        ),
+        IceDetectionThresholdMODIS721(;
+            band_7_max=band_7_max_relaxed,
+            band_2_min=band_2_min,
+            band_1_min=band_1_min_relaxed,
+        ),
+        IceDetectionBrightnessPeaksMODIS721(;
+            band_7_max=band_7_max,
+            possible_ice_threshold=possible_ice_threshold
+        ),
+    ])
+end
+
 
 @kwdef struct Segment <: IceFloeSegmentationAlgorithm
     coastal_buffer_structuring_element::AbstractMatrix{Bool} = make_landmask_se()
@@ -97,6 +125,8 @@ diffusion_parameters = (lambda=0.1, kappa=0.1, niters=5, g="exponential")
         clip=0.95,  # matlab default is 0.01 CP, which should be the same as clip=0.99
     )
     unsharp_mask_params = (smoothing_param=10, intensity=2)
+    kmeans_params = (k=4, maxiter=50, random_seed=45)
+    cluster_selection_algorithm = IceDetectionLopezAcosta2019()
 end
 
 function (p::Segment)(
@@ -174,6 +204,23 @@ function (p::Segment)(
     )
     # 3. Segmentation
     @info "Segmenting floes part 1/3"
+    kmeans_result = kmeans_binarization(
+            ice_water_discrim,
+            fc_landmasked;
+            k=p.kmeans_params.k,
+            maxiter=p.kmeans_params.maxiter,
+            random_seed=p.kmeans_params.random_seed,
+            cluster_selection_algorithm=p.cluster_selection_algorithm
+            ) |> clean_binary_floes
+
+    # check: are there any regions that are nonzero under the cloudmask, since it was applied in discriminate ice water?
+    segA = apply_cloudmask(kmeans_result, cloudmask) 
+
+    # The clean binary floes method has an aggressive fill_holes algorithm. Potentially merging with the
+    # ice brightness threshold can prevent some of the interstitial water areas from being filled.
+
+
+
     # The first segmentation step is k-means binarization followed by morphological clean-up.
     segA = segmentation_A(
         segmented_ice_cloudmasking(ice_water_discrim, fc_masked, cloudmask)
@@ -472,6 +519,20 @@ function segmentation_A(
     segmented_A = segmented_ice_cloudmasked .|| diff_matrix
 
     return segmented_A
+end
+
+
+"""
+    clean_binary_floes(bw_img; min_opening_area=50)
+
+Refine a binarized ice floe image (floes=white, leads/background/water=black) using morphological operations.
+
+"""
+function clean_binary_floes(bw_img; min_opening_area=50)
+    img_opened = area_opening(bw_img; min_area=min_opening_area) |> hbreak
+    img_filled = branch(img_opened) |> bridge |> fill_holes
+    diff_matrix = img_opened .!= img_filled
+    return bw_img .|| diff_matrix
 end
 
 """
