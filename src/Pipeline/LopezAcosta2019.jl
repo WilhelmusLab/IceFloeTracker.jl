@@ -4,6 +4,7 @@ import Images:
     Images,
     AbstractGray,
     AbstractRGB,
+    adjust_histogram!,
     TransparentRGB,
     mreconstruct!,
     mreconstruct,
@@ -84,36 +85,6 @@ diffusion_parameters = (lambda=0.1, kappa=0.1, niters=5, g="exponential")
 # TODO: Make it possible to set the block_size_pixels instead of rblocks/cblocks
 # so that the user doesn't need to be checking image dimensions as much. 
 # TODO: Expose the discrim ice/water settings to the main struct.
-
-# TODO: Add parameters to this IceDetectionAlgorithm so that the window size and 
-# minimum prominence are exposed.
-# TODO: Add threshold parameter for the IceDetectionFirstNonZeroAlgorithm
-function IceDetectionLopezAcosta2019(;
-    band_7_max::Float64=Float64(5 / 255),
-    band_2_min::Float64=Float64(230 / 255),
-    band_1_min::Float64=Float64(240 / 255),
-    band_7_max_relaxed::Float64=Float64(10 / 255),
-    band_1_min_relaxed::Float64=Float64(190 / 255),
-    possible_ice_threshold::Float64=Float64(75 / 255),
-)
-    return IceDetectionFirstNonZeroAlgorithm([
-        IceDetectionThresholdMODIS721(;
-            band_7_max=band_7_max,
-            band_2_min=band_2_min,
-            band_1_min=band_1_min
-        ),
-        IceDetectionThresholdMODIS721(;
-            band_7_max=band_7_max_relaxed,
-            band_2_min=band_2_min,
-            band_1_min=band_1_min_relaxed,
-        ),
-        IceDetectionBrightnessPeaksMODIS721(;
-            band_7_max=band_7_max,
-            possible_ice_threshold=possible_ice_threshold
-        ),
-    ])
-end
-
 
 @kwdef struct Segment <: IceFloeSegmentationAlgorithm
     coastal_buffer_structuring_element::AbstractMatrix{Bool} = make_landmask_se()
@@ -480,42 +451,6 @@ function _reconstruct(sharpened_grayscale_image, dilated_mask; strel=strel_diamo
     return reconstructed_grayscale
 end
 
-
-# """
-#     segmentation_A(segmented_ice_cloudmasked; min_opening_area)
-
-# Apply k-means segmentation to a gray image to isolate a cluster group representing sea ice. Returns an image segmented and processed as well as an intermediate files needed for downstream functions.
-
-# # Arguments
-
-# - `segmented_ice_cloudmask`: bitmatrix with open water/clouds = 0, ice = 1, output from `segmented_ice_cloudmasking()`
-# - `min_opening_area`: minimum size of pixels to use during morphological opening
-# - `fill_range`: range of values dictating the size of holes to fill
-
-# """
-# function segmentation_A(
-#     segmented_ice_cloudmasked::BitMatrix; min_opening_area::Real=50
-# )::BitMatrix
-#     segmented_ice_opened = area_opening(
-#         segmented_ice_cloudmasked; min_area=min_opening_area
-#     )
-
-#     hbreak!(segmented_ice_opened)
-
-#     segmented_opened_branched = branch(segmented_ice_opened)
-
-#     segmented_bridged = bridge(segmented_opened_branched)
-
-#     segmented_ice_filled = fill_holes(segmented_bridged)
-
-#     diff_matrix = segmented_ice_opened .!= segmented_ice_filled
-
-#     segmented_A = segmented_ice_cloudmasked .|| diff_matrix
-
-#     return segmented_A
-# end
-
-
 """
     clean_binary_floes(bw_img; min_opening_area=50)
 
@@ -528,6 +463,30 @@ function clean_binary_floes(bw_img; min_opening_area=50)
     diff_matrix = img_opened .!= img_filled
     return bw_img .|| diff_matrix
 end
+
+"""
+ segB_binarize(sharpened_image, brightened_image, cloudmask;
+     gamma_factor=2.5, adjusted_ice_threshold=0.05, fill_range=(0, 1), alpha_level=0.5)
+
+Binarize the sharpened image by selective brightening, gamma correction, threshold application, and 
+clean up with image hole filling.
+
+"""
+function segB_binarize(sharpened_image, brightened_image, cloudmask;
+     gamma_factor=2.5, adjusted_ice_threshold=0.05, fill_range=(0, 1), alpha_level=0.5)
+    # Weighted average between brightened image and sharpened grayscale
+    adjusted_sharpened = (1 - alpha_level) .* sharpened_image .+ alpha_level .* brightened_image
+
+    # Gamma correction and cloud masking
+    adjust_histogram!(adjusted_sharpened, GammaCorrection(; gamma=gamma_factor))
+    apply_cloudmask!(adjusted_sharpened, cloudmask) # Should this be happening here?
+
+    # Thresholding and filling small holes (based on fill_range=(min, max))
+    segB = adjusted_sharpened .<= adjusted_ice_threshold
+    segb_filled = .!imfill(segB, fill_range)
+    return segb_filled
+end
+
 
 """
     segmented_ice_cloudmasking(gray_image, cloudmask, ice_labels;)
