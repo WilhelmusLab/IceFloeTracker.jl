@@ -284,6 +284,13 @@ function apply_cloudmask!(
     return img[cloudmask] .= 0.0
 end
 
+function apply_cloudmask!(
+    img::AbstractArray{Bool},
+    cloudmask::AbstractArray{Bool},
+)
+    return img[cloudmask] .= false
+end
+
 function apply_cloudmask(img::AbstractArray, cloudmask::AbstractArray{Bool})
     return img[cloudmask] .= 0.0
 end
