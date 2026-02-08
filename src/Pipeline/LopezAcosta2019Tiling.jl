@@ -222,7 +222,7 @@ function (p::Segment)(
                 Gray.(morphed_residue ./ 255),
                 tiles;
                 minimum_window_size=100,
-                threshold_percentage=0,
+                threshold_percentage=15,
             ) .> 0
 
         prelim_icemask = kmeans_binarization(
