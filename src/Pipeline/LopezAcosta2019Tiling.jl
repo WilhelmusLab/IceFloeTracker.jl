@@ -221,8 +221,8 @@ function (p::Segment)(
             tiled_adaptive_binarization(
                 Gray.(morphed_residue ./ 255),
                 tiles;
-                minimum_window_size=32,
-                threshold_percentage=15,
+                minimum_window_size=100,
+                threshold_percentage=0,
             ) .> 0
 
         prelim_icemask = kmeans_binarization(
