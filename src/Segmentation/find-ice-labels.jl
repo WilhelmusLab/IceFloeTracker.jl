@@ -197,7 +197,7 @@ function IceDetectionLopezAcosta2019(;
         IceDetectionBrightnessPeaksMODIS721(;
             band_7_max=band_7_max, possible_ice_threshold=possible_ice_threshold
         ),
-    ], 10)
+    ], 1)
 end
 
 """
