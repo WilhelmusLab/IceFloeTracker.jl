@@ -1,6 +1,6 @@
 @testitem "Segmentation-B" begin
     using Images: @test_approx_eq_sigma_eps, load, float64, strel_diamond, closing, clamp01nan
-    import Statistics: mean
+    import StatsBase: mean
     include("config.jl")
     include("test_error_rate.jl")
 
