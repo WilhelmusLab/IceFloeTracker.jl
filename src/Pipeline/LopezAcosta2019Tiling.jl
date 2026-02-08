@@ -1,9 +1,5 @@
-
 module LopezAcosta2019Tiling
-
-import Images:
-    Images,
-    area_opening,
+import Images: area_opening,
     watershed,
     imfilter,
     isboundary,
@@ -557,7 +553,6 @@ function IceDetectionLopezAcosta2019Tiling(;
         IceDetectionThresholdMODIS721(;
             band_7_max=1.0, band_2_min=band_2_min, band_1_min=0.0
         ),
-    ])
+    ], 10)
 end
-
-end
+end # End module LopezAcosta2019Tiling.jl
