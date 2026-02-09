@@ -1,5 +1,4 @@
 
-import ..skimage: sk_measure
 import DataFrames: rename!, DataFrame, nrow, select!
 import ..Geospatial: latlon
 import Images: 

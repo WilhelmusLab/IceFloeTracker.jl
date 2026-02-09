@@ -171,6 +171,7 @@ Runs each algorithm from `algorithms` on the image, and returns the first which 
 """
 @kwdef struct IceDetectionFirstNonZeroAlgorithm <: IceDetectionAlgorithm
     algorithms::Vector{IceDetectionAlgorithm}
+    threshold::Int64
 end
 
 function (f::IceDetectionFirstNonZeroAlgorithm)(out, img, args...; kwargs...)
@@ -178,7 +179,7 @@ function (f::IceDetectionFirstNonZeroAlgorithm)(out, img, args...; kwargs...)
         @debug algorithm
         result = binarize(img, algorithm)
         ice_sum = sum(result)
-        if 0 < ice_sum
+        if f.threshold < ice_sum
             @. out = result
             return nothing
         end
@@ -223,7 +224,7 @@ function IceDetectionLopezAcosta2019(;
         IceDetectionBrightnessPeaksMODIS721(;
             band_7_max=band_7_max, possible_ice_threshold=possible_ice_threshold
         ),
-    ])
+    ], 1)
 end
 
 """
