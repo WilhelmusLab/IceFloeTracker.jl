@@ -29,7 +29,7 @@
     end
 
     @testset "IceDetectionBrightnessPeaksMODIS721" begin
-        f = IceDetectionBrightnessPeaksMODIS721(5 / 255, 75 / 255)
+        f = IceDetectionBrightnessPeaksMODIS721(band_7_max = 5 / 255, possible_ice_threshold = 75 / 255)
 
         dataset = Watkins2026Dataset(; ref="v0.1")
         case = first(filter(c -> (c.case_number == 12 && c.satellite == "terra"), dataset))

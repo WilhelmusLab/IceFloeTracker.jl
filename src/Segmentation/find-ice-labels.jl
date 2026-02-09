@@ -28,7 +28,7 @@ function get_ice_peaks(
     edges,
     counts;
     possible_ice_threshold::Float64=0.30,
-    minimum_prominence::Float64=0.05,
+    minimum_prominence::Float64=0.01,
     window::Int64=3,
 )
     size(counts)
@@ -73,7 +73,6 @@ end
         modis_721_image, 
         a::IceDetectionThresholdMODIS721
     )
-
 Returns pixels for a MODIS image where (band_7 < threshold AND band_2 > threshold AND band_1 > threshold).
 """
 @kwdef struct IceDetectionThresholdMODIS721 <: IceDetectionAlgorithm
@@ -95,19 +94,35 @@ end
 
 """
     IceDetectionBrightnessPeaksMODIS721(;
-        band_7_threshold::Real,
+        band_7_max::Real,
         possible_ice_threshold::Real
+        nbins=64
+        minimum_prominence=0.01
+        window=3
     )(image)
     binarize(
         modis_721_image, 
         a::IceDetectionBrightnessPeaksMODIS721
     )
 
-Returns pixels for a MODIS image where (band_7 < threshold AND both (band_2, band_1) are are above a peak value above some threshold).
+Uses the histogram of the band 1 and band 2 reflectance to determine thresholds for identifying
+bright ice pixels (e.g., snow-covered floes or ice thicker than its surroundings). The algorithm 
+builds a histogram using `nbins` bins, and finds the largest peak such that the peak brightness
+is larger than the `possible_ice_threshold` and has prominence larger than `minimum_prominence`
+using a comparison window of size `window`. If `join_method` = "intersect", then select pixels where
+the band 1 brightness is larger than the band 1 peak and the band 2 brightness is larger than the band
+2 peak. Otherwise, if`join_method` = "union", select pixels where either band 1 or band 2 is brighter
+than the threshold criteria. Finally, since clouds tend to have higher reflectance in band 7, mask
+pixels with the band 7 brightness larger than `band_7_max`. It is designed to be used with MODIS
+false color 7-2-1 imagery.
 """
 @kwdef struct IceDetectionBrightnessPeaksMODIS721 <: IceDetectionAlgorithm
     band_7_max::Real
     possible_ice_threshold::Real
+    nbins::Int64=64
+    minimum_prominence::Float64=0.01
+    window::Int64=3
+    join_method="intersection"
 end
 
 function (f::IceDetectionBrightnessPeaksMODIS721)(out, modis_721_image, args...; kwargs...)
@@ -119,8 +134,10 @@ function (f::IceDetectionBrightnessPeaksMODIS721)(out, modis_721_image, args...;
 
     get_band_peak = function (band)
         return get_ice_peaks(
-            build_histogram(band .* alpha_binary, 64; minval=0, maxval=1)...;
+            build_histogram(band .* alpha_binary, f.nbins; minval=0, maxval=1)...;
             possible_ice_threshold=f.possible_ice_threshold,
+            minimum_prominence=f.minimum_prominence,
+            window=f.window
         )
     end
 
@@ -131,7 +148,17 @@ function (f::IceDetectionBrightnessPeaksMODIS721)(out, modis_721_image, args...;
     mask_band_2 = band_2 .> band_2_peak
     mask_band_1 = band_1 .> band_1_peak
 
-    @. out = mask_band_7 * mask_band_2 * mask_band_1 * alpha_binary
+    join_method = f.join_method
+    if join_method ∉ ["intersection", "union"]
+        print("Join method ", join_method, "not defined, defaulting to intersection")
+        join_method = "intersection"
+    end
+    join_method == "intersection" && begin
+        @. out = mask_band_7 && mask_band_2 && mask_band_1 && alpha_binary
+    end
+    join_method == "union" && begin
+        @. out = mask_band_7 && (mask_band_2 || mask_band_1) && alpha_binary
+    end
 end
 
 """
