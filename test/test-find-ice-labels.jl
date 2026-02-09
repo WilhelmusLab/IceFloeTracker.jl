@@ -43,6 +43,12 @@
 
         masked_land = masker(modis_landmask(case), modis_falsecolor(case))[1:50, 1:50]
         @test sum(binarize(masked_land, f)) == 0
+
+        # Make sure we can all the new option
+        f2 = IceDetectionBrightnessPeaksMODIS721(band_7_max = 5 / 255, possible_ice_threshold = 75 / 255, join_method="union")
+        intersect_method = binarize(modis_falsecolor(case), f)
+        union_method = binarize(modis_falsecolor(case), f2)
+        @test sum(intersect_method) .<= sum(union_method)
     end
 
     @testset "IceDetectionLopezAcosta2019" begin
@@ -249,3 +255,4 @@ end
         end
     end
 end
+
