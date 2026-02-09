@@ -33,7 +33,11 @@ function _get_nlabel(
         IceDetectionThresholdMODIS721(;
             band_7_max=1.0, band_2_min=band_2_threshold, band_1_min=0.0
         ),
+<<<<<<< feat_update_segmentation_la2019
     ], 1)
+=======
+    ], 10) # Threshold prevents single-pixel "detection" of sea ice
+>>>>>>> main
 
     ice_labels = binarize(falsecolor_img, f) .> 0
     (isempty(ice_labels) || sum(ice_labels) == 0) && return -1

@@ -105,7 +105,7 @@ prelim_icemask_params = (radius=10, amount=2, factor=0.5)
     ice_masks_params = ice_masks_params
     prelim_icemask_params = prelim_icemask_params
     brighten_factor = brighten_factor
-    coastal_buffer_structuring_element = centered(strel_box((3, 3)))
+    coastal_buffer_structuring_element = centered(strel_box((51, 51)))
 end
 
 function (p::Segment)(
@@ -115,7 +115,7 @@ function (p::Segment)(
     intermediate_results_callback::Union{Nothing,Function}=nothing,
 ) where {T<:AbstractMatrix{<:Union{AbstractRGB,TransparentRGB}},U<:AbstractMatrix}
     @info "building landmask and coastal buffer mask"
-    landmask, coastal_buffer_mask = create_landmask(
+    coastal_buffer_mask, landmask = create_landmask(
         float64.(landmask), p.coastal_buffer_structuring_element
     )
     return p(
@@ -220,6 +220,7 @@ function (p::Segment)(
                 minimum_window_size=100,
                 threshold_percentage=15,
             ) .> 0
+        
 
         prelim_icemask = kmeans_binarization(
             Gray.(morphed_residue / 255),
@@ -554,5 +555,10 @@ function IceDetectionLopezAcosta2019Tiling(;
             band_7_max=1.0, band_2_min=band_2_min, band_1_min=0.0
         ),
     ], 10)
+<<<<<<< feat_update_segmentation_la2019
+=======
+end
+
+>>>>>>> main
 end
 end # End module LopezAcosta2019Tiling.jl
