@@ -41,12 +41,14 @@ function kmeans_segmentation(
 
     indexmap = zeros(Int64, size(gray_image))
     for (offset, tile) in enumerate(tiles)
-        indexmap[tile...] .= labels_map(kmeans_segmentation(gray_image[tile...]; k=k, maxiter=maxiter, random_seed=random_seed))
+        indexmap[tile...] .= labels_map(kmeans_segmentation(gray_image[tile...];
+                                     k=k, maxiter=maxiter, random_seed=random_seed))
         indexmap[tile...] .+= k * offset
         offset += 1
     end
 
-    indexmap .= stitch_clusters(SegmentedImage(gray_image, indexmap), tiles, minimum_overlap, grayscale_threshold) 
+    indexmap .= stitch_clusters(SegmentedImage(gray_image, indexmap),
+                                     tiles, minimum_overlap, grayscale_threshold) 
     return SegmentedImage(gray_image, indexmap)
 end
 
