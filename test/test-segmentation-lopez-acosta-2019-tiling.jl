@@ -62,9 +62,9 @@ end
     @test all(results.success)
 
     # Aggregate performance measures
-    mean_recall = mean(skipnanormissing(results.recall))
-    mean_precision = mean(skipnanormissing(results.precision))
-    mean_F_score = mean(skipnanormissing(results.F_score))
+    mean_recall = round(mean(skipnanormissing(results.recall)), digits=2)
+    mean_precision = round(mean(skipnanormissing(results.precision)), digits=2)
+    mean_F_score = round(mean(skipnanormissing(results.F_score)), digits=2)
 
     # Good performance might look liks this:
     @test mean_recall ≥ 0.9 broken = true
