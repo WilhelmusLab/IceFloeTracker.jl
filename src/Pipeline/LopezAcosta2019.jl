@@ -96,7 +96,7 @@ diffusion_parameters = (lambda=0.1, kappa=0.1, niters=5, g="exponential")
         cblocks=8, # matlab default is 8 CP
         clip=0.95,  # matlab default is 0.01 CP, which should be the same as clip=0.99
     )
-    unsharp_mask_params = (smoothing_param=10, intensity=2)
+    unsharp_mask_params = (smoothing_param=10, intensity=0.5)
     kmeans_params = (k=4, maxiter=50, random_seed=45)
     cluster_selection_algorithm = IceDetectionLopezAcosta2019()
 end
