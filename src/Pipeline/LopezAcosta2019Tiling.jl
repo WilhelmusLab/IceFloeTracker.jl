@@ -555,10 +555,5 @@ function IceDetectionLopezAcosta2019Tiling(;
             band_7_max=1.0, band_2_min=band_2_min, band_1_min=0.0
         ),
     ], 10)
-<<<<<<< feat_update_segmentation_la2019
-=======
-end
-
->>>>>>> main
 end
 end # End module LopezAcosta2019Tiling.jl
