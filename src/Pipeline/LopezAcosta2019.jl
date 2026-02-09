@@ -756,7 +756,7 @@ function IceDetectionLopezAcosta2019(;
             band_7_max=band_7_max,
             possible_ice_threshold=possible_ice_threshold
         ),
-    ])
+    ], 10)
 end
 
 end
