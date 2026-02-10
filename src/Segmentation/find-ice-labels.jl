@@ -21,7 +21,7 @@ import ..ImageUtils: masker
 Given the edges and counts from build_histogram, identify local maxima and return the location of the
 largest local maximum that is bright enough that it is possibly sea ice. Locations are determined by 
 the edges, which by default are the left bin edges. Note also that peaks defaults to the left side of
-plateaus. Returns Inf if there are no non-zero parts of the histogram with bins larger than the possible
+plateaus (see ). Returns Inf if there are no non-zero parts of the histogram with bins larger than the possible
 ice threshold, or if there are no detected peaks larger than the minimum prominence.
 """
 function get_ice_peaks(
@@ -109,12 +109,24 @@ Uses the histogram of the band 1 and band 2 reflectance to determine thresholds 
 bright ice pixels (e.g., snow-covered floes or ice thicker than its surroundings). The algorithm 
 builds a histogram using `nbins` bins, and finds the largest peak such that the peak brightness
 is larger than the `possible_ice_threshold` and has prominence larger than `minimum_prominence`
-using a comparison window of size `window_size` (see docs for `Peaks.findmaxima`). If `join_method` = "intersect", then select pixels where
-the band 1 brightness is larger than the band 1 peak and the band 2 brightness is larger than the band
-2 peak. Otherwise, if `join_method` = "union", select pixels where either band 1 or band 2 is brighter
-than the threshold criteria. Finally, since clouds tend to have higher reflectance in band 7, mask
-pixels with the band 7 brightness larger than `band_7_max`. It is designed to be used with MODIS
-false color 7-2-1 imagery.
+using a comparison window of size `window_size` (see docs for `Peaks.findmaxima`).
+If `join_method` = "intersect", then select pixels where the band 1 brightness is larger than the
+band 1 peak and the band 2 brightness is larger than the band 2 peak. Otherwise, if 
+`join_method` = "union", select pixels where either band 1 or band 2 is brighter than the threshold criteria.
+Finally, since clouds tend to have higher reflectance in band 7, mask pixels with the band 7 brightness
+larger than `band_7_max`. It is designed to be used with MODIS false color 7-2-1 imagery.
+
+See also: [`binarize`](@ref)
+
+# Examples
+```jldoctest
+julia> algo = IceDetectionBrightnessPeaksMODIS721(;
+           band_7_max=5/255,
+           possible_ice_threshold=75/255,
+           join_method="union",
+       )
+IceDetectionBrightnessPeaksMODIS721(0.0196078431372549, 0.29411764705882354, 64, 0.01, 3, "union")
+```
 """
 @kwdef struct IceDetectionBrightnessPeaksMODIS721 <: IceDetectionAlgorithm
     band_7_max::Real
