@@ -21,7 +21,7 @@ import ..ImageUtils: masker
 Given the edges and counts from build_histogram, identify local maxima and return the location of the
 largest local maximum that is bright enough that it is possibly sea ice. Locations are determined by 
 the edges, which by default are the left bin edges. Note also that peaks defaults to the left side of
-plateaus (see ). Returns Inf if there are no non-zero parts of the histogram with bins larger than the possible
+plateaus (see Peaks.jl documentation). Returns Inf if there are no non-zero parts of the histogram with bins larger than the possible
 ice threshold, or if there are no detected peaks larger than the minimum prominence.
 """
 function get_ice_peaks(
