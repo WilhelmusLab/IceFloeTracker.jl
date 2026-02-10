@@ -99,11 +99,9 @@ end
         nbins=64
         minimum_prominence=0.01
         window_size=3
-    )(image)
-    binarize(
-        modis_721_image, 
-        a::IceDetectionBrightnessPeaksMODIS721
     )
+
+    binarize(modis_721_image, a::IceDetectionBrightnessPeaksMODIS721)
 
 Uses the histogram of the band 1 and band 2 reflectance to determine thresholds for identifying
 bright ice pixels (e.g., snow-covered floes or ice thicker than its surroundings). The algorithm 
