@@ -150,7 +150,7 @@ function (f::IceDetectionBrightnessPeaksMODIS721)(out, modis_721_image, args...;
 
     join_method = f.join_method
     if join_method ∉ ["intersection", "union"]
-        @warn("Join method ", join_method, "not defined, defaulting to intersection")
+         @warn "Join method $join_method not defined, defaulting to intersection"
         join_method = "intersection"
     end
     join_method == "intersection" && begin
