@@ -49,6 +49,11 @@
         intersect_method = binarize(modis_falsecolor(case), f)
         union_method = binarize(modis_falsecolor(case), f2)
         @test sum(intersect_method) .<= sum(union_method)
+
+        # Test whether it will default to intersect as intended
+        f3 = IceDetectionBrightnessPeaksMODIS721(band_7_max = 5 / 255, possible_ice_threshold = 75 / 255, join_method="divide")
+        alt_method = binarize(modis_falsecolor(case), f3)
+        @test allequal(alt_method .== intersect_method)
     end
 
     @testset "IceDetectionLopezAcosta2019" begin
