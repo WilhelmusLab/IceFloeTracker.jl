@@ -1,4 +1,3 @@
-
 import DataFrames: rename!, DataFrame, nrow, select!
 import ..Geospatial: latlon
 import Images: 

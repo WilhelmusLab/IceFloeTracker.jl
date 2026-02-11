@@ -1,9 +1,5 @@
-
 module LopezAcosta2019Tiling
-
-import Images:
-    Images,
-    area_opening,
+import Images: area_opening,
     watershed,
     imfilter,
     isboundary,
@@ -221,7 +217,7 @@ function (p::Segment)(
             tiled_adaptive_binarization(
                 Gray.(morphed_residue ./ 255),
                 tiles;
-                minimum_window_size=32,
+                minimum_window_size=100,
                 threshold_percentage=15,
             ) .> 0
         
@@ -560,5 +556,4 @@ function IceDetectionLopezAcosta2019Tiling(;
         ),
     ], 10)
 end
-
 end
