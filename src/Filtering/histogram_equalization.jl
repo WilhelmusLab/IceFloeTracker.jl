@@ -159,21 +159,17 @@ minimum and maximum value of each channel band instead of the 0 to 1 range from
 the default AdaptiveEqualization algorithm.
 
 """
-function channelwise_adapthisteq(img;
-    nbins=256,
-    rblocks=8,
-    cblocks=8,
-    clip=0.99)
-
-    f_eq(img_channel) = adjust_histogram(img_channel,
-        AdaptiveEqualization(;
+function channelwise_adapthisteq(img; nbins=256, rblocks=8, cblocks=8, clip=0.99)
+    function f_eq(img_channel)
+        ae = AdaptiveEqualization(;
             nbins=nbins,
             rblocks=rblocks,
             cblocks=cblocks,
             minval=minimum(img_channel),
             maxval=maximum(img_channel),
-            clip=clip
-            )
+            clip=clip,
         )
-    return apply_to_channels(img, f_eq) 
+        return adjust_histogram(img_channel, ae)
+    end
+    return apply_to_channels(img, f_eq)
 end
