@@ -465,6 +465,30 @@ function clean_binary_floes(bw_img; min_opening_area=50)
 end
 
 """
+ segB_binarize(sharpened_image, brightened_image, cloudmask;
+     gamma_factor=2.5, adjusted_ice_threshold=0.05, fill_range=(0, 1), alpha_level=0.5)
+
+Binarize the sharpened image by selective brightening, gamma correction, threshold application, and 
+clean up with image hole filling.
+
+"""
+function segB_binarize(sharpened_image, brightened_image, cloudmask;
+     gamma_factor=2.5, adjusted_ice_threshold=0.05, fill_range=(0, 1), alpha_level=0.5)
+    # Weighted average between brightened image and sharpened grayscale
+    adjusted_sharpened = (1 - alpha_level) .* sharpened_image .+ alpha_level .* brightened_image
+
+    # Gamma correction and cloud masking
+    adjust_histogram!(adjusted_sharpened, GammaCorrection(; gamma=gamma_factor))
+    apply_cloudmask!(adjusted_sharpened, cloudmask) # Should this be happening here?
+
+    # Thresholding and filling small holes (based on fill_range=(min, max))
+    segB = adjusted_sharpened .<= adjusted_ice_threshold
+    segb_filled = .!imfill(segB, fill_range)
+    return segb_filled
+end
+
+
+"""
     segmented_ice_cloudmasking(gray_image, cloudmask, ice_labels;)
 
 Apply cloudmask to a bitmatrix of segmented ice after kmeans clustering. Returns a bitmatrix with open water/clouds = 0, ice = 1).
