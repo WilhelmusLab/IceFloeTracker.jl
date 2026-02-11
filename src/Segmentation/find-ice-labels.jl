@@ -280,9 +280,9 @@ end
 # TODO: Set up wrapper for applying binarization to a tiled iterator. Let this
 # method be one functor algorithm option, and the version that uses the Peaks as a second.
 """
-tiled_adaptive_binarization(img, tiles; minimum_window_size=). 
+    tiled_adaptive_binarization(img, tiles; minimum_window_size=50, minimum_brightness=75 / 255, threshold_percentage=15) 
 
-    Applies the (AdaptiveThreshold)[https://juliaimages.org/ImageBinarization.jl/v0.1/#Adaptive-Threshold-1] binarization algorithm
+    Applies the [AdaptiveThreshold](https://juliaimages.org/ImageBinarization.jl/v0.1/#Adaptive-Threshold-1) binarization algorithm
     to each tile in the image. Following the recommendations from ImageBinarization, the default is to use the integer window size
     nearest to 1/8th the tile size if the tile is large enough. So that the window is large enough to include moderately large floes,
     the default minimum window size is 100 pixels (25 km for MODIS imagery). The minimum brightness parameter masks pixels with low
