@@ -556,4 +556,4 @@ function IceDetectionLopezAcosta2019Tiling(;
         ),
     ], 10)
 end
-end # End module LopezAcosta2019Tiling.jl
+end
