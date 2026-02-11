@@ -21,9 +21,6 @@
     brightened_image = map(clamp01nan, not_ice_mask)
 
 
-    # threshold_mask = sharpened_image .> 0.4
-    # brightened_image = (sharpened_image .* 1.3) .* threshold_mask
-    # clamp!(brightened_image, 0, 1)
     segB = LopezAcosta2019.segB_binarize(sharpened_image, brightened_image, cloudmask)
     
     @info "Merging segmentation results"
