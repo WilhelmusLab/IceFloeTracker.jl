@@ -25,7 +25,7 @@ end
         LopezAcosta2019Tiling.Segment();
     )
     @test 0.33 ≈ labeled_fraction atol = 0.1
-    @test 0.66 ≤ round(recall; digits=2) # upper right tile missing -- investigate
+    @test 0.66 ≤ round(recall; digits=2) # TODO: upper right tile missing -- investigate
     @test 0.27 ≤ round(precision; digits=2)
     @test 0.38 ≤ round(F_score; digits=2)
 
