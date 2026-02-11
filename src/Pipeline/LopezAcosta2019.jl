@@ -501,7 +501,7 @@ Apply cloudmask to a bitmatrix of segmented ice after kmeans clustering. Returns
 
 """
 function segmented_ice_cloudmasking(
-    gray_image, #::Matrix{Gray{Float64}}
+    gray_image, 
     falsecolor_image,
     cloudmask::BitMatrix,
 )::BitMatrix
