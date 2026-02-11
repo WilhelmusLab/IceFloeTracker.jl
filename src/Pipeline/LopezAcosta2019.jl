@@ -809,4 +809,4 @@ function IceDetectionLopezAcosta2019(;
     ], 10)
 end
 
-end # End module LopezAcosta2019
+end
