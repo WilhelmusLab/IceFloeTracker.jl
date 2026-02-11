@@ -154,9 +154,9 @@ end
 """
     channelwise_adapthisteq(img; nbins=256, rblocks=8, cblocks=8, clip=0.99)
 
-    Broadcast adaptive histogram equalization to color channels of an image. Uses the 
-    minimum and maximum value of each channel band instead of the 0 to 1 range from
-    the default AdaptiveEqualization algorithm.
+Broadcast adaptive histogram equalization to color channels of an image. Uses the 
+minimum and maximum value of each channel band instead of the 0 to 1 range from
+the default AdaptiveEqualization algorithm.
 
 """
 function channelwise_adapthisteq(img;
