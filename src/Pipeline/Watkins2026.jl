@@ -56,7 +56,7 @@ function (p::Preprocess)(
     falsecolor_image::AbstractArray{<:Union{AbstractRGB,TransparentRGB}},  
     landmask_image,
     tiles::TileIterator
-)::AbstractArray{AbstractGray}
+)
     
     proc_img = deepcopy(Gray.(truecolor_image))
     cloud_mask = p.cloud_mask_algorithm(falsecolor_image)
@@ -98,6 +98,81 @@ end
 
 ###### Segmentation ########
 
+# 1. K-means workflow
+# 2. Adaptive Threshold workflow
+# 3. 
+function Segment()
+
+    prelim_ice_mask = ice_water_mask(tc_img, cloud_mask, land_mask)
+
+    # input arguments or struct attributes
+    tile_size_pixels = 1000 # 1000 pixel edge length = 250 km edge length
+    min_tile_pixel_count = 200e2 # 100 pixels by 100 pixels = 25 km by 25 km, which is rather small
+
+    tiles = IceFloeTracker.get_tiles(tc_img, tile_size_pixels)
+
+    # Select a subset of the tiles to preprocess
+    # Here, it's counting clear-sky ice pixels.
+    # Actually I think the cloud mask and land mask are irrelevant here since the ice mask has those applied!
+    filtered_tiles = filter(
+        t -> sum( .!coast_buffer[t...] .&& prelim_ice_mask[t...] .&& .!cloud_mask[t...]) > min_tile_pixel_count,
+        tiles);
+
+
+
+    # make part of the struct
+    bright_ice_algo = IceDetectionBrightnessPeaksMODIS721(
+        band_7_max=0.1,
+        possible_ice_threshold=0.3,
+        join_method="union",
+        minimum_prominence=0.01
+    )
+
+    @info "Segmentation method 1: First K-means workflow"
+    begin
+        fc_masked = deepcopy(fc_img)
+        fc_masked .= fc_masked .* (proc_img .> 1e-4)
+        kmeans_binarized = kmeans_binarization(proc_img, fc_masked, filtered_tiles;
+            cluster_selection_algorithm=bright_ice_algo, k=4) # TODO: make this a Binarization algorithm
+        kmeans_binarized .= clean_binary_floes(kmeans_binarized, filtered_tiles)
+        kmeans_watershed = watershed_transform(kmeans_cleaned, tc_img, filtered_tiles; 
+                                strel=strel_diamond((5,5)),
+                                dist_threshold=4, min_overlap=10,
+                                grayscale_threshold=0.3) # output type? I think it's a segmented image                
+    end
+
+    @info "Segmentation method 2: Adaptive threshold workflow" # TODO:make the post processing a function, since it's repeated
+    begin
+        adaptive_thresh =
+                tiled_adaptive_binarization(
+                    proc_img,
+                    filtered_tiles;
+                    minimum_window_size=400, # inputs! struct could actually have the binarization methods as attributes
+                    threshold_percentage=0,
+                    minimum_brightness=100/255
+                ) .> 0 # returns Gray 
+        adaptive_thresh .= clean_binary_floes(adaptive_thresh, filtered_tiles)
+        adapt_watershed = watershed_transform(adaptive_cleaned, tc_img, alt_filtered_tiles;
+                                 strel=strel_diamond((5,5)),
+                                 dist_threshold=4, min_overlap=10,
+                                grayscale_threshold=0.3)
+    end
+
+    # Joining the segmentation results
+    # - Watershed intersection needs to have the effects of tile boundaries removed.
+    #   To do this, for each tile, check the columns around the tile edge. If the pattern is 0-1-0 then mask it. 
+    
+    # Original algorithm does k-means again after zero-ing out the water pixels
+    # Then watershed -> remove smaller than 3 km2 -> hbridge -> opening with 5,5 strel -> fill holes.
+    # FS pipeline: Segmentation F
+    # BG pipeline: Regularize + Get Final
+    # Side by side comparison -- which does a better job, given a good initial binarization? 
+
+    # Final step in this version: select low-solidity objects, and break the bridges
+    # Need some confidence that we are separating out the filaments to throw away
+
+end
+
 
 ###### Tracking #######
 # Specify defaults for the various filter functions
@@ -129,7 +204,6 @@ function ice_water_mask(truecolor_image, cloud_mask, land_mask; b1_ice_min = 75/
     thresh = 0.5 * (b1_ice_min + ice_peak)
     return banddata .> thresh
 end
-
 
 ####### Morphological cleanup ########
 """
@@ -184,28 +258,43 @@ end
     carry out the transform only on the listed tiles.
 
 """
-function watershed_transform(binary_floes, img; strel=strel_diamond((3,3)), dist_threshold=4)
+function watershed_transform(
+    binary_floes,
+    img;
+    strel=strel_diamond((5,5)),
+    dist_threshold=4
+)
     bw = .!binary_floes
     dist = .- distance_transform(feature_transform(bw))
     markers = erode(dist .< -1 * dist_threshold, strel) |> label_components
     labels = labels_map(watershed(dist, markers))
     labels[bw] .= 0
+
     return SegmentedImage(img, labels)
 end
 
-function watershed_transform(binary_floes, img, tiles; strel=strel_diamond((3,3)), dist_threshold=4, min_overlap=10)
+function watershed_transform(
+    binary_floes,
+    img,
+    tiles;
+    strel=strel_diamond((5,5)),
+    dist_threshold=4,
+    min_overlap=10,
+    grayscale_threshold=0.1
+)
     labels = zeros(Int64, size(binary_floes))
     for tile in tiles
-        wseg = watershed_transform(binary_floes[tile...], img[tile...]; strel=strel, dist_threshold=dist_treshold)
+        wseg = watershed_transform(binary_floes[tile...], img[tile...]; strel=strel, dist_threshold=dist_threshold)
         labels[tile...] = labels_map(wseg)
     end
     wseg = SegmentedImage(img, labels)
-    stitched_labels = stitch_clusters(wseg, tiles, min_overlap) # TODO: Add method to allow labels map for stitch clusters
+    stitched_labels = stitch_clusters(wseg, tiles, min_overlap, grayscale_threshold) # TODO: Add method to allow labels map for stitch clusters
     stitched_labels[.!binary_floes] .= 0 # TODO: Check to see if the background needs to be re-masked
+
     return SegmentedImage(img, stitched_labels)
 end
 
-# Component properties
+# Component properties can go into the regionprops file
 """
     component_boundary_mean(indexmap, img, strel)
 
@@ -222,4 +311,4 @@ function component_boundary_mean(indexmap, img, strel)
         results[l] = mean(vec(img[bdry .> 0]))
     end
     return results
-end
+end 
