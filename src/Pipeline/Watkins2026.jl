@@ -207,7 +207,7 @@ function (s::Segment)(truecolor_image, falsecolor_image, land_mask_image)
 
     end
 
-    @info "Segmentation setp 4: Morphological floe splitting"
+    @info "Segmentation step 4: Morphological floe splitting"
     begin
         separated_floes = morph_split_floes(label_components(kmeans_refined), max_depth=5)
     end
@@ -406,6 +406,7 @@ end
 """
 function grayscale_reconstruction(preprocessed_image, binarized_image, boundary_intersection, land_mask;
     brightness_threshold = 0.4,
+    brightening_factor = 0.3,
     min_area_opening=20,
     strel_dilation = strel_diamond((5, 5))
     )
@@ -414,7 +415,7 @@ function grayscale_reconstruction(preprocessed_image, binarized_image, boundary_
     brightened_grayscale = deepcopy(preprocessed_image) 
     brightened_grayscale[brightened_grayscale .< brightness_threshold] .= 0
     brightened_grayscale .= adjust_histogram(
-        brightened_grayscale .* 0.3 .+ preprocessed_image, LinearStretching()
+        brightened_grayscale .* brightening_factor .+ preprocessed_image, LinearStretching()
         )
     apply_landmask!(brightened_grayscale, land_mask)
                                      # could use a robust linear stretching with percentiles
@@ -432,7 +433,7 @@ function grayscale_reconstruction(preprocessed_image, binarized_image, boundary_
         complement.(brightened_dilated),
         complement.(brightened_grayscale)
     )
-    return adjust_histogram(brightened_grayscale .* ice_leads, LinearStretching())
+    return adjust_histogram(brightened_dilated .* ice_leads, LinearStretching())
 end
 
 """
