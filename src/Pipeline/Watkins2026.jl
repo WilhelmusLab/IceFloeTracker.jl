@@ -109,13 +109,20 @@ end
     adaptive_binarization_settings = (minimum_window_size=400, threshold_percentage=0, minimum_brightness=100/255)
     # cleanup parameters: can be named tuple, after writing self-contained cleanup function
     minimum_floe_size = 100
+    maximum_floe_size = 20000 # About 35 km by 35 km size
     maximum_fill_size = 64
     #kmeans_binarization_settings = (k=4, )
 end
 
 function (s::Segment)(truecolor_image, falsecolor_image, land_mask_image)
 
-    tiles = get_tiles(truecolor_image, s.tile_size_pixels)
+    n, m = size(truecolor_image)
+    tile_size_pixels = s.tile_size_pixels
+    tile_size_pixels > maximum([n, m]) && begin
+        @warn "Tile size too large, defaulting to image size"
+        tile_size_pixels = minimum([n, m])
+    end
+    tiles = get_tiles(truecolor_image, tile_size_pixels)
 
     cloud_mask = s.cloud_mask_algorithm(falsecolor_image)
     
@@ -144,7 +151,7 @@ function (s::Segment)(truecolor_image, falsecolor_image, land_mask_image)
     # - Gamma threshold method from LopezAcosta2019
     # - Make the kmeans_binarized a binarization algorithm
     begin
-        fc_masked = apply_cloudmask(falsecolor_image, cloud_mask)
+        fc_masked = apply_cloudmask(RGB.(falsecolor_image), cloud_mask) # Error in cloudmask function with RGBA
         # Use the coastal buffer here to highlight bright pixels in the ocean rather than landfast
         apply_landmask!(fc_masked, coastal_buffer)
         kmeans_binarized = kmeans_binarization(preprocessed_image, fc_masked, filtered_tiles;
@@ -207,22 +214,30 @@ function (s::Segment)(truecolor_image, falsecolor_image, land_mask_image)
 
     end
 
-    @info "Segmentation step 4: Morphological floe splitting"
+    @info "Floe splitting 1: Morphological floe splitting"
+    # TODO: Floe splitting can be an input to the function.
+    # TODO: Add parameters to main function call
     begin
+        # morph split goes from binarized to index map
         separated_floes = morph_split_floes(label_components(kmeans_refined), max_depth=5)
+
+        # watershed split floes goes from indexmap to segmented image
+        watershed_floes = watershed_split_floes(separated_floes, truecolor_image;
+                            strel=strel_box((5,5)), min_circularity=0.6, min_solidity=0.85)
     end
 
-    # @info "Image gradient filtering"
+    @info "Final cleanup"
 
-    # Original algorithm does k-means again after zero-ing out the water pixels
-    # Then watershed -> remove smaller than 3 km2 -> hbridge -> opening with 5,5 strel -> fill holes.
-    # FS pipeline: Segmentation F
-    # BG pipeline: Regularize + Get Final
-    # Side by side comparison -- which does a better job, given a good initial binarization? 
-
-    # Final step in this version: select low-solidity objects, and break the bridges
-    # Need some confidence that we are separating out the filaments to throw away
-    return SegmentedImage(truecolor_image, separated_floes)
+    # Enforce the min floe size, potential to remove floe candidates if other criteria aren't met
+    indexmap = labels_map(watershed_floes)
+    areas = component_lengths(indexmap)
+    indices = component_indices(indexmap)
+    for r in keys(areas)
+        areas[r] < s.minimum_floe_size && (indexmap[indices[r]] .= 0)
+        areas[r] > s.maximum_floe_size && (indexmap[indices[r]] .= 0)
+    end
+    # Check brightness, edge contrast first
+    return SegmentedImage(truecolor_image, label_components(indexmap))
 end
 
 
@@ -581,6 +596,44 @@ function morph_split_floes(labeled_array;
         # print("Count: "*string(count)*", N labels "*string(n_regions)*", N updated "*string(n_updated)*"\n")
     end
     return label_components(out)
+end
+
+"""
+    watershed_split_floes(indexmap, img; strel=strel_box((5,5)))
+
+Attempt to separate floes using a watershed transformation. If the floe is separated, overwrite the indexmap. Otherwise,
+don't change the floe.
+"""
+function watershed_split_floes(indexmap, img; strel=strel_box((5,5)), min_circularity=0.6, min_solidity=0.5)
+
+    C = component_circularities(indexmap)
+    S = component_solidities(indexmap)
+    indices = component_indices(indexmap)
+    watershed_floes = zeros(size(indexmap))
+
+    adjust_labels = [r for r in keys(indices) if (C[r] < min_circularity || S[r] < 0min_solidity)]
+
+    # Make a copy of the indexmap with only the floes failing the circularity check
+    for r in adjust_labels
+        watershed_floes[indices[r]] .= indexmap[indices[r]]
+    end
+
+    # Option later to use different marker selection method, perhaps using image gradient
+    # Note that the watershed transform takes a binary image as input
+    watershed_segments = watershed_transform(watershed_floes .> 0, img; strel=strel)
+    watershed_indexmap = labels_map(watershed_segments)
+    watershed_bdry = isboundary(watershed_indexmap)
+    watershed_indexmap[watershed_bdry .> 0] .= 0
+
+    # If the watershed transform separated the object into multiple parts, overwrite the original matrix
+    # Using the component indices makes this much faster -- you only have to search the matrix for locations
+    # one time.
+    for r in adjust_labels
+        length(unique(watershed_indexmap[indices[r]])) > 1 && begin
+            indexmap[indices[r]] .= watershed_indexmap[indices[r]]
+        end
+    end
+    return SegmentedImage(img, indexmap)
 end
 
 end
