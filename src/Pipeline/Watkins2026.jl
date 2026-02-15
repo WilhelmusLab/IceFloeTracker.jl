@@ -2,7 +2,7 @@ module Watkins2026
 using Images # Find individual functions to import later
 
 import ..Filtering: nonlinear_diffusion, PeronaMalikDiffusion, unsharp_mask, channelwise_adapthisteq
-import ..Morphology: hbreak, hbreak!, branch, bridge
+import ..Morphology: hbreak, hbreak!, branch, bridge, _generate_se!
 import ..Preprocessing:
     create_landmask,
     create_cloudmask,
@@ -24,10 +24,8 @@ import ..Segmentation:
     component_convex_areas,
     component_perimeters
 
-
 import ..ImageUtils:
     get_tiles
-
 
 abstract type IceFloePreprocessingAlgorithm end
 
@@ -49,8 +47,6 @@ abstract type IceFloePreprocessingAlgorithm end
     to each tile, while the adaptive histogram equalization is divided according to the parameter specifications.
 
 """
-abstract type IceFloePreprocessingAlgorithm end
-
 @kwdef struct Preprocess <: IceFloePreprocessingAlgorithm
     diffusion_algorithm = PeronaMalikDiffusion(λ=0.1, K=0.1, niters=5, g="exponential")
     adapthisteq_params = (nbins=256, rblocks=8, cblocks=8, clip=0.99) # rblocks/cblocks not used yet -- add with CLAHE.jl
@@ -109,8 +105,9 @@ end
     adaptive_binarization_settings = (minimum_window_size=400, threshold_percentage=0, minimum_brightness=100/255)
     # cleanup parameters: can be named tuple, after writing self-contained cleanup function
     minimum_floe_size = 100
-    maximum_floe_size = 20000 # About 35 km by 35 km size
+    maximum_floe_size = 50000 # how big should we allow?
     maximum_fill_size = 64
+    morph_max_depth = 10
     #kmeans_binarization_settings = (k=4, )
 end
 
@@ -173,7 +170,7 @@ function (s::Segment)(truecolor_image, falsecolor_image, land_mask_image)
                 tiled_adaptive_binarization(
                     preprocessed_image,
                     filtered_tiles; s.adaptive_binarization_settings...
-                ) .> 0 # returns Gray 
+                ) .> 0 # returns Gray, so we convert it here
         adaptive_thresh .= clean_binary_floes(adaptive_thresh, filtered_tiles)
         adapt_watershed = watershed_transform(adaptive_thresh, truecolor_image, filtered_tiles;
                                  strel=strel_diamond((5,5)),
@@ -187,40 +184,58 @@ function (s::Segment)(truecolor_image, falsecolor_image, land_mask_image)
 
     # To do: 
     # - determine best grayscale enhancement factors for brightening
-    @info "Segmentation step 3: Enhanced grayscale k-means"
+    @info "Preprocess 2: Enhanced grayscale"
     begin
-        segmentation_intersection = closing(kmeans_binarized, strel_diamond((3, 3))) .* adaptive_thresh
+        # Simple join of segmentation results: closing (dilate then erode) of the k-means results
+        # then multiplication by the prelim ice mask and the adaptive threshold mask
+        # TODO: Segmentation intersection could be a function.
+        segmentation_intersection = closing(kmeans_binarized, strel_diamond((3, 3))) .* adaptive_thresh .* prelim_ice_mask
         boundary_intersection = (kmeans_bdry  .> 0 ) .&& (adapt_bdry .> 0)
         
+        # The grayscale reconstruction method comes from the LopezAcosta2019 code
+        # The idea is that we use the segmentation results from the initial processing to reconstruct
+        # the image, smearing out image details based on where the mask is. It also uses a 
+        # threshold to get an extra segmentation method for brightening the image.
         morphed_grayscale = grayscale_reconstruction(
             preprocessed_image,
             segmentation_intersection,
             boundary_intersection,
             land_mask;
             brightness_threshold = s.grayscale_floe_threshold)
+        morphed_grayscale[boundary_intersection] .= 1 # Testing applying this before instead of after the k-means step
+    end
 
+    @info "Segmentation 3: K-means of morphed grayscale image"
+    begin
+        # Then, we use k-means on the image again.
         # New kmeans binarization, accounting for boundaries in initial segmentation
         kmeans_refined =
             kmeans_binarization(
                 morphed_grayscale,
-                falsecolor_image;
+                fc_masked,
+                filtered_tiles;
                 k = 3,
                 cluster_selection_algorithm=s.bright_ice_detector)
-        kmeans_refined[boundary_intersection] .= 0
+        # kmeans_refined[boundary_intersection] .= 0 # Q: better before or after?
 
+        # The third application of the morphological cleanup removes small floes
+        # and fills holes with certain criteria. Needs to be updated
         kmeans_refined .= clean_binary_floes_mask_fill(
             kmeans_refined, cloud_mask, prelim_ice_mask; 
             max_fill=s.maximum_fill_size, min_floe_size=s.minimum_floe_size, opening_strel=strel_diamond((3,3)))
-
+        
+        apply_landmask!(kmeans_refined, land_mask)
+        apply_cloudmask!(kmeans_refined, cloud_mask)
     end
 
-    @info "Floe splitting 1: Morphological floe splitting"
+    @info "Floe splitting"
     # TODO: Floe splitting can be an input to the function.
     # TODO: Add parameters to main function call
     begin
-        # morph split goes from binarized to index map
-        separated_floes = morph_split_floes(label_components(kmeans_refined), max_depth=5)
-
+        # morph split goes from binarized to index map. Update the outputs to be consistent across floe split functions.
+        separated_floes = morph_split_floes(label_components(kmeans_refined), max_depth=s.morph_max_depth)
+        
+        # separated_floes = label_components(kmeans_refined) # temp test if morph split helps
         # watershed split floes goes from indexmap to segmented image
         watershed_floes = watershed_split_floes(separated_floes, truecolor_image;
                             strel=strel_box((5,5)), min_circularity=0.6, min_solidity=0.85)
@@ -230,14 +245,26 @@ function (s::Segment)(truecolor_image, falsecolor_image, land_mask_image)
 
     # Enforce the min floe size, potential to remove floe candidates if other criteria aren't met
     indexmap = labels_map(watershed_floes)
+    indexmap .= indexmap .* opening(indexmap .> 0, se_disk(2)) # size of the disk can be a parameter
     areas = component_lengths(indexmap)
     indices = component_indices(indexmap)
+    final_indexmap = zeros(Int64, size(indexmap))
+
+    # could set up a function that collects the labels of the 
+    # floes that fulfil the final criteria
+    # - aspect ratios, circularity, solidity, gradient ratio
+
+    label = 1
     for r in keys(areas)
-        areas[r] < s.minimum_floe_size && (indexmap[indices[r]] .= 0)
-        areas[r] > s.maximum_floe_size && (indexmap[indices[r]] .= 0)
+        (r != 0) && (
+            s.minimum_floe_size <= areas[r] <= s.maximum_floe_size) && begin
+                final_indexmap[indices[r]] .= label
+                label += 1
+        end 
     end
+    
     # Check brightness, edge contrast first
-    return SegmentedImage(truecolor_image, label_components(indexmap))
+    return SegmentedImage(truecolor_image, final_indexmap)
 end
 
 
@@ -324,7 +351,7 @@ end
     is imposed and a SegmentedImage is generated using `img`. Optionally, supply a TiledIterator and 
     carry out the transform only on the listed tiles.
 
-"""
+""" # TODO: Make the "marker_selection_function" an input, with the idea that it's a function of the distance transform
 function watershed_transform(
     binary_floes,
     img;
@@ -333,7 +360,7 @@ function watershed_transform(
 )
     bw = .!binary_floes
     dist = .- distance_transform(feature_transform(bw))
-    markers = erode(dist .< -1 * dist_threshold, strel) |> label_components
+    markers = erode(dist .< -dist_threshold, strel) |> label_components
     labels = labels_map(watershed(dist, markers))
     labels[bw] .= 0
 
@@ -391,7 +418,8 @@ Compute the solidity (area/convex area) for each labeled region in indexmap.
 function component_solidities(indexmap)
     ca = component_convex_areas(indexmap)
     a = component_lengths(indexmap)
-    s = Dict(r => (r == 0 ? 0 : a[r] / ca[r]) for r in keys(ca))
+    labels = intersect(keys(a), keys(ca))
+    s = Dict(r => (r == 0 ? 0 : a[r] / ca[r]) for r in labels)
     return s
 end
 
@@ -404,7 +432,8 @@ Compute the circularity (4πA/P^2)for each labeled region in indexmap.
 function component_circularities(indexmap)
     p = component_perimeters(indexmap)
     a = component_lengths(indexmap)
-    c = Dict(r => (r == 0 ? 0 : 4*π*a[r] / p[r]^2) for r in keys(a))
+    labels = intersect(keys(a), keys(p))
+    c = Dict(r => (r == 0 ? 0 : 4*π*a[r] / p[r]^2) for r in labels)
     return c
 end
 
@@ -435,12 +464,8 @@ function grayscale_reconstruction(preprocessed_image, binarized_image, boundary_
     apply_landmask!(brightened_grayscale, land_mask)
                                      # could use a robust linear stretching with percentiles
 
-
-
     ice_leads = .!boundary_intersection .* binarized_image
     ice_leads .= .!area_opening(ice_leads; min_area=min_area_opening, connectivity=2)
-
-
     brightened_dilated = dilate(brightened_grayscale, strel_dilation)
 
     mreconstruct!(
@@ -468,7 +493,7 @@ function clean_binary_floes_mask_fill(
     # Fill moderately small holes if they are clouds or ice
     small_holes = .!imfill(.!binary_image, (0, max_fill)) .&& .! binary_image
     # To do: Find small holes with no neighbors
-    
+    # Seems to me like this could be done with the distance transform or with morphology
     small_holes .= small_holes .&& (cloud_mask .|| prelim_ice_mask)
     binary_image[small_holes .> 0] .= 1    
     binary_image .= opening(binary_image, opening_strel)
@@ -476,8 +501,7 @@ function clean_binary_floes_mask_fill(
     return binary_image
 end
 
-using DataFrames
-import IceFloeTracker.Morphology: _generate_se!
+
 function se_disk(r)
     se = [sum(c.I) <= r for c in CartesianIndices((2*r + 1, 2*r + 1))]
     _generate_se!(se)
@@ -519,11 +543,18 @@ function morph_split_floes(labeled_array;
     # apply opening with radius r = 1:max_depth until either the
     # shape is broken into parts or you reach max depth. If max depth
     # is reached and nothing changes, return the original mask.
+    # To do: figure out how to keep going until the large objects have been split enough times
     function morph_split(mask, max_depth)
-        for r in 1:max_depth
-            # d = 2*r + 1 # This would be if we wanted instead to use the strel_diamond or box
-            update_mask = opening(mask, se_disk(r)) |> label_components
-            maximum(update_mask) > 1 && return update_mask .> 0
+        n, m = size(mask)
+        _max_depth = minimum([n - 1, m - 1, max_depth])
+        for r in 1:_max_depth
+            try
+                update_mask = opening(mask, se_disk(r)) |> label_components
+                maximum(update_mask) > 1 && return update_mask .> 0
+            catch
+                @warn "Tried to do the impossible. Mask size "*string(n)*"x"*string(m)*", r="*string(r)
+                continue
+            end
         end
         return mask
     end
@@ -538,7 +569,8 @@ function morph_split_floes(labeled_array;
     solidities = Dict(r => areas[r] / convex_areas[r] for r in labels if r != 0)
 
     split_labels = [r for r in labels if filter_function(circularities[r], solidities[r])]
-
+    # also only split if the sizes are big enough to have at least one valid floe left over
+    split_labels = [r for r in split_labels if areas[r] > 1.5 * min_area]
     n_regions = length(unique(out))
     n_updated = 0
     split_labels_new = []
@@ -587,10 +619,12 @@ function morph_split_floes(labeled_array;
         n_updated = length(unique(out))
 
         # Update maps
+        areas = component_lengths(out)
         boxes = component_boxes(out)
         indices = component_indices(out)
         masks = component_floes(out)
         split_labels = [r for r in split_labels_new if r in keys(masks)]
+        split_labels = [r for r in split_labels if areas[r] > 1.5 * min_area]
         split_labels_new = []
 
         # print("Count: "*string(count)*", N labels "*string(n_regions)*", N updated "*string(n_updated)*"\n")
@@ -601,39 +635,89 @@ end
 """
     watershed_split_floes(indexmap, img; strel=strel_box((5,5)))
 
-Attempt to separate floes using a watershed transformation. If the floe is separated, overwrite the indexmap. Otherwise,
+Attempt to separate floes using a watershed transformation. Finds markers using an adaptive method,
+taking each reach and checking each depth from 1 to max_depth until the floe is separated at least once.
+Carry out a watershed transform. If floes are separated, then overwrite the original indexmap. Otherwise,
 don't change the floe.
 """
 function watershed_split_floes(indexmap, img; strel=strel_box((5,5)), min_circularity=0.6, min_solidity=0.5)
 
+    function dist_split(distances, max_depth)
+        # TODO Make it possible to label and keep the distinct components
+        # This could look like saving it each time the component separates
+        # Or it could look like the E-P method, where we mark when a label disappears.
+        for r in 1:max_depth
+            update_mask = (distances .< -r) |> label_components
+            maximum(update_mask) > 1 && return distances .< -r
+        end
+        return zeros(size(distances))
+    end
+
     C = component_circularities(indexmap)
     S = component_solidities(indexmap)
     indices = component_indices(indexmap)
-    watershed_floes = zeros(size(indexmap))
+    masks = component_floes(indexmap)
+    boxes = component_boxes(indexmap)
+    
+    labels = intersect(keys(C), keys(S), keys(indices))
 
-    adjust_labels = [r for r in keys(indices) if (C[r] < min_circularity || S[r] < 0min_solidity)]
+    adjust_labels = [r for r in labels if (C[r] < min_circularity || S[r] < 0min_solidity)]
 
-    # Make a copy of the indexmap with only the floes failing the circularity check
+    # Binary image is the inverted map
+    binary_img = indexmap .== 0
+
+    # Initialize markers with the nonzero regions in the indexmap
+    init_dist = .- distance_transform(feature_transform(binary_img))
+    adjust_floes = zeros(Int64, size(indexmap));
+    markers = zeros(Int64, size(indexmap));
+    
+    # Only transform floes that fail the circ/solidity check
     for r in adjust_labels
-        watershed_floes[indices[r]] .= indexmap[indices[r]]
+        adjust_floes[indices[r]] .= (indexmap .> 0)[indices[r]]
+        update_mask = dist_split(init_dist[boxes[r]] .* masks[r], 5)
+        markers[boxes[r]] .+= update_mask
     end
+
+    bw_img = complement.(mreconstruct(dilate, markers, adjust_floes)) .> 0;
+    updated_dist = .- distance_transform(feature_transform(bw_img));
+    new_labels = labels_map(watershed(updated_dist, label_components(markers)));
+    new_labels[bw_img .> 0] .= 0
+    
+    # Find where the new boundaries separate regions and exclude where they mark the boudnary with background
+    watershed_bdry = (isboundary(new_labels) .> 0) .&& (isboundary(new_labels .> 0) .> 0)
+    
+    updated_indexmap = deepcopy(indexmap)
+    updated_indexmap[new_labels .> 0] .= new_labels[new_labels .> 0]
+    updated_indexmap[watershed_bdry] .= 0
 
     # Option later to use different marker selection method, perhaps using image gradient
     # Note that the watershed transform takes a binary image as input
-    watershed_segments = watershed_transform(watershed_floes .> 0, img; strel=strel)
-    watershed_indexmap = labels_map(watershed_segments)
-    watershed_bdry = isboundary(watershed_indexmap)
-    watershed_indexmap[watershed_bdry .> 0] .= 0
+    # watershed_segments = watershed_transform(watershed_floes .> 0, img; strel=strel)
+    # watershed_indexmap = labels_map(watershed_segments)
+    # watershed_bdry = isboundary(watershed_indexmap)
+    # watershed_indexmap[watershed_bdry .> 0] .= 0
 
     # If the watershed transform separated the object into multiple parts, overwrite the original matrix
     # Using the component indices makes this much faster -- you only have to search the matrix for locations
     # one time.
-    for r in adjust_labels
-        length(unique(watershed_indexmap[indices[r]])) > 1 && begin
-            indexmap[indices[r]] .= watershed_indexmap[indices[r]]
-        end
-    end
-    return SegmentedImage(img, indexmap)
+    # for r in adjust_labels
+    #     length(unique(watershed_indexmap[indices[r]])) > 1 && begin
+    #         indexmap[indices[r]] .= watershed_indexmap[indices[r]]
+    #     end
+    # end
+    return SegmentedImage(img, updated_indexmap)
+
+
+
+#### Notes for next steps
+# - Fix the adaptive marker finder. It needs to get at least a few levels.
+# - Fix the issue where we get a line inbetween floes. Why is that happening?
+# - Fix the issue where large objects are not being removed.
+# - Use tracking between the pairs of images to find matched floes
+# - Use image gradients to filter cloud / landfast segments
+# - Seems like the largest shapes didn't get removed like they should have
+# - Use mismatched near-time floes to refine (e.g., average images after optimal alignment)
+# - Use best matches across pairs to estimate location of other pairs
 end
 
 end
