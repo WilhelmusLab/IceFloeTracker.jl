@@ -33,6 +33,9 @@ include("Tracking/Tracking.jl")
 @reexport using .Tracking
 
 # Pipelines
+include("Pipeline/FSPipeline.jl")
+export FSPipeline
+
 include("Pipeline/LopezAcosta2019.jl")
 export LopezAcosta2019
 

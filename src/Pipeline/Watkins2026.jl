@@ -88,13 +88,13 @@ function (p::Preprocess)(
 end
 
 ###### Segmentation ########
-
 @kwdef struct Segment <: IceFloeSegmentationAlgorithm
     preprocessing_function = Preprocess()
     coastal_buffer_structuring_element = strel_box((51,51))
     cloud_mask_algorithm = Watkins2025CloudMask()
     tile_size_pixels = 1000
     min_tile_ice_pixel_count = 4000
+    prelim_ice_threshold = 0.3
     bright_ice_detector = IceDetectionBrightnessPeaksMODIS721(
         band_7_max=0.1,
         possible_ice_threshold=0.3,
@@ -103,6 +103,7 @@ end
     )
     grayscale_floe_threshold = 0.4 # Brighten pixels brighter than this threshold 
     adaptive_binarization_settings = (minimum_window_size=400, threshold_percentage=0, minimum_brightness=100/255)
+    watershed_strel = se_disk(5) 
     # cleanup parameters: can be named tuple, after writing self-contained cleanup function
     minimum_floe_size = 100
     maximum_floe_size = 50000 # how big should we allow?
@@ -128,8 +129,8 @@ function (s::Segment)(truecolor_image, falsecolor_image, land_mask_image)
     coastal_buffer = _lm_temp.dilated
     
     # Ice-water mask from the red channel reflectance
-    # TODO: Add tiles option, and make it an IceDetectionAlgorithm to use as an import
-    prelim_ice_mask = ice_water_mask(truecolor_image, cloud_mask, land_mask)
+    # TODO: Add as an IceDetectionAlgorithm to use as an import
+    prelim_ice_mask = ice_water_mask(truecolor_image, cloud_mask, coastal_buffer, tiles; b1_ice_min=s.prelim_ice_threshold)
 
     # Enhanced grayscale image for segmentation
     preprocessed_image = s.preprocessing_function(truecolor_image, land_mask, cloud_mask, tiles)
@@ -137,7 +138,7 @@ function (s::Segment)(truecolor_image, falsecolor_image, land_mask_image)
     # Select a subset of the tiles to preprocess by checking for clear-sky ice pixels outside the 
     # coast buffer
     filtered_tiles = filter(
-        t -> sum(prelim_ice_mask[t...] .&& .! coastal_buffer[t...]) > s.min_tile_ice_pixel_count,
+        t -> sum(prelim_ice_mask[t...]) > s.min_tile_ice_pixel_count,
         tiles);
 
     @info "Segmentation method 1: First K-means workflow"
@@ -224,21 +225,25 @@ function (s::Segment)(truecolor_image, falsecolor_image, land_mask_image)
             kmeans_refined, cloud_mask, prelim_ice_mask; 
             max_fill=s.maximum_fill_size, min_floe_size=s.minimum_floe_size, opening_strel=strel_diamond((3,3)))
         
+        # Add special treatment for floes that are in the cloud mask bounday. For these floes, 
+        # we can take the intersection between the convex 
+
         apply_landmask!(kmeans_refined, land_mask)
         apply_cloudmask!(kmeans_refined, cloud_mask)
     end
 
+    return SegmentedImage(truecolor_image, label_components(kmeans_refined)) # Temp early exit
     @info "Floe splitting"
     # TODO: Floe splitting can be an input to the function.
     # TODO: Add parameters to main function call
     begin
         # morph split goes from binarized to index map. Update the outputs to be consistent across floe split functions.
-        separated_floes = morph_split_floes(label_components(kmeans_refined), max_depth=s.morph_max_depth)
+        separated_floes = morph_split_floes(label_components(kmeans_refined))
         
         # separated_floes = label_components(kmeans_refined) # temp test if morph split helps
         # watershed split floes goes from indexmap to segmented image
         watershed_floes = watershed_split_floes(separated_floes, truecolor_image;
-                            strel=strel_box((5,5)), min_circularity=0.6, min_solidity=0.85)
+                            strel=s.watershed_strel, min_circularity=0.6, min_solidity=0.85)
     end
 
     @info "Final cleanup"
@@ -297,6 +302,14 @@ function ice_water_mask(truecolor_image, cloud_mask, land_mask; b1_ice_min = 75/
     
     thresh = 0.5 * (b1_ice_min + ice_peak)
     return banddata .> thresh
+end
+
+function ice_water_mask(truecolor_image, cloud_mask, land_mask, tiles; b1_ice_min = 75/255) 
+    out = falses(size(truecolor_image))
+    for tile in tiles
+        out[tile...] .= ice_water_mask(truecolor_image[tile...], cloud_mask[tile...], land_mask[tile...]; b1_ice_min=b1_ice_min)
+    end
+    return out
 end
 
 ####### Morphological cleanup ########
@@ -481,7 +494,7 @@ end
 
 Fill small holes in the binary image if the hole represents clouds or ice. Use morphological operations (hbreak, opening)
 to clean up the binary image for floe detection.
-"""
+""" # TODO: Set up function to select floes that intersect with cloud mask, and test the hole and gap-filling methods.
 function clean_binary_floes_mask_fill(
     binary_image, cloud_mask, prelim_ice_mask; 
     max_fill=64, min_floe_size=100, opening_strel=strel_diamond((3,3))
@@ -501,11 +514,15 @@ function clean_binary_floes_mask_fill(
     return binary_image
 end
 
+"""
+    se_disk(r)
 
+    Generate an approximately circular structuring element with radius r. For small r, this will be somewhat diamond-shaped.
+
+""" # #TODO add simple example to docs, add to special strels, and in future, optimize the extreme filter for this shape
 function se_disk(r)
-    se = [sum(c.I) <= r for c in CartesianIndices((2*r + 1, 2*r + 1))]
-    _generate_se!(se)
-    return se
+    se = [sum(abs.(c.I .- (r + 1)) .^ 2) for c in CartesianIndices((2*r + 1, 2*r + 1))]
+    return sqrt.(se) .<= r
 end
 
 """
@@ -524,110 +541,97 @@ Options for later:
 - inplace version
 - function for choosing which labels to split
 - option to keep labels intact
-"""
+""" # TODO: Add this function to a new floe-splitting segmentationl.jl file, and add some tests for cases (like linear features)
 function morph_split_floes(labeled_array;
-        max_depth=5,
+        max_depth=20,
         min_area=100,
-        filter_function=(c, s) -> (c < 0.6) | (s < 0.85),
+        min_circularity=0.6,
+        min_solidity=0.85,
         max_iter=10)
 
     # relabel components to remove gaps in numbering
     indexmap = label_components(labeled_array)
     out = deepcopy(indexmap)
-    
-    label_offset = maximum(indexmap)
     boxes = component_boxes(indexmap)
     indices = component_indices(indexmap)
     masks = component_floes(indexmap)
 
-    # apply opening with radius r = 1:max_depth until either the
-    # shape is broken into parts or you reach max depth. If max depth
-    # is reached and nothing changes, return the original mask.
-    # To do: figure out how to keep going until the large objects have been split enough times
+    # Split the mask by opening with a circular SE until the floes separate.
+    # If it isn't split after reaching the effective radius, quit.
     function morph_split(mask, max_depth)
+        _max_depth = round(Int, sqrt(sum(mask)/pi))
+        # check for oblong shapes
         n, m = size(mask)
-        _max_depth = minimum([n - 1, m - 1, max_depth])
+        _max_depth = minimum([n-1, m-1, _max_depth])
         for r in 1:_max_depth
-            try
-                update_mask = opening(mask, se_disk(r)) |> label_components
-                maximum(update_mask) > 1 && return update_mask .> 0
-            catch
-                @warn "Tried to do the impossible. Mask size "*string(n)*"x"*string(m)*", r="*string(r)
-                continue
-            end
+            new_labels = opening(mask, se_disk(r)) |> label_components
+            length(unique(new_labels)) > 2 && return new_labels .> 0
         end
-        return mask
+        return nothing
     end
 
-    # TODO: Make this an input function, not hard coded
-    areas = component_lengths(indexmap)
-    perimeters = component_perimeters(indexmap)
-    convex_areas = component_convex_areas(indexmap)
-    labels = filter(r -> r != 0, intersect(keys(areas), keys(perimeters), keys(convex_areas)))
-    
-    circularities = Dict(r => 4 * pi * areas[r] / perimeters[r]^2 for r in labels if r != 0)
-    solidities = Dict(r => areas[r] / convex_areas[r] for r in labels if r != 0)
+    # Get the list of candidates for splitting by checking area, circularity, and solidity.
+    # Evaluates solidity lazily since that operation is slow.
+    function get_candidate_labels(indexmap, min_area, min_circularity, min_solidity)
+        areas = component_lengths(indexmap)
+        perimeters = component_perimeters(indexmap)
+        masks = component_floes(indexmap)
+        # convex_areas = component_convex_areas(indexmap)
+        labels = filter(r -> r != 0, intersect(keys(areas), keys(perimeters)))
+        
+        circularities = Dict(r => 4 * pi * areas[r] / perimeters[r]^2 for r in labels if r != 0)
+        
+        # Only evaluate convex area if the area and circularity pass the thresholds for splitting
+        split_labels = Int64[]
+        for r in labels
+            (r != 0) && (areas[r] > 1.5 * min_area) && (circularities[r] < min_circularity) && begin
+                ca = component_convex_areas(Int64.(masks[r]))
+                s = areas[r] / ca[1]
+                s < min_solidity && push!(split_labels, r)
+            end
+        end
+        return split_labels
+    end
 
-    split_labels = [r for r in labels if filter_function(circularities[r], solidities[r])]
-    # also only split if the sizes are big enough to have at least one valid floe left over
-    split_labels = [r for r in split_labels if areas[r] > 1.5 * min_area]
     n_regions = length(unique(out))
     n_updated = 0
-    split_labels_new = []
-
+    split_labels = get_candidate_labels(indexmap, min_area, min_circularity, min_solidity)
     count = 0
-    
     while (n_regions != n_updated) && (count < max_iter)
         n_regions = length(unique(out))
         for r in split_labels
             update_floe = morph_split(masks[r], max_depth)
-            masks[r] != update_floe && 
-                begin
-                    update_labels = label_components(update_floe)
-                    update_areas = component_lengths(update_labels)
-                    for rnew in keys(update_areas)
-                        # imfill can work, but won't catch if a small object neighbors another.                
-                        update_areas[rnew] < min_area && (update_labels[update_labels .== rnew] .= 0)
-                    end
-                     # re-label for dropped objects
-                    update_labels = label_components(update_floe)
-                    update_labels[update_labels .> 0] .+= label_offset
-                    # update offset based on the new labels
-                    label_offset += length(unique(update_labels))
-    
-                    # add new shape(s) to the indexmap
-                    out[indices[r]] .= 0 # Remove original floe
-                    out[boxes[r]] .+= update_labels # New floe has at most equal area to the original, so there shouldn't be overlap
-    
-                    # check if new components need to be added to the update list
-                    # TODO: make this all part of the filter function
-                    a = component_lengths(update_labels)
-                    p = component_perimeters(update_labels)
-                    ca = component_convex_areas(update_labels)
-                    _labels = [r for r in unique(update_labels) if (r != 0) && (r ∈ keys(a)) && (r ∈ keys(p)) && (r ∈ keys(ca))]
-                    for rnew in _labels 
-                        (rnew != 0) && begin
-                            c = 4 * pi * a[rnew] / p[rnew]^2
-                            s = a[rnew] / ca[rnew]
-                            filter_function(c, s) && (push!(split_labels_new, rnew))
-                        end
-                    end
+            !isnothing(update_floe) && begin
+                update_labels = label_components(update_floe)
+                update_areas = component_lengths(update_labels)
+                
+                for rnew in keys(update_areas)
+                    # imfill works for fully separated components, but will miss if components are touching.                
+                    update_areas[rnew] < min_area && (update_labels[update_labels .== rnew] .= 0)
                 end
+
+                # Remove original floe and overwrite with new floe
+                out[indices[r]] .= 0 
+                out[boxes[r]] .+= update_labels 
+            end
         end
-        # update the split_labels list and zero out the split_labels_new list
+        
         count += 1
+        out .= label_components(out)
         n_updated = length(unique(out))
-
-        # Update maps
-        areas = component_lengths(out)
-        boxes = component_boxes(out)
-        indices = component_indices(out)
-        masks = component_floes(out)
-        split_labels = [r for r in split_labels_new if r in keys(masks)]
-        split_labels = [r for r in split_labels if areas[r] > 1.5 * min_area]
-        split_labels_new = []
-
-        # print("Count: "*string(count)*", N labels "*string(n_regions)*", N updated "*string(n_updated)*"\n")
+        n_regions != n_updated && begin 
+            # Select candidate labels which were successfully split in the morph split step.
+            split_labels = get_candidate_labels(out, min_area, min_circularity, min_solidity)
+            ### There's an error here that doesn't make sense to me, since this code worked in a standalone script.
+            ### If I can make it work, it should save at least some time for processing.
+            # split_labels = [r for r in get_candidate_labels(out, min_area, min_circularity, min_solidity) if length(unique(out[indices[r]])) > 1]
+            
+            # One thing that slows this down is having to re-write the array all the time. It would be faster to add entries to the boxes
+            # rather than start afresh each time.
+            boxes = component_boxes(out)
+            indices = component_indices(out)
+            masks = component_floes(out)
+        end
     end
     return label_components(out)
 end
@@ -661,7 +665,7 @@ function watershed_split_floes(indexmap, img; strel=strel_box((5,5)), min_circul
     
     labels = intersect(keys(C), keys(S), keys(indices))
 
-    adjust_labels = [r for r in labels if (C[r] < min_circularity || S[r] < 0min_solidity)]
+    adjust_labels = [r for r in labels if (C[r] < min_circularity || S[r] < min_solidity)]
 
     # Binary image is the inverted map
     binary_img = indexmap .== 0
@@ -705,10 +709,8 @@ function watershed_split_floes(indexmap, img; strel=strel_box((5,5)), min_circul
     #         indexmap[indices[r]] .= watershed_indexmap[indices[r]]
     #     end
     # end
+
     return SegmentedImage(img, updated_indexmap)
-
-
-
 #### Notes for next steps
 # - Fix the adaptive marker finder. It needs to get at least a few levels.
 # - Fix the issue where we get a line inbetween floes. Why is that happening?
