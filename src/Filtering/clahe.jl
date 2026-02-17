@@ -47,10 +47,10 @@ function (f::ContrastLimitedAdaptiveHistogramEqualization)(
     must_resize = (resized_height != height) || (resized_width != width)
     if must_resize
         img_tmp = imresize(img, (resized_height, resized_width))
-        out_tmp = copy(img_tmp)
+        out_tmp = similar(img_tmp)
     else
         img_tmp = img
-        out_tmp = copy(img)
+        out_tmp = similar(img)
     end
 
     # Size of each contextual region
