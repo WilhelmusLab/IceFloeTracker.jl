@@ -1,8 +1,8 @@
 module CLAHE
 
-using Images
+using Images: YIQ, channelview
 using Images.ImageContrastAdjustment:
-    AbstractHistogramAdjustmentAlgorithm, GenericGrayImage, imresize
+    AbstractHistogramAdjustmentAlgorithm, GenericGrayImage, imresize, build_histogram, adjust_histogram, adjust_histogram!
 using Images.ImageCore
 
 """
