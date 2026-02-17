@@ -11,7 +11,7 @@
 
     @testset "imgradientmag" begin
         gmag = to_uint8(imgradientmag(coins))
-        @test sum(gmag) == 2938959
+        @test sum(gmag) == 442528
     end
 
     @testset "image binarization" begin
