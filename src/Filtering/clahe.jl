@@ -143,7 +143,6 @@ function (f::ContrastLimitedAdaptiveHistogramEqualization)(
 end
 
 function validate_parameters(f::ContrastLimitedAdaptiveHistogramEqualization)
-    # !(0 <= f.clip <= 1) && throw(ArgumentError("The parameter `clip` must be in the range [0..1]."))
     !(1 <= f.rblocks && 1 <= f.cblocks) &&
         throw(ArgumentError("At least 1 contextual regions required (1x1 or greater)."))
     return nothing
