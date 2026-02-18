@@ -184,7 +184,7 @@ function map_histogram(
 
     function _mapping_function(value)
         index = searchsortedfirst(edges, value)
-        return mapping[index - 1] # -1 because mapped_values is an OffsetArray
+        return mapping[index - 1] # -1 because mapping is an OffsetArray
     end
     return _mapping_function
 end
