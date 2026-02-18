@@ -35,6 +35,15 @@
     end
 end
 
+@testitem "conditional adaptive histeq" begin
+    using TestImages
+    using Images: adjust_histogram
+    img = testimage("cameraman")
+    img_eq = adjust_histogram(img, ContrastLimitedAdaptiveHistogramEqualization())
+    @test size(img) == size(img_eq)
+    @test 125075 ≈ sum(img_eq) rtol = 0.0001
+end
+
 @testitem "conditional adaptivehisteq (data loader)" setup = [FalseColorCloudmask] begin
     dataset = filter(
         c -> c.case_number == 161 && c.satellite == "terra", Watkins2026Dataset()
