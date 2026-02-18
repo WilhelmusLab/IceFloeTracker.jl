@@ -146,10 +146,10 @@ function (f::ContrastLimitedAdaptiveHistogramEqualization)(
         wₙ = ((rₑ - rₛ) * (cₑ - cₛ))
 
         # Interpolate the results using the values and the weights
-        wᵢ = @. (w₁₁ * v₁₁ + w₁₂ * v₁₂ + w₂₁ * v₂₁ + w₂₂ * v₂₂) / wₙ
+        vₒ = @. (w₁₁ * v₁₁ + w₁₂ * v₁₂ + w₂₁ * v₂₁ + w₂₂ * v₂₂) / wₙ
 
         # Write to the correct region in the output image
-        @. out_region = wᵢ
+        @. out_region = vₒ
     end
 
     out .= must_pad ? out_padded[1:height, 1:width] : out_padded
