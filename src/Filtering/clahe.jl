@@ -157,10 +157,7 @@ function redistribute_histogram(
     n_bins = length(counts)
     n_excess == 0 && return counts
     increment, remainder = divrem(n_excess, n_bins)
-    new_counts = similar(counts)
-    for i in eachindex(counts)
-        new_counts[i] = min(counts[i], clip_limit) + increment
-    end
+    new_counts = @. min(counts, clip_limit) + increment
     for i in 1:remainder
         new_counts[i] += 1
     end
