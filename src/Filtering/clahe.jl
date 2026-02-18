@@ -1,9 +1,10 @@
 module CLAHE
 
-using Images: YIQ, channelview
+using Images: YIQ, channelview, padarray, Pad
 using Images.ImageContrastAdjustment:
     AbstractHistogramAdjustmentAlgorithm, GenericGrayImage, imresize, build_histogram, adjust_histogram, adjust_histogram!
 using Images.ImageCore
+using TiledIteration: TileIterator
 
 """
 ```
@@ -46,7 +47,9 @@ function (f::ContrastLimitedAdaptiveHistogramEqualization)(
     resized_width = ceil(Int, width / (2 * f.cblocks)) * 2 * f.cblocks
     must_resize = (resized_height != height) || (resized_width != width)
     if must_resize
-        img_tmp = imresize(img, (resized_height, resized_width))
+        left, right = ceil(Int, (resized_width - width) / 2), floor(Int, (resized_width - width) / 2)
+        top, bottom = ceil(Int, (resized_height - height) / 2), floor(Int, (resized_height - height) / 2)
+        img_tmp = padarray(img, Pad(:reflect, (top, left), (bottom, right)))
         out_tmp = similar(img_tmp)
     else
         img_tmp = img
@@ -54,8 +57,8 @@ function (f::ContrastLimitedAdaptiveHistogramEqualization)(
     end
 
     # Size of each contextual region
-    rsize = resized_height / f.rblocks
-    csize = resized_width / f.cblocks
+    rsize = resized_height ÷ f.rblocks
+    csize = resized_width ÷ f.cblocks
 
     # Calculate actual clip limit
     clip_limit = f.clip * (rsize * csize) / f.nbins
@@ -64,12 +67,10 @@ function (f::ContrastLimitedAdaptiveHistogramEqualization)(
 
     # Process each contextual region
     histograms = Array{Any}(undef, f.rblocks, f.cblocks)
-    for rblock in 1:(f.rblocks), cblock in 1:(f.cblocks)
-        rstart = Int((rblock - 1) * rsize) + 1
-        rend = Int(rblock * rsize)
-        cstart = Int((cblock - 1) * csize) + 1
-        cend = Int(cblock * csize)
-        region = view(img_tmp, rstart:rend, cstart:cend)
+    tiles = collect(TileIterator(axes(img_tmp), (rsize, csize)))
+    for (I, tile) in zip(CartesianIndices(tiles), tiles)
+        rblock, cblock = Tuple(I)
+        region = img_tmp[tile...]
         edges, raw_counts = build_histogram(
             region, f.nbins; minval=f.minval, maxval=f.maxval
         )
@@ -81,7 +82,9 @@ function (f::ContrastLimitedAdaptiveHistogramEqualization)(
     end
 
     # Interpolate pixel values
-    for rblock in 1:(f.rblocks + 1), cblock in 1:(f.cblocks + 1) # use zero-indexing here because we're not in the original format
+    for rblock in 1:(f.rblocks + 1), cblock in 1:(f.cblocks + 1)
+        
+        # Get the histograms for each block
         if rblock == 1
             idUr, idBr = 1, 1
         elseif rblock == f.rblocks + 1
@@ -89,7 +92,6 @@ function (f::ContrastLimitedAdaptiveHistogramEqualization)(
         else
             idUr, idBr = rblock - 1, rblock
         end
-
         if cblock == 1
             idLc, idRc = 1, 1
         elseif cblock == f.cblocks + 1
@@ -97,26 +99,25 @@ function (f::ContrastLimitedAdaptiveHistogramEqualization)(
         else
             idLc, idRc = cblock - 1, cblock
         end
+        histUL, histUR = histograms[idUr, idLc], histograms[idUr, idRc]
+        histBL, histBR = histograms[idBr, idLc], histograms[idBr, idRc]
 
+        # Get the block itself
         rblockpix = rblock ∈ [1, f.rblocks + 1] ? rsize / 2 : rsize
         rblockoffset = rblock == 1 ? 0 : -rsize / 2
         cblockpix = cblock ∈ [1, f.cblocks + 1] ? csize / 2 : csize
         cblockoffset = cblock == 1 ? 0 : -csize / 2
 
-        histUL, histUR = histograms[idUr, idLc], histograms[idUr, idRc]
-        histBL, histBR = histograms[idBr, idLc], histograms[idBr, idRc]
+        rorigin, corigin = minimum.(axes(img_tmp))
 
-        rstart = Int((rblock - 1) * rsize + rblockoffset) + 1
+        rstart = Int((rblock - 1) * rsize + rblockoffset) + rorigin
         rend = Int(rstart + rblockpix) - 1
 
-        cstart = Int((cblock - 1) * csize + cblockoffset) + 1
+        cstart = Int((cblock - 1) * csize + cblockoffset) + corigin
         cend = Int(cstart + cblockpix) - 1
 
         region = view(img_tmp, rstart:rend, cstart:cend)
         out_region = view(out_tmp, rstart:rend, cstart:cend)
-
-        resultUL, resultUR = histUL.(region), histUR.(region)
-        resultBL, resultBR = histBL.(region), histBR.(region)
 
         resultUL = histUL.(region)
         resultUR = histUR.(region)
@@ -138,7 +139,7 @@ function (f::ContrastLimitedAdaptiveHistogramEqualization)(
             (w₁₁ * resultUL + w₁₂ * resultUR + w₂₁ * resultBL + w₂₂ * resultBR) / wₙ
     end
 
-    out .= must_resize ? imresize(out_tmp, (height, width)) : out_tmp
+    out .= must_resize ? out_tmp[1:height, 1:width] : out_tmp
     return out
 end
 
