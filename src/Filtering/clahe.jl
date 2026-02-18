@@ -50,11 +50,10 @@ function (f::ContrastLimitedAdaptiveHistogramEqualization)(
         left, right = ceil(Int, (resized_width - width) / 2), floor(Int, (resized_width - width) / 2)
         top, bottom = ceil(Int, (resized_height - height) / 2), floor(Int, (resized_height - height) / 2)
         img_padded = padarray(img, Pad(:reflect, (top, left), (bottom, right)))
-        out_tmp = similar(img_padded)
     else
         img_padded = img
-        out_tmp = similar(img)
     end
+    out_padded = similar(img_padded)
 
     # Size of each contextual region
     rsize = resized_height ÷ f.rblocks
@@ -116,7 +115,7 @@ function (f::ContrastLimitedAdaptiveHistogramEqualization)(
         cend = Int(cstart + cblockpix) - 1
         
         region = view(img_padded, rstart:rend, cstart:cend)
-        out_region = view(out_tmp, rstart:rend, cstart:cend)
+        out_region = view(out_padded, rstart:rend, cstart:cend)
 
         # Calculate new values using each of the histograms from the four surrounding blocks
         resultUL = histUL.(region)
@@ -141,7 +140,7 @@ function (f::ContrastLimitedAdaptiveHistogramEqualization)(
             (w₁₁ * resultUL + w₁₂ * resultUR + w₂₁ * resultBL + w₂₂ * resultBR) / wₙ
     end
 
-    out .= must_pad ? out_tmp[1:height, 1:width] : out_tmp
+    out .= must_pad ? out_padded[1:height, 1:width] : out_padded
     return out
 end
 
