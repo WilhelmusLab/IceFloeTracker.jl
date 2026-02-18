@@ -7,7 +7,7 @@ import Images: RGB,
     blue,
     adjust_histogram,
     AdaptiveEqualization
-import ..ImageUtils: to_uint8
+import ..ImageUtils: to_uint8, apply_to_channels
 
 """
     get_rgb_channels(img)
