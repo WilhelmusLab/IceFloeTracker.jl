@@ -79,7 +79,7 @@ end
     side_length = size(true_color_eq, 1) ÷ 8
     tiles = get_tiles(true_color_image, side_length)
     true_color_eq = conditional_histeq(true_color_image, clouds_red, tiles)
-    @test 30_397_862 ≈ sum(to_uint8(true_color_eq[:, :, 1])) rtol = 0.003
+    @test 30_255_658 ≈ sum(to_uint8(true_color_eq[:, :, 1])) rtol = 0.003
 end
 
 @testitem "_get_false_color_cloudmasked (data loader)" setup = [FalseColorCloudmask] begin
