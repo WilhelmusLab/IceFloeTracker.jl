@@ -195,15 +195,6 @@ function (f::ContrastLimitedAdaptiveHistogramEqualization)(
     T = eltype(img)
     yiq = convert.(YIQ, img)
     yiq_view = channelview(yiq)
-    #=
-       TODO: Understand the cause and solution of this error.
-       When I pass a view I run into this error on Julia 1.1.
-       ERROR: ArgumentError: an array of type `Base.ReinterpretArray` shares memory with another argument and must
-       make a preventative copy of itself in order to maintain consistent semantics,
-       but `copy(A)` returns a new array of type `Array{Float64,3}`. To fix, implement:
-       `Base.unaliascopy(A::Base.ReinterpretArray)::typeof(A)`
-    =#
-    #adjust_histogram!(view(yiq_view,1,:,:), f)
     y = comp1.(yiq)
     adjust_histogram!(y, f)
     yiq_view[1, :, :] .= y
