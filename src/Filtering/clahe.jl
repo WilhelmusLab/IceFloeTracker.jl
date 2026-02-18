@@ -127,26 +127,29 @@ function (f::ContrastLimitedAdaptiveHistogramEqualization)(
         out_region = view(out_padded, rstart:rend, cstart:cend)
 
         # Calculate new values using each of the histograms from the four surrounding blocks
-        resultUL = histUL.(region)
-        resultUR = histUR.(region)
-        resultBL = histBL.(region)
-        resultBR = histBR.(region)
+        v₁₁ = histUL.(region)
+        v₁₂ = histUR.(region)
+        v₂₁ = histBL.(region)
+        v₂₂ = histBR.(region)
 
-        # Interpolate the results bilinearly
-        r₁, r₂ = rstart, rend
-        c₁, c₂ = cstart, cend
-        r = Array(range(r₁, r₂))
-        c = Array(range(c₁, c₂))'
+        # Get the coordinates of each row and column in the current block
+        rₛ, rₑ = rstart, rend
+        cₛ, cₑ = cstart, cend
+        r = Array(range(rₛ, rₑ))
+        c = Array(range(cₛ, cₑ))'
 
-        w₁₁ = @. ((r₂ - r) * (c₂ - c))
-        w₁₂ = @. ((r₂ - r) * (c - c₁))
-        w₂₁ = @. ((r - r₁) * (c₂ - c))
-        w₂₂ = @. ((r - r₁) * (c - c₁))
-        wₙ = ((r₂ - r₁) * (c₂ - c₁))
+        # Get the weights of each value within the block
+        w₁₁ = @. ((rₑ - r) * (cₑ - c))
+        w₁₂ = @. ((rₑ - r) * (c - cₛ))
+        w₂₁ = @. ((r - rₛ) * (cₑ - c))
+        w₂₂ = @. ((r - rₛ) * (c - cₛ))
+        wₙ = ((rₑ - rₛ) * (cₑ - cₛ))
+
+        # Interpolate the results using the values and the weights
+        wᵢ = @. (w₁₁ * v₁₁ + w₁₂ * v₁₂ + w₂₁ * v₂₁ + w₂₂ * v₂₂) / wₙ
 
         # Write to the correct region in the output image
-        @. out_region =
-            (w₁₁ * resultUL + w₁₂ * resultUR + w₂₁ * resultBL + w₂₂ * resultBR) / wₙ
+        @. out_region = wᵢ
     end
 
     out .= must_pad ? out_padded[1:height, 1:width] : out_padded
