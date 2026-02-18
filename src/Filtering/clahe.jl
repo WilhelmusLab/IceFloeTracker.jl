@@ -130,10 +130,10 @@ function (f::ContrastLimitedAdaptiveHistogramEqualization)(
         r = Array(range(r₁, r₂))
         c = Array(range(c₁, c₂))'
 
-        w₁₁ = ((r₂ .- r) .* (c₂ .- c))
-        w₁₂ = ((r₂ .- r) .* (c .- c₁))
-        w₂₁ = ((r .- r₁) .* (c₂ .- c))
-        w₂₂ = ((r .- r₁) .* (c .- c₁))
+        w₁₁ = @. ((r₂ - r) * (c₂ - c))
+        w₁₂ = @. ((r₂ - r) * (c - c₁))
+        w₂₁ = @. ((r - r₁) * (c₂ - c))
+        w₂₂ = @. ((r - r₁) * (c - c₁))
         wₙ = ((r₂ - r₁) * (c₂ - c₁))
 
         # Write to the correct region in the output image
