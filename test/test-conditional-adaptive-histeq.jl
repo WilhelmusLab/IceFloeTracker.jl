@@ -84,18 +84,6 @@ end
 end
     
 
-
-    # img = testimage("cameraman")
-    # sizes = [1024, 512, 256, 128, 64, 32, 100, 78, 50, 20]
-    # blocks = [1, 2, 4, 8, 16]
-    # for rsize in sizes, csize in sizes, rblocks in blocks, cblocks in blocks
-    #     f = ContrastLimitedAdaptiveHistogramEqualization(rblocks=rblocks, cblocks=cblocks)
-    #     img_resized = imresize(img, (rsize, csize))
-    #     img_eq = adjust_histogram(img_resized, f)
-    #     @test size(img_resized) == size(img_eq)
-    # end
-end
-
 @testitem "conditional adaptivehisteq (data loader)" setup = [FalseColorCloudmask] begin
     dataset = filter(
         c -> c.case_number == 161 && c.satellite == "terra", Watkins2026Dataset()
