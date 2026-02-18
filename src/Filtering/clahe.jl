@@ -45,8 +45,8 @@ function (f::ContrastLimitedAdaptiveHistogramEqualization)(
     # If necessary, resize the image so that the requested number of blocks fit exactly.
     resized_height = ceil(Int, height / (2 * f.rblocks)) * 2 * f.rblocks
     resized_width = ceil(Int, width / (2 * f.cblocks)) * 2 * f.cblocks
-    must_resize = (resized_height != height) || (resized_width != width)
-    if must_resize
+    must_pad = (resized_height != height) || (resized_width != width)
+    if must_pad
         left, right = ceil(Int, (resized_width - width) / 2), floor(Int, (resized_width - width) / 2)
         top, bottom = ceil(Int, (resized_height - height) / 2), floor(Int, (resized_height - height) / 2)
         img_tmp = padarray(img, Pad(:reflect, (top, left), (bottom, right)))
@@ -141,7 +141,7 @@ function (f::ContrastLimitedAdaptiveHistogramEqualization)(
             (w₁₁ * resultUL + w₁₂ * resultUR + w₂₁ * resultBL + w₂₂ * resultBR) / wₙ
     end
 
-    out .= must_resize ? out_tmp[1:height, 1:width] : out_tmp
+    out .= must_pad ? out_tmp[1:height, 1:width] : out_tmp
     return out
 end
 
