@@ -49,10 +49,10 @@ function (f::ContrastLimitedAdaptiveHistogramEqualization)(
     if must_pad
         left, right = ceil(Int, (resized_width - width) / 2), floor(Int, (resized_width - width) / 2)
         top, bottom = ceil(Int, (resized_height - height) / 2), floor(Int, (resized_height - height) / 2)
-        img_tmp = padarray(img, Pad(:reflect, (top, left), (bottom, right)))
-        out_tmp = similar(img_tmp)
+        img_padded = padarray(img, Pad(:reflect, (top, left), (bottom, right)))
+        out_tmp = similar(img_padded)
     else
-        img_tmp = img
+        img_padded = img
         out_tmp = similar(img)
     end
 
@@ -67,10 +67,10 @@ function (f::ContrastLimitedAdaptiveHistogramEqualization)(
 
     # Process each contextual region
     histograms = Array{Any}(undef, f.rblocks, f.cblocks)
-    tiles = collect(TileIterator(axes(img_tmp), (rsize, csize)))
+    tiles = collect(TileIterator(axes(img_padded), (rsize, csize)))
     for (I, tile) in zip(CartesianIndices(tiles), tiles)
         rblock, cblock = Tuple(I)
-        region = img_tmp[tile...]
+        region = img_padded[tile...]
         edges, raw_counts = build_histogram(
             region, f.nbins; minval=f.minval, maxval=f.maxval
         )
@@ -109,13 +109,13 @@ function (f::ContrastLimitedAdaptiveHistogramEqualization)(
         cblockoffset = cblock == 1 ? 0 : -csize / 2
         
         # Get the block itself, indexing from the origin of the axes of the image (which may be negative if we had to pad)
-        rorigin, corigin = minimum.(axes(img_tmp))
+        rorigin, corigin = minimum.(axes(img_padded))
         rstart = Int((rblock - 1) * rsize + rblockoffset) + rorigin
         rend = Int(rstart + rblockpix) - 1
         cstart = Int((cblock - 1) * csize + cblockoffset) + corigin
         cend = Int(cstart + cblockpix) - 1
         
-        region = view(img_tmp, rstart:rend, cstart:cend)
+        region = view(img_padded, rstart:rend, cstart:cend)
         out_region = view(out_tmp, rstart:rend, cstart:cend)
 
         # Calculate new values using each of the histograms from the four surrounding blocks
