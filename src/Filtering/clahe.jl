@@ -98,8 +98,10 @@ function (f::ContrastLimitedAdaptiveHistogramEqualization)(
         else
             idLc, idRc = cblock - 1, cblock
         end
-        histUL, histUR = histograms[idUr, idLc], histograms[idUr, idRc]
-        histBL, histBR = histograms[idBr, idLc], histograms[idBr, idRc]
+        histUL = histograms[idUr, idLc]
+        histUR = histograms[idUr, idRc]
+        histBL = histograms[idBr, idLc]
+        histBR = histograms[idBr, idRc]
 
         # Get the size of the block, which may be half the normal size if we're on the edge of the image
         rblockpix = rblock ∈ [1, f.rblocks + 1] ? rsize / 2 : rsize
