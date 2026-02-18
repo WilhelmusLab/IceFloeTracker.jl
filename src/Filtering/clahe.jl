@@ -127,8 +127,8 @@ function (f::ContrastLimitedAdaptiveHistogramEqualization)(
         # Interpolate the results bilinearly
         x₁, x₂ = rstart, rend
         y₁, y₂ = cstart, cend
-        x = Array(range(rstart, rend))
-        y = Array(range(cstart, cend))'
+        x = Array(range(x₁, x₂))
+        y = Array(range(y₁, y₂))'
 
         w₁₁ = ((x₂ .- x) .* (y₂ .- y))
         w₁₂ = ((x₂ .- x) .* (y .- y₁))
