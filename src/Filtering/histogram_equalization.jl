@@ -1,6 +1,4 @@
-import Images:
-    Images,
-    RGB,
+import Images: RGB,
     float64,
     Gray,
     entropy,
