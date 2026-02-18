@@ -1,9 +1,15 @@
 module CLAHE
 
-using Images
+using Images: YIQ, channelview, padarray, Pad
 using Images.ImageContrastAdjustment:
-    AbstractHistogramAdjustmentAlgorithm, GenericGrayImage, imresize
+    AbstractHistogramAdjustmentAlgorithm,
+    GenericGrayImage,
+    imresize,
+    build_histogram,
+    adjust_histogram,
+    adjust_histogram!
 using Images.ImageCore
+using TiledIteration: TileIterator
 
 """
 ```
@@ -15,7 +21,7 @@ using Images.ImageCore
 ```
 
 Performs Contrast Limited Adaptive Histogram Equalisation (CLAHE) on the input
-image. 
+image.
 
 This version is based on the code in:
 GraphicsGems IV, "Contrast Limited Adaptive Histogram Equalization".
@@ -44,18 +50,21 @@ function (f::ContrastLimitedAdaptiveHistogramEqualization)(
     # If necessary, resize the image so that the requested number of blocks fit exactly.
     resized_height = ceil(Int, height / (2 * f.rblocks)) * 2 * f.rblocks
     resized_width = ceil(Int, width / (2 * f.cblocks)) * 2 * f.cblocks
-    must_resize = (resized_height != height) || (resized_width != width) ? true : false
-    if must_resize
-        img_tmp = imresize(img, (resized_height, resized_width))
-        out_tmp = copy(img_tmp)
+    must_pad = (resized_height != height) || (resized_width != width)
+    if must_pad
+        left = ceil(Int, (resized_width - width) / 2)
+        right = floor(Int, (resized_width - width) / 2)
+        top = ceil(Int, (resized_height - height) / 2)
+        bottom = floor(Int, (resized_height - height) / 2)
+        img_padded = padarray(img, Pad(:reflect, (top, left), (bottom, right)))
     else
-        img_tmp = img
-        out_tmp = copy(img)
+        img_padded = img
     end
+    out_padded = similar(img_padded)
 
     # Size of each contextual region
-    rsize = resized_height / f.rblocks
-    csize = resized_width / f.cblocks
+    rsize = resized_height ÷ f.rblocks
+    csize = resized_width ÷ f.cblocks
 
     # Calculate actual clip limit
     clip_limit = f.clip * (rsize * csize) / f.nbins
@@ -64,12 +73,10 @@ function (f::ContrastLimitedAdaptiveHistogramEqualization)(
 
     # Process each contextual region
     histograms = Array{Any}(undef, f.rblocks, f.cblocks)
-    for rblock in 1:(f.rblocks), cblock in 1:(f.cblocks)
-        rstart = Int((rblock - 1) * rsize) + 1
-        rend = Int(rblock * rsize)
-        cstart = Int((cblock - 1) * csize) + 1
-        cend = Int(cblock * csize)
-        region = view(img_tmp, rstart:rend, cstart:cend)
+    tiles = collect(TileIterator(axes(img_padded), (rsize, csize)))
+    for (I, tile) in zip(CartesianIndices(tiles), tiles)
+        rblock, cblock = Tuple(I)
+        region = img_padded[tile...]
         edges, raw_counts = build_histogram(
             region, f.nbins; minval=f.minval, maxval=f.maxval
         )
@@ -81,7 +88,9 @@ function (f::ContrastLimitedAdaptiveHistogramEqualization)(
     end
 
     # Interpolate pixel values
-    for rblock in 1:(f.rblocks + 1), cblock in 1:(f.cblocks + 1) # use zero-indexing here because we're not in the original format
+    for rblock in 1:(f.rblocks + 1), cblock in 1:(f.cblocks + 1)
+
+        # Get the histograms for each block
         if rblock == 1
             idUr, idBr = 1, 1
         elseif rblock == f.rblocks + 1
@@ -89,7 +98,6 @@ function (f::ContrastLimitedAdaptiveHistogramEqualization)(
         else
             idUr, idBr = rblock - 1, rblock
         end
-
         if cblock == 1
             idLc, idRc = 1, 1
         elseif cblock == f.cblocks + 1
@@ -97,74 +105,61 @@ function (f::ContrastLimitedAdaptiveHistogramEqualization)(
         else
             idLc, idRc = cblock - 1, cblock
         end
+        histUL = histograms[idUr, idLc]
+        histUR = histograms[idUr, idRc]
+        histBL = histograms[idBr, idLc]
+        histBR = histograms[idBr, idRc]
 
-        if rblock ∈ [1, f.rblocks + 1]
-            rblockpix = rsize / 2
-        else
-            rblockpix = rsize
-        end
+        # Get the size of the block, which may be half the normal size if we're on the edge of the image
+        rblockpix = rblock ∈ [1, f.rblocks + 1] ? rsize / 2 : rsize
+        rblockoffset = rblock == 1 ? 0 : -rsize / 2
+        cblockpix = cblock ∈ [1, f.cblocks + 1] ? csize / 2 : csize
+        cblockoffset = cblock == 1 ? 0 : -csize / 2
 
-        if rblock == 1
-            rblockoffset = 0
-        else
-            rblockoffset = -(rsize / 2)
-        end
-
-        if cblock ∈ [1, f.cblocks + 1]
-            cblockpix = csize / 2
-        else
-            cblockpix = csize
-        end
-
-        if cblock == 1
-            cblockoffset = 0
-        else
-            cblockoffset = -(csize / 2)
-        end
-
-        histUL, histUR = histograms[idUr, idLc], histograms[idUr, idRc]
-        histBL, histBR = histograms[idBr, idLc], histograms[idBr, idRc]
-
-        rstart = Int((rblock - 1) * rsize + rblockoffset) + 1
+        # Get the block itself, indexing from the origin of the axes of the image (which may be negative if we had to pad)
+        rorigin, corigin = minimum.(axes(img_padded))
+        rstart = Int((rblock - 1) * rsize + rblockoffset) + rorigin
         rend = Int(rstart + rblockpix) - 1
-
-        cstart = Int((cblock - 1) * csize + cblockoffset) + 1
+        cstart = Int((cblock - 1) * csize + cblockoffset) + corigin
         cend = Int(cstart + cblockpix) - 1
 
-        region = view(img_tmp, rstart:rend, cstart:cend)
-        out_region = view(out_tmp, rstart:rend, cstart:cend)
+        region = view(img_padded, rstart:rend, cstart:cend)
+        out_region = view(out_padded, rstart:rend, cstart:cend)
 
-        resultUL, resultUR = histUL.(region), histUR.(region)
-        resultBL, resultBR = histBL.(region), histBR.(region)
+        # Calculate new values using each of the histograms from the four surrounding blocks
+        v₁₁ = histUL.(region)
+        v₁₂ = histUR.(region)
+        v₂₁ = histBL.(region)
+        v₂₂ = histBR.(region)
 
-        resultUL = histUL.(region)
-        resultUR = histUR.(region)
-        resultBL = histBL.(region)
-        resultBR = histBR.(region)
+        # Get the coordinates of each row and column in the current block
+        rₛ, rₑ = rstart, rend
+        cₛ, cₑ = cstart, cend
+        r = Array(range(rₛ, rₑ))
+        c = Array(range(cₛ, cₑ))'
 
-        x₁, x₂ = rstart, rend
-        y₁, y₂ = cstart, cend
-        x = Array(range(rstart, rend))
-        y = Array(range(cstart, cend))'
+        # Get the weights of each value within the block
+        w₁₁ = @. ((rₑ - r) * (cₑ - c))
+        w₁₂ = @. ((rₑ - r) * (c - cₛ))
+        w₂₁ = @. ((r - rₛ) * (cₑ - c))
+        w₂₂ = @. ((r - rₛ) * (c - cₛ))
+        wₙ = ((rₑ - rₛ) * (cₑ - cₛ))
 
-        w₁₁ = ((x₂ .- x) .* (y₂ .- y))
-        w₁₂ = ((x₂ .- x) .* (y .- y₁))
-        w₂₁ = ((x .- x₁) .* (y₂ .- y))
-        w₂₂ = ((x .- x₁) .* (y .- y₁))
-        wₙ = ((x₂ - x₁) * (y₂ - y₁))
+        # Interpolate the results using the values and the weights
+        vₒ = @. (w₁₁ * v₁₁ + w₁₂ * v₁₂ + w₂₁ * v₂₁ + w₂₂ * v₂₂) / wₙ
 
-        @. out_region =
-            (w₁₁ * resultUL + w₁₂ * resultUR + w₂₁ * resultBL + w₂₂ * resultBR) / wₙ
+        # Write to the correct region in the output image
+        @. out_region = vₒ
     end
 
-    out .= must_resize ? imresize(out_tmp, (height, width)) : out_tmp
+    out .= must_pad ? out_padded[1:height, 1:width] : out_padded
     return out
 end
 
 function validate_parameters(f::ContrastLimitedAdaptiveHistogramEqualization)
-    # !(0 <= f.clip <= 1) && throw(ArgumentError("The parameter `clip` must be in the range [0..1]."))
-    return !(1 <= f.rblocks && 1 <= f.cblocks) &&
-           throw(ArgumentError("At least 1 contextual regions required (1x1 or greater)."))
+    !(1 <= f.rblocks && 1 <= f.cblocks) &&
+        throw(ArgumentError("At least 1 contextual regions required (1x1 or greater)."))
+    return nothing
 end
 
 function redistribute_histogram(
@@ -172,14 +167,9 @@ function redistribute_histogram(
 ) where {T<:Integer}
     n_excess = sum(max(0, count - clip_limit) for count in counts)
     n_bins = length(counts)
-    if n_excess == 0
-        return counts
-    end
+    n_excess == 0 && return counts
     increment, remainder = divrem(n_excess, n_bins)
-    new_counts = similar(counts)
-    for i in eachindex(counts)
-        new_counts[i] = min(counts[i], clip_limit) + increment
-    end
+    new_counts = @. min(counts, clip_limit) + increment
     for i in 1:remainder
         new_counts[i] += 1
     end
@@ -206,7 +196,7 @@ function map_histogram(
 
     function _mapping_function(value)
         index = searchsortedfirst(edges, value)
-        return mapping[index - 1] # -1 because mapped_values is an OffsetArray
+        return mapping[index - 1] # -1 because mapping is an OffsetArray
     end
     return _mapping_function
 end
@@ -217,21 +207,13 @@ function (f::ContrastLimitedAdaptiveHistogramEqualization)(
     T = eltype(img)
     yiq = convert.(YIQ, img)
     yiq_view = channelview(yiq)
-    #=
-       TODO: Understand the cause and solution of this error.
-       When I pass a view I run into this error on Julia 1.1.
-       ERROR: ArgumentError: an array of type `Base.ReinterpretArray` shares memory with another argument and must
-       make a preventative copy of itself in order to maintain consistent semantics,
-       but `copy(A)` returns a new array of type `Array{Float64,3}`. To fix, implement:
-       `Base.unaliascopy(A::Base.ReinterpretArray)::typeof(A)`
-    =#
-    #adjust_histogram!(view(yiq_view,1,:,:), f)
     y = comp1.(yiq)
     adjust_histogram!(y, f)
     yiq_view[1, :, :] .= y
-    return out .= convert.(T, yiq)
+    out .= convert.(T, yiq)
+    return out
 end
 
 export ContrastLimitedAdaptiveHistogramEqualization, adjust_histogram, adjust_histogram!
 
-end # module CLAHE
+end
