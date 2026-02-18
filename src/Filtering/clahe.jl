@@ -125,16 +125,16 @@ function (f::ContrastLimitedAdaptiveHistogramEqualization)(
         resultBR = histBR.(region)
 
         # Interpolate the results bilinearly
-        x₁, x₂ = rstart, rend
-        y₁, y₂ = cstart, cend
-        x = Array(range(x₁, x₂))
-        y = Array(range(y₁, y₂))'
+        r₁, r₂ = rstart, rend
+        c₁, c₂ = cstart, cend
+        r = Array(range(r₁, r₂))
+        c = Array(range(c₁, c₂))'
 
-        w₁₁ = ((x₂ .- x) .* (y₂ .- y))
-        w₁₂ = ((x₂ .- x) .* (y .- y₁))
-        w₂₁ = ((x .- x₁) .* (y₂ .- y))
-        w₂₂ = ((x .- x₁) .* (y .- y₁))
-        wₙ = ((x₂ - x₁) * (y₂ - y₁))
+        w₁₁ = ((r₂ .- r) .* (c₂ .- c))
+        w₁₂ = ((r₂ .- r) .* (c .- c₁))
+        w₂₁ = ((r .- r₁) .* (c₂ .- c))
+        w₂₂ = ((r .- r₁) .* (c .- c₁))
+        wₙ = ((r₂ - r₁) * (c₂ - c₁))
 
         # Write to the correct region in the output image
         @. out_region =
