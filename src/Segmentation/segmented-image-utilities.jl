@@ -1,5 +1,6 @@
 import ImageSegmentation: SegmentedImage, labels_map, segment_labels, segment_mean, segment_pixel_count
 using DataFrames 
+using Random
 
 """
 Results of a segmentation comparison
@@ -11,9 +12,9 @@ SegmentationComparison = @NamedTuple begin
 end
 
 """
-function segmentation_comparison(
-    validated::SegmentedImage, measured::SegmentedImage
-)::@NamedTuple{recall::Real, precision::Real, F_score::Real}
+    segmentation_comparison(
+        validated::SegmentedImage, measured::SegmentedImage
+    )::@NamedTuple{recall::Real, precision::Real, F_score::Real}
 
 Compares two SegmentedImages and returns values describing how similar the segmentations are.
 
@@ -66,21 +67,23 @@ function segmentation_summary(segmented::Union{SegmentedImage,Nothing})::Segment
 end
 
 """
-Find pixels in a segmented image with non-zero labels
+    binarize_segments(segments::SegmentedImage)
+
+Find pixels in a segmented image with non-zero labels and return as a grayscale image.
 """
 function binarize_segments(segments::SegmentedImage)::AbstractArray{Gray}
     return Gray.(labels_map(segments) .> 0)
 end
 
 
-"""stitch_clusters(tiles, segmented_image, minimum_overlap, grayscale_threshold)
+"""
+    stitch_clusters(tiles, segmented_image, minimum_overlap, grayscale_threshold)
 
 Stitches clusters across tile boundaries based on neighbor with largest shared boundary.
 The algorithm finds all pairs of segment labels at the tile edges. Then, we count the number of 
 times each right-hand label is paired to a left-hand label, and for pairs with at least `minimum_overlap` pixel overlap,
 the right-hand label is assigned as a candidate pair to the left-hand label. If the difference in grayscale
 intensity is less than `grayscale_threshold`, the objects are merged. The function returns an image index map.
-
 """
 function stitch_clusters(segmented_image, tiles, minimum_overlap=4, grayscale_threshold=0.1) 
     grayscale_magnitude(c) = Float64(Gray(c))
@@ -142,4 +145,34 @@ function stitch_clusters(segmented_image, tiles, minimum_overlap=4, grayscale_th
         end    
     end
     return idxmap
+end
+
+"""
+    _get_random_color(seed)
+
+Convenience function to produce a random RGB color.
+"""
+function _get_random_color(seed)
+    Random.seed!(seed)
+    rand(RGB{N0f8})
+end
+
+"""
+    view_seg_random(s::SegmentedImage)
+
+Produce an array with the segment mean mapped to each segment label.
+If the SegmentedImage was produced with color type (e.g., RGB, Gray), then
+the result will be an image.
+"""
+function view_seg(s)
+    map(i->segment_mean(s,i), labels_map(s))
+end
+
+"""
+    view_seg_random(s::SegmentedImage)
+
+Produce an RGB image with a random color for each unique segment in `s`.
+"""
+function view_seg_random(s)
+    map(i->_get_random_color(i), labels_map(s))
 end
