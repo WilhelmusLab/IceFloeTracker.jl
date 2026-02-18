@@ -142,7 +142,7 @@ end
 Compute the psi-s correlation between a floe and a dataframe of candidate floes. Adds the 
 psi-s correlation,  psi-s correlation score (1 - correlation), and the result of the threshold function
 to the columns of `candidates`.
-""" 
+"""
 @kwdef struct PsiSCorrelationThresholdFilter <: AbstractFloeFilterFunction
     area_variable = :area
     threshold_column = :psi_s_correlation_test
