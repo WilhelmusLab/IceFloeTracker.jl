@@ -29,7 +29,7 @@
     end
 
     @testset "IceDetectionBrightnessPeaksMODIS721" begin
-        f = IceDetectionBrightnessPeaksMODIS721(5 / 255, 75 / 255)
+        f = IceDetectionBrightnessPeaksMODIS721(band_7_max = 5 / 255, possible_ice_threshold = 75 / 255)
 
         dataset = Watkins2026Dataset(; ref="v0.1")
         case = first(filter(c -> (c.case_number == 12 && c.satellite == "terra"), dataset))
@@ -43,6 +43,17 @@
 
         masked_land = masker(modis_landmask(case), modis_falsecolor(case))[1:50, 1:50]
         @test sum(binarize(masked_land, f)) == 0
+
+        # Make sure we can all the new option
+        f2 = IceDetectionBrightnessPeaksMODIS721(band_7_max = 5 / 255, possible_ice_threshold = 75 / 255, join_method="union")
+        intersect_method = binarize(modis_falsecolor(case), f)
+        union_method = binarize(modis_falsecolor(case), f2)
+        @test sum(intersect_method) .<= sum(union_method)
+
+        # Test whether it will default to intersect as intended
+        f3 = IceDetectionBrightnessPeaksMODIS721(band_7_max = 5 / 255, possible_ice_threshold = 75 / 255, join_method="divide")
+        alt_method = binarize(modis_falsecolor(case), f3)
+        @test allequal(alt_method .== intersect_method)
     end
 
     @testset "IceDetectionLopezAcosta2019" begin
@@ -249,3 +260,4 @@ end
         end
     end
 end
+
