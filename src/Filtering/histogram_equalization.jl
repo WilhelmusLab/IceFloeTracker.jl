@@ -1,6 +1,15 @@
-import Images: Images, RGB, float64, Gray, red, green, blue
+import Images: RGB, 
+    float64, 
+    Gray, 
+    entropy, 
+    red,
+    green,
+    blue,
+    adjust_histogram,
+    AdaptiveEqualization
+
 import ..skimage: sk_exposure
-import ..ImageUtils: to_uint8
+import ..ImageUtils: to_uint8, apply_to_channels
 
 """
     get_rgb_channels(img)
@@ -84,11 +93,11 @@ function conditional_histeq(
     # For each tile, compute the entropy in the false color tile, and the fraction of white and black pixels
     for tile in tiles
         clouds_tile = clouds_red[tile...]
-        entropy = Images.entropy(clouds_tile)
+        tile_entropy = entropy(clouds_tile)
         whitefraction = sum(clouds_tile .> white_threshold) / length(clouds_tile)
 
         # If the entropy is above a threshold, and the fraction of white pixels is above a threshold, then apply histogram equalization to the tiles of each channel of the true color image. Otherwise, keep the original tiles.
-        if entropy > entropy_threshold && whitefraction > white_fraction_threshold
+        if tile_entropy > entropy_threshold && whitefraction > white_fraction_threshold
             for i in 1:3
                 eqhist =
                     adjust_histogram(
@@ -120,4 +129,27 @@ Histogram equalization of `img` using `nbins` bins.
 """
 function histeq(img::S; nbins=64)::S where {S<:AbstractArray{<:Integer}}
     return to_uint8(sk_exposure.equalize_hist(img; nbins=nbins) * 255)
+end
+
+"""
+    channelwise_adapthisteq(img; nbins=256, rblocks=8, cblocks=8, clip=0.99)
+
+Broadcast adaptive histogram equalization to color channels of an image. Uses the 
+minimum and maximum value of each channel band instead of the 0 to 1 range from
+the default AdaptiveEqualization algorithm.
+
+"""
+function channelwise_adapthisteq(img; nbins=256, rblocks=8, cblocks=8, clip=0.99)
+    function f_eq(img_channel)
+        ae = AdaptiveEqualization(;
+            nbins=nbins,
+            rblocks=rblocks,
+            cblocks=cblocks,
+            minval=minimum(img_channel),
+            maxval=maximum(img_channel),
+            clip=clip,
+        )
+        return adjust_histogram(img_channel, ae)
+    end
+    return apply_to_channels(img, f_eq)
 end
