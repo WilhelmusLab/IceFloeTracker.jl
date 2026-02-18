@@ -1,9 +1,5 @@
-
 module LopezAcosta2019Tiling
-
-import Images:
-    Images,
-    area_opening,
+import Images: area_opening,
     watershed,
     imfilter,
     isboundary,
@@ -109,7 +105,7 @@ prelim_icemask_params = (radius=10, amount=2, factor=0.5)
     ice_masks_params = ice_masks_params
     prelim_icemask_params = prelim_icemask_params
     brighten_factor = brighten_factor
-    coastal_buffer_structuring_element = centered(strel_box((3, 3)))
+    coastal_buffer_structuring_element = centered(strel_box((51, 51)))
 end
 
 function (p::Segment)(
@@ -210,9 +206,10 @@ function (p::Segment)(
             tiled_adaptive_binarization(
                 Gray.(morphed_residue ./ 255),
                 tiles;
-                minimum_window_size=32,
+                minimum_window_size=100,
                 threshold_percentage=15,
             ) .> 0
+        
 
         prelim_icemask = kmeans_binarization(
             Gray.(morphed_residue / 255),
@@ -548,7 +545,6 @@ function IceDetectionLopezAcosta2019Tiling(;
         IceDetectionThresholdMODIS721(;
             band_7_max=1.0, band_2_min=band_2_min, band_1_min=0.0
         ),
-    ])
+    ], 10)
 end
-
 end
