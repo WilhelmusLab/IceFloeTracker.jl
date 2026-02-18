@@ -2,7 +2,12 @@ module CLAHE
 
 using Images: YIQ, channelview, padarray, Pad
 using Images.ImageContrastAdjustment:
-    AbstractHistogramAdjustmentAlgorithm, GenericGrayImage, imresize, build_histogram, adjust_histogram, adjust_histogram!
+    AbstractHistogramAdjustmentAlgorithm,
+    GenericGrayImage,
+    imresize,
+    build_histogram,
+    adjust_histogram,
+    adjust_histogram!
 using Images.ImageCore
 using TiledIteration: TileIterator
 
@@ -47,8 +52,10 @@ function (f::ContrastLimitedAdaptiveHistogramEqualization)(
     resized_width = ceil(Int, width / (2 * f.cblocks)) * 2 * f.cblocks
     must_pad = (resized_height != height) || (resized_width != width)
     if must_pad
-        left, right = ceil(Int, (resized_width - width) / 2), floor(Int, (resized_width - width) / 2)
-        top, bottom = ceil(Int, (resized_height - height) / 2), floor(Int, (resized_height - height) / 2)
+        left = ceil(Int, (resized_width - width) / 2)
+        right = floor(Int, (resized_width - width) / 2)
+        top = ceil(Int, (resized_height - height) / 2)
+        bottom = floor(Int, (resized_height - height) / 2)
         img_padded = padarray(img, Pad(:reflect, (top, left), (bottom, right)))
     else
         img_padded = img
@@ -82,7 +89,7 @@ function (f::ContrastLimitedAdaptiveHistogramEqualization)(
 
     # Interpolate pixel values
     for rblock in 1:(f.rblocks + 1), cblock in 1:(f.cblocks + 1)
-        
+
         # Get the histograms for each block
         if rblock == 1
             idUr, idBr = 1, 1
@@ -108,14 +115,14 @@ function (f::ContrastLimitedAdaptiveHistogramEqualization)(
         rblockoffset = rblock == 1 ? 0 : -rsize / 2
         cblockpix = cblock ∈ [1, f.cblocks + 1] ? csize / 2 : csize
         cblockoffset = cblock == 1 ? 0 : -csize / 2
-        
+
         # Get the block itself, indexing from the origin of the axes of the image (which may be negative if we had to pad)
         rorigin, corigin = minimum.(axes(img_padded))
         rstart = Int((rblock - 1) * rsize + rblockoffset) + rorigin
         rend = Int(rstart + rblockpix) - 1
         cstart = Int((cblock - 1) * csize + cblockoffset) + corigin
         cend = Int(cstart + cblockpix) - 1
-        
+
         region = view(img_padded, rstart:rend, cstart:cend)
         out_region = view(out_padded, rstart:rend, cstart:cend)
 
