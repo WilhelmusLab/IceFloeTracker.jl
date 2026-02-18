@@ -102,28 +102,29 @@ function (f::ContrastLimitedAdaptiveHistogramEqualization)(
         histUL, histUR = histograms[idUr, idLc], histograms[idUr, idRc]
         histBL, histBR = histograms[idBr, idLc], histograms[idBr, idRc]
 
-        # Get the block itself
+        # Get the size of the block, which may be half the normal size if we're on the edge of the image
         rblockpix = rblock ∈ [1, f.rblocks + 1] ? rsize / 2 : rsize
         rblockoffset = rblock == 1 ? 0 : -rsize / 2
         cblockpix = cblock ∈ [1, f.cblocks + 1] ? csize / 2 : csize
         cblockoffset = cblock == 1 ? 0 : -csize / 2
-
+        
+        # Get the block itself, indexing from the origin of the axes of the image (which may be negative if we had to pad)
         rorigin, corigin = minimum.(axes(img_tmp))
-
         rstart = Int((rblock - 1) * rsize + rblockoffset) + rorigin
         rend = Int(rstart + rblockpix) - 1
-
         cstart = Int((cblock - 1) * csize + cblockoffset) + corigin
         cend = Int(cstart + cblockpix) - 1
-
+        
         region = view(img_tmp, rstart:rend, cstart:cend)
         out_region = view(out_tmp, rstart:rend, cstart:cend)
 
+        # Calculate new values using each of the histograms from the four surrounding blocks
         resultUL = histUL.(region)
         resultUR = histUR.(region)
         resultBL = histBL.(region)
         resultBR = histBR.(region)
 
+        # Interpolate the results bilinearly
         x₁, x₂ = rstart, rend
         y₁, y₂ = cstart, cend
         x = Array(range(rstart, rend))
@@ -135,6 +136,7 @@ function (f::ContrastLimitedAdaptiveHistogramEqualization)(
         w₂₂ = ((x .- x₁) .* (y .- y₁))
         wₙ = ((x₂ - x₁) * (y₂ - y₁))
 
+        # Write to the correct region in the output image
         @. out_region =
             (w₁₁ * resultUL + w₁₂ * resultUR + w₂₁ * resultBL + w₂₂ * resultBR) / wₙ
     end
