@@ -157,7 +157,7 @@ function (f::ContrastLimitedAdaptiveHistogramEqualization)(
 end
 
 function validate_parameters(f::ContrastLimitedAdaptiveHistogramEqualization)
-    !(1 <= f.rblocks && 1 <= f.cblocks) &&
+    (f.rblocks < 1 || f.cblocks < 1) &&
         throw(ArgumentError("At least 1 contextual regions required (1x1 or greater)."))
     return nothing
 end
