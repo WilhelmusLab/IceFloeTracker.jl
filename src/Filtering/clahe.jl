@@ -152,7 +152,7 @@ function (f::ContrastLimitedAdaptiveHistogramEqualization)(
         @. out_region = vₒ
     end
 
-    out .= must_pad ? out_padded[1:height, 1:width] : out_padded
+    out .= out_padded[1:height, 1:width] # Remove padding if we added it
     return out
 end
 
