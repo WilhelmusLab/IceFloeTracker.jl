@@ -189,10 +189,7 @@ function map_histogram(
     cumulative = 0
     for (i, count) in enumerate(counts)
         cumulative += count
-        mapping[i] = minval + cumulative * scale
-        if mapping[i] > maxval
-            mapping[i] = maxval
-        end
+        mapping[i] = min(minval + cumulative * scale, maxval) 
     end
 
     function _mapping_function(value)
