@@ -166,8 +166,9 @@ function redistribute_histogram(
     counts::AbstractVector{T}, clip_limit::Int
 ) where {T<:Integer}
     n_excess = sum(max(0, count - clip_limit) for count in counts)
-    n_bins = length(counts)
     n_excess == 0 && return counts
+    n_bins = length(counts)
+
     increment, remainder = divrem(n_excess, n_bins)
     new_counts = @. min(counts, clip_limit) + increment
     for i in 1:remainder
