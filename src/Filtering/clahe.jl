@@ -187,8 +187,8 @@ function map_histogram(
     scale = (maxval - minval) / n_pixels
     mapping = similar(counts, Float64) # Can I make this the same type as minval/maxval?
     cumulative = 0
-    for i in eachindex(counts)
-        cumulative += counts[i]
+    for (i, count) in enumerate(counts)
+        cumulative += count
         mapping[i] = minval + cumulative * scale
         if mapping[i] > maxval
             mapping[i] = maxval
