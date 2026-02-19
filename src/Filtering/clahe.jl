@@ -1,6 +1,5 @@
 module CLAHE
 
-using Images: padarray, Pad
 using Images.ImageContrastAdjustment:
     AbstractHistogramAdjustmentAlgorithm,
     GenericGrayImage,
@@ -8,6 +7,7 @@ using Images.ImageContrastAdjustment:
     build_histogram,
     adjust_histogram,
     adjust_histogram!
+using Images.ImageFiltering: padarray, Pad
 using Images.ImageCore: comp1, AbstractGray, Color3, YIQ, channelview
 using TiledIteration: TileIterator
 
