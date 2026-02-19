@@ -52,6 +52,7 @@ function (f::ContrastLimitedAdaptiveHistogramEqualization)(
     resized_width = ceil(Int, width / (2 * f.cblocks)) * 2 * f.cblocks
     must_pad = (resized_height != height) || (resized_width != width)
     if must_pad
+        @debug "Padding image from size ($(height), $(width)) to size ($(resized_height), $(resized_width)) to fit the requested number of blocks ($(f.rblocks) x $(f.cblocks))."
         left = ceil(Int, (resized_width - width) / 2)
         right = floor(Int, (resized_width - width) / 2)
         top = ceil(Int, (resized_height - height) / 2)
