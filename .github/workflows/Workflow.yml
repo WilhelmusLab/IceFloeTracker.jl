@@ -1,0 +1,35 @@
+name: Workflow
+on:
+  push:
+    branches:
+      - main
+    tags: '*'
+  pull_request:
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ startsWith(github.ref, 'refs/pull/') }}
+jobs:
+  test:
+    name: Julia ${{ matrix.version }} - ${{ matrix.os }} - ${{ matrix.arch }} - ${{ github.event_name }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        version: ['1.12']
+        os: [ubuntu-latest]
+        arch: [x64]
+
+    steps:
+      - uses: actions/checkout@v6
+      - uses: julia-actions/setup-julia@v2
+        with:
+          version: ${{ matrix.version }}
+          arch: ${{ matrix.arch }}
+      - uses: actions/setup-python@v4
+        with:
+          python-version: '3.x'
+      - name: Install workflow dependencies
+        run: ".devcontainer/setup-workflow-dependencies.sh"
+      - name: Get tracking results for an example region
+        run: "snakemake --cores 2 beaufort_sea.250m.20190322.20190324.lopeztiling.tracked.csv"
+        
