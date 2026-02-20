@@ -6,7 +6,8 @@
 		"ghcr.io/devcontainers/features/python:1": {}
 	},
 	"postCreateCommand": {
-		"startup-test": ".devcontainer/startup-test.sh"
+		"startup-test": ".devcontainer/startup-test.sh",
+		"workflow-dependencies": "./devcontainer/setup-workflow-dependencies.sh"
 	},
 	"customizations": {
 		"vscode": {
