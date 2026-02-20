@@ -90,7 +90,7 @@ ice_masks_params = (
     band_1_min=240 / 255,
     band_7_max_relaxed=10 / 255,
     band_1_min_relaxed=190 / 255,
-    possible_ice_threshold=75 / 255
+    possible_ice_threshold=75 / 255,
 )
 
 prelim_icemask_params = (radius=10, amount=2, factor=0.5)
@@ -109,31 +109,20 @@ prelim_icemask_params = (radius=10, amount=2, factor=0.5)
 end
 
 function (p::Segment)(
-    truecolor::T,
-    falsecolor::T,
-    landmask::U;
+    truecolor::T₁,
+    falsecolor::T₂,
+    landmask::T₃,
+    coastal_buffer_mask::T₄;
     intermediate_results_callback::Union{Nothing,Function}=nothing,
-) where {T<:AbstractMatrix{<:Union{AbstractRGB,TransparentRGB}},U<:AbstractMatrix}
-    @info "building landmask and coastal buffer mask"
-    coastal_buffer_mask, landmask = create_landmask(
-        float64.(landmask), p.coastal_buffer_structuring_element
-    )
-    return p(
-        truecolor,
-        falsecolor,
-        landmask,
-        coastal_buffer_mask;
-        intermediate_results_callback=intermediate_results_callback,
-    )
-end
+) where {
+    T₁<:AbstractMatrix{<:Union{AbstractRGB,TransparentRGB}},
+    T₂<:AbstractMatrix{<:Union{AbstractRGB,TransparentRGB}},
+    T₃<:AbstractMatrix{<:Union{Bool,Gray{Bool}}},
+    T₄<:AbstractMatrix{<:Union{Bool,Gray{Bool}}},
+}
+    coastal_buffer_mask = reinterpret(Bool, coastal_buffer_mask)
+    landmask = reinterpret(Bool, landmask)
 
-function (p::Segment)(
-    truecolor::T,
-    falsecolor::T,
-    landmask::U,
-    coastal_buffer_mask::U;
-    intermediate_results_callback::Union{Nothing,Function}=nothing,
-) where {T<:AbstractMatrix{<:Union{AbstractRGB,TransparentRGB}},U<:BitMatrix}
     tiles = get_tiles(truecolor; p.tile_settings...)
 
     ref_image = RGB.(falsecolor)  # TODO: remove this typecast
@@ -226,8 +215,10 @@ function (p::Segment)(
             Gray.(morphed_residue / 255),
             fc_landmasked,
             tiles;
-            cluster_selection_algorithm=IceDetectionLopezAcosta2019Tiling(; ice_masks_params...), # Initialize this with ice_masks_params
-            k=4
+            cluster_selection_algorithm=IceDetectionLopezAcosta2019Tiling(;
+                ice_masks_params...
+            ), # Initialize this with ice_masks_params
+            k=4,
         )
     end
 
@@ -263,8 +254,10 @@ function (p::Segment)(
             Gray.(prelim_icemask2 ./ 255),
             fc_landmasked,
             tiles;
-            cluster_selection_algorithm=IceDetectionLopezAcosta2019Tiling(;ice_masks_params...),
-            k=3
+            cluster_selection_algorithm=IceDetectionLopezAcosta2019Tiling(;
+                ice_masks_params...
+            ),
+            k=3,
         )
     end
 
@@ -523,7 +516,6 @@ function adjustgamma(img, gamma=1.5, asuint8=true)
     return adjusted
 end
 
-
 """IceDetectionLopezAcosta2019Tiling
 
 Application of the IceDetectionFirstNonZeroAlgorithm using two passes of 
@@ -540,9 +532,7 @@ function IceDetectionLopezAcosta2019Tiling(;
 )
     return IceDetectionFirstNonZeroAlgorithm([
         IceDetectionThresholdMODIS721(;
-            band_7_max=band_7_max,
-            band_2_min=band_2_min,
-            band_1_min=band_1_min
+            band_7_max=band_7_max, band_2_min=band_2_min, band_1_min=band_1_min
         ),
         IceDetectionThresholdMODIS721(;
             band_7_max=band_7_max_relaxed,
@@ -550,8 +540,7 @@ function IceDetectionLopezAcosta2019Tiling(;
             band_1_min=band_1_min_relaxed,
         ),
         IceDetectionBrightnessPeaksMODIS721(;
-            band_7_max=band_7_max,
-            possible_ice_threshold=possible_ice_threshold
+            band_7_max=band_7_max, possible_ice_threshold=possible_ice_threshold
         ),
         IceDetectionThresholdMODIS721(;
             band_7_max=1.0, band_2_min=band_2_min, band_1_min=0.0
