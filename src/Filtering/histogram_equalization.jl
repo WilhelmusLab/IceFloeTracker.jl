@@ -7,8 +7,6 @@ import Images: RGB,
     blue,
     adjust_histogram,
     AdaptiveEqualization
-
-import ..skimage: sk_exposure
 import ..ImageUtils: to_uint8, apply_to_channels
 
 """
@@ -119,16 +117,6 @@ Convert an RGB image to grayscale in the range [0, 255].
 """
 function rgb2gray(img::Matrix{RGB{Float64}})
     return round.(Int, Gray.(img) * 255)
-end
-
-"""
-    histeq(img)
-    histeq(img; nbins=64)
-
-Histogram equalization of `img` using `nbins` bins.
-"""
-function histeq(img::S; nbins=64)::S where {S<:AbstractArray{<:Integer}}
-    return to_uint8(sk_exposure.equalize_hist(img; nbins=nbins) * 255)
 end
 
 """

@@ -148,39 +148,3 @@ end
     @test h[1, 1] == 92
     @test h[1, 2] == 206
 end
-
-@testitem "histeq" begin
-    @testset "normal cases" begin
-        @test histeq([
-            4 4 4 4 4
-            3 4 5 4 3
-            3 5 5 5 3
-            3 4 5 4 3
-            4 4 4 4 4
-        ]) == [
-            204 204 204 204 204
-            061 204 255 204 061
-            061 255 255 255 061
-            061 204 255 204 061
-            204 204 204 204 204
-        ]
-    end
-
-    @testset "edge cases" begin
-        @test histeq([
-            0 0 0
-            2 2 2
-        ]) == [
-            128 128 128
-            255 255 255
-        ]
-
-        @test histeq([
-            000 000 000
-            255 255 255
-        ]) == [
-            128 128 128
-            255 255 255
-        ]
-    end
-end
