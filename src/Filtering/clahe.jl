@@ -186,11 +186,11 @@ function map_histogram(
 ) where {T<:Integer}
     n_pixels = sum(counts)
     scale = (maxval - minval) / n_pixels
-    mapping = similar(counts, Float64) # Can I make this the same type as minval/maxval?
+    mapping = similar(counts, Float64)
     cumulative = 0
     for i in eachindex(counts)
         cumulative += counts[i]
-        mapping[i] = min(minval + cumulative * scale, maxval) 
+        mapping[i] = min(minval + cumulative * scale, maxval)
     end
 
     function _mapping_function(value)
