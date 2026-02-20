@@ -4,10 +4,7 @@
 	"features": {
 		"ghcr.io/julialang/devcontainer-features/julia:1": {}
 	},
-	"postCreateCommand": {
-		"setup-TestEnv": "julia -e 'using Pkg; Pkg.add(\"TestEnv\")'" // Add TestEnv globally to use in PostStart
-	},
-	"postStartCommand": "julia --project=. -e 'using TestEnv; TestEnv.activate(); include(\"test/runtests-smoke.jl\")'",
+	"postStartCommand": ".devcontainer/startup-test.sh",
 	"customizations": {
 		"vscode": {
 			"extensions": [
