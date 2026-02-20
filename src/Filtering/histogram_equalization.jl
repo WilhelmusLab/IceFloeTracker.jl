@@ -11,30 +11,6 @@ import Images: RGB,
 import ..skimage: sk_exposure
 import ..ImageUtils: to_uint8, apply_to_channels
 
-# dmw: use multiple dispatch, so that if the 2d function is called 
-function adapthisteq(img::Matrix{T}, nbins=256, clip=0.01) where {T}
-    # Step 1: Normalize the image to [0, 1] based on its own min and max
-    image_min, image_max = minimum(img), maximum(img)
-    normalized_image = (img .- image_min) / (image_max - image_min)
-
-    # Step 2: Apply adaptive histogram equalization. equalize_adapthist handles the tiling to 1/8 of the image size (equivalent to 8x8 blocks in MATLAB)
-    equalized_image = sk_exposure.equalize_adapthist(
-        normalized_image;
-        clip_limit=clip,  # Equivalent to MATLAB's 'ClipLimit'
-        nbins=nbins,         # Number of histogram bins. 255 is used to match the default in MATLAB script
-    )
-
-    # Step 3: Rescale the image back to the original range [image_min, image_max]
-    final_image = adjust_histogram(
-        equalized_image, LinearStretching(nothing => (image_min, image_max))
-    )
-
-    # Convert back to the original data type if necessary
-    final_image = to_uint8(final_image)
-
-    return final_image
-end
-
 """
     get_rgb_channels(img)
 
@@ -123,7 +99,11 @@ function conditional_histeq(
         # If the entropy is above a threshold, and the fraction of white pixels is above a threshold, then apply histogram equalization to the tiles of each channel of the true color image. Otherwise, keep the original tiles.
         if tile_entropy > entropy_threshold && whitefraction > white_fraction_threshold
             for i in 1:3
-                eqhist = adapthisteq(rgbchannels[:, :, i][tile...])
+                eqhist =
+                    adjust_histogram(
+                        rgbchannels[:, :, i][tile...] / 255.0,
+                        ContrastLimitedAdaptiveHistogramEqualization(; clip=2.0),
+                    ) .* 255
                 @view(rgbchannels[:, :, i])[tile...] .= eqhist
             end
         end

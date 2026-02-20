@@ -35,6 +35,55 @@
     end
 end
 
+@testitem "ContrastLimitedAdaptiveHistogramEqualization basic case" begin
+    using TestImages
+    using Images: adjust_histogram
+    img = testimage("cameraman")
+    img_eq = adjust_histogram(img, ContrastLimitedAdaptiveHistogramEqualization())
+    @test size(img) == size(img_eq)
+    @test 125075 ≈ sum(img_eq) rtol = 0.0001
+end
+
+@testitem "ContrastLimitedAdaptiveHistogramEqualization different image sizes and aspect ratios" begin
+    # Test that the function can handle different sizes of input image without crashing
+    using TestImages
+    using Images: adjust_histogram, imresize
+    
+    function clahe_works_with_size(img, rsize, csize, rblocks, cblocks)
+        img_resized = imresize(img, (rsize, csize))
+        img_eq = adjust_histogram(img_resized, ContrastLimitedAdaptiveHistogramEqualization(;rblocks,cblocks))
+        valid = size(img_resized) == size(img_eq)
+        return valid
+    end
+
+    img = testimage("cameraman")
+    # Happy Path – square images
+    @test clahe_works_with_size(img, 1024, 1024, 8, 8)
+    @test clahe_works_with_size(img, 512, 512, 8, 8)
+    @test clahe_works_with_size(img, 256, 256, 8, 8)
+    @test clahe_works_with_size(img, 128, 128, 8, 8)
+    @test clahe_works_with_size(img, 64, 64, 8, 8)
+    @test clahe_works_with_size(img, 32, 32, 8, 8)
+    
+    # Happy Path – non-square images
+    @test clahe_works_with_size(img, 100, 78, 8, 8)
+    @test clahe_works_with_size(img, 100, 78, 16, 16)
+    @test clahe_works_with_size(img, 32, 78, 8, 8)
+    @test clahe_works_with_size(img, 1024, 64, 32, 4)
+    @test clahe_works_with_size(img, 512, 64, 32, 4)
+    @test clahe_works_with_size(img, 2048, 1024, 100, 100)
+    @test clahe_works_with_size(img, 33, 12, 3, 5)
+
+    # Edge cases – lower limit of block size (3x3)
+    @test clahe_works_with_size(img, 9, 9, 3, 3)
+    @test clahe_works_with_size(img, 6, 6, 2, 2)
+    @test clahe_works_with_size(img, 3, 3, 1, 1)
+
+    # Broken cases
+    @test clahe_works_with_size(img, 2, 2, 1, 1) broken=true # 2x2 blocks are too small
+end
+    
+
 @testitem "conditional adaptivehisteq (data loader)" setup = [FalseColorCloudmask] begin
     dataset = filter(
         c -> c.case_number == 161 && c.satellite == "terra", Watkins2026Dataset()
@@ -64,13 +113,13 @@ end
     # This differs from MATLAB script due to disparity in the implementations
     # of the adaptive histogram equalization / diffusion functions
     # For the moment testing for regression
-    @test sum(to_uint8(true_color_eq[:, :, 1])) ≈ 27_422_448 rtol = 0.003
+    @test 27_311_946 ≈ sum(to_uint8(true_color_eq[:, :, 1])) rtol = 0.003
 
     # Use custom tile size
     side_length = size(true_color_eq, 1) ÷ 8
     tiles = get_tiles(true_color_image, side_length)
     true_color_eq = conditional_histeq(true_color_image, clouds_red, tiles)
-    @test sum(to_uint8(true_color_eq[:, :, 1])) ≈ 27_446_614 rtol = 0.003
+    @test 30_255_658 ≈ sum(to_uint8(true_color_eq[:, :, 1])) rtol = 0.003
 end
 
 @testitem "_get_false_color_cloudmasked (data loader)" setup = [FalseColorCloudmask] begin
@@ -90,18 +139,6 @@ end
     @test sum(false_color_cloudmasked[1, :, :]) ≈ 10_350_341 rtol = 0.01
     @test sum(false_color_cloudmasked[2, :, :]) ≈ 17_029_014 rtol = 0.01
     @test sum(false_color_cloudmasked[3, :, :]) ≈ 17_159_247 rtol = 0.01
-end
-
-@testitem "adapthisteq" begin
-    using TestImages: testimage
-    function convert_to_255_matrix(img)::Matrix{Int}
-        img_clamped = clamp.(img, 0.0, 1.0)
-        return round.(Int, img_clamped * 255)
-    end
-
-    img = convert_to_255_matrix(testimage("cameraman"))
-    img_eq = adapthisteq(img)
-    @test sum(img_eq) == 32_387_397
 end
 
 @testitem "rgb2gray" begin
