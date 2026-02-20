@@ -2,7 +2,7 @@ import os
 from datetime import datetime, timedelta, date
 
 configfile: "workflow/config.yaml"
-workdir: "workflow-results"
+workdir: "workflow/results"
 
 
 def daterange(start_date, end_date):
