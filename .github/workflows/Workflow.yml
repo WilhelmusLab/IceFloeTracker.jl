@@ -28,6 +28,12 @@ jobs:
       - uses: actions/setup-python@v4
         with:
           python-version: '3.x'
+      - name: Install Julia dependencies
+        shell: julia --color=yes {0}
+        run: |
+          using Pkg
+          Pkg.develop(PackageSpec(path=pwd()))
+          Pkg.instantiate()
       - name: Install workflow dependencies
         run: ".devcontainer/setup-workflow-dependencies.sh"
       - name: Get tracking results for an example region
