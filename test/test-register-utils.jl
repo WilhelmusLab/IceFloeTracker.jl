@@ -1,7 +1,7 @@
 
 @testitem "registration utilities" begin
     using IceFloeTracker: align_centroids, compute_centroid, shape_difference_rotation
-    
+
     @testset "centroid" begin
         @testset "zeroes" begin
             @test isequal(compute_centroid(Bool[0;;]; rounded=false), (NaN, NaN))
@@ -610,10 +610,10 @@
                 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
                 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
             ],
-            [0.0, π / 4.0, π / 2.0, 3π / 2.0, π],
+            [0.0, π / 3.0, π / 2.0, 3π / 2.0, π],
         ) == [
             (; angle=0.0, shape_difference=58.0),
-            (; angle=Float64(π / 4.0), shape_difference=32.0),
+            (; angle=Float64(π / 3.0), shape_difference=18.0),
             (; angle=Float64(π / 2.0), shape_difference=14.0),
             (; angle=Float64(3π / 2.0), shape_difference=14.0),
             (; angle=Float64(π), shape_difference=58.0),

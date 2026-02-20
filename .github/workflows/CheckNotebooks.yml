@@ -18,7 +18,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        version: ['lts', '1.11']
+        version: ['1.12']
         os: [ubuntu-latest]
         arch: [x64]
 
@@ -33,9 +33,6 @@ jobs:
 
       - uses: julia-actions/cache@v2
       
-      - name: setup PyCall
-        run: julia --project=.devcontainer/PyCallSetup.jl .devcontainer/PyCallSetup.jl/setup.jl
-
       - uses: julia-actions/julia-buildpkg@v1
 
       # Convert notebooks to .jl files using nbconvert

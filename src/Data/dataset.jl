@@ -32,6 +32,7 @@ end
 Base.length(ds::Dataset)::Int = nrow(info(ds))
 
 Base.getindex(ds::Dataset, i::Int) = Case(ds.loader, ds.info[i, :])
+Base.getindex(ds::Dataset, r::UnitRange{Int}) = Dataset(ds.loader, ds.info[r, :])
 
 Base.iterate(ds::Dataset) = iterate(Case.(Ref(ds.loader), eachrow(info(ds))))
 function Base.iterate(ds::Dataset, state)

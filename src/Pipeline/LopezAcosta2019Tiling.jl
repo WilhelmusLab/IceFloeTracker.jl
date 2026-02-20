@@ -27,10 +27,10 @@ import Images: area_opening,
     labels_map,
     local_maxima,
     SegmentedImage,
-    segment_mean
-import ..skimage: sk_morphology
+    segment_mean,
+    Equalization
 import ..ImageUtils: get_brighten_mask, to_uint8, imcomplement, imbrighten, get_tiles
-import ..Filtering: histeq, unsharp_mask, conditional_histeq, rgb2gray, imgradientmag
+import ..Filtering: unsharp_mask, conditional_histeq, rgb2gray, imgradientmag
 import ..Preprocessing:
     apply_landmask,
     apply_landmask!,
@@ -381,7 +381,9 @@ function watershed2(morph_residue, segment_mask, ice_mask)
 
     # Task 2: Calculate gradient magnitude
     # task2 = Threads.@spawn begin
-    gmag = imgradientmag(histeq(morph_residue))
+    gmag = imgradientmag(
+        to_uint8(adjust_histogram(morph_residue, Equalization(; nbins=64))) * 255
+    )
     # end
 
     # Wait for both tasks to complete

@@ -1,5 +1,4 @@
 import Images: mreconstruct, dilate, erode
-import ..skimage: sk_morphology
 import ..ImageUtils: to_uint8, imcomplement
 
 """
@@ -17,8 +16,8 @@ function reconstruct(img, se, type, invert::Bool=true)
     !(type == "dilation" || type == "erosion") &&
         throw(ArgumentError("Invalid type: $type. Must be 'dilation' or 'erosion'."))
 
-    type == "dilation" && (morphed = to_uint8(dilate(img, collect(se))))
-    type == "erosion" && (morphed = to_uint8(erode(img, collect(se))))
+    type == "dilation" && (morphed = to_uint8(dilate(img, se)))
+    type == "erosion" && (morphed = to_uint8(erode(img, se)))
 
     invert && (morphed = imcomplement(to_uint8(morphed)); img = imcomplement(img))
 
