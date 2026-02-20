@@ -48,7 +48,8 @@ import Images:
 import Peaks: findmaxima
 import StatsBase: kurtosis, skewness, mean, std
 
-import ..Filtering: nonlinear_diffusion, PeronaMalikDiffusion, unsharp_mask, channelwise_adapthisteq
+import ..Filtering:
+    nonlinear_diffusion, PeronaMalikDiffusion, unsharp_mask, channelwise_adapthisteq
 import ..Morphology: hbreak, hbreak!, branch, bridge, fill_holes, se_disk4
 import ..Preprocessing:
     make_landmask_se,
@@ -102,27 +103,6 @@ diffusion_parameters = (lambda=0.1, kappa=0.1, niters=5, g="exponential")
 end
 
 function (p::Segment)(
-    truecolor::T,
-    falsecolor::T,
-    landmask::U;
-    intermediate_results_callback::Union{Nothing,Function}=nothing,
-) where {T<:AbstractMatrix{<:AbstractRGB},U<:AbstractMatrix}
-    @info "building landmask and coastal buffer mask"
-    _landmask_temp = create_landmask(
-        float64.(landmask), p.coastal_buffer_structuring_element
-    )
-    landmask = _landmask_temp.non_dilated
-    coastal_buffer_mask = _landmask_temp.dilated
-    return p(
-        truecolor,
-        falsecolor,
-        landmask,
-        coastal_buffer_mask;
-        intermediate_results_callback=intermediate_results_callback,
-    )
-end
-
-function (p::Segment)(
     truecolor::T₁,
     falsecolor::T₂,
     landmask::T₃,
@@ -154,16 +134,15 @@ function (p::Segment)(
     @info "Preprocessing truecolor image"
     # nonlinear diffusion
     apply_landmask!(truecolor_image, landmask)
-    sharpened_truecolor_image = nonlinear_diffusion(
-        truecolor_image, p.diffusion_algorithm
-    )
+    sharpened_truecolor_image = nonlinear_diffusion(truecolor_image, p.diffusion_algorithm)
 
-    sharpened_truecolor_image .= channelwise_adapthisteq(sharpened_truecolor_image;
+    sharpened_truecolor_image .= channelwise_adapthisteq(
+        sharpened_truecolor_image;
         nbins=p.adapthisteq_params.nbins,
         rblocks=p.adapthisteq_params.rblocks,
         cblocks=p.adapthisteq_params.cblocks,
-        clip=p.adapthisteq_params.clip
-    ) 
+        clip=p.adapthisteq_params.clip,
+    )
 
     sharpened_grayscale_image = unsharp_mask(
         Gray.(sharpened_truecolor_image),
@@ -171,7 +150,6 @@ function (p::Segment)(
         p.unsharp_mask_params.intensity,
     )
     apply_landmask!(sharpened_grayscale_image, coastal_buffer_mask)
-
 
     # Heighten differences between floes and background ice/water.
     # Currently set to return the morphed grayscale image if band 2 / band 1 have nothing greater than
@@ -185,14 +163,15 @@ function (p::Segment)(
     )
     # 3. Segmentation
     @info "Segmenting floes part 1/3"
-    kmeans_result = kmeans_binarization(
+    kmeans_result =
+        kmeans_binarization(
             ice_water_discrim,
             fc_masked;
             k=p.kmeans_params.k,
             maxiter=p.kmeans_params.maxiter,
             random_seed=p.kmeans_params.random_seed,
-            cluster_selection_algorithm=p.cluster_selection_algorithm
-            ) |> clean_binary_floes
+            cluster_selection_algorithm=p.cluster_selection_algorithm,
+        ) |> clean_binary_floes
 
     # check: are there any regions that are nonzero under the cloudmask, since it was applied in discriminate ice water?
     apply_cloudmask!(kmeans_result, cloudmask)
@@ -247,7 +226,8 @@ function (p::Segment)(
             segF=segF,
             labels=labels,
             segment_mean_truecolor=map( # TODO Add "view_seg" code snippet
-                i -> segment_mean(segments_truecolor, i), labels_map(segments_truecolor)
+                i -> segment_mean(segments_truecolor, i),
+                labels_map(segments_truecolor),
             ),
             segment_mean_falsecolor=map(
                 i -> segment_mean(segments_falsecolor, i), labels_map(segments_falsecolor)
@@ -481,10 +461,18 @@ Binarize the sharpened image by selective brightening, gamma correction, thresho
 clean up with image hole filling.
 
 """
-function segB_binarize(sharpened_image, brightened_image, cloudmask;
-     gamma_factor=2.5, adjusted_ice_threshold=0.05, fill_range=(0, 1), alpha_level=0.5)
+function segB_binarize(
+    sharpened_image,
+    brightened_image,
+    cloudmask;
+    gamma_factor=2.5,
+    adjusted_ice_threshold=0.05,
+    fill_range=(0, 1),
+    alpha_level=0.5,
+)
     # Weighted average between brightened image and sharpened grayscale
-    adjusted_sharpened = (1 - alpha_level) .* sharpened_image .+ alpha_level .* brightened_image
+    adjusted_sharpened =
+        (1 - alpha_level) .* sharpened_image .+ alpha_level .* brightened_image
 
     # Gamma correction and cloud masking
     adjust_histogram!(adjusted_sharpened, GammaCorrection(; gamma=gamma_factor))
@@ -495,7 +483,6 @@ function segB_binarize(sharpened_image, brightened_image, cloudmask;
     segb_filled = .!imfill(segB, fill_range)
     return segb_filled
 end
-
 
 """
     segmented_ice_cloudmasking(gray_image, cloudmask, ice_labels;)
@@ -510,9 +497,7 @@ Apply cloudmask to a bitmatrix of segmented ice after kmeans clustering. Returns
 
 """
 function segmented_ice_cloudmasking(
-    gray_image::Matrix{Gray{Float64}}, 
-    falsecolor_image,
-    cloudmask::BitMatrix,
+    gray_image::Matrix{Gray{Float64}}, falsecolor_image, cloudmask::BitMatrix
 )::BitMatrix
     segmented_ice = kmeans_binarization(
         gray_image,
@@ -803,19 +788,22 @@ function IceDetectionLopezAcosta2019(;
     band_1_min_relaxed::Float64=Float64(190 / 255),
     possible_ice_threshold::Float64=Float64(75 / 255),
 )
-    return IceDetectionFirstNonZeroAlgorithm([
-        IceDetectionThresholdMODIS721(;
-            band_7_max=band_7_max, band_2_min=band_2_min, band_1_min=band_1_min
-        ),
-        IceDetectionThresholdMODIS721(;
-            band_7_max=band_7_max_relaxed,
-            band_2_min=band_2_min,
-            band_1_min=band_1_min_relaxed,
-        ),
-        IceDetectionBrightnessPeaksMODIS721(;
-            band_7_max=band_7_max, possible_ice_threshold=possible_ice_threshold
-        ),
-    ], 10)
+    return IceDetectionFirstNonZeroAlgorithm(
+        [
+            IceDetectionThresholdMODIS721(;
+                band_7_max=band_7_max, band_2_min=band_2_min, band_1_min=band_1_min
+            ),
+            IceDetectionThresholdMODIS721(;
+                band_7_max=band_7_max_relaxed,
+                band_2_min=band_2_min,
+                band_1_min=band_1_min_relaxed,
+            ),
+            IceDetectionBrightnessPeaksMODIS721(;
+                band_7_max=band_7_max, possible_ice_threshold=possible_ice_threshold
+            ),
+        ],
+        10,
+    )
 end
 
 end

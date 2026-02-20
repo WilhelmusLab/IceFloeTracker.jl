@@ -46,12 +46,12 @@
             falsecolor_path,
             landmask_path;
             intermediates_directory=tempdir,
-            intermediates_targets=["icemask.tiff"],
+            intermediates_targets=["ice_mask.tiff"],
         )
         result = (;
             imageType=typeof(segmented) <: Images.SegmentedImage,
             imageSize=size(labels_map(segmented)) == size(truecolor),
-            icemaskExists=isfile(joinpath(tempdir, "icemask.tiff")),
+            icemaskExists=isfile(joinpath(tempdir, "ice_mask.tiff")),
         )
         if !all(values(result))
             @warn "Intermediate results callback test failed" result = result
