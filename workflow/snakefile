@@ -163,37 +163,80 @@ rule load_landmask:
 # - preprocessed image
 # - K-means result
 
+# JGH:  this is really janky, because the intermediate outputs 
+#       all go into the same directory, regardless of whether 
+#       they are from the tiling or non-tiling version of the pipeline.
+#       We need to be able to split them up, either by 
+#       - putting all the intermediate outputs from a given pipeline in a subdirectory like {dir}/lopez/ and {dir}/lopeztiling/, or
+#       - adding a prefix to the intermediate output names like {dir}/lopez.cloud_mask.tiff
+
 rule preprocess_lopez:
     output:
-        labels_map="{stem}lopez.labels_map.tiff"
+        labels_map="{dir}/lopez.labels_map.tiff",
+        cloud_mask="{dir}/lopez/cloud_mask.tiff",
+        ice_mask="{dir}/lopez/ice_mask.tiff",
+        ice_water_discrim="{dir}/lopez/ice_water_discrim.tiff",
+        sharpened_grayscale_image="{dir}/lopez/sharpened_grayscale_image.tiff",
+        kmeans_result="{dir}/lopez/kmeans_result.tiff",
+        segment_mean_truecolor="{dir}/lopez/segment_mean_truecolor.tiff",
+        segment_mean_falsecolor="{dir}/lopez/segment_mean_falsecolor.tiff",
     input:
-        truecolor="{stem}truecolor.tiff",
-        falsecolor="{stem}falsecolor.tiff",
-        landmask="{stem}landmask.tiff",
+        truecolor="{dir}/truecolor.tiff",
+        falsecolor="{dir}/falsecolor.tiff",
+        landmask="{dir}/landmask.tiff",
     shell:
         """
         {config[IFT]} -e 'using IceFloeTracker; LopezAcosta2019.Segment()(
             "{output.labels_map}",
             "{input.truecolor}",
             "{input.falsecolor}",
-            "{input.landmask}"
+            "{input.landmask}";
+            intermediates_directory="{wildcards.dir}/lopez/",
+            intermediates_targets=[
+                "cloud_mask.tiff", 
+                "ice_mask.tiff", 
+                "ice_water_discrim.tiff", 
+                "sharpened_grayscale_image.tiff",
+                "kmeans_result.tiff",
+                "segment_mean_truecolor.tiff",
+                "segment_mean_falsecolor.tiff"
+            ]
         )'
         """
 
 rule preprocess_lopez_tiling:
     output:
-        labels_map="{stem}lopeztiling.labels_map.tiff"
+        labels_map="{dir}/lopeztiling.labels_map.tiff",
+        # Commented out intermediate results aren't yet available in the package code
+        # TODO: get all these intermediates available
+        cloud_mask="{dir}/lopeztiling/cloud_mask.tiff",
+        ice_mask="{dir}/lopeztiling/ice_mask.tiff",
+        # ice_water_discrim="{dir}/lopeztiling/ice_water_discrim.tiff",
+        sharpened_grayscale_image="{dir}/lopeztiling/sharpened_grayscale_image.tiff",
+        # kmeans_result="{dir}/lopeztiling/kmeans_result.tiff",
+        segment_mean_truecolor="{dir}/lopeztiling/segment_mean_truecolor.tiff",
+        segment_mean_falsecolor="{dir}/lopeztiling/segment_mean_falsecolor.tiff",
     input:
-        truecolor="{stem}truecolor.tiff",
-        falsecolor="{stem}falsecolor.tiff",
-        landmask="{stem}landmask.tiff",
+        truecolor="{dir}/truecolor.tiff",
+        falsecolor="{dir}/falsecolor.tiff",
+        landmask="{dir}/landmask.tiff",
     shell:
         """
         {config[IFT]} -e 'using IceFloeTracker; LopezAcosta2019Tiling.Segment()(
             "{output.labels_map}",
             "{input.truecolor}",
             "{input.falsecolor}",
-            "{input.landmask}"
+            "{input.landmask}";
+            intermediates_directory="{wildcards.dir}/lopeztiling/",
+            intermediates_targets=[
+                "cloud_mask.tiff", 
+                "ice_mask.tiff", 
+                # "ice_water_discrim.tiff", 
+                "sharpened_grayscale_image.tiff",
+                # "kmeans_result.tiff",
+                "segment_mean_truecolor.tiff",
+                "segment_mean_falsecolor.tiff"
+            ]
         )'
         """
 
