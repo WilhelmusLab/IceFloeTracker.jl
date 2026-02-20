@@ -4,7 +4,9 @@
 	"features": {
 		"ghcr.io/julialang/devcontainer-features/julia:1": {}
 	},
-	"postStartCommand": ".devcontainer/startup-test.sh",
+	"postCreateCommand": {
+		"startup-test": ".devcontainer/startup-test.sh"
+	},
 	"customizations": {
 		"vscode": {
 			"extensions": [
