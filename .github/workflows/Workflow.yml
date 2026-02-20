@@ -31,5 +31,8 @@ jobs:
       - name: Install workflow dependencies
         run: ".devcontainer/setup-workflow-dependencies.sh"
       - name: Get tracking results for an example region
+        env:
+          SPACEUSER: ${{ vars.SPACEUSER }}
+          SPACEPSWD: ${{ secrets.SPACEPSWD }}
         run: "snakemake --cores 2 beaufort_sea.250m.20190322.20190324.lopeztiling.tracked.csv"
         
