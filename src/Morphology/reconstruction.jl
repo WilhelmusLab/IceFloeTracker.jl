@@ -1,5 +1,4 @@
 import Images: mreconstruct, dilate, erode
-import ..skimage: sk_morphology
 import ..ImageUtils: to_uint8, imcomplement
 
 """
