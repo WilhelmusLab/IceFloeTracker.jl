@@ -1,0 +1,272 @@
+import os
+from datetime import datetime, timedelta, date
+
+configfile: "workflow/config.yaml"
+workdir: "workflow/results"
+
+
+def daterange(start_date, end_date):
+    """Generates dates from start_date to end_date (inclusive)."""
+    date = start_date
+    while date <= end_date:
+        yield date
+        date += timedelta(days=1)
+
+
+# ============================================================================
+# INIT RULES
+# ============================================================================
+
+rule init:
+    input:
+        "init-soit.txt",
+        "init-fsdproc.txt",
+        "init-colorize.txt",
+        "init-csvjoin.txt",
+        "init-IFTP.txt",
+
+rule init_soit:
+    output:
+        "init-soit.txt"
+    shell:
+        "{config[PASS_TIME]} --help > {output}"
+
+rule init_fsdproc:
+    output:
+        "init-fsdproc.txt"
+    shell:
+        "{config[FSDPROC]} --help > {output}"
+
+rule init_colorize:
+    output:
+        "init-colorize.txt"
+    shell:
+        "{config[COLORIZE]} --help > {output}"
+
+rule init_csvjoin:
+    output:
+        "init-csvjoin.txt"
+    shell:
+        "{config[CSVJOIN]} --help > {output}"
+
+rule init_iftp:
+    output:
+        "init-IFTP.txt"
+    shell:
+        "{config[IFT]} -e '' > {output}"
+
+
+# ============================================================================
+# OVERPASS TIME RULES
+# ============================================================================
+
+envvars:
+    "SPACEUSER",
+    "SPACEPSWD"
+
+rule get_region_overpass_times:
+    output: 
+        "{region}.{year}.overpasses.csv"
+    params:
+        SPACEUSER=os.environ["SPACEUSER"],
+        SPACEPSWD=os.environ["SPACEPSWD"],
+        start="{year}-01-01",
+        end="{year}-12-31",
+        centroid_lat=lambda wc: config["regions"][wc.region]["CENTROID_LAT"],
+        centroid_lon=lambda wc: config["regions"][wc.region]["CENTROID_LON"],
+    shell:
+        "{config[PASS_TIME]} --csvoutpath {output} "
+        "--startdate {params.start} --enddate {params.end} "
+        "--centroid-lat {params.centroid_lat} --centroid-lon {params.centroid_lon} "
+        "--SPACEUSER {params.SPACEUSER} --SPACEPSWD {params.SPACEPSWD}"
+
+rule get_single_overpass_time:
+    output:
+        "{region}.{year}-{month}-{day}.{satellite}.overpass.txt"
+    input:
+        "{region}.{year}.overpasses.csv"
+    wildcard_constraints:
+        year="[0-9]{4}",
+        month="[0-9]{2}",
+        day="[0-9]{2}"
+    params:
+        date=lambda wc: f"{wc.year}-{wc.month}-{wc.day}"
+    run:
+        import csv; 
+        overpass_time = None
+        with open(input[0]) as f:
+            csvfile = csv.reader(f)
+            for row in csvfile:
+                if row and row[0] == params.date and row[1] == wildcards.satellite:
+                    overpass_time = row[2]
+                    break
+        with open(output[0], "w") as f:
+            f.write(overpass_time + "\n")
+
+
+# ============================================================================
+# IMAGE LOADING RULES
+# ============================================================================
+
+rule load_truecolor:
+    output:
+        "{region}.{scale}m.{satellite}.{date}/truecolor.tiff"
+    params:
+        bbox=lambda wc: config["regions"][wc.region]["BBOX"],
+        crs=lambda wc: config["regions"][wc.region]["CRS"]
+    shell:
+        "{config[FSDPROC]} load {output} --kind truecolor "
+        "--crs {params.crs} --bbox {params.bbox} --scale {wildcards.scale} "
+        "--datetime {wildcards.date} --satellite {wildcards.satellite}"
+
+rule load_falsecolor:
+    output:
+        "{region}.{scale}m.{satellite}.{date}/falsecolor.tiff"
+    params:
+        bbox=lambda wc: config["regions"][wc.region]["BBOX"],
+        crs=lambda wc: config["regions"][wc.region]["CRS"]
+    shell:
+        "{config[FSDPROC]} load {output} --kind bands721 "
+        "--crs {params.crs} --bbox {params.bbox} --scale {wildcards.scale} "
+        "--datetime {wildcards.date} --satellite {wildcards.satellite}"
+
+rule load_cloud:
+    output:
+        "{region}.{scale}m.{satellite}.{date}/cloud.tiff"
+    params:
+        bbox=lambda wc: config["regions"][wc.region]["BBOX"],
+        crs=lambda wc: config["regions"][wc.region]["CRS"]
+    shell:
+        "{config[FSDPROC]} load {output} --kind cloud "
+        "--crs {params.crs} --bbox {params.bbox} --scale {wildcards.scale} "
+        "--datetime {wildcards.date} --satellite {wildcards.satellite}"
+
+rule load_landmask:
+    output:
+        "{region}.{scale}m.{satellite}.{date}/landmask.tiff"
+    params:
+        bbox=lambda wc: config["regions"][wc.region]["BBOX"],
+        crs=lambda wc: config["regions"][wc.region]["CRS"]
+    shell:
+        "{config[FSDPROC]} load {output} --kind landmask "
+        "--crs {params.crs} --bbox {params.bbox} --scale {wildcards.scale} "
+        "--datetime {wildcards.date} --satellite {wildcards.satellite}"
+
+# ============================================================================
+# PREPROCESSING RULES
+# ============================================================================
+# TODO: add intermediate outputs
+# In all cases, add intermediate outputs for:
+# - Cloud mask
+# - Ice-water discrimination
+# - preprocessed image masked with cloud and land-mask
+# - preprocessed image
+# - K-means result
+
+# JGH:  this is really janky, because the intermediate outputs 
+#       all go into the same directory, regardless of whether 
+#       they are from the tiling or non-tiling version of the pipeline.
+#       We need to be able to split them up, either by 
+#       - putting all the intermediate outputs from a given pipeline in a subdirectory like {dir}/lopez/ and {dir}/lopeztiling/, or
+#       - adding a prefix to the intermediate output names like {dir}/lopez.cloud_mask.tiff
+
+rule preprocess_lopez:
+    output:
+        labels_map="{dir}/lopez.labels_map.tiff",
+        cloud_mask="{dir}/lopez/cloud_mask.tiff",
+        ice_mask="{dir}/lopez/ice_mask.tiff",
+        ice_water_discrim="{dir}/lopez/ice_water_discrim.tiff",
+        sharpened_grayscale_image="{dir}/lopez/sharpened_grayscale_image.tiff",
+        kmeans_result="{dir}/lopez/kmeans_result.tiff",
+        segment_mean_truecolor="{dir}/lopez/segment_mean_truecolor.tiff",
+        segment_mean_falsecolor="{dir}/lopez/segment_mean_falsecolor.tiff",
+    input:
+        truecolor="{dir}/truecolor.tiff",
+        falsecolor="{dir}/falsecolor.tiff",
+        landmask="{dir}/landmask.tiff",
+    shell:
+        """
+        {config[IFT]} -e 'using IceFloeTracker; LopezAcosta2019.Segment()(
+            "{output.labels_map}",
+            "{input.truecolor}",
+            "{input.falsecolor}",
+            "{input.landmask}";
+            intermediates_directory="{wildcards.dir}/lopez/",
+            intermediates_targets=[
+                "cloud_mask.tiff", 
+                "ice_mask.tiff", 
+                "ice_water_discrim.tiff", 
+                "sharpened_grayscale_image.tiff",
+                "kmeans_result.tiff",
+                "segment_mean_truecolor.tiff",
+                "segment_mean_falsecolor.tiff"
+            ]
+        )'
+        """
+
+rule preprocess_lopez_tiling:
+    output:
+        labels_map="{dir}/lopeztiling.labels_map.tiff",
+        # Commented out intermediate results aren't yet available in the package code
+        # TODO: get all these intermediates available
+        cloud_mask="{dir}/lopeztiling/cloud_mask.tiff",
+        ice_mask="{dir}/lopeztiling/ice_mask.tiff",
+        # ice_water_discrim="{dir}/lopeztiling/ice_water_discrim.tiff",
+        sharpened_grayscale_image="{dir}/lopeztiling/sharpened_grayscale_image.tiff",
+        # kmeans_result="{dir}/lopeztiling/kmeans_result.tiff",
+        segment_mean_truecolor="{dir}/lopeztiling/segment_mean_truecolor.tiff",
+        segment_mean_falsecolor="{dir}/lopeztiling/segment_mean_falsecolor.tiff",
+    input:
+        truecolor="{dir}/truecolor.tiff",
+        falsecolor="{dir}/falsecolor.tiff",
+        landmask="{dir}/landmask.tiff",
+    shell:
+        """
+        {config[IFT]} -e 'using IceFloeTracker; LopezAcosta2019Tiling.Segment()(
+            "{output.labels_map}",
+            "{input.truecolor}",
+            "{input.falsecolor}",
+            "{input.landmask}";
+            intermediates_directory="{wildcards.dir}/lopeztiling/",
+            intermediates_targets=[
+                "cloud_mask.tiff", 
+                "ice_mask.tiff", 
+                # "ice_water_discrim.tiff", 
+                "sharpened_grayscale_image.tiff",
+                # "kmeans_result.tiff",
+                "segment_mean_truecolor.tiff",
+                "segment_mean_falsecolor.tiff"
+            ]
+        )'
+        """
+
+rule tracking:
+    output:
+        tracked="{region}.{scale}m.{start}.{end}.{seg}.tracked.csv"
+    input:
+        labels_maps = lambda wc: expand("{region}.{scale}m.{satellite}.{date}/{seg}.labels_map.tiff", 
+            satellite=config["SATELLITES"], 
+            date=daterange(date.fromisoformat(wc.start), date.fromisoformat(wc.end)), 
+            **wc
+        ),
+        overpasses = lambda wc: expand("{region}.{date}.{satellite}.overpass.txt", 
+            satellite=config["SATELLITES"], 
+            date=daterange(date.fromisoformat(wc.start), date.fromisoformat(wc.end)), 
+            **wc
+        )
+    shell:
+        "touch {output.tracked}"
+    
+# ============================================================================
+# UTILITY RULES
+# ============================================================================
+
+rule colorize_labeled:
+    input:
+        labeled="{stem}labels_map.tiff",
+        init="init-colorize.txt"
+    output:
+        colorized="{stem}labels_map.colorized.tiff"
+    shell:
+        "{config[COLORIZE]} {input.labeled} {output.colorized}"
+

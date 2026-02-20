@@ -1,0 +1,27 @@
+IFT: "julia --project=/workspaces/IceFloeTracker.jl"
+FSDPROC: "pipx run --spec git+https://github.com/WilhelmusLab/ebseg@v1.0.1 fsdproc"
+PASS_TIME: "pipx run --spec git+https://github.com/wilhelmuslab/ice-floe-tracker-pipeline@v2.3.1#subdirectory=satellite-overpass-identification-tool soit"
+COLORIZE: "pipx run --spec git+https://github.com/wilhelmuslab/ice-floe-tracker-pipeline@v2.3.1#subdirectory=label-colorizer colorize"
+CSVJOIN: "pipx run --spec git+https://github.com/wilhelmuslab/ice-floe-tracker-pipeline@v2.3.1#subdirectory=csvjoin csvjoin"
+
+#--------------------------------------------------
+# Regions, Satellites
+#--------------------------------------------------
+SATELLITES: ["aqua", "terra"]
+
+regions: {
+  # BBOX: "x_lower_left,y_lower_left,x_upper_right,y_upper_right"
+  "beaufort_sea": { 
+    CENTROID_LAT: 71.02795656503653, 
+    CENTROID_LON: -129.11755440990464, 
+    CRS: "EPSG:3413", 
+    BBOX: "-2112500.0,-262500.0,-2012500.0,-162500.0" 
+  }
+}
+
+#--------------------------------------------------
+# Satellite Overpass Identification Tool
+#--------------------------------------------------
+# Username and password for Space-Track.org (don't commit!)
+SPACEUSER: ""
+SPACEPSWD: ""
