@@ -1,6 +1,5 @@
 module CLAHE
 
-using Images: YIQ, channelview, padarray, Pad
 using Images.ImageContrastAdjustment:
     AbstractHistogramAdjustmentAlgorithm,
     GenericGrayImage,
@@ -8,7 +7,8 @@ using Images.ImageContrastAdjustment:
     build_histogram,
     adjust_histogram,
     adjust_histogram!
-using Images.ImageCore
+using Images.ImageFiltering: padarray, Pad
+using Images.ImageCore: comp1, AbstractGray, Color3, YIQ, channelview
 using TiledIteration: TileIterator
 
 """
@@ -52,6 +52,7 @@ function (f::ContrastLimitedAdaptiveHistogramEqualization)(
     resized_width = ceil(Int, width / (2 * f.cblocks)) * 2 * f.cblocks
     must_pad = (resized_height != height) || (resized_width != width)
     if must_pad
+        @debug "Padding image from size ($(height), $(width)) to size ($(resized_height), $(resized_width)) to fit the requested number of blocks ($(f.rblocks) x $(f.cblocks))."
         left = ceil(Int, (resized_width - width) / 2)
         right = floor(Int, (resized_width - width) / 2)
         top = ceil(Int, (resized_height - height) / 2)
@@ -152,12 +153,12 @@ function (f::ContrastLimitedAdaptiveHistogramEqualization)(
         @. out_region = vₒ
     end
 
-    out .= must_pad ? out_padded[1:height, 1:width] : out_padded
+    out .= out_padded[1:height, 1:width] # Remove padding if we added it
     return out
 end
 
 function validate_parameters(f::ContrastLimitedAdaptiveHistogramEqualization)
-    !(1 <= f.rblocks && 1 <= f.cblocks) &&
+    (f.rblocks < 1 || f.cblocks < 1) &&
         throw(ArgumentError("At least 1 contextual regions required (1x1 or greater)."))
     return nothing
 end
@@ -166,8 +167,9 @@ function redistribute_histogram(
     counts::AbstractVector{T}, clip_limit::Int
 ) where {T<:Integer}
     n_excess = sum(max(0, count - clip_limit) for count in counts)
-    n_bins = length(counts)
     n_excess == 0 && return counts
+    n_bins = length(counts)
+
     increment, remainder = divrem(n_excess, n_bins)
     new_counts = @. min(counts, clip_limit) + increment
     for i in 1:remainder
@@ -184,14 +186,11 @@ function map_histogram(
 ) where {T<:Integer}
     n_pixels = sum(counts)
     scale = (maxval - minval) / n_pixels
-    mapping = similar(counts, Float64) # Can I make this the same type as minval/maxval?
+    mapping = similar(counts, Float64)
     cumulative = 0
     for i in eachindex(counts)
         cumulative += counts[i]
-        mapping[i] = minval + cumulative * scale
-        if mapping[i] > maxval
-            mapping[i] = maxval
-        end
+        mapping[i] = min(minval + cumulative * scale, maxval)
     end
 
     function _mapping_function(value)
