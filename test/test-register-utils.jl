@@ -1,7 +1,7 @@
 
 @testitem "registration utilities" begin
     using IceFloeTracker: align_centroids, compute_centroid, shape_difference_rotation
-    
+
     @testset "centroid" begin
         @testset "zeroes" begin
             @test isequal(compute_centroid(Bool[0;;]; rounded=false), (NaN, NaN))
