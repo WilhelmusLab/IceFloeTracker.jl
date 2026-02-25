@@ -166,7 +166,7 @@ rule load_landmask:
         '
         """
 
-rule make_coastal_buffer_mask:
+rule load_coastal_buffer_mask:
     output:
         "{region}.{scale}m.{year}.coastal_buffer_mask.tiff"
     input:
