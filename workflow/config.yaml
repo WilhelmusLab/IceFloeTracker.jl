@@ -1,4 +1,4 @@
-IFT: "julia --project=/workspaces/IceFloeTracker.jl"
+IFT: "julia --project=../../" # relative to workdir
 FSDPROC: "pipx run --spec git+https://github.com/WilhelmusLab/ebseg@v1.0.1 fsdproc"
 PASS_TIME: "pipx run --spec git+https://github.com/wilhelmuslab/ice-floe-tracker-pipeline@v2.3.1#subdirectory=satellite-overpass-identification-tool soit"
 COLORIZE: "pipx run --spec git+https://github.com/wilhelmuslab/ice-floe-tracker-pipeline@v2.3.1#subdirectory=label-colorizer colorize"
