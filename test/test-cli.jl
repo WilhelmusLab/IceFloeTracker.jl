@@ -49,7 +49,7 @@
             load(falsecolor_path),
             load(landmask_path) |> to_landmask;
             intermediate_results_callback=call_kwargs(;
-                labels_map=l -> reinterpret(Gray{N0f64}, l) |> save(output_path),
+                labels_map=l -> l .|> UInt16 |> save(output_path),
                 ice_mask=save(ice_mask_path),
             ),
         )
