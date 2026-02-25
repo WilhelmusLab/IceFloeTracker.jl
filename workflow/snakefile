@@ -74,6 +74,8 @@ envvars:
 rule get_region_overpass_times:
     output: 
         "{region}.{year}.overpasses.csv"
+    wildcard_constraints:
+        year="[0-9]{4}"
     params:
         SPACEUSER=os.environ["SPACEUSER"],
         SPACEPSWD=os.environ["SPACEPSWD"],
@@ -87,11 +89,28 @@ rule get_region_overpass_times:
         "--centroid-lat {params.centroid_lat} --centroid-lon {params.centroid_lon} "
         "--SPACEUSER {params.SPACEUSER} --SPACEPSWD {params.SPACEPSWD}"
 
+rule get_region_month_overpass_times:
+    output: 
+        "{region}.{year}-{month}.overpasses.csv"
+    params:
+        SPACEUSER=os.environ["SPACEUSER"],
+        SPACEPSWD=os.environ["SPACEPSWD"],
+        start="{year}-{month}-01",
+        end=lambda wc: last_day_of_month(int(wc.year), int(wc.month)).strftime("%Y-%m-%d"),
+        centroid_lat=lambda wc: config["regions"][wc.region]["CENTROID_LAT"],
+        centroid_lon=lambda wc: config["regions"][wc.region]["CENTROID_LON"],
+    shell:
+        "{config[PASS_TIME]} --csvoutpath {output} "
+        "--startdate {params.start} --enddate {params.end} "
+        "--centroid-lat {params.centroid_lat} --centroid-lon {params.centroid_lon} "
+        "--SPACEUSER {params.SPACEUSER} --SPACEPSWD {params.SPACEPSWD}"
+
+
 rule get_single_overpass_time:
     output:
         "{region}.{year}-{month}-{day}.{satellite}.overpass.txt"
     input:
-        "{region}.{year}.overpasses.csv"
+        "{region}.{year}-{month}.overpasses.csv"
     wildcard_constraints:
         year="[0-9]{4}",
         month="[0-9]{2}",
@@ -110,6 +129,13 @@ rule get_single_overpass_time:
         with open(output[0], "w") as f:
             f.write(overpass_time + "\n")
 
+rule get_case_overpass_time:
+    output:
+        "{region}.{scale}m.{satellite}.{year}-{month}-{day}/overpass.txt"
+    input:
+        "{region}.{year}-{month}-{day}.{satellite}.overpass.txt"
+    shell:
+        "cp {input} {output}"
 
 # ============================================================================
 # IMAGE LOADING RULES
