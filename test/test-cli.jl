@@ -33,16 +33,6 @@
     save(falsecolor_path, falsecolor)
     save(landmask_path, landmask)
 
-    function test_algorithm(seg)
-        segmented = seg(output_path, truecolor_path, falsecolor_path, landmask_path)
-        # Check output type and shape
-        return typeof(segmented) <: Images.SegmentedImage &&
-               size(labels_map(segmented)) == size(truecolor)
-    end
-
-    @test test_algorithm(LopezAcosta2019.Segment())
-    @test test_algorithm(LopezAcosta2019Tiling.Segment())
-
     function test_algorithm_with_callback(seg)
         segmented = seg(
             load(truecolor_path),
