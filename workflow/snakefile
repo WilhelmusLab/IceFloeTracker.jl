@@ -235,6 +235,10 @@ rule segment_lopez_tiling:
         )'
         """
 
+# ============================================================================
+# TRACKING RULES
+# ============================================================================
+
 rule tracking:
     output:
         tracked="{region}.{scale}m.{start}.{end}.{seg}.tracked.csv"
