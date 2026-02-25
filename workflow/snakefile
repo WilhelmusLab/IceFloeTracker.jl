@@ -373,26 +373,29 @@ rule tracking:
     output:
         tracked = "{region}.{scale}m.{start}.{end}.{seg}.tracked.csv"
     input:
-        def labels_maps(wc): return expand("{region}.{scale}m.{satellite}.{date}/{seg}.labels_map.tiff",
-                                           satellite=config["SATELLITES"],
-                                           date=daterange(date.fromisoformat(wc.start),
-                                                          date.fromisoformat(wc.end)),
-                                           **wc
-                                           ),
+        def labels_maps(wc):
+            return expand("{region}.{scale}m.{satellite}.{date}/{seg}.labels_map.tiff",
+                          satellite=config["SATELLITES"],
+                          date=daterange(date.fromisoformat(wc.start),
+                                         date.fromisoformat(wc.end)),
+                          **wc
+                          ),
 
-        def truecolor_imgs(wc): return expand("{region}.{scale}m.{satellite}.{date}/truecolor.tiff",
-                                              satellite=config["SATELLITES"],
-                                              date=daterange(date.fromisoformat(wc.start),
-                                                             date.fromisoformat(wc.end)),
-                                              **wc
-                                              ),
+        def truecolor_imgs(wc):
+            return expand("{region}.{scale}m.{satellite}.{date}/truecolor.tiff",
+                          satellite=config["SATELLITES"],
+                          date=daterange(date.fromisoformat(wc.start),
+                                         date.fromisoformat(wc.end)),
+                          **wc
+                          ),
 
-        def overpasses(wc): return expand("{region}.{scale}m.{satellite}.{date}/overpass.txt",
-                                          satellite=config["SATELLITES"],
-                                          date=daterange(date.fromisoformat(wc.start),
-                                                         date.fromisoformat(wc.end)),
-                                          **wc
-                                          )
+        def overpasses(wc):
+            return expand("{region}.{scale}m.{satellite}.{date}/overpass.txt",
+                          satellite=config["SATELLITES"],
+                          date=daterange(date.fromisoformat(wc.start),
+                                         date.fromisoformat(wc.end)),
+                          **wc
+                          )
     shell:
         """
         {config[IFT]} -e 'using IceFloeTracker, Images, TimeZones, CSVFiles;
