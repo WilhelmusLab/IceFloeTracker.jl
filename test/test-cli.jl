@@ -2,6 +2,9 @@
     using IceFloeTracker
     using FileIO
     using Images
+    using IceFloeTracker.Data: to_landmask
+    using IceFloeTracker.Utils: call_kwargs
+
     tempdir = mktempdir()
     # Download the dataset (default ref, cache_dir)
     dataset = Watkins2026Dataset()
@@ -25,6 +28,7 @@
     falsecolor_path = joinpath(tempdir, "falsecolor.tiff")
     landmask_path = joinpath(tempdir, "landmask.tiff")
     output_path = joinpath(tempdir, "output.tiff")
+    ice_mask_path = joinpath(tempdir, "ice_mask.tiff")
     save(truecolor_path, truecolor)
     save(falsecolor_path, falsecolor)
     save(landmask_path, landmask)
@@ -41,17 +45,18 @@
 
     function test_algorithm_with_callback(seg)
         segmented = seg(
-            output_path,
-            truecolor_path,
-            falsecolor_path,
-            landmask_path;
-            intermediates_directory=tempdir,
-            intermediates_targets=["ice_mask.tiff"],
+            load(truecolor_path),
+            load(falsecolor_path),
+            load(landmask_path) |> to_landmask;
+            intermediate_results_callback=call_kwargs(;
+                labels_map=l -> reinterpret(Gray{N0f64}, l) |> save(output_path),
+                ice_mask=save(ice_mask_path),
+            ),
         )
         result = (;
             imageType=typeof(segmented) <: Images.SegmentedImage,
             imageSize=size(labels_map(segmented)) == size(truecolor),
-            icemaskExists=isfile(joinpath(tempdir, "ice_mask.tiff")),
+            icemaskExists=isfile(ice_mask_path),
         )
         if !all(values(result))
             @warn "Intermediate results callback test failed" result = result
