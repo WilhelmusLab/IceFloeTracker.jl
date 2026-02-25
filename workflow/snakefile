@@ -243,7 +243,7 @@ rule segment_lopez:
             load("{input.landmask}") |> to_landmask,
             load("{input.coastal_buffer_mask}") |> to_landmask;
             intermediate_results_callback=call_kwargs(;
-                labels_map=l -> reinterpret(Gray{{N0f64}}, l) |> save("{output.labels_map}"),
+                labels_map=l -> l .|> UInt16 |> save("{output.labels_map}"),
                 cloud_mask=save("{output.cloud_mask}"),
                 ice_mask=save("{output.ice_mask}"),
                 ice_water_discrim=save("{output.ice_water_discrim}"),
@@ -279,7 +279,7 @@ rule segment_lopez_tiling:
             load("{input.landmask}") |> to_landmask,
             load("{input.coastal_buffer_mask}") |> to_landmask;
             intermediate_results_callback=call_kwargs(;
-                labels_map=l -> reinterpret(Gray{{N0f64}}, l) |> save("{output.labels_map}"),
+                labels_map=l -> l .|> UInt16 |> save("{output.labels_map}"),
                 cloud_mask=save("{output.cloud_mask}"),
                 ice_mask=save("{output.ice_mask}"),
                 segment_mean_truecolor=save("{output.segment_mean_truecolor}"),
