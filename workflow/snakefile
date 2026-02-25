@@ -141,16 +141,66 @@ rule load_cloud:
         "--crs {params.crs} --bbox {params.bbox} --scale {wildcards.scale} "
         "--datetime {wildcards.date} --satellite {wildcards.satellite}"
 
-rule load_landmask:
+
+rule load_raw_landmask:
     output:
-        "{region}.{scale}m.{satellite}.{date}/landmask.tiff"
+        "{region}.{scale}m.{year}.landmask_raw.tiff"
     params:
         bbox=lambda wc: config["regions"][wc.region]["BBOX"],
         crs=lambda wc: config["regions"][wc.region]["CRS"]
     shell:
         "{config[FSDPROC]} load {output} --kind landmask "
         "--crs {params.crs} --bbox {params.bbox} --scale {wildcards.scale} "
-        "--datetime {wildcards.date} --satellite {wildcards.satellite}"
+        "--datetime {wildcards.year}-01-01"
+
+
+rule load_landmask:
+    output:
+        "{stem}landmask.tiff"
+    input:
+        "{stem}landmask_raw.tiff"
+    shell:
+        """
+        {config[IFT]} -e 'using IceFloeTracker, Images; 
+            load("{input}") |> to_landmask .|> Bool .|> Gray |> save("{output}")
+        '
+        """
+
+rule make_coastal_buffer_mask:
+    output:
+        "{region}.{scale}m.{year}.coastal_buffer_mask.tiff"
+    input:
+        landmask="{region}.{scale}m.{year}.landmask.tiff"
+    shell:
+        """
+        {config[IFT]} -e 'using IceFloeTracker, Images; 
+            load("{input.landmask}") |> to_landmask |> create_coastal_buffer .|> Gray |> save("{output}")
+        '
+        """
+
+
+rule load_case_landmask:
+    input:
+        "{region}.{scale}m.{year}.landmask.tiff"
+    output:
+        "{region}.{scale}m.{satellite}.{year}-{month}-{day}/landmask.tiff"
+    shell:
+        "cp {input} {output}"
+
+
+rule load_case_coastal_buffer_mask:
+    input:
+        "{region}.{scale}m.{year}.coastal_buffer_mask.tiff"
+    output:
+        "{region}.{scale}m.{satellite}.{year}-{month}-{day}/coastal_buffer_mask.tiff"
+    shell:
+        "cp {input} {output}"
+
+        
+# ============================================================================
+# PREPROCESSING RULES
+# ============================================================================
+
 
 # ============================================================================
 # SEGMENTATION RULES
@@ -184,18 +234,20 @@ rule segment_lopez:
         truecolor="{dir}/truecolor.tiff",
         falsecolor="{dir}/falsecolor.tiff",
         landmask="{dir}/landmask.tiff",
+        coastal_buffer_mask="{dir}/coastal_buffer_mask.tiff",
     shell:
         """
         {config[IFT]} -e 'using IceFloeTracker, Images; LopezAcosta2019.Segment()(
             load("{input.truecolor}"),
             load("{input.falsecolor}"),
-            load("{input.landmask}") |> to_landmask;
+            load("{input.landmask}") |> to_landmask,
+            load("{input.coastal_buffer_mask}") |> to_landmask;
+
             intermediate_results_callback=call_kwargs(;
                 labels_map=l -> reinterpret(Gray{{N0f64}}, l) |> save("{output.labels_map}"),
                 cloud_mask=save("{output.cloud_mask}"),
                 ice_mask=save("{output.ice_mask}"),
                 ice_water_discrim=save("{output.ice_water_discrim}"),
-                
                 kmeans_result=save("{output.kmeans_result}"),
                 segment_mean_truecolor=save("{output.segment_mean_truecolor}"),
                 segment_mean_falsecolor=save("{output.segment_mean_falsecolor}"),
@@ -219,12 +271,14 @@ rule segment_lopez_tiling:
         truecolor="{dir}/truecolor.tiff",
         falsecolor="{dir}/falsecolor.tiff",
         landmask="{dir}/landmask.tiff",
+        coastal_buffer_mask="{dir}/coastal_buffer_mask.tiff",
     shell:
         """
         {config[IFT]} -e 'using IceFloeTracker, Images; LopezAcosta2019Tiling.Segment()(
             load("{input.truecolor}"),
             load("{input.falsecolor}"),
-            load("{input.landmask}") |> to_landmask;
+            load("{input.landmask}") |> to_landmask,
+            load("{input.coastal_buffer_mask}") |> to_landmask;
             intermediate_results_callback=call_kwargs(;
                 labels_map=l -> reinterpret(Gray{{N0f64}}, l) |> save("{output.labels_map}"),
                 cloud_mask=save("{output.cloud_mask}"),
