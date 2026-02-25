@@ -334,13 +334,39 @@ rule tracking:
             date=daterange(date.fromisoformat(wc.start), date.fromisoformat(wc.end)), 
             **wc
         ),
-        overpasses = lambda wc: expand("{region}.{date}.{satellite}.overpass.txt", 
+        truecolor_imgs = lambda wc: expand("{region}.{scale}m.{satellite}.{date}/truecolor.tiff", 
+            satellite=config["SATELLITES"], 
+            date=daterange(date.fromisoformat(wc.start), date.fromisoformat(wc.end)), 
+            **wc
+        ),
+        overpasses = lambda wc: expand("{region}.{scale}m.{satellite}.{date}/overpass.txt", 
             satellite=config["SATELLITES"], 
             date=daterange(date.fromisoformat(wc.start), date.fromisoformat(wc.end)), 
             **wc
         )
     shell:
-        "touch {output.tracked}"
+        """
+        {config[IFT]} -e 'using IceFloeTracker, Images, TimeZones, CSVFiles;
+        # Load input data
+        overpasses = "{input.overpasses}" |> split .|> (n-> read(n, String)) .|> chomp .|> ZonedDateTime .|> DateTime;
+        truecolor_imgs = "{input.truecolor_imgs}" |> split .|> load;
+        labels_maps = "{input.labels_maps}" |> split .|> load .|> x -> reinterpret(Int16, x);
+        segmented_imgs = map((tc, lm) -> SegmentedImage(tc, Int64.(lm)), truecolor_imgs, labels_maps);
+        
+        # Sort into chronological order
+        order = sortperm(overpasses);
+        overpasses = overpasses[order];
+        segmented_imgs = segmented_imgs[order];
+
+        tracker = FloeTracker(
+            filter_function=FilterFunction(),
+            matching_function=MinimumWeightMatchingFunction()
+        );
+        tracked = tracker(segmented_imgs, overpasses);
+        save("{output.tracked}", tracked);
+        '
+        """
+        
     
 # ============================================================================
 # UTILITY RULES
