@@ -79,18 +79,3 @@ function apply_landmask!(input_image::AbstractMatrix, landmask_binary::BitMatrix
     input_image .= (.!landmask_binary) .* input_image
     return nothing
 end
-
-"""
-    apply_landmask(img, landmask; as_indices::Bool=false)
-
-Apply the landmask to the input image, optionally returning the indices of non-masked (ocean/ice) pixels.
-
-# Arguments
-- `img`: input image (e.g., ice mask or RGB image)
-- `landmask`: binary landmask (1=ocean/ice, 0=land)
-- `as_indices`: if true, return indices of non-masked pixels; otherwise, return masked image
-"""
-function apply_landmask(img, landmask; as_indices::Bool)
-    landmasked = apply_landmask(img, landmask)
-    return as_indices ? findall(vec(landmasked)) : landmasked
-end
