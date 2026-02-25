@@ -15,7 +15,8 @@
 				"github.vscode-github-actions",
 				"GitHub.vscode-pull-request-github",
 				"tamasfe.even-better-toml",
-				"snakemake.snakemake-lang"
+				"snakemake.snakemake-lang",
+				"kleinicke.tiff-visualizer"
 			],
 			"settings": {
 				"editor.formatOnSave": true
