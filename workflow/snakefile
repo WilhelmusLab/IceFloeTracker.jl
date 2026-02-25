@@ -196,7 +196,7 @@ rule load_case_coastal_buffer_mask:
     shell:
         "cp {input} {output}"
 
-        
+
 # ============================================================================
 # PREPROCESSING RULES
 # ============================================================================
@@ -242,7 +242,6 @@ rule segment_lopez:
             load("{input.falsecolor}"),
             load("{input.landmask}") |> to_landmask,
             load("{input.coastal_buffer_mask}") |> to_landmask;
-
             intermediate_results_callback=call_kwargs(;
                 labels_map=l -> reinterpret(Gray{{N0f64}}, l) |> save("{output.labels_map}"),
                 cloud_mask=save("{output.cloud_mask}"),
