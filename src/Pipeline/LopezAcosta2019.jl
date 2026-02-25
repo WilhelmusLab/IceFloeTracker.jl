@@ -226,13 +226,17 @@ function (p::Segment)(
             watersheds_segB_product=watersheds_segB_product,
             segF=segF,
             labels=labels,
+            labels_map=labels,
+            segments,
+            segmented_truecolor=segments_truecolor,
+            segmented_falsecolor=segments_falsecolor,
             segment_mean_truecolor=map( # TODO Add "view_seg" code snippet
                 i -> segment_mean(segments_truecolor, i),
                 labels_map(segments_truecolor),
             ),
             segment_mean_falsecolor=map(
                 i -> segment_mean(segments_falsecolor, i), labels_map(segments_falsecolor)
-            ), # Add figure that overlays the segments
+            ), # TODO Add figure that overlays the segments
         )
     end
     return segments

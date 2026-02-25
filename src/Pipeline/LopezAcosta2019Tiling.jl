@@ -299,7 +299,11 @@ function (p::Segment)(
             ice_mask=icemask,
             binary_floe_masks,
             labels,
+            labels_map=labels,
             segmented,
+            segments=segmented,
+            segments_truecolor,
+            segments_falsecolor,
             segment_mean_truecolor=map(i -> segment_mean(segments_truecolor, i), labels),
             segment_mean_falsecolor=map(i -> segment_mean(segments_falsecolor, i), labels),
         )
