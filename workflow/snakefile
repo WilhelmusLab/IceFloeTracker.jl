@@ -153,7 +153,7 @@ rule load_landmask:
         "--datetime {wildcards.date} --satellite {wildcards.satellite}"
 
 # ============================================================================
-# PREPROCESSING RULES
+# SEGMENTATION RULES
 # ============================================================================
 # TODO: add intermediate outputs
 # In all cases, add intermediate outputs for:
@@ -170,7 +170,7 @@ rule load_landmask:
 #       - putting all the intermediate outputs from a given pipeline in a subdirectory like {dir}/lopez/ and {dir}/lopeztiling/, or
 #       - adding a prefix to the intermediate output names like {dir}/lopez.cloud_mask.tiff
 
-rule preprocess_lopez:
+rule segment_lopez:
     output:
         labels_map="{dir}/lopez.labels_map.tiff",
         cloud_mask="{dir}/lopez/cloud_mask.tiff",
@@ -203,7 +203,7 @@ rule preprocess_lopez:
         )'
         """
 
-rule preprocess_lopez_tiling:
+rule segment_lopez_tiling:
     output:
         labels_map="{dir}/lopeztiling.labels_map.tiff",
         # Commented out intermediate results aren't yet available in the package code
