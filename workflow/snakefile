@@ -1,6 +1,7 @@
 import os
 from datetime import datetime, timedelta, date
 import calendar 
+import pyproj
 
 configfile: "workflow/config.yaml"
 workdir: "workflow/results"
@@ -19,6 +20,19 @@ def last_day_of_month(year, month):
     date_ = date(year, month, last_day)
     return date_
 
+def get_bbox(centroid_crs, centroid, target_crs, target_width_height):
+    """Given a centroid coordinate, its CRS, and a target width and height in meters, 
+    returns a bounding box in the target CRS."""
+    transformer = pyproj.Transformer.from_crs(centroid_crs, target_crs, always_xy=True)
+    centroid = transformer.transform(centroid[1], centroid[0])
+    centroid_round = list(map(round, centroid))
+    half_width = target_width_height[0] / 2
+    half_height = target_width_height[1] / 2
+    min_x = centroid_round[0] - half_width
+    max_x = centroid_round[0] + half_width
+    min_y = centroid_round[1] - half_height
+    max_y = centroid_round[1] + half_height
+    return f"{min_x},{min_y},{max_x},{max_y}"
 
 # ============================================================================
 # INIT RULES
@@ -145,8 +159,13 @@ rule load_truecolor:
     output:
         "{region}.{scale}m.{satellite}.{date}/truecolor.tiff"
     params:
-        bbox=lambda wc: config["regions"][wc.region]["BBOX"],
-        crs=lambda wc: config["regions"][wc.region]["CRS"]
+        bbox = lambda wc: get_bbox(
+            config["regions"][wc.region]["CENTROID_CRS"],
+            config["regions"][wc.region]["CENTROID_LAT_LON"],
+            config["regions"][wc.region]["TARGET_CRS"],
+            config["regions"][wc.region]["TARGET_WIDTH_HEIGHT"],
+        ),
+        crs=lambda wc: config["regions"][wc.region]["TARGET_CRS"]
     shell:
         "{config[FSDPROC]} load {output} --kind truecolor "
         "--crs {params.crs} --bbox {params.bbox} --scale {wildcards.scale} "
@@ -156,8 +175,13 @@ rule load_falsecolor:
     output:
         "{region}.{scale}m.{satellite}.{date}/falsecolor.tiff"
     params:
-        bbox=lambda wc: config["regions"][wc.region]["BBOX"],
-        crs=lambda wc: config["regions"][wc.region]["CRS"]
+        bbox = lambda wc: get_bbox(
+            config["regions"][wc.region]["CENTROID_CRS"],
+            config["regions"][wc.region]["CENTROID_LAT_LON"],
+            config["regions"][wc.region]["TARGET_CRS"],
+            config["regions"][wc.region]["TARGET_WIDTH_HEIGHT"],
+        ),
+        crs=lambda wc: config["regions"][wc.region]["TARGET_CRS"]
     shell:
         "{config[FSDPROC]} load {output} --kind bands721 "
         "--crs {params.crs} --bbox {params.bbox} --scale {wildcards.scale} "
@@ -167,8 +191,13 @@ rule load_cloud:
     output:
         "{region}.{scale}m.{satellite}.{date}/cloud.tiff"
     params:
-        bbox=lambda wc: config["regions"][wc.region]["BBOX"],
-        crs=lambda wc: config["regions"][wc.region]["CRS"]
+        bbox = lambda wc: get_bbox(
+            config["regions"][wc.region]["CENTROID_CRS"],
+            config["regions"][wc.region]["CENTROID_LAT_LON"],
+            config["regions"][wc.region]["TARGET_CRS"],
+            config["regions"][wc.region]["TARGET_WIDTH_HEIGHT"],
+        ),
+        crs=lambda wc: config["regions"][wc.region]["TARGET_CRS"]
     shell:
         "{config[FSDPROC]} load {output} --kind cloud "
         "--crs {params.crs} --bbox {params.bbox} --scale {wildcards.scale} "
@@ -179,8 +208,13 @@ rule load_raw_landmask:
     output:
         "{region}.{scale}m.{year}.landmask_raw.tiff"
     params:
-        bbox=lambda wc: config["regions"][wc.region]["BBOX"],
-        crs=lambda wc: config["regions"][wc.region]["CRS"]
+        bbox = lambda wc: get_bbox(
+            config["regions"][wc.region]["CENTROID_CRS"],
+            config["regions"][wc.region]["CENTROID_LAT_LON"],
+            config["regions"][wc.region]["TARGET_CRS"],
+            config["regions"][wc.region]["TARGET_WIDTH_HEIGHT"],
+        ),
+        crs=lambda wc: config["regions"][wc.region]["TARGET_CRS"]
     shell:
         "{config[FSDPROC]} load {output} --kind landmask "
         "--crs {params.crs} --bbox {params.bbox} --scale {wildcards.scale} "

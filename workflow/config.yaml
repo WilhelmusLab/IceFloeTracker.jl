@@ -10,12 +10,11 @@ CSVJOIN: "pipx run --spec git+https://github.com/wilhelmuslab/ice-floe-tracker-p
 SATELLITES: ["aqua", "terra"]
 
 regions: {
-  # BBOX: "x_lower_left,y_lower_left,x_upper_right,y_upper_right"
   "beaufort_sea": { 
-    CENTROID_LAT: 71.02795656503653, 
-    CENTROID_LON: -129.11755440990464, 
-    CRS: "EPSG:3413", 
-    BBOX: "-2112500.0,-262500.0,-2012500.0,-162500.0" 
+    CENTROID_CRS: "EPSG:4326",
+    CENTROID_LAT_LON: [71.02795656503653, -129.11755440990464],
+    TARGET_CRS: "EPSG:3413", 
+    TARGET_WIDTH_HEIGHT: [100_000, 100_000],
   }
 }
 
