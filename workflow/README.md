@@ -1,4 +1,3 @@
-
 # Workflow Management
 
 IceFloeTracker.jl can be used with workflow management tools for batch processing.
