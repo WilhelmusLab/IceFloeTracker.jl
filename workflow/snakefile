@@ -7,7 +7,7 @@ import pandas as pd
 configfile: "workflow/config.yaml"
 workdir: "workflow/results"
 
-regions = pd.read_csv("../region.csv").set_index("region")
+regions = pd.read_csv(config["REGION_CSV"]).set_index("region")
 
 def daterange(start_date, end_date):
     """Generates dates from start_date to end_date (inclusive)."""

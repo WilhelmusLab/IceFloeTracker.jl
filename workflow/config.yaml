@@ -5,6 +5,11 @@ COLORIZE: "pipx run --spec git+https://github.com/wilhelmuslab/ice-floe-tracker-
 CSVJOIN: "pipx run --spec git+https://github.com/wilhelmuslab/ice-floe-tracker-pipeline@v2.3.1#subdirectory=csvjoin csvjoin"
 
 #--------------------------------------------------
+# Config files
+#--------------------------------------------------
+REGION_CSV: "../region.csv" # relative to workdir
+
+#--------------------------------------------------
 # Satellites
 #--------------------------------------------------
 SATELLITES: ["aqua", "terra"]
