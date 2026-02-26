@@ -2,10 +2,12 @@ import os
 from datetime import timedelta, date
 import calendar
 import pyproj
+import pandas as pd
 
 configfile: "workflow/config.yaml"
 workdir: "workflow/results"
 
+regions = pd.read_csv("../region.csv").set_index("region")
 
 def daterange(start_date, end_date):
     """Generates dates from start_date to end_date (inclusive)."""
@@ -22,20 +24,43 @@ def last_day_of_month(year, month):
     return date_
 
 
-def get_bbox(centroid_crs, centroid, target_crs, target_width_height):
+def get_bbox(center_crs, centroid, target_crs, target_width_height):
     """Given a centroid coordinate, its CRS, and a target width and height in meters, 
     returns a bounding box in the target CRS."""
     transformer = pyproj.Transformer.from_crs(
-        centroid_crs, target_crs, always_xy=True)
+        center_crs, target_crs, always_xy=True)
     centroid = transformer.transform(centroid[1], centroid[0])
-    centroid_round = list(map(round, centroid))
+    center_round = list(map(round, centroid))
     half_width = target_width_height[0] / 2
     half_height = target_width_height[1] / 2
-    min_x = centroid_round[0] - half_width
-    max_x = centroid_round[0] + half_width
-    min_y = centroid_round[1] - half_height
-    max_y = centroid_round[1] + half_height
+    min_x = center_round[0] - half_width
+    max_x = center_round[0] + half_width
+    min_y = center_round[1] - half_height
+    max_y = center_round[1] + half_height
     return f"{min_x},{min_y},{max_x},{max_y}"
+
+
+def get_region_data(region):
+    data = regions.loc[region].to_dict()
+    return data
+
+def get_region_centroid(region):
+    data = get_region_data(region)
+    crs, lat, lon = data["center_crs"], float(data["center_lat"]), float(data["center_lon"])
+    return crs, (lat, lon)
+
+def get_region_target_extent(region):
+    data = get_region_data(region)
+    crs, width, height = data["target_crs"], float(data["target_width"]), float(data["target_height"])
+    return crs, (width, height)
+
+def get_region_target_bbox(region):
+    data = get_region_data(region)
+    centroid = get_region_centroid(region)
+    extent = get_region_target_extent(region)
+    bbox = get_bbox(*centroid, *extent)
+    return bbox
+
 
 # ============================================================================
 # INIT RULES
@@ -99,16 +124,12 @@ rule get_region_overpass_times:
         SPACEPSWD = os.environ["SPACEPSWD"],
         start = "{year}-01-01",
         end = "{year}-12-31",
-
-        def centroid_lat(
-            wc): return config["regions"][wc.region]["CENTROID_LAT"],
-
-        def centroid_lon(
-            wc): return config["regions"][wc.region]["CENTROID_LON"],
+        center_lat = lambda wc: get_region_data(wc.region)["center_lat"],
+        center_lon = lambda wc: get_region_data(wc.region)["center_lon"]
     shell:
         "{config[PASS_TIME]} --csvoutpath {output} "
         "--startdate {params.start} --enddate {params.end} "
-        "--centroid-lat {params.centroid_lat} --centroid-lon {params.centroid_lon} "
+        "--centroid-lat {params.center_lat} --centroid-lon {params.center_lon} "
         "--SPACEUSER {params.SPACEUSER} --SPACEPSWD {params.SPACEPSWD}"
 
 rule get_region_month_overpass_times:
@@ -118,18 +139,14 @@ rule get_region_month_overpass_times:
         SPACEUSER = os.environ["SPACEUSER"],
         SPACEPSWD = os.environ["SPACEPSWD"],
         start = "{year}-{month}-01",
-
-        def end(wc): return last_day_of_month(
+        end = lambda wc: last_day_of_month(
             int(wc.year), int(wc.month)).strftime("%Y-%m-%d"),
-
-        def centroid_lat(
-            wc): return config["regions"][wc.region]["CENTROID_LAT"],
-        def centroid_lon(
-            wc): return config["regions"][wc.region]["CENTROID_LON"],
+        center_lat = lambda wc: get_region_data(wc.region)["center_lat"],
+        center_lon = lambda wc: get_region_data(wc.region)["center_lon"]
     shell:
         "{config[PASS_TIME]} --csvoutpath {output} "
         "--startdate {params.start} --enddate {params.end} "
-        "--centroid-lat {params.centroid_lat} --centroid-lon {params.centroid_lon} "
+        "--centroid-lat {params.center_lat} --centroid-lon {params.center_lon} "
         "--SPACEUSER {params.SPACEUSER} --SPACEPSWD {params.SPACEPSWD}"
 
 
@@ -143,7 +160,7 @@ rule get_single_overpass_time:
         month = "[0-9]{2}",
         day = "[0-9]{2}"
     params:
-        def date(wc): return f"{wc.year}-{wc.month}-{wc.day}"
+        date = lambda wc: f"{wc.year}-{wc.month}-{wc.day}"
     run:
         import csv
         overpass_time = None
@@ -172,13 +189,8 @@ rule load_truecolor:
     output:
         "{region}.{scale}m.{satellite}.{date}/truecolor.tiff"
     params:
-        def bbox(wc): return get_bbox(
-            config["regions"][wc.region]["CENTROID_CRS"],
-            config["regions"][wc.region]["CENTROID_LAT_LON"],
-            config["regions"][wc.region]["TARGET_CRS"],
-            config["regions"][wc.region]["TARGET_WIDTH_HEIGHT"],
-        ),
-        def crs(wc): return config["regions"][wc.region]["TARGET_CRS"]
+        bbox = lambda wc: get_region_target_bbox(wc.region),
+        crs = lambda wc: get_region_data(wc.region)["target_crs"]
     shell:
         "{config[FSDPROC]} load {output} --kind truecolor "
         "--crs {params.crs} --bbox {params.bbox} --scale {wildcards.scale} "
@@ -188,13 +200,8 @@ rule load_falsecolor:
     output:
         "{region}.{scale}m.{satellite}.{date}/falsecolor.tiff"
     params:
-        def bbox(wc): return get_bbox(
-            config["regions"][wc.region]["CENTROID_CRS"],
-            config["regions"][wc.region]["CENTROID_LAT_LON"],
-            config["regions"][wc.region]["TARGET_CRS"],
-            config["regions"][wc.region]["TARGET_WIDTH_HEIGHT"],
-        ),
-        def crs(wc): return config["regions"][wc.region]["TARGET_CRS"]
+        bbox = lambda wc: get_region_target_bbox(wc.region),
+        crs = lambda wc: get_region_data(wc.region)["target_crs"]
     shell:
         "{config[FSDPROC]} load {output} --kind bands721 "
         "--crs {params.crs} --bbox {params.bbox} --scale {wildcards.scale} "
@@ -204,13 +211,8 @@ rule load_cloud:
     output:
         "{region}.{scale}m.{satellite}.{date}/cloud.tiff"
     params:
-        def bbox(wc): return get_bbox(
-            config["regions"][wc.region]["CENTROID_CRS"],
-            config["regions"][wc.region]["CENTROID_LAT_LON"],
-            config["regions"][wc.region]["TARGET_CRS"],
-            config["regions"][wc.region]["TARGET_WIDTH_HEIGHT"],
-        ),
-        def crs(wc): return config["regions"][wc.region]["TARGET_CRS"]
+        bbox = lambda wc: get_region_target_bbox(wc.region),
+        crs = lambda wc: get_region_data(wc.region)["target_crs"]
     shell:
         "{config[FSDPROC]} load {output} --kind cloud "
         "--crs {params.crs} --bbox {params.bbox} --scale {wildcards.scale} "
@@ -221,13 +223,8 @@ rule load_raw_landmask:
     output:
         "{region}.{scale}m.{year}.landmask_raw.tiff"
     params:
-        def bbox(wc): return get_bbox(
-            config["regions"][wc.region]["CENTROID_CRS"],
-            config["regions"][wc.region]["CENTROID_LAT_LON"],
-            config["regions"][wc.region]["TARGET_CRS"],
-            config["regions"][wc.region]["TARGET_WIDTH_HEIGHT"],
-        ),
-        def crs(wc): return config["regions"][wc.region]["TARGET_CRS"]
+        bbox = lambda wc: get_region_target_bbox(wc.region),
+        crs = lambda wc: get_region_data(wc.region)["target_crs"]
     shell:
         "{config[FSDPROC]} load {output} --kind landmask "
         "--crs {params.crs} --bbox {params.bbox} --scale {wildcards.scale} "
@@ -373,24 +370,21 @@ rule tracking:
     output:
         tracked = "{region}.{scale}m.{start}.{end}.{seg}.tracked.csv"
     input:
-        def labels_maps(wc):
-            return expand("{region}.{scale}m.{satellite}.{date}/{seg}.labels_map.tiff",
+        labels_maps = lambda wc: expand("{region}.{scale}m.{satellite}.{date}/{seg}.labels_map.tiff",
                           satellite=config["SATELLITES"],
                           date=daterange(date.fromisoformat(wc.start),
                                          date.fromisoformat(wc.end)),
                           **wc
                           ),
 
-        def truecolor_imgs(wc):
-            return expand("{region}.{scale}m.{satellite}.{date}/truecolor.tiff",
+        truecolor_imgs = lambda wc: expand("{region}.{scale}m.{satellite}.{date}/truecolor.tiff",
                           satellite=config["SATELLITES"],
                           date=daterange(date.fromisoformat(wc.start),
                                          date.fromisoformat(wc.end)),
                           **wc
                           ),
 
-        def overpasses(wc):
-            return expand("{region}.{scale}m.{satellite}.{date}/overpass.txt",
+        overpasses = lambda wc: expand("{region}.{scale}m.{satellite}.{date}/overpass.txt",
                           satellite=config["SATELLITES"],
                           date=daterange(date.fromisoformat(wc.start),
                                          date.fromisoformat(wc.end)),

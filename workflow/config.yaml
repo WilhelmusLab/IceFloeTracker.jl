@@ -5,24 +5,9 @@ COLORIZE: "pipx run --spec git+https://github.com/wilhelmuslab/ice-floe-tracker-
 CSVJOIN: "pipx run --spec git+https://github.com/wilhelmuslab/ice-floe-tracker-pipeline@v2.3.1#subdirectory=csvjoin csvjoin"
 
 #--------------------------------------------------
-# Regions, Satellites
+# Satellites
 #--------------------------------------------------
 SATELLITES: ["aqua", "terra"]
-
-regions: {
-  "beaufort_sea": { 
-    CENTROID_CRS: "EPSG:4326",
-    CENTROID_LAT_LON: [71.02795656503653, -129.11755440990464],
-    TARGET_CRS: "EPSG:3413", 
-    TARGET_WIDTH_HEIGHT: [100_000, 100_000],
-  },
-  "hudson_bay": { 
-    CENTROID_CRS: "EPSG:4326",
-    CENTROID_LAT_LON: [60, -83.0],
-    TARGET_CRS: "EPSG:3413", 
-    TARGET_WIDTH_HEIGHT: [1_500_000, 1_500_000],
-  },
-}
 
 #--------------------------------------------------
 # Satellite Overpass Identification Tool
