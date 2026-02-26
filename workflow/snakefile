@@ -64,14 +64,23 @@ def get_region_target_bbox(region):
 
 
 # ============================================================================
-# Default Targets
+# Batch Targets
 # ============================================================================
 
-rule all:
+rule region_case_results:
     input:
         expand("{case.region}.{case.scale}m.{case.start}.{case.end}.{case.segmentation}.tracked.csv",
             case=regions_cases.itertuples(),
         )
+    output:
+        "region-case-results.txt"
+    shell:        
+        """
+        for case in {input}; do
+            wc "$case" >> {output};
+        done
+
+        """
 
 # ============================================================================
 # INIT RULES

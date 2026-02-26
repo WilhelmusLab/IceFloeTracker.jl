@@ -1,5 +1,4 @@
 region,start,end,scale,segmentation
-000-baffin_bay-100km,2004-07-25,2004-07-26,250,lopez
-000-baffin_bay-100km,2005-07-25,2005-07-26,250,lopez
-033-baffin_bay-100km,2004-07-25,2004-07-30,250,lopeztiling
-033-baffin_bay-100km,2004-07-25,2004-07-30,250,lopez
+beaufort_sea-100km,2004-03-19,2004-03-26,250,lopez
+beaufort_sea-300km,2004-03-19,2004-03-26,250,lopeztiling
+beaufort_sea-300km,2004-03-19,2004-03-26,250,lopez

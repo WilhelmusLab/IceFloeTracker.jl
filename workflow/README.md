@@ -7,7 +7,90 @@ The example in this directory uses [Snakemake](https://snakemake.readthedocs.io/
 The main file specifying the workflow is the [snakefile](./snakefile). 
 The [config.yaml](./config.yaml) file sets environment variables.
 
+## Install dependencies
 
+Install the workflow and its dependencies by calling:
+```
+# Install the snakemake runner in an isolated environment
+pipx install snakemake  
+
+# Add pyproj and pandas to the snakemake environment
+pipx inject snakemake pyproj pandas  
+```
+
+## Run the workflow
+
+To run the workflow, specify the output files which are desired, 
+and Snakemake should download or create any (missing) prerequisites 
+and process them in the correct order.
+
+For example, the command:
+```bash
+snakemake -c 1 beaufort_sea-100km.250m.2019-03-22.2019-03-23.lopeztiling.tracked.csv 
+```
+- Will use one processor core (`-c 1`) 
+- to run tracking (`....tracked.csv`)
+- on a 100km x 100km region in the Beaufort Sea, 
+- using 250m scale images, 
+- from 22nd to 23rd March 2019,
+- with the `Lopez2019Tiling.Segment` algorithm.
+
+It reports that 29 tasks of different types are planned before executing the first:
+```
+Assuming unrestricted shared filesystem usage.
+host: c486485cb3cb
+Building DAG of jobs...
+Using shell: /usr/bin/bash
+Provided cores: 1 (use --cores to define parallelism)
+Rules claiming more threads will be scaled down.
+Job stats:
+job                                count
+-------------------------------  -------
+get_region_month_overpass_times        1
+get_single_overpass_time               4
+load_case_coastal_buffer_mask          4
+load_case_landmask                     4
+load_coastal_buffer_mask               1
+load_falsecolor                        4
+load_landmask                          1
+load_raw_landmask                      1
+load_truecolor                         4
+segment_lopez_tiling                   4
+tracking                               1
+total                                 29
+```
+
+Intermediate files can be made in the same way, e.g.:
+```bash
+snakemake -c 4 hudson_bay-1500km.250m.2023-03-{22..25}.terra/falsecolor.tiff
+```
+- will use four cores (`-c 4`)
+- to load falsecolor images (`.../falsecolor.tiff`)
+- of the 1500km x 1500km image of Hudson Bay
+- at the 250m scale
+- for the 22nd through 25th March 2023.
+
+## Specifying new regions
+
+Regions like `hudson_bay-1500km` can be specified by adding them to the [region.csv](./region.csv) file.
+Each region is identified by a name, and specified by:
+- its center in a particular Coordinate Reference System (CRS), usually [EPSG:4326](https://epsg.io/4326) (latitude and longitude in decimal degrees),
+- the target (output) CRS, usually [EPSG:3413](https://epsg.io/3413) (NSIDC Sea Ice Polar Stereographic North)
+- and its extent in the target CRS, which for EPSG:3413 is in metres. 
+
+## Batch processing
+
+To run the tracking pipeline on a series of time periods and regions, we can run:
+```
+snakemake -c 4 region-case-results.txt
+```
+
+The [region-case.csv](./region-case.csv) file specifies which regions and which cases will be run. 
+Each row specifies: 
+- the region name (from [region.csv](./region.csv)), 
+- the start and end dates (in ISO 8601 YYYY-MM-DD format)
+- the image scale in metres
+- the segmentation algorithm type.
 
 ## Anatomy of a Snakemake Rule
 
