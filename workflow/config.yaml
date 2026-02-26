@@ -8,6 +8,7 @@ CSVJOIN: "pipx run --spec git+https://github.com/wilhelmuslab/ice-floe-tracker-p
 # Config files
 #--------------------------------------------------
 REGION_CSV: "../region.csv" # relative to workdir
+REGION_CASE_CSV: "../region-case.csv" # relative to workdir
 
 #--------------------------------------------------
 # Satellites
