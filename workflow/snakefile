@@ -285,13 +285,6 @@ rule load_case_coastal_buffer_mask:
 # - preprocessed image
 # - K-means result
 
-# JGH:  this is really janky, because the intermediate outputs
-#       all go into the same directory, regardless of whether
-#       they are from the tiling or non-tiling version of the pipeline.
-#       We need to be able to split them up, either by
-#       - putting all the intermediate outputs from a given pipeline in a subdirectory like {dir}/lopez/ and {dir}/lopeztiling/, or
-#       - adding a prefix to the intermediate output names like {dir}/lopez.cloud_mask.tiff
-
 rule segment_lopez:
     output:
         labels_map = "{dir}/lopez.labels_map.tiff",
