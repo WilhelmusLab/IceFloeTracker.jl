@@ -3,9 +3,9 @@
 
 IceFloeTracker.jl can be used with workflow management tools for batch processing.
 
-The example in this directory uses [Snakemake](https://snakemake.readthedocs.io/en/stable/index.html).
-The main file specifying the workflow is the [snakefile](./snakefile). 
-The [config.yaml](./config.yaml) file sets environment variables.
+- The example in this directory uses [Snakemake](https://snakemake.readthedocs.io/en/stable/index.html).
+- The main file specifying the workflow is the [snakefile](./snakefile). 
+- The [config.yaml](./config.yaml) file sets environment variables.
 
 ## Install dependencies
 
