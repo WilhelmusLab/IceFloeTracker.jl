@@ -116,7 +116,7 @@ envvars:
 
 rule get_region_overpass_times:
     output:
-        "{region}.{year}.overpasses.csv"
+        "{region}/{year}.overpasses.csv"
     wildcard_constraints:
         year = "[0-9]{4}"
     params:
@@ -134,7 +134,7 @@ rule get_region_overpass_times:
 
 rule get_region_month_overpass_times:
     output:
-        "{region}.{year}-{month}.overpasses.csv"
+        "{region}/{year}.{month}.overpasses.csv"
     params:
         SPACEUSER = os.environ["SPACEUSER"],
         SPACEPSWD = os.environ["SPACEPSWD"],
@@ -152,9 +152,9 @@ rule get_region_month_overpass_times:
 
 rule get_single_overpass_time:
     output:
-        "{region}.{year}-{month}-{day}.{satellite}.overpass.txt"
+        "{region}.{scale}m.{year}-{month}-{day}.{satellite}/overpass.txt"
     input:
-        "{region}.{year}-{month}.overpasses.csv"
+        "{region}/{year}.{month}.overpasses.csv"
     wildcard_constraints:
         year = "[0-9]{4}",
         month = "[0-9]{2}",
@@ -175,9 +175,9 @@ rule get_single_overpass_time:
 
 rule get_case_overpass_time:
     output:
-        "{region}.{scale}m.{satellite}.{year}-{month}-{day}/overpass.txt"
+        "{region}.{scale}m.{year}-{month}-{day}.{satellite}/overpass.txt"
     input:
-        "{region}.{year}-{month}-{day}.{satellite}.overpass.txt"
+        "{region}.{scale}m.{year}-{month}-{day}.{satellite}/overpass.txt"
     shell:
         "cp {input} {output}"
 
@@ -187,7 +187,7 @@ rule get_case_overpass_time:
 
 rule load_truecolor:
     output:
-        "{region}.{scale}m.{satellite}.{date}/truecolor.tiff"
+        "{region}.{scale}m.{date}.{satellite}/truecolor.tiff"
     params:
         bbox = lambda wc: get_region_target_bbox(wc.region),
         crs = lambda wc: get_region_data(wc.region)["target_crs"]
@@ -198,7 +198,7 @@ rule load_truecolor:
 
 rule load_falsecolor:
     output:
-        "{region}.{scale}m.{satellite}.{date}/falsecolor.tiff"
+        "{region}.{scale}m.{date}.{satellite}/falsecolor.tiff"
     params:
         bbox = lambda wc: get_region_target_bbox(wc.region),
         crs = lambda wc: get_region_data(wc.region)["target_crs"]
@@ -209,7 +209,7 @@ rule load_falsecolor:
 
 rule load_cloud:
     output:
-        "{region}.{scale}m.{satellite}.{date}/cloud.tiff"
+        "{region}.{scale}m.{date}.{satellite}/cloud.tiff"
     params:
         bbox = lambda wc: get_region_target_bbox(wc.region),
         crs = lambda wc: get_region_data(wc.region)["target_crs"]
@@ -221,7 +221,7 @@ rule load_cloud:
 
 rule load_raw_landmask:
     output:
-        "{region}.{scale}m.{year}.landmask_raw.tiff"
+        "{region}/{scale}m.{year}.landmask_raw.tiff"
     params:
         bbox = lambda wc: get_region_target_bbox(wc.region),
         crs = lambda wc: get_region_data(wc.region)["target_crs"]
@@ -245,9 +245,9 @@ rule load_landmask:
 
 rule load_coastal_buffer_mask:
     output:
-        "{region}.{scale}m.{year}.coastal_buffer_mask.tiff"
+        "{region}/{scale}m.{year}.coastal_buffer_mask.tiff"
     input:
-        landmask = "{region}.{scale}m.{year}.landmask.tiff"
+        landmask = "{region}/{scale}m.{year}.landmask.tiff"
     shell:
         """
         {config[IFT]} -e 'using IceFloeTracker, Images; 
@@ -258,18 +258,18 @@ rule load_coastal_buffer_mask:
 
 rule load_case_landmask:
     input:
-        "{region}.{scale}m.{year}.landmask.tiff"
+        "{region}/{scale}m.{year}.landmask.tiff"
     output:
-        "{region}.{scale}m.{satellite}.{year}-{month}-{day}/landmask.tiff"
+        "{region}.{scale}m.{year}-{month}-{day}.{satellite}/landmask.tiff"
     shell:
         "cp {input} {output}"
 
 
 rule load_case_coastal_buffer_mask:
     input:
-        "{region}.{scale}m.{year}.coastal_buffer_mask.tiff"
+        "{region}/{scale}m.{year}.coastal_buffer_mask.tiff"
     output:
-        "{region}.{scale}m.{satellite}.{year}-{month}-{day}/coastal_buffer_mask.tiff"
+        "{region}.{scale}m.{year}-{month}-{day}.{satellite}/coastal_buffer_mask.tiff"
     shell:
         "cp {input} {output}"
 
@@ -370,21 +370,21 @@ rule tracking:
     output:
         tracked = "{region}.{scale}m.{start}.{end}.{seg}.tracked.csv"
     input:
-        labels_maps = lambda wc: expand("{region}.{scale}m.{satellite}.{date}/{seg}.labels_map.tiff",
+        labels_maps = lambda wc: expand("{region}.{scale}m.{date}.{satellite}/{seg}.labels_map.tiff",
                           satellite=config["SATELLITES"],
                           date=daterange(date.fromisoformat(wc.start),
                                          date.fromisoformat(wc.end)),
                           **wc
                           ),
 
-        truecolor_imgs = lambda wc: expand("{region}.{scale}m.{satellite}.{date}/truecolor.tiff",
+        truecolor_imgs = lambda wc: expand("{region}.{scale}m.{date}.{satellite}/truecolor.tiff",
                           satellite=config["SATELLITES"],
                           date=daterange(date.fromisoformat(wc.start),
                                          date.fromisoformat(wc.end)),
                           **wc
                           ),
 
-        overpasses = lambda wc: expand("{region}.{scale}m.{satellite}.{date}/overpass.txt",
+        overpasses = lambda wc: expand("{region}.{scale}m.{date}.{satellite}/overpass.txt",
                           satellite=config["SATELLITES"],
                           date=daterange(date.fromisoformat(wc.start),
                                          date.fromisoformat(wc.end)),
