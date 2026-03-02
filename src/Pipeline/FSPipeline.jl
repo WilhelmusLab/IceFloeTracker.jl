@@ -7,7 +7,12 @@ using Images
 import Peaks: findmaxima
 import StatsBase: kurtosis, skewness, mean, std
 
-import ..Filtering: nonlinear_diffusion, PeronaMalikDiffusion, unsharp_mask, channelwise_adapthisteq
+import ..Filtering: 
+    nonlinear_diffusion, 
+    PeronaMalikDiffusion, 
+    unsharp_mask, 
+    ContrastLimitedAdaptiveHistogramEqualization
+
 import ..Morphology: hbreak, hbreak!, branch, bridge, fill_holes, se_disk4
 import ..Preprocessing:
     create_landmask,
@@ -26,7 +31,8 @@ import ..Segmentation:
     IceDetectionFirstNonZeroAlgorithm,
     IceDetectionBrightnessPeaksMODIS721,
     IceDetectionThresholdMODIS721,
-    stitch_clusters
+    stitch_clusters,
+    view_seg
 
 """
 Sample input parameters expected by the main function
@@ -48,9 +54,9 @@ diffusion_parameters = (lambda=0.1, kappa=0.1, niters=5, g="exponential")
     diffusion_algorithm = PeronaMalikDiffusion(diffusion_parameters...)
     adapthisteq_params = (
         nbins=256,
-        rblocks=16, # TODO: Make responsive to tile size
+        rblocks=16,
         cblocks=8, 
-        clip=0.9,  # matlab default is 0.01 CP, which should be the same as clip=0.99
+        clip=20, 
     )
     tile_size_pixels=1000
     min_tile_ice_pixel_count=500
@@ -74,7 +80,7 @@ function (p::Segment)(
     falsecolor::T,
     land_mask::U;
     intermediate_results_callback::Union{Nothing,Function}=nothing,
-) where {T<:AbstractMatrix{<:AbstractRGB},U<:AbstractMatrix}
+) where {T<:AbstractMatrix{<:Union{AbstractRGB, TransparentRGB}},U<:AbstractMatrix}
     @info "building landmask and coastal buffer mask"
     _landmask_temp = create_landmask(
         float64.(land_mask), p.coastal_buffer_structuring_element
@@ -96,7 +102,7 @@ function (p::Segment)(
     land_mask::U,
     coastal_buffer::U;
     intermediate_results_callback::Union{Nothing,Function}=nothing,
-) where {T<:AbstractMatrix{<:AbstractRGB},U<:BitMatrix}
+) where {T<:AbstractMatrix{<:Union{AbstractRGB, TransparentRGB}},U<:BitMatrix}
 
     # Move these conversions down through the function as each step gets support for 
     # the full range of image formats
@@ -147,13 +153,22 @@ function (p::Segment)(
         )
     end
     
-    preproc_img .= channelwise_adapthisteq(preproc_img;
-        nbins=p.adapthisteq_params.nbins,
-        rblocks=p.adapthisteq_params.rblocks,
-        cblocks=p.adapthisteq_params.cblocks,
-        clip=p.adapthisteq_params.clip
-    );
+    # Replace with the CLAHE.jl function
+    # preproc_img .= channelwise_adapthisteq(preproc_img;
+    #     nbins=p.adapthisteq_params.nbins,
+    #     rblocks=p.adapthisteq_params.rblocks,
+    #     cblocks=p.adapthisteq_params.cblocks,
+    #     clip=p.adapthisteq_params.clip
+    # );
+    adjust_histogram!(preproc_img,
+        ContrastLimitedAdaptiveHistogramEqualization(
+            nbins=p.adapthisteq_params.nbins,
+            rblocks=p.adapthisteq_params.rblocks,
+            cblocks=p.adapthisteq_params.cblocks,
+            clip=p.adapthisteq_params.clip)
+    )
 
+    # Potentially change to channelwise apply, using helper function
     preproc_gray = Gray.(preproc_img)
     for tile in filtered_tiles
         preproc_gray[tile...] .= unsharp_mask(
@@ -189,6 +204,7 @@ function (p::Segment)(
             ) |> clean_binary_floes
     
     # check: are there any regions that are nonzero under the cloudmask, since it was applied in discriminate ice water?
+    apply_landmask!(kmeans_result, land_mask)
     apply_cloudmask!(kmeans_result, cloud_mask)
 
     # The clean binary floes method has an aggressive fill_holes algorithm. Potentially merging with the
@@ -209,7 +225,7 @@ function (p::Segment)(
         segB.ice_intersect,
         segB.not_ice,
         filtered_tiles;
-        strel=s.watershed_strel,
+        strel=p.watershed_strel,
         dist_threshold=4
     )
     
@@ -218,19 +234,20 @@ function (p::Segment)(
         segB.not_ice_bit,
         segB.not_ice,
         filtered_tiles;
-        strel=s.watershed_strel, # add to inputs for calibration
+        strel=p.watershed_strel, # add to inputs for calibration
         dist_threshold=4 # add to inputs for calibration
     )
 
     watersheds_segB_product = falses(size(truecolor_image))
     for tile in filtered_tiles
-        watersheds_segB_product[tile...] .= (isboundary(labels_map(w_merged)[tile...]) .* isboundary(labels_map(w_other)[tile...])) .> 0
+        watersheds_segB_product[tile...] .= (
+            isboundary(labels_map(w_merged)[tile...]) .* isboundary(labels_map(w_other)[tile...])
+            ) .> 0
     end
 
-    
     # segmentation_F
     # TODO: Split the refined k-means workflow from the cleanup
-    # TODO: Make the 
+    # TODO: Make the final morphological operations into a split_floes function
     @info "Segmenting floes part 3/3"
     segF = segmentation_F(
         segB.not_ice,
@@ -249,8 +266,8 @@ function (p::Segment)(
     segments = SegmentedImage(truecolor, labels)
 
     if !isnothing(intermediate_results_callback)
-        segments_truecolor = SegmentedImage(truecolor, labels)
-        segments_falsecolor = SegmentedImage(falsecolor, labels)
+        colorview_truecolor = view_seg(SegmentedImage(truecolor, labels))
+        colorview_falsecolor = view_seg(SegmentedImage(falsecolor, labels))
         intermediate_results_callback(;
             truecolor,
             falsecolor,
@@ -258,19 +275,15 @@ function (p::Segment)(
             cloud_mask,
             prelim_ice_mask,
             sharpened_grayscale_image=preproc_gray,
-            ice_water_discrim=ice_water_discrim,
+            bright_ice_mask=p.cluster_selection_algorithm(falsecolor_image),
+            ice_water_discrim=Gray.(ice_water_discrim), # TODO: Output of discriminate ice water can be forced to be Gray
             segA=kmeans_result,
             segB=segB,
             watersheds_segB_product=watersheds_segB_product,
-            segF=segF,
-            labels=labels,
-            segment_mean_truecolor=map( # TODO Add "view_seg" code snippet
-                i -> segment_mean(segments_truecolor, i), labels_map(segments_truecolor)
-            ),
-            segment_mean_falsecolor=map(
-                i -> segment_mean(segments_falsecolor, i), labels_map(segments_falsecolor)
-            ), # Add figure that overlays the segments
-        )
+            segF=segF, # TODO: Add enhanced grayscale to output
+            segment_mean_falsecolor=colorview_falsecolor,
+            segment_mean_truecolor=colorview_truecolor,
+            ) # Add figure that overlays the segments
     end
     return segments
 end
