@@ -56,7 +56,10 @@ end
 Calculate the optimal tile size in the range [l0-1, l0+1] for the given size `l0` and image dimensions `dims`.
 
 # Description
-This function computes the optimal tile size for tiling an area with given dimensions. It ensures that the initial tile size `l0` is at least 2 and not larger than any of the given dimensions. The function evaluates candidate tile sizes and selects the one that minimizes the area missed by its corresponding tiling. In case of a tie, it prefers the larger tile size.
+This function computes the optimal tile size for tiling an area with given dimensions. It ensures that the initial
+tile size `l0` is at least 2 and not larger than any of the given dimensions. The function evaluates candidate tile
+sizes and selects the one that minimizes the area missed by its corresponding tiling. In case of a tie, it prefers 
+the larger tile size.
 
 # Example
 ```
