@@ -13,8 +13,10 @@ using Images
 
 # setup
 begin
-    dataloc = "/Users/dmw/Documents/research/calval_tgrs/data/MODIS_JOG_example_case/"
-    falsecolor_files = filter(f -> f != ".DS_Store", readdir(joinpath(dataloc, "falsecolor")))
+    # dataloc = "/Users/dmw/Documents/research/calval_tgrs/data/MODIS_JOG_example_case/"
+    dataloc = "/Volumes/Research/ENG_Wilhelmus_Shared/group/IFT_greenland_sea_floe_trajectories/greenland_sea_ift_dataset/"
+    year = string(2003)
+    falsecolor_files = filter(f -> f != ".DS_Store", readdir(joinpath(dataloc, "falsecolor", year)))
     truecolor_files = replace.(falsecolor_files, ("falsecolor" => "truecolor"))
     landmask_file = joinpath(dataloc, "landmask.tiff")
     landmask_img = Gray.(load(landmask_file))
@@ -22,8 +24,8 @@ begin
 
     fc_file = falsecolor_files[1]
     tc_file = truecolor_files[1]
-    tc_img = RGB.(load(joinpath(dataloc, "truecolor", tc_file)))
-    fc_img = RGB.(load(joinpath(dataloc, "falsecolor", fc_file)))
+    tc_img = RGB.(load(joinpath(dataloc, "truecolor", year, tc_file)))
+    fc_img = RGB.(load(joinpath(dataloc, "falsecolor", year, fc_file)))
 
     # segment = LopezAcosta2019.Segment()
     segment = FSPipeline.Segment(
