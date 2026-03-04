@@ -374,6 +374,30 @@ rule segment_lopez_tiling:
         """
 
 
+rule segment_buckley:
+    output:
+        labels_map = "{dir}/buckley.labels_map.tiff",
+        props = "{dir}/buckley/props.csv",
+        truecolor_cloudmasked = "{dir}/buckley/cloud_mask_on_rgb.tif",
+        truecolor_land_cloudmasked = "{dir}/buckley/land_cloud_mask_on_rgb.tif",
+    input:
+        truecolor = "{dir}/truecolor.tiff",
+        cloud_map = "{dir}/cloud.tiff",
+        landmask = "{dir}/landmask.tiff",
+    shell:
+        """
+        mkdir -p {wildcards.dir}/buckley;
+
+        {config[FSDPROC]} process \
+            {input.truecolor} \
+            {input.cloud_map} \
+            {input.landmask} \
+            {wildcards.dir}/buckley/
+
+        cp {wildcards.dir}/buckley/final.tif {output.labels_map}
+        """
+
+
 # ============================================================================
 # TRACKING RULES
 # ============================================================================
