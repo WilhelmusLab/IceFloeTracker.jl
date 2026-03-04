@@ -446,6 +446,7 @@ rule tracking:
             matching_function=MinimumWeightMatchingFunction()
         );
         tracked = tracker(segmented_imgs, overpasses);
+        select!(tracked, Not(:mask, :psi));
         save("{output.tracked}", tracked);
         '
         """
