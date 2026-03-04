@@ -359,6 +359,7 @@ rule segment_buckley:
         cp {wildcards.dir}/buckley/final.tif {output.labels_map}
         """
 
+ruleorder: segment_buckley > segment
 
 # ============================================================================
 # TRACKING RULES
