@@ -277,19 +277,19 @@ rule load_coastal_buffer_mask:
 
 
 rule load_case_landmask:
-    input:
-        "{region}/{scale}m.{year}.landmask.tiff"
     output:
         "{region}.{scale}m.{year}-{month}-{day}.{satellite}/landmask.tiff"
+    input:
+        "{region}/{scale}m.{year}.landmask.tiff"
     shell:
         "cp {input} {output}"
 
 
 rule load_case_coastal_buffer_mask:
-    input:
-        "{region}/{scale}m.{year}.coastal_buffer_mask.tiff"
     output:
         "{region}.{scale}m.{year}-{month}-{day}.{satellite}/coastal_buffer_mask.tiff"
+    input:
+        "{region}/{scale}m.{year}.coastal_buffer_mask.tiff"
     shell:
         "cp {input} {output}"
 
