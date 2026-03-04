@@ -334,75 +334,7 @@ rule segment:
             ),
         )'
         """
-
-rule segment_lopez:
-    output:
-        labels_map = "{dir}/lopez.labels_map.tiff",
-        cloud_mask = "{dir}/lopez/cloud_mask.tiff",
-        ice_mask = "{dir}/lopez/ice_mask.tiff",
-        ice_water_discrim = "{dir}/lopez/ice_water_discrim.tiff",
-        # sharpened_grayscale_image="{dir}/lopez/sharpened_grayscale_image.tiff",
-        kmeans_result = "{dir}/lopez/kmeans_result.tiff",
-        segment_mean_truecolor = "{dir}/lopez/segment_mean_truecolor.tiff",
-        segment_mean_falsecolor = "{dir}/lopez/segment_mean_falsecolor.tiff",
-    input:
-        truecolor = "{dir}/truecolor.tiff",
-        falsecolor = "{dir}/falsecolor.tiff",
-        landmask = "{dir}/landmask.tiff",
-        coastal_buffer_mask = "{dir}/coastal_buffer_mask.tiff",
-    shell:
-        """
-        {config[IFT]} -e 'using IceFloeTracker, Images; LopezAcosta2019.Segment()(
-            load("{input.truecolor}"),
-            load("{input.falsecolor}"),
-            load("{input.landmask}") |> to_landmask,
-            load("{input.coastal_buffer_mask}") |> to_landmask;
-            intermediate_results_callback=call_kwargs(;
-                labels_map=l -> l .|> UInt16 |> save("{output.labels_map}"),
-                cloud_mask=save("{output.cloud_mask}"),
-                ice_mask=save("{output.ice_mask}"),
-                ice_water_discrim=save("{output.ice_water_discrim}"),
-                kmeans_result=save("{output.kmeans_result}"),
-                segment_mean_truecolor=save("{output.segment_mean_truecolor}"),
-                segment_mean_falsecolor=save("{output.segment_mean_falsecolor}"),
-            ),
-        )'
-        """
-
-rule segment_lopez_tiling:
-    output:
-        labels_map = "{dir}/lopeztiling.labels_map.tiff",
-        # Commented out intermediate results aren't yet available in the package code
-        # TODO: get all these intermediates available
-        cloud_mask = "{dir}/lopeztiling/cloud_mask.tiff",
-        ice_mask = "{dir}/lopeztiling/ice_mask.tiff",
-        # ice_water_discrim="{dir}/lopeztiling/ice_water_discrim.tiff",
-        # sharpened_grayscale_image="{dir}/lopeztiling/sharpened_grayscale_image.tiff",
-        # kmeans_result="{dir}/lopeztiling/kmeans_result.tiff",
-        segment_mean_truecolor = "{dir}/lopeztiling/segment_mean_truecolor.tiff",
-        segment_mean_falsecolor = "{dir}/lopeztiling/segment_mean_falsecolor.tiff",
-    input:
-        truecolor = "{dir}/truecolor.tiff",
-        falsecolor = "{dir}/falsecolor.tiff",
-        landmask = "{dir}/landmask.tiff",
-        coastal_buffer_mask = "{dir}/coastal_buffer_mask.tiff",
-    shell:
-        """
-        {config[IFT]} -e 'using IceFloeTracker, Images; LopezAcosta2019Tiling.Segment()(
-            load("{input.truecolor}"),
-            load("{input.falsecolor}"),
-            load("{input.landmask}") |> to_landmask,
-            load("{input.coastal_buffer_mask}") |> to_landmask;
-            intermediate_results_callback=call_kwargs(;
-                labels_map=l -> l .|> UInt16 |> save("{output.labels_map}"),
-                cloud_mask=save("{output.cloud_mask}"),
-                ice_mask=save("{output.ice_mask}"),
-                segment_mean_truecolor=save("{output.segment_mean_truecolor}"),
-                segment_mean_falsecolor=save("{output.segment_mean_falsecolor}"),
-            ), 
-        )'
-        """
-
+        
 
 rule segment_buckley:
     output:
