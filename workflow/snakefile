@@ -93,6 +93,7 @@ rule init:
         "init-fsdproc.txt",
         "init-colorize.txt",
         "init-csvjoin.txt",
+        "init-loader.txt",
         "init-IFTP.txt",
 
 rule init_soit:
@@ -118,6 +119,14 @@ rule init_csvjoin:
         "init-csvjoin.txt"
     shell:
         "{config[CSVJOIN]} --help > {output}"
+
+
+rule init_loader:
+    output:
+        "init-loader.txt"
+    shell:
+        "{config[LOADER]} --help > {output}"
+
 
 rule init_iftp:
     output:
