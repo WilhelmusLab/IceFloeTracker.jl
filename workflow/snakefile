@@ -414,13 +414,6 @@ rule tracking:
                           **wc
                           ),
 
-        truecolor_imgs = lambda wc: expand("{region}.{scale}m.{date}.{satellite}/truecolor.tiff",
-                          satellite=config["SATELLITES"],
-                          date=daterange(date.fromisoformat(wc.start),
-                                         date.fromisoformat(wc.end)),
-                          **wc
-                          ),
-
         overpasses = lambda wc: expand("{region}.{scale}m.{date}.{satellite}/overpass.txt",
                           satellite=config["SATELLITES"],
                           date=daterange(date.fromisoformat(wc.start),
@@ -429,12 +422,12 @@ rule tracking:
                           )
     shell:
         """
-        {config[IFT]} -e 'using IceFloeTracker, Images, TimeZones, CSVFiles;
+        {config[IFT]} -e 'using IceFloeTracker, Images, TimeZones, CSVFiles, DataFrames;
         # Load input data
         overpasses = "{input.overpasses}" |> split .|> (n-> read(n, String)) .|> chomp .|> ZonedDateTime .|> DateTime;
-        truecolor_imgs = "{input.truecolor_imgs}" |> split .|> load;
         labels_maps = "{input.labels_maps}" |> split .|> load .|> x -> reinterpret(Int16, x);
-        segmented_imgs = map((tc, lm) -> SegmentedImage(tc, Int64.(lm)), truecolor_imgs, labels_maps);
+        imgs = labels_maps .|> x -> Int16.(x) .|> .>(0) .|> Gray;  # for tracking, we only need the shape of the segments, not the actual labels, so convert to binary masks
+        segmented_imgs = map((tc, lm) -> SegmentedImage(tc, Int64.(lm)), imgs, labels_maps);
 
         # Sort into chronological order
         order = sortperm(overpasses);
