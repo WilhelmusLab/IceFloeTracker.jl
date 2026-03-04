@@ -212,7 +212,7 @@ rule load_truecolor:
         bbox = lambda wc: get_region_target_bbox(wc.region),
         crs = lambda wc: get_region_data(wc.region)["target_crs"]
     shell:
-        "{config[FSDPROC]} load {output} --kind truecolor "
+        "{config[LOADER]} {output} --kind truecolor "
         "--crs {params.crs} --bbox {params.bbox} --scale {wildcards.scale} "
         "--datetime {wildcards.date} --satellite {wildcards.satellite}"
 
@@ -223,7 +223,7 @@ rule load_falsecolor:
         bbox = lambda wc: get_region_target_bbox(wc.region),
         crs = lambda wc: get_region_data(wc.region)["target_crs"]
     shell:
-        "{config[FSDPROC]} load {output} --kind bands721 "
+        "{config[LOADER]} {output} --kind bands721 "
         "--crs {params.crs} --bbox {params.bbox} --scale {wildcards.scale} "
         "--datetime {wildcards.date} --satellite {wildcards.satellite}"
 
@@ -234,7 +234,7 @@ rule load_cloud:
         bbox = lambda wc: get_region_target_bbox(wc.region),
         crs = lambda wc: get_region_data(wc.region)["target_crs"]
     shell:
-        "{config[FSDPROC]} load {output} --kind cloud "
+        "{config[LOADER]} {output} --kind cloud "
         "--crs {params.crs} --bbox {params.bbox} --scale {wildcards.scale} "
         "--datetime {wildcards.date} --satellite {wildcards.satellite}"
 
@@ -246,7 +246,7 @@ rule load_raw_landmask:
         bbox = lambda wc: get_region_target_bbox(wc.region),
         crs = lambda wc: get_region_data(wc.region)["target_crs"]
     shell:
-        "{config[FSDPROC]} load {output} --kind landmask "
+        "{config[LOADER]} {output} --kind landmask "
         "--crs {params.crs} --bbox {params.bbox} --scale {wildcards.scale} "
         "--datetime {wildcards.year}-01-01"
 
