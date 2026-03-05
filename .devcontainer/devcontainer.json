@@ -7,7 +7,7 @@
 	},
 	"postCreateCommand": {
 		"startup-test": ".devcontainer/startup-test.sh",
-		"workflow-dependencies": "./devcontainer/setup-workflow-dependencies.sh"
+		"workflow-dependencies": ".devcontainer/setup-workflow-dependencies.sh"
 	},
 	"customizations": {
 		"vscode": {
