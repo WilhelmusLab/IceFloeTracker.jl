@@ -139,18 +139,12 @@ rule init_iftp:
 # OVERPASS TIME RULES
 # ============================================================================
 
-envvars:
-    "SPACEUSER",
-    "SPACEPSWD"
-
 rule get_region_overpass_times:
     output:
         "{region}/{year}.overpasses.csv"
     wildcard_constraints:
         year = "[0-9]{4}"
     params:
-        SPACEUSER = os.environ["SPACEUSER"],
-        SPACEPSWD = os.environ["SPACEPSWD"],
         start = "{year}-01-01",
         end = "{year}-12-31",
         center_lat = lambda wc: get_region_data(wc.region)["center_lat"],
@@ -159,14 +153,11 @@ rule get_region_overpass_times:
         "{config[PASS_TIME]} --csvoutpath {output} "
         "--startdate {params.start} --enddate {params.end} "
         "--centroid-lat {params.center_lat} --centroid-lon {params.center_lon} "
-        "--SPACEUSER {params.SPACEUSER} --SPACEPSWD {params.SPACEPSWD}"
 
 rule get_region_month_overpass_times:
     output:
         "{region}/{year}.{month}.overpasses.csv"
     params:
-        SPACEUSER = os.environ["SPACEUSER"],
-        SPACEPSWD = os.environ["SPACEPSWD"],
         start = "{year}-{month}-01",
         end = lambda wc: last_day_of_month(
             int(wc.year), int(wc.month)).strftime("%Y-%m-%d"),
@@ -176,7 +167,6 @@ rule get_region_month_overpass_times:
         "{config[PASS_TIME]} --csvoutpath {output} "
         "--startdate {params.start} --enddate {params.end} "
         "--centroid-lat {params.center_lat} --centroid-lon {params.center_lon} "
-        "--SPACEUSER {params.SPACEUSER} --SPACEPSWD {params.SPACEPSWD}"
 
 
 rule get_single_overpass_time:
