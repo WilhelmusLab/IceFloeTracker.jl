@@ -40,5 +40,5 @@ jobs:
         env:
           SPACEUSER: ${{ vars.SPACEUSER }}
           SPACEPSWD: ${{ secrets.SPACEPSWD }}
-        run: "snakemake --cores 2 beaufort_sea.250m.20190322.20190323.lopeztiling.tracked.csv"
+        run: "snakemake --cores 2 beaufort_sea.250m.20190322.20190323.LopezAcosta2019Tiling.tracked.csv"
         
