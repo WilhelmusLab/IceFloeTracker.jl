@@ -52,7 +52,7 @@ include("psi-s.jl")
 include("register.jl")
 include("resample-boundary.jl")
 include("rotation.jl")
-include("tracker-funcs.jl")
+# include("tracker-funcs.jl")
 
 ##### Default settings ######
 # TODO: Replace with filter_function

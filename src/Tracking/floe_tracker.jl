@@ -5,7 +5,6 @@ import ..Segmentation: regionprops_table
 
 abstract type AbstractTracker end
 
-
 """
     FloeTracker(    
         filter_function::AbstractFloeFilterFunction

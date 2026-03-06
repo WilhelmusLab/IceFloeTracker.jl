@@ -9,8 +9,8 @@ Function to identify a best matching between pairs of ice floes in the DataFrame
 to sum. The result of the sum is the weight assigned to each pairing. Then, a best set of unique pairs is found by
 carrying out two grouped minimizations: first grouping by the first floe, identified by the `head_uuid` column, and
 finding the floe with the smallest weight, then grouping by the second floe, identified by the `uuid` column, and again 
-finding the floe with the smallest weight. Finally, only pairs that exist in both the forward and backward grouped minizations
-are identified as likely true matches.
+finding the floe with the smallest weight. Finally, we apply a consistency check such that only pairs that exist in both 
+the forward and backward grouped minizations are identified as likely true matches.
 """
 @kwdef struct MinimumWeightMatchingFunction <: AbstractFloeMatchingFunction
     columns=[:scaled_distance, :relative_error_area, :relative_error_convex_area, 
@@ -33,6 +33,8 @@ function (f::MinimumWeightMatchingFunction)(candidate_pairs::DataFrame);
     
     return innerjoin(matches_fwd[:, [:head_uuid, :uuid]], matches_bwd, on = [:head_uuid, :uuid]);
 end
+
+# TODO: Set up a GetNearest matching function
 
 # TODO: Use the commented-out code below to construct a MostMinimumEverythingMatchingFunction
 # that uses the prior method for finding a best match. 
