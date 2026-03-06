@@ -1,20 +1,81 @@
 import DataFrames: DataFrames, DataFrame, AbstractDataFrame, eachrow, select!, subset!
-import Dates: Day
+import Images: SegmentedImage
+import Dates: DateTime, Period, Day
+import ..Segmentation: regionprops_table
+
+abstract type AbstractTracker end
+
+
+"""
+    FloeTracker(    
+        filter_function::AbstractFloeFilterFunction
+        matching_function::AbstractFloeMatchingFunction
+        minimum_area::Real = 100
+        maximum_area::Real = 90e3
+        maximum_time_step::Period = Day(2)
+    )
+    
+    Track ice floes over multiple observations.
+
+    The FloeTracker functor initializes the floe tracking function by setting the `filter_function` and
+    the `matching_function`, and basic filter parameters for the area range and maximum time step. 
+
+    Trajectories are built as follows:
+        - Assume the floes detected in observation 1 are trajectories of length 1.
+        - For each subsequent observation at time `t``:
+        - Determine the latest observation for each trajectory – these are the "current trajectory heads".
+        - Select the subset of trajectory heads observed within the window `maximum_time_step, t`
+        - Apply the filter function in order to determine possible floe pairings 
+        - Apply the matching function to produce unique pairs of floes
+        - Update the trajectories to include the newly paired floes
+        - Add all unmatched floes as heads for new trajectories.
+
+    Using the default functions, initialize as:
+    ```
+        tracker = FloeTracker(FilterFunction(), MinimumWeightMatchingFunction())
+    ```
+))
+
+"""
+@kwdef struct FloeTracker <: AbstractTracker
+    filter_function::AbstractFloeFilterFunction
+    matching_function::AbstractFloeMatchingFunction
+    minimum_area::Real = 100
+    maximum_area::Real = 90e3
+    maximum_time_step::Period = Day(2)
+end
+# TODO: Add the minimum area and maximum area to the FilterFunction
+# TODO: Add method to functor to get list of needed columns from the filter functions or struct (e.g., if doing cross correlation)
+
+function (t::FloeTracker)(
+    segmented_images::Vector{<:SegmentedImage}, passtimes::Vector{DateTime}
+)
+    props = regionprops_table.(segmented_images)
+    add_uuids!.(props)
+    !issorted(passtimes) && @warn "Passtimes are not in ascending order."
+    add_passtimes!.(props, passtimes)
+    add_floemasks!.(props, segmented_images)
+    add_ψs!.(props)
+
+    tracking_results = floe_tracker(
+        props,
+        t.filter_function,
+        t.matching_function;
+        minimum_area=t.minimum_area,
+        maximum_area=t.maximum_area,
+        maximum_time_step=t.maximum_time_step,
+    )
+
+    return tracking_results
+end
+
+
+
 
 """
     floe_tracker(props; filter_function, matching_function, minimum_floe_size, maximum_floe_size, maximum_time_step)
 
-Track ice floes over multiple observations.
-
-Trajectories are built as follows:
-- Assume the floes detected in observation 1 are trajectories of length 1.
-- For each subsequent observation at time `t``:
-  - Determine the latest observation for each trajectory – these are the "current trajectory heads".
-  - Select the subset of trajectory heads observed within the window `maximum_time_step, t`
-  - Apply the filter function in order to determine possible floe pairings 
-  - Apply the matching function to produce unique pairs of floes
-  - Update the trajectories to include the newly paired floes
-  - Add all unmatched floes as heads for new trajectories.
+Lower-level function for tracking from an already-existing property table. See the FloeTracker function for comparison.
 
 # Arguments
 - `props::Vector{DataFrame}`: A vector of DataFrames, each containing ice floe properties for a single observation time. Each DataFrame must have the following columns:

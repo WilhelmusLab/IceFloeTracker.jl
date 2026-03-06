@@ -1,5 +1,7 @@
 import Images: float64, channelview, Gray, padarray, Pad, base_color_type, colorview
 
+abstract type AbstractDiffusionAlgorithm end
+
 """Nonlinear Diffusion
 
 Anisotropic diffusion was introduced by Perona and Malik (1987) and refined in subsequent publications.
@@ -13,15 +15,12 @@ PeronaMalikDiffusion(λ, K, niters, g)
     niters = Number of interations
     g = "exponential", "inverse_quadratic" (TBD: Option to provide user-defined function)
 
-
-P. Perona and J. Malik (November 1987). "Scale-space and edge detection using anisotropic diffusion". Proceedings of IEEE Computer Society Workshop on Computer Vision. pp. 16–22.
-P. Perona and J. Malik, Scale-Space and Edge Detection Using Anisotropic Diffusion, IEEE Transactions on Pattern Analysis and Machine Intelligence, 12(7):629-639, July 1990
-G. Grieg, O. Kubler, R. Kikinis, and F. A. Jolesz, Nonlinear Anisotropic Filtering of MRI Data, IEEE Transactions on Medical Imaging, 11(2):221-232, June 1992
+References:
+- P. Perona and J. Malik (November 1987). "Scale-space and edge detection using anisotropic diffusion". Proceedings of IEEE Computer Society Workshop on Computer Vision. pp. 16–22.
+- P. Perona and J. Malik, Scale-Space and Edge Detection Using Anisotropic Diffusion, IEEE Transactions on Pattern Analysis and Machine Intelligence, 12(7):629-639, July 1990
+- G. Grieg, O. Kubler, R. Kikinis, and F. A. Jolesz, Nonlinear Anisotropic Filtering of MRI Data, IEEE Transactions on Medical Imaging, 11(2):221-232, June 1992
 
 """
-
-abstract type AbstractDiffusionAlgorithm end
-
 @kwdef struct PeronaMalikDiffusion <: AbstractDiffusionAlgorithm
     λ::Float64 = 0.1
     K::Number = 0.1
@@ -43,7 +42,12 @@ abstract type AbstractDiffusionAlgorithm end
     end
 end
 
-# Default to using Perona Malik diffusion. Future releases may include more modern algorithms.
+"""
+    nonlinear_diffusion(img, f::AbstractDiffusionAlgorithm)
+
+Simple wrapper to apply a diffusion algorithm to an image. Currently the only supported algortihm
+is the Perona-Malik method.
+"""
 function nonlinear_diffusion(
     img::AbstractArray{<:Union{AbstractRGB,TransparentRGB,AbstractGray}},
     f::AbstractDiffusionAlgorithm=PeronaMalikDiffusion(),
@@ -51,7 +55,6 @@ function nonlinear_diffusion(
     return f(img)
 end
 
-"""Perform nonlinear diffusion on an input image. By default, use the Perona-Malik method."""
 function nonlinear_diffusion(
     img::AbstractArray{<:Union{AbstractRGB,TransparentRGB,AbstractGray}},
     λ::Float64,

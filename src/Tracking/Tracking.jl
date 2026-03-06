@@ -46,14 +46,13 @@ include("crosscorr.jl")
 include("extend_regionprops.jl")
 include("geometric_thresholds.jl")
 include("filter_functions.jl")
-include("floe_tracker.jl")
 include("matching_functions.jl")
+include("floe_tracker.jl")
 include("psi-s.jl")
 include("register.jl")
 include("resample-boundary.jl")
 include("rotation.jl")
 include("tracker-funcs.jl")
-include("functor.jl")
 
 ##### Default settings ######
 # TODO: Replace with filter_function
