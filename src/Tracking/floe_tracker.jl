@@ -30,7 +30,7 @@ abstract type AbstractTracker end
         - Add all unmatched floes as heads for new trajectories.
 
     Using the default functions, initialize as:
-    ```
+    ```jldoctest; setup = :(using IceFloeTracker)
         tracker = FloeTracker(FilterFunction(), MinimumWeightMatchingFunction())
     ```
 ))
