@@ -6,6 +6,7 @@ import pandas as pd
 
 configfile: "workflow/config.yaml"
 workdir: "workflow/results"
+# The profile in workflow/profiles/default/config.yaml sets default values for this workflow.
 
 regions = pd.read_csv(config["REGION_CSV"]).set_index("region")
 regions_cases = pd.read_csv(config["REGION_CASE_CSV"])
@@ -149,6 +150,8 @@ rule get_region_overpass_times:
         end = "{year}-12-31",
         center_lat = lambda wc: get_region_data(wc.region)["center_lat"],
         center_lon = lambda wc: get_region_data(wc.region)["center_lon"]
+    resources:
+        soit_api_calls=1  # limit is set in workflow/profiles/default/config.yaml
     shell:
         "{config[PASS_TIME]} --csvoutpath {output} "
         "--startdate {params.start} --enddate {params.end} "
@@ -163,6 +166,8 @@ rule get_region_month_overpass_times:
             int(wc.year), int(wc.month)).strftime("%Y-%m-%d"),
         center_lat = lambda wc: get_region_data(wc.region)["center_lat"],
         center_lon = lambda wc: get_region_data(wc.region)["center_lon"]
+    resources:
+        soit_api_calls=1  # limit is set in workflow/profiles/default/config.yaml
     shell:
         "{config[PASS_TIME]} --csvoutpath {output} "
         "--startdate {params.start} --enddate {params.end} "
