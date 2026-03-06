@@ -151,7 +151,7 @@ rule get_region_overpass_times:
         center_lat = lambda wc: get_region_data(wc.region)["center_lat"],
         center_lon = lambda wc: get_region_data(wc.region)["center_lon"]
     resources:
-        soit_api_calls=1  # limit is set in workflow/profiles/default/config.yaml
+        soit_api_calls=2  # limit is set in workflow/profiles/default/config.yaml
     shell:
         "{config[PASS_TIME]} --csvoutpath {output} "
         "--startdate {params.start} --enddate {params.end} "
@@ -167,7 +167,7 @@ rule get_region_month_overpass_times:
         center_lat = lambda wc: get_region_data(wc.region)["center_lat"],
         center_lon = lambda wc: get_region_data(wc.region)["center_lon"]
     resources:
-        soit_api_calls=1  # limit is set in workflow/profiles/default/config.yaml
+        soit_api_calls=2  # limit is set in workflow/profiles/default/config.yaml
     shell:
         "{config[PASS_TIME]} --csvoutpath {output} "
         "--startdate {params.start} --enddate {params.end} "
