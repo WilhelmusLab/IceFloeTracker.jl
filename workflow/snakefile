@@ -84,59 +84,6 @@ rule region_case_results:
         """
 
 # ============================================================================
-# INIT RULES
-# ============================================================================
-
-
-rule init:
-    input:
-        "init-soit.txt",
-        "init-fsdproc.txt",
-        "init-colorize.txt",
-        "init-csvjoin.txt",
-        "init-loader.txt",
-        "init-IFTP.txt",
-
-rule init_soit:
-    output:
-        "init-soit.txt"
-    shell:
-        "{config[PASS_TIME]} --help > {output}"
-
-rule init_fsdproc:
-    output:
-        "init-fsdproc.txt"
-    shell:
-        "{config[FSDPROC]} --help > {output}"
-
-rule init_colorize:
-    output:
-        "init-colorize.txt"
-    shell:
-        "{config[COLORIZE]} --help > {output}"
-
-rule init_csvjoin:
-    output:
-        "init-csvjoin.txt"
-    shell:
-        "{config[CSVJOIN]} --help > {output}"
-
-
-rule init_loader:
-    output:
-        "init-loader.txt"
-    shell:
-        "{config[LOADER]} --help > {output}"
-
-
-rule init_iftp:
-    output:
-        "init-IFTP.txt"
-    shell:
-        "{config[IFT]} -e '' > {output}"
-
-
-# ============================================================================
 # OVERPASS TIME RULES
 # ============================================================================
 
