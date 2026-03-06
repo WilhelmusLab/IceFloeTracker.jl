@@ -69,6 +69,23 @@ snakemake -c 4 hudson_bay-1500km.250m.2023-03-{22..25}.terra/falsecolor.tiff
 - at the 250m scale
 - for the 22nd through 25th March 2023.
 
+## Satellite Overpass Identification Tool Concurrency Limit
+
+The Satellite Overpass Identification Tool depends on the rate limits of space-track.org. 
+As of March 6, 2026, the rate limits on API calls are 30 per minute _and_ 300 per hour.[^1]
+A conservative global limit is set in [profiles/default/config.yaml](./profiles/default/config.yaml)
+The two rules `get_region_overpass_times` and `get_region_month_overpass_times` each make two API calls,
+so a resource limit of `soit_api_calls=4` means that only two instances of those rules can run concurrently.
+
+You can specify a different limit in the snakemake call:
+```bash
+snakemake <other arguments> --resources soit_api_calls=16
+```
+
+[^1]: https://www.space-track.org/documentation
+
+
+
 ## Specifying new regions
 
 Regions like `hudson_bay-1500km` can be specified by adding them to the [region.csv](./region.csv) file.
