@@ -522,6 +522,11 @@ function regionprops(
     isa(label_img, SegmentedImage) ? (labels = labels_map(label_img)) : labels = label_img
     eltype(properties) == String && (properties = [Symbol(a) for a in properties])
 
+    maximum(labels) == 0 && begin
+        @warn "Labeled image is empty!"
+        return Dict(p => missing for p in properties)
+    end
+
     data = Dict{Symbol,Any}()
     
     # Begin by extracting the set of labels that meet the minimum area criterion

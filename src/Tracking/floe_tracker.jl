@@ -13,6 +13,7 @@ abstract type AbstractTracker end
         maximum_area::Real = 90e3
         maximum_time_step::Period = Day(2)
     )
+    FloeTracker()(Vector{<:Union{SegmentedImage,Matrix{Int64}}}, passtimes::Vector{DateTime})
     
     Track ice floes over multiple observations.
 
@@ -31,8 +32,11 @@ abstract type AbstractTracker end
 
     Using the default functions, initialize as:
     ```jldoctest; setup = :(using IceFloeTracker)
-        tracker = FloeTracker(FilterFunction(), MinimumWeightMatchingFunction())
+        tracker = FloeTracker(filter_function=FilterFunction(), matching_function=MinimumWeightMatchingFunction())
     ```
+
+    Once the tracker is defined, it can be run on a list of either SegmentedImages (or labeled image indexmaps) and
+    a list of corresponding observation times.
 ))
 
 """
@@ -47,7 +51,7 @@ end
 # TODO: Add method to functor to get list of needed columns from the filter functions or struct (e.g., if doing cross correlation)
 
 function (t::FloeTracker)(
-    segmented_images::Vector{<:SegmentedImage}, passtimes::Vector{DateTime}
+    segmented_images::Vector{<:Union{SegmentedImage,Matrix{Int64}}}, passtimes::Vector{DateTime}
 )
     props = regionprops_table.(segmented_images)
     add_uuids!.(props)

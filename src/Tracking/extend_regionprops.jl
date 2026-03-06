@@ -4,7 +4,8 @@ import DataFrames: DataFrame, nrow, DataFrameRow, transform!, ByRow, AbstractDat
 import Images: label_components, SegmentedImage, labels_map
 import Dates: DateTime
 import Random: randstring
-import ..Morphology: bwareamaxfilt
+import ..Segmentation: component_floes
+
 
 FloeLabelsImage = Union{BitMatrix,Matrix{<:Bool},Matrix{<:Integer},<:SegmentedImage}
 
@@ -58,9 +59,10 @@ end
 
 Add a column to `props` called `mask` containing the cropped floe masks from `indexmap`.
 """
-function add_floemasks!(props::DataFrame, indexmap::AbstractArray{Int64}; label_column::Symbol=:label)
+function add_floemasks!(props::DataFrame, indexmap::Matrix{Int64}; label_column::Symbol=:label)
     floes = component_floes(indexmap)
-    push!(props, :mask => map(s -> floes[s], props[:, label_column]))
+    img_labels = props[:, label_column]
+    props[:, :mask] = map(s -> floes[s], img_labels)
     return nothing
 end
 
@@ -68,12 +70,5 @@ function add_floemasks!(
     props::DataFrame, segmented_image::SegmentedImage; label_column::Symbol=:label
 )
     add_floemasks!(props, labels_map(segmented_image); label_column=label_column)
-    return nothing
-end
-
-function add_floemasks!(
-    props::Vector{DataFrame}, segmented_images::Vector{SegmentedImage}; label_column::Symbol=:label
-)
-    add_floemasks!.(props, labels_map.(segmented_images); label_column=[label_column])
     return nothing
 end

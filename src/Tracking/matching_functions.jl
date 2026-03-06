@@ -11,11 +11,15 @@ carrying out two grouped minimizations: first grouping by the first floe, identi
 finding the floe with the smallest weight, then grouping by the second floe, identified by the `uuid` column, and again 
 finding the floe with the smallest weight. Finally, we apply a consistency check such that only pairs that exist in both 
 the forward and backward grouped minizations are identified as likely true matches.
+
+Arguments:
+- columns: List of columns to use in comparison
 """
 @kwdef struct MinimumWeightMatchingFunction <: AbstractFloeMatchingFunction
     columns=[:scaled_distance, :relative_error_area, :relative_error_convex_area, 
                     :relative_error_major_axis_length, :relative_error_minor_axis_length,
                     :psi_s_correlation_score, :scaled_shape_difference]
+    weights=ones(7)
 end
 
 function (f::MinimumWeightMatchingFunction)(candidate_pairs::DataFrame);
