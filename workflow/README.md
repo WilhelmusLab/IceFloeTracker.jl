@@ -74,7 +74,8 @@ snakemake -c 4 hudson_bay-1500km.250m.2023-03-{22..25}.terra/falsecolor.tiff
 The Satellite Overpass Identification Tool depends on the rate limits of space-track.org. 
 As of March 6, 2026, the rate limits on API calls are 30 per minute _and_ 300 per hour.[^1]
 
-A conservative global limit is set in [profiles/default/config.yaml](./profiles/default/config.yaml).
+A conservative global resource limit for `soit_api_calls` 
+is set in [profiles/default/config.yaml](./profiles/default/config.yaml).
 The two rules `get_region_overpass_times` and `get_region_month_overpass_times` each make two API calls,
 so a resource limit of `soit_api_calls=4` means that only two instances of those rules can run concurrently.
 
