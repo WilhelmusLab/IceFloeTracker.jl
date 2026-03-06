@@ -14,27 +14,24 @@ using Images
 # setup
 begin
     # dataloc = "/Users/dmw/Documents/research/calval_tgrs/data/MODIS_JOG_example_case/"
-    dataloc = "/Volumes/Research/ENG_Wilhelmus_Shared/group/IFT_greenland_sea_floe_trajectories/greenland_sea_ift_dataset/"
-    year = string(2003)
-    falsecolor_files = filter(f -> f != ".DS_Store", readdir(joinpath(dataloc, "falsecolor", year)))
+    # dataloc = "/Volumes/Research/ENG_Wilhelmus_Shared/group/IFT_greenland_sea_floe_traje ctories/greenland_sea_ift_dataset/"
+    dataloc = "/Users/dwatkin2/Documents/research/manuscripts/greenland_floe_scale_dataset/ift_fram_strait_test_cases/data/modis/"
+    # Year is needed for the greenland sea dataset on the share
+    # year = string(2003)
+    # falsecolor_files = filter(f -> f != ".DS_Store", readdir(joinpath(dataloc, "falsecolor", year)))
+    falsecolor_files = filter(f -> f != ".DS_Store", readdir(joinpath(dataloc, "falsecolor")))
+
+    case_number = "009" # Next: 011
+    falsecolor_files = filter(f -> occursin(case_number, f), falsecolor_files)
+
     truecolor_files = replace.(falsecolor_files, ("falsecolor" => "truecolor"))
     landmask_file = joinpath(dataloc, "landmask.tiff")
-    landmask_img = Gray.(load(landmask_file))
-    # for (fc_file, tc_file) in zip(falsecolor_files, truecolor_files)
-
-    fc_file = falsecolor_files[1]
-    tc_file = truecolor_files[1]
-    tc_img = RGB.(load(joinpath(dataloc, "truecolor", year, tc_file)))
-    fc_img = RGB.(load(joinpath(dataloc, "falsecolor", year, fc_file)))
-
-    # segment = LopezAcosta2019.Segment()
-    segment = FSPipeline.Segment(
-        cloud_mask_algorithm=LopezAcostaCloudMask(),
-        coastal_buffer_structuring_element=strel_box((5,5))
-    )
+    landmask_img = Gray.(load(landmask_file)) 
+    nothing
 end
 
-# 
+
+# This gives us 120 images for testing.
 # zoom = (1000:2500, 1000:2500)
 # Already looks different (and bad) after the k-means step
 # The discriminate ice water function seems to rely on the
@@ -44,24 +41,44 @@ end
 segment = FSPipeline.Segment(
                 cloud_mask_algorithm=LopezAcostaCloudMask(),
                 coastal_buffer_structuring_element=strel_box((5,5)),
-                adapthisteq_params=(nbins=256, rblocks=8, cblocks=8, clip=0.2),
+                tile_size_pixels=500,
+                adapthisteq_params=(nbins=256, rblocks=11, cblocks=6, clip=20),
                 )
 
+# TODO: Add callback function to return the binarized image prior to floe-splitting.
+# TODO: Add callback function to return the preprocessed sharpened image and the ice-water-discrimination image
+
+# saveloc = "/Users/dwatkin2/Documents/research/manuscripts/greenland_floe_scale_dataset/IFT_greenland_sea_dataset/data/FSPipeline_results/"
+saveloc = "/Users/dwatkin2/Documents/research/manuscripts/greenland_floe_scale_dataset/IFT_greenland_sea_dataset/data/FSPipeline_results/binary_lacm_clip20_test_cases/"
+
 for (fc_file, tc_file) in zip(falsecolor_files, truecolor_files)
-    tc_img = RGB.(load(joinpath(dataloc, "truecolor", tc_file)))
+    tc_img = RGB.(load(joinpath(dataloc, "truecolor", tc_file))) # add year if pulling from share
     fc_img = RGB.(load(joinpath(dataloc, "falsecolor", fc_file)))
 
     @time begin
         segmented_image = segment(tc_img, fc_img, landmask_img)
     end
-
-    save(joinpath(dataloc, "LopezAcosta2019", "binary",
-        replace(tc_file, ("truecolor.250m.tiff" => "binary_floes_tiled_strong_equalization.png")), 
+    save(joinpath(saveloc, 
+        replace(tc_file, ("truecolor.tiff" => "binary_floes.png")), 
         ), Gray.(segmented_image.image_indexmap .> 0))
 end
 
+segment = LopezAcosta2019.Segment()
+for (fc_file, tc_file) in zip(falsecolor_files, truecolor_files)
+    tc_img = RGB.(load(joinpath(dataloc, "truecolor", tc_file))) # add year if pulling from share
+    fc_img = RGB.(load(joinpath(dataloc, "falsecolor", fc_file)))
+
+    @time begin
+        segmented_image = segment(tc_img, fc_img, landmask_img)
+    end
+    save(joinpath(saveloc, "LA2019_julia",
+        replace(tc_file, ("truecolor.tiff" => "binary_floes.png")), 
+        ), Gray.(segmented_image.image_indexmap .> 0))
+end
+
+
+#### In this section: running section by section so I can view the output ####
 # testing: exporting just the kmeans result.
-Gray.(test)
 # Gray.(test.image_indexmap .> 0)
 # check what the resolution was on the edges in the watershed boundary
 
@@ -69,21 +86,49 @@ p = (diffusion_algorithm=PeronaMalikDiffusion(0.1, 0.1, 5, "exponential"),
     adapthisteq_params=(nbins=256, rblocks=8, cblocks=8, clip=0.2),
     unsharp_mask_params=(smoothing_param=10, intensity=0.5),
     kmeans_params = (k=4, maxiter=50, random_seed=45),
-    tile_size_pixels = 1000,
+    tile_size_pixels = 500,
     cloud_mask_algorithm = Watkins2025CloudMask(),
-    min_tile_ice_pixel_count = 1000,
+    min_tile_ice_pixel_count = 1000, # or use rblocks / cblocks
     coastal_buffer_structuring_element = strel_box((51,51)),
-    cluster_selection_algorithm=LopezAcosta2019.IceDetectionLopezAcosta2019())
+    cluster_selection_algorithm=IceDetectionBrightnessPeaksMODIS721(0.1, 0.3, 64, 0.01, 3, "union")
+    )
 
 
 for (fc_file, tc_file) in zip(falsecolor_files, truecolor_files)
     @time begin
-    tc_img = RGB.(load(joinpath(dataloc, "truecolor", tc_file)))
-    fc_img = RGB.(load(joinpath(dataloc, "falsecolor", fc_file)))
+    global tc_img = RGB.(load(joinpath(dataloc, "truecolor", year, tc_file)))
+    global fc_img = RGB.(load(joinpath(dataloc, "falsecolor", year, fc_file)))
     end    
     break
 end
 
+mosaicview(tc_img, fc_img, nrow=1)
+
+@time begin
+    init_segment_results = segment(tc_img, fc_img, landmask_img)
+end
+begin
+    # coastal intersection, update buffer
+    coastal_buffer = dilate(landmask_img .> 0, strel_box((25,25)))
+    binary_segments = labels_map(init_segment_results) .> 0
+    potential_landfast = mreconstruct(dilate, coastal_buffer, binary_segments, strel_box((3,3)))
+end
+
+mosaicview(
+    [Gray.(m) for m in [coastal_buffer, binary_segments, potential_landfast]], nrow=1)
+
+begin
+updated_mask = (landmask_img .> 0) .|| potential_landfast
+post_segment_results = segment(tc_img, fc_img, updated_mask)
+updated_binary_segments = labels_map(post_segment_results) .> 0
+end
+mosaicview(
+    [Gray.(m) for m in [binary_segments, updated_binary_segments]], nrow=1)
+
+save("/Users/dwatkin2/Downloads/original_binary_floes_500px.png", Gray.(binary_segments))
+save("/Users/dwatkin2/Downloads/updated_mask_binary_floes_500px.png", Gray.(updated_binary_segments))
+save("/Users/dwatkin2/Downloads/tc_img.png", tc_img)
+save("/Users/dwatkin2/Downloads/band7.png", Gray.(red.(fc_img)))
 begin
     @info "Setting up initial masks"
     begin
@@ -127,12 +172,22 @@ begin
 
     # changed to AdaptiveEqualization directly, could be an issue with channelwise adapthisteq
     # Full image, but we'll zero out the masks again
-    preproc_img .= IceFloeTracker.Filtering.channelwise_adapthisteq(preproc_img;
-        nbins=p.adapthisteq_params.nbins,
-        rblocks=p.adapthisteq_params.rblocks,
-        cblocks=p.adapthisteq_params.cblocks,
-        clip=p.adapthisteq_params.clip
-    );
+    # preproc_img .= IceFloeTracker.Filtering.channelwise_adapthisteq(preproc_img;
+    #     nbins=p.adapthisteq_params.nbins,
+    #     rblocks=p.adapthisteq_params.rblocks,
+    #     cblocks=p.adapthisteq_params.cblocks,
+    #     clip=p.adapthisteq_params.clip
+    # );
+    @time begin
+        adjust_histogram!(preproc_img,
+            ContrastLimitedAdaptiveHistogramEqualization(
+                nbins=p.adapthisteq_params.nbins,
+                rblocks=p.adapthisteq_params.rblocks,
+                cblocks=p.adapthisteq_params.cblocks,
+                clip=p.adapthisteq_params.clip)
+        )
+    end
+
 
     preproc_gray = Gray.(preproc_img)
     for tile in filtered_tiles
@@ -147,15 +202,6 @@ begin
     nothing
 end
 
-# Preprocessing seems fine - maybe a little too intense with the sharpening, but not crazy.
-Gray.(preproc_gray)
-save("/Users/dmw/Downloads/preproc_strong_eq.png", preproc_gray)
-
-test_adapt_bin = tiled_adaptive_binarization(preproc_gray, filtered_tiles; 
-minimum_window_size=400, threshold_percentage=0, minimum_brightness=0.4);
-
-save("/Users/dmw/Downloads/preproc_strong_eq_binarized.png", Gray.(test_adapt_bin))
-
 
 begin
     ice_water_discrim = zeros(size(preproc_gray))
@@ -165,26 +211,30 @@ begin
     );
     end
 end
-alt_iwd = deepcopy(test)
-mosaicview(Gray.(ice_water_discrim[zoom...]), Gray.(alt_iwd[zoom...]), nrow=1)
+
+# There's an issue
+ice_water_discrim[coastal_buffer .> 0] .= Gray(1)
+ice_water_discrim[cloud_mask .> 0] .= Gray(1)
+
+Gray.(ice_water_discrim[zoom...])
 
 begin
     kmeans_result = kmeans_binarization(
-                Gray.(alt_iwd), # errors if not Gray type
+                Gray.(ice_water_discrim), # errors if not Gray type
                 fc_masked, 
                 filtered_tiles;
                 k=p.kmeans_params.k,
                 maxiter=p.kmeans_params.maxiter,
                 random_seed=p.kmeans_params.random_seed,
                 cluster_selection_algorithm=p.cluster_selection_algorithm
-                ) |> LopezAcosta2019.clean_binary_floes   
+                ) # |> LopezAcosta2019.clean_binary_floes   # The clean-binary-floes algorithm seems pretty agressive to me.
     apply_landmask!(kmeans_result, coastal_buffer);
     nothing
 end
-zoom = (1000:2000, 1000:3000)
+zoom = (1000:3000, 1000:3000)
 # fc_masked[zoom...]
 mosaicview(Gray.(kmeans_result)[zoom...],
-    Gray.(ice_water_discrim)[zoom...])
+    Gray.(ice_water_discrim)[zoom...], nrow=1)
 
 begin
     # The clean binary floes method has an aggressive fill_holes algorithm. Potentially merging with the
@@ -194,20 +244,9 @@ begin
     @info "Segmenting floes part 2/3"
     segB = LopezAcosta2019.segmentation_B(preproc_gray, cloud_mask, kmeans_result);
 
-    # # Process watershed in parallel using Folds
-    # @info "Building watersheds" # This takes about 5 minutes to run in the original version.
-    # @time begin
-    #     watersheds_segB = [
-    #         LopezAcosta2019.watershed_ice_floes(segB.not_ice_bit), LopezAcosta2019.watershed_ice_floes(segB.ice_intersect)
-    #     ]
-    #     watersheds_segB_product = LopezAcosta2019.watershed_product(watersheds_segB...)
-    # end
-    # nothing
-
-    # instead, use the watershed transform from the new algorithm
     @info "tiled watershed transform on the intersect"
     @time begin
-    w_merged = Watkins2026.watershed_transform(
+    w_merged = FSPipeline.watershed_transform(
         segB.ice_intersect,
         segB.not_ice,
         filtered_tiles;
@@ -250,3 +289,43 @@ begin
 end
 
 
+
+## Seg B
+# I'd like to update the seg B code to be more descriptive, based on what I was doing in the streamlining.
+# Same with Seg F.
+
+using IceFloeTracker
+using Images
+### Case tests ###
+dataset = Watkins2026Dataset(; ref="v0.1")
+case = first(filter(c -> (c.case_number == 11 && c.satellite == "aqua"), dataset))
+
+segment = FSPipeline.Segment(
+                cloud_mask_algorithm=LopezAcostaCloudMask(),
+                coastal_buffer_structuring_element=strel_box((5,5)),
+                tile_size_pixels=400,
+                adapthisteq_params=(nbins=256, rblocks=8, cblocks=8, clip=1),
+                )
+
+results = segment(modis_truecolor(case), modis_falsecolor(case), modis_landmask(case))
+results_old = LopezAcosta2019.Segment()(
+    RGB.(modis_truecolor(case)),
+    RGB.(modis_falsecolor(case)),
+     RGB.(modis_landmask(case)))
+begin
+    cview = view_seg_random(results)
+    labels = labels_map(results)
+    overlay = deepcopy(modis_truecolor(case))
+    overlay[labels .> 0] .= cview[labels .> 0]
+
+    cview2 = view_seg_random(results_old)
+    labels2 = labels_map(results_old)
+    overlay2 = deepcopy(modis_truecolor(case))
+    overlay2[labels2 .> 0] .= cview2[labels2 .> 0]
+    overlay2
+
+mosaicview(
+    overlay,
+    overlay2, 
+    Gray.((labels .> 0) .!= (labels2 .> 0)), nrow=1)
+end

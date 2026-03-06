@@ -21,7 +21,8 @@ end
     formerly_broken = c -> (c.case_number == 4 || (c.case_number == 39 && c.satellite == "aqua"))
     broken = c -> false  # `broken_cases` once fixed, for regression testing
     results = run_and_validate_segmentation(
-        filter(c -> (passing(c) || formerly_broken(c) || broken(c)), dataset),
+        filter(case -> (case.visible_floes == "yes" && case.cloud_fraction_manual <= 0.5 && case.case_number % 5 == 0), dataset),
+        # filter(c -> (passing(c) || formerly_broken(c) || broken(c)), dataset),
         LopezAcosta2019.Segment();
         output_directory="./test_outputs/",
     )
