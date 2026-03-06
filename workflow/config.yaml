@@ -13,7 +13,7 @@ LOADER: "pipx run --spec git+https://github.com/brown-ccv/earthdata-downloader@v
 # Config files
 #--------------------------------------------------
 REGION_CSV: "../region.csv" # relative to workdir
-REGION_CASE_CSV: "../region-case.csv" # relative to workdir
+CASE_CSV: "../case.csv" # relative to workdir
 
 #--------------------------------------------------
 # Satellites

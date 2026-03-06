@@ -9,7 +9,7 @@ workdir: "workflow/results"
 # The profile in workflow/profiles/default/config.yaml sets default values for this workflow.
 
 regions = pd.read_csv(config["REGION_CSV"]).set_index("region")
-regions_cases = pd.read_csv(config["REGION_CASE_CSV"])
+cases = pd.read_csv(config["CASE_CSV"])
 
 def daterange(start_date, end_date):
     """Generates dates from start_date to end_date (inclusive)."""
@@ -71,7 +71,7 @@ def get_region_target_bbox(region):
 rule region_case_results:
     input:
         expand("{case.region}.{case.scale}m.{case.start}.{case.end}.{case.segmentation}.tracked.csv",
-            case=regions_cases.itertuples(),
+            case=cases.itertuples(),
         )
     output:
         "region-case-results.txt"

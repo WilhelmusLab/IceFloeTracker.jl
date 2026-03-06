@@ -101,7 +101,7 @@ To run the tracking pipeline on a series of time periods and regions, we can run
 snakemake -c 4 region-case-results.txt
 ```
 
-The [region-case.csv](./region-case.csv) file specifies which regions and which cases will be run. 
+The [case.csv](./case.csv) file specifies which regions and which cases will be run. 
 Each row specifies: 
 - the region name (from [region.csv](./region.csv)), 
 - the start and end dates (in ISO 8601 YYYY-MM-DD format)
