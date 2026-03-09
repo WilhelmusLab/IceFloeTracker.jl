@@ -24,6 +24,7 @@ function to these columns to determine if the net travel is physically possible.
 is initialized with names for the time and distance columns, the threshold function (a TimeDistanceFunction)
 and the name of the column in which to store the results. 
 
+
 ```
 julia> dt_test = DistanceThresholdFilter(time_colum=:Δt, dist_column=:Δx, threshold_function=LinearTimeDistanceFunction())
 ```
@@ -39,20 +40,24 @@ Passing `Val{:raw}` as the third argument will forgo the subsetting step so that
 ## Arguments
 - `time_column`: Name of the column to store pairwise floe time differences
 - `dist_column`: Name of the column to store distances between floes
+- `scaled_dist_column` = Name of the column to store scaled distances
 - `threshold_function` = LinearTimeDistanceFunction()
 - `threshold_column` = :time_distance_test
-
+- `scaling_function`: Function producing a number (e.g., max expected distance) for scaling the distances. This quantify is used in the matching function as an error metric.
 """ 
 @kwdef struct DistanceThresholdFilter <: AbstractFloeFilterFunction
         time_column = :Δt
         dist_column = :Δx
+        scaled_dist_column = :scaled_distance
         threshold_function = LinearTimeDistanceFunction()
         threshold_column = :time_distance_test
+        scaling_function = dt -> maximum_linear_distance(dt; umax=1.5, eps=250)
 end
 
 function (f::DistanceThresholdFilter)(floe::DataFrameRow, candidates::DataFrame, _::Val{:raw}) # can we get the same behavior with a less opaque function call?
     candidates[!, f.time_column] = candidates[!, :passtime] .- floe.passtime
-    candidates[!, f.dist_column] = euclidean_distance(floe, candidates)    
+    candidates[!, f.dist_column] = euclidean_distance(floe, candidates)
+    candidates[!, f.scaled_dist_column] = candidates[!, f.dist_column] ./ f.scaling_function.(candidates[!, f.time_column])
     transform!(candidates, [f.dist_column, f.time_column] => 
         ByRow(f.threshold_function) => f.threshold_column)
 end
@@ -70,7 +75,7 @@ function euclidean_distance(floe, candidates; r = 250)
     (floe.col_centroid .- candidates.col_centroid).^2) * r
 end
 
-# TODO: geodetic_distance(). Would need lat/lon
+# TODO: Add geodetic distance function
 
 """
     RelativeErrorThresholdFilter(variable, area_variable, threshold_column, threshold_function)
