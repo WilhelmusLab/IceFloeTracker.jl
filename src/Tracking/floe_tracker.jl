@@ -13,7 +13,10 @@ abstract type AbstractTracker end
         maximum_area::Real = 90e3
         maximum_time_step::Period = Day(2)
     )
-    FloeTracker()(Vector{<:Union{SegmentedImage,Matrix{Int64}}}, passtimes::Vector{DateTime})
+    FloeTracker()(
+        segmented_images::Vector{<:Union{SegmentedImage,Matrix{Int64}}},
+        image_times::Vector{DateTime}
+    )
     
     Track ice floes over multiple observations.
 
@@ -30,15 +33,55 @@ abstract type AbstractTracker end
         - Update the trajectories to include the newly paired floes
         - Add all unmatched floes as heads for new trajectories.
 
+    ## Arguments
+    - `filter_function`: Function that reduces the number of rows in a DataFrame and adds columns for tests.
+    - `matching_function`: Function that decides between conflicting matches to form a unique matching.
+    - `minimum_area`: Minimum object size in pixels.
+    - `maximum_area`: Maximum object size in pixels.
+    - `maximum_time_step`: Maximum time step between observations using Dates period type.
+    - `segmented_images`: Vector of SegmentedImage objects or labeled indexmaps
+    - `image_times`: Vector of DateTimes of the same length as `segmented_images`
+
+    ## Examples
     Using the default functions, initialize as:
     ```jldoctest; setup = :(using IceFloeTracker)
-        tracker = FloeTracker(filter_function=FilterFunction(), matching_function=MinimumWeightMatchingFunction())
+    julia> tracker = FloeTracker(filter_function=FilterFunction(), matching_function=MinimumWeightMatchingFunction())
     ```
 
     Once the tracker is defined, it can be run on a list of either SegmentedImages (or labeled image indexmaps) and
-    a list of corresponding observation times.
-))
+    a list of corresponding observation times. As a simple toy example, we can use labeled blocks. We can't expect 
+    shapes to have consistent labels across images before tracking, so we'll intentionally mislabel them. We also need
+    to provide observation times. The default thresholds are time-step dependent, so we choose a short time step. We also
+    need to set the minimum size to accommodate the toy example.
 
+    ```jldoctest; setup = :(using IceFloeTracker, Dates)
+    julia> tracker = FloeTracker(
+            filter_function=FilterFunction(),
+            matching_function=MinimumWeightMatchingFunction(),
+            minimum_area=1)
+
+    julia> A = zeros(Int, 13, 16); A[2:6, 2:6] .= 1; A[4:8, 7:10] .= 2; A[10:12,13:15] .= 3; A[10:12,3:6] .= 4;
+    julia> B = zeros(Int, 13, 16); B[1:5, 1:5] .= 2; B[5:9, 7:10] .= 3; B[10:12,12:14] .= 4; B[10:12,2:5] .= 1;
+    julia> times = [DateTime("2025-05-01T11:00"), DateTime("2025-05-01T13:00")]
+
+    julia> tracked_floes = tracker([A, B], times)
+
+    julia> tracked_floes[:, ["ID", "label", "passtime"]]
+    8×3 DataFrame
+    Row │ ID     label  passtime            
+        │ Int64  Int64  DateTime            
+    ─────┼───────────────────────────────────
+    1 │     1      2  2025-05-01T11:00:00
+    2 │     1      3  2025-05-01T13:00:00
+    3 │     2      4  2025-05-01T11:00:00
+    4 │     2      1  2025-05-01T13:00:00
+    5 │     3      1  2025-05-01T11:00:00
+    6 │     3      2  2025-05-01T13:00:00
+    7 │     4      3  2025-05-01T11:00:00
+    8 │     4      4  2025-05-01T13:00:00
+    ```
+    Note that the tracker has assigned each object a unique ID, and that the objects are linked correctly:
+    1=>2, 2=>3, 3=>4, and 4=>1.
 """
 @kwdef struct FloeTracker <: AbstractTracker
     filter_function::AbstractFloeFilterFunction
@@ -51,12 +94,12 @@ end
 # TODO: Add method to functor to get list of needed columns from the filter functions or struct (e.g., if doing cross correlation)
 
 function (t::FloeTracker)(
-    segmented_images::Vector{<:Union{SegmentedImage,Matrix{Int64}}}, passtimes::Vector{DateTime}
+    segmented_images::Vector{<:Union{SegmentedImage,Matrix{Int64}}}, image_times::Vector{DateTime}
 )
     props = regionprops_table.(segmented_images)
     add_uuids!.(props)
-    !issorted(passtimes) && @warn "Passtimes are not in ascending order."
-    add_passtimes!.(props, passtimes)
+    !issorted(image_times) && @warn "Passtimes are not in ascending order."
+    add_passtimes!.(props, image_times) # TODO: Change function name to image_times
     add_floemasks!.(props, segmented_images)
     add_ψs!.(props)
 
@@ -72,9 +115,7 @@ function (t::FloeTracker)(
     return tracking_results
 end
 
-
-
-
+# TODO: Make this one an internal function, but extend FloeTracker functor to allow list of props
 """
     floe_tracker(props; filter_function, matching_function, minimum_floe_size, maximum_floe_size, maximum_time_step)
 
@@ -111,7 +152,14 @@ A DataFrame with the above columns, plus extra columns:
 
 Note: the props dataframes are modified in place.
 """
-function floe_tracker(props::Vector{DataFrame}, filter_function, matching_function; minimum_area=100, maximum_area=90e3, maximum_time_step=Day(2))
+function floe_tracker(
+    props::Vector{DataFrame},
+    filter_function,
+    matching_function;
+    minimum_area=100,
+    maximum_area=90e3,
+    maximum_time_step=Day(2)
+)
 
     # dmw: give users option to copy props rather than modify in place?
     floe_size_filter = filter(
@@ -124,7 +172,7 @@ function floe_tracker(props::Vector{DataFrame}, filter_function, matching_functi
     init_idx = 1
     nrow(props[init_idx]) == 0 && begin
         while nrow(props[init_idx]) == 0 && init_idx < length(props)
-            global init_idx += 1
+            init_idx += 1
         end
     end
     trajectories = props[init_idx]
