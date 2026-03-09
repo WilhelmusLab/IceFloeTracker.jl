@@ -20,8 +20,9 @@ abstract type AbstractTracker end
     
     Track ice floes over multiple observations.
 
-    The FloeTracker functor initializes the floe tracking function by setting the `filter_function` and
-    the `matching_function`, and basic filter parameters for the area range and maximum time step. 
+    The FloeTracker functor initializes the floe tracking function by setting the `filter_function` 
+    (see  [`FilterFunction`](@ref)) and the `matching_function` (e.g., ['MinimumWeightMatchingFunction'](@ref)),
+    and basic filter parameters for the area range and maximum time step. 
 
     Trajectories are built as follows:
         - Assume the floes detected in observation 1 are trajectories of length 1.
@@ -119,7 +120,7 @@ end
 """
     floe_tracker(props; filter_function, matching_function, minimum_floe_size, maximum_floe_size, maximum_time_step)
 
-Lower-level function for tracking from an already-existing property table. See the FloeTracker function for comparison.
+Lower-level function for tracking from an already-existing property table. See the  [`FloeTracker`](@ref) function for comparison.
 
 # Arguments
 - `props::Vector{DataFrame}`: A vector of DataFrames, each containing ice floe properties for a single observation time. Each DataFrame must have the following columns:
