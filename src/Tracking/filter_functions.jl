@@ -223,14 +223,14 @@ with parameters and threshold functions set based on Lopez-Acosta et al. 2019. T
 of threshold filters is the same as in the default FilterFunction, but using
 stepwise threshold functions instead of piecewise.
 """
-LopezAcosta2019ChainedFilterFunction = ChainedFilterFunction(
+LopezAcosta2019ChainedFilterFunction = ChainedFilterFunction(;
     filters=[
         DistanceThresholdFilter(threshold_function=LopezAcostaTimeDistanceFunction()),
         RelativeErrorThresholdFilter(variable=:area), # use the step functions
         RelativeErrorThresholdFilter(variable=:convex_area),
         RelativeErrorThresholdFilter(variable=:major_axis_length),
         RelativeErrorThresholdFilter(variable=:minor_axis_length),
-        ShapeDifferenceThresholdFilter(),
-        PsiSCorrelationThresholdFilter()
+        ShapeDifferenceThresholdFilter(), # Replace with step function
+        PsiSCorrelationThresholdFilter() # Replace with step function
         ]
 )

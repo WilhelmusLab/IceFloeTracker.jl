@@ -19,7 +19,7 @@ Arguments:
     columns=[:scaled_distance, :relative_error_area, :relative_error_convex_area, 
                     :relative_error_major_axis_length, :relative_error_minor_axis_length,
                     :psi_s_correlation_score, :scaled_shape_difference]
-    weights=ones(7)
+    weights=ones(7) # Not used yet!
 end
 
 function (f::MinimumWeightMatchingFunction)(candidate_pairs::DataFrame);
