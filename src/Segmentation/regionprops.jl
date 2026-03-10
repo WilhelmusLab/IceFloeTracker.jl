@@ -520,7 +520,7 @@ function regionprops(
 )
 
     isa(label_img, SegmentedImage) ? (labels = labels_map(label_img)) : labels = label_img
-    eltype(properties) == String && (properties = [Symbol(a) for a in properties])
+    eltype(properties) <: AbstractString && (properties = Symbol.(properties))
 
     maximum(labels) == 0 && begin
         @warn "Labeled image is empty!"
