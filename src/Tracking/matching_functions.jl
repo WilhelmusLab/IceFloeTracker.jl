@@ -16,26 +16,38 @@ Arguments:
 - columns: List of columns to use in comparison
 """
 @kwdef struct MinimumWeightMatchingFunction <: AbstractFloeMatchingFunction
-    columns=[:scaled_distance, :relative_error_area, :relative_error_convex_area, 
-                    :relative_error_major_axis_length, :relative_error_minor_axis_length,
-                    :psi_s_correlation_score, :scaled_shape_difference]
-    weights=ones(7) # Not used yet!
+    columns = [
+        :scaled_distance,
+        :relative_error_area,
+        :relative_error_convex_area,
+        :relative_error_major_axis_length,
+        :relative_error_minor_axis_length,
+        :psi_s_correlation_score,
+        :scaled_shape_difference,
+    ]
+    weights = ones(7) # Not used yet!
 end
 
-function (f::MinimumWeightMatchingFunction)(candidate_pairs::DataFrame);
-     
+function (f::MinimumWeightMatchingFunction)(candidate_pairs::DataFrame)
+
     # Potential future updates: replace sum with a weighted
     candidate_pairs[!, :w] = sum.(eachrow(candidate_pairs[:, f.columns]))
 
     # Forward: f -> {g}, find minimum dx over set {g}
-    matches_fwd = combine(sdf -> sdf[argmin(sdf.w), :], groupby(candidate_pairs, :head_uuid));
-    matches_fwd = combine(sdf -> sdf[argmin(sdf.w), :], groupby(candidate_pairs, :uuid));
+    matches_fwd = combine(
+        sdf -> sdf[argmin(sdf.w), :], groupby(candidate_pairs, :head_uuid)
+    )
+    matches_fwd = combine(sdf -> sdf[argmin(sdf.w), :], groupby(candidate_pairs, :uuid))
 
     # Backward: {f} <- g, find minimum dx over {f}
-    matches_bwd = combine(sdf -> sdf[argmin(sdf.w), :], groupby(candidate_pairs, :uuid));
-    matches_bwd = combine(sdf -> sdf[argmin(sdf.w), :], groupby(candidate_pairs, :head_uuid));
-    
-    return innerjoin(matches_fwd[:, [:head_uuid, :uuid]], matches_bwd, on = [:head_uuid, :uuid]);
+    matches_bwd = combine(sdf -> sdf[argmin(sdf.w), :], groupby(candidate_pairs, :uuid))
+    matches_bwd = combine(
+        sdf -> sdf[argmin(sdf.w), :], groupby(candidate_pairs, :head_uuid)
+    )
+
+    return innerjoin(
+        matches_fwd[:, [:head_uuid, :uuid]], matches_bwd; on=[:head_uuid, :uuid]
+    )
 end
 
 # TODO: Set up a GetNearest matching function

@@ -1,14 +1,14 @@
 import DataFrames: rename!, DataFrame, nrow, select!
 import ..Geospatial: latlon
-import Images: 
-    component_boxes, 
-    component_centroids, 
-    component_lengths, 
+import Images:
+    component_boxes,
+    component_centroids,
+    component_lengths,
     component_indices,
     convexhull,
     erode,
     Fill,
-    labels_map, 
+    labels_map,
     padarray,
     SegmentedImage,
     strel_diamond,
@@ -19,7 +19,6 @@ import DSP: conv
 abstract type PerimeterEstimationAlgorithm <: Function end
 abstract type ConvexAreaEstimationAlgorithm <: Function end
 
-
 # TODO: Determine if this function is needed, since rename! is a standard function for DataFrames.jl.
 """
     renamecols!(props::DataFrame, oldnames::Vector{T}, newnames::Vector{T}) where T<:Union{Symbol,String}
@@ -29,8 +28,8 @@ Rename the `oldnames` columns in `props` to `newnames`.
 function renamecols!(
     props::DataFrame,
     oldnames::Vector{Union{Symbol,String}},
-    newnames::Vector{Union{Symbol,String}}
-    )
+    newnames::Vector{Union{Symbol,String}},
+)
     rename!(props, Dict(zip(oldnames, newnames)))
     return nothing
 end
@@ -41,10 +40,7 @@ end
 
 Round the `colnames` columns in `props` to `Int`.
 """
-function roundtoint!(
-    props::DataFrame,
-    colnames::Vector{Union{Symbol,String}}
-    )
+function roundtoint!(props::DataFrame, colnames::Vector{Union{Symbol,String}})
     props[!, colnames] = (x -> convert.(Int, x))(round.(Int, props[!, colnames]))
     return nothing
 end
@@ -58,10 +54,7 @@ Add columns `latitude`, `longitude`, and pixel coordinates `x`, `y` to `pairedfl
 - `pairedfloesdf`: dataframe containing floe tracking data.
 - `refimage`: path to reference image.
 """
-function addlatlon!(
-    pairedfloesdf::DataFrame,
-    refimage::AbstractString
-    )
+function addlatlon!(pairedfloesdf::DataFrame, refimage::AbstractString)
     latlondata = latlon(refimage)
     colstodrop = [:row_centroid, :col_centroid, :min_row, :min_col, :max_row, :max_col]
     converttounits!(pairedfloesdf, latlondata, colstodrop)
@@ -133,7 +126,11 @@ end
 Given a labeled array, produce a dictionary where each entry is a binary array cropped to the
 location of the label.
 
-Examples:
+## Arguments
+- `indexmap`: Labeled array (e.g., output of `label_components()`)
+- `minimum_area`: Smallest object to include in the resulting dictionary of floe masks.
+
+## Examples
 ```jldoctest; setup = :(using IceFloeTracker)
 
 julia> A = zeros(Int, 8, 6); A[2:6, 1:2] .= 1; A[3:7, 4:5] .= 2; A[4:6, 3:6] .= 2;
@@ -174,10 +171,16 @@ function component_floes(indexmap; minimum_area=1)
     boxes = component_boxes(indexmap)
     mn = minimum(indexmap)
     if !(mn == 0 || mn == 1)
-        throw(ArgumentError("The input labeled array should contain background label `0` as the minimum value"))
+        throw(
+            ArgumentError(
+                "The input labeled array should contain background label `0` as the minimum value",
+            ),
+        )
     end
     areas = component_lengths(indexmap)
-    floe_masks = Dict(i => indexmap[boxes[i]] .== i for i in labels if areas[i] > minimum_area)
+    floe_masks = Dict(
+        i => indexmap[boxes[i]] .== i for i in labels if areas[i] > minimum_area
+    )
     return floe_masks
 end
 
@@ -188,9 +191,8 @@ Algorithm options = "benkrid_crookes" (only option currently, will add crofton i
 Defaults to using connectivity 4.
 """
 function component_perimeters(
-    indexmap;
-    algorithm::PerimeterEstimationAlgorithm=BenkridCrookes(),
-    )
+    indexmap; algorithm::PerimeterEstimationAlgorithm=BenkridCrookes()
+)
     masks = component_floes(indexmap)
     perims = Dict(
         label => (label == 0 ? 0 : algorithm(masks[label])) for
@@ -224,11 +226,11 @@ julia> BenkridCrookes(connectivity=8)(A)
 end
 
 function (f::BenkridCrookes)(shape_array)
-    f.connectivity == 4 ? (strel = strel_diamond((3,3))) : (strel = strel_box((3,3)))
+    f.connectivity == 4 ? (strel = strel_diamond((3, 3))) : (strel = strel_box((3, 3)))
     # Get border using the strel
     # Shape needs to have a border of zeros for erode to work here    
     n, m = size(shape_array)
-    mpad = padarray(shape_array, Fill(0, (1, 1)))    
+    mpad = padarray(shape_array, Fill(0, (1, 1)))
     epad = mpad .- erode(mpad, strel)
     e = epad[1:n, 1:m]
 
@@ -251,10 +253,9 @@ function (f::BenkridCrookes)(shape_array)
     perim = sum(
         type_vals[val] * count for (val, count) in pairs(val_counts) if val > 0 && val <= 33
     )
-    
+
     return perim
 end
-
 
 """component_convex_area(A; algorithm=PixelConvexArea()")
 
@@ -263,9 +264,9 @@ The polygon method uses Green's theorem to find the area of a polygon through it
 while the pixel method uses a point-in-pixel calculation to determine if pixels are inside the
 convex hull. In general the polygon area will be smaller than the pixel area.
 """
-function component_convex_areas(A;
-    algorithm::ConvexAreaEstimationAlgorithm=PixelConvexArea()
-    ) 
+function component_convex_areas(
+    A; algorithm::ConvexAreaEstimationAlgorithm=PixelConvexArea()
+)
     mn = minimum(A)
 
     (mn != 0 && mn != 1) && throw(
@@ -307,14 +308,13 @@ function (f::PolygonConvexArea)(A)
         for j in 1:N
             x0, y0 = Tuple(chull[j])
             x1, y1 = Tuple(chull[(j % N) + 1])
-            ca += x0*y1 - y0*x1
+            ca += x0 * y1 - y0 * x1
         end
         ca *= 0.5
         convex_areas[i] = ca
     end
     return convex_areas
 end
-
 
 """PixelConvexArea(minimum_area)
    PixelConvexArea(A)
@@ -335,18 +335,17 @@ function (f::PixelConvexArea)(A)
     bboxes = component_boxes(A)
     labels = unique(A)
     for i in labels
-        
         # treat convex area background and too-small objects as undefined
         (i == 0) || (areas[i] < f.minimum_area) && begin
             convex_areas[i] = NaN
             continue
         end
-            
+
         chull = convexhull(A .== i)
         N = length(chull)
         x = getindex.(bboxes[i], 1)
         y = getindex.(bboxes[i], 2)
-        
+
         for idx in eachindex(x)
             xi, yi = x[idx], y[idx]
             A[xi, yi] .== i && (convex_areas[i] += 1, continue)
@@ -354,11 +353,11 @@ function (f::PixelConvexArea)(A)
             for j in 1:N
                 x0, y0 = Tuple(chull[j])
                 x1, y1 = Tuple(chull[(j % N) + 1])
-                checkvals[j] = (yi - y0)*(x1 - x0) - (xi - x0)*(y1 - y0)
+                checkvals[j] = (yi - y0) * (x1 - x0) - (xi - x0) * (y1 - y0)
             end
-            all(checkvals .>= 0) && (convex_areas[i] += 1) 
-            end
-        end    
+            all(checkvals .>= 0) && (convex_areas[i] += 1)
+        end
+    end
     return convex_areas
 end
 
@@ -424,7 +423,7 @@ julia> properties = ["area", "perimeter"]
 function regionprops_table(
     label_img::Union{Matrix{Int64},SegmentedImage},
     intensity_img::Union{Nothing,AbstractMatrix}=nothing;
-    properties::Union{Vector{<:AbstractString}, Vector{<:Symbol}}=[
+    properties::Union{Vector{<:AbstractString},Vector{<:Symbol}}=[
         :label,
         :centroid,
         :area,
@@ -438,15 +437,17 @@ function regionprops_table(
     extra_properties::Union{Tuple{Function,Vararg{Function}},Nothing}=nothing,
     minimum_area=1,
     perimeter_algorithm=BenkridCrookes(),
-    convex_area_algorithm=PixelConvexArea()
-    )::DataFrame
-
-    data = regionprops(label_img, intensity_img;
+    convex_area_algorithm=PixelConvexArea(),
+)::DataFrame
+    data = regionprops(
+        label_img,
+        intensity_img;
         properties=properties,
         extra_properties=extra_properties,
         minimum_area=minimum_area,
         perimeter_algorithm=perimeter_algorithm,
-        convex_area_algorithm=convex_area_algorithm)
+        convex_area_algorithm=convex_area_algorithm,
+    )
     return DataFrame(data)
 end
 
@@ -502,7 +503,7 @@ julia> bw_img = rand([0, 1], 5, 10)
 function regionprops(
     label_img::Union{Matrix{Int64},SegmentedImage},
     intensity_img::Union{Nothing,AbstractMatrix}=nothing;
-    properties::Union{Vector{<:AbstractString}, Vector{<:Symbol}}=[
+    properties::Union{Vector{<:AbstractString},Vector{<:Symbol}}=[
         :label,
         :centroid,
         :area,
@@ -516,9 +517,8 @@ function regionprops(
     extra_properties::Union{Tuple{Function,Vararg{Function}},Nothing}=nothing,
     minimum_area=1,
     perimeter_algorithm=BenkridCrookes(),
-    convex_area_algorithm=PixelConvexArea()
+    convex_area_algorithm=PixelConvexArea(),
 )
-
     isa(label_img, SegmentedImage) ? (labels = labels_map(label_img)) : labels = label_img
     eltype(properties) <: AbstractString && (properties = Symbol.(properties))
 
@@ -528,7 +528,7 @@ function regionprops(
     end
 
     data = Dict{Symbol,Any}()
-    
+
     # Begin by extracting the set of labels that meet the minimum area criterion
     # We also get a sorted list of image labels, so all the dictionary entries can 
     # be placed in the same order.
@@ -546,41 +546,45 @@ function regionprops(
     end
 
     # Centroid, major/minor axis, and orientation all come from the image moments.
-    compute_moments = any([:centroid ∈ properties,
-                          :major_axis_length ∈ properties,
-                          :minor_axis_length ∈ properties,
-                          :orientation ∈ properties])
+    compute_moments = any([
+        :centroid ∈ properties,
+        :major_axis_length ∈ properties,
+        :minor_axis_length ∈ properties,
+        :orientation ∈ properties,
+    ])
     compute_moments && begin
         data_moments = _component_moment_measures(labels, img_labels)
         :centroid ∈ properties && begin
             push!(data, :row_centroid => data_moments[:row_centroid])
             push!(data, :col_centroid => data_moments[:col_centroid])
-        end 
-        :major_axis_length ∈ properties && push!(data, :major_axis_length => data_moments[:major_axis_length])
-        :minor_axis_length ∈ properties && push!(data, :minor_axis_length => data_moments[:minor_axis_length])
-        :orientation ∈ properties  && push!(data, :orientation => data_moments[:orientation])
+        end
+        :major_axis_length ∈ properties &&
+            push!(data, :major_axis_length => data_moments[:major_axis_length])
+        :minor_axis_length ∈ properties &&
+            push!(data, :minor_axis_length => data_moments[:minor_axis_length])
+        :orientation ∈ properties &&
+            push!(data, :orientation => data_moments[:orientation])
     end
 
     :bbox ∈ properties && begin
-        bboxes_init =  component_boxes(labels)
+        bboxes_init = component_boxes(labels)
         bboxes = stack(_get_bounds.(bboxes_init[s] for s in img_labels))
 
-        push!(data, :min_row => bboxes[1,:]) 
-        push!(data, :max_row => bboxes[2,:]) 
-        push!(data, :min_col => bboxes[3,:]) 
-        push!(data, :max_col => bboxes[4,:]) 
-    end 
+        push!(data, :min_row => bboxes[1, :])
+        push!(data, :max_row => bboxes[2, :])
+        push!(data, :min_col => bboxes[3, :])
+        push!(data, :max_col => bboxes[4, :])
+    end
 
     :perimeter ∈ properties && begin
         floe_perims = component_perimeters(labels; algorithm=perimeter_algorithm)
-        push!(data, :perimeter => map(s -> floe_perims[s], img_labels)) 
+        push!(data, :perimeter => map(s -> floe_perims[s], img_labels))
     end
 
     :convex_area ∈ properties && begin
         convex_areas = component_convex_areas(labels; algorithm=convex_area_algorithm)
         push!(data, :convex_area => map(s -> convex_areas[s], img_labels))
     end
-
 
     # psi-s needs masks, so this can get called first
     :mask ∈ properties && begin
@@ -622,7 +626,7 @@ Compute the central moments based on the index vectors
 x and y, the centroid xc, yc, and the exponents p and q.
 """
 function _central_moment(x, y, xc, yc, p, q)
-    mu = sum((x .- xc).^p .* (y .- yc).^q)
+    mu = sum((x .- xc) .^ p .* (y .- yc) .^ q)
     return mu
 end
 
@@ -653,26 +657,26 @@ function _component_moment_measures(labels, label_list)
     moment_measures = []
     for s in label_list
         X = getindex.(indices[s], 1)
-        Y = getindex.(indices[s], 2);
+        Y = getindex.(indices[s], 2)
         xc = row_centroid[s]
         yc = col_centroid[s]
-        
+
         μ11 = _central_moment(X, Y, xc, yc, 1, 1)
         μ20 = _central_moment(X, Y, xc, yc, 2, 0)
         μ02 = _central_moment(X, Y, xc, yc, 0, 2)
-        θ = 0.5 * atan(2*μ11, μ20 - μ02)
-        
-        λ0 = (μ20 + μ02 + sqrt((μ20 - μ02)^2 + 4*μ11^2))/2
-        λ1 = (μ20 + μ02 - sqrt((μ20 - μ02)^2 + 4*μ11^2))/2
-        
-        ra = 4*(λ0/areas[s])^0.5 
-        rb = 4*(λ1/areas[s])^0.5
+        θ = 0.5 * atan(2 * μ11, μ20 - μ02)
+
+        λ0 = (μ20 + μ02 + sqrt((μ20 - μ02)^2 + 4 * μ11^2)) / 2
+        λ1 = (μ20 + μ02 - sqrt((μ20 - μ02)^2 + 4 * μ11^2)) / 2
+
+        ra = 4 * (λ0 / areas[s])^0.5
+        rb = 4 * (λ1 / areas[s])^0.5
         append!(moment_measures, [[ra, rb, θ]])
     end
     moment_measures = stack(moment_measures)
-    push!(data, :major_axis_length => moment_measures[1,:])
-    push!(data, :minor_axis_length => moment_measures[2,:])
-    push!(data, :orientation => moment_measures[3,:])
+    push!(data, :major_axis_length => moment_measures[1, :])
+    push!(data, :minor_axis_length => moment_measures[2, :])
+    push!(data, :orientation => moment_measures[3, :])
 
     return data
 end
