@@ -80,16 +80,16 @@ end
         labeled_imgs = label_components.(_imgs)
     end
 
-    
     floe_area_threshold = 400
 
     @testset "Case 1" begin
         # Every floe is matched in every day
-        tracker = FloeTracker(filter_function=FilterFunction(), 
-        matching_function=MinimumWeightMatchingFunction(), minimum_area=floe_area_threshold)
-        trajectories = tracker(
-            labeled_imgs, _passtimes
+        tracker = FloeTracker(;
+            filter_function=FilterFunction(),
+            matching_function=MinimumWeightMatchingFunction(),
+            minimum_area=floe_area_threshold,
         )
+        trajectories = tracker(labeled_imgs, _passtimes)
 
         # Expected: 5 trajectories, all of which have length 3
         # (other floes are below the area threshold)
@@ -104,14 +104,13 @@ end
         labeled_imgs_gaps[2][labeled_imgs_gaps[2] .== 36] .= 0
         labeled_imgs_gaps[3][labeled_imgs_gaps[3] .== 33] .= 0
 
-        tracker = FloeTracker(
-            filter_function=FilterFunction(), 
+        tracker = FloeTracker(;
+            filter_function=FilterFunction(),
             matching_function=MinimumWeightMatchingFunction(),
-            minimum_area=floe_area_threshold)
-
-        trajectories = tracker(
-            labeled_imgs_gaps, _passtimes,
+            minimum_area=floe_area_threshold,
         )
+
+        trajectories = tracker(labeled_imgs_gaps, _passtimes)
 
         # Expected: 5 trajectories, 4 of which have length 3 and 1 of which have length 2
         counts = combine(groupby(trajectories, [:ID]), nrow => :count)
@@ -122,17 +121,20 @@ end
         @testset "Case 3" begin
             # Every floe is matched in every day for which there is data
             # Here we insert a blank image into the series
-            labeled_imgs_gaps = [labeled_imgs[1], labeled_imgs[2], labeled_imgs[2]*0, labeled_imgs[3]]
-            tracker = FloeTracker(
-                filter_function=FilterFunction(), 
+            labeled_imgs_gaps = [
+                labeled_imgs[1], labeled_imgs[2], labeled_imgs[2] * 0, labeled_imgs[3]
+            ]
+            tracker = FloeTracker(;
+                filter_function=FilterFunction(),
                 matching_function=MinimumWeightMatchingFunction(),
-                minimum_area=floe_area_threshold)
-            # Add an extra pass-time to simulate a longer time series
-            passtimes_gaps = [_passtimes[1], _passtimes[2], _passtimes[3],  DateTime("2022-09-16T12:44:49")]
-            
-            trajectories = tracker(
-                labeled_imgs_gaps, passtimes_gaps,
+                minimum_area=floe_area_threshold,
             )
+            # Add an extra pass-time to simulate a longer time series
+            passtimes_gaps = [
+                _passtimes[1], _passtimes[2], _passtimes[3], DateTime("2022-09-16T12:44:49")
+            ]
+
+            trajectories = tracker(labeled_imgs_gaps, passtimes_gaps)
 
             # Expected: 5 trajectories, all of which have length 3 as in test case 1
             IDs = trajectories[!, :ID]
@@ -142,27 +144,32 @@ end
         end
 
         @testset "Case 4" begin
-            tracker = FloeTracker(
-                filter_function=FilterFunction(), 
+            tracker = FloeTracker(;
+                filter_function=FilterFunction(),
                 matching_function=MinimumWeightMatchingFunction(),
-                minimum_area=floe_area_threshold
+                minimum_area=floe_area_threshold,
             )
-            
+
             # Add full image gap
-            labeled_imgs_gaps = [labeled_imgs[1], labeled_imgs[2], labeled_imgs[2]*0, labeled_imgs[3]]
-            
+            labeled_imgs_gaps = [
+                labeled_imgs[1], labeled_imgs[2], labeled_imgs[2] * 0, labeled_imgs[3]
+            ]
+
             # Add single floe gaps
             labeled_imgs_gaps[2][labeled_imgs_gaps[2] .== 36] .= 0
             labeled_imgs_gaps[4][labeled_imgs_gaps[4] .== 33] .= 0
 
             # Extend passtimes
-            passtimes_gaps = [_passtimes[1], _passtimes[2], _passtimes[3],  DateTime("2022-09-16T12:44:49")]
+            passtimes_gaps = [
+                _passtimes[1], _passtimes[2], _passtimes[3], DateTime("2022-09-16T12:44:49")
+            ]
 
-            tracker = FloeTracker(
-                filter_function=FilterFunction(), 
+            tracker = FloeTracker(;
+                filter_function=FilterFunction(),
                 matching_function=MinimumWeightMatchingFunction(),
-                minimum_area=floe_area_threshold)
-            
+                minimum_area=floe_area_threshold,
+            )
+
             trajectories = tracker(labeled_imgs_gaps, passtimes_gaps)
             counts = combine(groupby(trajectories, [:ID]), nrow => :count)
             @test sum(counts[:, :count] .== 3) == 4 && sum(counts[:, :count] .== 2) == 1
@@ -173,10 +180,7 @@ end
 @testitem "Ellipses" begin
     using CSVFiles
     using DataFrames
-    using IceFloeTracker:
-        floe_tracker, 
-        FilterFunction, 
-        MinimumWeightMatchingFunction 
+    using IceFloeTracker: floe_tracker, FilterFunction, MinimumWeightMatchingFunction
 
     function load_props_from_csv(path; eval_cols=[:mask, :psi])
         df = DataFrame(load(path))
@@ -250,13 +254,13 @@ end
 @testitem "FloeTracker pipeline" begin
     import Dates: DateTime
     import DataFrames: nrow, DataFrame
-    import IceFloeTracker.Tracking: 
-        FilterFunction, 
+    import IceFloeTracker.Tracking:
+        FilterFunction,
         MinimumWeightMatchingFunction,
-        ChainedFilterFunction, 
-        DistanceThresholdFilter, 
+        ChainedFilterFunction,
+        DistanceThresholdFilter,
         RelativeErrorThresholdFilter
-    
+
     dataset = Watkins2026Dataset(; ref="v0.1")
 
     @testset "Basic functionality" begin
@@ -294,15 +298,15 @@ end
 
         tracker = FloeTracker(;
             filter_function=ChainedFilterFunction(;
-                                filters=[
-                                    DistanceThresholdFilter(),
-                                    RelativeErrorThresholdFilter(variable=:area)
-                                    ],
-                                ),
-            matching_function=MinimumWeightMatchingFunction(
+                filters=[
+                    DistanceThresholdFilter(),
+                    RelativeErrorThresholdFilter(; variable=:area),
+                ],
+            ),
+            matching_function=MinimumWeightMatchingFunction(;
                 columns=[:scaled_distance, :relative_error_area],
-                weights=ones(2) # Not yet used
-            ), 
+                weights=ones(2), # Not yet used
+            ),
         )
         tracking_results = tracker(segmentation_results, info(dataset).pass_time)
         @test isa(tracking_results, DataFrame)
