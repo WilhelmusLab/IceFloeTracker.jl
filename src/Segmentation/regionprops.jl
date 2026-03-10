@@ -524,7 +524,7 @@ function regionprops(
 
     maximum(labels) == 0 && begin
         @warn "Labeled image is empty!"
-        return Dict(p => 0 for p in properties)
+        return Dict(p => [] for p in properties)
     end
 
     data = Dict{Symbol,Any}()
