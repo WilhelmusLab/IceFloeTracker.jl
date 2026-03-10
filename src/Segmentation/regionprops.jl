@@ -132,7 +132,6 @@ location of the label.
 
 ## Examples
 ```jldoctest; setup = :(using IceFloeTracker)
-
 julia> A = zeros(Int, 8, 6); A[2:6, 1:2] .= 1; A[3:7, 4:5] .= 2; A[4:6, 3:6] .= 2;
 julia> A
 8×6 Matrix{Int64}:
