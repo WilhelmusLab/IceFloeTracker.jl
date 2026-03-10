@@ -26,7 +26,7 @@ abstract type AbstractTracker end
 
     Trajectories are built as follows:
         - Assume the floes detected in observation 1 are trajectories of length 1.
-        - For each subsequent observation at time `t``:
+        - For each subsequent observation at time `t`:
         - Determine the latest observation for each trajectory – these are the "current trajectory heads".
         - Select the subset of trajectory heads observed within the window `maximum_time_step, t`
         - Apply the filter function in order to determine possible floe pairings 
