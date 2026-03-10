@@ -45,7 +45,7 @@ end
 """
     nonlinear_diffusion(img, f::AbstractDiffusionAlgorithm)
 
-Simple wrapper to apply a diffusion algorithm to an image. Currently the only supported algortihm
+Simple wrapper to apply a diffusion algorithm to an image. Currently the only supported algorithm
 is the Perona-Malik method.
 """
 function nonlinear_diffusion(
