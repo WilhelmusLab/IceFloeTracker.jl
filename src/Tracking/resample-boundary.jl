@@ -1,4 +1,4 @@
-# resample pixels on floe boundary for psi-s curve
+import Interpolations: Natural, Periodic, Cubic, NoInterp, OnGrid, scale, interpolate
 
 """
     resample_boundary(bd_points::Vector{<:CartesianIndex}, reduc_factor::Int64=2, bd::String="natural")
@@ -54,7 +54,8 @@ julia> boundary[3]
  12.0357  13.5859
  10.5859  15.0357
  10.0     13.0
-"""
+```
+ """
 function resample_boundary(
     bd_points::Vector{<:CartesianIndex}, reduc_factor::Int64=2, bd::String="natural"
 )

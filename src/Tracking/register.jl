@@ -1,4 +1,5 @@
 import Images: imrotate, padarray, Fill
+import Interpolations: BSpline, Constant
 
 greaterthan05(x) = x .> 0.5 # used for the image resize step and for binarizing images
 function imrotate_bin(x, r)

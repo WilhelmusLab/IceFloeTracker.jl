@@ -1,4 +1,3 @@
-
 @testitem "Utilities" begin
     using DataFrames
     import IceFloeTracker.Tracking: _get_trajectory_heads
@@ -69,85 +68,73 @@ end
     using DataFrames
     using IceFloeTracker: floe_tracker, FilterFunction, MinimumWeightMatchingFunction
     using Serialization: deserialize
-
-    """
-    addgaps(props)
-
-    Add gaps to the props array after the first and before the last day.
-    """
-    function addgaps(props)
-        blank_props = fill(similar(props[1], 0), rand(1:5))
-
-        # add gap after first day
-        props = vcat(props[1:1], blank_props, props[2:end])
-        # add gap before last day
-        props = vcat(props[1:(end - 1)], blank_props, [props[end]])
-        return props
-    end
+    import Images: label_components
+    using Dates
 
     begin # Load data
         pth = joinpath("test_inputs", "tracker")
         _floedata = deserialize(joinpath(pth, "tracker_test_data.dat"))
         _passtimes = deserialize(joinpath(pth, "passtimes.dat"))
+        # The serialized data has props tables, but we'll generate those ourselves
         _props, _imgs = deepcopy.([_floedata.props, _floedata.imgs])
-
-        # This order is important: masks, uuids, passtimes, ψs
-        add_floemasks!.(_props, _imgs)
-        add_ψs!.(_props)
-        add_passtimes!.(_props, _passtimes)
-        Random.seed!(123)
-        add_uuids!.(_props)
+        labeled_imgs = label_components.(_imgs)
     end
 
-    begin # Filter out floes with area less than `floe_area_threshold` pixels
-        floe_area_threshold = 400
-        for (i, prop) in enumerate(_props)
-            _props[i] = prop[prop[:, :area] .>= floe_area_threshold, :] # 500 working good
-            sort!(_props[i], :area; rev=true)
-        end
-    end
+    floe_area_threshold = 400
 
     @testset "Case 1" begin
         # Every floe is matched in every day
-        props_test_case1 = deepcopy(_props)
-        trajectories = floe_tracker(
-            props_test_case1, FilterFunction(), MinimumWeightMatchingFunction()
+        tracker = FloeTracker(;
+            filter_function=FilterFunction(),
+            matching_function=MinimumWeightMatchingFunction(),
+            minimum_area=floe_area_threshold,
         )
+        trajectories = tracker(labeled_imgs, _passtimes)
 
         # Expected: 5 trajectories, all of which have length 3
+        # (other floes are below the area threshold)
         counts = combine(groupby(trajectories, [:ID]), nrow => :count)
         @test nrow(counts) == 5
         @test all(counts[!, :count] .== 3)
     end
 
-    begin # Unmatched floe in day 1, unmatched floe in day 2, and matches for every floe starting in day 3
-        props_test_case2 = deepcopy(_props)
-        deleteat!(props_test_case2[1], 1)
-        deleteat!(props_test_case2[2], 5)
-    end
-
     @testset "Case 2" begin
-        trajectories = IceFloeTracker.floe_tracker(
-            props_test_case2,
-            FilterFunction(),
-            IceFloeTracker.MinimumWeightMatchingFunction(),
+        # Add single floe gaps
+        labeled_imgs_gaps = deepcopy(labeled_imgs)
+        labeled_imgs_gaps[2][labeled_imgs_gaps[2] .== 36] .= 0
+        labeled_imgs_gaps[3][labeled_imgs_gaps[3] .== 33] .= 0
+
+        tracker = FloeTracker(;
+            filter_function=FilterFunction(),
+            matching_function=MinimumWeightMatchingFunction(),
+            minimum_area=floe_area_threshold,
         )
 
-        # Expected: 5 trajectories, 3 of which have length 3 and 2 of which have length 2
+        trajectories = tracker(labeled_imgs_gaps, _passtimes)
 
+        # Expected: 5 trajectories, 4 of which have length 3 and 1 of which have length 2
         counts = combine(groupby(trajectories, [:ID]), nrow => :count)
-        @test sum(counts[:, :count] .== 3) == 3 && sum(counts[:, :count] .== 2) == 2
+        @test sum(counts[:, :count] .== 3) == 4 && sum(counts[:, :count] .== 2) == 1
     end
 
     @testset "Test gaps" begin
         @testset "Case 3" begin
             # Every floe is matched in every day for which there is data
-            Random.seed!(123)
-            props = addgaps(_props)
-
-            trajectories = IceFloeTracker.floe_tracker(
-                props, FilterFunction(), MinimumWeightMatchingFunction()
+            # Here we insert a blank image into the series
+            labeled_imgs_gaps = [
+                labeled_imgs[1], labeled_imgs[2], labeled_imgs[2] * 0, labeled_imgs[3]
+            ]
+            tracker = FloeTracker(;
+                filter_function=FilterFunction(),
+                matching_function=MinimumWeightMatchingFunction(),
+                minimum_area=floe_area_threshold,
             )
+            # Add an extra pass-time to simulate a longer time series
+            passtimes_gaps = [
+                _passtimes[1], _passtimes[2], _passtimes[3], DateTime("2022-09-16T12:44:49")
+            ]
+
+            trajectories = tracker(labeled_imgs_gaps, passtimes_gaps)
 
             # Expected: 5 trajectories, all of which have length 3 as in test case 1
             IDs = trajectories[!, :ID]
@@ -157,16 +144,35 @@ end
         end
 
         @testset "Case 4" begin
-            # Add gaps to props_test_case2
-            Random.seed!(123)
-            props = addgaps(props_test_case2)
-            trajectories = IceFloeTracker.floe_tracker(
-                props, FilterFunction(), IceFloeTracker.MinimumWeightMatchingFunction()
+            tracker = FloeTracker(;
+                filter_function=FilterFunction(),
+                matching_function=MinimumWeightMatchingFunction(),
+                minimum_area=floe_area_threshold,
             )
 
-            # Expected: 5 trajectories, 3 of which have length 3 and 2 of which have length 2 as in test case 2
+            # Add full image gap
+            labeled_imgs_gaps = [
+                labeled_imgs[1], labeled_imgs[2], labeled_imgs[2] * 0, labeled_imgs[3]
+            ]
+
+            # Add single floe gaps
+            labeled_imgs_gaps[2][labeled_imgs_gaps[2] .== 36] .= 0
+            labeled_imgs_gaps[4][labeled_imgs_gaps[4] .== 33] .= 0
+
+            # Extend passtimes
+            passtimes_gaps = [
+                _passtimes[1], _passtimes[2], _passtimes[3], DateTime("2022-09-16T12:44:49")
+            ]
+
+            tracker = FloeTracker(;
+                filter_function=FilterFunction(),
+                matching_function=MinimumWeightMatchingFunction(),
+                minimum_area=floe_area_threshold,
+            )
+
+            trajectories = tracker(labeled_imgs_gaps, passtimes_gaps)
             counts = combine(groupby(trajectories, [:ID]), nrow => :count)
-            @test sum(counts[:, :count] .== 3) == 3 && sum(counts[:, :count] .== 2) == 2
+            @test sum(counts[:, :count] .== 3) == 4 && sum(counts[:, :count] .== 2) == 1
         end
     end
 end
@@ -174,8 +180,7 @@ end
 @testitem "Ellipses" begin
     using CSVFiles
     using DataFrames
-    using IceFloeTracker:
-        floe_tracker, FilterFunction, MinimumWeightMatchingFunction
+    using IceFloeTracker: floe_tracker, FilterFunction, MinimumWeightMatchingFunction
 
     function load_props_from_csv(path; eval_cols=[:mask, :psi])
         df = DataFrame(load(path))
@@ -190,6 +195,9 @@ end
             load_props_from_csv(p) for p in readdir(path; join=true) if endswith(p, ".csv")
         ]
         # TODO: Check types for the ShapeDifference function. What's different about these props tables?
+
+        # This test uses the inner floe tracker function, which takes a props argument instead of 
+        # the list of images
         trajectories_ = floe_tracker(
             props, FilterFunction(), MinimumWeightMatchingFunction()
         )
@@ -241,4 +249,72 @@ end
 
         @test all(1200 .<= trajectories_.area)
     end
+end
+
+@testitem "FloeTracker pipeline" begin
+    import Dates: DateTime
+    import DataFrames: nrow, DataFrame
+    import IceFloeTracker.Tracking:
+        FilterFunction,
+        MinimumWeightMatchingFunction,
+        ChainedFilterFunction,
+        DistanceThresholdFilter,
+        RelativeErrorThresholdFilter
+
+    dataset = Watkins2026Dataset(; ref="v0.1")
+
+    @testset "Basic functionality" begin
+        filter!(c -> c.case_number == 6, dataset)
+        sort!([:pass_time], dataset)
+        segmenter = LopezAcosta2019Tiling.Segment()
+        segmentation_results =
+            segmenter.(
+                modis_truecolor.(dataset),
+                modis_falsecolor.(dataset),
+                modis_landmask.(dataset),
+            )
+        tracker = FloeTracker(;
+            filter_function=FilterFunction(),
+            matching_function=MinimumWeightMatchingFunction(),
+        )
+        tracking_results = tracker(segmentation_results, info(dataset).pass_time)
+        @test isa(tracking_results, DataFrame)
+        @test "trajectory_uuid" in names(tracking_results)
+        @test nrow(tracking_results) == 116 # Just a test of consistency, not indicator of correctness
+    end
+
+    @testset "Simpler filter function" begin
+
+        # Note: Only tests that the function runs, does not check the error in the results!
+        filter!(c -> c.case_number == 6, dataset)
+        sort!([:pass_time], dataset)
+        segmenter = LopezAcosta2019Tiling.Segment()
+        segmentation_results =
+            segmenter.(
+                modis_truecolor.(dataset),
+                modis_falsecolor.(dataset),
+                modis_landmask.(dataset),
+            )
+
+        tracker = FloeTracker(;
+            filter_function=ChainedFilterFunction(;
+                filters=[
+                    DistanceThresholdFilter(),
+                    RelativeErrorThresholdFilter(; variable=:area),
+                ],
+            ),
+            matching_function=MinimumWeightMatchingFunction(;
+                columns=[:scaled_distance, :relative_error_area],
+                weights=ones(2), # Not yet used
+            ),
+        )
+        tracking_results = tracker(segmentation_results, info(dataset).pass_time)
+        @test isa(tracking_results, DataFrame)
+        @test "trajectory_uuid" in names(tracking_results)
+        @test nrow(tracking_results) == 150 # Just checks consistency -- not a direct indicator of quality!
+    end
+
+    # TODO: LopezAcosta filter function
+    # TODO: LopezAcosta matching function
+    # TODO: Update to use error metric for matching
 end
