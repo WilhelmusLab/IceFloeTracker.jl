@@ -149,7 +149,6 @@ end
             )
             
             # Add full image gap
-            labeled_imgs_gaps = deepcopy(labeled_imgs)
             labeled_imgs_gaps = [labeled_imgs[1], labeled_imgs[2], labeled_imgs[2]*0, labeled_imgs[3]]
             
             # Add single floe gaps
@@ -253,7 +252,7 @@ end
     import DataFrames: nrow, DataFrame
     import IceFloeTracker.Tracking: 
         FilterFunction, 
-        MinimumWeightMatchingFunction
+        MinimumWeightMatchingFunction,
         ChainedFilterFunction, 
         DistanceThresholdFilter, 
         RelativeErrorThresholdFilter
