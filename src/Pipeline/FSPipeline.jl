@@ -196,7 +196,7 @@ function (p::Segment)(
     # Compare to Segmentation A from LopezAcosta2019
     kmeans_result = kmeans_binarization(
             Gray.(ice_water_discrim),
-            falsecolor_image,
+            falsecolor_image, 
             filtered_tiles;
             k=p.kmeans_params.k,
             maxiter=p.kmeans_params.maxiter,
@@ -216,9 +216,6 @@ function (p::Segment)(
     # Compare to Segmentation B from Lopez-Acosta 2019
     # TODO: Bring over the updated version I've been developing for the streamline algorithm
     # grayscale enhnacement using gamma correction
-    # threshold binarization
-    # morphological cleanup
-
 
     # segB grayscale enhancement
     adaptive_binarized =  tiled_adaptive_binarization(preproc_gray, filtered_tiles; p.adaptive_binarization_settings...) .> 0 
@@ -243,38 +240,42 @@ function (p::Segment)(
         dist_threshold=4
     )
     
-    @info "tiled watershed on the not ice bit, whatever that one is"
-    # not-ice-bit is just a global threshold on the preprocessed image!
-    # So we should be able to replace this with the tiled adaptive binarization.
     w_other = watershed_transform(
         adaptive_binarized,
         brightened_gray,
         filtered_tiles;
-        strel=p.watershed_strel, # add to inputs for calibration
+        strel=p.watershed_strel,
         dist_threshold=4 # add to inputs for calibration
     )
 
-    watersheds_segB_product = falses(size(truecolor_image))
+    watersheds_product = falses(size(truecolor_image))
     for tile in filtered_tiles
-        watersheds_segB_product[tile...] .= (
+        watersheds_product[tile...] .= (
             isboundary(labels_map(w_merged)[tile...]) .* isboundary(labels_map(w_other)[tile...])
             ) .> 0
     end
+
 
     # segmentation_F
     # TODO: Split the refined k-means workflow from the cleanup
     # TODO: Make the final morphological operations into a split_floes function
     @info "Segmenting floes part 3/3"
-    segF = segmentation_F(
+    morphed_grayscale = reconstruct_and_mask(
         brightened_gray,
+        watersheds_product,
         ice_intersect,
-        watersheds_segB_product,
-        falsecolor_image,
-        cloud_mask,
-        coastal_buffer;
-        cluster_selection_algorithm=p.cluster_selection_algorithm
-    )
+        land_mask
+    ) # allows min area and strel to be added as kwd inputs
 
+    # kmeans binarization, again
+    segF_binarized = kmeans_binarization(
+        morphed_grayscale, falsecolor_image;
+        cluster_selection_algorithm=p.cluster_selection_algorithm
+        ) .* .! watersheds_product
+    
+    @info "Splitting floes"
+    segF = morph_split_floes(segF_binarized, cloud_mask; max_fill_area=1, min_area_opening=20, opening_strel=se_disk(4))
+   
     @info "Labeling floes"
     labels = label_components(segF)
 
@@ -294,10 +295,12 @@ function (p::Segment)(
             bright_ice_mask=p.cluster_selection_algorithm(falsecolor_image),
             ice_water_discrim=Gray.(ice_water_discrim), # TODO: Output of discriminate ice water can be forced to be Gray
             segA=kmeans_result,
-            segB=Gray.(ice_intersect),
+            segAB_intersect=Gray.(ice_intersect),
             segB_enhanced_gray=Gray.(brightened_gray),
-            watersheds_segB_product=watersheds_segB_product,
-            segF=segF, # TODO: Add enhanced grayscale to output
+            watersheds_product=watersheds_product,
+            segF_reconst_gray=morphed_grayscale,
+            segF=segF_binarized, 
+            final_floes = segF,
             segment_mean_falsecolor=colorview_falsecolor,
             segment_mean_truecolor=colorview_truecolor,
             ) # Add figure that overlays the segments
@@ -501,11 +504,17 @@ structuring element `strel` and taking the complement. The dilated landmask
 is applied at the end to prevent bright regions from bleeding into the land mask.
 Defaults to using a radius 5 diamond mask.
 """
-function _reconstruct(sharpened_grayscale_image, dilated_mask; strel=strel_diamond((5, 5)))
+function _reconstruct(sharpened_grayscale_image, land_mask; strel=strel_diamond((5, 5)))
     markers = complement.(dilate(sharpened_grayscale_image, strel))
     mask = complement.(sharpened_grayscale_image)
     reconstructed_grayscale = mreconstruct(dilate, markers, mask)
-    apply_landmask!(reconstructed_grayscale, dilated_mask)
+    # dealing with complements! Ice is black in the constructed image, so we have to reverse it
+    # to apply the landmask.
+    reconstructed_grayscale = complement.(
+        apply_landmask(
+            complement.(reconstructed_grayscale),
+             land_mask)
+    )
     return reconstructed_grayscale
 end
 
@@ -529,7 +538,7 @@ end
 Binarize the sharpened image by selective brightening, gamma correction, threshold application, and 
 clean up with image hole filling.
 
-"""
+""" # TODO: Sensitivity test. Does having the segB binarization in the workflow add value?
 function segB_binarize(sharpened_image, brightened_image, cloudmask;
      gamma_factor=2.5, adjusted_ice_threshold=0.05, fill_range=(0, 1), alpha_level=0.5)
     # Weighted average between brightened image and sharpened grayscale
@@ -593,115 +602,6 @@ function watershed_transform(
     return SegmentedImage(img, stitched_labels)
 end
 
-
-
-"""
-    segmentation_F(
-    enhanced_gray::Matrix{Gray{Float64}},
-    segmentation_B_ice_intersect::BitMatrix,
-    segmentation_B_watershed_intersect::BitMatrix,
-    ice_labels::Union{Vector{Int64},BitMatrix},
-    cloudmask::BitMatrix,
-    landmask::BitMatrix;
-    min_area_opening::Int64=20
-)
-
-Cleans up past segmentation images with morphological operations, and applies the results of prior watershed segmentation, returning the final cleaned image for tracking with ice floes segmented and isolated.
-
-# Arguments
-- `enhanced_gray`: gray image output from `segmentation_b.jl`
-- `segmentation_B_ice_intersect`: binary mask output from `segmentation_b.jl`
-- `segmentation_B_watershed_intersect`: ice pixels, output from `segmentation_b.jl`
-- `ice_labels`: vector of pixel coordinates output from `find_ice_labels.jl`
-- `cloudmask.jl`: bitmatrix cloudmask for region of interest
-- `landmask.jl`: bitmatrix landmask for region of interest
-- `min_area_opening`: threshold used for area opening; pixel groups greater than threshold are retained
-
-""" # TODO: Split into the grayscale and floe splitting components
-function segmentation_F(
-    enhanced_gray::Matrix{Gray{Float64}},
-    segmentation_B_ice_intersect::BitMatrix,
-    segmentation_B_watershed_intersect::BitMatrix,
-    falsecolor_image,
-    cloudmask::BitMatrix,
-    landmask::BitMatrix;
-    min_area_opening::Int64=20,
-    cluster_selection_algorithm
-)::BitMatrix
-    apply_landmask!(enhanced_gray, landmask)
-
-    ice_leads = .!segmentation_B_watershed_intersect .* segmentation_B_ice_intersect
-
-    ice_leads .= .!area_opening(ice_leads; min_area=min_area_opening, connectivity=2)
-
-    not_ice = dilate(enhanced_gray, strel_diamond((5, 5)))
-
-    mreconstruct!(
-        dilate, not_ice, complement.(not_ice), complement.(enhanced_gray)
-    )
-
-    reconstructed_leads = (not_ice .* ice_leads) .+ (60 / 255)
-
-    #### Update K-Means Segmentation ####
-    @info("Updated k-means segmentation")
-    leads_segmented =
-        kmeans_binarization(reconstructed_leads, falsecolor_image;
-            cluster_selection_algorithm=cluster_selection_algorithm) .*
-        .!segmentation_B_watershed_intersect
-    
-    @info "Splitting floes"
-    leads_segmented_broken = hbreak(leads_segmented)
-
-    leads_branched = branch(leads_segmented_broken)
-
-    leads_filled = .!imfill(.!leads_branched, 0:1)
-
-    leads_opened = branch(
-        area_opening(leads_filled; min_area=min_area_opening, connectivity=2)
-    )
-
-    leads_bothat = bothat(leads_opened, strel_diamond((5, 5))) .> 0.499
-
-    leads = convert(BitMatrix, (complement.(leads_bothat) .* leads_opened))
-
-    area_opening!(leads, leads; min_area=min_area_opening, connectivity=2)
-
-    # dmw: replace multiplication with apply_cloudmask
-    leads_bothat_filled = (fill_holes(leads) .* .!cloudmask)
-    # leads_bothat_filled = apply_cloudmask(fill_holes(leads), cloudmask)
-    floes = branch(leads_bothat_filled)
-
-    floes_opened = opening(floes, se_disk(4))
-
-    mreconstruct!(dilate, floes_opened, floes, floes_opened)
-
-    return floes_opened
-end
-
-"""
-    _adjust_histogram(masked_view, nbins, rblocks, cblocks, clip)
-
-Perform adaptive histogram equalization to a masked image. To be invoked within `imsharpen`.
-
-# Arguments
-- `masked_view`: input image in truecolor
-See `imsharpen` for a description of the remaining arguments
-
-"""
-function _adjust_histogram(masked_view, nbins, rblocks, cblocks, clip)
-    return adjust_histogram(
-        masked_view,
-        AdaptiveEqualization(;
-            nbins=nbins,
-            rblocks=rblocks,
-            cblocks=cblocks,
-            minval=minimum(masked_view),
-            maxval=maximum(masked_view),
-            clip=clip,
-        ),
-    )
-end
-
 """
     se_disk(r)
 
@@ -711,6 +611,50 @@ end
 function se_disk(r)
     se = [sum(abs.(c.I .- (r + 1)) .^ 2) for c in CartesianIndices((2*r + 1, 2*r + 1))]
     return sqrt.(se) .<= r
+end
+
+function reconstruct_and_mask(
+    grayscale_img::AbstractArray{<:Union{AbstractGray, TransparentGray}},
+    watershed_boundary::BitMatrix,
+    ice_intersect::BitMatrix,
+    landmask::BitMatrix;
+    se=strel_diamond((5,5)),
+    min_area_opening=20
+)
+    ice_mask = .!watershed_boundary .* ice_intersect
+    ice_mask .= .!area_opening(ice_mask; min_area=min_area_opening, connectivity=2)
+
+    reconst_gray = dilate(grayscale_img, se)
+    mreconstruct!(
+        dilate, reconst_gray, complement.(reconst_gray), complement.(grayscale_img)
+    )
+    reconst_gray[ice_mask .== 0] .= 0 # better before or after reconstruction?
+
+    apply_landmask!(reconst_gray, landmask) # does this need to be here?
+    return reconst_gray
+end
+
+"""
+    morph_split_floes(binary_img; max_fill_area=1, min_area_opening=20, opening_strel=se_disk(4))
+
+Separate floes in a binary image using hbreak, branch, imfill, bottom hat transform, and area opening.
+
+"""
+function morph_split_floes(binary_img, cloudmask; max_fill_area=1, min_area_opening=20, opening_strel=se_disk(4))
+    leads_branched = hbreak(binary_img) |> branch
+    leads_filled = .!imfill(.!leads_branched, 0:max_fill_area)
+    leads_opened = branch(
+        area_opening(leads_filled; min_area=min_area_opening, connectivity=2)
+    )
+
+    leads_bothat = bothat(leads_opened, strel_diamond((5, 5))) .> 0
+    leads = convert(BitMatrix, (complement.(leads_bothat) .* leads_opened))
+    area_opening!(leads, leads; min_area=min_area_opening, connectivity=2)
+
+    floes = (fill_holes(leads) .* .!cloudmask) |> branch
+    floes_opened = opening(floes, opening_strel)
+    mreconstruct!(dilate, floes_opened, floes, floes_opened)
+    return floes_opened
 end
 
 end
