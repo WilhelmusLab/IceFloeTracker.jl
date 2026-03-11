@@ -1,6 +1,10 @@
 module FSPipeline
 """
-Update of the LopezAcosta2019 algorithm for the floe trajectory dataset
+Update of the LopezAcosta2019 algorithm for the Fram Strait floe trajectory dataset. Key updates:
+    * Separating segmentation algorithm components for clearer functions
+    * Implementation of the tiling workflow
+    * Simpler watershed transformation steps
+    * Exposure of algorithm settings to the user
 """
 
 using Images
@@ -23,11 +27,12 @@ import ..Preprocessing:
     apply_cloudmask!,
     LopezAcostaCloudMask,
     Watkins2025CloudMask
-import ..ImageUtils: get_tiles
+import ..ImageUtils: get_tiles, imbrighten
 import ..Segmentation: 
     IceFloeSegmentationAlgorithm, 
     find_ice_mask, 
     kmeans_binarization,
+    tiled_adaptive_binarization,
     IceDetectionFirstNonZeroAlgorithm,
     IceDetectionBrightnessPeaksMODIS721,
     IceDetectionThresholdMODIS721,
@@ -50,16 +55,16 @@ diffusion_parameters = (lambda=0.1, kappa=0.1, niters=5, g="exponential")
 
 @kwdef struct Segment <: IceFloeSegmentationAlgorithm
     coastal_buffer_structuring_element::AbstractMatrix{Bool} = strel_box((51,51))
-    cloud_mask_algorithm = Watkins2025CloudMask()
+    cloud_mask_algorithm = LopezAcostaCloudMask() #Watkins2025CloudMask()
     diffusion_algorithm = PeronaMalikDiffusion(diffusion_parameters...)
     adapthisteq_params = (
         nbins=256,
-        rblocks=16,
-        cblocks=8, 
-        clip=20, 
+        rblocks=4,
+        cblocks=4, 
+        clip=5, 
     )
     tile_size_pixels=1000
-    min_tile_ice_pixel_count=500
+    min_tile_ice_pixel_count=300
     unsharp_mask_params = (smoothing_param=10, intensity=0.5)
     kmeans_params = (k=4, maxiter=50, random_seed=45)
     cluster_selection_algorithm = IceDetectionBrightnessPeaksMODIS721(
@@ -67,11 +72,11 @@ diffusion_parameters = (lambda=0.1, kappa=0.1, niters=5, g="exponential")
         possible_ice_threshold=0.3,
         join_method="union",
         minimum_prominence=0.01)
-    grayscale_floe_threshold = 0.4 # Brighten pixels brighter than this threshold 
+    brightening_factor = 0.3 # Fraction to brighten floes by (e.g., 0 = no brightening, 1 = doubling brightness)
     adaptive_binarization_settings = (
         minimum_window_size=400,
         threshold_percentage=0,
-        minimum_brightness=100/255) # Not used in this workflow yet
+        minimum_brightness=100/255)
     watershed_strel = se_disk(5) # 
 end
 
@@ -135,7 +140,8 @@ function (p::Segment)(
     apply_landmask!(truecolor_image, land_mask);
     preproc_img = float64.(deepcopy(truecolor_image));
 
-    # TODO: Options to test
+    #### Preprocessing ######
+    # TODO: Test whether the order of diffuse, sharpen, and equalization matter for the end results.
     # Order of operations permutations: 
     #    a. eq -> sharpen -> diffuse
     #    b. diffuse -> eq -> sharpen (current Lopez Acosta 2019)
@@ -187,6 +193,7 @@ function (p::Segment)(
  
     # 3. Segmentation
     @info "Segmenting floes part 1/3"
+    # Compare to Segmentation A from LopezAcosta2019
     kmeans_result = kmeans_binarization(
             Gray.(ice_water_discrim),
             falsecolor_image,
@@ -204,8 +211,9 @@ function (p::Segment)(
     # The clean binary floes method has an aggressive fill_holes algorithm. Potentially merging with the
     # ice brightness threshold can prevent some of the interstitial water areas from being filled.
 
-    # segmentation_B
+    
     @info "Segmenting floes part 2/3"
+    # Compare to Segmentation B from Lopez-Acosta 2019
     # TODO: Bring over the updated version I've been developing for the streamline algorithm
     # grayscale enhnacement using gamma correction
     # threshold binarization
@@ -213,24 +221,34 @@ function (p::Segment)(
 
 
     # segB grayscale enhancement
+    adaptive_binarized =  tiled_adaptive_binarization(preproc_gray, filtered_tiles; p.adaptive_binarization_settings...) .> 0 
+    brightened_gray = imbrighten(preproc_gray, adaptive_binarized, 1 + p.brightening_factor)
+    
+    # TODO: give more descriptive name
+    gamma_binarized = segB_binarize(preproc_gray, brightened_gray, cloud_mask; 
+                                    gamma_factor=2.5, 
+                                    adjusted_ice_threshold=0.05,
+                                    fill_range=(0, 1),
+                                    alpha_level=0.5)
 
-
-    segB = segmentation_B(preproc_gray, cloud_mask, kmeans_result)
+    ice_intersect = closing(kmeans_result, strel_diamond((3, 3))) .* gamma_binarized
 
     # Process watershed in parallel using Folds
     @info "Computing watershed boundaries"
     w_merged = watershed_transform(
-        segB.ice_intersect,
-        segB.enhanced_gray,
+        ice_intersect,
+        brightened_gray,
         filtered_tiles;
         strel=p.watershed_strel,
         dist_threshold=4
     )
     
     @info "tiled watershed on the not ice bit, whatever that one is"
+    # not-ice-bit is just a global threshold on the preprocessed image!
+    # So we should be able to replace this with the tiled adaptive binarization.
     w_other = watershed_transform(
-        segB.not_ice_bit,
-        segB.enhanced_gray,
+        adaptive_binarized,
+        brightened_gray,
         filtered_tiles;
         strel=p.watershed_strel, # add to inputs for calibration
         dist_threshold=4 # add to inputs for calibration
@@ -248,8 +266,8 @@ function (p::Segment)(
     # TODO: Make the final morphological operations into a split_floes function
     @info "Segmenting floes part 3/3"
     segF = segmentation_F(
-        segB.enhanced_gray,
-        segB.ice_intersect,
+        brightened_gray,
+        ice_intersect,
         watersheds_segB_product,
         falsecolor_image,
         cloud_mask,
@@ -276,8 +294,8 @@ function (p::Segment)(
             bright_ice_mask=p.cluster_selection_algorithm(falsecolor_image),
             ice_water_discrim=Gray.(ice_water_discrim), # TODO: Output of discriminate ice water can be forced to be Gray
             segA=kmeans_result,
-            segB=Gray.(segB.ice_intersect),
-            segB_enhanced_gray=Gray.(segB.enhanced_gray),
+            segB=Gray.(ice_intersect),
+            segB_enhanced_gray=Gray.(brightened_gray),
             watersheds_segB_product=watersheds_segB_product,
             segF=segF, # TODO: Add enhanced grayscale to output
             segment_mean_falsecolor=colorview_falsecolor,
@@ -527,72 +545,6 @@ function segB_binarize(sharpened_image, brightened_image, cloudmask;
     return segb_filled
 end
 
-"""
-    segmentation_B(sharpened_image, cloudmask, segmented_a_ice_mask, struct_elem; fill_range, isolation_threshold, alpha_level, adjusted_ice_threshold)
-
-Performs image processing and morphological filtering with intermediate files from normalization.jl and segmentation_A to further isolate ice floes, returning a mask of potential ice.
-
-# Arguments
-- `sharpened_image`: non-cloudmasked but sharpened image, output from `normalization.jl`
-- `cloudmask`:  bitmatrix cloudmask for region of interest
-- `segmented_a_ice_mask`: binary cloudmasked ice mask from `segmentation_a_direct.jl`
-- `struct_elem`: structuring element for dilation
-- `fill_range`: range of values dictating the size of holes to fill
-- `isolation_threshold`: threshold used to isolated pixels from `sharpened_image`; between 0-1
-- `alpha_level`: alpha threshold used to adjust contrast
-- `gamma_factor`: amount of gamma adjustment
-- `adjusted_ice_threshold`: threshold used to set ice equal to one after gamma adjustment
-
-""" # TODO: Split into the segB binarize and segB preproc functions
-function segmentation_B(
-    sharpened_image::Matrix{Gray{Float64}},
-    cloudmask::BitMatrix,
-    segmented_a_ice_mask::BitMatrix,
-    struct_elem=strel_diamond((3, 3));
-    fill_range::Tuple=(0, 1),
-    isolation_threshold::Float64=0.4,
-    alpha_level::Float64=0.5,
-    gamma_factor::Float64=2.5,
-    adjusted_ice_threshold::Float64=0.05,
-)
-
-    ## Process sharpened image
-    enhanced_gray = deepcopy(sharpened_image)
-    enhanced_gray[enhanced_gray .< isolation_threshold] .= 0
-    seg_b_binarized = enhanced_gray .* 0.3
-    enhanced_gray .= seg_b_binarized .+ sharpened_image
-    adjusted_sharpened = (
-        (1 - alpha_level) .* sharpened_image .+ alpha_level .* enhanced_gray
-    )
-
-    gamma_adjusted_sharpened = adjust_histogram(
-        adjusted_sharpened, GammaCorrection(; gamma=gamma_factor)
-    )
-    gamma_adjusted_sharpened_cloudmasked = apply_cloudmask(
-        gamma_adjusted_sharpened, cloudmask
-    )
-    segb_filled =
-        .!imfill(
-            gamma_adjusted_sharpened_cloudmasked .<= adjusted_ice_threshold, fill_range
-        )
-
-    ## Merge segmentation results
-    segb_ice = closing(segmented_a_ice_mask, struct_elem) .* segb_filled
-
-    ice_intersect = (segb_filled .* segb_ice)
-
-    ## Check results in the streamline_la2019 section
-    # - Where is the second enhanced grayscale used?
-    # - Where is the intermediate ice mask used?
-    # - What names make sense for these?
-
-    return (;
-        :enhanced_gray => map(clamp01nan, enhanced_gray)::Matrix{Gray{Float64}}, # Enhanced Grayscale B
-        :not_ice_bit => (seg_b_binarized .> 0)::BitMatrix, # Seg B prelim ice mask?
-        :ice_intersect => ice_intersect::BitMatrix, # Joined binarization result
-    )
-end
-
 ##### Watershed transformation #######
 """
    watershed_transform(binary_img, img; strel=strel_diamond((3,3)), dist_threshold=4)
@@ -607,7 +559,7 @@ end
 """ # TODO: Make the "marker_selection_function" an input, with the idea that it's a function of the distance transform
 function watershed_transform(
     binary_floes,
-    img;
+    img; # Only used to generate the segmented image for the output.
     strel=strel_diamond((5,5)),
     dist_threshold=4
 )
