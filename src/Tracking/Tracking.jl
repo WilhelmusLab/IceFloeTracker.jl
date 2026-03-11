@@ -11,7 +11,6 @@ export add_floemasks!,
     candidate_matching_settings,
     ChainedFilterFunction,
     compute_centroid,
-    cropfloe,
     crosscorr,
     distance_threshold,
     DistanceThresholdFilter,
@@ -28,6 +27,7 @@ export add_floemasks!,
     LinearTimeDistanceFunction,
     LogLogQuadraticTimeDistanceFunction,
     LopezAcostaTimeDistanceFunction,
+    LopezAcosta2019ChainedFilterFunction,
     PiecewiseLinearThresholdFunction,
     PsiSCorrelationThresholdFilter,
     register,
@@ -46,14 +46,13 @@ include("crosscorr.jl")
 include("extend_regionprops.jl")
 include("geometric_thresholds.jl")
 include("filter_functions.jl")
-include("floe_tracker.jl")
 include("matching_functions.jl")
+include("floe_tracker.jl")
 include("psi-s.jl")
 include("register.jl")
 include("resample-boundary.jl")
 include("rotation.jl")
-include("tracker-funcs.jl")
-include("functor.jl")
+# include("tracker-funcs.jl")
 
 ##### Default settings ######
 # TODO: Replace with filter_function

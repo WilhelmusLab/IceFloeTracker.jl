@@ -9,30 +9,48 @@ Function to identify a best matching between pairs of ice floes in the DataFrame
 to sum. The result of the sum is the weight assigned to each pairing. Then, a best set of unique pairs is found by
 carrying out two grouped minimizations: first grouping by the first floe, identified by the `head_uuid` column, and
 finding the floe with the smallest weight, then grouping by the second floe, identified by the `uuid` column, and again 
-finding the floe with the smallest weight. Finally, only pairs that exist in both the forward and backward grouped minizations
-are identified as likely true matches.
+finding the floe with the smallest weight. Finally, we apply a consistency check such that only pairs that exist in both 
+the forward and backward grouped minimizations are identified as likely true matches.
+
+Arguments:
+- columns: List of columns to use in comparison
 """
 @kwdef struct MinimumWeightMatchingFunction <: AbstractFloeMatchingFunction
-    columns=[:scaled_distance, :relative_error_area, :relative_error_convex_area, 
-                    :relative_error_major_axis_length, :relative_error_minor_axis_length,
-                    :psi_s_correlation_score, :scaled_shape_difference]
+    columns = [
+        :scaled_distance,
+        :relative_error_area,
+        :relative_error_convex_area,
+        :relative_error_major_axis_length,
+        :relative_error_minor_axis_length,
+        :psi_s_correlation_score,
+        :scaled_shape_difference,
+    ]
+    weights = ones(7) # Not used yet!
 end
 
-function (f::MinimumWeightMatchingFunction)(candidate_pairs::DataFrame);
-     
+function (f::MinimumWeightMatchingFunction)(candidate_pairs::DataFrame)
+
     # Potential future updates: replace sum with a weighted
     candidate_pairs[!, :w] = sum.(eachrow(candidate_pairs[:, f.columns]))
 
     # Forward: f -> {g}, find minimum dx over set {g}
-    matches_fwd = combine(sdf -> sdf[argmin(sdf.w), :], groupby(candidate_pairs, :head_uuid));
-    matches_fwd = combine(sdf -> sdf[argmin(sdf.w), :], groupby(candidate_pairs, :uuid));
+    matches_fwd = combine(
+        sdf -> sdf[argmin(sdf.w), :], groupby(candidate_pairs, :head_uuid)
+    )
+    matches_fwd = combine(sdf -> sdf[argmin(sdf.w), :], groupby(candidate_pairs, :uuid))
 
     # Backward: {f} <- g, find minimum dx over {f}
-    matches_bwd = combine(sdf -> sdf[argmin(sdf.w), :], groupby(candidate_pairs, :uuid));
-    matches_bwd = combine(sdf -> sdf[argmin(sdf.w), :], groupby(candidate_pairs, :head_uuid));
-    
-    return innerjoin(matches_fwd[:, [:head_uuid, :uuid]], matches_bwd, on = [:head_uuid, :uuid]);
+    matches_bwd = combine(sdf -> sdf[argmin(sdf.w), :], groupby(candidate_pairs, :uuid))
+    matches_bwd = combine(
+        sdf -> sdf[argmin(sdf.w), :], groupby(candidate_pairs, :head_uuid)
+    )
+
+    return innerjoin(
+        matches_fwd[:, [:head_uuid, :uuid]], matches_bwd; on=[:head_uuid, :uuid]
+    )
 end
+
+# TODO: Set up a GetNearest matching function
 
 # TODO: Use the commented-out code below to construct a MostMinimumEverythingMatchingFunction
 # that uses the prior method for finding a best match. 

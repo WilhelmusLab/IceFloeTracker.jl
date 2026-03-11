@@ -37,6 +37,13 @@ julia> dt_test(floe, candidates)
 will modify `candidates` in place to include only rows in which the `LinearTimeDistanceFunction()` evaluates as true. 
 Passing `Val{:raw}` as the third argument will forgo the subsetting step so that the output of the test can be examined.
 
+## Arguments
+- `time_column`: Name of the column to store pairwise floe time differences
+- `dist_column`: Name of the column to store distances between floes
+- `scaled_dist_column` = Name of the column to store scaled distances
+- `threshold_function` = LinearTimeDistanceFunction()
+- `threshold_column` = :time_distance_test
+- `scaling_function`: Function producing a number (e.g., max expected distance) for scaling the distances. This quantify is used in the matching function as an error metric.
 """ 
 @kwdef struct DistanceThresholdFilter <: AbstractFloeFilterFunction
         time_column = :Δt
@@ -68,6 +75,7 @@ function euclidean_distance(floe, candidates; r = 250)
     (floe.col_centroid .- candidates.col_centroid).^2) * r
 end
 
+# TODO: Add geodetic distance function
 
 """
     RelativeErrorThresholdFilter(variable, area_variable, threshold_column, threshold_function)
@@ -79,12 +87,12 @@ between scalar variables X and Y is defined as
 ```
 err = abs(X - Y)/mean(X, Y)
 ```
-This function takes a scalar `<variable>` (which must be a named column in 
+This function takes a string or Symbol `variable` (which must be a named column in 
 the `candidates` DataFrame) and computes the relative error. Calling the function with 
 the variable name, `area_variable`, `threshold_column name``, and a `threshold_function`
 initializes the function and saves the parameter values. Once initialized, the function 
-takes a floe (DataFrameRow) and a DataFrame of candidate floes as arguments, and subsets
-the candidates to only those which evaluate as true using the `threshold_function`.
+takes a `DataFrameRow` and a `DataFrame` of candidate floes as arguments, and subsets
+the candidates to only those which evaluate as `true` using the `threshold_function`.
 Including the dummy variable `Var(:raw)` returns the candidates dataframe with the test 
 results without subsetting it.
 """
@@ -166,8 +174,8 @@ end
 """
     ChainedFilterFunction(filters::Vector{AbstractFloeFilterFunction})
 
-A ChainedFilterFunction is a composite function based on a set of AbstractFloeFilterFunctions. Each is
-applied in sequence. Thus a filter function based on the DistanceThresholdFilter and area relative error 
+A `ChainedFilterFunction` is a composite function based on a set of `AbstractFloeFilterFunctions`. Each is
+applied in sequence. Thus a filter function based on the `DistanceThresholdFilter` and area relative error 
 could be made as
 
 ```julia
@@ -175,6 +183,8 @@ filter_function = ChainedFilterFunction(
     filters=[DistanceThresholdFilter(), RelativeErrorThresholdFilter(variable=:area)]
 )
 ```
+
+Each item in the list should be an AbstractFloeFilterFunction.
 
 """ 
 @kwdef struct ChainedFilterFunction <: AbstractFloeFilterFunction
@@ -189,14 +199,14 @@ end
 
 """FilterFunction()
 
-The default filter function for the FloeTracker. The function is an instance of ChainedFilterFunction,
+The default filter function for the FloeTracker. The function is an instance of [`ChainedFilterFunction`]@ref,
 applying 7 individual AbstractFloeFilterFunctions in sequence:
-    1. DistanceThresholdFilter
-    2-5. RelativeErrorThresholdFilters for area, convex_area, major_axis_length, and minor_axis_length
-    6. ShapeDifferenceThresholdFilter
-    7. PsiSCorrelationThresholdFilter
-Filters 2-7 use PiecewiseLinearThresholdFunctions for thresholds, while Filter 1 uses a LinearTimeDistanceFunction.
-The default values and settings are derived in Watkins et al. 2026.
+    1. DistanceThresholdFilter  
+    2-5. RelativeErrorThresholdFilters for area, convex_area, major_axis_length, and minor_axis_length  
+    6. ShapeDifferenceThresholdFilter  
+    7. PsiSCorrelationThresholdFilter  
+Filters 2-7 use the [`PiecewiseLinearThresholdFunction`]@ref for thresholds, while Filter 1 uses a [`LinearTimeDistanceFunction`]@ref`.
+The default values and settings are derived in Watkins et al. 2026 (in prep.).
 """
 FilterFunction() = ChainedFilterFunction(;
     filters = [
@@ -223,14 +233,14 @@ with parameters and threshold functions set based on Lopez-Acosta et al. 2019. T
 of threshold filters is the same as in the default FilterFunction, but using
 stepwise threshold functions instead of piecewise.
 """
-LopezAcosta2019ChainedFilterFunction = ChainedFilterFunction(
+LopezAcosta2019ChainedFilterFunction = ChainedFilterFunction(;
     filters=[
         DistanceThresholdFilter(threshold_function=LopezAcostaTimeDistanceFunction()),
         RelativeErrorThresholdFilter(variable=:area), # use the step functions
         RelativeErrorThresholdFilter(variable=:convex_area),
         RelativeErrorThresholdFilter(variable=:major_axis_length),
         RelativeErrorThresholdFilter(variable=:minor_axis_length),
-        ShapeDifferenceThresholdFilter(),
-        PsiSCorrelationThresholdFilter()
+        ShapeDifferenceThresholdFilter(), # Replace with step function
+        PsiSCorrelationThresholdFilter() # Replace with step function
         ]
 )
