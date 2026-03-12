@@ -227,15 +227,15 @@ function (p::Segment)(
             truecolor,
             falsecolor,
             landmask,
-            coastal_buffer_mask,
+            coastal_buffer=coastal_buffer_mask,
             cloudmask,
             ice_mask=IceDetectionLopezAcosta2019()(fc_masked),
             sharpened_grayscale_image=sharpened_grayscale_image,
             ice_water_discrim=ice_water_discrim,
             segA=kmeans_result,
-            segB=segB,
+            segAB_intersect=Gray.(segB.ice_intersect),
             watersheds_segB_product=watersheds_segB_product,
-            segF=segF,
+            final_floes=segF,
             labels=labels,
             segment_mean_truecolor=map( # TODO Add "view_seg" code snippet
                 i -> segment_mean(segments_truecolor, i), labels_map(segments_truecolor)

@@ -15,19 +15,33 @@
 end
 
 @testitem "LopezAcosta2019.Segment – sample of cases" setup = [Segmentation] tags = [:e2e] begin
+    using StatsBase: mean
     dataset = Watkins2026Dataset(; ref="v0.1")
     passing = c -> c.case_number % 17 == 0
     # Case 4 has only very small floes, while case 39 is missing data from Aqua.
     formerly_broken = c -> (c.case_number == 4 || (c.case_number == 39 && c.satellite == "aqua"))
     broken = c -> false  # `broken_cases` once fixed, for regression testing
+    
     results = run_and_validate_segmentation(
-        filter(case -> (case.visible_floes == "yes" && case.cloud_fraction_manual <= 0.5 && case.case_number % 6 == 0), dataset),
-        # filter(c -> (passing(c) || formerly_broken(c) || broken(c)), dataset),
+        filter(case -> (case.visible_floes == "yes" && case.cloud_fraction_manual <= 0.5 && case.case_number % 2 == 0), dataset),
         LopezAcosta2019.Segment();
         output_directory="./test_outputs/",
     )
+
+    results[:, ["case_name", "success", "recall", "precision", "F_score", "labeled_fraction", "segment_count"]] |> save("test_outputs/LopezAcosta2019_sampled.csv")
+
     @test all(filter(!broken, results).success)
     @test any(filter(broken, results).success) broken = true
+
+    # Aggregate performance measures
+    mean_recall = round(mean(skipnanormissing(results.recall)), digits=2)
+    mean_precision = round(mean(skipnanormissing(results.precision)), digits=2)
+    mean_F_score = round(mean(skipnanormissing(results.F_score)), digits=2)
+
+    @show mean_recall
+    @show mean_precision
+    @show mean_F_score
+
 end
 
 @testitem "LopezAcosta2019.Segment – detailed tests" setup = [Segmentation] tags = [:e2e] begin

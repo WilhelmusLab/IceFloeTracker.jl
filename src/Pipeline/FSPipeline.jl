@@ -78,6 +78,7 @@ diffusion_parameters = (lambda=0.1, kappa=0.1, niters=5, g="exponential")
         threshold_percentage=0,
         minimum_brightness=100/255)
     watershed_strel = se_disk(5) # 
+    floe_splitting_settings = (max_fill_area=1, min_area_opening=20, opening_strel=se_disk(4))
 end
 
 function (p::Segment)(
@@ -269,13 +270,16 @@ function (p::Segment)(
 
     # kmeans binarization, again
     segF_binarized = kmeans_binarization(
-        morphed_grayscale, falsecolor_image;
+        morphed_grayscale, falsecolor_image, filtered_tiles; # number of clusters = ?
         cluster_selection_algorithm=p.cluster_selection_algorithm
         ) .* .! watersheds_product
     
     @info "Splitting floes"
-    segF = morph_split_floes(segF_binarized, cloud_mask; max_fill_area=1, min_area_opening=20, opening_strel=se_disk(4))
-   
+    segF = morph_split_floes(segF_binarized, cloud_mask; p.floe_splitting_settings...)
+    
+    # Alternative: test whether the final segF_binarized is helpful
+    # segF = morph_split_floes(ice_intersect, cloud_mask; max_fill_area=1, min_area_opening=20, opening_strel=se_disk(4))
+
     @info "Labeling floes"
     labels = label_components(segF)
 
@@ -630,7 +634,7 @@ function reconstruct_and_mask(
     )
     reconst_gray[ice_mask .== 0] .= 0 # better before or after reconstruction?
 
-    apply_landmask!(reconst_gray, landmask) # does this need to be here?
+    # apply_landmask!(reconst_gray, landmask) # does this need to be here?
     return reconst_gray
 end
 
@@ -638,6 +642,7 @@ end
     morph_split_floes(binary_img; max_fill_area=1, min_area_opening=20, opening_strel=se_disk(4))
 
 Separate floes in a binary image using hbreak, branch, imfill, bottom hat transform, and area opening.
+Based on Lopez-Acosta et al. 2019, 2021.
 
 """
 function morph_split_floes(binary_img, cloudmask; max_fill_area=1, min_area_opening=20, opening_strel=se_disk(4))

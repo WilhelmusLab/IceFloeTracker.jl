@@ -104,6 +104,7 @@
                     segment_mean_truecolor_validated=map(
                         i -> segment_mean(validated, i), labels_map(validated)
                     ),
+                    validated_binary=Gray.(labels_map(validated) .> 0)
                 )
             end
             return results
