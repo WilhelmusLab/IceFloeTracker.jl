@@ -68,6 +68,9 @@ import ..Segmentation:
     IceDetectionBrightnessPeaksMODIS721,
     IceDetectionThresholdMODIS721
 
+import ..ImageUtils:
+    imbrighten
+    
 """
 Sample input parameters expected by the main function
 """
@@ -193,12 +196,28 @@ function (p::Segment)(
 
     # segmentation_B
     @info "Segmenting floes part 2/3"
-    segB = segmentation_B(sharpened_grayscale_image, cloudmask, kmeans_result)
+    isolation_threshold = 0.4
+    brightening_factor = 0.3
+    prelim_binarized = sharpened_grayscale_image .> isolation_threshold 
+
+    # todo: add the updated imbrighten function
+    brightened_gray = imbrighten(sharpened_grayscale_image, prelim_binarized, 1 + brightening_factor)
+    
+    gamma_binarized = segB_binarize(sharpened_grayscale_image, brightened_gray, cloudmask; 
+                                    gamma_factor=2.5, 
+                                    adjusted_ice_threshold=0.05,
+                                    fill_range=(0, 1),
+                                    alpha_level=0.5)
+
+    ice_intersect = closing(kmeans_result, strel_diamond((3, 3))) .* gamma_binarized
+
+
+    # segB = segmentation_B(sharpened_grayscale_image, cloudmask, kmeans_result)
 
     # Process watershed in parallel using Folds
     @info "Building watersheds"
     watersheds_segB = [
-        watershed_ice_floes(segB.not_ice_bit), watershed_ice_floes(segB.ice_intersect)
+        watershed_ice_floes(prelim_binarized), watershed_ice_floes(ice_intersect)
     ]
     watersheds_segB_product = watershed_product(watersheds_segB...)
 
@@ -206,8 +225,8 @@ function (p::Segment)(
     # TODO: @hollandjg find out why segF is more dilated
     @info "Segmenting floes part 3/3"
     segF = segmentation_F(
-        segB.not_ice,
-        segB.ice_intersect,
+        brightened_gray,
+        ice_intersect,
         watersheds_segB_product,
         fc_masked,
         cloudmask,
@@ -233,7 +252,7 @@ function (p::Segment)(
             sharpened_grayscale_image=sharpened_grayscale_image,
             ice_water_discrim=ice_water_discrim,
             segA=kmeans_result,
-            segB=segB,
+            segB=ice_intersect,
             watersheds_segB_product=watersheds_segB_product,
             segF=segF,
             labels=labels,
@@ -463,6 +482,7 @@ function clean_binary_floes(bw_img; min_opening_area=50)
     diff_matrix = img_opened .!= img_filled
     return bw_img .|| diff_matrix
 end
+
 
 """
  segB_binarize(sharpened_image, brightened_image, cloudmask;

@@ -1,3 +1,5 @@
+import Images: AbstractRGB, AbstractGray, TransparentColor, TransparentGray
+
 """
     get_brighten_mask(equalized_gray_reconstructed_img, gamma_green)
 # Arguments
@@ -26,3 +28,14 @@ function imbrighten(img, brighten_mask, bright_factor)
     img[brighten_mask] .= img[brighten_mask] * bright_factor
     return img = to_uint8(img)
 end
+
+function imbrighten(
+    img::AbstractArray{<:Union{AbstractRGB, TransparentColor, AbstractGray}},
+    brighten_mask::AbstractArray{Bool}, bright_factor::Number
+)
+    _img = float64.(img)
+    _img[brighten_mask] .= _img[brighten_mask] * bright_factor
+    clamp01nan!(_img)
+    return convert.(eltype(img), _img)
+end
+
