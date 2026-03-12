@@ -78,7 +78,7 @@ diffusion_parameters = (lambda=0.1, kappa=0.1, niters=5, g="exponential")
         threshold_percentage=0,
         minimum_brightness=100/255)
     watershed_strel = se_disk(5) # 
-    floe_splitting_settings = (max_fill_area=1, min_area_opening=20, opening_strel=se_disk(4))
+    floe_splitting_settings = (max_fill_area=1, min_area_opening=20, opening_strel=se_disk(2))
 end
 
 function (p::Segment)(
