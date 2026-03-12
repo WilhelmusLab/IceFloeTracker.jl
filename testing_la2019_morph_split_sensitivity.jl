@@ -49,7 +49,7 @@ init_img = RGB.(seg_f .> 0) .+ RGB(0, 1, 0.3) .* Float64.(outlines)
 # Illustrate steps with defaults
 begin
     proc_images = []
-    binary_img = deepcopy(ice_intersect)
+    binary_img = deepcopy(segF_cleaned)
     push!(proc_images, binary_img)
     max_fill_area=1
     min_area_opening=20
@@ -94,6 +94,7 @@ end
 
 save("/Users/dwatkin2/Downloads/ift_split_stages.png", mosaicview([m for m in proc_images], nrow=3, rowmajor=true))
 
+outlines = IceFloeTracker.Morphology.bwperim(validated .> 0)
 segF_overlay = RGB.(final) .+ RGB(1, 0, 0) .* outlines
 segA_morphed_overlay = RGB.(floes_opened) .+ RGB(1, 0, 0) .* outlines;
 mosaicview(segF_overlay, segA_morphed_overlay, nrow=1)
