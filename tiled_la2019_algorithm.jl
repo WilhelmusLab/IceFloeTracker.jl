@@ -21,7 +21,7 @@ begin
     # falsecolor_files = filter(f -> f != ".DS_Store", readdir(joinpath(dataloc, "falsecolor", year)))
     falsecolor_files = filter(f -> f != ".DS_Store", readdir(joinpath(dataloc, "falsecolor")))
 
-    case_number = "009" # Next: 011
+    case_number = "001-" # Hyphen keeps it from matching years (e.g., 009 -> 2009)
     falsecolor_files = filter(f -> occursin(case_number, f), falsecolor_files)
 
     truecolor_files = replace.(falsecolor_files, ("falsecolor" => "truecolor"))
