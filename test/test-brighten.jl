@@ -1,6 +1,6 @@
-
 @testitem "brighten tests" begin
     using IceFloeTracker: get_brighten_mask, imbrighten
+    import Images: Gray, AbstractGray
 
     @testset "get_brighten_mask" begin
         img = rand(0:255, 5, 5)
@@ -19,5 +19,12 @@
             result = imbrighten(img, brighten_mask, bright_factor)
             @test result == expected_result
         end
+
+        img = Gray.(img ./ maximum(img))
+        result = imbrighten(img, brighten_mask .> 0, 1.25)
+        # Expected result is different in this case because we aren't
+        # rounding to integer precision in the end.
+        expected = Gray.([1*1.25 2; 3*1.25 4] ./ 4)
+        @test eltype(result) == eltype(img)
     end
 end
