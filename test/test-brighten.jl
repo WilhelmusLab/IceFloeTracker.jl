@@ -26,5 +26,6 @@
         # rounding to integer precision in the end.
         expected = Gray.([1*1.25 2; 3*1.25 4] ./ 4)
         @test eltype(result) == eltype(img)
+        @test result == expected
     end
 end
