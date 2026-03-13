@@ -9,6 +9,7 @@ import ..Segmentation: component_floes
 
 FloeLabelsImage = Union{BitMatrix,Matrix{<:Bool},Matrix{<:Integer},<:SegmentedImage}
 
+# TODO: Change "passtimes" to "image_time". In principle we could be using images from airplanes/helicopters, not just satellites
 """
     add_passtimes!(props::DataFrame, passtimes::DateTime)
     add_passtimes!.(props::Vector{DataFrame}, passtimes::Vector{DateTime})
@@ -51,7 +52,6 @@ function add_uuids!(df::DataFrame)
     df.uuid = [_uuid() for _ in 1:nrow(df)]
     return df
 end
-
 
 """
     add_floemasks!(props::DataFrame, indexmap::FloeLabelsImage)

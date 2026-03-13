@@ -25,12 +25,12 @@ is initialized with names for the time and distance columns, the threshold funct
 and the name of the column in which to store the results. 
 
 
-```
+```julia
 julia> dt_test = DistanceThresholdFilter(time_colum=:Δt, dist_column=:Δx, threshold_function=LinearTimeDistanceFunction())
 ```
 Now, let's assume that `floe` and `candidates` are already defined. Then
 
-```
+```julia
 julia> dt_test(floe, candidates)
 ```
 
@@ -68,9 +68,10 @@ end
 
 Compute the distance in meters between a floe and candidate floes by computing the
 straight-line distance between centroids in pixel coordinates and converting that result
-using a pixel resolution `r` with units meters/pixel.
+using a pixel resolution `r` with units meters/pixel. The floe and candidates must 
+have rows `row_centroid` and `col_centroid`.
 """
-function euclidean_distance(floe, candidates; r = 250)
+function euclidean_distance(floe::DataFrame, candidates::DataFrame; r = 250)
     return sqrt.((floe.row_centroid .- candidates.row_centroid).^2 .+ 
     (floe.col_centroid .- candidates.col_centroid).^2) * r
 end
@@ -84,8 +85,8 @@ end
 
 Compute and test (absolute) relative error for `variable`. The relative error
 between scalar variables X and Y is defined as 
-```
-err = abs(X - Y)/mean(X, Y)
+```math
+\eps = \abs(X - Y)/\text{mean}(X, Y)
 ```
 This function takes a string or Symbol `variable` (which must be a named column in 
 the `candidates` DataFrame) and computes the relative error. Calling the function with 
@@ -119,8 +120,13 @@ end
     
 
 Compute and test the scaled shape difference between input `floe` and each floe in the dataframe `candidates`.
-Assumes that the shape difference test operates on the shape difference scaled by a variable `scale_by`
-and the shape difference test depends on the area. 
+The shape difference between objects ``\\A`` and ``\\B`` is defined as 
+```math
+SD = (A \cup B) \setminus (A \cap B)
+```
+Here, the shapes are both rotated by their orientation and aligned at their respect centroids before computing ``\\SD``.
+The result is divided by the variable `scale_by` (e.g., area or perimenter), then the scaled variable is assessed with
+the `threshold_function` which is assumed to depend on area.
 
 """
 @kwdef struct ShapeDifferenceThresholdFilter <: AbstractFloeFilterFunction

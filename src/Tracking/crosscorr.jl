@@ -11,13 +11,12 @@ Wrapper of DSP.xcorr with normalization (see https://docs.juliadsp.org/stable/co
 
 Returns the pair `(r, lags)` with the cross correlation scores `r` and corresponding `lags` according to `padmode`.
 
-# Arguments
-
+## Arguments
 - `u,v`: real vectors which could have unequal length.
 - `normalize`: return normalized correlation scores (`false` by default).
 - `padmode`: either `:longest` (default) or `:none` to control padding of shorter vector with zeros.
 
-# Examples
+## Examples
 
 The example below builds two vectors, one a shifted version of the other, and computes various cross correlation scores.
 

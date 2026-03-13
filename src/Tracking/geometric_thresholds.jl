@@ -1,6 +1,7 @@
-# TODO: Update to take square root of area (parameterized in terms of length scale)
-
 """
+    PiecewiseLinearThresholdFunction(minimum_area, maximum_area, minimum_value, maximum_value)
+    PiecewiseLinearThresholdFunction()(area, value)
+
 The piecewise linear threshold function is defined using two (area, value) pairs. For
 areas below the minimum area, it is constant at minimum value; likewise for above the
 maximum area. The threshold function is linear in between these two points. A return 
@@ -21,10 +22,14 @@ function (f::PiecewiseLinearThresholdFunction)(area, value)
 end
 
 """
+    StepwiseLinearThresholdFunction(changepoint_area::Number, low_value::Number, high_value::Number)
+    StepwiseLinearThresholdFunction()(area, value)
+
 The stepwise linear threshold function is defined using a changepoint area and two levels. 
 If the area is less than the changepoint area, the function returns true if the value is below
-`low_value` and false otherwsie; if the area is greater than or equal to the changepoint area, 
+`low_value` and false otherwise; if the area is greater than or equal to the changepoint area, 
 then the value is tested againg `high_value`.
+
 """
 @kwdef struct StepwiseLinearThresholdFunction <: AbstractThresholdFunction
     changepoint_area::Number
