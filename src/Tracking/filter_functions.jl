@@ -121,7 +121,7 @@ The shape difference between objects ``\\A`` and ``\\B`` is defined as
 ```math
 SD = (A \\cup B) \\setminus (A \\cap B)
 ```
-Here, the shapes are both rotated by their orientation and aligned at their respect centroids before computing ``\\SD``.
+Here, the shapes are both rotated by their orientation and aligned at their respective centroids before computing ``\\SD``.
 The result is divided by the variable `scale_by` (e.g., area or perimenter), then the scaled variable is assessed with
 the `threshold_function` which is assumed to depend on area.
 
