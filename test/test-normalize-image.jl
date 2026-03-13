@@ -1,4 +1,4 @@
-@testitem "Normalize Image" begin
+@testitem "Image Preprocessing" begin
     using Images:
         channelview,
         colorview,
@@ -7,7 +7,8 @@
         test_approx_eq_sigma_eps,
         strel_diamond,
         float64,
-        load
+        load,
+        Gray
     using Dates: Dates
 
     include("config.jl")
@@ -54,6 +55,7 @@
     @info "Process Image - Equalization"
 
     ## Equalization
+    # TODO: Run test of the CLAHE function to see which parameters match the MATLAB output most closely
     masked_view = (channelview(matlab_diffused))
     eq = [
         LopezAcosta2019._adjust_histogram(masked_view[i, :, :], 255, 10, 10, 0.86) for
@@ -70,12 +72,15 @@
     @persist image_equalized equalized_image_filename
 
     @info "Process Image - Sharpening"
-
-    ## Sharpening
-    @time sharpenedimg = LopezAcosta2019.imsharpen(input_image, landmask_no_dilate)
-    @time image_sharpened_gray = LopezAcosta2019.imsharpen_gray(
-        sharpenedimg, landmask_bitmatrix
-    )
+    image_sharpened_gray = unsharp_mask(Gray.(image_equalized), 10, 2)
+    eps = test_approx_eq_sigma_eps(image_sharpened_gray, matlab_sharpened, ones(2), 0.1, true)
+    # Note: Cumulative differences from the sharpening and the adjust histogram step result in 
+    # slightly larger error when testing the julia equalized -> julia sharpened vs matlab equalized -> julia sharpened.
+    @test (@test_approx_eq_sigma_eps image_sharpened_gray matlab_sharpened [1, 1] 0.08) ===
+    @info "Epsilon: " * string(eps)
+    
+    # Now for just testing the unsharp mask:
+    image_sharpened_gray = unsharp_mask(Gray.(matlab_equalized), 10, 2)
     @test (@test_approx_eq_sigma_eps image_sharpened_gray matlab_sharpened [0, 0] 0.046) ===
         nothing
 
@@ -85,25 +90,21 @@
         ".png"
     @persist image_sharpened_gray sharpened_image_filename
 
-    @info "Process Image - Normalization"
-
-    ## Normalization
-    @time normalized_image = LopezAcosta2019._reconstruct(
+    @info "Process Image - Grayscale Reconstruction"
+    @time reconstructed_image = LopezAcosta2019._reconstruct(
         image_sharpened_gray, landmask_bitmatrix; strel=struct_elem2
     )
-
-    #test for percent difference in normalized images
-    eps = test_approx_eq_sigma_eps(normalized_image, matlab_norm_image, ones(2), 0.1, true)
+    eps = test_approx_eq_sigma_eps(reconstructed_image, matlab_norm_image, ones(2), 0.1, true)
     @info "Epsilon: " * string(eps)
 
     @test test_approx_eq_sigma_eps(
-        normalized_image, matlab_norm_image, ones(2), 0.1, true
+        reconstructed_image, matlab_norm_image, ones(2), 0.1, true
     ) <= 0.05
     nothing
 
-    normalized_image_filename =
-        "$(test_output_dir)/normalized_test_image_" *
+    reconstructed_image_filename =
+        "$(test_output_dir)/reconstructed_test_image_" *
         Dates.format(Dates.now(), "yyyy-mm-dd-HHMMSS") *
         ".png"
-    @persist normalized_image normalized_image_filename
+    @persist reconstructed_image reconstructed_image_filename
 end
