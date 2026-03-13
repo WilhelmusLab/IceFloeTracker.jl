@@ -68,7 +68,7 @@ straight-line distance between centroids in pixel coordinates and converting tha
 using a pixel resolution `r` with units meters/pixel. The floe and candidates must 
 have rows `row_centroid` and `col_centroid`.
 """
-function euclidean_distance(floe::DataFrame, candidates::DataFrame; r = 250)
+function euclidean_distance(floe, candidates; r = 250)
     return sqrt.((floe.row_centroid .- candidates.row_centroid).^2 .+ 
     (floe.col_centroid .- candidates.col_centroid).^2) * r
 end
