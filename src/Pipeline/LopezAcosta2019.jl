@@ -212,7 +212,6 @@ function (p::Segment)(
     ice_intersect = closing(kmeans_result, strel_diamond((3, 3))) .* gamma_binarized
 
 
-    # segB = segmentation_B(sharpened_grayscale_image, cloudmask, kmeans_result)
 
     # Process watershed in parallel using Folds
     @info "Building watersheds"
