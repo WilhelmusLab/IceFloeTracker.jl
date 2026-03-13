@@ -24,7 +24,7 @@
         result = imbrighten(img, brighten_mask .> 0, 1.25)
         # Expected result is different in this case because we aren't
         # rounding to integer precision in the end.
-        expected = Gray.([1 * 1.25 2; 3 * 1.25 4] ./ 4)
+        expected = Gray.([1*1.25 2; 3*1.25 4] ./ 4)
         @test eltype(result) == eltype(img)
         @test result == expected
     end
