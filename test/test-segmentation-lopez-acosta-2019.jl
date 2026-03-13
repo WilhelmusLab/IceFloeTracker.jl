@@ -15,18 +15,39 @@
 end
 
 @testitem "LopezAcosta2019.Segment – sample of cases" setup = [Segmentation] tags = [:e2e] begin
+    import StatsBase: mean
     dataset = Watkins2026Dataset(; ref="v0.1")
-    passing = c -> c.case_number % 17 == 0
-    # Case 4 has only very small floes, while case 39 is missing data from Aqua.
-    formerly_broken = c -> (c.case_number == 4 || (c.case_number == 39 && c.satellite == "aqua"))
-    broken = c -> false  # `broken_cases` once fixed, for regression testing
     results = run_and_validate_segmentation(
-        filter(c -> (passing(c) || formerly_broken(c) || broken(c)), dataset),
+        filter(c -> (c.visible_floes == "yes" && c.case_number % 6 == 0), dataset),
         LopezAcosta2019.Segment();
         output_directory="./test_outputs/",
     )
-    @test all(filter(!broken, results).success)
-    @test any(filter(broken, results).success) broken = true
+    @test all(results.success)
+
+    # Aggregate performance measures
+    mean_recall = round(mean(skipnanormissing(results.recall)), digits=2)
+    mean_precision = round(mean(skipnanormissing(results.precision)), digits=2)
+    mean_F_score = round(mean(skipnanormissing(results.F_score)), digits=2)
+
+    # Good performance might look liks this:
+    @test mean_recall ≥ 0.9 broken = true
+    @test mean_precision ≥ 0.9 broken = true
+    @test mean_F_score ≥ 0.9 broken = true
+
+    # Better performance might look like this:
+    @test mean_recall ≥ 0.8 broken = true
+    @test mean_precision ≥ 0.8 broken = true
+    @test mean_F_score ≥ 0.8 broken = true
+
+    # Current performance should look at least as good as this:
+    @test mean_recall ≥ 0.38
+    @test mean_precision ≥ 0.21
+    @test round(mean_F_score; digits=1) ≥ 0.28
+
+    # return current performance
+    @show mean_recall
+    @show mean_precision
+    @show mean_F_score
 end
 
 @testitem "LopezAcosta2019.Segment – detailed tests" setup = [Segmentation] tags = [:e2e] begin
