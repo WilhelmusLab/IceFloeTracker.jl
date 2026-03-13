@@ -7,7 +7,51 @@ Floe tracking in Ice Floe Tracker is based on object shapes and locations. Given
 By designing and customizing the filter functions and matching functions, `FloeTracker` provides a flexible and powerful platform for developing floe tracking workflows.
 
 ## Preparing data for tracking
-The `floe_tracker` takes three positional arguments: a list of DataFrames, a filter function, and a matching function, as well as optional keyword arguments to specify the minimum and maximum floe sizes (in pixels) and the maximum time step in between floe pairs. Assuming that a set of images `segmented_images` has already been produced, the `regionprops_table` function produces a DataFrame where each row corresponds to a floe, and each column is some measurement or attribute of the floe. DataFrames are highly flexible--entries in the dataframe are not limited to words and numbers, but can include vectors and matrices as well. At the very least, the property tables will need to include the floe ID, floe area and an associated observation time. Other columns and measures depend on what will be used in the filter function. The `regionprops_table` function defaults to calculating  area, convex area, centroid, perimeter, major and minor axis, and orientation. We can initialize the property tables using dot notation to broadcast to a list:
+The current implementation of `FloeTracker` accepts two arguments: a vector of images and a vector of DateTimes. The vector of images may either be SegmentedImages or labeled integer arrays (background=0). The two vectors must be the same length, and each image must be the same size. For example, if `img_paths` contained an ordered list of saved, segmented binary images: 
+
+```julia
+using IceFloeTracker
+using Images
+
+binary_images = load.(img_paths)
+labeled_images = label_components.(binary_images)
+
+```
+
+## Setting up the FloeTracker
+The FloeTracker functor is initialized with a FilterFunction and a Matching function. Initializing with the default functions:
+```julia
+tracker = FloeTracker(FilterFunction(), MatchingFunction())
+```
+
+Optional keyword arguments specify the minimum and maximum floe sizes (in pixels) and the maximum time step in between floe pairs.
+```julia
+using Dates
+minimum_area = 100
+maximum_area = 90e3
+maximum_time_step = Day(2)
+tracker = FloeTracker(FilterFunction(), MatchingFunction(), minimum_area, maximum_area, maximum_time_step)
+```
+
+With image times `passtimes`, you can then track floes simply by running
+```julia
+tracked_floes = tracker(labeled_images, passtimes)
+```
+
+## Filter Functions
+Floe tracking begins by feature extraction. `FloeTracker` uses the `regionprops_table` function to extract geometric information from the segmented
+images. This function provides the following measures:
+* label
+* centroid (row, col)
+* bounding box
+* area
+* convex area
+* major and minor axis length
+* perimeter
+* orientation
+In addition to the region props quantities, each label is given a random 12-character string UUID, a cropped binary mask with the segment shape, a computed ψ-s curve, and the image time. 
+
+The `floe_tracker` takes three positional arguments: a list of DataFrames, a filter function, and a matching function, as  Assuming that a set of images `segmented_images` has already been produced, the `regionprops_table` function produces a DataFrame where each row corresponds to a floe, and each column is some measurement or attribute of the floe. DataFrames are highly flexible--entries in the dataframe are not limited to words and numbers, but can include vectors and matrices as well. At the very least, the property tables will need to include the floe ID, floe area and an associated observation time. Other columns and measures depend on what will be used in the filter function. The `regionprops_table` function defaults to calculating  area, convex area, centroid, perimeter, major and minor axis, and orientation. We can initialize the property tables using dot notation to broadcast to a list:
 
 ```julia
 props = regionprops_table.(segmented_images)
