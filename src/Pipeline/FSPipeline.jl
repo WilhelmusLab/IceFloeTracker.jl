@@ -215,22 +215,21 @@ function (p::Segment)(
     
     @info "Segmenting floes part 2/3"
     # Compare to Segmentation B from Lopez-Acosta 2019
-    # TODO: Bring over the updated version I've been developing for the streamline algorithm
-    # grayscale enhnacement using gamma correction
+    # grayscale enhnacement using gamma correction - does it ever help? Or is it always just super bright and all ice?
 
     # segB grayscale enhancement
     adaptive_binarized =  tiled_adaptive_binarization(preproc_gray, filtered_tiles; p.adaptive_binarization_settings...) .> 0 
     brightened_gray = imbrighten(preproc_gray, adaptive_binarized, 1 + p.brightening_factor)
     
-    # TODO: give more descriptive name
-    gamma_binarized = segB_binarize(preproc_gray, brightened_gray, cloud_mask; 
-                                    gamma_factor=2.5, 
-                                    adjusted_ice_threshold=0.05,
-                                    fill_range=(0, 1),
-                                    alpha_level=0.5)
+    # # TODO: give more descriptive name
+    # gamma_binarized = segB_binarize(preproc_gray, brightened_gray, cloud_mask; 
+    #                                 gamma_factor=2.5, 
+    #                                 adjusted_ice_threshold=0.05,
+    #                                 fill_range=(0, 1),
+    #                                 alpha_level=0.5)
 
-    ice_intersect = closing(kmeans_result, strel_diamond((3, 3))) .* gamma_binarized
-
+    ice_intersect = closing(kmeans_result, strel_diamond((3, 3))) # .* gamma_binarized
+    
     # Process watershed in parallel using Folds
     @info "Computing watershed boundaries"
     w_merged = watershed_transform(
