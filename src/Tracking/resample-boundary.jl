@@ -5,16 +5,17 @@ import Interpolations: Natural, Periodic, Cubic, NoInterp, OnGrid, scale, interp
 
 Get a uniform set of resampled boundary points from `bd_points` using cubic splines with specified boundary conditions
 
-The resampled set of points is obtained using parametric interpolation of the points in `bd_points`. It is assumed that the separation between a pair of adjacent points is 1.
+The resampled set of points is obtained using parametric interpolation of the points in `bd_points`. It is assumed
+that the separation between a pair of adjacent points is 1.
 
-# Arguments
+## Arguments
 - `bd_points`: Sequetial set of boundary points for the object of interest
 - `reduc_factor`: Factor by which to reduce the number of points in `bd_points` (2 by default)
 -`bd`: Boundary condition, either 'natural' (default) or 'periodic'
 
 See also [`bwtraceboundary`](@ref)
 
-# Example
+## Example
 
 ```jldoctest; setup = :(using IceFloeTracker)
 julia> A = zeros(Int, 13, 16); A[2:6, 2:6] .= 1; A[4:8, 7:10] .= 1; A[10:12,13:15] .= 1; A[10:12,3:6] .= 1;

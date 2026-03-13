@@ -1,6 +1,3 @@
-# TODO
-# Set default functions for all filter functions based on the calibration paper results
-
 """
     AbstractFloeFilterFunction
 
@@ -153,8 +150,8 @@ end
     PsiSCorrelationThresholdFunction(area_variable, threshold_column, threshold_function)
     PsiSCorrelationThresholdFunction(floe, candidates, Val(:raw))
 
-Compute the psi-s correlation between a floe and a dataframe of candidate floes. Adds the 
-psi-s correlation,  psi-s correlation score (1 - correlation), and the result of the threshold function
+Compute the ψ-s correlation between a floe and a dataframe of candidate floes. Adds the 
+ψ-s correlation ``\\rho``,  ψ-s correlation score (1 - ``\\rho``), and the result of the threshold function
 to the columns of `candidates`.
 """ 
 @kwdef struct PsiSCorrelationThresholdFilter <: AbstractFloeFilterFunction
@@ -165,7 +162,6 @@ end
 
 #TODO: Add option to include the confidence intervals with the normalized cross correlation tests.
 function (f::PsiSCorrelationThresholdFilter)(floe, candidates, _::Val{:raw})
-    
 
     rfloe(p2) = round(normalized_cross_correlation(floe.psi, p2), digits=3)
     transform!(candidates,  [:psi] => ByRow(rfloe) => :psi_s_correlation)
@@ -180,8 +176,8 @@ end
 """
     ChainedFilterFunction(filters::Vector{AbstractFloeFilterFunction})
 
-A `ChainedFilterFunction` is a composite function based on a set of `AbstractFloeFilterFunctions`. Each is
-applied in sequence. Thus a filter function based on the `DistanceThresholdFilter` and area relative error 
+A [`ChainedFilterFunction`](@ref) is a composite function based on a set of [`AbstractFloeFilterFunctions`](@ref). Each is
+applied in sequence. Thus a filter function based on the distance threshold filter and area relative error filter
 could be made as
 
 ```julia
@@ -205,15 +201,14 @@ end
 
 """FilterFunction()
 
-The default filter function for the FloeTracker. The function is an instance of [`ChainedFilterFunction`]@ref,
-applying 7 individual AbstractFloeFilterFunctions in sequence:
-    1. DistanceThresholdFilter  
-    2-5. RelativeErrorThresholdFilters for area, convex_area, major_axis_length, and minor_axis_length  
-    6. ShapeDifferenceThresholdFilter  
-    7. PsiSCorrelationThresholdFilter  
-Filters 2-7 use the [`PiecewiseLinearThresholdFunction`]@ref for thresholds, while Filter 1 uses a [`LinearTimeDistanceFunction`]@ref`.
-The default values and settings are derived in Watkins et al. 2026 (in prep.).
-"""
+The default filter function for the FloeTracker. The function is an instance of [`ChainedFilterFunction`](@ref),
+applying 7 individual [`AbstractFloeFilterFunctions`](@ref) in sequence:
+    1. `DistanceThresholdFilter`  
+    2. `RelativeErrorThresholdFilters` for area, convex area, major axis length, and minor axis length  
+    3. `ShapeDifferenceThresholdFilter`  
+    4. `PsiSCorrelationThresholdFilter`  
+Filters in step 2 use the [`PiecewiseLinearThresholdFunction`](@ref) for thresholds, while Filter 1 uses a [`LinearTimeDistanceFunction`](@ref).
+""" # TODO: Add reference to cal-val paper when ready.
 FilterFunction() = ChainedFilterFunction(;
     filters = [
         DistanceThresholdFilter(),
