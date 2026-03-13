@@ -1,3 +1,5 @@
+import Images: AbstractRGB, AbstractGray, TransparentColor, TransparentGray
+
 """
     get_brighten_mask(equalized_gray_reconstructed_img, gamma_green)
 # Arguments
@@ -12,17 +14,33 @@ end
 
 """
     imbrighten(img, brighten_mask, bright_factor)
+    imbrighten(
+        img::AbstractArray{<:Union{AbstractRGB, TransparentColor, AbstractGray, TransparentGray}},
+        brighten_mask::AbstractArray{Bool}, bright_factor::Float64
+    )
+
 Brighten the image using a mask and a brightening factor.
-# Arguments
-- `img`: The input image.
+## Arguments
+- `img`: The input image, either an integer array or an array with an image color type.
 - `brighten_mask`: A mask indicating the pixels to brighten.
 - `bright_factor`: The factor by which to brighten the pixels.
-# Returns
+## Returns
 - The brightened image.
 """
-function imbrighten(img, brighten_mask, bright_factor)
+function imbrighten(img::AbstractArray{<:Integer}, brighten_mask, bright_factor::Float64)
     img = Float64.(img)
     brighten_mask = brighten_mask .> 0
     img[brighten_mask] .= img[brighten_mask] * bright_factor
     return img = to_uint8(img)
 end
+
+function imbrighten(
+    img::AbstractArray{<:Union{AbstractRGB, TransparentColor, AbstractGray, TransparentGray}},
+    brighten_mask::AbstractArray{Bool}, bright_factor::Float64
+)
+    _img = float64.(img)
+    _img[brighten_mask] .= _img[brighten_mask] * bright_factor
+    clamp01nan!(_img)
+    return convert.(eltype(img), _img)
+end
+
