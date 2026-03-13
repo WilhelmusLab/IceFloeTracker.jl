@@ -214,7 +214,7 @@ function (p::Segment)(
     ice_water_discrim = discriminate_ice_water(
         sharpened_grayscale_image, fc_masked, coastal_buffer_mask, cloudmask
     )
-    kmeans_result = kmeans_binarization(
+    segmentation_A = kmeans_binarization(
             ice_water_discrim,
             fc_masked;
             k=p.kmeans_params.k,
@@ -222,9 +222,10 @@ function (p::Segment)(
             random_seed=p.kmeans_params.random_seed,
             cluster_selection_algorithm=p.cluster_selection_algorithm
             ) |> clean_binary_floes
+
     # Potential upgrade: Remove segments of the k-means result which are all cloud. However the 
     # small isolated clouds could be filled if surrounded by a single segment.
-    apply_cloudmask!(kmeans_result, cloudmask)
+    apply_cloudmask!(segmentation_A, cloudmask)
 
     @info "Segmenting floes part 2/3"
     # The second segmentation routine uses imbrighten to increase contrast between ice floes
@@ -237,16 +238,14 @@ function (p::Segment)(
 
     brightened_gray = imbrighten(sharpened_grayscale_image, prelim_binarized, 1 + p.segB_params.brightening_factor)
     
-    gamma_binarized = segB_binarize(sharpened_grayscale_image, brightened_gray, cloudmask; 
+    segmentation_B = segB_binarize(sharpened_grayscale_image, brightened_gray, cloudmask; 
                                     gamma_factor=p.segB_params.gamma_factor, 
                                     adjusted_ice_threshold=p.segB_params.adjusted_ice_threshold,
                                     fill_range=(0, p.segB_params.fill_range_max),
                                     alpha_level=p.segB_params.alpha_level)
 
-    # Join segmentations results
-    ice_intersect = closing(kmeans_result, strel_diamond((3, 3))) .* gamma_binarized
-
-
+    # Simple join of segmentations results
+    ice_intersect = segmentation_A .* segmentation_B
 
     # Process watershed in parallel using Folds
     @info "Building watersheds"
@@ -285,8 +284,8 @@ function (p::Segment)(
             ice_mask=IceDetectionLopezAcosta2019()(fc_masked),
             sharpened_grayscale_image=sharpened_grayscale_image,
             ice_water_discrim=ice_water_discrim,
-            segA=kmeans_result,
-            segB=gamma_binarized,
+            segA=segmentation_A,
+            segB=segmentation_B,
             segAB_intersect=ice_intersect,
             watersheds_segB_product=watersheds_segB_product,
             final_floes=segF,
@@ -511,11 +510,11 @@ end
 Refine a binarized ice floe image (floes=white, leads/background/water=black) using morphological operations.
 
 """
-function clean_binary_floes(bw_img; min_opening_area=50)
+function clean_binary_floes(bw_img; min_opening_area=50, se=strel_diamond((5,5)))
     img_opened = area_opening(bw_img; min_area=min_opening_area) |> hbreak
     img_filled = branch(img_opened) |> bridge |> fill_holes
     diff_matrix = img_opened .!= img_filled
-    return bw_img .|| diff_matrix
+    return closing(bw_img .|| diff_matrix, se)
 end
 
 
@@ -708,7 +707,7 @@ end
 
 Application of the IceDetectionFirstNonZeroAlgorithm using two passes of 
 the IceDetectionThresholdMODIS721 and one application of the IceDetectionBrightnessPeaksMODIS721.
-"""
+""" # TODO: This works in the kmeans binarization but not by itself in the example notebook.
 function IceDetectionLopezAcosta2019(;
     band_7_max::Float64=Float64(5 / 255),
     band_2_min::Float64=Float64(230 / 255),
