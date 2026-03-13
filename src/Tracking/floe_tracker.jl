@@ -100,7 +100,7 @@ function (t::FloeTracker)(
 )
     props = regionprops_table.(segmented_images)
     add_uuids!.(props)
-    !issorted(image_times) && @warn "Passtimes are not in ascending order."
+    !issorted(image_times) && @warn "Image times are not in ascending order."
     add_passtimes!.(props, image_times) # TODO: Change function name to image_times
     add_floemasks!.(props, segmented_images)
     add_ψs!.(props)
