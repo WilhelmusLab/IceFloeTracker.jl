@@ -514,7 +514,7 @@ function clean_binary_floes(bw_img; min_opening_area=50, se=strel_diamond((5,5))
     img_opened = area_opening(bw_img; min_area=min_opening_area) |> hbreak
     img_filled = branch(img_opened) |> bridge |> fill_holes
     diff_matrix = img_opened .!= img_filled
-    return closing(bw_img .|| diff_matrix, se)
+    return closing(bw_img  .|| diff_matrix, se) # Original has closing here, but opening works better!
 end
 
 

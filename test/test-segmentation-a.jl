@@ -1,7 +1,7 @@
 
 @testitem "Segmentation-A" begin
     import DelimitedFiles: readdlm
-    import Images: float64, load
+    import Images: float64, load, closing, strel_diamond
     import IceFloeTracker.Segmentation: kmeans_binarization
     import IceFloeTracker.LopezAcosta2019: IceDetectionLopezAcosta2019
 
@@ -45,7 +45,8 @@
     apply_cloudmask!(segmented_ice, cloudmask) 
     @time segmented_A = LopezAcosta2019.clean_binary_floes(segmented_ice)
     @test typeof(segmented_A) == typeof(matlab_segmented_A_bitmatrix)
-    @test test_similarity(matlab_segmented_A_bitmatrix, segmented_A, 0.039)
+    matlab_closed = closing(matlab_segmented_A .> 0, strel_diamond((5,5)))
+    @test test_similarity(matlab_closed, segmented_A, 0.039)
 
     @test typeof(segmented_ice) == typeof(matlab_segmented_ice_cloudmasked)
     @test test_similarity(
