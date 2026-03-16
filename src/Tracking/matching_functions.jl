@@ -12,8 +12,12 @@ finding the floe with the smallest weight, then grouping by the second floe, ide
 finding the floe with the smallest weight. Finally, we apply a consistency check such that only pairs that exist in both 
 the forward and backward grouped minimizations are identified as likely true matches.
 
-Arguments:
-- columns: List of columns to use in comparison
+## Arguments:
+- `columns`: List of columns to use in comparison
+- `candidate_pairs`: DataFrame with floe pairings to assess. Expects columns `head_uuid` and `uuid` as described in the `floe_tracker` functions.
+
+## Returns:
+- DataFrame with unique pairs
 """
 @kwdef struct MinimumWeightMatchingFunction <: AbstractFloeMatchingFunction
     columns = [
@@ -25,12 +29,12 @@ Arguments:
         :psi_s_correlation_score,
         :scaled_shape_difference,
     ]
-    weights = ones(7) # Not used yet!
+    weights = ones(7) # TODO: Add weighted average
 end
 
 function (f::MinimumWeightMatchingFunction)(candidate_pairs::DataFrame)
 
-    # Potential future updates: replace sum with a weighted
+    # Potential future updates: replace sum with a weighted average
     candidate_pairs[!, :w] = sum.(eachrow(candidate_pairs[:, f.columns]))
 
     # Forward: f -> {g}, find minimum dx over set {g}

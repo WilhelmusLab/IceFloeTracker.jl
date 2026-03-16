@@ -45,9 +45,9 @@ Trajectories are built as follows:
 
 ## Examples
 Using the default functions, initialize as:
-    ```jldoctest; setup = :(using IceFloeTracker)
-    julia> tracker = FloeTracker(filter_function=FilterFunction(), matching_function=MinimumWeightMatchingFunction())
-    ```
+```jldoctest; setup = :(using IceFloeTracker)
+julia> tracker = FloeTracker(filter_function=FilterFunction(), matching_function=MinimumWeightMatchingFunction())
+```
 
 Once the tracker is defined, it can be run on a list of either SegmentedImages (or labeled image indexmaps) and
 a list of corresponding observation times. As a simple toy example, we can use labeled blocks. We can't expect 
@@ -55,32 +55,33 @@ shapes to have consistent labels across images before tracking, so we'll intenti
 to provide observation times. The default thresholds are time-step dependent, so we choose a short time step. We also
 need to set the minimum size to accommodate the toy example.
 
-    ```jldoctest; setup = :(using IceFloeTracker, Dates)
-    julia> tracker = FloeTracker(
-            filter_function=FilterFunction(),
-            matching_function=MinimumWeightMatchingFunction(),
-            minimum_area=1)
+```jldoctest; setup = :(using IceFloeTracker, Dates)
+julia> tracker = FloeTracker(
+        filter_function=FilterFunction(),
+        matching_function=MinimumWeightMatchingFunction(),
+        minimum_area=1)
 
-    julia> A = zeros(Int, 13, 16); A[2:6, 2:6] .= 1; A[4:8, 7:10] .= 2; A[10:12,13:15] .= 3; A[10:12,3:6] .= 4;
-    julia> B = zeros(Int, 13, 16); B[1:5, 1:5] .= 2; B[5:9, 7:10] .= 3; B[10:12,12:14] .= 4; B[10:12,2:5] .= 1;
-    julia> times = [DateTime("2025-05-01T11:00"), DateTime("2025-05-01T13:00")]
+julia> A = zeros(Int, 13, 16); A[2:6, 2:6] .= 1; A[4:8, 7:10] .= 2; A[10:12,13:15] .= 3; A[10:12,3:6] .= 4;
+julia> B = zeros(Int, 13, 16); B[1:5, 1:5] .= 2; B[5:9, 7:10] .= 3; B[10:12,12:14] .= 4; B[10:12,2:5] .= 1;
+julia> times = [DateTime("2025-05-01T11:00"), DateTime("2025-05-01T13:00")]
 
-    julia> tracked_floes = tracker([A, B], times)
+julia> tracked_floes = tracker([A, B], times)
 
-    julia> tracked_floes[:, ["ID", "label", "passtime"]]
-    8×3 DataFrame
-    Row │ ID     label  passtime            
-        │ Int64  Int64  DateTime            
-    ─────┼───────────────────────────────────
-    1 │     1      2  2025-05-01T11:00:00
-    2 │     1      3  2025-05-01T13:00:00
-    3 │     2      4  2025-05-01T11:00:00
-    4 │     2      1  2025-05-01T13:00:00
-    5 │     3      1  2025-05-01T11:00:00
-    6 │     3      2  2025-05-01T13:00:00
-    7 │     4      3  2025-05-01T11:00:00
-    8 │     4      4  2025-05-01T13:00:00
-    ```
+julia> tracked_floes[:, ["ID", "label", "passtime"]]
+8×3 DataFrame
+Row │ ID     label  passtime            
+    │ Int64  Int64  DateTime            
+─────┼───────────────────────────────────
+1 │     1      2  2025-05-01T11:00:00
+2 │     1      3  2025-05-01T13:00:00
+3 │     2      4  2025-05-01T11:00:00
+4 │     2      1  2025-05-01T13:00:00
+5 │     3      1  2025-05-01T11:00:00
+6 │     3      2  2025-05-01T13:00:00
+7 │     4      3  2025-05-01T11:00:00
+8 │     4      4  2025-05-01T13:00:00
+```
+
 Note that the tracker has assigned each object a unique ID, and that the objects are linked correctly:
 1=>2, 2=>3, 3=>4, and 4=>1.
 """
