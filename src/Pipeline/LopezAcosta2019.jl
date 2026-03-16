@@ -68,28 +68,64 @@ import ..Segmentation:
     IceDetectionBrightnessPeaksMODIS721,
     IceDetectionThresholdMODIS721
 
+import ..ImageUtils:
+    imbrighten
+    
+""" 
+    LopezAcosta2019.Segment(
+        coastal_buffer_structuring_element::AbstractMatrix{Bool} = make_landmask_se()
+        cloud_mask_algorithm = LopezAcostaCloudMask()
+        diffusion_algorithm = PeronaMalikDiffusion(0.1, 0.1, 5, "exponential")
+        adapthisteq_params = (
+            nbins=256,
+            rblocks=8, # matlab default is 8 CP
+            cblocks=8, # matlab default is 8 CP
+            clip=0.95,  # matlab default is 0.01 CP, which should be the same as clip=0.99
+        )
+        unsharp_mask_params = (smoothing_param=10, intensity=0.5)
+        kmeans_params = (k=4, maxiter=50, random_seed=45)
+        cluster_selection_algorithm = IceDetectionLopezAcosta2019()
+        segB_params = (
+            isolation_threshold=0.4,
+            brightening_factor=0.3,
+            gamma_factor=2.5,
+            adjusted_ice_threshold=0.05,
+            fill_range_max=1,
+            alpha_level=0.5
+        )
+
+Segmentation algorithm for sea ice floe identification based on Lopez-Acosta 2019, 2021. The basic procedure is as follows:
+1. Preprocess the image using diffusion, adaptive histogram equalization, and unsharp masking.
+2. Produce a set of binary classified images using (a) global thresholds, (b) k-means cluster selection, and (c) global thresholds
+   on contrast-adjusted images. Use image morphology to clean and merge individual classified images.
+3. Find the shared boundaries across the segmentation methods.
+4. Use the initial classification and shared boundaries to refine the preprocessed image.
+5. Perform k-means binarization on the refined image
+6. Use image morphology to separate ice floes.
+
+## Arguments
+- `cloud_mask_algorithm`: An `AbstractCloudMaskAlgorithm`. Defaults to [`LopezAcostaCloudMask`](@ref)
+- `diffusion_algorithm`: An `AbstractDiffusionAlgorithm`. Defaults to [`PeronaMalikDiffusion`](@ref)
+- `adapthisteq_params`: Parameters for the adaptive histogram AdaptiveEqualization. 
+- `unsharp_mask_params`: Parameters for [`unsharp_mask`](@ref)
+- `kmeans_params`: Parameters for [`kmeans_binarization`](@ref)
+- `cluster_selection_algorithm`: An [`IceDetectionAlgorithm`](@ref), which takes the falsecolor image as an input and produces 
+   a binary image with likely ice floe pixels set to `true`.
+- `segB_params`: A collection of parameters for the second segmentation stage. `isolation_threshold` is a global threshold for
+   selecting likely ice; `brightening_factor` is a percentage to increase the brightness of ice regions, `gamma_factor` is an
+   input to the ImageContrastAdjustment GammaCorrection algorithm, `adjusted_ice_threshold` is a global threshold for the internal
+   adjusted image, `alpha_level` controls the amount of the brightened image to use, and `fill_range_max` is the largest dark spot
+   to fill in the binarized result.
+
+## Returns
+A segmented image with candidate sea ice floes.
+
+Note: This algorithm is under active development and the API will change in a future release.
 """
-Sample input parameters expected by the main function
-"""
-cloud_mask_thresholds = (
-    prelim_threshold=110.0 / 255.0,
-    band_7_threshold=200.0 / 255.0,
-    band_2_threshold=190.0 / 255.0,
-    ratio_lower=0.0,
-    ratio_offset=0.0,
-    ratio_upper=0.75,
-)
-
-diffusion_parameters = (lambda=0.1, kappa=0.1, niters=5, g="exponential")
-
-# TODO: Make it possible to set the block_size_pixels instead of rblocks/cblocks
-# so that the user doesn't need to be checking image dimensions as much. 
-# TODO: Expose the discrim ice/water settings to the main struct.
-
 @kwdef struct Segment <: IceFloeSegmentationAlgorithm
     coastal_buffer_structuring_element::AbstractMatrix{Bool} = make_landmask_se()
-    cloud_mask_algorithm = LopezAcostaCloudMask(cloud_mask_thresholds...)
-    diffusion_algorithm = PeronaMalikDiffusion(diffusion_parameters...)
+    cloud_mask_algorithm = LopezAcostaCloudMask()
+    diffusion_algorithm = PeronaMalikDiffusion(0.1, 0.1, 5, "exponential")
     adapthisteq_params = (
         nbins=256,
         rblocks=8, # matlab default is 8 CP
@@ -99,6 +135,14 @@ diffusion_parameters = (lambda=0.1, kappa=0.1, niters=5, g="exponential")
     unsharp_mask_params = (smoothing_param=10, intensity=0.5)
     kmeans_params = (k=4, maxiter=50, random_seed=45)
     cluster_selection_algorithm = IceDetectionLopezAcosta2019()
+    segB_params = (
+        isolation_threshold=0.4,
+        brightening_factor=0.3,
+        gamma_factor=2.5,
+        adjusted_ice_threshold=0.05,
+        fill_range_max=1,
+        alpha_level=0.5
+    )
 end
 
 function (p::Segment)(
@@ -163,20 +207,14 @@ function (p::Segment)(
     )
     apply_landmask!(sharpened_grayscale_image, coastal_buffer_mask)
 
-
-    # Heighten differences between floes and background ice/water.
-    # Currently set to return the morphed grayscale image if band 2 / band 1 have nothing greater than
-    # the threshold of 100. May be better to return blank image instead.
-    @info "Discriminating ice/water"
-    
-    # This step is a grayscale morphology operation. Reconstruction by dilation of the image complement
-    # followed by thresholding.
+    # 3. Segmentation
+    @info "Segmenting floes part 1/3"
+    # The first segmentation routine uses "discriminate_ice_water" to enhance the contrast in the grayscale image.
+    # Then, k-means clustering is used to select sea ice floes, and morphological cleanup is applied.
     ice_water_discrim = discriminate_ice_water(
         sharpened_grayscale_image, fc_masked, coastal_buffer_mask, cloudmask
     )
-    # 3. Segmentation
-    @info "Segmenting floes part 1/3"
-    kmeans_result = kmeans_binarization(
+    segmentation_A = kmeans_binarization(
             ice_water_discrim,
             fc_masked;
             k=p.kmeans_params.k,
@@ -185,20 +223,34 @@ function (p::Segment)(
             cluster_selection_algorithm=p.cluster_selection_algorithm
             ) |> clean_binary_floes
 
-    # check: are there any regions that are nonzero under the cloudmask, since it was applied in discriminate ice water?
-    apply_cloudmask!(kmeans_result, cloudmask)
+    # Potential upgrade: Remove segments of the k-means result which are all cloud. However the 
+    # small isolated clouds could be filled if surrounded by a single segment.
+    apply_cloudmask!(segmentation_A, cloudmask)
 
-    # The clean binary floes method has an aggressive fill_holes algorithm. Potentially merging with the
-    # ice brightness threshold can prevent some of the interstitial water areas from being filled.
-
-    # segmentation_B
     @info "Segmenting floes part 2/3"
-    segB = segmentation_B(sharpened_grayscale_image, cloudmask, kmeans_result)
+    # The second segmentation routine uses imbrighten to increase contrast between ice floes
+    # and the background. It uses a simple threshold-based mask to select where to brighten.
+    # Then, the segB_binarize function uses gamma correction to increase contrast before 
+    # a second binary threshold is applied.
+
+
+    prelim_binarized = sharpened_grayscale_image .> p.segB_params.isolation_threshold 
+
+    brightened_gray = imbrighten(sharpened_grayscale_image, prelim_binarized, 1 + p.segB_params.brightening_factor)
+    
+    segmentation_B = segB_binarize(sharpened_grayscale_image, brightened_gray, cloudmask; 
+                                    gamma_factor=p.segB_params.gamma_factor, 
+                                    adjusted_ice_threshold=p.segB_params.adjusted_ice_threshold,
+                                    fill_range=(0, p.segB_params.fill_range_max),
+                                    alpha_level=p.segB_params.alpha_level)
+
+    # Simple join of segmentations results
+    ice_intersect = segmentation_A .* segmentation_B
 
     # Process watershed in parallel using Folds
     @info "Building watersheds"
     watersheds_segB = [
-        watershed_ice_floes(segB.not_ice_bit), watershed_ice_floes(segB.ice_intersect)
+        watershed_ice_floes(prelim_binarized), watershed_ice_floes(ice_intersect)
     ]
     watersheds_segB_product = watershed_product(watersheds_segB...)
 
@@ -206,8 +258,8 @@ function (p::Segment)(
     # TODO: @hollandjg find out why segF is more dilated
     @info "Segmenting floes part 3/3"
     segF = segmentation_F(
-        segB.not_ice,
-        segB.ice_intersect,
+        brightened_gray,
+        ice_intersect,
         watersheds_segB_product,
         fc_masked,
         cloudmask,
@@ -232,10 +284,11 @@ function (p::Segment)(
             ice_mask=IceDetectionLopezAcosta2019()(fc_masked),
             sharpened_grayscale_image=sharpened_grayscale_image,
             ice_water_discrim=ice_water_discrim,
-            segA=kmeans_result,
-            segB=segB,
+            segA=segmentation_A,
+            segB=segmentation_B,
+            segAB_intersect=ice_intersect,
             watersheds_segB_product=watersheds_segB_product,
-            segF=segF,
+            final_floes=segF,
             labels=labels,
             segment_mean_truecolor=map( # TODO Add "view_seg" code snippet
                 i -> segment_mean(segments_truecolor, i), labels_map(segments_truecolor)
@@ -457,12 +510,13 @@ end
 Refine a binarized ice floe image (floes=white, leads/background/water=black) using morphological operations.
 
 """
-function clean_binary_floes(bw_img; min_opening_area=50)
+function clean_binary_floes(bw_img; min_opening_area=50, se=strel_diamond((5,5)))
     img_opened = area_opening(bw_img; min_area=min_opening_area) |> hbreak
     img_filled = branch(img_opened) |> bridge |> fill_holes
     diff_matrix = img_opened .!= img_filled
-    return bw_img .|| diff_matrix
+    return closing(bw_img  .|| diff_matrix, se) # Original has closing here, but opening works better!
 end
+
 
 """
  segB_binarize(sharpened_image, brightened_image, cloudmask;
@@ -512,68 +566,6 @@ function segmented_ice_cloudmasking(
     segmented_ice_cloudmasked[cloudmask] .= 0
     return segmented_ice_cloudmasked
 end
-
-"""
-    segmentation_B(sharpened_image, cloudmask, segmented_a_ice_mask, struct_elem; fill_range, isolation_threshold, alpha_level, adjusted_ice_threshold)
-
-Performs image processing and morphological filtering with intermediate files from normalization.jl and segmentation_A to further isolate ice floes, returning a mask of potential ice.
-
-# Arguments
-- `sharpened_image`: non-cloudmasked but sharpened image, output from `normalization.jl`
-- `cloudmask`:  bitmatrix cloudmask for region of interest
-- `segmented_a_ice_mask`: binary cloudmasked ice mask from `segmentation_a_direct.jl`
-- `struct_elem`: structuring element for dilation
-- `fill_range`: range of values dictating the size of holes to fill
-- `isolation_threshold`: threshold used to isolated pixels from `sharpened_image`; between 0-1
-- `alpha_level`: alpha threshold used to adjust contrast
-- `gamma_factor`: amount of gamma adjustment
-- `adjusted_ice_threshold`: threshold used to set ice equal to one after gamma adjustment
-
-"""
-function segmentation_B(
-    sharpened_image::Matrix{Gray{Float64}},
-    cloudmask::BitMatrix,
-    segmented_a_ice_mask::BitMatrix,
-    struct_elem=strel_diamond((3, 3));
-    fill_range::Tuple=(0, 1),
-    isolation_threshold::Float64=0.4,
-    alpha_level::Float64=0.5,
-    gamma_factor::Float64=2.5,
-    adjusted_ice_threshold::Float64=0.05,
-)
-
-    ## Process sharpened image
-    not_ice_mask = deepcopy(sharpened_image)
-    not_ice_mask[not_ice_mask .< isolation_threshold] .= 0
-    not_ice_bit = not_ice_mask .* 0.3
-    not_ice_mask .= not_ice_bit .+ sharpened_image
-    adjusted_sharpened = (
-        (1 - alpha_level) .* sharpened_image .+ alpha_level .* not_ice_mask
-    )
-
-    gamma_adjusted_sharpened = adjust_histogram(
-        adjusted_sharpened, GammaCorrection(; gamma=gamma_factor)
-    )
-    gamma_adjusted_sharpened_cloudmasked = apply_cloudmask(
-        gamma_adjusted_sharpened, cloudmask
-    )
-    segb_filled =
-        .!imfill(
-            gamma_adjusted_sharpened_cloudmasked .<= adjusted_ice_threshold, fill_range
-        )
-
-    ## Process ice mask
-    segb_ice = closing(segmented_a_ice_mask, struct_elem) .* segb_filled
-
-    ice_intersect = (segb_filled .* segb_ice)
-
-    return (;
-        :not_ice => map(clamp01nan, not_ice_mask)::Matrix{Gray{Float64}},
-        :not_ice_bit => (not_ice_bit .> 0)::BitMatrix,
-        :ice_intersect => ice_intersect::BitMatrix,
-    )
-end
-
 """
     watershed_ice_floes(intermediate_segmentation_image;)
 Performs image processing and watershed segmentation with intermediate files from segmentation_b.jl to further isolate ice floes, returning a binary segmentation mask indicating potential sparse boundaries of ice floes.
@@ -692,11 +684,9 @@ end
 """
     _adjust_histogram(masked_view, nbins, rblocks, cblocks, clip)
 
-Perform adaptive histogram equalization to a masked image. To be invoked within `imsharpen`.
-
-# Arguments
-- `masked_view`: input image in truecolor
-See `imsharpen` for a description of the remaining arguments
+Perform adaptive histogram equalization to a masked image. Wrapper for the
+JuliaImages `adjust_histogram` function with `AdaptiveEqualization`, setting the minval
+and maxval to the image maximum and minimum.
 
 """
 function _adjust_histogram(masked_view, nbins, rblocks, cblocks, clip)
@@ -706,83 +696,18 @@ function _adjust_histogram(masked_view, nbins, rblocks, cblocks, clip)
             nbins=nbins,
             rblocks=rblocks,
             cblocks=cblocks,
-            minval=minimum(masked_view),
+            minval=minimum(masked_view), # Could this be causing the unnatural coloration in dark image regions?
             maxval=maximum(masked_view),
             clip=clip,
         ),
     )
 end
 
-"""
-    imsharpen(truecolor_image, landmask_no_dilate, lambda, kappa, niters, nbins, rblocks, cblocks, clip, smoothing_param, intensity)
-
-Sharpen `truecolor_image`.
-
-# Arguments
-- `truecolor_image`: input image in truecolor
-- `landmask_no_dilate`: landmask for region of interest
-- `lambda`: speed of diffusion (0–0.25)
-- `kappa`: conduction coefficient for diffusion (25–100)
-- `niters`: number of iterations of diffusion
-- `nbins`: number of bins during histogram equalization
-- `rblocks`: number of row blocks to divide input image during equalization
-- `cblocks`: number of column blocks to divide input image during equalization
-- `clip`: Thresholds for clipping histogram bins (0–1); values closer to one minimize contrast enhancement, values closer to zero maximize contrast enhancement
-- `smoothing_param`: pixel radius for gaussian blurring (1–10)
-- `intensity`: amount of sharpening to perform
-"""
-function imsharpen(
-    truecolor_image::Matrix{RGB{Float64}},
-    landmask_no_dilate::BitMatrix,
-    lambda::Real=0.1,
-    kappa::Real=0.1,
-    niters::Int64=5,
-    nbins::Int64=255,
-    rblocks::Int64=10, # matlab default is 8 CP
-    cblocks::Int64=10, # matlab default is 8 CP
-    clip::Float64=0.86, # matlab default is 0.01 CP
-    smoothing_param::Int64=10,
-    intensity::Float64=2.0,
-)::Matrix{Float64}
-    input_image = apply_landmask(truecolor_image, landmask_no_dilate)
-
-    pmd = PeronaMalikDiffusion(lambda, kappa, niters, "exponential")
-    input_image .= nonlinear_diffusion(input_image, pmd)
-
-    masked_view = Float64.(channelview(input_image))
-
-    eq = [
-        _adjust_histogram(@view(masked_view[i, :, :]), nbins, rblocks, cblocks, clip) for
-        i in 1:3
-    ]
-
-    image_equalized = colorview(RGB, eq...)
-
-    image_equalized_gray = Gray.(image_equalized)
-
-    return unsharp_mask(image_equalized_gray, smoothing_param, intensity)
-end
-
-# TODO: Remove function, replace with direct use of landmask and colorview.
-"""
-    imsharpen_gray(imgsharpened, landmask)
-
-Apply landmask and return Gray type image in colorview for normalization.
-
-"""
-function imsharpen_gray(
-    imgsharpened::Matrix{Float64}, landmask::AbstractArray{Bool}
-)::Matrix{Gray{Float64}}
-    image_sharpened_landmasked = apply_landmask(imgsharpened, landmask)
-    return colorview(Gray, image_sharpened_landmasked)
-end
-
-
 """IceDetectionLopezAcosta2019
 
 Application of the IceDetectionFirstNonZeroAlgorithm using two passes of 
 the IceDetectionThresholdMODIS721 and one application of the IceDetectionBrightnessPeaksMODIS721.
-"""
+""" # TODO: This works in the kmeans binarization but not by itself in the example notebook.
 function IceDetectionLopezAcosta2019(;
     band_7_max::Float64=Float64(5 / 255),
     band_2_min::Float64=Float64(230 / 255),

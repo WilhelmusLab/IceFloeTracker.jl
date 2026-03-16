@@ -14,12 +14,10 @@
     cloudmask = create_cloudmask(falsecolor_image) # reversed cloudmask
     matlab_ice_water_discrim =
         float64.(load("$(test_data_dir)/matlab_ice_water_discrim.png"))
-
-    image_sharpened = LopezAcosta2019.imsharpen(input_image, landmask_no_dilate)
-    image_sharpened_gray = LopezAcosta2019.imsharpen_gray(image_sharpened, landmask)
+    matlab_sharpened = float64.(load("$(test_data_dir)/matlab_sharpened.png"))
     fc_masked = apply_landmask(falsecolor_image, landmask)
     ice_water_discrim = LopezAcosta2019.discriminate_ice_water(
-        image_sharpened_gray, fc_masked, landmask, cloudmask
+        matlab_sharpened, fc_masked, landmask, cloudmask
     )
     @test (@test_approx_eq_sigma_eps ice_water_discrim matlab_ice_water_discrim [0, 0] 0.065) ===
         nothing
