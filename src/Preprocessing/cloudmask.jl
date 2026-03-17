@@ -115,9 +115,9 @@ function _get_masks(
     b7_masked = false_color_image_b7 .* (mask_b2 .&& mask_b7)
     b7_masked_float, b2_masked_float = [Float64.(m) for m in [b7_masked, b2_masked]]
     b7_greater_than_adjusted_b2_lower = @. b7_masked_float >=
-        (b2_masked_float * ratio_lower)
+        round(b2_masked_float * ratio_lower, digits=4)
     b7_less_than_adjusted_b2_upper = @. b7_masked_float <
-        (b2_masked_float * (ratio_upper - ratio_offset))
+        round(b2_masked_float * (ratio_upper - ratio_offset), digits=4)
     mask_cloud_ice = b7_greater_than_adjusted_b2_lower .&& b7_less_than_adjusted_b2_upper
 
     # Returning the two masks for facilitating testing other related workflows such as conditional adaptive histogram equalization
