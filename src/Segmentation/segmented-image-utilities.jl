@@ -183,8 +183,8 @@ end
 Produce an RGB image with a random color for each unique segment in `s`.
 Background elements (where `labels_map(s) .== 0`) are set to black.
 """
-function view_seg_random(s)
-    cview = map(i->_get_random_color(i), labels_map(s))
+function view_seg_random(s; min_intensity=0.2)
+    cview = map(i->_get_random_color(i; min_intensity=min_intensity), labels_map(s))
     cview[labels_map(s) .== 0] .= RGB(0, 0, 0)
     return cview
 end

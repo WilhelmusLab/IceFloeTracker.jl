@@ -124,6 +124,7 @@ end
     import IceFloeTracker
     import IceFloeTracker: view_seg, view_seg_random
     import Images: SegmentedImage, Gray, N0f8, RGB
+    import Random: rand, seed!
     
     test_im = zeros(Int64, (10, 10))
     test_im[2:5, 2:5] .= 1
@@ -139,4 +140,19 @@ end
     cview = view_seg_random(segments)
     @test typeof(cview) == Matrix{RGB{N0f8}}
     @test length(unique(cview)) == 5
+
+    # test whether the minimum brightness workflows
+    seed!(42)
+    A = zeros(Int64, 100, 100)
+    for ii in CartesianIndices(A)
+       A[ii] = rand(Int8)
+       (A[ii] == 0) && (A[ii] = 1) # no background
+    end
+    A = abs.(A)
+    cview1 = view_seg_random(SegmentedImage(A, A); min_intensity=0.1)
+    cview2 = view_seg_random(SegmentedImage(A, A); min_intensity=0.5)
+    println(minimum(Float64.(Gray.(cview1))))
+    println(minimum(Float64.(Gray.(cview2))))
+    @test 0.2 > minimum(Float64.(Gray.(cview1))) > 0.1
+    @test 0.6 > minimum(Float64.(Gray.(cview2))) > 0.5
 end
