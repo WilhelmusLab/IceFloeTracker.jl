@@ -54,7 +54,7 @@ In addition to the region props quantities, each label is given a random 12-char
 
 Starting from the first floe ``\f`` in the first image and corresponding time ``\\t``, `FloeTracker` selects all the DataFrame rows with time stamps up to `maximum_time_step` before and after ``\\t`` to form a set of candidate matches ``\C``. The goal of the filter function is to reduce the size of ``\C`` as far as possible without removing the true match (if it exists). 
 
-Floe filter functions have type `AbstractFloeFilterFunction` and take two argmuments: a DataFrameRow corresponding to the floe to be matched, and a DataFrame with candidate pairs from the current time step. These functions operate in-place, modifying and subsetting DataFrame ``\C``. IceFloeTracker.jl includes four main `AbstractFloeFilterFunctions`.  These functions all follow the same procedure:
+Floe filter functions have type `AbstractFloeFilterFunction` and take two argmuments: a DataFrameRow corresponding to the floe to be matched, and a DataFrame with candidate pairs from the current time step. These functions operate in-place, modifying and subsetting DataFrame ``C``. IceFloeTracker.jl includes four main `AbstractFloeFilterFunctions`.  These functions all follow the same procedure:
 1. Compute comparisons between the floe and each floe in the candidates DataFrame
 2. Use an threshold test to evaluate the comparisons
 3. Reduce the candidates dataframe to only those pairs that pass the threshold test
@@ -76,8 +76,21 @@ Since the input and output of filter functions are dataframes, they can be linke
 
 The `ChainedFilterFunction` functor takes a list of filter functions and wraps them into a single function call. Using the struct/functor approach, we can initialize each function with parameters, then pass the function and settings into the `floe_tracker` function. The default `FilterFunction` is an instance of a `ChainedFilterFunction` with seven inidividual filter functions, based on Lopez-Acosta et al. 2019.
 
-After the filter function is applied, any floes remaining in ``\\C`` are given a column `trajectory_uuid` matching the `head_uuid` of the initial floe ``\f``.
+After the filter function is applied, any floes remaining in ``C`` are given a column `trajectory_uuid` matching the `head_uuid` of the initial floe ``f``.
 
 ## Matching Function
 Inevitably there will be cases where multiple candidates are plausible. `AbstractFloeMatchingFunctions` accept a DataFrame with the candidate pairings, then filter this dataframe to insure that all pairings are unique.
 
+The default matching function is the `MinimumWeightMatchingFunction`. To initialize the function, it needs a list of properties. In this example, just three properties are assigned. The properties can be written as `Symbol` or as `String`.
+```julia
+matchfun = MinimumWeightMatchingFunction(
+    columns=[:scaled_distance, :relative_error_area, :relative_error_convex_area]
+)
+```
+Importantly, the names of the listed properties must coincide with columns created in the filter functions. They are interpreted as errors, such that a small value is favored over a large value.
+
+The algorithm then works as follows. For each floe pair ``f, g``, and list of error measures ``m_0(f, g), \dots, m_k(f, g)``, we compute the weight
+```math
+w(f, g) = \sum_{i=1:k} m_i(f, g)
+```
+The matched pairs are then identified by finding the minimum ``w`` for each floe. We use a consistency check, such that we compute the minimum weight pair forward and backward and only return the matchings that minimize both directions.

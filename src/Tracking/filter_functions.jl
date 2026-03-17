@@ -117,7 +117,7 @@ end
     
 
 Compute and test the scaled shape difference between input `floe` and each floe in the dataframe `candidates`.
-The shape difference between objects ``\\A`` and ``\\B`` is defined as 
+The shape difference between objects ``A`` and ``B`` is defined as 
 ```math
 SD = (A \\cup B) \\setminus (A \\cap B)
 ```
