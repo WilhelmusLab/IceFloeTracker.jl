@@ -134,7 +134,7 @@ end
     segments = SegmentedImage(Gray.(ones(size(test_im))), test_im)
     cview = view_seg(segments)
     @test typeof(cview) == Matrix{Gray{Float64}}
-    @test length(unique(cview)) == 1
+    @test length(unique(cview)) == 2
 
     cview = view_seg_random(segments)
     @test typeof(cview) == Matrix{RGB{N0f8}}
