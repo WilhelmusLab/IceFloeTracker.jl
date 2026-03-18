@@ -106,7 +106,7 @@ end
     # function to put it back together again
 
     import IceFloeTracker: get_tiles, stitch_clusters
-    import Images: SegmentedImage, labels_map
+    import Images: SegmentedImage, labels_map, Gray
 
     test_im = zeros(Int64, (10, 10))
     test_im[2:5, 2:5] .= 1
@@ -114,7 +114,7 @@ end
     test_im[2:5, 6:9] .= 3
     test_im[6:9, 6:9] .= 4
     tiles = get_tiles(test_im, 5) # divide into 4 tiles
-    segments = SegmentedImage(ones(size(test_im)), test_im)
+    segments = SegmentedImage(Gray.(ones(size(test_im))), test_im)
     stitched_segments = labels_map(stitch_clusters(segments, tiles))
     @test all(stitched_segments[2:9, 2:9] .== 1)
 
