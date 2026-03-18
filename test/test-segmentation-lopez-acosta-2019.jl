@@ -9,7 +9,7 @@
         RGB.(modis_falsecolor(case)),
         RGB.(modis_landmask(case)),
     )
-    @show segments
+    # @show segments
     expected_segment_count = validated_floe_properties(case) |> DataFrame |> nrow
     @test length(segments.segment_labels) ≈ expected_segment_count rtol = 0.7
 end
@@ -18,11 +18,12 @@ end
     import StatsBase: mean
     dataset = Watkins2026Dataset(; ref="v0.1")
     results = run_and_validate_segmentation(
-        filter(c -> (c.visible_floes == "yes" && c.case_number % 6 == 0), dataset),
+        filter(c -> (c.visible_floes == "yes" && c.cloud_fraction_manual < 0.5 && c.case_number % 3 == 0), dataset),
         LopezAcosta2019.Segment();
         output_directory="./test_outputs/",
     )
     @test all(results.success)
+    print(results[:, ["case_number", "recall", "precision", "F_score"]])
 
     # Aggregate performance measures
     mean_recall = round(mean(skipnanormissing(results.recall)), digits=2)

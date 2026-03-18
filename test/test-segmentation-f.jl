@@ -19,7 +19,7 @@
     # ice_labels = Int64.(vec(readdlm("$(test_data_dir)/ice_labels_floe_region.csv", ',')))
 
     ## Run function with Matlab inputs
-
+    # TODO: Add version with the new functions
     @time isolated_floes = LopezAcosta2019.segmentation_F(
         segmentation_B_not_ice_mask[ice_floe_test_region...],
         segmentation_B_ice_intersect[ice_floe_test_region...],

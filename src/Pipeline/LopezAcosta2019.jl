@@ -6,6 +6,7 @@ import Images:
     AbstractRGB,
     adjust_histogram!,
     TransparentRGB,
+    TransparentGray,
     mreconstruct!,
     mreconstruct,
     feature_transform,
@@ -143,6 +144,15 @@ Note: This algorithm is under active development and the API will change in a fu
         fill_range_max=1,
         alpha_level=0.5
     )
+    segF_params = (
+        k=3,
+        se=strel_diamond((5,5)),
+        min_area_opening=20)
+    floe_splitting_settings = (
+        max_fill_area=1,
+        min_area_opening=20,
+        opening_strel=se_disk4()
+    )
 end
 
 function (p::Segment)(
@@ -252,21 +262,31 @@ function (p::Segment)(
     watersheds_segB = [
         watershed_ice_floes(prelim_binarized), watershed_ice_floes(ice_intersect)
     ]
-    watersheds_segB_product = watershed_product(watersheds_segB...)
+    watersheds_product = watershed_product(watersheds_segB...)
 
     # segmentation_F
     # TODO: @hollandjg find out why segF is more dilated
     @info "Segmenting floes part 3/3"
-    segF = segmentation_F(
-        brightened_gray,
-        ice_intersect,
-        watersheds_segB_product,
-        fc_masked,
-        cloudmask,
-        coastal_buffer_mask,
-    )
 
-    @info "Labeling floes"
+    # segmentation_F
+    @info "Segmenting floes part 3/3"
+    morphed_grayscale = reconstruct_and_mask(
+        brightened_gray,
+        watersheds_product,
+        ice_intersect,
+        coastal_buffer_mask;
+        se=p.segF_params.se,
+        min_area_opening=p.segF_params.min_area_opening,
+    ) 
+    # kmeans binarization, again
+    segF_binarized = kmeans_binarization(
+        morphed_grayscale, fc_masked;
+        k=p.segF_params.k,
+        cluster_selection_algorithm=p.cluster_selection_algorithm,
+        ) .* .! watersheds_product
+    
+    @info "Splitting floes"
+    segF = morph_split_floes(segF_binarized, cloudmask; p.floe_splitting_settings...)
     labels = label_components(segF)
 
     # Return the original truecolor image, segmented
@@ -287,7 +307,7 @@ function (p::Segment)(
             segA=segmentation_A,
             segB=segmentation_B,
             segAB_intersect=ice_intersect,
-            watersheds_segB_product=watersheds_segB_product,
+            watersheds_segB_product=watersheds_product,
             final_floes=segF,
             labels=labels,
             segment_mean_truecolor=map( # TODO Add "view_seg" code snippet
@@ -733,5 +753,51 @@ function IceDetectionLopezAcosta2019(;
         ),
     ], 10)
 end
+
+
+function reconstruct_and_mask(
+    grayscale_img::AbstractArray{<:Union{AbstractGray, TransparentGray}},
+    watershed_boundary::BitMatrix,
+    ice_intersect::BitMatrix,
+    landmask::BitMatrix;
+    se=strel_diamond((5,5)),
+    min_area_opening=20
+)
+    ice_mask = .!watershed_boundary .* ice_intersect
+    ice_mask .= .!area_opening(ice_mask; min_area=min_area_opening, connectivity=2)
+
+    reconst_gray = dilate(grayscale_img, se)
+    mreconstruct!(
+        dilate, reconst_gray, complement.(reconst_gray), complement.(grayscale_img)
+    )
+    apply_landmask!(reconst_gray, ice_mask .== 0)
+    apply_landmask!(reconst_gray, landmask) # does this need to be here?
+    return reconst_gray
+end
+
+"""
+    morph_split_floes(binary_img; max_fill_area=1, min_area_opening=20, opening_strel=se_disk(4))
+
+Separate floes in a binary image using hbreak, branch, imfill, bottom hat transform, and area opening.
+Based on Lopez-Acosta et al. 2019, 2021.
+
+"""
+function morph_split_floes(binary_img, cloudmask; max_fill_area=1, min_area_opening=20, opening_strel=se_disk4())
+    leads_branched = hbreak(binary_img) |> branch
+    leads_filled = .!imfill(.!leads_branched, 0:max_fill_area)
+    leads_opened = branch(
+        area_opening(leads_filled; min_area=min_area_opening, connectivity=2)
+    )
+
+    leads_bothat = bothat(leads_opened, strel_diamond((5, 5))) .> 0
+    leads = convert(BitMatrix, (complement.(leads_bothat) .* leads_opened))
+    area_opening!(leads, leads; min_area=min_area_opening, connectivity=2)
+
+    floes = (fill_holes(leads) .* .!cloudmask) |> branch
+    floes_opened = opening(floes, opening_strel)
+    mreconstruct!(dilate, floes_opened, floes, floes_opened)
+    return floes_opened
+end
+
 
 end
