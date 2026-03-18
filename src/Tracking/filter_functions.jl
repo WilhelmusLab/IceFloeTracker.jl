@@ -87,7 +87,7 @@ between scalar variables X and Y is defined as
 ```
 This function takes a string or Symbol `variable` (which must be a named column in 
 the `candidates` DataFrame) and computes the relative error. Calling the function with 
-the variable name, `area_variable`, `threshold_column name``, and a `threshold_function`
+the variable name, `area_variable`, `threshold_column` name, and a `threshold_function`
 initializes the function and saves the parameter values. Once initialized, the function 
 takes a `DataFrameRow` and a `DataFrame` of candidate floes as arguments, and subsets
 the candidates to only those which evaluate as `true` using the `threshold_function`.
