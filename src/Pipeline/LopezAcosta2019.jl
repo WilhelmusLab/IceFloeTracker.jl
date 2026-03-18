@@ -771,7 +771,7 @@ function reconstruct_and_mask(
         dilate, reconst_gray, complement.(reconst_gray), complement.(grayscale_img)
     )
     apply_landmask!(reconst_gray, ice_mask .== 0)
-    apply_landmask!(reconst_gray, landmask) # does this need to be here?
+    # apply_landmask!(reconst_gray, landmask) # does this need to be here?
     return reconst_gray
 end
 
