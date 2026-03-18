@@ -13,3 +13,15 @@ The process is illustrated in the image below, as well as in an example notebook
 ```
 
 In the top left, we see the truecolor image for Case 006, from the Aqua satellite. Prior to the $k$-means clustering, we cast the image to grayscale, equalized it, and sharpened it. The top right shows the $k$-means clusters with $k=4$. In the bottom left is the result from the IceDetectionAlgorithm (here, `IceDetectionBrightnessPeaksMODIS721`). Finally, the $k$-means binarization result is in the bottom right.
+
+## Tiled adaptive binarization
+[Adaptive threshold binarization](https://juliaimages.org/ImageBinarization.jl/v0.1/#Adaptive-Threshold-1) uses image properties within a moving window to separate light and dark areas in an image. If the window contains both sea ice and water, it is an effective method for producing an initial sea ice segmentation. One side effect however can be that relatively bright regions that are too dark to be ice can appear bright in the binarized image. 
+
+## Floe splitting
+Binarized images of sea ice floes generally need further processing before they can be treated as objects, because sea ice floes are often in contact with one another. The primary methods in IceFloeTracker for floe splitting are morphological operations such as opening (erosion followed by dilation) and `hbreak` (removing single pixel connections between objects), and watershed transformation.
+
+## Pipelines
+Sea ice floe segmentation requires a series of image processing steps. The `Pipelines` module contains workflows which link together the preprocessing, segmentation, and floe splitting routines. Examples of each are provided in the Tutorials section.
+
+## Summarizing segmentation results
+The `regionprops` function computes characteristics of each individual objects. The IFT `regionprops` function is modeled after the `Scikit Image` [regionprops function]() while internally using the structure of the `component_*` functions in Julia `ImageMorphology`. 
