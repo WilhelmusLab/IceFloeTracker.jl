@@ -8,3 +8,8 @@ The IFT segmentation functions include functions for semantic segmentation (pixe
 3. Select the cluster with the largest fraction of bright ice pixels.
 The process is illustrated in the image below, as well as in an example notebook in the Github repository.
 
+```@raw html
+<img src="../assets/kmeans_example_case_006.png" width="600" alt="Example of k-means workflow. Shows a truecolor image of sea ice, a 4-color k-means segmentation, and two binarized images"/>
+```
+
+In the top left, we see the truecolor image for Case 006, from the Aqua satellite. Prior to the $k$-means clustering, we cast the image to grayscale, equalized it, and sharpened it. The top right shows the $k$-means clusters with $k=4$. In the bottom left is the result from the IceDetectionAlgorithm (here, `IceDetectionBrightnessPeaksMODIS721`). Finally, the $k$-means binarization result is in the bottom right.
