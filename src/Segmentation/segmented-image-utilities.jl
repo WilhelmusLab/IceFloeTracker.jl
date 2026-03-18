@@ -85,7 +85,7 @@ times each right-hand label is paired to a left-hand label, and for pairs with a
 the right-hand label is assigned as a candidate pair to the left-hand label. If the difference in grayscale
 intensity is less than `grayscale_threshold`, the objects are merged. The function returns an image index map.
 """
-function stitch_clusters(segmented_image, tiles, minimum_overlap=4, grayscale_threshold=0.1) 
+function stitch_clusters(segmented_image::SegmentedImage, tiles, minimum_overlap=4, grayscale_threshold=0.1) 
     grayscale_magnitude(c) = Float64(Gray(c))
     
     idxmap = deepcopy(labels_map(segmented_image))
@@ -144,7 +144,7 @@ function stitch_clusters(segmented_image, tiles, minimum_overlap=4, grayscale_th
             end
         end    
     end
-    return idxmap
+    return SegmentedImage(view_seg(segmented_image), idxmap)
 end
 
 """
