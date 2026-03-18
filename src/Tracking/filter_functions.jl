@@ -1,6 +1,3 @@
-# TODO
-# Set default functions for all filter functions based on the calibration paper results
-
 """
     AbstractFloeFilterFunction
 
@@ -25,12 +22,12 @@ is initialized with names for the time and distance columns, the threshold funct
 and the name of the column in which to store the results. 
 
 
-```
+```julia
 julia> dt_test = DistanceThresholdFilter(time_colum=:Δt, dist_column=:Δx, threshold_function=LinearTimeDistanceFunction())
 ```
 Now, let's assume that `floe` and `candidates` are already defined. Then
 
-```
+```julia
 julia> dt_test(floe, candidates)
 ```
 
@@ -68,7 +65,8 @@ end
 
 Compute the distance in meters between a floe and candidate floes by computing the
 straight-line distance between centroids in pixel coordinates and converting that result
-using a pixel resolution `r` with units meters/pixel.
+using a pixel resolution `r` with units meters/pixel. The floe and candidates must 
+have rows `row_centroid` and `col_centroid`.
 """
 function euclidean_distance(floe, candidates; r = 250)
     return sqrt.((floe.row_centroid .- candidates.row_centroid).^2 .+ 
@@ -84,8 +82,8 @@ end
 
 Compute and test (absolute) relative error for `variable`. The relative error
 between scalar variables X and Y is defined as 
-```
-err = abs(X - Y)/mean(X, Y)
+```math
+\eps = \abs(X - Y)/\text{mean}(X, Y)
 ```
 This function takes a string or Symbol `variable` (which must be a named column in 
 the `candidates` DataFrame) and computes the relative error. Calling the function with 
@@ -119,8 +117,13 @@ end
     
 
 Compute and test the scaled shape difference between input `floe` and each floe in the dataframe `candidates`.
-Assumes that the shape difference test operates on the shape difference scaled by a variable `scale_by`
-and the shape difference test depends on the area. 
+The shape difference between objects ``\\A`` and ``\\B`` is defined as 
+```math
+SD = (A \\cup B) \\setminus (A \\cap B)
+```
+Here, the shapes are both rotated by their orientation and aligned at their respective centroids before computing ``\\SD``.
+The result is divided by `scale_by` (e.g., area or perimeter), then the scaled value is assessed with
+the `threshold_function` which is assumed to depend on area.
 
 """
 @kwdef struct ShapeDifferenceThresholdFilter <: AbstractFloeFilterFunction
@@ -147,8 +150,8 @@ end
     PsiSCorrelationThresholdFunction(area_variable, threshold_column, threshold_function)
     PsiSCorrelationThresholdFunction(floe, candidates, Val(:raw))
 
-Compute the psi-s correlation between a floe and a dataframe of candidate floes. Adds the 
-psi-s correlation,  psi-s correlation score (1 - correlation), and the result of the threshold function
+Compute the ψ-s correlation between a floe and a dataframe of candidate floes. Adds the 
+ψ-s correlation ``\\rho``,  ψ-s correlation score (1 - ``\\rho``), and the result of the threshold function
 to the columns of `candidates`.
 """ 
 @kwdef struct PsiSCorrelationThresholdFilter <: AbstractFloeFilterFunction
@@ -159,7 +162,6 @@ end
 
 #TODO: Add option to include the confidence intervals with the normalized cross correlation tests.
 function (f::PsiSCorrelationThresholdFilter)(floe, candidates, _::Val{:raw})
-    
 
     rfloe(p2) = round(normalized_cross_correlation(floe.psi, p2), digits=3)
     transform!(candidates,  [:psi] => ByRow(rfloe) => :psi_s_correlation)
@@ -174,8 +176,8 @@ end
 """
     ChainedFilterFunction(filters::Vector{AbstractFloeFilterFunction})
 
-A `ChainedFilterFunction` is a composite function based on a set of `AbstractFloeFilterFunctions`. Each is
-applied in sequence. Thus a filter function based on the `DistanceThresholdFilter` and area relative error 
+A [`ChainedFilterFunction`](@ref) is a composite function based on a set of [`AbstractFloeFilterFunctions`](@ref). Each is
+applied in sequence. Thus a filter function based on the distance threshold filter and area relative error filter
 could be made as
 
 ```julia
@@ -199,15 +201,14 @@ end
 
 """FilterFunction()
 
-The default filter function for the FloeTracker. The function is an instance of [`ChainedFilterFunction`]@ref,
-applying 7 individual AbstractFloeFilterFunctions in sequence:
-    1. DistanceThresholdFilter  
-    2-5. RelativeErrorThresholdFilters for area, convex_area, major_axis_length, and minor_axis_length  
-    6. ShapeDifferenceThresholdFilter  
-    7. PsiSCorrelationThresholdFilter  
-Filters 2-7 use the [`PiecewiseLinearThresholdFunction`]@ref for thresholds, while Filter 1 uses a [`LinearTimeDistanceFunction`]@ref`.
-The default values and settings are derived in Watkins et al. 2026 (in prep.).
-"""
+The default filter function for the FloeTracker. The function is an instance of [`ChainedFilterFunction`](@ref),
+applying 7 individual [`AbstractFloeFilterFunctions`](@ref) in sequence:
+    1. `DistanceThresholdFilter`  
+    2. `RelativeErrorThresholdFilters` for area, convex area, major axis length, and minor axis length  
+    3. `ShapeDifferenceThresholdFilter`  
+    4. `PsiSCorrelationThresholdFilter`  
+Filters in step 2 use the [`PiecewiseLinearThresholdFunction`](@ref) for thresholds, while Filter 1 uses a [`LinearTimeDistanceFunction`](@ref).
+""" # TODO: Add reference to cal-val paper when ready.
 FilterFunction() = ChainedFilterFunction(;
     filters = [
         DistanceThresholdFilter(),

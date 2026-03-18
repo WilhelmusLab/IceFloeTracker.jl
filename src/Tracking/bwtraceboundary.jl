@@ -10,14 +10,19 @@
 
 Trace the boundary of objects in `image` 
 
-Background pixels are represented as zero. The algorithm traces the boundary counterclockwise and an initial point `P0` can be specified. If more than one boundary is detected and an initial point is provided, the boundary that contains this point is returned as a vector of CartesianIndex types. Otherwise an array of vectors is returned with all the detected boundaries in `image`. 
+Background pixels are represented as zero. The algorithm traces the boundary counterclockwise and an initial point 
+`P0` can be specified. If more than one boundary is detected and an initial point is provided, the boundary that
+contains this point is returned as a vector of CartesianIndex types. Otherwise an array of vectors is returned with
+all the detected boundaries in `image`. 
 
-# Arguments
+## Arguments
 - `image`: image, preferably binary with one single object, whose objects' boundaries are to be traced.
 - `P0`: initial point of a target boundary.
 - `closed`: if `true` (default) makes the inital point of a boundary equal to the last point.
 
-# Example
+## Returns
+- `Vector{CartesianIndex}` or an array of vectors.
+## Example
 
 ```jldoctest; setup = :(using IceFloeTracker)
 julia> A = zeros(Int, 13, 16); A[2:6, 2:6] .= 1; A[4:8, 7:10] .= 1; A[10:12,13:15] .= 1; A[10:12,3:6] .= 1;
@@ -168,7 +173,12 @@ function makecontourstartatP(P::CartesianIndex{2}, contour::Vector{CartesianInde
 end
 
 """
-Check `P` is in countour list if so return the index of the contour that contains `P`, otherwise return false.
+     isincountourlist(
+    P::Union{CartesianIndex{2},Tuple{Int64,Int64}},
+    contour_list::Vector{Vector{CartesianIndex}},
+)
+
+Check whether `P` is in countour list. If so return the index of the contour that contains `P`, otherwise return false.
 """
 function isincountourlist(
     P::Union{CartesianIndex{2},Tuple{Int64,Int64}},

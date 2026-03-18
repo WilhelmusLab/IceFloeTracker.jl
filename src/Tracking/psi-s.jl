@@ -50,24 +50,18 @@ end
                rangeout::Bool=true,
                unwrap::Bool=true)::Tuple{Vector{Float64}, Vector{Float64}}
 
-Builds the ψ-s curve defined by vectors `x` and `y`.
-
-Returns a tuple of vectors with the phases `ψ` in the first component and the traversed arclength in the second component. 
-
-Following the convention in [1], the wrapped ψ-s curve has values in [0, 2π) by default; use `rangeout` to control this behavior.
+Builds the ψ-s curve defined by vectors `x` and `y`. Returns a tuple of vectors with the phases `ψ` in the
+first component and the traversed arclength in the second component.  Following the convention in [1], the
+wrapped ψ-s curve has values in [0, 2π) by default; use `rangeout` to control this behavior.
 
 See also [`bwtraceboundary`](@ref), [`resample_boundary`](@ref)
 
-# Arguments
+## Arguments
 - `x`: Vector of x-coordinates
 - `y`: corresponding vector of y-coordinates
 - `rangeout`: `true` (default) for phase values in [0, 2π); `false` for phase values in (-π, π].
 - `unwrap`: set to `true` to get "unwrapped" phases (default). 
-
-# Reference
-[1] McConnell, Ross, et al. "psi-s correlation and dynamic time warping: two methods for tracking ice floes in SAR images." IEEE Transactions on Geoscience and Remote sensing 29.6 (1991): 1004-1012.
-
-# Example
+## Example
 
 The example below builds a cardioid and obtains its ψ-s curve.
 
@@ -107,6 +101,10 @@ julia> [s psi] # inspect psi-s data
 
  julia> plot(s, psi) # inspect psi-s curve -- should be a straight line from (0, 0) to (8, 3π)
 ```
+
+## Reference
+[1] McConnell, Ross, et al. "psi-s correlation and dynamic time warping: two methods for tracking ice floes in SAR images." IEEE Transactions on Geoscience and Remote sensing 29.6 (1991): 1004-1012.
+
 """
 function buildψs(
     x::Vector{<:Number}, y::Vector{<:Number}; rangeout::Bool=true, dsp_unwrap::Bool=true

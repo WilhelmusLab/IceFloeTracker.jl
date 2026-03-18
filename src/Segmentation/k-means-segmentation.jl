@@ -47,8 +47,15 @@ function kmeans_segmentation(
         offset += 1
     end
 
-    indexmap .= stitch_clusters(SegmentedImage(gray_image, indexmap),
-                                     tiles, minimum_overlap, grayscale_threshold) 
+    indexmap .= labels_map(
+        stitch_clusters(
+            SegmentedImage(gray_image, indexmap), 
+            tiles, 
+            minimum_overlap, 
+            grayscale_threshold
+        )
+    )
+    
     return SegmentedImage(gray_image, indexmap)
 end
 

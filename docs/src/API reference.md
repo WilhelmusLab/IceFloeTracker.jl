@@ -1,4 +1,4 @@
-
+# API Reference
 ## Index
 ```@index
 ```
