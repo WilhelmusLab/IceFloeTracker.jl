@@ -83,7 +83,7 @@ end
 Compute and test (absolute) relative error for `variable`. The relative error
 between scalar variables X and Y is defined as 
 ```math
-\eps = \abs(X - Y)/\text{mean}(X, Y)
+\\eps = \\abs(X - Y)/\\text{mean}(X, Y)
 ```
 This function takes a string or Symbol `variable` (which must be a named column in 
 the `candidates` DataFrame) and computes the relative error. Calling the function with 
