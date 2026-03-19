@@ -17,7 +17,7 @@ rgb_landmask = IceFloeTracker.load("/path/to/landmask_image.tiff");
 landmask_imgs = IceFloeTracker.create_landmask(rgb_landmask);
 ```
 
-The landmask_imgs object includes a binary version of the original landmask and a dilated version, which helps to cover the complicated near-coastal regions. 
+The `landmask_imgs` object includes a binary version of the original landmask and a dilated version, which helps to cover the complicated near-coastal regions.
 
 ```@raw html
 <img src="../assets/landmask_example.png" width="400" alt="Landmask Example"/>
