@@ -1,7 +1,7 @@
-abstract type IceFloeSegmentationAlgorithm end
-
 using Images: AbstractRGB, TransparentRGB, Gray, float64
 using ..Preprocessing: create_landmask
+
+abstract type IceFloeSegmentationAlgorithm end
 
 function (p::IceFloeSegmentationAlgorithm)(
     truecolor::T₁,
