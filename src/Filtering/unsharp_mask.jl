@@ -66,13 +66,13 @@ Apply unsharp masking on grayscale image to enhance its sharpness.
 - `image_gray`: The input grayscale image, typically already equalized.
 - `smoothing_param::Int`: The pixel radius for Gaussian blurring (typically between 1 and 10).
 - `intensity`: The amount of sharpening to apply. Higher values result in more pronounced sharpening.
-- `clampmax=255`: upper limit of intensity values in the returned image.`
+- `clampmax`: upper limit of intensity values in the returned image.`
 ## Returns
 The sharpened grayscale image with values clipped between 0 and `clapmax`.
 """
-function unsharp_mask(img::Matrix{Int64}, smoothing_param, intensity; clampmax=255)
+function unsharp_mask(img::Matrix{Int64}, smoothing_param, intensity, clampmax)
     image_gray = Gray.(img ./ clampmax)
     image_sharpened = unsharp_mask(image_gray, smoothing_param, intensity, 0)
 
-    return round.(Int, Float64.(image_sharpened) .* clampmax)
+    return round.(Int, Float64.(image_sharpened)) .* clampmax
 end
