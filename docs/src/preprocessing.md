@@ -58,7 +58,7 @@ truecolor_diffused = nonlinear_diffusion(truecolor_image, pmd)
 truecolor_equalized = adjust_histogram(truecolor_diffused,
                       AdaptiveEqualization(nbins=256, rblocks=8, cblocks=10, clip=0.8))
 ```
-Note that the implementation of contrast limited adaptive histogram equalization differs from the version used in Matlab and in Python's `scikit-image` library, as the Julia version is based on a different source algorithm while having the same name. The Matlab and Python implementations are instead based on an algorithm published in Graphics Gems IV. We implemented the Graphic Gems version in Julia. The resulting function `ContrastLimitedAdaptiveHistogramEqualization` can be used as an alternative to `AdaptiveEqualization` in the `adjust_histogram` function.
+Note that the implementation of contrast limited adaptive histogram equalization differs from the version used in Matlab and in Python's `scikit-image` library, as the Julia version is based on a different source algorithm while having the same name. The Matlab and Python implementations are instead based on an algorithm published in (Graphics Gems IV)[https://github.com/erich666/GraphicsGems/blob/master/gemsiv/README]. We implemented the Graphic Gems version in Julia. The resulting function `ContrastLimitedAdaptiveHistogramEqualization` can be used as an alternative to `AdaptiveEqualization` in the `adjust_histogram` function.
 3. Unsharp masking. This technique subtracts a Gaussian blurred copy of an image, resulting in sharper contrast at image object edges.
 ```julia
 truecolor_sharpened =unsharp_mask(truecolor_equalized)
