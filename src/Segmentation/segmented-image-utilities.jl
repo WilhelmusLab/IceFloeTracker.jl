@@ -85,7 +85,7 @@ times each right-hand label is paired to a left-hand label, and for pairs with a
 the right-hand label is assigned as a candidate pair to the left-hand label. If the difference in grayscale
 intensity is less than `grayscale_threshold`, the objects are merged. The function returns an image index map.
 """
-function stitch_clusters(segmented_image, tiles, minimum_overlap=4, grayscale_threshold=0.1) 
+function stitch_clusters(segmented_image::SegmentedImage, tiles, minimum_overlap=4, grayscale_threshold=0.1) 
     grayscale_magnitude(c) = Float64(Gray(c))
     
     idxmap = deepcopy(labels_map(segmented_image))
@@ -144,17 +144,22 @@ function stitch_clusters(segmented_image, tiles, minimum_overlap=4, grayscale_th
             end
         end    
     end
-    return idxmap
+    return SegmentedImage(view_seg(segmented_image), idxmap)
 end
 
 """
-    _get_random_color(seed)
+    _get_random_color(seed; min_inensity)
 
-Convenience function to produce a random RGB color.
+Convenience function to produce a random RGB color. If the grayscale
+value is less than `min_intensity` draw a new random color.
 """
-function _get_random_color(seed)
+function _get_random_color(seed; min_intensity=0.2)
     Random.seed!(seed)
-    rand(RGB{N0f8})
+    C = rand(RGB{N0f8})
+    while Float64(Gray(C)) < min_intensity
+        C = rand(RGB{N0f8})
+    end
+    return C
 end
 
 """
@@ -163,16 +168,23 @@ end
 Produce an array with the segment mean mapped to each segment label.
 If the SegmentedImage was produced with color type (e.g., RGB, Gray), then
 the result will be an image.
+
+Background elements (where `labels_map(s) .== 0`) are set to black.
 """
 function view_seg(s)
-    map(i->segment_mean(s,i), labels_map(s))
+    cview = map(i->segment_mean(s,i), labels_map(s))
+    cview[labels_map(s) .== 0] .= RGB(0, 0, 0)
+    return cview
 end
 
 """
     view_seg_random(s::SegmentedImage)
 
 Produce an RGB image with a random color for each unique segment in `s`.
+Background elements (where `labels_map(s) .== 0`) are set to black.
 """
-function view_seg_random(s)
-    map(i->_get_random_color(i), labels_map(s))
+function view_seg_random(s; min_intensity=0.2)
+    cview = map(i->_get_random_color(i; min_intensity=min_intensity), labels_map(s))
+    cview[labels_map(s) .== 0] .= RGB(0, 0, 0)
+    return cview
 end
