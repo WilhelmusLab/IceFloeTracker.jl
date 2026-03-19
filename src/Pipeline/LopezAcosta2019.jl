@@ -49,7 +49,8 @@ import Images:
 import Peaks: findmaxima
 import StatsBase: kurtosis, skewness, mean, std
 
-import ..Filtering: nonlinear_diffusion, PeronaMalikDiffusion, unsharp_mask, channelwise_adapthisteq
+import ..Filtering:
+    nonlinear_diffusion, PeronaMalikDiffusion, unsharp_mask, channelwise_adapthisteq
 import ..Morphology: hbreak, hbreak!, branch, bridge, fill_holes, se_disk4
 import ..Preprocessing:
     make_landmask_se,
@@ -61,17 +62,16 @@ import ..Preprocessing:
     apply_cloudmask!,
     LopezAcostaCloudMask
 
-import ..Segmentation: 
-    IceFloeSegmentationAlgorithm, 
-    find_ice_mask, 
+import ..Segmentation:
+    IceFloeSegmentationAlgorithm,
+    find_ice_mask,
     kmeans_binarization,
     IceDetectionFirstNonZeroAlgorithm,
     IceDetectionBrightnessPeaksMODIS721,
     IceDetectionThresholdMODIS721
 
-import ..ImageUtils:
-    imbrighten
-    
+import ..ImageUtils: imbrighten
+
 """ 
     LopezAcosta2019.Segment(
         coastal_buffer_structuring_element::AbstractMatrix{Bool} = make_landmask_se()
@@ -142,16 +142,11 @@ Note: This algorithm is under active development and the API will change in a fu
         gamma_factor=2.5,
         adjusted_ice_threshold=0.05,
         fill_range_max=1,
-        alpha_level=0.5
+        alpha_level=0.5,
     )
-    segF_params = (
-        k=3,
-        se=strel_diamond((5,5)),
-        min_area_opening=20)
+    segF_params = (k=3, se=strel_diamond((5, 5)), min_area_opening=20)
     floe_splitting_settings = (
-        max_fill_area=1,
-        min_area_opening=20,
-        opening_strel=se_disk4()
+        max_fill_area=1, min_area_opening=20, opening_strel=se_disk4()
     )
 end
 
@@ -199,16 +194,15 @@ function (p::Segment)(
     @info "Preprocessing truecolor image"
     # nonlinear diffusion
     apply_landmask!(truecolor_image, landmask)
-    sharpened_truecolor_image = nonlinear_diffusion(
-        truecolor_image, p.diffusion_algorithm
-    )
+    sharpened_truecolor_image = nonlinear_diffusion(truecolor_image, p.diffusion_algorithm)
 
-    sharpened_truecolor_image .= channelwise_adapthisteq(sharpened_truecolor_image;
+    sharpened_truecolor_image .= channelwise_adapthisteq(
+        sharpened_truecolor_image;
         nbins=p.adapthisteq_params.nbins,
         rblocks=p.adapthisteq_params.rblocks,
         cblocks=p.adapthisteq_params.cblocks,
-        clip=p.adapthisteq_params.clip
-    ) 
+        clip=p.adapthisteq_params.clip,
+    )
 
     sharpened_grayscale_image = unsharp_mask(
         Gray.(sharpened_truecolor_image),
@@ -224,14 +218,15 @@ function (p::Segment)(
     ice_water_discrim = discriminate_ice_water(
         sharpened_grayscale_image, fc_masked, coastal_buffer_mask, cloudmask
     )
-    segmentation_A = kmeans_binarization(
+    segmentation_A =
+        kmeans_binarization(
             ice_water_discrim,
             fc_masked;
             k=p.kmeans_params.k,
             maxiter=p.kmeans_params.maxiter,
             random_seed=p.kmeans_params.random_seed,
-            cluster_selection_algorithm=p.cluster_selection_algorithm
-            ) |> clean_binary_floes
+            cluster_selection_algorithm=p.cluster_selection_algorithm,
+        ) |> clean_binary_floes
 
     # Potential upgrade: Remove segments of the k-means result which are all cloud. However the 
     # small isolated clouds could be filled if surrounded by a single segment.
@@ -243,16 +238,21 @@ function (p::Segment)(
     # Then, the segB_binarize function uses gamma correction to increase contrast before 
     # a second binary threshold is applied.
 
+    prelim_binarized = sharpened_grayscale_image .> p.segB_params.isolation_threshold
 
-    prelim_binarized = sharpened_grayscale_image .> p.segB_params.isolation_threshold 
+    brightened_gray = imbrighten(
+        sharpened_grayscale_image, prelim_binarized, 1 + p.segB_params.brightening_factor
+    )
 
-    brightened_gray = imbrighten(sharpened_grayscale_image, prelim_binarized, 1 + p.segB_params.brightening_factor)
-    
-    segmentation_B = segB_binarize(sharpened_grayscale_image, brightened_gray, cloudmask; 
-                                    gamma_factor=p.segB_params.gamma_factor, 
-                                    adjusted_ice_threshold=p.segB_params.adjusted_ice_threshold,
-                                    fill_range=(0, p.segB_params.fill_range_max),
-                                    alpha_level=p.segB_params.alpha_level)
+    segmentation_B = segB_binarize(
+        sharpened_grayscale_image,
+        brightened_gray,
+        cloudmask;
+        gamma_factor=p.segB_params.gamma_factor,
+        adjusted_ice_threshold=p.segB_params.adjusted_ice_threshold,
+        fill_range=(0, p.segB_params.fill_range_max),
+        alpha_level=p.segB_params.alpha_level,
+    )
 
     # Simple join of segmentations results
     ice_intersect = segmentation_A .* segmentation_B
@@ -276,14 +276,16 @@ function (p::Segment)(
         ice_intersect;
         se=p.segF_params.se,
         min_area_opening=p.segF_params.min_area_opening,
-    ) 
+    )
     # kmeans binarization, again
-    segF_binarized = kmeans_binarization(
-        morphed_grayscale, fc_masked;
-        k=p.segF_params.k,
-        cluster_selection_algorithm=p.cluster_selection_algorithm,
-        ) .* .! watersheds_product
-    
+    segF_binarized =
+        kmeans_binarization(
+            morphed_grayscale,
+            fc_masked;
+            k=p.segF_params.k,
+            cluster_selection_algorithm=p.cluster_selection_algorithm,
+        ) .* .!watersheds_product
+
     @info "Splitting floes"
     segF = morph_split_floes(segF_binarized, cloudmask; p.floe_splitting_settings...)
     labels = label_components(segF)
@@ -310,7 +312,8 @@ function (p::Segment)(
             final_floes=segF,
             labels=labels,
             segment_mean_truecolor=map( # TODO Add "view_seg" code snippet
-                i -> segment_mean(segments_truecolor, i), labels_map(segments_truecolor)
+                i -> segment_mean(segments_truecolor, i),
+                labels_map(segments_truecolor),
             ),
             segment_mean_falsecolor=map(
                 i -> segment_mean(segments_falsecolor, i), labels_map(segments_falsecolor)
@@ -371,7 +374,7 @@ function discriminate_ice_water(
     st_dev_thresh_lower::Float64=Float64(84 / 255),
     st_dev_thresh_upper::Float64=Float64(98.9 / 255),
     clouds_ratio_threshold::Float64=0.02,
-    differ_threshold::Float64=0.6
+    differ_threshold::Float64=0.6,
 )::AbstractMatrix where {T<:AbstractArray{Bool}}
 
     # First step: Grayscale reconstruction, creating an inverted and smoothed image.
@@ -397,11 +400,11 @@ function discriminate_ice_water(
 
     # Compute "proportional intensity", a measure of the prominence of a peak
     # The nbins value is just the number of gray levels larger than the floes threshold.
-    nbins = round(Int64, 255*(1 - floes_threshold))
+    nbins = round(Int64, 255 * (1 - floes_threshold))
     _, floes_bin_counts = build_histogram(b2_subset, nbins)
     _, vals = findmaxima(floes_bin_counts)
     differ = vals / (maximum(vals))
-    proportional_intensity = sum(differ .> differ_threshold) / length(differ) 
+    proportional_intensity = sum(differ .> differ_threshold) / length(differ)
 
     # compute kurtosis, skewness, and standard deviation to use in threshold filtering
     kurt_band_2 = kurtosis(b2_subset)
@@ -458,7 +461,8 @@ function discriminate_ice_water(
     # This is essentially speckle noise, and has minimal effect on the results.
 
     _cloud_threshold = (
-        b7_landmasked_cloudmasked .< mask_clouds_lower .|| b7_landmasked_cloudmasked .> mask_clouds_upper
+        b7_landmasked_cloudmasked .< mask_clouds_lower .||
+        b7_landmasked_cloudmasked .> mask_clouds_upper
     )
 
     # reusing image_cloudless - used to be band7_masked
@@ -506,7 +510,6 @@ function _check_threshold_130(
            (standard_dev > st_dev_thresh_upper)
 end
 
-
 """_reconstruct(sharpened_grayscale_image, dilated_mask; strel)
 
 Convenience function for reconstruction by dilation using the complement
@@ -529,13 +532,12 @@ end
 Refine a binarized ice floe image (floes=white, leads/background/water=black) using morphological operations.
 
 """
-function clean_binary_floes(bw_img; min_opening_area=50, se=strel_diamond((5,5)))
+function clean_binary_floes(bw_img; min_opening_area=50, se=strel_diamond((5, 5)))
     img_opened = area_opening(bw_img; min_area=min_opening_area) |> hbreak
     img_filled = branch(img_opened) |> bridge |> fill_holes
     diff_matrix = img_opened .!= img_filled
-    return closing(bw_img  .|| diff_matrix, se) # Original has closing here, but opening works better!
+    return closing(bw_img .|| diff_matrix, se) # Original has closing here, but opening works better!
 end
-
 
 """
  segB_binarize(sharpened_image, brightened_image, cloudmask;
@@ -545,10 +547,18 @@ Binarize the sharpened image by selective brightening, gamma correction, thresho
 clean up with image hole filling.
 
 """
-function segB_binarize(sharpened_image, brightened_image, cloudmask;
-     gamma_factor=2.5, adjusted_ice_threshold=0.05, fill_range=(0, 1), alpha_level=0.5)
+function segB_binarize(
+    sharpened_image,
+    brightened_image,
+    cloudmask;
+    gamma_factor=2.5,
+    adjusted_ice_threshold=0.05,
+    fill_range=(0, 1),
+    alpha_level=0.5,
+)
     # Weighted average between brightened image and sharpened grayscale
-    adjusted_sharpened = (1 - alpha_level) .* sharpened_image .+ alpha_level .* brightened_image
+    adjusted_sharpened =
+        (1 - alpha_level) .* sharpened_image .+ alpha_level .* brightened_image
 
     # Gamma correction and cloud masking
     adjust_histogram!(adjusted_sharpened, GammaCorrection(; gamma=gamma_factor))
@@ -559,7 +569,6 @@ function segB_binarize(sharpened_image, brightened_image, cloudmask;
     segb_filled = .!imfill(segB, fill_range)
     return segb_filled
 end
-
 
 """
     segmented_ice_cloudmasking(gray_image, cloudmask, ice_labels;)
@@ -574,13 +583,13 @@ Apply cloudmask to a bitmatrix of segmented ice after kmeans clustering. Returns
 
 """
 function segmented_ice_cloudmasking(
-    gray_image, 
-    falsecolor_image,
-    cloudmask::BitMatrix,
+    gray_image, falsecolor_image, cloudmask::BitMatrix
 )::BitMatrix
     segmented_ice = kmeans_binarization(
-        gray_image, falsecolor_image; 
-        cluster_selection_algorithm=IceDetectionLopezAcosta2019())
+        gray_image,
+        falsecolor_image;
+        cluster_selection_algorithm=IceDetectionLopezAcosta2019(),
+    )
     segmented_ice_cloudmasked = deepcopy(segmented_ice)
     segmented_ice_cloudmasked[cloudmask] .= 0
     return segmented_ice_cloudmasked
@@ -654,30 +663,30 @@ function IceDetectionLopezAcosta2019(;
     band_1_min_relaxed::Float64=Float64(190 / 255),
     possible_ice_threshold::Float64=Float64(75 / 255),
 )
-    return IceDetectionFirstNonZeroAlgorithm([
-        IceDetectionThresholdMODIS721(;
-            band_7_max=band_7_max,
-            band_2_min=band_2_min,
-            band_1_min=band_1_min
-        ),
-        IceDetectionThresholdMODIS721(;
-            band_7_max=band_7_max_relaxed,
-            band_2_min=band_2_min,
-            band_1_min=band_1_min_relaxed,
-        ),
-        IceDetectionBrightnessPeaksMODIS721(;
-            band_7_max=band_7_max,
-            possible_ice_threshold=possible_ice_threshold
-        ),
-    ], 10)
+    return IceDetectionFirstNonZeroAlgorithm(
+        [
+            IceDetectionThresholdMODIS721(;
+                band_7_max=band_7_max, band_2_min=band_2_min, band_1_min=band_1_min
+            ),
+            IceDetectionThresholdMODIS721(;
+                band_7_max=band_7_max_relaxed,
+                band_2_min=band_2_min,
+                band_1_min=band_1_min_relaxed,
+            ),
+            IceDetectionBrightnessPeaksMODIS721(;
+                band_7_max=band_7_max, possible_ice_threshold=possible_ice_threshold
+            ),
+        ],
+        10,
+    )
 end
 
 function reconstruct_and_mask(
-    grayscale_img::AbstractArray{<:Union{AbstractGray, TransparentGray}},
+    grayscale_img::AbstractArray{<:Union{AbstractGray,TransparentGray}},
     watershed_boundary::BitMatrix,
     ice_intersect::BitMatrix;
-    se=strel_diamond((5,5)),
-    min_area_opening=20
+    se=strel_diamond((5, 5)),
+    min_area_opening=20,
 )
     ice_mask = .!watershed_boundary .* ice_intersect
     ice_mask .= .!area_opening(ice_mask; min_area=min_area_opening, connectivity=2)
@@ -686,7 +695,7 @@ function reconstruct_and_mask(
     mreconstruct!(
         dilate, reconst_gray, complement.(reconst_gray), complement.(grayscale_img)
     )
-    
+
     apply_landmask!(reconst_gray, ice_mask .== 0)
     return reconst_gray
 end
@@ -698,7 +707,9 @@ Separate floes in a binary image using hbreak, branch, imfill, bottom hat transf
 Based on Lopez-Acosta et al. 2019, 2021.
 
 """
-function morph_split_floes(binary_img, cloudmask; max_fill_area=1, min_area_opening=20, opening_strel=se_disk4())
+function morph_split_floes(
+    binary_img, cloudmask; max_fill_area=1, min_area_opening=20, opening_strel=se_disk4()
+)
     leads_branched = hbreak(binary_img) |> branch
     leads_filled = .!imfill(.!leads_branched, 0:max_fill_area)
     leads_opened = branch(
@@ -714,6 +725,5 @@ function morph_split_floes(binary_img, cloudmask; max_fill_area=1, min_area_open
     mreconstruct!(dilate, floes_opened, floes, floes_opened)
     return floes_opened
 end
-
 
 end
