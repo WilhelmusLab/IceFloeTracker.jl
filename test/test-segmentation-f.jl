@@ -22,8 +22,7 @@
     morphed_grayscale = LopezAcosta2019.reconstruct_and_mask(
         brightened_gray[ice_floe_test_region...],
         watershed_intersect[ice_floe_test_region...],
-        ice_intersect[ice_floe_test_region...],
-        landmask[ice_floe_test_region...]
+        ice_intersect[ice_floe_test_region...]
     )
     # kmeans binarization, again
     segF_binarized = kmeans_binarization(
