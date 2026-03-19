@@ -49,20 +49,20 @@ In the image, clouds are visible as bright patches in the false color image (top
 The IFT includes multiple functions for preparing an image for segmentation. Common tasks include equalizing the lighting in an image, smoothing noise away from boundaries, sharpening edges, and enhancing difference between floes and background ice. The primary image filters and image adjustment algorithms included in the `Filtering` module are
 
 1. Nonlinear diffusion using the Perona-Malik algorithm. This algorithm performs diffusion using a heat equation weighted by a function image gradient. Thus, the diffusion is limited near edges and strong in object interiors. The algorithm was coded in Julia from the original Perona-Malik paper and includes both the inverse quadratic and exponential gradient functions.
-```julia
-pmd = PeronaMalikDiffusion(0.1, 0.1, 5, "exponential")
-truecolor_diffused = nonlinear_diffusion(truecolor_image, pmd)
-```
+    ```julia
+    pmd = PeronaMalikDiffusion(0.1, 0.1, 5, "exponential")
+    truecolor_diffused = nonlinear_diffusion(truecolor_image, pmd)
+    ```
 2. Adaptive histogram equalization. The Julia ImageContrastAdjustment library includes multiple methods for adjusting image histograms via the `adjust_histogram` function.
-```julia
-truecolor_equalized = adjust_histogram(truecolor_diffused,
-                      AdaptiveEqualization(nbins=256, rblocks=8, cblocks=10, clip=0.8))
-```
-Note that the implementation of contrast limited adaptive histogram equalization differs from the version used in Matlab and in Python's `scikit-image` library, as the Julia version is based on a different source algorithm while having the same name. The Matlab and Python implementations are instead based on an algorithm published in (Graphics Gems IV)[https://github.com/erich666/GraphicsGems/blob/master/gemsiv/README]. We implemented the Graphic Gems version in Julia. The resulting function `ContrastLimitedAdaptiveHistogramEqualization` can be used as an alternative to `AdaptiveEqualization` in the `adjust_histogram` function.
+    ```julia
+    truecolor_equalized = adjust_histogram(truecolor_diffused,
+                        AdaptiveEqualization(nbins=256, rblocks=8, cblocks=10, clip=0.8))
+    ```
+    Note that the implementation of contrast limited adaptive histogram equalization differs from the version used in Matlab and in Python's `scikit-image` library, as the Julia version is based on a different source algorithm while having the same name. The Matlab and Python implementations are instead based on an algorithm published in (Graphics Gems IV)[https://github.com/erich666/GraphicsGems/blob/master/gemsiv/README]. We implemented the Graphic Gems version in Julia. The resulting function `ContrastLimitedAdaptiveHistogramEqualization` can be used as an alternative to `AdaptiveEqualization` in the `adjust_histogram` function.
 3. Unsharp masking. This technique subtracts a Gaussian blurred copy of an image, resulting in sharper contrast at image object edges.
-```julia
-truecolor_sharpened =unsharp_mask(truecolor_equalized)
-```
+    ```julia
+    truecolor_sharpened =unsharp_mask(truecolor_equalized)
+    ```
 
 The image below illustrates the processing with a zoomed-in version of the example case. In the top row, we have the true color image on the left and the nonlinear diffusion image on the right. In the bottom row, we have the diffused and equalized image on the left and the diffused, equalized and sharpened image on the right.
 ```@raw html
