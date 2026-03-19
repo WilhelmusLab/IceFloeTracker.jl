@@ -154,8 +154,8 @@ function (p::Segment)(
 ) where {
     T₁<:AbstractMatrix{<:Union{AbstractRGB,TransparentRGB}},
     T₂<:AbstractMatrix{<:Union{AbstractRGB,TransparentRGB}},
-    T₃<:Union{BitMatrix,AbstractArray{Gray{Bool}}},
-    T₄<:Union{BitMatrix,AbstractArray{Gray{Bool}}},
+    T₃<:AbstractMatrix{<:Union{Bool,Gray}},
+    T₄<:AbstractMatrix{<:Union{Bool,Gray}},
 }
     coastal_buffer_mask = reinterpret(Bool, coastal_buffer_mask)
     landmask = reinterpret(Bool, landmask)
