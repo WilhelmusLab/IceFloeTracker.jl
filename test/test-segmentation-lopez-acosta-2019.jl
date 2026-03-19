@@ -23,8 +23,7 @@ end
         output_directory="./test_outputs/",
     )
     @test all(results.success)
-    print(results[:, ["case_number", "recall", "precision", "F_score"]])
-
+    
     # Aggregate performance measures
     mean_recall = round(mean(skipnanormissing(results.recall)), digits=2)
     mean_precision = round(mean(skipnanormissing(results.precision)), digits=2)
