@@ -52,7 +52,7 @@ In addition to the region props quantities, each label is given a random 12-char
 
 ## Filter Functions
 
-Starting from the first floe ``\f`` in the first image and corresponding time ``\\t``, `FloeTracker` selects all the DataFrame rows with time stamps up to `maximum_time_step` before and after ``\\t`` to form a set of candidate matches ``\C``. The goal of the filter function is to reduce the size of ``\C`` as far as possible without removing the true match (if it exists). 
+Starting from the first floe ``f`` in the first image and corresponding time ``t``, `FloeTracker` selects all the DataFrame rows with time stamps up to `maximum_time_step` before and after ``t`` to form a set of candidate matches ``C``. The goal of the filter function is to reduce the size of ``C`` as far as possible without removing the true match (if it exists). 
 
 Floe filter functions have type `AbstractFloeFilterFunction` and take two argmuments: a DataFrameRow corresponding to the floe to be matched, and a DataFrame with candidate pairs from the current time step. These functions operate in-place, modifying and subsetting DataFrame ``C``. IceFloeTracker.jl includes four main `AbstractFloeFilterFunctions`.  These functions all follow the same procedure:
 1. Compute comparisons between the floe and each floe in the candidates DataFrame
