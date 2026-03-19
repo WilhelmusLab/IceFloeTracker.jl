@@ -38,7 +38,7 @@ cloud_mask = create_cloudmask(falsecolor_image, LopezAcosta2019CloudMask())
 cloud_mask = create_cloudmask(falsecolor_image, Watkins2025CloudMask())
 ```
 
-The Lopez-Acosta 2019 cloud mask aims to only mask the brightest clouds, and is used in Pipelines where cloudy regions are further processed to enhance clarity. The Watkins 2025 cloud mask beings with the Lopez-Acosta 2019 algorithm, with different, stricter parameters, and includes morphological operations to remove speckle. This algorithm has lower tolerance for cloud cover.
+The Lopez-Acosta 2019 cloud mask aims to only mask the brightest clouds, and is used in Pipelines where cloudy regions are further processed to enhance clarity. The Watkins 2025 cloud mask begins with the Lopez-Acosta 2019 algorithm, with different, stricter parameters, and includes morphological operations to remove speckle. This algorithm has lower tolerance for cloud cover.
 
 ```@raw html
 <img src="../assets/cloudmask_example.png" width="400" alt="False color image, Lopez-Acosta cloud mask, Watkins cloud mask"/>
