@@ -273,8 +273,7 @@ function (p::Segment)(
     morphed_grayscale = reconstruct_and_mask(
         brightened_gray,
         watersheds_product,
-        ice_intersect,
-        coastal_buffer_mask;
+        ice_intersect;
         se=p.segF_params.se,
         min_area_opening=p.segF_params.min_area_opening,
     ) 
@@ -621,87 +620,6 @@ function watershed_product(
 end
 
 """
-    segmentation_F(
-    segmentation_B_not_ice_mask::Matrix{Gray{Float64}},
-    segmentation_B_ice_intersect::BitMatrix,
-    segmentation_B_watershed_intersect::BitMatrix,
-    ice_labels::Union{Vector{Int64},BitMatrix},
-    cloudmask::BitMatrix,
-    landmask::BitMatrix;
-    min_area_opening::Int64=20
-)
-
-Cleans up past segmentation images with morphological operations, and applies the results of prior watershed segmentation, returning the final cleaned image for tracking with ice floes segmented and isolated.
-
-# Arguments
-- `segmentation_B_not_ice_mask`: gray image output from `segmentation_b.jl`
-- `segmentation_B_ice_intersect`: binary mask output from `segmentation_b.jl`
-- `segmentation_B_watershed_intersect`: ice pixels, output from `segmentation_b.jl`
-- `ice_labels`: vector of pixel coordinates output from `find_ice_labels.jl`
-- `cloudmask.jl`: bitmatrix cloudmask for region of interest
-- `landmask.jl`: bitmatrix landmask for region of interest
-- `min_area_opening`: threshold used for area opening; pixel groups greater than threshold are retained
-
-"""
-function segmentation_F(
-    segmentation_B_not_ice_mask::Matrix{Gray{Float64}},
-    segmentation_B_ice_intersect::BitMatrix,
-    segmentation_B_watershed_intersect::BitMatrix,
-    falsecolor_image,
-    cloudmask::BitMatrix,
-    landmask::BitMatrix;
-    min_area_opening::Int64=20,
-)::BitMatrix
-    apply_landmask!(segmentation_B_not_ice_mask, landmask)
-
-    ice_leads = .!segmentation_B_watershed_intersect .* segmentation_B_ice_intersect
-
-    ice_leads .= .!area_opening(ice_leads; min_area=min_area_opening, connectivity=2)
-
-    not_ice = dilate(segmentation_B_not_ice_mask, strel_diamond((5, 5)))
-
-    mreconstruct!(
-        dilate, not_ice, complement.(not_ice), complement.(segmentation_B_not_ice_mask)
-    )
-
-    reconstructed_leads = (not_ice .* ice_leads) .+ (60 / 255)
-
-    #### Update K-Means Segmentation ####
-
-    leads_segmented =
-        kmeans_binarization(reconstructed_leads, falsecolor_image;
-            cluster_selection_algorithm=IceDetectionLopezAcosta2019()) .*
-        .!segmentation_B_watershed_intersect
-    @info("Done with k-means segmentation")
-    leads_segmented_broken = hbreak(leads_segmented)
-
-    leads_branched = branch(leads_segmented_broken)
-
-    leads_filled = .!imfill(.!leads_branched, 0:1)
-
-    leads_opened = branch(
-        area_opening(leads_filled; min_area=min_area_opening, connectivity=2)
-    )
-
-    leads_bothat = bothat(leads_opened, strel_diamond((5, 5))) .> 0.499
-
-    leads = convert(BitMatrix, (complement.(leads_bothat) .* leads_opened))
-
-    area_opening!(leads, leads; min_area=min_area_opening, connectivity=2)
-
-    # dmw: replace multiplication with apply_cloudmask
-    leads_bothat_filled = (fill_holes(leads) .* .!cloudmask)
-    # leads_bothat_filled = apply_cloudmask(fill_holes(leads), cloudmask)
-    floes = branch(leads_bothat_filled)
-
-    floes_opened = opening(floes, centered(se_disk4()))
-
-    mreconstruct!(dilate, floes_opened, floes, floes_opened)
-
-    return floes_opened
-end
-
-"""
     _adjust_histogram(masked_view, nbins, rblocks, cblocks, clip)
 
 Perform adaptive histogram equalization to a masked image. Wrapper for the
@@ -754,12 +672,10 @@ function IceDetectionLopezAcosta2019(;
     ], 10)
 end
 
-
 function reconstruct_and_mask(
     grayscale_img::AbstractArray{<:Union{AbstractGray, TransparentGray}},
     watershed_boundary::BitMatrix,
-    ice_intersect::BitMatrix,
-    landmask::BitMatrix;
+    ice_intersect::BitMatrix;
     se=strel_diamond((5,5)),
     min_area_opening=20
 )
@@ -770,8 +686,8 @@ function reconstruct_and_mask(
     mreconstruct!(
         dilate, reconst_gray, complement.(reconst_gray), complement.(grayscale_img)
     )
+    
     apply_landmask!(reconst_gray, ice_mask .== 0)
-    # apply_landmask!(reconst_gray, landmask) # does this need to be here?
     return reconst_gray
 end
 
