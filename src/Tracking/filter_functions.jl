@@ -83,11 +83,11 @@ end
 Compute and test (absolute) relative error for `variable`. The relative error
 between scalar variables X and Y is defined as 
 ```math
-\eps = \abs(X - Y)/\text{mean}(X, Y)
+\\eps = \\abs(X - Y)/\\text{mean}(X, Y)
 ```
 This function takes a string or Symbol `variable` (which must be a named column in 
 the `candidates` DataFrame) and computes the relative error. Calling the function with 
-the variable name, `area_variable`, `threshold_column name``, and a `threshold_function`
+the variable name, `area_variable`, `threshold_column` name, and a `threshold_function`
 initializes the function and saves the parameter values. Once initialized, the function 
 takes a `DataFrameRow` and a `DataFrame` of candidate floes as arguments, and subsets
 the candidates to only those which evaluate as `true` using the `threshold_function`.
@@ -117,7 +117,7 @@ end
     
 
 Compute and test the scaled shape difference between input `floe` and each floe in the dataframe `candidates`.
-The shape difference between objects ``\\A`` and ``\\B`` is defined as 
+The shape difference between objects ``A`` and ``B`` is defined as 
 ```math
 SD = (A \\cup B) \\setminus (A \\cap B)
 ```
