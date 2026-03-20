@@ -1,4 +1,7 @@
 module LopezAcosta2019Tiling
+
+export Segment, IceDetectionLopezAcosta2019Tiling
+
 import Images: area_opening,
     watershed,
     imfilter,
@@ -80,7 +83,7 @@ structuring_elements = (
     se_disk1=collect(strel_diamond((3, 3))), se_disk2=se_disk2(), se_disk4=se_disk4()
 )
 
-unsharp_mask_params = (radius=10, amount=2.0, factor=255.0)
+unsharp_mask_params = (radius=10, amount=2.0, factor=255)
 
 brighten_factor = 0.1
 
@@ -117,8 +120,8 @@ function (p::Segment)(
 ) where {
     T₁<:AbstractMatrix{<:Union{AbstractRGB,TransparentRGB}},
     T₂<:AbstractMatrix{<:Union{AbstractRGB,TransparentRGB}},
-    T₃<:AbstractMatrix{<:Union{Bool,Gray{Bool}}},
-    T₄<:AbstractMatrix{<:Union{Bool,Gray{Bool}}},
+    T₃<:AbstractMatrix{<:Union{Bool,Gray}},
+    T₄<:AbstractMatrix{<:Union{Bool,Gray}},
 }
     coastal_buffer_mask = reinterpret(Bool, coastal_buffer_mask)
     landmask = reinterpret(Bool, landmask)
