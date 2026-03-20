@@ -48,23 +48,26 @@ In the image, clouds are visible as bright patches in the false color image (lef
 ## Image filtering and adjustment
 The IFT includes multiple functions for preparing an image for segmentation. Common tasks include equalizing the lighting in an image, smoothing noise away from boundaries, sharpening edges, and enhancing difference between floes and background ice. The primary image filters and image adjustment algorithms included in the `Filtering` module are
 
-1. Nonlinear diffusion using the Perona-Malik algorithm. This algorithm performs diffusion using a heat equation weighted by a function image gradient. Thus, the diffusion is limited near edges and strong in object interiors. The algorithm was coded in Julia from the original Perona-Malik paper and includes both the inverse quadratic and exponential gradient functions.
-    ```julia
-    pmd = PeronaMalikDiffusion(0.1, 0.1, 5, "exponential")
-    truecolor_diffused = nonlinear_diffusion(truecolor_image, pmd)
-    ```
-2. Adaptive histogram equalization. 
-    ```julia
-    truecolor_equalized = adjust_histogram(truecolor_diffused,
-                        ContrastLimitedAdaptiveHistogramEqualization(nbins=256, rblocks=10, cblocks=10, clip=10))
-    ```
-    Note that the implementation of contrast limited adaptive histogram equalization in JuliaImages (`AdaptiveEqualization`) differs from the version used in Matlab and in Python's `scikit-image` library, as the Julia version is based on a different source algorithm while having the same name. The Matlab and Python implementations are instead based on an algorithm published in [Graphics Gems IV](https://github.com/erich666/GraphicsGems/blob/master/gemsiv/README). We implemented the Graphic Gems version in Julia. The resulting function `ContrastLimitedAdaptiveHistogramEqualization` can be used as an alternative to `AdaptiveEqualization` in the `adjust_histogram` function.
-3. Unsharp masking. This technique subtracts a Gaussian blurred copy of an image, resulting in sharper contrast at image object edges.
-    ```julia
-    truecolor_sharpened =unsharp_mask(truecolor_equalized)
-    ```
+1. *Nonlinear diffusion using the Perona-Malik algorithm.* This algorithm performs diffusion using a heat equation weighted by a function image gradient. Thus, the diffusion is limited near edges and strong in object interiors. The algorithm was coded in Julia from the original Perona-Malik paper and includes both the inverse quadratic and exponential gradient functions.
+2. *Adaptive histogram equalization.* Histogram equalization redistributes intensities in an image. This can help enhance the contrast for sea ice floes. Note that the implementation of contrast limited adaptive histogram equalization in JuliaImages (`AdaptiveEqualization`) differs from the version used in Matlab and in Python's `scikit-image` library, as the Julia version is based on a different source algorithm while having the same name. The Matlab and Python implementations are instead based on an algorithm published in [Graphics Gems IV](https://github.com/erich666/GraphicsGems/blob/master/gemsiv/README). We implemented the Graphic Gems version in Julia. The resulting function `ContrastLimitedAdaptiveHistogramEqualization` can be used as an alternative to `AdaptiveEqualization` in the `adjust_histogram` function.
+3. *Unsharp masking.* This technique subtracts a Gaussian blurred copy of an image, resulting in sharper contrast at image object edges.
 
-The image below illustrates the processing with a zoomed-in version of the example case. On the left, the truecolor image after nonlinear diffusion. Next, the diffused image was equalized (middle). Finally, the diffused and equalized image was sharpened using the unsharp mask method (right).
+We illustrate the preprocessing functions with an example workflow.
+
+```julia
+pmd = PeronaMalikDiffusion(0.1, 0.1, 5, "exponential")
+truecolor_diffused = nonlinear_diffusion(truecolor_image, pmd)
+truecolor_equalized = adjust_histogram(truecolor_diffused,
+                    ContrastLimitedAdaptiveHistogramEqualization(
+                        nbins=256,
+                        rblocks=10,
+                        cblocks=10,
+                        clip=10
+                        )
+                    )
+truecolor_sharpened = unsharp_mask(truecolor_equalized)
+```
+The results are pictured below. On the left, the truecolor image after nonlinear diffusion. Next, the diffused image was equalized (middle). Finally, the diffused and equalized image was sharpened using the unsharp mask method (right).
 ```@raw html
 <img src="../assets/filtering_example.png" width="600" alt="Original true color image, diffused image, equalized image, and sharpened image."/>
 ```
