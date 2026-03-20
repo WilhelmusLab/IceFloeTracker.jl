@@ -169,10 +169,12 @@ function (p::Segment)(
 
     # Move these conversions down through the function as each step gets support for 
     # the full range of image formats
-    truecolor_image = float64.(truecolor)
-    falsecolor_image = float64.(falsecolor)
+    truecolor_image = RGB.(float64.(truecolor))
+    falsecolor_image = RGB.(float64.(falsecolor))
 
     @info "Building cloudmask"
+    # TODO: @hollandjg track down why the cloudmask is different for float32 vs float64 input images
+    # dmw: I suspect it's likely it's roundoff error with the comparison to the ratio threshold, that's where I've seen differences
     # TODO: Make sure tests aren't over-sensitive to roundoff errors for Float32 vs Float64
     cloudmask = create_cloudmask(falsecolor_image)
 
@@ -289,7 +291,7 @@ function (p::Segment)(
             falsecolor,
             landmask,
             coastal_buffer_mask,
-            cloudmask,
+            cloud_mask=cloudmask,
             ice_mask=IceDetectionLopezAcosta2019()(fc_masked),
             sharpened_grayscale_image=sharpened_grayscale_image,
             ice_water_discrim=ice_water_discrim,
@@ -299,13 +301,17 @@ function (p::Segment)(
             watersheds_segB_product=watersheds_product,
             final_floes=segF,
             labels=labels,
+            labels_map=labels,
+            segments,
+            segmented_truecolor=segments_truecolor,
+            segmented_falsecolor=segments_falsecolor,
             segment_mean_truecolor=map( # TODO Add "view_seg" code snippet
                 i -> segment_mean(segments_truecolor, i),
                 labels_map(segments_truecolor),
             ),
             segment_mean_falsecolor=map(
                 i -> segment_mean(segments_falsecolor, i), labels_map(segments_falsecolor)
-            ), # Add figure that overlays the segments
+            ), # TODO Add figure that overlays the segments
         )
     end
     return segments

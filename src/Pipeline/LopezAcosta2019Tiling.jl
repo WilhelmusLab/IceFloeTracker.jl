@@ -93,7 +93,7 @@ ice_masks_params = (
     band_1_min=240 / 255,
     band_7_max_relaxed=10 / 255,
     band_1_min_relaxed=190 / 255,
-    possible_ice_threshold=75 / 255
+    possible_ice_threshold=75 / 255,
 )
 
 prelim_icemask_params = (radius=10, amount=2, factor=0.5)
@@ -218,8 +218,10 @@ function (p::Segment)(
             Gray.(morphed_residue / 255),
             fc_landmasked,
             tiles;
-            cluster_selection_algorithm=IceDetectionLopezAcosta2019Tiling(; ice_masks_params...), # Initialize this with ice_masks_params
-            k=4
+            cluster_selection_algorithm=IceDetectionLopezAcosta2019Tiling(;
+                ice_masks_params...
+            ), # Initialize this with ice_masks_params
+            k=4,
         )
     end
 
@@ -255,8 +257,10 @@ function (p::Segment)(
             Gray.(prelim_icemask2 ./ 255),
             fc_landmasked,
             tiles;
-            cluster_selection_algorithm=IceDetectionLopezAcosta2019Tiling(;ice_masks_params...),
-            k=3
+            cluster_selection_algorithm=IceDetectionLopezAcosta2019Tiling(;
+                ice_masks_params...
+            ),
+            k=3,
         )
     end
 
@@ -281,11 +285,13 @@ function (p::Segment)(
             falsecolor,
             truecolor,
             ref_img_cloudmasked,
+            cloud_mask=cloudmask,
             gammagreen,
             coastal_buffer_mask,
             equalized_gray,
             equalized_gray_sharpened_reconstructed,
             equalized_gray_reconstructed,
+            sharpened_grayscale_image=equalized_gray_sharpened_reconstructed,
             morphed_residue,
             prelim_icemask,
             binarized_tiling,
@@ -293,10 +299,14 @@ function (p::Segment)(
             local_maxima_mask,
             L0mask,
             prelim_icemask2,
-            icemask,
+            ice_mask=icemask,
             binary_floe_masks,
             labels,
+            labels_map=labels,
             segmented,
+            segments=segmented,
+            segments_truecolor,
+            segments_falsecolor,
             segment_mean_truecolor=map(i -> segment_mean(segments_truecolor, i), labels),
             segment_mean_falsecolor=map(i -> segment_mean(segments_falsecolor, i), labels),
         )
@@ -515,7 +525,6 @@ function adjustgamma(img, gamma=1.5, asuint8=true)
     return adjusted
 end
 
-
 """IceDetectionLopezAcosta2019Tiling
 
 Application of the IceDetectionFirstNonZeroAlgorithm using two passes of 
@@ -532,9 +541,7 @@ function IceDetectionLopezAcosta2019Tiling(;
 )
     return IceDetectionFirstNonZeroAlgorithm([
         IceDetectionThresholdMODIS721(;
-            band_7_max=band_7_max,
-            band_2_min=band_2_min,
-            band_1_min=band_1_min
+            band_7_max=band_7_max, band_2_min=band_2_min, band_1_min=band_1_min
         ),
         IceDetectionThresholdMODIS721(;
             band_7_max=band_7_max_relaxed,
@@ -542,8 +549,7 @@ function IceDetectionLopezAcosta2019Tiling(;
             band_1_min=band_1_min_relaxed,
         ),
         IceDetectionBrightnessPeaksMODIS721(;
-            band_7_max=band_7_max,
-            possible_ice_threshold=possible_ice_threshold
+            band_7_max=band_7_max, possible_ice_threshold=possible_ice_threshold
         ),
         IceDetectionThresholdMODIS721(;
             band_7_max=1.0, band_2_min=band_2_min, band_1_min=0.0

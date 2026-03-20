@@ -2,6 +2,7 @@ import ..Morphology: se_disk50
 import Images: Gray
 import OffsetArrays: centered
 import Images: ImageMorphology, dilate
+import Images.ImageMorphology: imfill
 
 """
     make_landmask_se()
@@ -38,6 +39,26 @@ end
 
 function create_landmask(landmask_image; strel=make_landmask_se())
     return create_landmask(landmask_image, strel)
+end
+
+function create_coastal_buffer(
+    landmask_image::T; kwargs...
+) where {T<:AbstractMatrix{Gray{Bool}}}
+    landmask_binary = channelview(landmask_image)
+    coastal_buffer_binary = create_coastal_buffer(landmask_binary; kwargs...)
+    coastal_buffer = colorview(Gray, coastal_buffer_binary)
+    return coastal_buffer
+end
+
+function create_coastal_buffer(
+    landmask_binary::T;
+    struct_elem=make_landmask_se(),
+    fill_value_lower::Int=0,
+    fill_value_upper::Int=2000,
+) where {T<:AbstractMatrix{Bool}}
+    coastal_buffer = dilate(landmask_binary, centered(struct_elem))
+    coastal_buffer = .!imfill(.!coastal_buffer, (fill_value_lower, fill_value_upper))
+    return coastal_buffer
 end
 
 """
@@ -78,19 +99,4 @@ end
 function apply_landmask!(input_image::AbstractMatrix, landmask_binary::BitMatrix)
     input_image .= (.!landmask_binary) .* input_image
     return nothing
-end
-
-"""
-    apply_landmask(img, landmask; as_indices::Bool=false)
-
-Apply the landmask to the input image, optionally returning the indices of non-masked (ocean/ice) pixels.
-
-# Arguments
-- `img`: input image (e.g., ice mask or RGB image)
-- `landmask`: binary landmask (1=ocean/ice, 0=land)
-- `as_indices`: if true, return indices of non-masked pixels; otherwise, return masked image
-"""
-function apply_landmask(img, landmask; as_indices::Bool)
-    landmasked = apply_landmask(img, landmask)
-    return as_indices ? findall(vec(landmasked)) : landmasked
 end
