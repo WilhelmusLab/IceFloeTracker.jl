@@ -9,11 +9,12 @@ We include two implementations of the Perona and Malik algorithm: one adapted fr
 other a reimplementation of approach used in the default Matlab image processing toolbox.
 Since the algorithm is not truly anisotropic, we refer to it instead as nonlinear diffusion.
 
-PeronaMalikDiffusion(λ, K, niters, g)
-    λ = Parameter weighting the diffusion rate, needs to be between 0 and 0.25 for stability.
-    K = Numerator for the image gradient function. (TBD: Option to estimate from image gradient histogram)
-    niters = Number of interations
-    g = "exponential", "inverse_quadratic" (TBD: Option to provide user-defined function)
+    PeronaMalikDiffusion(λ, K, niters, g)
+##Arguments
+- λ = Parameter weighting the diffusion rate, needs to be between 0 and 0.25 for stability.
+- K = Numerator for the image gradient function. (TBD: Option to estimate from image gradient histogram)
+- niters = Number of interations
+- g = "exponential", "inverse_quadratic" (TBD: Option to provide user-defined function)
 
 References:
 - P. Perona and J. Malik (November 1987). "Scale-space and edge detection using anisotropic diffusion". Proceedings of IEEE Computer Society Workshop on Computer Vision. pp. 16–22.
