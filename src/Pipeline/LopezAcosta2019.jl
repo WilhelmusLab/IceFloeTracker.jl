@@ -1,5 +1,7 @@
 module LopezAcosta2019
 
+export Segment, IceDetectionLopezAcosta2019
+
 import Images:
     Images,
     AbstractGray,
