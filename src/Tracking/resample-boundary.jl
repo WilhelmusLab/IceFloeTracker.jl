@@ -11,7 +11,7 @@ that the separation between a pair of adjacent points is 1.
 ## Arguments
 - `bd_points`: Sequetial set of boundary points for the object of interest
 - `reduc_factor`: Factor by which to reduce the number of points in `bd_points` (2 by default)
--`bd`: Boundary condition, either 'natural' (default) or 'periodic'
+- `bd`: Boundary condition, either 'natural' (default) or 'periodic'
 
 See also [`bwtraceboundary`](@ref)
 
