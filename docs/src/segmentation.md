@@ -31,7 +31,7 @@ The `regionprops` function computes characteristics of each individual objects. 
 * computing the $\psi$-s curve from the object masks
 As with the `regionprops` function in `Scikit Image`, a subset of the properties can be called:
 ```julia
-    region_props_dict = regionprops(segmented_image, properties=[:area, :convex_area, :centroid])
+region_props_dict = regionprops(segmented_image, properties=[:area, :convex_area, :centroid])
 ```
 and either a `Dict` (as above) or a `DataFrame` can be produced:
 ```julia
