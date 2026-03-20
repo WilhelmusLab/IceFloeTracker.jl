@@ -17,16 +17,23 @@ end
     import StatsBase: mean
     dataset = Watkins2026Dataset(; ref="v0.1")
     results = run_and_validate_segmentation(
-        filter(c -> (c.visible_floes == "yes" && c.cloud_fraction_manual < 0.5 && c.case_number % 3 == 0), dataset),
+        filter(
+            c -> (
+                c.visible_floes == "yes" &&
+                c.cloud_fraction_manual < 0.5 &&
+                c.case_number % 3 == 0
+            ),
+            dataset,
+        ),
         LopezAcosta2019.Segment();
         output_directory="./test_outputs/",
     )
     @test all(results.success)
-    
+
     # Aggregate performance measures
-    mean_recall = round(mean(skipnanormissing(results.recall)), digits=2)
-    mean_precision = round(mean(skipnanormissing(results.precision)), digits=2)
-    mean_F_score = round(mean(skipnanormissing(results.F_score)), digits=2)
+    mean_recall = round(mean(skipnanormissing(results.recall)); digits=2)
+    mean_precision = round(mean(skipnanormissing(results.precision)); digits=2)
+    mean_F_score = round(mean(skipnanormissing(results.F_score)); digits=2)
 
     # Good performance might look liks this:
     @test mean_recall ≥ 0.9 broken = true
@@ -69,7 +76,7 @@ end
     @test 0.29 ≈ labeled_fraction atol = 0.1
     @test 0.40 ≤ round(recall; digits=2)
     @test 0.21 ≤ round(precision; digits=2) # Note: Decreased precision, I suspect an issue with Seg. A.
-    @test 0.3 ≤ round(F_score; digits=2) 
+    @test 0.3 ≤ round(F_score; digits=2)
 
     (; labeled_fraction, recall, precision, F_score) = run_and_validate_segmentation(
         first(filter(c -> (c.case_number == 61 && c.satellite == "aqua"), dataset)),
@@ -89,7 +96,7 @@ end
     # Note: Validation dataset currently doesn't include the floes intersecting the edge.
     # Improving the segmentation lowered the scores here due to these floes.
     @test labeled_fraction ≈ 0.45 rtol = 0.1
-    @test 0.5 ≤ round(recall; digits=2) 
+    @test 0.5 ≤ round(recall; digits=2)
     @test 0.48 ≤ round(precision; digits=2)
     @test 0.55 ≤ round(F_score; digits=2)
 end

@@ -147,10 +147,10 @@ IceDetectionBrightnessPeaksMODIS721(0.0196078431372549, 0.29411764705882354, 64,
 @kwdef struct IceDetectionBrightnessPeaksMODIS721 <: IceDetectionAlgorithm
     band_7_max::Real
     possible_ice_threshold::Real
-    nbins::Int64=64
-    minimum_prominence::Float64=0.01
-    window_size::Int64=3
-    join_method="intersection"
+    nbins::Int64 = 64
+    minimum_prominence::Float64 = 0.01
+    window_size::Int64 = 3
+    join_method = "intersection"
 end
 
 function (f::IceDetectionBrightnessPeaksMODIS721)(out, modis_721_image, args...; kwargs...)
@@ -165,7 +165,7 @@ function (f::IceDetectionBrightnessPeaksMODIS721)(out, modis_721_image, args...;
             build_histogram(band .* alpha_binary, f.nbins; minval=0, maxval=1)...;
             possible_ice_threshold=f.possible_ice_threshold,
             minimum_prominence=f.minimum_prominence,
-            window_size=f.window_size
+            window_size=f.window_size,
         )
     end
 
@@ -178,13 +178,13 @@ function (f::IceDetectionBrightnessPeaksMODIS721)(out, modis_721_image, args...;
 
     join_method = f.join_method
     if join_method ∉ ["intersection", "union"]
-         @warn "Join method $join_method not defined, defaulting to intersection"
+        @warn "Join method $join_method not defined, defaulting to intersection"
         join_method = "intersection"
     end
     join_method == "intersection" && begin
         @. out = mask_band_7 && mask_band_2 && mask_band_1 && alpha_binary
     end
-    join_method == "union" && begin
+    return join_method == "union" && begin
         @. out = mask_band_7 && (mask_band_2 || mask_band_1) && alpha_binary
     end
 end
@@ -240,19 +240,22 @@ function IceDetectionLopezAcosta2019(;
     band_1_min_relaxed::Float64=Float64(190 / 255),
     possible_ice_threshold::Float64=Float64(75 / 255),
 )
-    return IceDetectionFirstNonZeroAlgorithm([
-        IceDetectionThresholdMODIS721(;
-            band_7_max=band_7_max, band_2_min=band_2_min, band_1_min=band_1_min
-        ),
-        IceDetectionThresholdMODIS721(;
-            band_7_max=band_7_max_relaxed,
-            band_2_min=band_2_min,
-            band_1_min=band_1_min_relaxed,
-        ),
-        IceDetectionBrightnessPeaksMODIS721(;
-            band_7_max=band_7_max, possible_ice_threshold=possible_ice_threshold
-        ),
-    ], 1)
+    return IceDetectionFirstNonZeroAlgorithm(
+        [
+            IceDetectionThresholdMODIS721(;
+                band_7_max=band_7_max, band_2_min=band_2_min, band_1_min=band_1_min
+            ),
+            IceDetectionThresholdMODIS721(;
+                band_7_max=band_7_max_relaxed,
+                band_2_min=band_2_min,
+                band_1_min=band_1_min_relaxed,
+            ),
+            IceDetectionBrightnessPeaksMODIS721(;
+                band_7_max=band_7_max, possible_ice_threshold=possible_ice_threshold
+            ),
+        ],
+        1,
+    )
 end
 
 """

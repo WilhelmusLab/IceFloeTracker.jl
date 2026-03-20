@@ -16,24 +16,27 @@ function _get_nlabel(
     band_1_threshold_relaxed::T=190 / 255,
     possible_ice_threshold::T=75 / 255,
 ) where {T<:Float64}
-    f = IceDetectionFirstNonZeroAlgorithm([
-        IceDetectionThresholdMODIS721(;
-            band_7_max=band_7_threshold,
-            band_2_min=band_2_threshold,
-            band_1_min=band_1_threshold,
-        ),
-        IceDetectionThresholdMODIS721(;
-            band_7_max=band_7_threshold_relaxed,
-            band_2_min=band_2_threshold,
-            band_1_min=band_1_threshold_relaxed,
-        ),
-        IceDetectionBrightnessPeaksMODIS721(;
-            band_7_max=band_7_threshold, possible_ice_threshold=possible_ice_threshold
-        ),
-        IceDetectionThresholdMODIS721(;
-            band_7_max=1.0, band_2_min=band_2_threshold, band_1_min=0.0
-        ),
-    ], 1)
+    f = IceDetectionFirstNonZeroAlgorithm(
+        [
+            IceDetectionThresholdMODIS721(;
+                band_7_max=band_7_threshold,
+                band_2_min=band_2_threshold,
+                band_1_min=band_1_threshold,
+            ),
+            IceDetectionThresholdMODIS721(;
+                band_7_max=band_7_threshold_relaxed,
+                band_2_min=band_2_threshold,
+                band_1_min=band_1_threshold_relaxed,
+            ),
+            IceDetectionBrightnessPeaksMODIS721(;
+                band_7_max=band_7_threshold, possible_ice_threshold=possible_ice_threshold
+            ),
+            IceDetectionThresholdMODIS721(;
+                band_7_max=1.0, band_2_min=band_2_threshold, band_1_min=0.0
+            ),
+        ],
+        1,
+    )
 
     ice_labels = binarize(falsecolor_img, f) .> 0
     (isempty(ice_labels) || sum(ice_labels) == 0) && return -1

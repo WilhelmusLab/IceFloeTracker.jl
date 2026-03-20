@@ -35,12 +35,12 @@ function imbrighten(img::AbstractArray{<:Integer}, brighten_mask, bright_factor:
 end
 
 function imbrighten(
-    img::AbstractArray{<:Union{AbstractRGB, TransparentColor, AbstractGray, TransparentGray}},
-    brighten_mask::AbstractArray{Bool}, bright_factor::Float64
+    img::AbstractArray{<:Union{AbstractRGB,TransparentColor,AbstractGray,TransparentGray}},
+    brighten_mask::AbstractArray{Bool},
+    bright_factor::Float64,
 )
     _img = float64.(img)
     _img[brighten_mask] .= _img[brighten_mask] * bright_factor
     clamp01nan!(_img)
     return convert.(eltype(img), _img)
 end
-

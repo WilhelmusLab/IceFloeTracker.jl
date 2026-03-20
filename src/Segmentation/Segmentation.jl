@@ -1,7 +1,6 @@
 module Segmentation
 
-export
-    addlatlon!,
+export addlatlon!,
     BenkridCrookes,
     binarize_segments,
     component_convex_areas,

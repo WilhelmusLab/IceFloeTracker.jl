@@ -2,7 +2,8 @@ module LopezAcosta2019Tiling
 
 export Segment, IceDetectionLopezAcosta2019Tiling
 
-import Images: area_opening,
+import Images:
+    area_opening,
     watershed,
     imfilter,
     isboundary,
@@ -93,7 +94,7 @@ ice_masks_params = (
     band_1_min=240 / 255,
     band_7_max_relaxed=10 / 255,
     band_1_min_relaxed=190 / 255,
-    possible_ice_threshold=75 / 255
+    possible_ice_threshold=75 / 255,
 )
 
 prelim_icemask_params = (radius=10, amount=2, factor=0.5)
@@ -212,14 +213,15 @@ function (p::Segment)(
                 minimum_window_size=100,
                 threshold_percentage=15,
             ) .> 0
-        
 
         prelim_icemask = kmeans_binarization(
             Gray.(morphed_residue / 255),
             fc_landmasked,
             tiles;
-            cluster_selection_algorithm=IceDetectionLopezAcosta2019Tiling(; ice_masks_params...), # Initialize this with ice_masks_params
-            k=4
+            cluster_selection_algorithm=IceDetectionLopezAcosta2019Tiling(;
+                ice_masks_params...
+            ), # Initialize this with ice_masks_params
+            k=4,
         )
     end
 
@@ -255,8 +257,10 @@ function (p::Segment)(
             Gray.(prelim_icemask2 ./ 255),
             fc_landmasked,
             tiles;
-            cluster_selection_algorithm=IceDetectionLopezAcosta2019Tiling(;ice_masks_params...),
-            k=3
+            cluster_selection_algorithm=IceDetectionLopezAcosta2019Tiling(;
+                ice_masks_params...
+            ),
+            k=3,
         )
     end
 
@@ -515,7 +519,6 @@ function adjustgamma(img, gamma=1.5, asuint8=true)
     return adjusted
 end
 
-
 """IceDetectionLopezAcosta2019Tiling
 
 Application of the IceDetectionFirstNonZeroAlgorithm using two passes of 
@@ -530,24 +533,24 @@ function IceDetectionLopezAcosta2019Tiling(;
     band_1_min_relaxed::Float64=Float64(190 / 255),
     possible_ice_threshold::Float64=Float64(75 / 255),
 )
-    return IceDetectionFirstNonZeroAlgorithm([
-        IceDetectionThresholdMODIS721(;
-            band_7_max=band_7_max,
-            band_2_min=band_2_min,
-            band_1_min=band_1_min
-        ),
-        IceDetectionThresholdMODIS721(;
-            band_7_max=band_7_max_relaxed,
-            band_2_min=band_2_min,
-            band_1_min=band_1_min_relaxed,
-        ),
-        IceDetectionBrightnessPeaksMODIS721(;
-            band_7_max=band_7_max,
-            possible_ice_threshold=possible_ice_threshold
-        ),
-        IceDetectionThresholdMODIS721(;
-            band_7_max=1.0, band_2_min=band_2_min, band_1_min=0.0
-        ),
-    ], 10)
+    return IceDetectionFirstNonZeroAlgorithm(
+        [
+            IceDetectionThresholdMODIS721(;
+                band_7_max=band_7_max, band_2_min=band_2_min, band_1_min=band_1_min
+            ),
+            IceDetectionThresholdMODIS721(;
+                band_7_max=band_7_max_relaxed,
+                band_2_min=band_2_min,
+                band_1_min=band_1_min_relaxed,
+            ),
+            IceDetectionBrightnessPeaksMODIS721(;
+                band_7_max=band_7_max, possible_ice_threshold=possible_ice_threshold
+            ),
+            IceDetectionThresholdMODIS721(;
+                band_7_max=1.0, band_2_min=band_2_min, band_1_min=0.0
+            ),
+        ],
+        10,
+    )
 end
 end
