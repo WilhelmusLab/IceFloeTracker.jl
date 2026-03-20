@@ -1,4 +1,7 @@
 module LopezAcosta2019Tiling
+
+export Segment, IceDetectionLopezAcosta2019Tiling
+
 import Images: area_opening,
     watershed,
     imfilter,
