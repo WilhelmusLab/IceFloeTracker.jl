@@ -24,9 +24,9 @@ end
     @test all(results.success)
     
     # Aggregate performance measures
-    mean_recall = round(mean(skipnanormissing(results.recall)); digits=2)
-    mean_precision = round(mean(skipnanormissing(results.precision)); digits=2)
-    mean_F_score = round(mean(skipnanormissing(results.F_score)); digits=2)
+    mean_recall = round(mean(skipnanormissing(results.recall)), digits=2)
+    mean_precision = round(mean(skipnanormissing(results.precision)), digits=2)
+    mean_F_score = round(mean(skipnanormissing(results.F_score)), digits=2)
 
     # Good performance might look liks this:
     @test mean_recall ≥ 0.9 broken = true
@@ -40,8 +40,8 @@ end
 
     # Current performance should look at least as good as this:
     @test mean_recall ≥ 0.38
-    @test mean_precision ≥ 0.18
-    @test round(mean_F_score; digits=1) ≥ 0.20
+    @test mean_precision ≥ 0.21
+    @test round(mean_F_score; digits=1) ≥ 0.28
 
     # return current performance
     @show mean_recall
@@ -69,7 +69,7 @@ end
     @test 0.29 ≈ labeled_fraction atol = 0.1
     @test 0.40 ≤ round(recall; digits=2)
     @test 0.21 ≤ round(precision; digits=2) # Note: Decreased precision, I suspect an issue with Seg. A.
-    @test 0.3 ≤ round(F_score; digits=2)
+    @test 0.3 ≤ round(F_score; digits=2) 
 
     (; labeled_fraction, recall, precision, F_score) = run_and_validate_segmentation(
         first(filter(c -> (c.case_number == 61 && c.satellite == "aqua"), dataset)),
@@ -89,7 +89,7 @@ end
     # Note: Validation dataset currently doesn't include the floes intersecting the edge.
     # Improving the segmentation lowered the scores here due to these floes.
     @test labeled_fraction ≈ 0.45 rtol = 0.1
-    @test 0.5 ≤ round(recall; digits=2)
+    @test 0.5 ≤ round(recall; digits=2) 
     @test 0.48 ≤ round(precision; digits=2)
     @test 0.55 ≤ round(F_score; digits=2)
 end
