@@ -35,5 +35,5 @@ region_props_dict = regionprops(segmented_image, properties=[:area, :convex_area
 ```
 and either a `Dict` (as above) or a `DataFrame` can be produced:
 ```julia
-    region_props_df = regionprops_table(segmented_image, properties=[:area, :convex_area, :centroid])
+region_props_df = regionprops_table(segmented_image, properties=[:area, :convex_area, :centroid])
 ```
