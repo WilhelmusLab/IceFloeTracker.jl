@@ -24,15 +24,15 @@ The FloeTracker functor initializes the floe tracking function by setting the `f
 (see  [`FilterFunction`](@ref)) and the `matching_function` (e.g., ['MinimumWeightMatchingFunction'](@ref)),
 and basic filter parameters for the area range and maximum time step. 
 
-Trajectories are built as follows:
-    - Assume the floes detected in observation 1 are trajectories of length 1.
-    - For each subsequent observation at time `t`:
-    - Determine the latest observation for each trajectory – these are the "current trajectory heads".
-    - Select the subset of trajectory heads observed within the window `maximum_time_step, t`
-    - Apply the filter function in order to determine possible floe pairings 
-    - Apply the matching function to produce unique pairs of floes
-    - Update the trajectories to include the newly paired floes
-    - Add all unmatched floes as heads for new trajectories.
+Trajectories are built as follows:  
+- Assume the floes detected in observation 1 are trajectories of length 1.
+- For each subsequent observation at time `t`:
+- Determine the latest observation for each trajectory -- these are the "current trajectory heads".
+- Select the subset of trajectory heads observed within the window `maximum_time_step, t`
+- Apply the filter function in order to determine possible floe pairings 
+- Apply the matching function to produce unique pairs of floes
+- Update the trajectories to include the newly paired floes
+- Add all unmatched floes as heads for new trajectories.
 
 ## Arguments
 - `filter_function`: Function that reduces the number of rows in a DataFrame and adds columns for tests.

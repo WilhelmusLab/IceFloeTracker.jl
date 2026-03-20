@@ -9,7 +9,6 @@
         RGB.(modis_falsecolor(case)),
         RGB.(modis_landmask(case)),
     )
-    # @show segments
     expected_segment_count = validated_floe_properties(case) |> DataFrame |> nrow
     @test length(segments.segment_labels) ≈ expected_segment_count rtol = 0.7
 end
@@ -23,8 +22,7 @@ end
         output_directory="./test_outputs/",
     )
     @test all(results.success)
-    print(results[:, ["case_number", "recall", "precision", "F_score"]])
-
+    
     # Aggregate performance measures
     mean_recall = round(mean(skipnanormissing(results.recall)), digits=2)
     mean_precision = round(mean(skipnanormissing(results.precision)), digits=2)
