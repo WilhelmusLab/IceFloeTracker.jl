@@ -70,7 +70,7 @@ Apply unsharp masking on grayscale image to enhance its sharpness.
 ## Returns
 The sharpened grayscale image with values clipped between 0 and `clapmax`.
 """
-function unsharp_mask(img::Matrix{Int64}, smoothing_param, intensity, clampmax)
+function unsharp_mask(img::Matrix{Int64}, smoothing_param, intensity, clampmax::Int64)
     image_gray = Gray.(img ./ clampmax)
     image_sharpened = unsharp_mask(image_gray, smoothing_param, intensity, 0)
 
