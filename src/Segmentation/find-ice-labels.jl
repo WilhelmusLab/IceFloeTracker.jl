@@ -18,11 +18,29 @@ import DataFrames: DataFrame, sort, Not
 import ..ImageUtils: masker
 
 """
+    get_ice_peaks(
+        edges,
+        counts;
+        possible_ice_threshold::Float64=0.30,
+        minimum_prominence::Float64=0.01,
+        window_size::Int64=3,
+    )
+
 Given the edges and counts from build_histogram, identify local maxima and return the location of the
 largest local maximum that is bright enough that it is possibly sea ice. Locations are determined by 
 the edges, which by default are the left bin edges. Note also that peaks defaults to the left side of
 plateaus (see Peaks.jl documentation). Returns Inf if there are no non-zero parts of the histogram with bins larger than the possible
 ice threshold, or if there are no detected peaks larger than the minimum prominence.
+
+## Arguments
+
+-` edges`: bin edges from `build_histogram`
+- `counts`: bin counts from `build_histogram`
+- `possible_ice_threshold`: Minimum intensity to count as an ice peak
+- `minimum_prominence`: Minimum prominence of the ice peak
+- `window_size`: Size of the window for assessing prominence.
+)
+
 """
 function get_ice_peaks(
     edges,
@@ -34,6 +52,7 @@ function get_ice_peaks(
     size(counts)
     counts = counts[1:end]
     normalizer = sum(counts[edges .> possible_ice_threshold])
+
     # Normalize the possible sea ice section of the histogram. 
     # Images with a lot of masked pixels can have large peaks at 0, which
     # we don't want to include in the normalization. If no potential
@@ -55,7 +74,6 @@ Functors to detect ice regions in an image.
 Each algorithm `a` with parameters `kwargs...` can be called like:
 - `binarize(image, a(; kwargs...))` 
 - or `a(; kwargs...)(image)`.
-
 """
 abstract type IceDetectionAlgorithm <: AbstractImageBinarizationAlgorithm end
 
@@ -114,7 +132,7 @@ band 1 peak and the band 2 brightness is larger than the band 2 peak. Otherwise,
 Finally, since clouds tend to have higher reflectance in band 7, mask pixels with the band 7 brightness
 larger than `band_7_max`. It is designed to be used with MODIS false color 7-2-1 imagery.
 
-See also: [`binarize`](@ref)
+See also: [`binarize`](https://juliaimages.org/ImageBinarization.jl/v0.1/)
 
 # Examples
 ```jldoctest
