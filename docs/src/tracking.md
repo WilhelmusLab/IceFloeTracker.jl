@@ -89,7 +89,7 @@ matchfun = MinimumWeightMatchingFunction(
 ```
 Importantly, the names of the listed properties must coincide with columns created in the filter functions. They are interpreted as errors, such that a small value is favored over a large value.
 
-The algorithm then works as follows. For each floe pair ``f, g``, and list of error measures ``m_0(f, g), \dots, m_k(f, g)``, we compute the weight
+The algorithm then works as follows. For each floe pair ``f, g``, and list of error measures ``m_1(f, g), \dots, m_k(f, g)``, we compute the weight
 ```math
 w(f, g) = \sum_{i=1:k} m_i(f, g)
 ```

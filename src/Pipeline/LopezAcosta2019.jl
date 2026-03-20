@@ -667,6 +667,15 @@ function IceDetectionLopezAcosta2019(;
     )
 end
 
+"""
+    reconstruct_and_mask(grayscale_img, watershed_boundary, ice_intersect;
+    se=strel_diamond((5,5)), min_area_opening=20
+    )
+
+Enhance the visibility of distinct floes in the grayscale image by using grayscale reconstruction.
+Updates the sea ice mask by intersecting the `ice_intersect` and the `watershed_boundary` and using 
+morphological area opening.
+"""
 function reconstruct_and_mask(
     grayscale_img::AbstractArray{<:Union{AbstractGray,TransparentGray}},
     watershed_boundary::BitMatrix,
