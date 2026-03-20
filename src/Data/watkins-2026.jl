@@ -143,7 +143,6 @@ julia> modis_truecolor(first(dataset))
     In this case, you can clear the cache by deleting the cache directory, 
     e.g. `rm -r /tmp/Watkins2026/v0.1/`.
 
-```
 """
 function Watkins2026Dataset(;
     url="https://github.com/danielmwatkins/ice_floe_validation_dataset/",
