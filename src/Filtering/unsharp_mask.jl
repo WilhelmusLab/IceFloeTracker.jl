@@ -74,5 +74,5 @@ function unsharp_mask(img::Matrix{Int64}, smoothing_param, intensity, clampmax)
     image_gray = Gray.(img ./ clampmax)
     image_sharpened = unsharp_mask(image_gray, smoothing_param, intensity, 0)
 
-    return round.(Int, Float64.(image_sharpened)) .* clampmax
+    return round.(Int, Float64.(image_sharpened) .* clampmax)
 end
