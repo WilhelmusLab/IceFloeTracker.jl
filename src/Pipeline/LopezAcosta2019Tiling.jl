@@ -109,31 +109,20 @@ prelim_icemask_params = (radius=10, amount=2, factor=0.5)
 end
 
 function (p::Segment)(
-    truecolor::T,
-    falsecolor::T,
-    landmask::U;
+    truecolor::T₁,
+    falsecolor::T₂,
+    landmask::T₃,
+    coastal_buffer_mask::T₄;
     intermediate_results_callback::Union{Nothing,Function}=nothing,
-) where {T<:AbstractMatrix{<:Union{AbstractRGB,TransparentRGB}},U<:AbstractMatrix}
-    @info "building landmask and coastal buffer mask"
-    coastal_buffer_mask, landmask = create_landmask(
-        float64.(landmask), p.coastal_buffer_structuring_element
-    )
-    return p(
-        truecolor,
-        falsecolor,
-        landmask,
-        coastal_buffer_mask;
-        intermediate_results_callback=intermediate_results_callback,
-    )
-end
+) where {
+    T₁<:AbstractMatrix{<:Union{AbstractRGB,TransparentRGB}},
+    T₂<:AbstractMatrix{<:Union{AbstractRGB,TransparentRGB}},
+    T₃<:AbstractMatrix{<:Union{Bool,Gray}},
+    T₄<:AbstractMatrix{<:Union{Bool,Gray}},
+}
+    coastal_buffer_mask = reinterpret(Bool, coastal_buffer_mask)
+    landmask = reinterpret(Bool, landmask)
 
-function (p::Segment)(
-    truecolor::T,
-    falsecolor::T,
-    landmask::U,
-    coastal_buffer_mask::U;
-    intermediate_results_callback::Union{Nothing,Function}=nothing,
-) where {T<:AbstractMatrix{<:Union{AbstractRGB,TransparentRGB}},U<:BitMatrix}
     tiles = get_tiles(truecolor; p.tile_settings...)
 
     ref_image = RGB.(falsecolor)  # TODO: remove this typecast

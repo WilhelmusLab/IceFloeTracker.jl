@@ -95,7 +95,7 @@ end
 end
 
 @testitem "LopezAcosta2019.Segment – image types" setup = [Segmentation] tags = [:e2e] begin
-    import Images: RGB, n0f8, n6f10, n4f12, n2f14, n0f16, float32, float64
+    import Images: RGB, RGBA, n0f8, n6f10, n4f12, n2f14, n0f16, float32, float64
     dataset = Watkins2026Dataset(; ref="v0.1")
     case::Case = first(filter(c -> (c.case_number == 6 && c.satellite == "aqua"), dataset))
     algorithm = LopezAcosta2019.Segment()
@@ -104,14 +104,14 @@ end
     )
 
     @test results_invariant_for(RGB; baseline, algorithm, case)
-    @test results_invariant_for(RGBA; baseline, algorithm, case) broken = true
-    @test results_invariant_for(n0f8; baseline, algorithm, case) broken = true
+    @test results_invariant_for(RGBA; baseline, algorithm, case)
+    @test results_invariant_for(n0f8; baseline, algorithm, case)
     @test results_invariant_for(n6f10; baseline, algorithm, case) broken = true
     @test results_invariant_for(n4f12; baseline, algorithm, case) broken = true
-    @test results_invariant_for(n2f14; baseline, algorithm, case) broken = true
-    @test results_invariant_for(n0f16; baseline, algorithm, case) broken = true
-    @test results_invariant_for(float32; baseline, algorithm, case) broken = true
-    @test results_invariant_for(float64; baseline, algorithm, case) broken = true
+    @test results_invariant_for(n2f14; baseline, algorithm, case)
+    @test results_invariant_for(n0f16; baseline, algorithm, case)
+    @test results_invariant_for(float32; baseline, algorithm, case)
+    @test results_invariant_for(float64; baseline, algorithm, case)
     @test results_invariant_for(RGB, n0f8; baseline, algorithm, case)
     @test results_invariant_for(RGB, n6f10; baseline, algorithm, case) broken = true
     @test results_invariant_for(RGB, n4f12; baseline, algorithm, case) broken = true

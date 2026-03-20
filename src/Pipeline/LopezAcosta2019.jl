@@ -151,33 +151,19 @@ Note: This algorithm is under active development and the API will change in a fu
 end
 
 function (p::Segment)(
-    truecolor::T,
-    falsecolor::T,
-    landmask::U;
+    truecolor::T₁,
+    falsecolor::T₂,
+    landmask::T₃,
+    coastal_buffer_mask::T₄;
     intermediate_results_callback::Union{Nothing,Function}=nothing,
-) where {T<:AbstractMatrix{<:AbstractRGB},U<:AbstractMatrix}
-    @info "building landmask and coastal buffer mask"
-    _landmask_temp = create_landmask(
-        float64.(landmask), p.coastal_buffer_structuring_element
-    )
-    landmask = _landmask_temp.non_dilated
-    coastal_buffer_mask = _landmask_temp.dilated
-    return p(
-        truecolor,
-        falsecolor,
-        landmask,
-        coastal_buffer_mask;
-        intermediate_results_callback=intermediate_results_callback,
-    )
-end
-
-function (p::Segment)(
-    truecolor::T,
-    falsecolor::T,
-    landmask::U,
-    coastal_buffer_mask::U;
-    intermediate_results_callback::Union{Nothing,Function}=nothing,
-) where {T<:AbstractMatrix{<:AbstractRGB},U<:BitMatrix}
+) where {
+    T₁<:AbstractMatrix{<:Union{AbstractRGB,TransparentRGB}},
+    T₂<:AbstractMatrix{<:Union{AbstractRGB,TransparentRGB}},
+    T₃<:AbstractMatrix{<:Union{Bool,Gray}},
+    T₄<:AbstractMatrix{<:Union{Bool,Gray}},
+}
+    coastal_buffer_mask = reinterpret(Bool, coastal_buffer_mask)
+    landmask = reinterpret(Bool, landmask)
 
     # Move these conversions down through the function as each step gets support for 
     # the full range of image formats
