@@ -34,8 +34,8 @@ on whether Δx is larger than the expected maximum for the given time period Δt
 
 """
 @kwdef struct LopezAcostaTimeDistanceFunction <: AbstractTimeDistanceThresholdFunction
-    dt=(Minute(20), Minute(90), Hour(24))
-    dx=(3.75e3, 7.5e3, 30e3, 60e3)
+    dt = (Minute(20), Minute(90), Hour(24))
+    dx = (3.75e3, 7.5e3, 30e3, 60e3)
     # TODO: add tests of input types and dimensions
 end
 
@@ -67,11 +67,11 @@ distance, while times larger than the maximum fail automatically.
 - Δx: Elapsed distance in meters
 - Δt: Elapsed time; must be a Dates.Period or Dates.CompoundPeriod
 
-""" 
+"""
 @kwdef struct LogLogQuadraticTimeDistanceFunction <: AbstractTimeDistanceThresholdFunction
-    llq_params=[0.403, 0.988, -0.05]
-    min_time=Hour(1)
-    max_time=Day(7)
+    llq_params = [0.403, 0.988, -0.05]
+    min_time = Hour(1)
+    max_time = Day(7)
     # TODO: add tests of input types and dimensions
     # TODO: potentially move the parameterized equation into the struct
 end
@@ -79,10 +79,10 @@ end
 function (f::LogLogQuadraticTimeDistanceFunction)(Δx, Δt)
     a, b, c = f.llq_params
     seconds(Δt) > seconds(f.max_time) && return false
-    
+
     Δx_km = Δx / 1000
     seconds(Δt) <= seconds(f.min_time) && return Δx_km <= 10^a # Check whether this is being activated early. Issue with time format?
-    
+
     Δt_hours = seconds(Δt) / 3600
     Δx_km <= 10^(a + b * log10(Δt_hours) + c * (log10(Δt_hours))^2) && return true
     return false
@@ -117,9 +117,8 @@ the maximum velocity `umax` (m/s) and an additive uncertainty of `eps` (meters).
 """
 function maximum_linear_distance(Δt; umax=0.75, eps=250)
     s = seconds(Δt)
-    return s*umax + eps
+    return s * umax + eps
 end
-
 
 """
     distance_threshold(Δx, Δt, threshold_function)
@@ -136,6 +135,8 @@ distance_threshold(100, Hour(12), LopezAcostaTimeDistanceFunction())
 """
 # TODO: require dt to be milliseconds (or at least a timedelta), so we can do e.g. = Dates.seconds(passtimes[2] - passtimes[1])
 # TODO: Determine whether we should have a default option here.
-function distance_threshold(Δx, Δt, threshold_function::AbstractTimeDistanceThresholdFunction)
+function distance_threshold(
+    Δx, Δt, threshold_function::AbstractTimeDistanceThresholdFunction
+)
     return threshold_function(Δx, Δt)
 end

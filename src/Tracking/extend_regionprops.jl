@@ -6,7 +6,6 @@ import Dates: DateTime
 import Random: randstring
 import ..Segmentation: component_floes
 
-
 FloeLabelsImage = Union{BitMatrix,Matrix{<:Bool},Matrix{<:Integer},<:SegmentedImage}
 
 # TODO: Change "passtimes" to "image_time". In principle we could be using images from airplanes/helicopters, not just satellites
@@ -59,7 +58,9 @@ end
 
 Add a column to `props` called `mask` containing the cropped floe masks from `indexmap`.
 """
-function add_floemasks!(props::DataFrame, indexmap::Matrix{Int64}; label_column::Symbol=:label)
+function add_floemasks!(
+    props::DataFrame, indexmap::Matrix{Int64}; label_column::Symbol=:label
+)
     floes = component_floes(indexmap)
     img_labels = props[:, label_column]
     props[:, :mask] = map(s -> floes[s], img_labels)

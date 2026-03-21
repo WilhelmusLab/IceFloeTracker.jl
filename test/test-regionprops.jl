@@ -16,13 +16,13 @@
         "minor_axis_length",
         "bbox",
         "perimeter",
-        "orientation"
+        "orientation",
     ]
     extra_props = nothing
 
     table = regionprops_table(label_img, bw_img; properties=properties, minimum_area=1)
     total_labels = maximum(label_img)
-    
+
     # Tests for regionprops_table
     @test typeof(table) <: DataFrame # check correct data type
     @test nrow(table) == total_labels - 1 # One point has area 1, we exclude that point intentionally
@@ -59,7 +59,10 @@
 
     # Test that algorithm options at least run
     regionprops(label_img; properties=["perimeter"], perimeter_algorithm=BenkridCrookes())
-    regionprops(label_img; properties=["convex_area"], convex_area_algorithm=PolygonConvexArea())
-    regionprops(label_img; properties=["convex_area"], convex_area_algorithm=PixelConvexArea())
-
+    regionprops(
+        label_img; properties=["convex_area"], convex_area_algorithm=PolygonConvexArea()
+    )
+    regionprops(
+        label_img; properties=["convex_area"], convex_area_algorithm=PixelConvexArea()
+    )
 end

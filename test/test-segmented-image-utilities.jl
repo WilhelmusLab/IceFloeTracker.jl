@@ -117,15 +117,14 @@ end
     segments = SegmentedImage(Gray.(ones(size(test_im))), test_im)
     stitched_segments = labels_map(stitch_clusters(segments, tiles))
     @test all(stitched_segments[2:9, 2:9] .== 1)
-
 end
 
 @testitem "segmentation_visualization" begin
-    import IceFloeTracker
+    using IceFloeTracker: IceFloeTracker
     import IceFloeTracker: view_seg, view_seg_random
     import Images: SegmentedImage, Gray, N0f8, RGB
     import Random: rand, seed!
-    
+
     test_im = zeros(Int64, (10, 10))
     test_im[2:5, 2:5] .= 1
     test_im[6:9, 2:5] .= 2
@@ -145,8 +144,8 @@ end
     seed!(42)
     A = zeros(Int64, 100, 100)
     for ii in CartesianIndices(A)
-       A[ii] = rand(Int8)
-       (A[ii] == 0) && (A[ii] = 1) # no background
+        A[ii] = rand(Int8)
+        (A[ii] == 0) && (A[ii] = 1) # no background
     end
     A = abs.(A)
     cview1 = view_seg_random(SegmentedImage(A, A); min_intensity=0.1)

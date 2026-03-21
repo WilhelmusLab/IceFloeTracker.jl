@@ -1,12 +1,5 @@
-import Images: RGB, 
-    float64, 
-    Gray, 
-    entropy, 
-    red,
-    green,
-    blue,
-    adjust_histogram,
-    AdaptiveEqualization
+import Images:
+    RGB, float64, Gray, entropy, red, green, blue, adjust_histogram, AdaptiveEqualization
 import ..ImageUtils: to_uint8, apply_to_channels
 
 """
@@ -19,7 +12,7 @@ Get the RBC (Red, Blue, and Green) channels of an image.
 
 # Returns
 An m x n x 3 array the Red, Blue, and Green channels of the input image.
-
+ 
 """
 function get_rgb_channels(img)
     # TODO: might be able to use channelview instead

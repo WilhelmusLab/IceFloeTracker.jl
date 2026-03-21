@@ -11,7 +11,9 @@ end
 imrotate_bin_clockwise_radians(x, r) = imrotate_bin(x, r)
 imrotate_bin_counterclockwise_radians(x, r) = imrotate_bin(x, -r)
 imrotate_bin_clockwise_degrees(x, r) = imrotate_bin_clockwise_radians(x, deg2rad(r))
-imrotate_bin_counterclockwise_degrees(x, r) = imrotate_bin_counterclockwise_radians(x, deg2rad(r))
+function imrotate_bin_counterclockwise_degrees(x, r)
+    return imrotate_bin_counterclockwise_radians(x, deg2rad(r))
+end
 
 """
     compute_centroid(im::AbstractArray{Bool}; rounded=false)
@@ -52,15 +54,9 @@ function align_centroids(im1::AbstractArray{Bool}, im2::AbstractArray{Bool})
     s2, d2 = size(im2) .- (r2, c2) .+ 1
 
     # Calculate the new "common centroid" position in image coordinates
-    rn, cn = (
-        maximum([r1, r2]),
-        maximum([c1, c2]),
-    )
+    rn, cn = (maximum([r1, r2]), maximum([c1, c2]))
     # Calculate the new "reverse common centroid" position in image coordinates from the bottom right
-    sn, dn = (
-        maximum([s1, s2]),
-        maximum([d1, d2]),
-    )
+    sn, dn = (maximum([s1, s2]), maximum([d1, d2]))
 
     # For each image, we shift the pixel containing its centroid to the new centroid
     # by adding rn-ri rows padding at the top, and cn-ci columns at the left.
@@ -70,11 +66,11 @@ function align_centroids(im1::AbstractArray{Bool}, im2::AbstractArray{Bool})
     im1_padded = collect(padarray(im1, Fill(0, (rn - r1, cn - c1), (sn - s1, dn - d1))))
     im2_padded = collect(padarray(im2, Fill(0, (rn - r2, cn - c2), (sn - s2, dn - d2))))
 
-    @assert floor.(compute_centroid(im1_padded; rounded=false)) == floor.(compute_centroid(im2_padded; rounded=false))
+    @assert floor.(compute_centroid(im1_padded; rounded=false)) ==
+        floor.(compute_centroid(im2_padded; rounded=false))
 
     return im1_padded, im2_padded
 end
-
 
 """
     shape_difference(floe1::DataFrameRow, floe2::DataFrameRow)
@@ -85,8 +81,12 @@ end
     orientation to first align both floes on the same axis. 
 
 """
-function shape_difference(floe1_mask::AbstractArray{Bool}, floe1_orientation::Real,
-                     floe2_mask::AbstractArray{Bool}, floe2_orientation::Real)
+function shape_difference(
+    floe1_mask::AbstractArray{Bool},
+    floe1_orientation::Real,
+    floe2_mask::AbstractArray{Bool},
+    floe2_orientation::Real,
+)
     im1 = imrotate_bin_nocrop(floe1_mask, floe1_orientation)
     im2 = imrotate_bin_nocrop(floe2_mask, floe2_orientation)
     im1, im2 = align_centroids(im1, im2)
@@ -110,7 +110,9 @@ direction. A perfect match at angle `A` would imply im_target is the same shape 
 rotated by `A`. 
 Use `imrotate_function=imrotate_bin_<clockwise|counterclockwise>_<radians|degrees>` to get angles <clockwise|counterclockwise> in <radians|degrees>.
 """
-function shape_difference_rotation(im_reference, im_target, test_angles; imrotate_function=imrotate_bin_clockwise_radians)
+function shape_difference_rotation(
+    im_reference, im_target, test_angles; imrotate_function=imrotate_bin_clockwise_radians
+)
     shape_differences = Array{
         NamedTuple{(:angle, :shape_difference),Tuple{Float64,Float64}}
     }(
@@ -132,11 +134,9 @@ function shape_difference_rotation(im_reference, im_target, test_angles; imrotat
         b_not_a = im2 .> 0 .&& isequal.(im1, 0)
         shape_difference = sum(a_not_b .|| b_not_a)
         shape_differences[idx] = (; angle, shape_difference)
-
     end
     return shape_differences
 end
-
 
 """
 The default registration angles are evenly distributed in steps of π/36 rad (5º) around a full rotation,

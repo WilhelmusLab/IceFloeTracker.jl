@@ -11,16 +11,14 @@ one can specify the number of clusters `k``, the maximum number of iterations `m
 random number generator, `random_seed`. Returns a SegmentedImage object. 
 """
 function kmeans_segmentation(
-    gray_image::AbstractArray{<:AbstractGray}; 
+    gray_image::AbstractArray{<:AbstractGray};
     k::Int64=4,
     maxiter::Int64=50,
-    random_seed::Int64=45
+    random_seed::Int64=45,
 )
     Random.seed!(random_seed)
 
-    feature_classes = kmeans(
-        vec(gray_image), k; maxiter=maxiter, display=:none, init=:kmpp
-    )
+    feature_classes = kmeans(vec(gray_image), k; maxiter=maxiter, display=:none, init=:kmpp)
 
     class_assignments = assignments(feature_classes)
 
@@ -31,34 +29,35 @@ end
 
 function kmeans_segmentation(
     gray_image::AbstractArray{<:AbstractGray},
-    tiles; 
+    tiles;
     k::Int64=4,
     maxiter::Int64=50,
     random_seed::Int64=45,
     minimum_overlap=4,
-    grayscale_threshold=0.1
+    grayscale_threshold=0.1,
 )
-
     indexmap = zeros(Int64, size(gray_image))
     for (offset, tile) in enumerate(tiles)
-        indexmap[tile...] .= labels_map(kmeans_segmentation(gray_image[tile...];
-                                     k=k, maxiter=maxiter, random_seed=random_seed))
+        indexmap[tile...] .= labels_map(
+            kmeans_segmentation(
+                gray_image[tile...]; k=k, maxiter=maxiter, random_seed=random_seed
+            ),
+        )
         indexmap[tile...] .+= k * offset
         offset += 1
     end
 
     indexmap .= labels_map(
         stitch_clusters(
-            SegmentedImage(gray_image, indexmap), 
-            tiles, 
-            minimum_overlap, 
-            grayscale_threshold
-        )
+            SegmentedImage(gray_image, indexmap),
+            tiles,
+            minimum_overlap,
+            grayscale_threshold,
+        ),
     )
-    
+
     return SegmentedImage(gray_image, indexmap)
 end
-
 
 """
     kmeans_binarization(gray_image, false_color_image; kwargs...)
@@ -83,16 +82,18 @@ function kmeans_binarization(
     k::Int64=4,
     maxiter::Int64=50,
     random_seed::Int64=45,
-    threshold=1 # TODO: Make the test FirstNonZero algo more robust, case 14 succeeds with only 1 or 2 pixels which is not stable.
+    threshold=1, # TODO: Make the test FirstNonZero algo more robust, case 14 succeeds with only 1 or 2 pixels which is not stable.
 )::BitMatrix
-
     selected_labels = cluster_selection_algorithm(falsecolor_image) .> 0
     isempty(selected_labels) && return falses(size(gray_image))
     sum(selected_labels) < threshold && return falses(size(gray_image))
 
-    segmented = kmeans_segmentation(gray_image; k=k, maxiter=maxiter, random_seed=random_seed)
+    segmented = kmeans_segmentation(
+        gray_image; k=k, maxiter=maxiter, random_seed=random_seed
+    )
 
-    return segmented.image_indexmap .== StatsBase.mode(segmented.image_indexmap[selected_labels])
+    return segmented.image_indexmap .==
+           StatsBase.mode(segmented.image_indexmap[selected_labels])
 end
 
 """
@@ -126,17 +127,21 @@ function kmeans_binarization(
     cluster_selection_algorithm,
     ice_pixels_threshold=1,
     minimum_overlap=4,
-    grayscale_threshold=0.1
+    grayscale_threshold=0.1,
 )::BitMatrix
     out = falses(size(gray_image))
-    kseg = kmeans_segmentation(gray_image, tiles;
-                k=k, random_seed=random_seed,
-                maxiter=maxiter,
-                minimum_overlap=minimum_overlap,
-                grayscale_threshold=grayscale_threshold)
+    kseg = kmeans_segmentation(
+        gray_image,
+        tiles;
+        k=k,
+        random_seed=random_seed,
+        maxiter=maxiter,
+        minimum_overlap=minimum_overlap,
+        grayscale_threshold=grayscale_threshold,
+    )
     labels = labels_map(kseg)
     ice = cluster_selection_algorithm(falsecolor_image) .> 0
-        
+
     for tile in tiles
         if sum(ice[tile...]) > ice_pixels_threshold
             k = StatsBase.mode(labels[tile...][ice[tile...]])

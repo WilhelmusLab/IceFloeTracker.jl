@@ -37,10 +37,12 @@ function get_rotation_measurements(
             # TODO: look into passing this filtering as an argument
             id_column => ByRow(==(measurement[id_column])), # only look at matching floes
             time_column => ByRow((t) -> t < (measurement[time_column])), # only look at earlier images
-            time_column => ByRow((t) -> Date((measurement[time_column]) - Day(lookback_days)) <= Date(t)), # only look at floes from the previous day or later
+            time_column => ByRow(
+                (t) -> Date((measurement[time_column]) - Day(lookback_days)) <= Date(t)
+            ), # only look at floes from the previous day or later
         )
         new_results = get_rotation_measurements(
-            measurement, filtered_df; image_column, time_column, registration_function,
+            measurement, filtered_df; image_column, time_column, registration_function
         )
         append!(results, new_results)
     end
@@ -52,7 +54,8 @@ function get_rotation_measurements(
 
     # Add some columns
     sec_per_day = 86400.0
-    measurement_result_df[!, :omega_rad_per_day] .= measurement_result_df[!, :omega_rad_per_sec] * sec_per_day
+    measurement_result_df[!, :omega_rad_per_day] .=
+        measurement_result_df[!, :omega_rad_per_sec] * sec_per_day
     measurement_result_df[!, :theta_deg] .= rad2deg.(measurement_result_df[!, :theta_rad])
     omega_deg_per_sec = rad2deg.(measurement_result_df[!, :omega_rad_per_sec])
     measurement_result_df[!, :omega_deg_per_day] .= omega_deg_per_sec * sec_per_day
@@ -60,7 +63,6 @@ function get_rotation_measurements(
     results_df = hcat(measurement_result_df, row1_df, row2_df)
 
     return results_df
-
 end
 
 """
@@ -83,7 +85,7 @@ function get_rotation_measurements(
 )
     results = [
         get_rotation_measurements(
-            other_measurement, measurement; image_column, time_column, registration_function,
+            other_measurement, measurement; image_column, time_column, registration_function
         ) for other_measurement in eachrow(df)
     ]
     return results
@@ -108,7 +110,7 @@ function get_rotation_measurements(
         row2[image_column],
         row1[time_column],
         row2[time_column];
-        registration_function
+        registration_function,
     )
 
     combined_result = merge(result, (; row1, row2))

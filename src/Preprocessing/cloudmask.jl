@@ -278,15 +278,12 @@ function apply_cloudmask(
 end
 
 function apply_cloudmask!(
-    img::AbstractArray{<:Union{AbstractRGB,TransparentRGB,Gray, Real}},
+    img::AbstractArray{<:Union{AbstractRGB,TransparentRGB,Gray,Real}},
     cloudmask::AbstractArray{Bool},
 )
     return img[cloudmask] .= 0.0
 end
 
-function apply_cloudmask!(
-    img::AbstractArray{Bool},
-    cloudmask::AbstractArray{Bool},
-)
+function apply_cloudmask!(img::AbstractArray{Bool}, cloudmask::AbstractArray{Bool})
     return img[cloudmask] .= false
 end

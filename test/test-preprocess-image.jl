@@ -73,12 +73,14 @@
 
     @info "Process Image - Sharpening"
     image_sharpened_gray = unsharp_mask(Gray.(image_equalized), 10, 2)
-    eps = test_approx_eq_sigma_eps(image_sharpened_gray, matlab_sharpened, ones(2), 0.1, true)
+    eps = test_approx_eq_sigma_eps(
+        image_sharpened_gray, matlab_sharpened, ones(2), 0.1, true
+    )
     # Note: Cumulative differences from the sharpening and the adjust histogram step result in 
     # slightly larger error when testing the julia equalized -> julia sharpened vs matlab equalized -> julia sharpened.
     @test (@test_approx_eq_sigma_eps image_sharpened_gray matlab_sharpened [1, 1] 0.08) ===
-    @info "Epsilon: " * string(eps)
-    
+        @info "Epsilon: " * string(eps)
+
     # Now for just testing the unsharp mask:
     image_sharpened_gray = unsharp_mask(Gray.(matlab_equalized), 10, 2)
     @test (@test_approx_eq_sigma_eps image_sharpened_gray matlab_sharpened [0, 0] 0.046) ===
@@ -94,7 +96,9 @@
     @time reconstructed_image = LopezAcosta2019._reconstruct(
         image_sharpened_gray, landmask_bitmatrix; strel=struct_elem2
     )
-    eps = test_approx_eq_sigma_eps(reconstructed_image, matlab_norm_image, ones(2), 0.1, true)
+    eps = test_approx_eq_sigma_eps(
+        reconstructed_image, matlab_norm_image, ones(2), 0.1, true
+    )
     @info "Epsilon: " * string(eps)
 
     @test test_approx_eq_sigma_eps(

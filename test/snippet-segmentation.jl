@@ -94,10 +94,7 @@
             summary = segmentation_summary(measured)
             comparison = segmentation_comparison(; validated, measured)
             results = merge(
-                (; case_name, success, error),
-                comparison,
-                summary,
-                NamedTuple(info(case)),
+                (; case_name, success, error), comparison, summary, NamedTuple(info(case))
             )
             if !isnothing(intermediate_results_callback) && !isnothing(validated)
                 intermediate_results_callback(;
