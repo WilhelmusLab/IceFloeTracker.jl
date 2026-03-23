@@ -173,8 +173,6 @@ function (p::Segment)(
     falsecolor_image = float64.(falsecolor)
 
     @info "Building cloudmask"
-    # TODO: @hollandjg track down why the cloudmask is different for float32 vs float64 input images
-    # dmw: I suspect it's likely it's roundoff error with the comparison to the ratio threshold, that's where I've seen differences
     # TODO: Make sure tests aren't over-sensitive to roundoff errors for Float32 vs Float64
     cloudmask = create_cloudmask(falsecolor_image)
 
