@@ -13,12 +13,10 @@ function (p::IceFloeSegmentationAlgorithm)(
     T₂<:AbstractMatrix{<:Union{AbstractRGB,TransparentRGB}},
     T₃<:AbstractMatrix{<:Union{Bool,Gray,AbstractRGB,TransparentRGB}},
 }
-    coastal_buffer_mask, landmask = create_landmask(
-        float64.(landmask), p.coastal_buffer_structuring_element
+    landmask_ = reinterpret(Bool, landmask_)
+    coastal_buffer_mask = create_coastal_buffer_mask(
+        landmask_, centered(p.coastal_buffer_structuring_element)
     )
-
-    landmask = reinterpret(Bool, landmask)
-    coastal_buffer_mask = reinterpret(Bool, coastal_buffer_mask)
 
     return p(
         truecolor,
