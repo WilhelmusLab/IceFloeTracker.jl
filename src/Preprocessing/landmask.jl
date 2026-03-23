@@ -1,7 +1,6 @@
 import ..Morphology: se_disk50
-import Images: Gray
+import Images: Gray, dilate, imfill
 import OffsetArrays: centered
-import Images: ImageMorphology, dilate
 
 """
     make_landmask_se()
