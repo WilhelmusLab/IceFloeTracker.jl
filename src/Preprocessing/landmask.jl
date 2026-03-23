@@ -28,12 +28,15 @@ function create_landmask(
     fill_value_lower::Int=0,
     fill_value_upper::Int=2000,
 ) where {T<:AbstractMatrix}
-    landmask_binary = binarize_landmask(landmask_image)
-    dilated = dilate(landmask_binary, centered(struct_elem))
-    return (
-        dilated=.!ImageMorphology.imfill(.!dilated, (fill_value_lower, fill_value_upper)),
-        non_dilated=landmask_binary,
+    land_mask = binarize_landmask(landmask_image)
+    coastal_buffer_mask = create_coastal_buffer_mask(
+        land_mask,
+        struct_elem;
+        fill_holes_min_pixels=fill_value_lower,
+        fill_holes_max_pixels=fill_value_upper,
     )
+
+    return (dilated=coastal_buffer_mask, non_dilated=land_mask)
 end
 
 function create_landmask(landmask_image; strel=make_landmask_se())
