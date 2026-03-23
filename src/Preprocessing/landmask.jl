@@ -44,34 +44,6 @@ function create_landmask(landmask_image; strel=make_landmask_se())
     return create_landmask(landmask_image, strel)
 end
 
-function create_coastal_buffer(
-    landmask_image::T; kwargs...
-) where {T<:AbstractMatrix{Gray{Bool}}}
-    landmask_binary = channelview(landmask_image)
-    coastal_buffer_binary = create_coastal_buffer(landmask_binary; kwargs...)
-    coastal_buffer = colorview(Gray, coastal_buffer_binary)
-    return coastal_buffer
-end
-
-function create_coastal_buffer(
-    landmask_binary::T;
-    struct_elem=make_landmask_se(),
-    fill_value_lower::Int=0,
-    fill_value_upper::Int=2000,
-) where {T<:AbstractMatrix{Bool}}
-    coastal_buffer = dilate(landmask_binary, centered(struct_elem))
-    coastal_buffer = .!imfill(.!coastal_buffer, (fill_value_lower, fill_value_upper))
-    return coastal_buffer
-end
-
-function create_coastal_buffer_mask(
-    landmask_binary::T, centered_struct_elem;
-)::Matrix{Bool} where {T<:AbstractMatrix{Bool}}
-    coastal_buffer_mask_with_holes = dilate(landmask_binary, centered_struct_elem)
-    coastal_buffer_mask = .!imfill(.!coastal_buffer_mask_with_holes, (false, true))
-    return coastal_buffer_mask
-end
-
 """
     create_coastal_buffer_mask(landmask_binary, structuring_element; fill_min_pixels, fill_max_pixels)
 
