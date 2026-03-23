@@ -42,7 +42,7 @@ end
 
 function create_coastal_buffer_mask(
     landmask_binary::AbstractMatrix{Bool},
-    centered_struct_elem,
+    centered_struct_elem;
     fill_holes_min_pixels::Int=0,
     fill_holes_max_pixels::Int=2000,
 )::Matrix{Bool}
