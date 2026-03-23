@@ -40,6 +40,14 @@ function create_landmask(landmask_image; strel=make_landmask_se())
     return create_landmask(landmask_image, strel)
 end
 
+function create_coastal_buffer_mask(
+    landmask_binary::T, centered_struct_elem;
+)::Matrix{Bool} where {T<:AbstractMatrix{Bool}}
+    coastal_buffer_mask_with_holes = dilate(landmask_binary, centered_struct_elem)
+    coastal_buffer_mask = .!imfill(.!coastal_buffer_mask_with_holes, (false, true))
+    return coastal_buffer_mask
+end
+
 """
     binarize_landmask(landmask_image)
 
