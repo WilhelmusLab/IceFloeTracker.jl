@@ -169,8 +169,8 @@ function (p::Segment)(
 
     # Move these conversions down through the function as each step gets support for 
     # the full range of image formats
-    truecolor_image = RGB.(float64.(truecolor))
-    falsecolor_image = RGB.(float64.(falsecolor))
+    truecolor_image = float64.(truecolor)
+    falsecolor_image = float64.(falsecolor)
 
     @info "Building cloudmask"
     # TODO: @hollandjg track down why the cloudmask is different for float32 vs float64 input images
