@@ -41,10 +41,16 @@ function create_landmask(landmask_image; strel=make_landmask_se())
 end
 
 function create_coastal_buffer_mask(
-    landmask_binary::AbstractMatrix{Bool}, centered_struct_elem;
+    landmask_binary::AbstractMatrix{Bool},
+    centered_struct_elem,
+    fill_holes_min_pixels::Int=0,
+    fill_holes_max_pixels::Int=2000,
 )::Matrix{Bool}
     coastal_buffer_mask_with_holes = dilate(landmask_binary, centered_struct_elem)
-    coastal_buffer_mask = .!imfill(.!coastal_buffer_mask_with_holes, (false, true))
+    coastal_buffer_mask =
+        .!imfill(
+            .!coastal_buffer_mask_with_holes, (fill_holes_min_pixels, fill_holes_max_pixels)
+        )
     return coastal_buffer_mask
 end
 
@@ -62,10 +68,6 @@ for land pixels be chosen.
 function binarize_landmask(landmask_image; tol=0.1)::BitMatrix
     return Gray.(landmask_image) .> tol
 end
-
-# function binarize_landmask(landmask_image; tol=0.1)::BitMatrix
-#     return binarize_landmask(Gray.(landmask_image); tol=tol)
-# end
 
 """
     apply_landmask(input_image, landmask_binary)
