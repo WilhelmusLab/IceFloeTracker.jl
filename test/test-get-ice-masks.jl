@@ -78,7 +78,8 @@
     end
 
     begin
-        morph_residue_seglabels = kmeans_segmentation(morph_residue[tile...]; k=3).image_indexmap
+        morph_residue_seglabels =
+            kmeans_segmentation(morph_residue[tile...]; k=3).image_indexmap
         @test _get_nlabel(ref_image_landmasked[tile...], morph_residue_seglabels) == 1
     end
 

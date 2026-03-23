@@ -62,9 +62,9 @@ end
     @test all(results.success)
 
     # Aggregate performance measures
-    mean_recall = round(mean(skipnanormissing(results.recall)), digits=2)
-    mean_precision = round(mean(skipnanormissing(results.precision)), digits=2)
-    mean_F_score = round(mean(skipnanormissing(results.F_score)), digits=2)
+    mean_recall = round(mean(skipnanormissing(results.recall)); digits=2)
+    mean_precision = round(mean(skipnanormissing(results.precision)); digits=2)
+    mean_F_score = round(mean(skipnanormissing(results.F_score)); digits=2)
 
     # Good performance might look liks this:
     @test mean_recall ≥ 0.9 broken = true
@@ -99,7 +99,7 @@ end
 
     @test results_invariant_for(RGB; baseline, algorithm, case)
     @test results_invariant_for(RGB, n0f8; baseline, algorithm, case)
-    @test results_invariant_for(RGB, n6f10; baseline, algorithm, case) broken=true
+    @test results_invariant_for(RGB, n6f10; baseline, algorithm, case) broken = true
     @test results_invariant_for(RGB, n4f12; baseline, algorithm, case)
     @test results_invariant_for(RGB, n2f14; baseline, algorithm, case)
     @test results_invariant_for(RGB, n0f16; baseline, algorithm, case)
@@ -107,7 +107,7 @@ end
     @test results_invariant_for(RGB, float64; baseline, algorithm, case)
     @test results_invariant_for(RGBA; baseline, algorithm, case)
     @test results_invariant_for(RGBA, n0f8; baseline, algorithm, case)
-    @test results_invariant_for(RGBA, n6f10; baseline, algorithm, case) broken=true
+    @test results_invariant_for(RGBA, n6f10; baseline, algorithm, case) broken = true
     @test results_invariant_for(RGBA, n4f12; baseline, algorithm, case)
     @test results_invariant_for(RGBA, n2f14; baseline, algorithm, case)
     @test results_invariant_for(RGBA, n0f16; baseline, algorithm, case)

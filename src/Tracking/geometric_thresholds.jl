@@ -18,7 +18,7 @@ function (f::PiecewiseLinearThresholdFunction)(area, value)
     area < f.minimum_area && return value < f.minimum_value
     area > f.maximum_area && return value < f.maximum_value
     slope = (f.maximum_value - f.minimum_value) / (f.maximum_area - f.minimum_area)
-    return value < slope*(area - f.maximum_area) + f.maximum_value
+    return value < slope * (area - f.maximum_area) + f.maximum_value
 end
 
 """

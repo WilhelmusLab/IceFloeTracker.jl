@@ -2,7 +2,8 @@ module LopezAcosta2019Tiling
 
 export Segment, IceDetectionLopezAcosta2019Tiling
 
-import Images: area_opening,
+import Images:
+    area_opening,
     watershed,
     imfilter,
     isboundary,
@@ -212,7 +213,6 @@ function (p::Segment)(
                 minimum_window_size=100,
                 threshold_percentage=15,
             ) .> 0
-        
 
         prelim_icemask = kmeans_binarization(
             Gray.(morphed_residue / 255),
@@ -539,21 +539,24 @@ function IceDetectionLopezAcosta2019Tiling(;
     band_1_min_relaxed::Float64=Float64(190 / 255),
     possible_ice_threshold::Float64=Float64(75 / 255),
 )
-    return IceDetectionFirstNonZeroAlgorithm([
-        IceDetectionThresholdMODIS721(;
-            band_7_max=band_7_max, band_2_min=band_2_min, band_1_min=band_1_min
-        ),
-        IceDetectionThresholdMODIS721(;
-            band_7_max=band_7_max_relaxed,
-            band_2_min=band_2_min,
-            band_1_min=band_1_min_relaxed,
-        ),
-        IceDetectionBrightnessPeaksMODIS721(;
-            band_7_max=band_7_max, possible_ice_threshold=possible_ice_threshold
-        ),
-        IceDetectionThresholdMODIS721(;
-            band_7_max=1.0, band_2_min=band_2_min, band_1_min=0.0
-        ),
-    ], 10)
+    return IceDetectionFirstNonZeroAlgorithm(
+        [
+            IceDetectionThresholdMODIS721(;
+                band_7_max=band_7_max, band_2_min=band_2_min, band_1_min=band_1_min
+            ),
+            IceDetectionThresholdMODIS721(;
+                band_7_max=band_7_max_relaxed,
+                band_2_min=band_2_min,
+                band_1_min=band_1_min_relaxed,
+            ),
+            IceDetectionBrightnessPeaksMODIS721(;
+                band_7_max=band_7_max, possible_ice_threshold=possible_ice_threshold
+            ),
+            IceDetectionThresholdMODIS721(;
+                band_7_max=1.0, band_2_min=band_2_min, band_1_min=0.0
+            ),
+        ],
+        10,
+    )
 end
 end

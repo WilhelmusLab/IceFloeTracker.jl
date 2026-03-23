@@ -48,10 +48,12 @@ end
     # Test that the function can handle different sizes of input image without crashing
     using TestImages
     using Images: adjust_histogram, imresize
-    
+
     function clahe_works_with_size(img, rsize, csize, rblocks, cblocks)
         img_resized = imresize(img, (rsize, csize))
-        img_eq = adjust_histogram(img_resized, ContrastLimitedAdaptiveHistogramEqualization(;rblocks,cblocks))
+        img_eq = adjust_histogram(
+            img_resized, ContrastLimitedAdaptiveHistogramEqualization(; rblocks, cblocks)
+        )
         valid = size(img_resized) == size(img_eq)
         return valid
     end
@@ -64,7 +66,7 @@ end
     @test clahe_works_with_size(img, 128, 128, 8, 8)
     @test clahe_works_with_size(img, 64, 64, 8, 8)
     @test clahe_works_with_size(img, 32, 32, 8, 8)
-    
+
     # Happy Path – non-square images
     @test clahe_works_with_size(img, 100, 78, 8, 8)
     @test clahe_works_with_size(img, 100, 78, 16, 16)
@@ -80,9 +82,8 @@ end
     @test clahe_works_with_size(img, 3, 3, 1, 1)
 
     # Broken cases
-    @test clahe_works_with_size(img, 2, 2, 1, 1) broken=true # 2x2 blocks are too small
+    @test clahe_works_with_size(img, 2, 2, 1, 1) broken = true # 2x2 blocks are too small
 end
-    
 
 @testitem "conditional adaptivehisteq (data loader)" setup = [FalseColorCloudmask] begin
     dataset = filter(
