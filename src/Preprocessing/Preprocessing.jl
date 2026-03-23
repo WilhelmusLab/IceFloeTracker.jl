@@ -3,6 +3,7 @@ module Preprocessing
 export make_landmask_se,
     create_landmask,
     create_coastal_buffer,
+    create_coastal_buffer_mask,
     apply_landmask,
     apply_landmask!,
     LopezAcostaCloudMask,
