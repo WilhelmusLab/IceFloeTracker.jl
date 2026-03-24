@@ -1,7 +1,6 @@
 import ..Morphology: se_disk50
-import Images: Gray
+import Images: Gray, dilate, imfill
 import OffsetArrays: centered
-import Images: ImageMorphology, dilate
 
 """
     make_landmask_se()
@@ -28,16 +27,40 @@ function create_landmask(
     fill_value_lower::Int=0,
     fill_value_upper::Int=2000,
 ) where {T<:AbstractMatrix}
-    landmask_binary = binarize_landmask(landmask_image)
-    dilated = dilate(landmask_binary, centered(struct_elem))
-    return (
-        dilated=.!ImageMorphology.imfill(.!dilated, (fill_value_lower, fill_value_upper)),
-        non_dilated=landmask_binary,
+    land_mask = binarize_landmask(landmask_image)
+    coastal_buffer_mask = create_coastal_buffer_mask(
+        land_mask,
+        struct_elem;
+        fill_holes_min_pixels=fill_value_lower,
+        fill_holes_max_pixels=fill_value_upper,
     )
+
+    return (dilated=coastal_buffer_mask, non_dilated=land_mask)
 end
 
 function create_landmask(landmask_image; strel=make_landmask_se())
     return create_landmask(landmask_image, strel)
+end
+
+"""
+    create_coastal_buffer_mask(landmask_binary, structuring_element; fill_min_pixels, fill_max_pixels)
+
+Dilate the binary landmask using the provided structuring element, and fill holes in the dilated image. 
+In the input landmask, land = 1 and ocean = 0. 
+In the resulting mask, land and coastal buffer = 1, ocean = 0.
+
+The dilation will create a buffer around the land, which can help mask complex coastal features. 
+The hole filling step can help fill in small gaps in the dilated mask that may occur due to the dilation process.
+"""
+function create_coastal_buffer_mask(
+    landmask::AbstractMatrix{Bool},
+    structuring_element::AbstractMatrix{Bool};
+    fill_min_pixels::Int=0,
+    fill_max_pixels::Int=2000,
+)::Matrix{Bool}
+    mask_unfilled = dilate(landmask, structuring_element)
+    mask_filled = .!imfill(.!mask_unfilled, (fill_min_pixels, fill_max_pixels))
+    return mask_filled
 end
 
 """
@@ -54,10 +77,6 @@ for land pixels be chosen.
 function binarize_landmask(landmask_image; tol=0.1)::BitMatrix
     return Gray.(landmask_image) .> tol
 end
-
-# function binarize_landmask(landmask_image; tol=0.1)::BitMatrix
-#     return binarize_landmask(Gray.(landmask_image); tol=tol)
-# end
 
 """
     apply_landmask(input_image, landmask_binary)
