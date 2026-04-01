@@ -86,6 +86,15 @@
         @test recall >= 0.979
         water = sum(.! prelim_ice .&& .! clouds .&& .! land) ./ prod(size(land))
         @test 0.38 < water < 0.40
+
+        tiles = get_tiles(land, 200)
+        prelim_ice = f(modis_truecolor(case), clouds, land, tiles)
+        recall = sum(prelim_ice .&& floes .&& .! clouds .&& .! land) / sum(floes .&& .! clouds .&& .! land)
+        @test recall >= 0.979
+        
+        # With the tiled version the water fraction goes down. This is mainly a regression test.
+        water = sum(.! prelim_ice .&& .! clouds .&& .! land) ./ prod(size(land))
+        @test 0.26 < water < 0.28
     end
 end
 
