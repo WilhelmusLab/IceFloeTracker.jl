@@ -1,11 +1,12 @@
-import Images: AbstractGray, AbstractRGB, TransparentGray, TransparentColor
+import Images: AbstractRGB, AbstractGray, TransparentColor, TransparentGray
+
 """
     get_brighten_mask(equalized_gray_reconstructed_img, gamma_green)
 # Arguments
 - `equalized_gray_reconstructed_img`: The equalized gray reconstructed image (uint8 in Matlab).
 - `gamma_green`: The gamma value for the green channel (also uint8).
 # Returns
-Difference equalized_gray_reconstructed_img - gamma_green clamped between 0 and 255.
+Difference `equalized_gray_reconstructed_img` - `gamma_green` clamped between 0 and 255.
 """
 function get_brighten_mask(equalized_gray_reconstructed_img, gamma_green)
     return to_uint8(equalized_gray_reconstructed_img - gamma_green)
@@ -13,21 +14,20 @@ end
 
 """
     imbrighten(img, brighten_mask, bright_factor)
-    imbrighten(img::AbstractArray{<:Union{AbstractRGB, TransparentColor, AbstractGray}},
-     brighten_mask::Matrix{Bool}, bright_factor::Number))
+    imbrighten(
+        img::AbstractArray{<:Union{AbstractRGB, TransparentColor, AbstractGray, TransparentGray}},
+        brighten_mask::AbstractArray{Bool}, bright_factor::Float64
+    )
 
-Adjust image intensity within a masked region by multiplication with `bright_factor`. Despite the 
-name, the function can also be used to selectively darken regions by supplying a bright factor between
-0 and 1.
-
+Brighten the image using a mask and a brightening factor.
 ## Arguments
-- `img`: The input image.
+- `img`: The input image, either an integer array or an array with an image color type.
 - `brighten_mask`: A mask indicating the pixels to brighten.
 - `bright_factor`: The factor by which to brighten the pixels.
 ## Returns
 - The brightened image.
 """
-function imbrighten(img::AbstractArray{Int64}, brighten_mask, bright_factor)
+function imbrighten(img::AbstractArray{<:Integer}, brighten_mask, bright_factor::Float64)
     img = Float64.(img)
     brighten_mask = brighten_mask .> 0
     img[brighten_mask] .= img[brighten_mask] * bright_factor
@@ -35,8 +35,9 @@ function imbrighten(img::AbstractArray{Int64}, brighten_mask, bright_factor)
 end
 
 function imbrighten(
-    img::AbstractArray{<:Union{AbstractRGB, TransparentColor, AbstractGray}},
-    brighten_mask::AbstractArray{Bool}, bright_factor::Number
+    img::AbstractArray{<:Union{AbstractRGB,TransparentColor,AbstractGray,TransparentGray}},
+    brighten_mask::AbstractArray{Bool},
+    bright_factor::Float64,
 )
     _img = float64.(img)
     _img[brighten_mask] .= _img[brighten_mask] * bright_factor
