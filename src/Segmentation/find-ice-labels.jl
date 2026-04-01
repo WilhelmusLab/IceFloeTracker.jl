@@ -308,13 +308,14 @@ function tiled_adaptive_binarization(
 end
 
 """
-    IceDetectionBrightnessPeaksMODIS134(band_1_min, window_size, minimum_prominence)
+    IceDetectionBrightnessPeaksMODIS134(band_1_min=0.3, window_size=3, minimum_prominence=0.01, nbins=64)
     IceDetectionBrightnessPeaksMODIS134(truecolor_image)
     IceDetectionBrightnessPeaksMODIS134(truecolor_image, tiles)
 
 Identifies sea ice using the midpoint of the `band_1_min` and the detected band 1 mode. Expects the modis truecolor image as input.
 In the case that there are no peaks above the `band_1_min`, uses `band_1_min` as a simple threshold. The `window_size` and `minimum_prominence`
-are passed on to the function [`get_ice_peaks`](@ref). The input image should already have cloud and land masks applied.
+are passed on to the function [`get_ice_peaks`](@ref). The input image should already have cloud and land masks applied. Optionally, a list of 
+tiles can be provided and the algorithm will be run on each tile.
 
 """
 @kwdef struct IceDetectionBrightnessPeaksMODIS134 <: IceDetectionAlgorithm
