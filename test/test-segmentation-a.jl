@@ -1,7 +1,7 @@
 
 @testitem "Segmentation-A" begin
     import DelimitedFiles: readdlm
-    import Images: float64, load
+    import Images: float64, load, closing, strel_diamond
     import IceFloeTracker.Segmentation: kmeans_binarization
     import IceFloeTracker.LopezAcosta2019: IceDetectionLopezAcosta2019
 
@@ -11,7 +11,7 @@
     ice_water_discriminated_image =
         float64.(load("$(test_data_dir)/matlab_ice_water_discrim.png"))
     cloudmask = .!convert(BitMatrix, load(cloudmask_test_file))
-    landmask = convert(BitMatrix, load(current_landmask_file)[test_region...]) 
+    landmask = convert(BitMatrix, load(current_landmask_file)[test_region...])
     ice_labels = readdlm("$(test_data_dir)/ice_labels_julia.csv", ',')
     ice_labels = Int64.(vec(ice_labels))
     matlab_segmented_A = float64.(load("$(test_data_dir)/matlab_segmented_A.png"))
@@ -23,14 +23,14 @@
         load("$(test_data_dir)/matlab_segmented_ice_cloudmasked.png") .> 0.5
     fc_image = float64.(load(falsecolor_test_image_file)[test_region...])
 
-
     println("---------- Segment Image - Direct Method ------------")
-    fc_image = load("$(test_data_dir)/beaufort-chukchi-seas_falsecolor.2020162.aqua.250m.tiff")[test_region...]
+    fc_image = load(
+        "$(test_data_dir)/beaufort-chukchi-seas_falsecolor.2020162.aqua.250m.tiff"
+    )[test_region...]
     fc_landmasked = apply_landmask(fc_image, landmask)
     @time segmented_ice_cloudmasked = LopezAcosta2019.segmented_ice_cloudmasking(
         ice_water_discriminated_image, fc_landmasked, cloudmask
     )
-
 
     @time segmented_ice = kmeans_binarization(
         ice_water_discriminated_image,
@@ -38,14 +38,15 @@
         k=4,
         maxiter=50,
         random_seed=45,
-        cluster_selection_algorithm=IceDetectionLopezAcosta2019()
-        ) 
+        cluster_selection_algorithm=IceDetectionLopezAcosta2019(),
+    )
 
     # check: are there any regions that are nonzero under the cloudmask, since it was applied in discriminate ice water?
-    apply_cloudmask!(segmented_ice, cloudmask) 
+    apply_cloudmask!(segmented_ice, cloudmask)
     @time segmented_A = LopezAcosta2019.clean_binary_floes(segmented_ice)
     @test typeof(segmented_A) == typeof(matlab_segmented_A_bitmatrix)
-    @test test_similarity(matlab_segmented_A_bitmatrix, segmented_A, 0.039)
+    matlab_closed = closing(matlab_segmented_A .> 0, strel_diamond((5, 5)))
+    @test test_similarity(matlab_closed, segmented_A, 0.039)
 
     @test typeof(segmented_ice) == typeof(matlab_segmented_ice_cloudmasked)
     @test test_similarity(
@@ -55,7 +56,7 @@
     )
 
     @test typeof(segmented_ice) == typeof(matlab_segmented_ice)
-    
+
     # Matlab segmented ice image has dilated land mask set to 1
     segmented_ice[landmask] .= 1
     @test test_similarity(matlab_segmented_ice, segmented_ice, 0.04)

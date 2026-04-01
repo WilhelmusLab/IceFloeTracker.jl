@@ -59,7 +59,6 @@
         seg_imgs = SegmentedImage.(labels, labels)
         props = regionprops_table.(seg_imgs; properties=[:label, :mask])
 
-
         @test props[1][1, :].label == 2
         @test props[1][1, :].mask == BitMatrix([
             1 0
@@ -107,6 +106,5 @@
             1 1
             1 1
         ])
-
     end
 end

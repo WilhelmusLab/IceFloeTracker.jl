@@ -18,11 +18,29 @@ import DataFrames: DataFrame, sort, Not
 import ..ImageUtils: masker
 
 """
+    get_ice_peaks(
+        edges,
+        counts;
+        possible_ice_threshold::Float64=0.30,
+        minimum_prominence::Float64=0.01,
+        window_size::Int64=3,
+    )
+
 Given the edges and counts from build_histogram, identify local maxima and return the location of the
 largest local maximum that is bright enough that it is possibly sea ice. Locations are determined by 
 the edges, which by default are the left bin edges. Note also that peaks defaults to the left side of
 plateaus (see Peaks.jl documentation). Returns Inf if there are no non-zero parts of the histogram with bins larger than the possible
 ice threshold, or if there are no detected peaks larger than the minimum prominence.
+
+## Arguments
+
+-` edges`: bin edges from `build_histogram`
+- `counts`: bin counts from `build_histogram`
+- `possible_ice_threshold`: Minimum intensity to count as an ice peak
+- `minimum_prominence`: Minimum prominence of the ice peak
+- `window_size`: Size of the window for assessing prominence.
+)
+
 """
 function get_ice_peaks(
     edges,
@@ -34,6 +52,7 @@ function get_ice_peaks(
     size(counts)
     counts = counts[1:end]
     normalizer = sum(counts[edges .> possible_ice_threshold])
+
     # Normalize the possible sea ice section of the histogram. 
     # Images with a lot of masked pixels can have large peaks at 0, which
     # we don't want to include in the normalization. If no potential
@@ -55,7 +74,6 @@ Functors to detect ice regions in an image.
 Each algorithm `a` with parameters `kwargs...` can be called like:
 - `binarize(image, a(; kwargs...))` 
 - or `a(; kwargs...)(image)`.
-
 """
 abstract type IceDetectionAlgorithm <: AbstractImageBinarizationAlgorithm end
 
@@ -114,7 +132,7 @@ band 1 peak and the band 2 brightness is larger than the band 2 peak. Otherwise,
 Finally, since clouds tend to have higher reflectance in band 7, mask pixels with the band 7 brightness
 larger than `band_7_max`. It is designed to be used with MODIS false color 7-2-1 imagery.
 
-See also: [`binarize`](@ref)
+See also: [`binarize`](https://juliaimages.org/ImageBinarization.jl/v0.1/)
 
 # Examples
 ```jldoctest
@@ -129,10 +147,10 @@ IceDetectionBrightnessPeaksMODIS721(0.0196078431372549, 0.29411764705882354, 64,
 @kwdef struct IceDetectionBrightnessPeaksMODIS721 <: IceDetectionAlgorithm
     band_7_max::Real
     possible_ice_threshold::Real
-    nbins::Int64=64
-    minimum_prominence::Float64=0.01
-    window_size::Int64=3
-    join_method="intersection"
+    nbins::Int64 = 64
+    minimum_prominence::Float64 = 0.01
+    window_size::Int64 = 3
+    join_method = "intersection"
 end
 
 function (f::IceDetectionBrightnessPeaksMODIS721)(out, modis_721_image, args...; kwargs...)
@@ -147,7 +165,7 @@ function (f::IceDetectionBrightnessPeaksMODIS721)(out, modis_721_image, args...;
             build_histogram(band .* alpha_binary, f.nbins; minval=0, maxval=1)...;
             possible_ice_threshold=f.possible_ice_threshold,
             minimum_prominence=f.minimum_prominence,
-            window_size=f.window_size
+            window_size=f.window_size,
         )
     end
 
@@ -160,13 +178,13 @@ function (f::IceDetectionBrightnessPeaksMODIS721)(out, modis_721_image, args...;
 
     join_method = f.join_method
     if join_method ∉ ["intersection", "union"]
-         @warn "Join method $join_method not defined, defaulting to intersection"
+        @warn "Join method $join_method not defined, defaulting to intersection"
         join_method = "intersection"
     end
     join_method == "intersection" && begin
         @. out = mask_band_7 && mask_band_2 && mask_band_1 && alpha_binary
     end
-    join_method == "union" && begin
+    return join_method == "union" && begin
         @. out = mask_band_7 && (mask_band_2 || mask_band_1) && alpha_binary
     end
 end
@@ -222,19 +240,22 @@ function IceDetectionLopezAcosta2019(;
     band_1_min_relaxed::Float64=Float64(190 / 255),
     possible_ice_threshold::Float64=Float64(75 / 255),
 )
-    return IceDetectionFirstNonZeroAlgorithm([
-        IceDetectionThresholdMODIS721(;
-            band_7_max=band_7_max, band_2_min=band_2_min, band_1_min=band_1_min
-        ),
-        IceDetectionThresholdMODIS721(;
-            band_7_max=band_7_max_relaxed,
-            band_2_min=band_2_min,
-            band_1_min=band_1_min_relaxed,
-        ),
-        IceDetectionBrightnessPeaksMODIS721(;
-            band_7_max=band_7_max, possible_ice_threshold=possible_ice_threshold
-        ),
-    ], 1)
+    return IceDetectionFirstNonZeroAlgorithm(
+        [
+            IceDetectionThresholdMODIS721(;
+                band_7_max=band_7_max, band_2_min=band_2_min, band_1_min=band_1_min
+            ),
+            IceDetectionThresholdMODIS721(;
+                band_7_max=band_7_max_relaxed,
+                band_2_min=band_2_min,
+                band_1_min=band_1_min_relaxed,
+            ),
+            IceDetectionBrightnessPeaksMODIS721(;
+                band_7_max=band_7_max, possible_ice_threshold=possible_ice_threshold
+            ),
+        ],
+        1,
+    )
 end
 
 """
@@ -280,14 +301,14 @@ end
 # TODO: Set up wrapper for applying binarization to a tiled iterator. Let this
 # method be one functor algorithm option, and the version that uses the Peaks as a second.
 """
-tiled_adaptive_binarization(img, tiles; minimum_window_size=). 
+    tiled_adaptive_binarization(img, tiles; minimum_window_size=). 
 
-    Applies the (AdaptiveThreshold)[https://juliaimages.org/ImageBinarization.jl/v0.1/#Adaptive-Threshold-1] binarization algorithm
-    to each tile in the image. Following the recommendations from ImageBinarization, the default is to use the integer window size
-    nearest to 1/8th the tile size if the tile is large enough. So that the window is large enough to include moderately large floes,
-    the default minimum window size is 100 pixels (25 km for MODIS imagery). The minimum brightness parameter masks pixels with low
-    grayscale intensity to prevent dark regions from getting brightened (i.e., the center of a large patch of open water).
-    The "threshold_percentage" parameter is passed to the the AdaptiveThreshold function (percentage parameter).
+Applies the (AdaptiveThreshold)[https://juliaimages.org/ImageBinarization.jl/v0.1/#Adaptive-Threshold-1] binarization algorithm
+to each tile in the image. Following the recommendations from ImageBinarization, the default is to use the integer window size
+nearest to 1/8th the tile size if the tile is large enough. So that the window is large enough to include moderately large floes,
+the default minimum window size is 100 pixels (25 km for MODIS imagery). The minimum brightness parameter masks pixels with low
+grayscale intensity to prevent dark regions from getting brightened (i.e., the center of a large patch of open water).
+The "threshold_percentage" parameter is passed to the the AdaptiveThreshold function (percentage parameter).
 """
 function tiled_adaptive_binarization(
     img, tiles; minimum_window_size=50, minimum_brightness=75 / 255, threshold_percentage=15

@@ -16,8 +16,7 @@ struct SupportedFunctions
 
     function SupportedFunctions()
         funcs = Dict{String,Function}(
-            "exponential" => exponential,
-            "inverse_quadratic" => inverse_quadratic,
+            "exponential" => exponential, "inverse_quadratic" => inverse_quadratic
         )
         return new(funcs)
     end

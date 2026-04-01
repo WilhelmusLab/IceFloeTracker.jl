@@ -6,7 +6,7 @@ import Images: AbstractRGB, AbstractGray, TransparentColor, TransparentGray
 - `equalized_gray_reconstructed_img`: The equalized gray reconstructed image (uint8 in Matlab).
 - `gamma_green`: The gamma value for the green channel (also uint8).
 # Returns
-Difference equalized_gray_reconstructed_img - gamma_green clamped between 0 and 255.
+Difference `equalized_gray_reconstructed_img` - `gamma_green` clamped between 0 and 255.
 """
 function get_brighten_mask(equalized_gray_reconstructed_img, gamma_green)
     return to_uint8(equalized_gray_reconstructed_img - gamma_green)
@@ -35,12 +35,12 @@ function imbrighten(img::AbstractArray{<:Integer}, brighten_mask, bright_factor:
 end
 
 function imbrighten(
-    img::AbstractArray{<:Union{AbstractRGB, TransparentColor, AbstractGray, TransparentGray}},
-    brighten_mask::AbstractArray{Bool}, bright_factor::Float64
+    img::AbstractArray{<:Union{AbstractRGB,TransparentColor,AbstractGray,TransparentGray}},
+    brighten_mask::AbstractArray{Bool},
+    bright_factor::Float64,
 )
     _img = float64.(img)
     _img[brighten_mask] .= _img[brighten_mask] * bright_factor
     clamp01nan!(_img)
     return convert.(eltype(img), _img)
 end
-

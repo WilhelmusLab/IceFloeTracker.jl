@@ -38,12 +38,13 @@ Calculate the proportion of the area that is not covered by tiles of a given sid
 - `Float64`: The proportion of the area that is not covered by the tiles.
 
 # Examples
-```
+```julia
 julia> get_area_missed(5, (10, 20))
 0.0
 
 julia> get_area_missed(7, (10, 20))
 0.51
+```
 """
 function get_area_missed(side_length::Int, dims::Tuple{Int,Int})::Float64
     area = prod(dims)
