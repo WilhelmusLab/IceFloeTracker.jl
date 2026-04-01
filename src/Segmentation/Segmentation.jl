@@ -21,6 +21,7 @@ export
     tiled_adaptive_binarization,
     IceDetectionAlgorithm,
     IceDetectionThresholdMODIS721,
+    IceDetectionBrightnessPeaksMODIS134,
     IceDetectionBrightnessPeaksMODIS721,
     IceDetectionFirstNonZeroAlgorithm,
     IceDetectionLopezAcosta2019,

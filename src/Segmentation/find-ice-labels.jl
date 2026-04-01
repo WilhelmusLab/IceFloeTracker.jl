@@ -306,3 +306,40 @@ function tiled_adaptive_binarization(
     canvas[Gray.(img) .< minimum_brightness] .= 0
     return canvas
 end
+
+"""
+    IceDetectionBrightnessPeaksMODIS134(band_1_min, window_size, minimum_prominence)
+    IceDetectionBrightnessPeaksMODIS134(truecolor_image)
+    IceDetectionBrightnessPeaksMODIS134(truecolor_image, tiles)
+
+Identifies sea ice using the midpoint of the `band_1_min` and the detected band 1 mode. Expects the modis truecolor image as input.
+In the case that there are no peaks above the `band_1_min`, uses `band_1_min` as a simple threshold. The `window_size` and `minimum_prominence`
+are passed on to the function [`get_ice_peaks`](@ref). The input image should already have cloud and land masks applied.
+
+"""
+@kwdef struct IceDetectionBrightnessPeaksMODIS134 <: IceDetectionAlgorithm
+    band_1_min=0.3
+    window_size=3
+    minimum_prominence=0.01
+    nbins=64
+end
+
+function (f::IceDetectionBrightnessPeaksMODIS134)(truecolor_image::AbstractArray{<:Union{AbstractRGB, TransparentRGB}}) 
+    banddata = red.(truecolor_image)
+    edges, bincounts = build_histogram(banddata, f.nbins; minval=0, maxval=1)
+    ice_peak = get_ice_peaks(edges, bincounts;
+        possible_ice_threshold=f.band_1_min,
+        minimum_prominence=f.minimum_prominence,
+        window_size=f.window_size)
+    isinf(ice_peak) && (ice_peak = f.band_1_min)
+    thresh = 0.5 * (f.band_1_min + ice_peak) 
+    return banddata .> thresh
+end
+
+function (f::IceDetectionBrightnessPeaksMODIS134)(truecolor_image::AbstractArray{<:Union{AbstractRGB, TransparentRGB}}, tiles) 
+    out = falses(size(truecolor_image))
+    for tile in tiles
+        out[tile...] .= f(truecolor_image[tile...])
+    end
+    return out
+end
