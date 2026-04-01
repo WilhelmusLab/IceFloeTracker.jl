@@ -88,7 +88,7 @@
         @test 0.38 < water < 0.40
 
         tiles = get_tiles(land, 200)
-        prelim_ice = f(modis_truecolor(case), clouds, land, tiles)
+        prelim_ice = f(tc_masked, tiles)
         recall = sum(prelim_ice .&& floes .&& .! clouds .&& .! land) / sum(floes .&& .! clouds .&& .! land)
         @test recall >= 0.979
         
