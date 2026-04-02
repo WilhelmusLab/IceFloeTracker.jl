@@ -76,6 +76,32 @@
         first_non_zero = first(bi for bi in individual_results if sum(bi) > 0)
         @test bc == first_non_zero
     end
+
+    @testset "IceDetectionBrightnessPeaksMODIS134" begin
+        f = IceDetectionBrightnessPeaksMODIS134()
+        dataset = Watkins2026Dataset(; ref="v0.1")
+        case = first(filter(c -> (c.case_number == 111 && c.satellite == "terra"), dataset))
+        floes = validated_binary_floes(case) .> 0
+        clouds = Watkins2025CloudMask()(modis_falsecolor(case))
+        land = modis_landmask(case) .> 0
+
+        tc_masked = apply_cloudmask(RGB.(modis_truecolor(case)), clouds)
+        tc_masked .= apply_landmask(tc_masked, land)
+        prelim_ice = f(tc_masked)
+        recall = sum(prelim_ice .&& floes .&& .! clouds .&& .! land) / sum(floes .&& .! clouds .&& .! land)
+        @test recall >= 0.979
+        water = sum(.! prelim_ice .&& .! clouds .&& .! land) ./ prod(size(land))
+        @test 0.38 < water < 0.40
+
+        tiles = get_tiles(land, 200)
+        prelim_ice = f(tc_masked, tiles)
+        recall = sum(prelim_ice .&& floes .&& .! clouds .&& .! land) / sum(floes .&& .! clouds .&& .! land)
+        @test recall >= 0.979
+        
+        # With the tiled version the water fraction goes down. This is mainly a regression test.
+        water = sum(.! prelim_ice .&& .! clouds .&& .! land) ./ prod(size(land))
+        @test 0.26 < water < 0.28
+    end
 end
 
 @testitem "find_ice_labels" begin
