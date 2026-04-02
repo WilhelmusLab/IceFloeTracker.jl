@@ -293,16 +293,10 @@ function (p::Segment)(
             ice_mask=IceDetectionLopezAcosta2019()(fc_masked),
             sharpened_grayscale_image=sharpened_grayscale_image,
             ice_water_discrim=ice_water_discrim,
-<<<<<<< HEAD
-            segA=kmeans_result,
-            segAB_intersect=Gray.(segB.ice_intersect),
-            watersheds_segB_product=watersheds_segB_product,
-=======
             segA=segmentation_A,
             segB=segmentation_B,
             segAB_intersect=ice_intersect,
             watersheds_segB_product=watersheds_product,
->>>>>>> origin/main
             final_floes=segF,
             labels=labels,
             segment_mean_truecolor=map( # TODO Add "view_seg" code snippet
