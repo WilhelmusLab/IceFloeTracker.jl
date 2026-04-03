@@ -1,4 +1,4 @@
-@testmodule ImageSimilarity begin
+@testsnippet ImageSimilarity begin
     function test_similarity(
         imgA::AbstractArray{Bool}, imgB::AbstractArray{Bool}, error_rate=0.005
     )
