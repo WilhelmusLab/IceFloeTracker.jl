@@ -58,7 +58,8 @@ function create_coastal_buffer_mask(
     fill_min_pixels::Int=0,
     fill_max_pixels::Int=2000,
 )::Matrix{Bool}
-    mask_unfilled = dilate(landmask, structuring_element)
+    centered_structuring_element = centered(structuring_element)
+    mask_unfilled = dilate(landmask, centered_structuring_element)
     mask_filled = .!imfill(.!mask_unfilled, (fill_min_pixels, fill_max_pixels))
     return mask_filled
 end
