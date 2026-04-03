@@ -81,6 +81,7 @@ end
 
 """
     apply_landmask(input_image, landmask_binary)
+    apply_landmask!(input_image, landmask_binary)
 
 Zero out pixels in all channels of the input image using the binary landmask.
 
@@ -89,13 +90,12 @@ Zero out pixels in all channels of the input image using the binary landmask.
 - `landmask_binary`: binary landmask with 1=land, 0=water/ice
 
 """ # TODO: add option to use alpha channel for mask
-function apply_landmask(input_image::AbstractMatrix, landmask_binary::BitMatrix)
+function apply_landmask(input_image::AbstractMatrix, landmask_binary::AbstractArray{Bool})
     image_masked = (.!landmask_binary) .* input_image
     return image_masked
 end
 
-# in-place version
-function apply_landmask!(input_image::AbstractMatrix, landmask_binary::BitMatrix)
+function apply_landmask!(input_image::AbstractMatrix, landmask_binary::AbstractArray{Bool})
     input_image .= (.!landmask_binary) .* input_image
     return nothing
 end
