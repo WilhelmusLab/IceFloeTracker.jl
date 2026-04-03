@@ -1,4 +1,3 @@
-
 """
     call_kwargs(; name_to_function_map...)
 
@@ -11,5 +10,4 @@ function call_kwargs(; name_to_function_map...)
             func(kwargs[name])
         end
     end
-    return callback
 end
