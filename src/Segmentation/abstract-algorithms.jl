@@ -2,6 +2,8 @@ using Images: AbstractRGB, TransparentRGB, Gray, float64
 
 abstract type IceFloeSegmentationAlgorithm end
 
+import ..Preprocessing: create_coastal_buffer_mask
+
 function (p::IceFloeSegmentationAlgorithm)(
     truecolor::T₁,
     falsecolor::T₂,
