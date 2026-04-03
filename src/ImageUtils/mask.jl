@@ -198,7 +198,14 @@ julia> apply_mask(img, mask)
  0.0  2.0
  3.0  0.0
 
-julia> apply_mask!(img, mask);  img
+julia> img  # original is unchanged
+2×2 Matrix{Float64}:
+ 1.0  2.0
+ 3.0  4.0
+
+julia> img2 = [1.0 2.0; 3.0 4.0];
+
+julia> apply_mask!(img2, mask);  img2
 2×2 Matrix{Float64}:
  0.0  2.0
  3.0  0.0

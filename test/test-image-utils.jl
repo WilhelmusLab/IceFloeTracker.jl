@@ -47,10 +47,17 @@
     end
 
     @testset "apply_mask! - allocates less than apply_mask" begin
-        img = rand(100, 100)
+        # Wrap in functions so compilation happens before measurement
+        _test_copy(img, mask) = apply_mask(img, mask)
+        _test_inplace!(img, mask) = apply_mask!(img, mask)
+        img_copy = rand(100, 100)
+        img_inplace = rand(100, 100)
         mask = BitMatrix(rand(Bool, 100, 100))
-        x = @allocated apply_mask(img, mask)
-        y = @allocated apply_mask!(img, mask)
+        # Warm up to avoid measuring compilation
+        _test_copy(img_copy, mask)
+        _test_inplace!(img_inplace, mask)
+        x = @allocated _test_copy(img_copy, mask)
+        y = @allocated _test_inplace!(img_inplace, mask)
         @test x > y
     end
 
