@@ -31,8 +31,8 @@ function create_landmask(
     coastal_buffer_mask = create_coastal_buffer_mask(
         land_mask,
         struct_elem;
-        fill_holes_min_pixels=fill_value_lower,
-        fill_holes_max_pixels=fill_value_upper,
+        fill_min_pixels=fill_value_lower,
+        fill_max_pixels=fill_value_upper,
     )
 
     return (dilated=coastal_buffer_mask, non_dilated=land_mask)
