@@ -369,18 +369,3 @@ rule tracking:
         save("{output.tracked}", tracked);
         '
         """
-
-
-# ============================================================================
-# UTILITY RULES
-# ============================================================================
-
-
-rule colorize_labeled:
-    input:
-        labeled = "{stem}labels_map.tiff",
-        init = "init-colorize.txt"
-    output:
-        colorized = "{stem}labels_map.colorized.tiff"
-    shell:
-        "{config[COLORIZE]} {input.labeled} {output.colorized}"
