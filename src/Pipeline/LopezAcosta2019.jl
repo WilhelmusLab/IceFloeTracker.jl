@@ -58,10 +58,8 @@ import ..Preprocessing:
     make_landmask_se,
     create_landmask,
     create_cloudmask,
-    apply_landmask,
-    apply_landmask!,
-    apply_cloudmask,
-    apply_cloudmask!,
+    apply_mask,
+    apply_mask!,
     LopezAcostaCloudMask
 
 import ..Segmentation:
@@ -177,11 +175,11 @@ function (p::Segment)(
     cloudmask = create_cloudmask(falsecolor_image)
 
     # 2. Intermediate images
-    fc_masked = apply_landmask(falsecolor_image, coastal_buffer_mask)
+    fc_masked = apply_mask(falsecolor_image, coastal_buffer_mask)
 
     @info "Preprocessing truecolor image"
     # nonlinear diffusion
-    apply_landmask!(truecolor_image, landmask)
+    apply_mask!(truecolor_image, landmask)
     sharpened_truecolor_image = nonlinear_diffusion(truecolor_image, p.diffusion_algorithm)
 
     sharpened_truecolor_image .= channelwise_adapthisteq(
@@ -197,7 +195,7 @@ function (p::Segment)(
         p.unsharp_mask_params.smoothing_param,
         p.unsharp_mask_params.intensity,
     )
-    apply_landmask!(sharpened_grayscale_image, coastal_buffer_mask)
+    apply_mask!(sharpened_grayscale_image, coastal_buffer_mask)
 
     # 3. Segmentation
     @info "Segmenting floes part 1/3"
@@ -218,7 +216,7 @@ function (p::Segment)(
 
     # Potential upgrade: Remove segments of the k-means result which are all cloud. However the 
     # small isolated clouds could be filled if surrounded by a single segment.
-    apply_cloudmask!(segmentation_A, cloudmask)
+    apply_mask!(segmentation_A, cloudmask)
 
     @info "Segmenting floes part 2/3"
     # The second segmentation routine uses imbrighten to increase contrast between ice floes
@@ -373,7 +371,7 @@ function discriminate_ice_water(
     # which makes me think that we'd do better to use a percentile function or otherwise continuous estimate
     # of a threshold from the data, rather than 3 fixed steps.
     b7_landmasked = Gray.(red.(fc_landmasked)) # formerly falsecolor_image_band7 -> image_cloudless (but it does have clouds???)
-    b7_landmasked_cloudmasked = apply_cloudmask(b7_landmasked, cloudmask) # formerly clouds_channel -> image_clouds
+    b7_landmasked_cloudmasked = apply_mask(b7_landmasked, cloudmask) # formerly clouds_channel -> image_clouds
 
     # Select pixels greater than intensity 100 in bands 2 and 1
     b2_landmasked = green.(fc_landmasked)
@@ -510,7 +508,7 @@ function _reconstruct(sharpened_grayscale_image, dilated_mask; strel=strel_diamo
     markers = complement.(dilate(sharpened_grayscale_image, strel))
     mask = complement.(sharpened_grayscale_image)
     reconstructed_grayscale = mreconstruct(dilate, markers, mask)
-    apply_landmask!(reconstructed_grayscale, dilated_mask)
+    apply_mask!(reconstructed_grayscale, dilated_mask)
     return reconstructed_grayscale
 end
 
@@ -550,7 +548,7 @@ function segB_binarize(
 
     # Gamma correction and cloud masking
     adjust_histogram!(adjusted_sharpened, GammaCorrection(; gamma=gamma_factor))
-    apply_cloudmask!(adjusted_sharpened, cloudmask) # Should this be happening here?
+    apply_mask!(adjusted_sharpened, cloudmask) # Should this be happening here?
 
     # Thresholding and filling small holes (based on fill_range=(min, max))
     segB = adjusted_sharpened .<= adjusted_ice_threshold
@@ -693,7 +691,7 @@ function reconstruct_and_mask(
         dilate, reconst_gray, complement.(reconst_gray), complement.(grayscale_img)
     )
 
-    apply_landmask!(reconst_gray, ice_mask .== 0)
+    apply_mask!(reconst_gray, ice_mask .== 0)
     return reconst_gray
 end
 

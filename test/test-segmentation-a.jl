@@ -27,7 +27,7 @@
     fc_image = load(
         "$(test_data_dir)/beaufort-chukchi-seas_falsecolor.2020162.aqua.250m.tiff"
     )[test_region...]
-    fc_landmasked = apply_landmask(fc_image, landmask)
+    fc_landmasked = apply_mask(fc_image, landmask)
     @time segmented_ice_cloudmasked = LopezAcosta2019.segmented_ice_cloudmasking(
         ice_water_discriminated_image, fc_landmasked, cloudmask
     )
@@ -42,7 +42,7 @@
     )
 
     # check: are there any regions that are nonzero under the cloudmask, since it was applied in discriminate ice water?
-    apply_cloudmask!(segmented_ice, cloudmask)
+    apply_mask!(segmented_ice, cloudmask)
     @time segmented_A = LopezAcosta2019.clean_binary_floes(segmented_ice)
     @test typeof(segmented_A) == typeof(matlab_segmented_A_bitmatrix)
     matlab_closed = closing(matlab_segmented_A .> 0, strel_diamond((5, 5)))
@@ -50,7 +50,7 @@
 
     @test typeof(segmented_ice) == typeof(matlab_segmented_ice_cloudmasked)
     @test test_similarity(
-        convert(BitMatrix, apply_landmask(segmented_ice, landmask)),
+        convert(BitMatrix, apply_mask(segmented_ice, landmask)),
         matlab_segmented_ice_cloudmasked,
         0.051,
     )

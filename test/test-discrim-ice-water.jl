@@ -15,7 +15,7 @@
     matlab_ice_water_discrim =
         float64.(load("$(test_data_dir)/matlab_ice_water_discrim.png"))
     matlab_sharpened = float64.(load("$(test_data_dir)/matlab_sharpened.png"))
-    fc_masked = apply_landmask(falsecolor_image, landmask)
+    fc_masked = apply_mask(falsecolor_image, landmask)
     ice_water_discrim = LopezAcosta2019.discriminate_ice_water(
         matlab_sharpened, fc_masked, landmask, cloudmask
     )

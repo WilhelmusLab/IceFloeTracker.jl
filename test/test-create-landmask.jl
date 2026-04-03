@@ -25,8 +25,8 @@
 
     landmask = landmask_default_strel
 
-    @time masked_image = apply_landmask(test_image, landmask.dilated)
-    @time masked_image_no_dilate = apply_landmask(test_image, landmask.non_dilated)
+    @time masked_image = apply_mask(test_image, landmask.dilated)
+    @time masked_image_no_dilate = apply_mask(test_image, landmask.non_dilated)
 
     # test for percent difference in landmask images
     @test test_similarity(
@@ -37,12 +37,12 @@
     ) # flipping the landmask to match the matlab landmask
 
     # test for in-place allocation reduction
-    @time normal_lm = apply_landmask(test_image, landmask.dilated)
-    @time apply_landmask!(test_image, landmask.dilated)
+    @time normal_lm = apply_mask(test_image, landmask.dilated)
+    @time apply_mask!(test_image, landmask.dilated)
 
-    x = @allocated apply_landmask(test_image, landmask.dilated)
+    x = @allocated apply_mask(test_image, landmask.dilated)
     @info("normal allocated: $x")
-    y = @allocated apply_landmask!(test_image, landmask.dilated)
+    y = @allocated apply_mask!(test_image, landmask.dilated)
     @info("in-place allocated: $y")
     @test x > y
 

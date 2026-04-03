@@ -36,9 +36,8 @@ import Images:
 import ..ImageUtils: get_brighten_mask, to_uint8, imcomplement, imbrighten, get_tiles
 import ..Filtering: unsharp_mask, conditional_histeq, rgb2gray, imgradientmag
 import ..Preprocessing:
-    apply_landmask,
-    apply_landmask!,
-    apply_cloudmask,
+    apply_mask,
+    apply_mask!,
     create_cloudmask,
     create_landmask,
     LopezAcostaCloudMask
@@ -130,7 +129,7 @@ function (p::Segment)(
     tiles = get_tiles(truecolor; p.tile_settings...)
 
     ref_image = RGB.(falsecolor)  # TODO: remove this typecast
-    fc_landmasked = apply_landmask(ref_image, coastal_buffer_mask)
+    fc_landmasked = apply_mask(ref_image, coastal_buffer_mask)
     true_color_image = RGB.(truecolor)  # TODO: remove this typecast
 
     begin
@@ -139,7 +138,7 @@ function (p::Segment)(
         cloudmask = create_cloudmask(
             ref_image, LopezAcostaCloudMask(cloud_mask_thresholds...)
         )
-        ref_img_cloudmasked = apply_cloudmask(ref_image, cloudmask)
+        ref_img_cloudmasked = apply_mask(ref_image, cloudmask)
     end
 
     begin
@@ -175,18 +174,18 @@ function (p::Segment)(
     begin
         @debug "Step 6: Repeat step 5 with equalized_gray (landmasking, no sharpening)"
         equalized_gray_reconstructed = deepcopy(equalized_gray)
-        apply_landmask!(equalized_gray_reconstructed, coastal_buffer_mask)
+        apply_mask!(equalized_gray_reconstructed, coastal_buffer_mask)
 
         equalized_gray_reconstructed = reconstruct(
             equalized_gray_reconstructed, structuring_elements.se_disk1, "dilation", true
         )
-        apply_landmask!(equalized_gray_reconstructed, coastal_buffer_mask)
+        apply_mask!(equalized_gray_reconstructed, coastal_buffer_mask)
     end
 
     begin
         @debug "Step 7: Brighten equalized_gray"
         brighten = get_brighten_mask(equalized_gray_reconstructed, gammagreen)
-        apply_landmask!(equalized_gray, coastal_buffer_mask)
+        apply_mask!(equalized_gray, coastal_buffer_mask)
         equalized_gray .= imbrighten(equalized_gray, brighten, brighten_factor)
     end
 

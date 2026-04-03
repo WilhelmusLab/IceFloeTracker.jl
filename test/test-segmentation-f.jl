@@ -30,7 +30,7 @@
     segF_binarized =
         kmeans_binarization(
             morphed_grayscale,
-            apply_cloudmask(
+            apply_mask(
                 fc_image[ice_floe_test_region...], cloudmask[ice_floe_test_region...]
             );
             k=3,

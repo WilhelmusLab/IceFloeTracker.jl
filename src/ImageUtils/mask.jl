@@ -167,15 +167,6 @@ function masker(mask::AbstractArray, img::AbstractArray{<:Colorant})
     return masker(mask)(img)
 end
 
-function apply_mask(mask::AbstractArray, img::AbstractArray{<:Colorant})
-    masking_alpha_channel = _mask_to_alpha(mask)
-    if typeof(eltype(img)) <: TransparentColor
-        # combine the mask with any existing mask on the image
-        masking_alpha_channel = min.(alpha.(img), masking_alpha_channel)
-    end
-    return alphacolor.(img, masking_alpha_channel)
-end
-
 """
     _mask_to_alpha(mask::AbstractArray)
 

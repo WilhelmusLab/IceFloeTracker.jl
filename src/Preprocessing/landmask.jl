@@ -60,22 +60,30 @@ end
 # end
 
 """
-    apply_landmask(input_image, landmask_binary)
+    apply_mask(img, mask)
 
-Zero out pixels in all channels of the input image using the binary landmask.
+Zero out pixels in `img` where `mask` is `true`. Returns a new array.
 
 # Arguments
-- `input_image`: truecolor RGB image
-- `landmask_binary`: binary landmask with 1=land, 0=water/ice
-
-""" # TODO: add option to use alpha channel for mask
-function apply_landmask(input_image::AbstractMatrix, landmask_binary::BitMatrix)
-    image_masked = (.!landmask_binary) .* input_image
-    return image_masked
+- `img`: image array (e.g., RGB, Gray, BitMatrix, or any element type)
+- `mask`: boolean mask; pixels where `mask` is `true` are set to zero
+"""
+function apply_mask(img::AbstractArray, mask::AbstractArray{Bool})
+    masked_image = deepcopy(img)
+    masked_image[mask] .= zero(eltype(img))
+    return masked_image
 end
 
-# in-place version
-function apply_landmask!(input_image::AbstractMatrix, landmask_binary::BitMatrix)
-    input_image .= (.!landmask_binary) .* input_image
+"""
+    apply_mask!(img, mask)
+
+Zero out pixels in `img` where `mask` is `true`, modifying `img` in-place.
+
+# Arguments
+- `img`: image array (e.g., RGB, Gray, BitMatrix, or any element type)
+- `mask`: boolean mask; pixels where `mask` is `true` are set to zero
+"""
+function apply_mask!(img::AbstractArray, mask::AbstractArray{Bool})
+    img[mask] .= zero(eltype(img))
     return nothing
 end

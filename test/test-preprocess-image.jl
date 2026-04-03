@@ -32,7 +32,7 @@
     matlab_equalized = float64.(load(matlab_equalized_file))
 
     @info "Process Image - Diffusion"
-    input_landmasked = apply_landmask(input_image, landmask_no_dilate)
+    input_landmasked = apply_mask(input_image, landmask_no_dilate)
 
     pmd = PeronaMalikDiffusion(0.1, 0.1, 5, "exponential")
     @time image_diffused = nonlinear_diffusion(input_landmasked, pmd)
