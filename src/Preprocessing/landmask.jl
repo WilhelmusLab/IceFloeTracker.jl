@@ -69,7 +69,7 @@ Zero out pixels in `img` where `mask` is `true`. Returns a new array.
 - `mask`: boolean mask; pixels where `mask` is `true` are set to zero
 """
 function apply_mask(img::AbstractArray, mask::AbstractArray{Bool})
-    masked_image = deepcopy(img)
+    masked_image = copy(img)
     masked_image[mask] .= zero(eltype(img))
     return masked_image
 end
