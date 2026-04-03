@@ -5,9 +5,7 @@
 
     case = first(filter(c -> (c.case_number == 6 && c.satellite == "terra"), dataset))
     segments = LopezAcosta2019.Segment()(
-        RGB.(modis_truecolor(case)),
-        RGB.(modis_falsecolor(case)),
-        RGB.(modis_landmask(case)),
+        RGB.(modis_truecolor(case)), RGB.(modis_falsecolor(case)), modis_landmask(case)
     )
     expected_segment_count = validated_floe_properties(case) |> DataFrame |> nrow
     @test length(segments.segment_labels) ≈ expected_segment_count rtol = 0.7

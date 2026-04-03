@@ -1,8 +1,6 @@
 import ..Morphology: se_disk50
-import Images: Gray
+import Images: Gray, dilate, imfill
 import OffsetArrays: centered
-import Images: ImageMorphology, dilate
-import Images.ImageMorphology: imfill
 
 """
     make_landmask_se()
@@ -33,8 +31,8 @@ function create_landmask(
     coastal_buffer_mask = create_coastal_buffer_mask(
         land_mask,
         struct_elem;
-        fill_holes_min_pixels=fill_value_lower,
-        fill_holes_max_pixels=fill_value_upper,
+        fill_min_pixels=fill_value_lower,
+        fill_max_pixels=fill_value_upper,
     )
 
     return (dilated=coastal_buffer_mask, non_dilated=land_mask)
@@ -60,7 +58,8 @@ function create_coastal_buffer_mask(
     fill_min_pixels::Int=0,
     fill_max_pixels::Int=2000,
 )::Matrix{Bool}
-    mask_unfilled = dilate(landmask, structuring_element)
+    centered_structuring_element = centered(structuring_element)
+    mask_unfilled = dilate(landmask, centered_structuring_element)
     mask_filled = .!imfill(.!mask_unfilled, (fill_min_pixels, fill_max_pixels))
     return mask_filled
 end
@@ -82,6 +81,7 @@ end
 
 """
     apply_landmask(input_image, landmask_binary)
+    apply_landmask!(input_image, landmask_binary)
 
 Zero out pixels in all channels of the input image using the binary landmask.
 
@@ -90,13 +90,12 @@ Zero out pixels in all channels of the input image using the binary landmask.
 - `landmask_binary`: binary landmask with 1=land, 0=water/ice
 
 """ # TODO: add option to use alpha channel for mask
-function apply_landmask(input_image::AbstractMatrix, landmask_binary::BitMatrix)
+function apply_landmask(input_image::AbstractMatrix, landmask_binary::AbstractArray{Bool})
     image_masked = (.!landmask_binary) .* input_image
     return image_masked
 end
 
-# in-place version
-function apply_landmask!(input_image::AbstractMatrix, landmask_binary::BitMatrix)
+function apply_landmask!(input_image::AbstractMatrix, landmask_binary::AbstractArray{Bool})
     input_image .= (.!landmask_binary) .* input_image
     return nothing
 end
