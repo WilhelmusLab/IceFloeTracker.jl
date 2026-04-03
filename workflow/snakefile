@@ -262,6 +262,7 @@ rule segment:
         labels_map = "{dir}/{segmentation}.labels_map.tiff",
         cloud_mask = "{dir}/{segmentation}/cloud_mask.tiff",
         ice_mask = "{dir}/{segmentation}/ice_mask.tiff",
+        config = "{dir}/{segmentation}/config.txt",
         segment_mean_truecolor = "{dir}/{segmentation}/segment_mean_truecolor.tiff",
         segment_mean_falsecolor = "{dir}/{segmentation}/segment_mean_falsecolor.tiff",
     input:
@@ -271,7 +272,13 @@ rule segment:
         coastal_buffer_mask = "{dir}/coastal_buffer_mask.tiff",
     shell:
         """
-        {config[IFT]} -e 'using IceFloeTracker, Images; {wildcards.segmentation}.Segment()(
+        {config[IFT]} -e 'using IceFloeTracker, Images;
+        segmentation_algorithm = {wildcards.segmentation}.Segment();
+        open("{output.config}", "w") do io
+            Base.println(io, "IceFloeTracker.jl $(pkgversion(IceFloeTracker)) \n")
+            Base.dump(io, segmentation_algorithm)
+        end;
+        segmentation_algorithm(
             load("{input.truecolor}"),
             load("{input.falsecolor}"),
             load("{input.landmask}") |> to_landmask,
@@ -319,7 +326,8 @@ ruleorder: segment_buckley > segment
 
 rule tracking:
     output:
-        tracked = "{region}.{scale}m.{start}.{end}.{segmentation}.tracked.csv"
+        tracked = "{region}.{scale}m.{start}.{end}.{segmentation}.tracked.csv",
+        config = "{region}.{scale}m.{start}.{end}.{segmentation}.tracked.config.csv"
     input:
         labels_maps = lambda wc: expand("{region}.{scale}m.{date}.{satellite}/{segmentation}.labels_map.tiff",
                           satellite=config["SATELLITES"],
@@ -352,6 +360,10 @@ rule tracking:
             filter_function=FilterFunction(),
             matching_function=MinimumWeightMatchingFunction()
         );
+        open("{output.config}", "w") do io
+            Base.println(io, "IceFloeTracker.jl $(pkgversion(IceFloeTracker)) \n")
+            Base.dump(io, tracker)
+        end;
         tracked = tracker(segmented_imgs, overpasses);
         select!(tracked, Not(:mask, :psi));
         save("{output.tracked}", tracked);
