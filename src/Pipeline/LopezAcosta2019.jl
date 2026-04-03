@@ -58,8 +58,6 @@ import ..Preprocessing:
     make_landmask_se,
     create_landmask,
     create_cloudmask,
-    apply_mask,
-    apply_mask!,
     LopezAcostaCloudMask
 
 import ..Segmentation:
@@ -70,7 +68,7 @@ import ..Segmentation:
     IceDetectionBrightnessPeaksMODIS721,
     IceDetectionThresholdMODIS721
 
-import ..ImageUtils: imbrighten
+import ..ImageUtils: imbrighten, apply_mask, apply_mask!
 
 """ 
     LopezAcosta2019.Segment(
