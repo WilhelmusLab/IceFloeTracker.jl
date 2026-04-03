@@ -69,6 +69,10 @@ snakemake -c 4 hudson_bay-1500km.250m.2023-03-{22..25}.terra/falsecolor.tiff
 - at the 250m scale
 - for the 22nd through 25th March 2023.
 
+To keep going if a single function in the pipeline fails, 
+use the `--keep-going` flag to continue to continue to run any independent tasks.
+However, any tasks which depend on failed jobs will still fail.
+
 ## Satellite Overpass Identification Tool Concurrency Limit
 
 The Satellite Overpass Identification Tool depends on the rate limits of space-track.org. 
