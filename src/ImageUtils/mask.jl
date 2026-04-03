@@ -167,13 +167,59 @@ function masker(mask::AbstractArray, img::AbstractArray{<:Colorant})
     return masker(mask)(img)
 end
 
-function apply_mask(mask::AbstractArray, img::AbstractArray{<:Colorant})
-    masking_alpha_channel = _mask_to_alpha(mask)
-    if typeof(eltype(img)) <: TransparentColor
-        # combine the mask with any existing mask on the image
-        masking_alpha_channel = min.(alpha.(img), masking_alpha_channel)
-    end
-    return alphacolor.(img, masking_alpha_channel)
+"""
+    apply_mask(img, mask)
+    apply_mask!(img, mask)
+
+Zero out pixels in `img` where `mask` is `true`. `apply_mask` returns a new
+array; `apply_mask!` modifies `img` in-place.
+
+# Arguments
+- `img`: image array (e.g., RGB, Gray, BitMatrix, or any numeric element type)
+- `mask`: boolean mask; pixels where `mask` is `true` are set to zero
+
+# Examples
+
+```julia-repl
+julia> using Images
+
+julia> img = [1.0 2.0; 3.0 4.0]
+2×2 Matrix{Float64}:
+ 1.0  2.0
+ 3.0  4.0
+
+julia> mask = BitMatrix([true false; false true])
+2×2 BitMatrix:
+ 1  0
+ 0  1
+
+julia> apply_mask(img, mask)
+2×2 Matrix{Float64}:
+ 0.0  2.0
+ 3.0  0.0
+
+julia> img  # original is unchanged
+2×2 Matrix{Float64}:
+ 1.0  2.0
+ 3.0  4.0
+
+julia> img2 = [1.0 2.0; 3.0 4.0];
+
+julia> apply_mask!(img2, mask);  img2
+2×2 Matrix{Float64}:
+ 0.0  2.0
+ 3.0  0.0
+```
+"""
+function apply_mask(img::AbstractArray, mask::AbstractArray{Bool})
+    masked_image = copy(img)
+    masked_image[mask] .= zero(eltype(img))
+    return masked_image
+end
+
+function apply_mask!(img::AbstractArray, mask::AbstractArray{Bool})
+    img[mask] .= zero(eltype(img))
+    return nothing
 end
 
 """

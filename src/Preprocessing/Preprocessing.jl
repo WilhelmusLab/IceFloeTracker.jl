@@ -2,14 +2,13 @@ module Preprocessing
 
 export make_landmask_se,
     create_landmask,
-    apply_landmask,
-    apply_landmask!,
     LopezAcostaCloudMask,
     AbstractCloudMaskAlgorithm,
     Watkins2025CloudMask,
-    create_cloudmask,
-    apply_cloudmask,
-    apply_cloudmask!
+    create_cloudmask
+
+import ..ImageUtils: apply_mask, apply_mask!
+export apply_mask, apply_mask!
 
 include("cloudmask.jl")
 include("landmask.jl")

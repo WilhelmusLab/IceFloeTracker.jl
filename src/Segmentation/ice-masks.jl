@@ -3,7 +3,7 @@ import Peaks: findmaxima, peakproms!, peakwidths!
 import DataFrames: DataFrames
 import StatsBase: StatsBase
 
-import ..Preprocessing: apply_landmask
+import ..ImageUtils: apply_mask
 
 # Select a k-means cluster based on the 
 function _get_nlabel(
@@ -97,7 +97,7 @@ function get_ice_masks( #tbd: rename to kmeans_binarization?
     # Make canvases
     sz = size(falsecolor_image)
     ice_mask = BitMatrix(zeros(Bool, sz))
-    fc_landmasked = apply_landmask(falsecolor_image, landmask)
+    fc_landmasked = apply_mask(falsecolor_image, landmask)
 
     # Threads.@threads
     for tile in tiles

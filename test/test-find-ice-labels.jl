@@ -85,8 +85,8 @@
         clouds = Watkins2025CloudMask()(modis_falsecolor(case))
         land = modis_landmask(case) .> 0
 
-        tc_masked = apply_cloudmask(RGB.(modis_truecolor(case)), clouds)
-        tc_masked .= apply_landmask(tc_masked, land)
+        tc_masked = apply_mask(RGB.(modis_truecolor(case)), clouds)
+        tc_masked .= apply_mask(tc_masked, land)
         prelim_ice = f(tc_masked)
         recall = sum(prelim_ice .&& floes .&& .! clouds .&& .! land) / sum(floes .&& .! clouds .&& .! land)
         @test recall >= 0.979

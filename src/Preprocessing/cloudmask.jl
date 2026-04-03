@@ -2,16 +2,11 @@ import ..Morphology: fill_holes
 import Images:
     AbstractRGB,
     TransparentRGB,
-    RGB,
     Gray,
     red,
     green,
-    channelview,
-    colorview,
-    StackedView,
     strel_diamond,
     strel_box,
-    zeroarray,
     opening,
     mreconstruct,
     imfill
@@ -237,53 +232,4 @@ function create_cloudmask(
     f::AbstractCloudMaskAlgorithm=LopezAcostaCloudMask(),
 )
     return f(false_color_image)
-end
-
-"""
-    apply_cloudmask(false_color_image, cloudmask)
-
-Zero out pixels containing clouds where clouds and ice are not discernable. Arguments should be of the same size.
-
-# Arguments
-- `img`: RGB, RGBA, or Gray image to be masked
-- `cloudmask`: binary cloudmask with clouds = 1, else = 0
-- `modify_channel_1`: optional keyword argument for RGB images. If true, set the first channel to 0 in the returned image.
-"""
-function apply_cloudmask(
-    img::AbstractArray{<:Union{AbstractRGB,TransparentRGB}},
-    cloudmask::AbstractArray{Bool};
-    modify_channel_1::Bool=false,
-)
-    masked_image = deepcopy(img)
-    masked_image[cloudmask] .= 0.0
-    modify_channel_1 && begin
-        # Specialty application where Band 7 is set to 0          
-        image_view = channelview(masked_image)
-        cloudmasked_view = StackedView(
-            zeroarray, @view(image_view[2, :, :]), @view(image_view[3, :, :])
-        )
-        cloudmasked_image_rgb = colorview(RGB, cloudmasked_view)
-        return cloudmasked_image_rgb
-    end
-    return masked_image
-end
-
-function apply_cloudmask(
-    img::AbstractArray{<:Union{AbstractRGB,TransparentRGB,Gray}},
-    cloudmask::AbstractArray{Bool},
-)
-    masked_image = deepcopy(img)
-    masked_image[cloudmask] .= 0.0
-    return masked_image
-end
-
-function apply_cloudmask!(
-    img::AbstractArray{<:Union{AbstractRGB,TransparentRGB,Gray,Real}},
-    cloudmask::AbstractArray{Bool},
-)
-    return img[cloudmask] .= 0.0
-end
-
-function apply_cloudmask!(img::AbstractArray{Bool}, cloudmask::AbstractArray{Bool})
-    return img[cloudmask] .= false
 end

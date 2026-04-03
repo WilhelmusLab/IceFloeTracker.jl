@@ -68,7 +68,7 @@ save(
 
 cloudmask = create_cloudmask(falsecolor_image)
 cm2 = create_cloudmask(falsecolor_image, Watkins2025CloudMask())
-apply_landmask!(cm2, land_mask)
+apply_mask!(cm2, land_mask)
 save(
     joinpath(HOME, "docs/src/assets/cloudmask_example.png"),
     imresize(
@@ -101,7 +101,7 @@ truecolor_equalized = adjust_histogram(
 truecolor_sharpened = Gray.(unsharp_mask(truecolor_equalized))
 
 # Apply masks
-preprocessed_image = apply_landmask(truecolor_sharpened, land_mask)
+preprocessed_image = apply_mask(truecolor_sharpened, land_mask)
 
 zoom_region = (1001:2000, 501:1500)
 save(

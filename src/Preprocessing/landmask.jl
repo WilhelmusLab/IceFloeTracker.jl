@@ -59,23 +59,3 @@ end
 #     return binarize_landmask(Gray.(landmask_image); tol=tol)
 # end
 
-"""
-    apply_landmask(input_image, landmask_binary)
-
-Zero out pixels in all channels of the input image using the binary landmask.
-
-# Arguments
-- `input_image`: truecolor RGB image
-- `landmask_binary`: binary landmask with 1=land, 0=water/ice
-
-""" # TODO: add option to use alpha channel for mask
-function apply_landmask(input_image::AbstractMatrix, landmask_binary::BitMatrix)
-    image_masked = (.!landmask_binary) .* input_image
-    return image_masked
-end
-
-# in-place version
-function apply_landmask!(input_image::AbstractMatrix, landmask_binary::BitMatrix)
-    input_image .= (.!landmask_binary) .* input_image
-    return nothing
-end

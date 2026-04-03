@@ -5,6 +5,7 @@ module ImageUtils
 
 export masker,
     apply_mask,
+    apply_mask!,
     apply_to_channels,
     get_area_missed,
     get_brighten_mask,

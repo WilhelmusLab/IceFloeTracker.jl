@@ -1,6 +1,6 @@
 
 @testitem "Create Cloudmask" begin
-    using Images: RGBA, N0f8, @test_approx_eq_sigma_eps, float64, load, Gray, red
+    using Images: RGBA, N0f8, @test_approx_eq_sigma_eps, float64, load, Gray, red, channelview
     include("config.jl")
 
     # define constants, maybe move to test config file
@@ -11,7 +11,9 @@
 
     matlab_cloudmask = float64.(load(matlab_cloudmask_file))
     @time cloudmask = create_cloudmask(ref_image)
-    @time masked_image = apply_cloudmask(ref_image, cloudmask; modify_channel_1=true)
+    @time masked_image = apply_mask(ref_image, cloudmask)
+    # Set band 7 (channel 1 of 7-2-1 false color) to zero everywhere
+    channelview(masked_image)[1, :, :] .= 0
 
     # test for percent difference in cloudmask images
     @test (@test_approx_eq_sigma_eps masked_image matlab_cloudmask [0, 0] 0.005) === nothing
@@ -19,7 +21,7 @@
     # test for create_clouds_channel
     clouds_channel_expected = load(clouds_channel_test_file)
 
-    clds_channel = apply_cloudmask(Gray.(red.(ref_image)), cloudmask)
+    clds_channel = apply_mask(Gray.(red.(ref_image)), cloudmask)
     @test (@test_approx_eq_sigma_eps (clds_channel) (clouds_channel_expected) [0, 0] 0.005) ===
         nothing
 
