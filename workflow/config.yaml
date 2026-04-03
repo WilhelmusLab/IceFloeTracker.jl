@@ -4,7 +4,7 @@
 
 IFT: "julia --project=../../" # relative to workdir
 FSDPROC: "pipx run --spec git+https://github.com/WilhelmusLab/ebseg@v1.0.1 fsdproc"
-PASS_TIME: "pipx run --spec git+https://github.com/wilhelmuslab/satellite-overpass-identification-tool@v3.2.0b1 satellite-overpass-identification-tool"
+PASS_TIME: "pipx run --spec git+https://github.com/wilhelmuslab/satellite-overpass-identification-tool@v3.2.1 satellite-overpass-identification-tool"
 COLORIZE: "pipx run --spec git+https://github.com/wilhelmuslab/ice-floe-tracker-pipeline@v2.3.1#subdirectory=label-colorizer colorize"
 CSVJOIN: "pipx run --spec git+https://github.com/wilhelmuslab/ice-floe-tracker-pipeline@v2.3.1#subdirectory=csvjoin csvjoin"
 LOADER: "pipx run --spec git+https://github.com/brown-ccv/earthdata-downloader@v1.0 earthdata-downloader load"
