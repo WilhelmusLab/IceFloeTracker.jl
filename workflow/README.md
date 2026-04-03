@@ -25,7 +25,7 @@ and process them in the correct order.
 
 For example, the command:
 ```bash
-snakemake -c 1 beaufort_sea-100km.250m.2019-03-22.2019-03-23.lopeztiling.tracked.csv 
+snakemake -c 1 beaufort_sea-100km.250m.2019-03-22.2019-03-23.LopezAcosta2019Tiling.tracked.csv 
 ```
 - Will use one processor core (`-c 1`) 
 - to run tracking (`....tracked.csv`)
