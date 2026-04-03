@@ -31,8 +31,8 @@
             1 1 1 1 1
             1 1 1 1 1
         ]);
-        fill_holes_min_pixels=0,
-        fill_holes_max_pixels=0,
+        fill_min_pixels=0,
+        fill_max_pixels=0,
     )
 
     @test coastal_buffer_creation(
@@ -51,8 +51,8 @@
             0 1 1 1 0
             0 1 1 1 0
         ]);
-        fill_holes_min_pixels=0,
-        fill_holes_max_pixels=0,
+        fill_min_pixels=0,
+        fill_max_pixels=0,
     )
 
     @test coastal_buffer_creation(
@@ -71,8 +71,8 @@
             1 1 1 1 1 1 0
             1 1 1 1 1 0 0
         ]);
-        fill_holes_min_pixels=0,
-        fill_holes_max_pixels=0,
+        fill_min_pixels=0,
+        fill_max_pixels=0,
     )
     @test coastal_buffer_creation(
         BitMatrix(
@@ -96,8 +96,8 @@
             0 1 1 1 1 1 1 1
             0 1 1 1 1 1 0 0
         ];
-        fill_holes_min_pixels=0,
-        fill_holes_max_pixels=0,
+        fill_min_pixels=0,
+        fill_max_pixels=0,
     )
 
     @test coastal_buffer_creation(
@@ -128,8 +128,8 @@
                 0 0 1 0 1 0 0 0
             ],
         );
-        fill_holes_min_pixels=0,
-        fill_holes_max_pixels=1,
+        fill_min_pixels=0,
+        fill_max_pixels=1,
     )
 
     @test coastal_buffer_creation(
@@ -148,8 +148,8 @@
             1 1 1 1 1
             1 1 1 1 1
         ]);
-        fill_holes_min_pixels=0,
-        fill_holes_max_pixels=25,
+        fill_min_pixels=0,
+        fill_max_pixels=25,
     )
 
     @test coastal_buffer_creation(
@@ -168,7 +168,7 @@
             1 0 0 0 1
             1 1 1 1 1
         ]);
-        fill_holes_min_pixels=0,
-        fill_holes_max_pixels=8,
+        fill_min_pixels=0,
+        fill_max_pixels=8,
     )
 end
