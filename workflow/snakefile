@@ -222,7 +222,7 @@ rule load_coastal_buffer_mask:
     shell:
         """
         {config[IFT]} -e 'using IceFloeTracker, Images; 
-            load("{input.landmask}") |> to_landmask |> create_coastal_buffer .|> Gray |> save("{output}")
+            load("{input.landmask}") |> to_landmask |> create_coastal_buffer_mask .|> Gray |> save("{output}")
         '
         """
 
