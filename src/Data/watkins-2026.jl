@@ -8,6 +8,7 @@ export Watkins2026Dataset,
     masie_landmask,
     masie_seaice,
     validated_binary_floes,
+    validated_binary_landfast,
     validated_labeled_floes,
     validated_floe_properties
 
@@ -205,6 +206,14 @@ function validated_labeled_floes(case::Case; ext="tiff")
     file = "data/validation_dataset/labeled_floes/$(case_number)-$(region)-$(date)-$(satellite)-labeled_floes.$(ext)"
     labels = file |> case.loader |> load .|> Int
     img = SegmentedImage(modis_truecolor(case), labels)
+    return img
+end
+
+function validated_binary_landfast(case::Case)
+    info(case).fl_analyst == "" && return nothing
+    (; case_number, region, date, satellite) = _filename_parts(case)
+    file = "data/validation_dataset/binary_landfast/$(case_number)-$(region)-$(date)-$(satellite)-binary_landfast.png"
+    img = file |> case.loader |> load .|> Gray |> (x -> x .> 0.5) .|> Gray
     return img
 end
 
