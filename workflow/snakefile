@@ -327,7 +327,7 @@ ruleorder: segment_buckley > segment
 rule tracking:
     output:
         tracked = "{region}.{scale}m.{start}.{end}.{segmentation}.tracked.csv",
-        config = "{region}.{scale}m.{start}.{end}.{segmentation}.tracked.config.csv"
+        config = "{region}.{scale}m.{start}.{end}.{segmentation}.tracked.config.txt"
     input:
         labels_maps = lambda wc: expand("{region}.{scale}m.{date}.{satellite}/{segmentation}.labels_map.tiff",
                           satellite=config["SATELLITES"],
