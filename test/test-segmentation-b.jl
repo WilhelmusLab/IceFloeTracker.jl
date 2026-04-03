@@ -1,8 +1,9 @@
-@testitem "Segmentation-B" setup = [ImageSimilarity] begin
+@testitem "Segmentation-B" begin
     using Images:
         @test_approx_eq_sigma_eps, load, float64, strel_diamond, closing, clamp01nan
     import StatsBase: mean
     include("config.jl")
+    include("test_error_rate.jl")
 
     sharpened_image = float64.(load(sharpened_test_image_file))
     segmented_a_ice_mask = convert(BitMatrix, load(segmented_a_ice_mask_file))

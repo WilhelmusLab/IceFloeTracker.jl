@@ -1,11 +1,12 @@
 
-@testitem "Segmentation-A" setup = [ImageSimilarity] begin
+@testitem "Segmentation-A" begin
     import DelimitedFiles: readdlm
     import Images: float64, load, closing, strel_diamond
     import IceFloeTracker.Segmentation: kmeans_binarization
     import IceFloeTracker.LopezAcosta2019: IceDetectionLopezAcosta2019
 
     include("config.jl")
+    include("test_error_rate.jl")
 
     ice_water_discriminated_image =
         float64.(load("$(test_data_dir)/matlab_ice_water_discrim.png"))

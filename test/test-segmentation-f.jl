@@ -1,8 +1,9 @@
-@testitem "Segmentation-F" setup = [ImageSimilarity] begin
+@testitem "Segmentation-F" begin
     using DelimitedFiles: readdlm
     using Images: complement, float64, load
 
     include("config.jl")
+    include("test_error_rate.jl")
 
     ## Load inputs for comparison
     brightened_gray = float64.(load("$(test_data_dir)/matlab_I.png"))
