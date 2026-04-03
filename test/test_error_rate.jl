@@ -1,5 +1,7 @@
 # TODO: make this into a file not named test...
-function test_similarity(imgA::BitMatrix, imgB::BitMatrix, error_rate=0.005)
+function test_similarity(
+    imgA::AbstractArray{Bool}, imgB::AbstractArray{Bool}, error_rate=0.005
+)
     error = sum(imgA .!== imgB) / prod(size(imgA))
     res = error_rate > error
     if res
