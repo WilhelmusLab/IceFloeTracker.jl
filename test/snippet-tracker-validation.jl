@@ -37,4 +37,14 @@
         end
         return true
     end
+
+    function tracker_runs_without_error(dataset, case_number, tracker)
+        labeled_imgs, pass_times = load_tracker_pair(dataset, case_number)
+        result = tracker(labeled_imgs, pass_times)
+        return is_wellformed_tracker_result(result)
+    end
+
+    function tracker_runs_without_error(case_number; dataset, tracker)
+        return tracker_runs_without_error(dataset, case_number, tracker)
+    end
 end
