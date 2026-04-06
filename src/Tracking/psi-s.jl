@@ -153,8 +153,8 @@ function buildψs(floe_mask::AbstractArray)
     bd = bwtraceboundary(floe_mask)
     isempty(bd) && return Float64[]
     bd_points = bd[1]
-    # Need at least 4 boundary points for cubic spline resampling with default reduc_factor=2
-    # (requires length(bd_points) ÷ reduc_factor >= 2)
+    # Need at least 4 boundary points so that the resampled output (length ÷ reduc_factor)
+    # has at least 2 points, which is the minimum for cubic spline interpolation.
     length(bd_points) < 4 && return Float64[]
     bdres = resample_boundary(bd_points)
     return buildψs(bdres)[1]
