@@ -157,8 +157,8 @@ function (p::Segment)(
 ) where {
     T₁<:AbstractMatrix{<:Union{AbstractRGB,TransparentRGB}},
     T₂<:AbstractMatrix{<:Union{AbstractRGB,TransparentRGB}},
-    T₃<:AbstractMatrix{<:Union{Bool,Gray}},
-    T₄<:AbstractMatrix{<:Union{Bool,Gray}},
+    T₃<:AbstractMatrix{<:Union{Bool,Gray{Bool}}},
+    T₄<:AbstractMatrix{<:Union{Bool,Gray{Bool}}},
 }
     coastal_buffer_mask = reinterpret(Bool, coastal_buffer_mask)
     landmask = reinterpret(Bool, landmask)
@@ -347,8 +347,8 @@ Generates an image with ice floes apparent after filtering and combining previou
 function discriminate_ice_water(
     sharpened_grayscale_image, #::AbstractArray{AbstractGray}, #dmw: discrim-ice-water test fails here
     landmasked_falsecolor_image, #::AbstractArray{<:Union{AbstractRGB,TransparentRGB}},
-    landmask::T,
-    cloudmask::T,
+    landmask::AbstractArray{Bool},
+    cloudmask::AbstractArray{Bool},
     floes_threshold::Float64=Float64(100 / 255),
     mask_clouds_lower::Float64=Float64(17 / 255),
     mask_clouds_upper::Float64=Float64(30 / 255),
@@ -359,7 +359,7 @@ function discriminate_ice_water(
     st_dev_thresh_upper::Float64=Float64(98.9 / 255),
     clouds_ratio_threshold::Float64=0.02,
     differ_threshold::Float64=0.6,
-)::AbstractMatrix where {T<:AbstractArray{Bool}}
+)::AbstractMatrix
 
     # First step: Grayscale reconstruction, creating an inverted and smoothed image.
     fc_landmasked = landmasked_falsecolor_image # shorten name for convenience
