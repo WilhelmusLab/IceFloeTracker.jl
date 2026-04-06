@@ -567,7 +567,7 @@ function regionprops(
 
     :bbox ∈ properties && begin
         if isempty(img_labels)
-            bboxes = Array{Int64}(undef, 4, 0)
+            bboxes = Array{Int64}(undef, 4, 0) # a zero-length array with 4 rows for min_row, max_row, min_col, max_col
         else
             bboxes_init = component_boxes(labels)
             bboxes = stack(_get_bounds.(bboxes_init[s] for s in img_labels))
