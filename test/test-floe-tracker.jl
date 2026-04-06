@@ -184,7 +184,6 @@ end
 
     # Regression test: FloeTracker should not throw an ArgumentError when a small floe
     # produces no valid candidate pairs (empty candidate_pairs list).
-    # See: https://github.com/WilhelmusLab/IceFloeTracker.jl/issues/XXX
     img = Int[0 0 0 0; 0 1 1 0; 0 0 1 0; 0 0 0 0]
     time = DateTime("2025-01-01T00:00:00")
     tracker = FloeTracker(;
