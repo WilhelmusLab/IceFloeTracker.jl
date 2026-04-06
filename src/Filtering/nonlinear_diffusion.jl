@@ -65,6 +65,18 @@ function nonlinear_diffusion(
     return nonlinear_diffusion(img, PeronaMalikDiffusion(λ, K, niters, "inverse_quadratic"))
 end
 
+function nonlinear_diffusion(
+    img::AbstractArray{<:Union{AbstractRGB,TransparentRGB,AbstractGray}},
+    tiles,
+    f::AbstractDiffusionAlgorithm=PeronaMalikDiffusion()
+)
+    out = deepcopy(img)
+    for tile in tiles
+        out[tile...] .= f(img[tile...])
+    end
+    return out
+end
+
 function (f::PeronaMalikDiffusion)(img::AbstractArray{<:AbstractGray})
     # Get the gradient function from the supported functions
     g = SUPPORTED_GRADIENT_FUNCTIONS[f.g]
