@@ -74,9 +74,9 @@ end
 end
 
 @testitem "FloeTracker – smallest floe shapes" setup = [SyntheticTrackerHelpers] begin
-    @test tracker_runs_without_error(1) broken = true
-    @test tracker_runs_without_error(2) broken = true
-    @test tracker_runs_without_error(3) broken = true
+    @test tracker_runs_without_error(1) broken = true # https://github.com/WilhelmusLab/IceFloeTracker.jl/issues/911
+    @test tracker_runs_without_error(2) broken = true # https://github.com/WilhelmusLab/IceFloeTracker.jl/issues/912
+    @test tracker_runs_without_error(3) broken = true # https://github.com/WilhelmusLab/IceFloeTracker.jl/issues/913
     @test tracker_runs_without_error(4)
     @test tracker_runs_without_error(5)
 end
