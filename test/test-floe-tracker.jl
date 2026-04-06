@@ -318,3 +318,23 @@ end
     # TODO: LopezAcosta matching function
     # TODO: Update to use error metric for matching
 end
+
+@testitem "Tiny floe (2-pixel) does not error" begin
+    # Regression test for: ArgumentError: range(0.0, stop=1.0, length=1): endpoints differ
+    # https://github.com/WilhelmusLab/IceFloeTracker.jl/issues/...
+    # When tracking a 2-pixel floe, resample_boundary would fail because the resampled
+    # boundary length (n_pixels ÷ reduc_factor) would be 1, and range(0, 1, 1) is invalid.
+    using Dates
+    import DataFrames: DataFrame
+
+    img = Int[0 0 0 0; 0 0 1 0; 0 0 1 0; 0 0 0 0]
+    time = DateTime("2025-01-01T00:00:00")
+    tracker = FloeTracker(;
+        filter_function=FilterFunction(),
+        matching_function=MinimumWeightMatchingFunction(),
+        minimum_area=1,
+    )
+    # Should not throw an ArgumentError
+    result = tracker([img, img], [time, time])
+    @test isa(result, DataFrame)
+end

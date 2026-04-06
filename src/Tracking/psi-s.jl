@@ -145,9 +145,17 @@ end
     buildψs(floe_mask)
 
 Alternate method of `buildψs` accepting binary floe mask as input.
+
+Returns an empty `Float64[]` when the floe boundary has too few points for cubic spline
+resampling (fewer than 4 points with the default `reduc_factor=2`).
 """
 function buildψs(floe_mask::AbstractArray)
     bd = bwtraceboundary(floe_mask)
-    bdres = resample_boundary(bd[1])
+    isempty(bd) && return Float64[]
+    bd_points = bd[1]
+    # Need at least 4 boundary points for cubic spline resampling with default reduc_factor=2
+    # (requires length(bd_points) ÷ reduc_factor >= 2)
+    length(bd_points) < 4 && return Float64[]
+    bdres = resample_boundary(bd_points)
     return buildψs(bdres)[1]
 end

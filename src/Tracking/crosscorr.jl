@@ -115,8 +115,11 @@ end
     normalized_cross_corr(f1,f2)
 
 Return the normalized cross-correlation between the psi-s curves `p1` and `p2`.
+
+Returns `0.0` if either input is empty (e.g., for floes too small to compute a ψ-s curve).
 """
 function normalized_cross_correlation(p1::T, p2::T) where {T<:AbstractArray}
+    (isempty(p1) || isempty(p2)) && return 0.0
     cc, _ = maximum.(crosscorr(p1, p2; normalize=true, padmode=:longest))
     return cc
 end
