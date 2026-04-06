@@ -676,15 +676,13 @@ function _component_moment_measures(labels, label_list)
         append!(moment_measures, [[ra, rb, θ]])
     end
     if isempty(moment_measures)
-        push!(data, :major_axis_length => [])
-        push!(data, :minor_axis_length => [])
-        push!(data, :orientation => [])
+        moment_measures = Array{Float64}(undef, 3, 0) # a zero-length array with 3 rows for major_axis_length, minor_axis_length, and orientation
     else
         moment_measures = stack(moment_measures)
-        push!(data, :major_axis_length => moment_measures[1, :])
-        push!(data, :minor_axis_length => moment_measures[2, :])
-        push!(data, :orientation => moment_measures[3, :])
     end
+    push!(data, :major_axis_length => moment_measures[1, :])
+    push!(data, :minor_axis_length => moment_measures[2, :])
+    push!(data, :orientation => moment_measures[3, :])
 
     return data
 end
