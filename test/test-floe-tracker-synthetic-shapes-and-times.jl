@@ -65,7 +65,7 @@ end
 
     base_time = DateTime("2025-01-01T00:00:00")
     time_deltas_seconds = Second.(vcat([0], [2^k for k in 0:18]))
-    working_floe_sizes = 4:20
+    working_floe_sizes = [0, 4:20...]
     broken_floe_sizes = 1:3
 
     for (floe_pixel_count, dt) in Iterators.product(broken_floe_sizes, time_deltas_seconds)
@@ -78,6 +78,7 @@ end
 end
 
 @testitem "FloeTracker – smallest floe shapes" setup = [SyntheticTrackerHelpers] begin
+    @test tracker_runs_without_error(0)
     @test tracker_runs_without_error(1) broken = true # https://github.com/WilhelmusLab/IceFloeTracker.jl/issues/911
     @test tracker_runs_without_error(2) broken = true # https://github.com/WilhelmusLab/IceFloeTracker.jl/issues/912
     @test tracker_runs_without_error(3) broken = true # https://github.com/WilhelmusLab/IceFloeTracker.jl/issues/913
