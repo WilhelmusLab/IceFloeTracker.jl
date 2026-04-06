@@ -2,7 +2,7 @@ abstract type AbstractFloeMatchingFunction <: Function end
 
 """
     MinimumWeightMatchingFunction(columns=[:scaled_distance, :relative_error_area, ...])
-    MinimumWeightedMatchingFunction(candidate_pairs)
+    MinimumWeightMatchingFunction(candidate_pairs)
 
 Function to identify a best matching between pairs of ice floes in the DataFrame `candidate_pairs`. The
 `columns` variable is instantiated by the first functor call and is used to select a list of columns in `candidate_pairs`
