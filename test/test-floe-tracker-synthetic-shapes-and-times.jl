@@ -53,6 +53,7 @@
     )
         return tracker_runs_without_error(floe_pixel_count, dt, time)
     end
+
     function tracker_runs_without_error(floe_pixel_count::Int, dt::Second, time::DateTime)
         img = make_floe_image(floe_pixel_count)
         return tracker_runs_without_error(img, time, img, time + dt)
@@ -63,7 +64,7 @@ end
     using Dates: DateTime, Second
 
     base_time = DateTime("2025-01-01T00:00:00")
-    time_deltas_seconds = vcat([0], [2^k for k in 0:18])
+    time_deltas_seconds = Second.(vcat([0], [2^k for k in 0:18]))
     working_floe_sizes = 4:20
     broken_floe_sizes = 1:3
 
