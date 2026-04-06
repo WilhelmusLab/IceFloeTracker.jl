@@ -177,6 +177,26 @@ end
     end
 end
 
+@testitem "Small floe (no valid candidate pairs)" begin
+    using DataFrames
+    using Dates
+    using IceFloeTracker: FloeTracker, FilterFunction, MinimumWeightMatchingFunction
+
+    # Regression test: FloeTracker should not throw an ArgumentError when a small floe
+    # produces no valid candidate pairs (empty candidate_pairs list).
+    # See: https://github.com/WilhelmusLab/IceFloeTracker.jl/issues/XXX
+    img = Int[0 0 0 0; 0 1 1 0; 0 0 1 0; 0 0 0 0]
+    time = DateTime("2025-01-01T00:00:00")
+    tracker = FloeTracker(;
+        filter_function=FilterFunction(),
+        matching_function=MinimumWeightMatchingFunction(),
+        minimum_area=1,
+    )
+    # Should not throw an error
+    result = tracker([img, img], [time, time])
+    @test isa(result, DataFrame)
+end
+
 @testitem "Ellipses" begin
     using CSVFiles
     using DataFrames
