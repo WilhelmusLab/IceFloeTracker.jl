@@ -51,6 +51,9 @@
         dt::Second=Second(1),
         time::DateTime=DateTime("2025-01-01T00:00:00"),
     )
+        return tracker_runs_without_error(floe_pixel_count, dt, time)
+    end
+    function tracker_runs_without_error(floe_pixel_count::Int, dt::Second, time::DateTime)
         img = make_floe_image(floe_pixel_count)
         return tracker_runs_without_error(img, time, img, time + dt)
     end
