@@ -1,4 +1,5 @@
 export Watkins2026Dataset,
+    case_number,
     info,
     name,
     modis_truecolor,
@@ -246,6 +247,10 @@ function name(case::Case)::String
         case
     )
     return "$(case_number)-$(region)-$(image_scale)-$(date)-$(satellite)-$(pixel_scale)"
+end
+
+function case_number(case::Case)::Int
+    return info(case).case_number
 end
 
 function _filename_parts(case::Case)
