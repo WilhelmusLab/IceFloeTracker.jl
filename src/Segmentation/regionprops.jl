@@ -566,13 +566,20 @@ function regionprops(
     end
 
     :bbox ∈ properties && begin
-        bboxes_init = component_boxes(labels)
-        bboxes = stack(_get_bounds.(bboxes_init[s] for s in img_labels))
+        if isempty(img_labels)
+            push!(data, :min_row => [])
+            push!(data, :max_row => [])
+            push!(data, :min_col => [])
+            push!(data, :max_col => [])
+        else
+            bboxes_init = component_boxes(labels)
+            bboxes = stack(_get_bounds.(bboxes_init[s] for s in img_labels))
 
-        push!(data, :min_row => bboxes[1, :])
-        push!(data, :max_row => bboxes[2, :])
-        push!(data, :min_col => bboxes[3, :])
-        push!(data, :max_col => bboxes[4, :])
+            push!(data, :min_row => bboxes[1, :])
+            push!(data, :max_row => bboxes[2, :])
+            push!(data, :min_col => bboxes[3, :])
+            push!(data, :max_col => bboxes[4, :])
+        end
     end
 
     :perimeter ∈ properties && begin
@@ -672,10 +679,16 @@ function _component_moment_measures(labels, label_list)
         rb = 4 * (λ1 / areas[s])^0.5
         append!(moment_measures, [[ra, rb, θ]])
     end
-    moment_measures = stack(moment_measures)
-    push!(data, :major_axis_length => moment_measures[1, :])
-    push!(data, :minor_axis_length => moment_measures[2, :])
-    push!(data, :orientation => moment_measures[3, :])
+    if isempty(moment_measures)
+        push!(data, :major_axis_length => [])
+        push!(data, :minor_axis_length => [])
+        push!(data, :orientation => [])
+    else
+        moment_measures = stack(moment_measures)
+        push!(data, :major_axis_length => moment_measures[1, :])
+        push!(data, :minor_axis_length => moment_measures[2, :])
+        push!(data, :orientation => moment_measures[3, :])
+    end
 
     return data
 end
