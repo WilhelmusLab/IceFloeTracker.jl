@@ -67,7 +67,14 @@ end
     )
 
     all_cases_with_validated_floes = case_number.(filter(c -> c.fl_analyst != "", dataset))
-    known_broken_cases = [53, 84, 105, 141, 142, 188]
+    known_broken_cases = [
+        53, # https://github.com/WilhelmusLab/IceFloeTracker.jl/issues/913
+        84, # https://github.com/WilhelmusLab/IceFloeTracker.jl/issues/913
+        105, # https://github.com/WilhelmusLab/IceFloeTracker.jl/issues/913
+        141, # https://github.com/WilhelmusLab/IceFloeTracker.jl/issues/913
+        142, # https://github.com/WilhelmusLab/IceFloeTracker.jl/issues/913
+        188, # https://github.com/WilhelmusLab/IceFloeTracker.jl/issues/913
+    ]
     working_cases = setdiff(all_cases_with_validated_floes, known_broken_cases)
 
     # Some cases are known to be broken due to issues in the tracker.
