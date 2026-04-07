@@ -33,6 +33,7 @@
             @test modis_landmask(case) isa AbstractArray{<:Gray{Bool},2}
             @test modis_cloudfraction(case) isa AbstractArray{RGBA{N0f8},2}
             @test validated_binary_floes(case) isa AbstractArray{<:Gray{Bool},2}
+            @test validated_binary_landfast(case) isa AbstractArray{<:Gray{Bool},2}
             @test validated_labeled_floes(case) isa SegmentedImage
             @test validated_floe_properties(case) isa DataFrame
             @test masie_seaice(case) isa AbstractArray{<:Gray,2}
