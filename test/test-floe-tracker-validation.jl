@@ -43,10 +43,6 @@
         result = tracker(labeled_imgs, pass_times)
         return is_wellformed_tracker_result(result)
     end
-
-    function tracker_runs_without_error(case_number; dataset, tracker)
-        return tracker_runs_without_error(dataset, case_number, tracker)
-    end
 end
 
 @testitem "FloeTracker – sample of cases" setup = [TrackerValidation] tags = [:e2e] begin
