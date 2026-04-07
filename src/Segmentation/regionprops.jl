@@ -303,7 +303,8 @@ function (f::PolygonConvexArea)(A)
         local chull
         try
             chull = convexhull(A .== i)
-        catch
+        catch e
+            e isa ErrorException || rethrow()
             convex_areas[i] = Float64(areas[i])
             continue
         end
@@ -349,7 +350,8 @@ function (f::PixelConvexArea)(A)
         local chull
         try
             chull = convexhull(A .== i)
-        catch
+        catch e
+            e isa ErrorException || rethrow()
             convex_areas[i] = Float64(areas[i])
             continue
         end
