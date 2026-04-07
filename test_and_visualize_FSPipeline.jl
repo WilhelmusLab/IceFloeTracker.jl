@@ -19,7 +19,6 @@ begin
     end
 end
 
-
 # exports
 # save binary image
 save(joinpath(dataloc, "FSPipeline", "binary",
@@ -53,9 +52,18 @@ idx = labels_map(test_full) .> 0;
 overlay = deepcopy(tc_img);
 overlay[idx] .= cview[idx];
 
+
+
+binary_overlay = RGB.(Gray.(img));
+binary_overlay[idx] .= cview[idx];
+
 save(joinpath(dataloc, "FSPipeline", "colorized",
-    replace(tc_file, ("truecolor.250m.tiff" => "colorized_floes.png")), 
+    replace(tc_file, ("truecolor.250m.tiff" => "colorized_floes_disk5.png")), 
     ), overlay)
+save(joinpath(dataloc, "FSPipeline", "colorized",
+    replace(tc_file, ("truecolor.250m.tiff" => "colorized_floes_binary_disk5.png")), 
+    ), binary_overlay)
+
 
 Gray.(idx)
 

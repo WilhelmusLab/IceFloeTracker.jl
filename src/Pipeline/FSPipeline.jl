@@ -268,7 +268,6 @@ function (p::Segment)(
 
     # segmentation_F
     # TODO: Split the refined k-means workflow from the cleanup
-    # TODO: Make the final morphological operations into a split_floes function
     @info "Segmenting floes part 3/3"
     morphed_grayscale = reconstruct_and_mask(
         brightened_gray,
@@ -296,13 +295,16 @@ function (p::Segment)(
     markers = label_components(segF)
     labels = labels_map(watershed(dist, markers))
 
-    # bw2 = original k-means result
+    # bw2 = original k-means result ### TBD: Test which binarized image comes closest to the true floe boundaries
     bw2 = .!(kmeans_result .|| segF)
     labels[bw2] .= 0
     labels .= labels .* dilate(markers, se_disk(5))
 
-    # add removal of too-small objects here
+    # add removal of too-small objects here. This needs to be label based not binary
     labels .= labels .* imfill(labels .> 0, (0, p.min_floe_size))
+
+    # add removal of too-large objects here
+
 
     @info "Labeling floes"
     # labels = label_components(segF)
@@ -329,7 +331,7 @@ function (p::Segment)(
             watersheds_product=watersheds_product,
             segF_reconst_gray=morphed_grayscale,
             segF=segF_binarized, 
-            final_floes = segF,
+            final_floes = Gray.(labels_map(segments) .> 0),
             segment_mean_falsecolor=colorview_falsecolor,
             segment_mean_truecolor=colorview_truecolor,
             ) # Add figure that overlays the segments
