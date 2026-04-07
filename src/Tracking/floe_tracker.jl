@@ -292,3 +292,15 @@ function _add_integer_id!(df::AbstractDataFrame, col::Symbol, new::Symbol)
     transform!(df, col => ByRow(x -> _map[x]) => new)
     return nothing
 end
+
+function DefaultFloeTracker(
+    filter_function=FilterFunction(),
+    matching_function=MinimumWeightMatchingFunction(),
+    minimum_area=100,
+    maximum_area=90e3,
+    maximum_time_step=Day(2),
+)
+    return FloeTracker(;
+        filter_function, matching_function, minimum_area, maximum_area, maximum_time_step
+    )
+end
