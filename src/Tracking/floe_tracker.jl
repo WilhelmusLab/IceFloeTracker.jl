@@ -199,18 +199,25 @@ function floe_tracker(
 
             # matching function will find best pairs (head_uuid, uuid)
             # and ensure that all pairs are unique
-            matched_pairs = DataFrame(candidate_pairs) |> matching_function
+            if isempty(candidate_pairs)
+                # No valid candidate pairs found; treat all candidates as unmatched
+                unmatched = candidates
+                _start_new_trajectory!(unmatched)
+                trajectories = vcat(trajectories, unmatched)
+            else
+                matched_pairs = DataFrame(candidate_pairs) |> matching_function
 
-            # Get unmatched floes in day 2 (iterations > 2)
-            # This should handle the case where there are no trajectory heads available
-            matched_uuids = matched_pairs.uuid
-            unmatched = filter((f) -> !(f.uuid in matched_uuids), candidates)
-            _start_new_trajectory!(unmatched)
-            _update_cols_to_match!(unmatched, matched_pairs)
-            _update_cols_to_match!(trajectories, matched_pairs)
+                # Get unmatched floes in day 2 (iterations > 2)
+                # This should handle the case where there are no trajectory heads available
+                matched_uuids = matched_pairs.uuid
+                unmatched = filter((f) -> !(f.uuid in matched_uuids), candidates)
+                _start_new_trajectory!(unmatched)
+                _update_cols_to_match!(unmatched, matched_pairs)
+                _update_cols_to_match!(trajectories, matched_pairs)
 
-            # Attach new matches and unmatched floes to trajectories
-            trajectories = vcat(trajectories, matched_pairs, unmatched)
+                # Attach new matches and unmatched floes to trajectories
+                trajectories = vcat(trajectories, matched_pairs, unmatched)
+            end
         end
     end
     trajectories = _drop_short_trajectories(trajectories, :trajectory_uuid)
