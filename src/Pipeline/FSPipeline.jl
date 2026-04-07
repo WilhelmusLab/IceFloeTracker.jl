@@ -33,40 +33,107 @@ import ..Segmentation:
     find_ice_mask, 
     kmeans_binarization,
     tiled_adaptive_binarization,
-    IceDetectionFirstNonZeroAlgorithm,
     IceDetectionBrightnessPeaksMODIS721,
-    IceDetectionThresholdMODIS721,
+    IceDetectionBrightnessPeaksMODIS134,
     stitch_clusters,
     view_seg
 
-"""
-Sample input parameters expected by the main function
-"""
-# cloud_mask_thresholds = (
-#     prelim_threshold=110.0 / 255.0,
-#     band_7_threshold=200.0 / 255.0,
-#     band_2_threshold=190.0 / 255.0,
-#     ratio_lower=0.0,
-#     ratio_offset=0.0,
-#     ratio_upper=0.75,
-# )
+abstract type IceFloePreprocessingAlgorithm end
 
-diffusion_parameters = (lambda=0.1, kappa=0.1, niters=5, g="exponential")
 
-@kwdef struct Segment <: IceFloeSegmentationAlgorithm
-    coastal_buffer_structuring_element::AbstractMatrix{Bool} = strel_box((51,51))
-    cloud_mask_algorithm = LopezAcostaCloudMask() #Watkins2025CloudMask()
-    diffusion_algorithm = PeronaMalikDiffusion(diffusion_parameters...)
-    adapthisteq_params = (
-        nbins=256,
-        rblocks=4,
-        cblocks=4, 
-        clip=5, 
+"""
+   Preprocess(
+        coastal_buffer_structuring_element = strel_box((51,51))
+        cloud_mask_algorithm = Watkins2025CloudMask()
+        diffusion_algorithm = PeronaMalikDiffusion(lambda=0.1, kappa=0.1, niters=5, g="exponential")
+        adapthisteq_params = (nbins=256, rblocks=8, cblocks=8, clip=0.95)
+        unsharp_mask_params = (radius=50, amount=0.2, threshold=0.01)
     )
+    Preprocess()(img, cloudmask, landmask)
+
+    Converts input image to grayscale, then preprocesses by appling nonlinear diffusion, 
+    adaptive histogram equalization, and unsharp masking. Diffusion and unsharp masking are applied 
+    to each tile, while the adaptive histogram equalization is divided according to the parameter specifications.
+
+"""
+@kwdef struct Preprocess <: IceFloePreprocessingAlgorithm
+    diffusion_algorithm = PeronaMalikDiffusion(λ=0.1, K=0.1, niters=5, g="exponential")
+    adapthisteq_params = (nbins=256, rblocks=8, cblocks=8, clip=0.99) # rblocks/cblocks not used yet -- add with CLAHE.jl
+    unsharp_mask_params = (radius=50, amount=0.2, threshold=0.01)
+end
+
+function (p::Preprocess)(
+    truecolor_image::AbstractArray{<:Union{AbstractRGB,TransparentRGB}}, 
+    landmask,
+    cloud_mask,
+    tiles
+)
+    # Cast to grayscale first to save compute time
+    proc_img = Gray.(truecolor_image)
+    apply_landmask!(proc_img, landmask .|| cloud_mask)
+
+    # Diffusion and sharpening
+    proc_img .= nonlinear_diffusion(proc_img, tiles, p.diffusion_algorithm)
+    
+    adjust_histogram!(proc_img,
+        ContrastLimitedAdaptiveHistogramEqualization(
+            nbins=p.adapthisteq_params.nbins,
+            rblocks=p.adapthisteq_params.rblocks,
+            cblocks=p.adapthisteq_params.cblocks,
+            clip=p.adapthisteq_params.clip)
+    )
+
+    for tile in tiles
+        proc_img[tile...] .= unsharp_mask(proc_img[tile...],
+                p.unsharp_mask_params.radius,
+                p.unsharp_mask_params.amount,
+                p.unsharp_mask_params.threshold)
+    end
+
+            
+    apply_landmask!(proc_img, landmask .|| cloud_mask)
+    
+    return proc_img
+end
+
+"""
+    FSPipeline.Segment()
+
+Segmentation routine for identifying moderate to large floes in the Fram Strait. 
+The image preprocessing is supplied as an function in the functor setup.
+
+
+# Parameters
+- `coastal_buffer_structuring_element::AbstractMatrix{Bool} = strel_box((51,51))`: Structuring element for the `create_landmask` function
+- `cloud_mask_algorithm = LopezAcostaCloudMask()`: Cloud mask algorithm
+- `preprocessing_algorithm = Preprocess()`: Function to sharpen and equalize the truecolor image
+- `tile_size_pixels=1000`: Nominal tile size in pixels
+- `min_tile_ice_pixel_count=300`: Smallest number of likely sea ice floes in tile
+- `min_floe_size=100`: Smallest floe to retain in image
+- `preliminary_ice_mask = IceDetectionBrightnessPeaksMODIS134(band_7_max=0.1, possible_ice_threshold=0.3)`: Function to use to identify likely ice pixels for filtering.
+- `kmeans_params = (k=4, maxiter=50, random_seed=45)`: Parameters for `kmeans_binarization`
+- `cluster_selection_algorithm = IceDetectionBrightnessPeaksMODIS721(
+    band_7_max=0.1,
+    possible_ice_threshold=0.3,
+    join_method="union",
+    minimum_prominence=0.01)`: Function to use to select a k-means cluster in the `kmeans_binarization` workflow
+- `brightening_factor = 0.3`
+- `adaptive_binarization_settings = (
+    minimum_window_size=400,
+    threshold_percentage=0,
+    minimum_brightness=100/255)`: Settings for the adaptive threshold binarization
+- `watershed_strel = se_disk(5)`
+- `floe_splitting_settings = (max_fill_area=1, min_area_opening=20, opening_strel=se_disk(2))`
+"""
+@kwdef struct Segment <: IceFloeSegmentationAlgorithm # Tried making this an IceFloeSegmentationAlgorithm but julia complains about ambiguity when I do so. Need to fix this to be able to use the run and validate function.
+    coastal_buffer_structuring_element::AbstractMatrix{Bool} = strel_box((51,51))
+    cloud_mask_algorithm = LopezAcostaCloudMask()
+    preprocessing_algorithm = Preprocess()
     tile_size_pixels=1000
     min_tile_ice_pixel_count=300
-    unsharp_mask_params = (smoothing_param=10, intensity=0.5)
+    min_floe_size=100
     kmeans_params = (k=4, maxiter=50, random_seed=45)
+    preliminary_ice_mask = IceDetectionBrightnessPeaksMODIS134(band_1_min=0.3)
     cluster_selection_algorithm = IceDetectionBrightnessPeaksMODIS721(
         band_7_max=0.1,
         possible_ice_threshold=0.3,
@@ -79,37 +146,20 @@ diffusion_parameters = (lambda=0.1, kappa=0.1, niters=5, g="exponential")
         minimum_brightness=100/255)
     watershed_strel = se_disk(5) # 
     floe_splitting_settings = (max_fill_area=1, min_area_opening=20, opening_strel=se_disk(2))
-end
+end 
 
 function (p::Segment)(
-    truecolor::T,
-    falsecolor::T,
-    land_mask::U;
+    truecolor::T₁,
+    falsecolor::T₂,
+    landmask::T₃,
+    coastal_buffer_mask::T₄;
     intermediate_results_callback::Union{Nothing,Function}=nothing,
-) where {T<:AbstractMatrix{<:Union{AbstractRGB, TransparentRGB}},U<:AbstractMatrix}
-    @info "building landmask and coastal buffer mask"
-    _landmask_temp = create_landmask(
-        float64.(land_mask), p.coastal_buffer_structuring_element
-    )
-    land_mask = _landmask_temp.non_dilated
-    coastal_buffer = _landmask_temp.dilated
-    return p(
-        truecolor,
-        falsecolor,
-        land_mask,
-        coastal_buffer;
-        intermediate_results_callback=intermediate_results_callback,
-    )
-end
-
-function (p::Segment)(
-    truecolor::T,
-    falsecolor::T,
-    land_mask::U,
-    coastal_buffer::U;
-    intermediate_results_callback::Union{Nothing,Function}=nothing,
-) where {T<:AbstractMatrix{<:Union{AbstractRGB, TransparentRGB}},U<:BitMatrix}
-
+) where {
+    T₁<:AbstractMatrix{<:Union{AbstractRGB,TransparentRGB}},
+    T₂<:AbstractMatrix{<:Union{AbstractRGB,TransparentRGB}},
+    T₃<:AbstractMatrix{<:Union{Bool,Gray{Bool}}},
+    T₄<:AbstractMatrix{<:Union{Bool,Gray{Bool}}},
+}
     # Move these conversions down through the function as each step gets support for 
     # the full range of image formats
     truecolor_image = float64.(RGB.(truecolor))
@@ -128,90 +178,50 @@ function (p::Segment)(
     # TODO: Make sure tests aren't over-sensitive to roundoff errors for Float32 vs Float64
     cloud_mask = create_cloudmask(falsecolor_image, p.cloud_mask_algorithm)
 
-    # 2. Intermediate images
-    apply_landmask!(falsecolor_image, coastal_buffer)
-    apply_cloudmask!(falsecolor_image, cloud_mask)
+    # 2. Intermediate images - using coastal buffer on the FC image
+    apply_landmask!(truecolor_image, landmask .|| cloud_mask)
+    apply_landmask!(falsecolor_image, coastal_buffer_mask .|| cloud_mask)
 
-    prelim_ice_mask = (red.(truecolor_image) .> 0.3) .&& .!cloud_mask .&& .!coastal_buffer
+    prelim_ice_mask = p.preliminary_ice_mask(truecolor_image, tiles)
     filtered_tiles = filter(
-        t -> sum(prelim_ice_mask[t...]) > p.min_tile_ice_pixel_count, # check if the min is larger than the tile size and adjust
-        tiles);
+        t -> sum(prelim_ice_mask[t...]) > p.min_tile_ice_pixel_count, tiles);
 
     @info "Preprocessing truecolor image"
-    apply_landmask!(truecolor_image, land_mask);
-    preproc_img = float64.(deepcopy(truecolor_image));
-
-    #### Preprocessing ######
-    # TODO: Test whether the order of diffuse, sharpen, and equalization matter for the end results.
-    # Order of operations permutations: 
-    #    a. eq -> sharpen -> diffuse
-    #    b. diffuse -> eq -> sharpen (current Lopez Acosta 2019)
-    #    c. sharpen -> diffuse -> eq
-    #    d. eq -> diffuse -> sharpen
-    #    e. diffuse -> sharpen -> eq
-    #    f. sharpen -> diffuse -> eq
-    #
-    # Color image processing vs grayscale image processing
-    #    a. Grayscale immediately
-    #    b. Grayscale before sharpening (as is currently)
-    #    c. Update sharpen to be channel-wise, then cast to grayscale afterward
-    for tile in filtered_tiles
-        preproc_img[tile...] .= nonlinear_diffusion(
-            preproc_img[tile...], p.diffusion_algorithm
-        )
-    end
+    preproc_gray = float64.(p.preprocessing_algorithm(
+        truecolor_image, landmask, cloud_mask, filtered_tiles));
     
-    adjust_histogram!(preproc_img,
-        ContrastLimitedAdaptiveHistogramEqualization(
-            nbins=p.adapthisteq_params.nbins,
-            rblocks=p.adapthisteq_params.rblocks,
-            cblocks=p.adapthisteq_params.cblocks,
-            clip=p.adapthisteq_params.clip)
-    )
-
-    # Potentially change to channelwise apply, using helper function
-    preproc_gray = Gray.(preproc_img)
-    for tile in filtered_tiles
-        preproc_gray[tile...] .= unsharp_mask(
-        preproc_gray[tile...],
-        p.unsharp_mask_params.smoothing_param,
-        p.unsharp_mask_params.intensity)
-    end
-
-    apply_landmask!(preproc_gray, coastal_buffer)
-    apply_cloudmask!(preproc_gray, cloud_mask);
-
-    
-    @info "Enhancing grayscale image"
-    # This step is a grayscale morphology operation. Reconstruction by dilation of the image complement
-    # followed by thresholding.
-    ice_water_discrim = zeros(size(preproc_gray))
-    for tile in filtered_tiles
-        ice_water_discrim[tile...] .= discriminate_ice_water(
-            preproc_gray[tile...], falsecolor_image[tile...], coastal_buffer[tile...], cloud_mask[tile...]
-    );
-    end
+    # @info "Enhancing grayscale image"
+    # # This step is a grayscale morphology operation. Reconstruction by dilation of the image complement
+    # # followed by thresholding.
+    # ice_water_discrim = zeros(size(preproc_gray))
+    # for tile in filtered_tiles
+    #     ice_water_discrim[tile...] .= discriminate_ice_water(
+    #         preproc_gray[tile...], falsecolor_image[tile...], coastal_buffer_mask[tile...], cloud_mask[tile...]
+    # );
+    # end
  
     # 3. Segmentation
     @info "Segmenting floes part 1/3"
     # Compare to Segmentation A from LopezAcosta2019
     kmeans_result = kmeans_binarization(
-            Gray.(ice_water_discrim),
+            Gray.(preproc_gray),
             falsecolor_image, 
             filtered_tiles;
             k=p.kmeans_params.k,
             maxiter=p.kmeans_params.maxiter,
             random_seed=p.kmeans_params.random_seed,
             cluster_selection_algorithm=p.cluster_selection_algorithm
-            ) |> clean_binary_floes
+            )
+    # Simpler cleanup
+    kmeans_result = opening(kmeans_result, se_disk(2))
+    kmeans_result .= imfill(kmeans_result, (0, p.min_floe_size))
     
     # check: are there any regions that are nonzero under the cloudmask, since it was applied in discriminate ice water?
-    apply_landmask!(kmeans_result, land_mask)
+    apply_landmask!(kmeans_result, landmask)
     apply_cloudmask!(kmeans_result, cloud_mask)
 
     # The clean binary floes method has an aggressive fill_holes algorithm. Potentially merging with the
     # ice brightness threshold can prevent some of the interstitial water areas from being filled.
-
     
     @info "Segmenting floes part 2/3"
     # Compare to Segmentation B from Lopez-Acosta 2019
@@ -264,7 +274,7 @@ function (p::Segment)(
         brightened_gray,
         watersheds_product,
         ice_intersect,
-        land_mask
+        landmask
     ) # allows min area and strel to be added as kwd inputs
 
     # kmeans binarization, again
@@ -279,8 +289,24 @@ function (p::Segment)(
     # Alternative: test whether the final segF_binarized is helpful
     # segF = morph_split_floes(ice_intersect, cloud_mask; max_fill_area=1, min_area_opening=20, opening_strel=se_disk(4))
 
+    #### TBD: Test this subroutine and make into a function
+    # Restore the original boundaries
+    bw = .!(segF_binarized .|| segF) # Use the segF results to fill holes in segF binarized
+    dist = .- distance_transform(feature_transform(bw))
+    markers = label_components(segF)
+    labels = labels_map(watershed(dist, markers))
+
+    # bw2 = original k-means result
+    bw2 = .!(kmeans_result .|| segF)
+    labels[bw2] .= 0
+    labels .= labels .* dilate(markers, se_disk(5))
+
+    # add removal of too-small objects here
+    labels .= labels .* imfill(labels .> 0, (0, p.min_floe_size))
+
     @info "Labeling floes"
-    labels = label_components(segF)
+    # labels = label_components(segF)
+    labels = label_components(labels) # reset labels
 
     # Return the original truecolor image, segmented
     segments = SegmentedImage(truecolor, labels)
@@ -291,12 +317,12 @@ function (p::Segment)(
         intermediate_results_callback(;
             truecolor,
             falsecolor,
-            coastal_buffer,
+            coastal_buffer_mask,
             cloud_mask,
             prelim_ice_mask,
             sharpened_grayscale_image=preproc_gray,
             bright_ice_mask=p.cluster_selection_algorithm(falsecolor_image),
-            ice_water_discrim=Gray.(ice_water_discrim), # TODO: Output of discriminate ice water can be forced to be Gray
+            # ice_water_discrim=Gray.(ice_water_discrim), # TODO: Output of discriminate ice water can be forced to be Gray
             segA=kmeans_result,
             segAB_intersect=Gray.(ice_intersect),
             segB_enhanced_gray=Gray.(brightened_gray),
@@ -507,7 +533,7 @@ structuring element `strel` and taking the complement. The dilated landmask
 is applied at the end to prevent bright regions from bleeding into the land mask.
 Defaults to using a radius 5 diamond mask.
 """
-function _reconstruct(sharpened_grayscale_image, land_mask; strel=strel_diamond((5, 5)))
+function _reconstruct(sharpened_grayscale_image, landmask; strel=strel_diamond((5, 5)))
     markers = complement.(dilate(sharpened_grayscale_image, strel))
     mask = complement.(sharpened_grayscale_image)
     reconstructed_grayscale = mreconstruct(dilate, markers, mask)
@@ -516,7 +542,7 @@ function _reconstruct(sharpened_grayscale_image, land_mask; strel=strel_diamond(
     reconstructed_grayscale = complement.(
         apply_landmask(
             complement.(reconstructed_grayscale),
-             land_mask)
+             landmask)
     )
     return reconstructed_grayscale
 end
@@ -527,7 +553,22 @@ end
 Refine a binarized ice floe image (floes=white, leads/background/water=black) using morphological operations.
 
 """
-function clean_binary_floes(bw_img; min_opening_area=50)
+function clean_binary_floes(bw_img; min_opening_area=50, strel=se_disk(3), min_object_size=50) # 
+    # erode to separate objects
+    out = erode(bw_img, strel)
+    out .= imfill(out, (0, min_object_size)) 
+    out .= closing(bw_img)
+    out .= dilate(out, strel)
+    out .= .!imfill(.!out, (0, min_opening_area))
+    return out
+end
+
+"""
+    clean_binary_floes_la2019
+
+Version of post-segmentation cleanup used in LopezAcosta2019
+"""
+function clean_binary_floes_la2019(bw_img; min_opening_area=50)
     img_opened = area_opening(bw_img; min_area=min_opening_area) |> hbreak
     img_filled = branch(img_opened) |> bridge |> fill_holes
     diff_matrix = img_opened .!= img_filled
@@ -598,10 +639,10 @@ function watershed_transform(
         wseg = watershed_transform(binary_floes[tile...], img[tile...]; strel=strel, dist_threshold=dist_threshold)
         labels[tile...] = labels_map(wseg)
     end
-    wseg = SegmentedImage(img, labels)
-    stitched_labels = stitch_clusters(wseg, tiles, min_overlap, grayscale_threshold) # TODO: Add method to allow labels map for stitch clusters
-    stitched_labels[.!binary_floes] .= 0 # TODO: Check to see if the background needs to be re-masked
 
+    wseg = SegmentedImage(img, labels)
+    stitched_labels = labels_map(stitch_clusters(wseg, tiles, min_overlap, grayscale_threshold))
+    stitched_labels[.!binary_floes] .= 0
     return SegmentedImage(img, stitched_labels)
 end
 
