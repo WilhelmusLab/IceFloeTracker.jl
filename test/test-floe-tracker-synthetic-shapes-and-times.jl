@@ -1,87 +1,427 @@
-@testsnippet SyntheticTrackerHelpers begin
-    import DataFrames: DataFrame
-    import Dates: DateTime, Second
-    import Images: label_components
-    using IceFloeTracker
-
-    """
-        make_floe_image(n) -> BitMatrix
-
-    Create an 8×8 BitMatrix containing a single approximately-circular floe of
-    exactly `n` pixels centred in the image. Pixels are selected in order of
-    increasing distance from the image centre (4.5, 4.5).
-    """
-    function make_floe_image(n::Int)
-        center_r, center_c = 4.5, 4.5
-        all_pixels = [(i, j) for i in 1:8, j in 1:8]
-        sorted_pixels = sort(
-            vec(all_pixels); by=p -> (p[1] - center_r)^2 + (p[2] - center_c)^2
-        )
-        img = falses(8, 8)
-        for (r, c) in sorted_pixels[1:n]
-            img[r, c] = true
-        end
-        return img
-    end
-
-    """
-        tracker_runs_without_error(img1, time1, img2, time2) -> Bool
-
-    Convert each BitMatrix to a labeled integer image, pass the pair to the
-    FloeTracker, and return `true` if the tracker completes without error and
-    produces a well-formed DataFrame.
-    """
+@testitem "FloeTracker – synthetic shapes" setup = [TrackerValidation] begin
+    using Dates: DateTime
     function tracker_runs_without_error(
-        img1::BitMatrix, time1::DateTime, img2::BitMatrix, time2::DateTime
+        tracker::AbstractTracker,
+        img::Matrix{Int};
+        start=DateTime("2025-01-01T00:00:00"),
+        end_=DateTime("2025-01-01T00:00:01"),
     )
-        labeled1 = label_components(img1)
-        labeled2 = label_components(img2)
-        tracker = FloeTracker(;
-            filter_function=FilterFunction(),
-            matching_function=MinimumWeightMatchingFunction(),
-            minimum_area=1,
-            maximum_time_step=Second(2^19),  # 2^19 s covers the maximum test interval (2^18 s)
-        )
-        result = tracker([labeled1, labeled2], [time1, time2])
-        return result isa DataFrame
+        return is_wellformed_tracker_result(tracker([img, img], [start, end_]))
     end
 
-    function tracker_runs_without_error(
-        floe_pixel_count::Int;
-        dt::Second=Second(1),
-        time::DateTime=DateTime("2025-01-01T00:00:00"),
+    tracker = FloeTracker(;
+        filter_function=FilterFunction(),
+        matching_function=MinimumWeightMatchingFunction(),
+        minimum_area=1,
     )
-        return tracker_runs_without_error(floe_pixel_count, dt, time)
-    end
 
-    function tracker_runs_without_error(floe_pixel_count::Int, dt::Second, time::DateTime)
-        img = make_floe_image(floe_pixel_count)
-        return tracker_runs_without_error(img, time, img, time + dt)
-    end
-end
+    @test tracker_runs_without_error(
+        tracker,
+        Int[
+            0 0 0
+            0 0 0
+            0 0 0
+        ],
+    )
 
-@testitem "FloeTracker – synthetic shapes and times" setup = [SyntheticTrackerHelpers] begin
-    using Dates: DateTime, Second
+    @test tracker_runs_without_error(
+        tracker,
+        Int[
+            0 0 0
+            0 1 0
+            0 0 0
+        ],
+    ) broken = true # https://github.com/WilhelmusLab/IceFloeTracker.jl/issues/911
 
-    base_time = DateTime("2025-01-01T00:00:00")
-    time_deltas_seconds = Second.(vcat([0], [2^k for k in 0:18]))
-    working_floe_sizes = [0, 4:20...]
-    broken_floe_sizes = 1:3
-
-    for (floe_pixel_count, dt) in Iterators.product(broken_floe_sizes, time_deltas_seconds)
-        @test tracker_runs_without_error(floe_pixel_count, dt, base_time) broken = true
-    end
-
-    for (floe_pixel_count, dt) in Iterators.product(working_floe_sizes, time_deltas_seconds)
-        @test tracker_runs_without_error(floe_pixel_count, dt, base_time)
-    end
-end
-
-@testitem "FloeTracker – smallest floe shapes" setup = [SyntheticTrackerHelpers] begin
-    @test tracker_runs_without_error(0)
-    @test tracker_runs_without_error(1) broken = true # https://github.com/WilhelmusLab/IceFloeTracker.jl/issues/911
-    @test tracker_runs_without_error(2) broken = true # https://github.com/WilhelmusLab/IceFloeTracker.jl/issues/912
-    @test tracker_runs_without_error(3) broken = true # https://github.com/WilhelmusLab/IceFloeTracker.jl/issues/913
-    @test tracker_runs_without_error(4)
-    @test tracker_runs_without_error(5)
+    @test tracker_runs_without_error(
+        tracker,
+        Int[
+            0 0 0
+            0 1 0
+            0 1 0
+            0 0 0
+        ],
+    ) broken = true # https://github.com/WilhelmusLab/IceFloeTracker.jl/issues/912
+    @test tracker_runs_without_error(
+        tracker,
+        Int[
+            0 0 0 0
+            0 1 1 0
+            0 0 0 0
+        ],
+    ) broken = true # https://github.com/WilhelmusLab/IceFloeTracker.jl/issues/912
+    @test tracker_runs_without_error(
+        tracker,
+        Int[
+            0 0 0 0
+            0 1 0 0
+            0 0 1 0
+            0 0 0 0
+        ],
+    ) broken = true # https://github.com/WilhelmusLab/IceFloeTracker.jl/issues/912
+    @test tracker_runs_without_error(
+        tracker,
+        Int[
+            0 0 0 0
+            0 0 1 0
+            0 1 0 0
+            0 0 0 0
+        ],
+    ) broken = true # https://github.com/WilhelmusLab/IceFloeTracker.jl/issues/912
+    @test tracker_runs_without_error(
+        tracker,
+        Int[
+            0 0 0 0
+            0 1 1 0
+            0 0 1 0
+            0 0 0 0
+        ],
+    ) broken = true # https://github.com/WilhelmusLab/IceFloeTracker.jl/issues/913
+    @test tracker_runs_without_error(
+        tracker,
+        Int[
+            0 0 0 0
+            0 1 0 0
+            0 1 1 0
+            0 0 0 0
+        ],
+    ) broken = true # https://github.com/WilhelmusLab/IceFloeTracker.jl/issues/913
+    @test tracker_runs_without_error(
+        tracker,
+        Int[
+            0 0 0 0 0
+            0 1 1 1 0
+            0 0 0 0 0
+        ],
+    ) broken = true # https://github.com/WilhelmusLab/IceFloeTracker.jl/issues/913
+    @test tracker_runs_without_error(
+        tracker,
+        Int[
+            0 0 0 0 0
+            0 0 1 0 0
+            0 0 1 0 0
+            0 0 1 0 0
+            0 0 0 0 0
+        ],
+    ) broken = true # https://github.com/WilhelmusLab/IceFloeTracker.jl/issues/913
+    @test tracker_runs_without_error(
+        tracker,
+        Int[
+            0 0 0 0
+            0 1 1 0
+            0 1 1 0
+            0 0 0 0
+        ],
+    )
+    @test tracker_runs_without_error(
+        tracker,
+        Int[
+            0 0 0 0
+            0 1 0 0
+            0 1 1 0
+            0 1 0 0
+            0 0 0 0
+        ],
+    ) broken = true # https://github.com/WilhelmusLab/IceFloeTracker.jl/issues/919
+    @test tracker_runs_without_error(
+        tracker,
+        Int[
+            0 0 0 0 0 0
+            0 1 1 1 1 0
+            0 0 0 0 0 0
+        ],
+    ) broken = true # https://github.com/WilhelmusLab/IceFloeTracker.jl/issues/919
+    @test tracker_runs_without_error(
+        tracker,
+        Int[
+            0 0 0 0 0
+            0 0 1 0 0
+            0 1 1 1 0
+            0 0 1 0 0
+            0 0 0 0 0
+        ],
+    )
+    @test tracker_runs_without_error(
+        tracker,
+        Int[
+            0 0 0 0 0
+            0 1 1 1 0
+            0 0 1 1 0
+            0 0 0 0 0
+        ],
+    )
+    @test tracker_runs_without_error(
+        tracker,
+        Int[
+            0 0 0 0 0
+            0 1 1 0 0
+            0 1 1 0 0
+            0 0 1 0 0
+            0 0 0 0 0
+        ],
+    )
+    @test tracker_runs_without_error(
+        tracker,
+        Int[
+            0 0 0 0 0 0
+            0 0 0 1 0 0
+            0 1 1 1 1 0
+            0 0 0 0 0 0
+        ],
+    ) broken = true # https://github.com/WilhelmusLab/IceFloeTracker.jl/issues/919
+    @test tracker_runs_without_error(
+        tracker,
+        Int[
+            0 0 0 0 0 0 0
+            0 1 1 1 1 1 0
+            0 0 0 0 0 0 0
+        ],
+    ) broken = true # https://github.com/WilhelmusLab/IceFloeTracker.jl/issues/919
+    @test tracker_runs_without_error(
+        tracker,
+        Int[
+            0 0 0 0 0
+            0 1 1 1 0
+            0 1 1 1 0
+            0 0 0 0 0
+        ],
+    )
+    @test tracker_runs_without_error(
+        tracker,
+        Int[
+            0 0 0 0 0
+            0 0 1 1 0
+            0 1 1 1 0
+            0 0 1 0 0
+            0 0 0 0 0
+        ],
+    )
+    @test tracker_runs_without_error(
+        tracker,
+        Int[
+            0 0 0 0 0
+            0 1 1 1 0
+            0 1 1 0 0
+            0 1 0 0 0
+            0 0 0 0 0
+        ],
+    ) broken = true # https://github.com/WilhelmusLab/IceFloeTracker.jl/issues/919
+    @test tracker_runs_without_error(
+        tracker,
+        Int[
+            0 0 0 0 0 0
+            0 1 1 1 1 0
+            0 0 1 1 0 0
+            0 0 0 0 0 0
+        ],
+    )
+    @test tracker_runs_without_error(
+        tracker,
+        Int[
+            0 0 0 0 0
+            0 0 1 0 0
+            0 1 1 1 0
+            0 1 1 0 0
+            0 0 0 0 0
+        ],
+    )
+    @test tracker_runs_without_error(
+        tracker,
+        Int[
+            0 0 0 0 0
+            0 0 1 1 0
+            0 1 1 1 0
+            0 0 1 1 0
+            0 0 0 0 0
+        ],
+    )
+    @test tracker_runs_without_error(
+        tracker,
+        Int[
+            0 0 0 0 0
+            0 1 1 1 0
+            0 1 1 1 0
+            0 0 1 0 0
+            0 0 0 0 0
+        ],
+    )
+    @test tracker_runs_without_error(
+        tracker,
+        Int[
+            0 0 0 0 0 0
+            0 0 1 1 1 0
+            0 1 1 1 0 0
+            0 0 1 0 0 0
+            0 0 0 0 0 0
+        ],
+    )
+    @test tracker_runs_without_error(
+        tracker,
+        Int[
+            0 0 0 0 0
+            0 1 1 0 0
+            0 1 1 1 0
+            0 0 1 1 0
+            0 0 0 0 0
+        ],
+    )
+    @test tracker_runs_without_error(
+        tracker,
+        Int[
+            0 0 0 0 0
+            0 0 1 0 0
+            0 1 1 1 0
+            0 1 1 1 0
+            0 0 0 0 0
+        ],
+    )
+    @test tracker_runs_without_error(
+        tracker,
+        Int[
+            0 0 0 0 0
+            0 1 1 1 0
+            0 1 0 1 0
+            0 1 1 1 0
+            0 0 0 0 0
+        ],
+    )
+    @test tracker_runs_without_error(
+        tracker,
+        Int[
+            0 0 0 0 0 0
+            0 0 1 1 1 0
+            0 1 1 1 1 0
+            0 0 1 0 0 0
+            0 0 0 0 0 0
+        ],
+    )
+    @test tracker_runs_without_error(
+        tracker,
+        Int[
+            0 0 0 0 0
+            0 1 1 1 0
+            0 1 1 1 0
+            0 1 1 0 0
+            0 0 0 0 0
+        ],
+    )
+    @test tracker_runs_without_error(
+        tracker,
+        Int[
+            0 0 0 0 0
+            0 0 1 1 0
+            0 1 1 1 0
+            0 1 1 1 0
+            0 0 0 0 0
+        ],
+    )
+    @test tracker_runs_without_error(
+        tracker,
+        Int[
+            0 0 0 0 0 0
+            0 1 1 1 1 0
+            0 0 1 1 1 0
+            0 0 0 0 0 0
+        ],
+    )
+    @test tracker_runs_without_error(
+        tracker,
+        Int[
+            0 0 0 0 0
+            0 1 1 1 0
+            0 1 1 1 0
+            0 1 1 1 0
+            0 0 0 0 0
+        ],
+    )
+    @test tracker_runs_without_error(
+        tracker,
+        Int[
+            0 0 0 0 0
+            0 0 1 1 0
+            0 1 1 1 1
+            0 0 1 1 0
+            0 0 0 0 0
+        ],
+    )
+    @test tracker_runs_without_error(
+        tracker,
+        Int[
+            0 0 0 0 0 0
+            0 0 1 1 1 0
+            0 1 1 1 1 0
+            0 0 1 1 0 0
+            0 0 0 0 0 0
+        ],
+    )
+    @test tracker_runs_without_error(
+        tracker,
+        Int[
+            0 0 0 0 0
+            0 1 1 1 0
+            0 1 1 1 0
+            0 0 1 1 1
+            0 0 0 0 0
+        ],
+    )
+    @test tracker_runs_without_error(
+        tracker,
+        Int[
+            0 0 0 0 0 0
+            0 1 1 1 1 0
+            0 1 1 1 0 0
+            0 0 1 0 0 0
+            0 0 0 0 0 0
+        ],
+    )
+    @test tracker_runs_without_error(
+        tracker,
+        Int[
+            0 0 0 0 0 0
+            0 1 1 1 0 0
+            0 1 1 1 0 0
+            0 1 1 1 1 0
+            0 0 0 0 0 0
+        ],
+    )
+    @test tracker_runs_without_error(
+        tracker,
+        Int[
+            0 0 0 0 0 0
+            0 0 1 1 1 0
+            0 1 1 1 1 0
+            0 0 1 1 1 0
+            0 0 0 0 0 0
+        ],
+    )
+    @test tracker_runs_without_error(
+        tracker,
+        Int[
+            0 0 0 0 0 0
+            0 1 1 1 1 0
+            0 1 1 1 1 0
+            0 0 1 1 0 0
+            0 0 0 0 0 0
+        ],
+    )
+    @test tracker_runs_without_error(
+        tracker,
+        Int[
+            0 0 0 0 0 0
+            0 1 1 1 1 0
+            0 1 1 1 1 0
+            0 0 1 1 0 0
+            0 0 0 0 0 0
+        ],
+    )
+    @test tracker_runs_without_error(
+        tracker,
+        Int[
+            0 0 0 0 0 0
+            0 0 1 1 1 0
+            0 1 1 1 1 0
+            0 1 1 1 0 0
+            0 0 0 0 0 0
+        ],
+    )
 end
