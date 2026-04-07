@@ -54,17 +54,21 @@ end
     )
 
     all_cases_with_validated_floes = case_number.(filter(c -> c.fl_analyst != "", dataset))
+    known_broken_cases = [53, 84, 105, 141, 142, 188]
+    working_cases = setdiff(all_cases_with_validated_floes, known_broken_cases)
 
     # Some cases are known to be broken due to issues in the tracker.
     # Each of these cases should be fixed before being removed from this list.
-    known_broken_cases = [53, 84, 105, 141, 142, 188]
-    for case_number in known_broken_cases
-        @test tracker_runs_without_error(dataset, case_number, tracker) broken = true
+    @testset "Known broken cases" begin
+        for case_number in known_broken_cases
+            @test tracker_runs_without_error(dataset, case_number, tracker) broken = true
+        end
     end
 
     # The rest of the cases should run without error.
-    working_cases = setdiff(all_cases_with_validated_floes, known_broken_cases)
-    for case_number in working_cases
-        @test tracker_runs_without_error(dataset, case_number, tracker)
+    @testset "Working cases" begin
+        for case_number in working_cases
+            @test tracker_runs_without_error(dataset, case_number, tracker)
+        end
     end
 end
