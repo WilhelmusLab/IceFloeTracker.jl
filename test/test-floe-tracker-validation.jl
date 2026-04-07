@@ -1,4 +1,35 @@
 @testsnippet TrackerValidation begin
+    using DataFrames: DataFrame, nrow
+    using Dates: DateTime
+    function tracker_runs_without_error(
+        img1::Matrix{Int},
+        time1::DateTime,
+        img2::Matrix{Int},
+        time2::DateTime;
+        tracker::AbstractTracker,
+    )
+        result = tracker([img1, img2], [time1, time2])
+        return is_wellformed_tracker_result(result)
+    end
+
+    """
+        is_wellformed_tracker_result(result) -> Bool
+
+    Check that the result of running the FloeTracker is a well-formed DataFrame.
+    A well-formed result is a DataFrame that, when non-empty, contains the expected
+    trajectory and floe property columns.
+    """
+    function is_wellformed_tracker_result(result)
+        result isa DataFrame || return false
+        if nrow(result) > 0
+            expected_columns = ["ID", "trajectory_uuid", "uuid", "passtime"]
+            all(col in names(result) for col in expected_columns) || return false
+        end
+        return true
+    end
+end
+
+@testitem "FloeTracker – sample of cases" setup = [TrackerValidation] tags = [:e2e] begin
     import DataFrames: DataFrame, nrow
 
     """
@@ -22,30 +53,12 @@
         return labeled_imgs, pass_times
     end
 
-    """
-        is_wellformed_tracker_result(result) -> Bool
-
-    Check that the result of running the FloeTracker is a well-formed DataFrame.
-    A well-formed result is a DataFrame that, when non-empty, contains the expected
-    trajectory and floe property columns.
-    """
-    function is_wellformed_tracker_result(result)
-        result isa DataFrame || return false
-        if nrow(result) > 0
-            expected_columns = ["ID", "trajectory_uuid", "uuid", "passtime"]
-            all(col in names(result) for col in expected_columns) || return false
-        end
-        return true
-    end
-
     function tracker_runs_without_error(dataset, case_number, tracker)
         labeled_imgs, pass_times = load_tracker_pair(dataset, case_number)
         result = tracker(labeled_imgs, pass_times)
         return is_wellformed_tracker_result(result)
     end
-end
 
-@testitem "FloeTracker – sample of cases" setup = [TrackerValidation] tags = [:e2e] begin
     # Iterates through a sample of common pairs from the Watkins 2026 validation dataset,
     # loading the validated labeled floes and pass times, and running the default tracker.
     dataset = Watkins2026Dataset(; ref="v0.1")
