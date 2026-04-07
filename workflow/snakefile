@@ -326,8 +326,8 @@ ruleorder: segment_buckley > segment
 
 rule tracking:
     output:
-        tracked = "{region}.{scale}m.{start}.{end}.{segmentation}.tracked.csv",
-        config = "{region}.{scale}m.{start}.{end}.{segmentation}.tracked.config.txt"
+        tracked = "{region}.{scale}m.{start}.{end}.{segmentation}.{tracker}.tracked.csv",
+        config = "{region}.{scale}m.{start}.{end}.{segmentation}.{tracker}.tracked.config.txt"
     input:
         labels_maps = lambda wc: expand("{region}.{scale}m.{date}.{satellite}/{segmentation}.labels_map.tiff",
                           satellite=config["SATELLITES"],
@@ -355,11 +355,7 @@ rule tracking:
         order = sortperm(overpasses);
         overpasses = overpasses[order];
         segmented_imgs = segmented_imgs[order];
-
-        tracker = FloeTracker(
-            filter_function=FilterFunction(),
-            matching_function=MinimumWeightMatchingFunction()
-        );
+        tracker = {wildcards.tracker}();
         open("{output.config}", "w") do io
             Base.println(io, "IceFloeTracker.jl $(pkgversion(IceFloeTracker)) \n")
             Base.dump(io, tracker)
