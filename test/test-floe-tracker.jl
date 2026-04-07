@@ -66,7 +66,7 @@ end
 @testitem "Regression: cross-shaped floe does not raise convex hull error" begin
     using Dates
 
-    # Regression test for: https://github.com/WilhelmusLab/IceFloeTracker.jl/issues/...
+    # Regression test for: https://github.com/WilhelmusLab/IceFloeTracker.jl/issues/919
     # A cross-shaped region with 4 pixels produces only 3 boundary points when scanned
     # column-by-column, causing ImageMorphology.convexhull to fail after removing the
     # starting point (leaving < 3 points). The fix wraps convexhull in a try-catch.

@@ -67,7 +67,7 @@
     )
 
     # Regression test: cross-shaped region with 4 pixels should not error
-    # (see https://github.com/WilhelmusLab/IceFloeTracker.jl/issues/...)
+    # (see https://github.com/WilhelmusLab/IceFloeTracker.jl/issues/919)
     cross_img = [
         0 0 0 0
         0 1 0 0
