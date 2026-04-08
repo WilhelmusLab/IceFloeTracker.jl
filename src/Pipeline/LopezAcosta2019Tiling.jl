@@ -64,6 +64,7 @@ import ..Segmentation:
     IceDetectionBrightnessPeaksMODIS721,
     IceDetectionThresholdMODIS721
 import ..Tracking: FloeTracker, FilterFunction, MinimumWeightMatchingFunction
+import Dates: Day
 
 # Sample input parameters expected by the main function
 cloud_mask_thresholds = (

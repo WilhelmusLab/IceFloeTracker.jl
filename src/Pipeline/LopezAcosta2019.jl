@@ -73,6 +73,7 @@ import ..Segmentation:
     IceDetectionThresholdMODIS721
 
 import ..Tracking: FloeTracker, FilterFunction, MinimumWeightMatchingFunction
+import Dates: Day
 import ..ImageUtils: imbrighten
 
 """ 
