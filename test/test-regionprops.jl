@@ -85,6 +85,6 @@
         cross_img; properties=["convex_area"], convex_area_algorithm=PixelConvexArea()
     )
     @test nrow(cross_result) == 1
-    # The convex hull cannot be computed for this shape; the fallback is the pixel area (4)
-    @test cross_result.convex_area[1] == 4.0
+
+    @test isnan(cross_result.convex_area[1])
 end
