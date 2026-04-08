@@ -196,7 +196,7 @@ function validated_binary_floes(case::Case)
     info(case).fl_analyst == "" && return nothing
     (; case_number, region, date, satellite) = _filename_parts(case)
     file = "data/validation_dataset/binary_floes/$(case_number)-$(region)-$(date)-$(satellite)-binary_floes.png"
-    img = file |> case.loader |> load .|> Gray |> (x -> x .> 0.5) .|> Gray
+    img = file |> case.loader |> load |> to_landmask .|> Gray
     return img
 end
 
@@ -213,7 +213,7 @@ function validated_binary_landfast(case::Case)
     info(case).fl_analyst == "" && return nothing
     (; case_number, region, date, satellite) = _filename_parts(case)
     file = "data/validation_dataset/binary_landfast/$(case_number)-$(region)-$(date)-$(satellite)-binary_landfast.png"
-    img = file |> case.loader |> load .|> Gray |> (x -> x .> 0.5) .|> Gray
+    img = file |> case.loader |> load |> to_landmask .|> Gray
     return img
 end
 
