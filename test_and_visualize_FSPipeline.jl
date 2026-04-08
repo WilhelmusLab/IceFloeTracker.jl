@@ -8,14 +8,29 @@ begin
     truecolor_files = replace.(falsecolor_files, ("falsecolor" => "truecolor"))
     landmask_file = joinpath(dataloc, "landmask.tiff")
     landmask_img = Gray.(load(landmask_file))
-    fc_file = falsecolor_files[4]
-    tc_file = truecolor_files[4]
-    tc_img = RGB.(load(joinpath(dataloc, "truecolor", tc_file)))
-    fc_img = RGB.(load(joinpath(dataloc, "falsecolor", fc_file)))
+    # fc_file = falsecolor_files[4]
+    # tc_file = truecolor_files[4]
+    for (tc_file, fc_file) in zip(truecolor_files, falsecolor_files)
+        tc_img = RGB.(load(joinpath(dataloc, "truecolor", tc_file)))
+        fc_img = RGB.(load(joinpath(dataloc, "falsecolor", fc_file)))
 
-    segment = FSPipeline.Segment(tile_size_pixels=800)
-    @time begin
-        test_full = segment(tc_img, fc_img, landmask_img .> 0)
+        segment = FSPipeline.Segment(tile_size_pixels=800)
+        @time begin
+            segmentation_results = segment(tc_img, fc_img, landmask_img .> 0)
+        end
+
+        save(joinpath(dataloc, "FSPipeline", "binary",
+            replace(tc_file, ("truecolor.250m.tiff" => "binary_floes.png")), 
+            ), Gray.(labels_map(segmentation_results) .> 0))
+
+        # save colorized image
+        cview = view_seg_random(segmentation_results);
+        idx = labels_map(segmentation_results) .> 0;
+        overlay = deepcopy(tc_img);
+        overlay[idx] .= cview[idx];
+        save(joinpath(dataloc, "FSPipeline", "colorized",
+            replace(tc_file, ("truecolor.250m.tiff" => "colorized_floes.png")), 
+            ), overlay)
     end
 end
 
