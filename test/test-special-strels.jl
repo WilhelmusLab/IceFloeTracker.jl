@@ -1,15 +1,27 @@
 
 @testitem "Special strels" begin
-    using IceFloeTracker: se_disk4, se_disk20, se_disk50
-    @testset "se_disk4" begin
-        @test sum(se_disk4()) == 37
+    import IceFloeTracker: strel_octagon, make_landmask_se, strel_disk
+    import Images: strel_diamond
+
+    @testset "Octagon with radius 3 (se_disk4)" begin
+        @test sum(strel_octagon(3)) == 37
     end
 
-    @testset "se_disk20" begin
-        @test sum(se_disk20()) == 1301
+    @testset "Octagon with radius 19 (se_disk20)" begin
+        @test sum(strel_octagon(19)) == 1301
     end
 
-    @testset "se_disk50/se for landmask dilation" begin
-        @test sum(se_disk50()) == 8177
+    @testset "Special case for landmask dilation" begin
+        @test sum(make_landmask_se()) == 8177
     end
+
+    @testset "Small disk is the same as a diamond" begin
+        @test strel_disk(1) == strel_diamond((3,3))
+    end
+
+    @testset "Large disk is approximately circular" begin
+        @test 1 - sum(strel_disk(400)) / (pi*400^2) < 1e-3
+    end
+
+
 end

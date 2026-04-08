@@ -3,8 +3,6 @@
     import DelimitedFiles: readdlm
     import Images: strel_diamond
 
-    se = collect(strel_diamond((3, 3)))
-
     test_files_dir = joinpath(@__DIR__, "test_inputs/regularize")
 
     morph_residue = readdlm(joinpath(test_files_dir, "morph_residue.csv"), ',', Int)
@@ -19,8 +17,8 @@
     )
 
     get_final_input = readdlm(joinpath(test_files_dir, "get_final.csv"), ',', Bool)
-    se_erosion = se
-    se_dilation = se_disk2()
+    se_erosion = strel_diamond((3,3))
+    se_dilation = strel_diamond((5,5))
     get_final_expected = readdlm(
         joinpath(test_files_dir, "get_final_expected.csv"), ',', Bool
     )
@@ -39,7 +37,7 @@
             local_maxima_mask,
             segment_mask,
             L0mask,
-            se;
+            se_erosion;
             factor=(0.3, 0.5),
             radius=10,
             amount=2,
