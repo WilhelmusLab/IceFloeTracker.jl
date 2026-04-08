@@ -1,6 +1,6 @@
 module LopezAcosta2019Tiling
 
-export Segment, IceDetectionLopezAcosta2019Tiling
+export Segment, Track, IceDetectionLopezAcosta2019Tiling
 
 import Images:
     area_opening,
@@ -63,6 +63,7 @@ import ..Segmentation:
     IceDetectionFirstNonZeroAlgorithm,
     IceDetectionBrightnessPeaksMODIS721,
     IceDetectionThresholdMODIS721
+import ..Tracking: FloeTracker
 
 # Sample input parameters expected by the main function
 cloud_mask_thresholds = (
@@ -559,4 +560,17 @@ function IceDetectionLopezAcosta2019Tiling(;
         10,
     )
 end
+
+function Track(
+    filter_function=FilterFunction(),
+    matching_function=MinimumWeightMatchingFunction(),
+    minimum_area=100,
+    maximum_area=90e3,
+    maximum_time_step=Day(2),
+)
+    return FloeTracker(;
+        filter_function, matching_function, minimum_area, maximum_area, maximum_time_step
+    )
+end
+
 end
