@@ -86,8 +86,8 @@ Note that the tracker has assigned each object a unique ID, and that the objects
 1=>2, 2=>3, 3=>4, and 4=>1.
 """
 @kwdef struct FloeTracker <: AbstractTracker
-    filter_function::AbstractFloeFilterFunction
-    matching_function::AbstractFloeMatchingFunction
+    filter_function::AbstractFloeFilterFunction=FilterFunction(),
+    matching_function::AbstractFloeMatchingFunction=MinimumWeightMatchingFunction(),
     minimum_area::Real = 100
     maximum_area::Real = 90e3
     maximum_time_step::Period = Day(2)
@@ -293,14 +293,4 @@ function _add_integer_id!(df::AbstractDataFrame, col::Symbol, new::Symbol)
     return nothing
 end
 
-function DefaultFloeTracker(
-    filter_function=FilterFunction(),
-    matching_function=MinimumWeightMatchingFunction(),
-    minimum_area=100,
-    maximum_area=90e3,
-    maximum_time_step=Day(2),
-)
-    return FloeTracker(;
-        filter_function, matching_function, minimum_area, maximum_area, maximum_time_step
-    )
 end

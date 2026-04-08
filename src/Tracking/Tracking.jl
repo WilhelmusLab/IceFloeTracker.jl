@@ -38,8 +38,7 @@ export add_floemasks!,
     StepwiseLinearThresholdFunction,
     time_distance_test!,
     _add_suffix,
-    FloeTracker,
-    DefaultFloeTracker
+    FloeTracker
 
 include("distance_thresholds.jl")
 include("bwtraceboundary.jl")
