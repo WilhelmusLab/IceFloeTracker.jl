@@ -342,7 +342,7 @@ function (f::PixelConvexArea)(A)
     bboxes = component_boxes(A)
     labels = unique(A)
     for i in labels
-        # treat convex area background and too-small objects as undefined 
+        # treat convex area background and too-small objects as undefined
         (i == 0) || (areas[i] < f.minimum_area) && begin
             convex_areas[i] = NaN
             continue
