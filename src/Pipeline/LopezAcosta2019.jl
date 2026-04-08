@@ -72,7 +72,7 @@ import ..Segmentation:
     IceDetectionBrightnessPeaksMODIS721,
     IceDetectionThresholdMODIS721
 
-import ..Tracking: FloeTracker
+import ..Tracking: FloeTracker, FilterFunction, MinimumWeightMatchingFunction
 import ..ImageUtils: imbrighten
 
 """ 
