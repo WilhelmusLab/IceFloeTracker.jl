@@ -326,10 +326,10 @@ ruleorder: segment_buckley > segment
 
 rule tracking:
     output:
-        tracked = "{region}.{scale}m.{start}.{end}.{segmentation}.{tracker}.tracked.csv",
-        config = "{region}.{scale}m.{start}.{end}.{segmentation}.{tracker}.tracked.config.txt"
+        tracked = "{region}.{scale}m.{start}.{end}.{pipeline}.tracked.csv",
+        config = "{region}.{scale}m.{start}.{end}.{pipeline}.tracked.config.txt"
     input:
-        labels_maps = lambda wc: expand("{region}.{scale}m.{date}.{satellite}/{segmentation}.labels_map.tiff",
+        labels_maps = lambda wc: expand("{region}.{scale}m.{date}.{satellite}/{pipeline}.labels_map.tiff",
                           satellite=config["SATELLITES"],
                           date=daterange(date.fromisoformat(wc.start),
                                          date.fromisoformat(wc.end)),
@@ -355,7 +355,7 @@ rule tracking:
         order = sortperm(overpasses);
         overpasses = overpasses[order];
         segmented_imgs = segmented_imgs[order];
-        tracker = {wildcards.tracker}();
+        tracker = {wildcards.pipeline}.Track();
         open("{output.config}", "w") do io
             Base.println(io, "IceFloeTracker.jl $(pkgversion(IceFloeTracker)) \n")
             Base.dump(io, tracker)
