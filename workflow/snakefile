@@ -259,12 +259,12 @@ rule load_case_coastal_buffer_mask:
 
 rule segment:
     output:
-        labels_map = "{dir}/{segmentation}.labels_map.tiff",
-        cloud_mask = "{dir}/{segmentation}/cloud_mask.tiff",
-        ice_mask = "{dir}/{segmentation}/ice_mask.tiff",
-        config = "{dir}/{segmentation}/config.txt",
-        segment_mean_truecolor = "{dir}/{segmentation}/segment_mean_truecolor.tiff",
-        segment_mean_falsecolor = "{dir}/{segmentation}/segment_mean_falsecolor.tiff",
+        labels_map = "{dir}/{pipeline}.labels_map.tiff",
+        cloud_mask = "{dir}/{pipeline}/cloud_mask.tiff",
+        ice_mask = "{dir}/{pipeline}/ice_mask.tiff",
+        config = "{dir}/{pipeline}/config.txt",
+        segment_mean_truecolor = "{dir}/{pipeline}/segment_mean_truecolor.tiff",
+        segment_mean_falsecolor = "{dir}/{pipeline}/segment_mean_falsecolor.tiff",
     input:
         truecolor = "{dir}/truecolor.tiff",
         falsecolor = "{dir}/falsecolor.tiff",
@@ -273,7 +273,7 @@ rule segment:
     shell:
         """
         {config[IFT]} -e 'using IceFloeTracker, Images;
-        segmentation_algorithm = {wildcards.segmentation}.Segment();
+        segmentation_algorithm = {wildcards.pipeline}.Segment();
         open("{output.config}", "w") do io
             Base.println(io, "IceFloeTracker.jl $(pkgversion(IceFloeTracker)) \n")
             Base.dump(io, segmentation_algorithm)
