@@ -304,7 +304,6 @@ function (f::PolygonConvexArea)(A)
         try
             chull = convexhull(A .== i)
         catch e
-            e isa ErrorException || rethrow()
             @warn "Convex hull calculation failed for label $i with error: $(e.msg). Setting convex area to NaN."
             convex_areas[i] = NaN
             continue
@@ -348,7 +347,14 @@ function (f::PixelConvexArea)(A)
             continue
         end
 
-        chull = convexhull(A .== i)
+        local chull
+        try
+            chull = convexhull(A .== i)
+        catch e
+            @warn "Convex hull calculation failed for label $i with error: $(e.msg). Setting convex area to NaN."
+            convex_areas[i] = NaN
+            continue
+        end
         N = length(chull)
         x = getindex.(bboxes[i], 1)
         y = getindex.(bboxes[i], 2)
