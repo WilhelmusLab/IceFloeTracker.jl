@@ -11,12 +11,13 @@ export Watkins2026Dataset,
     validated_binary_floes,
     validated_binary_landfast,
     validated_labeled_floes,
-    validated_floe_properties
+    validated_floe_properties,
+    pass_time
 
 import FileIO: load
 using CSVFiles
 import DataFrames: DataFrame
-import Dates: format
+import Dates: format, DateTime
 import Images: Gray, SegmentedImage
 
 """
@@ -251,6 +252,11 @@ end
 
 function case_number(case::Case)::Int
     return info(case).case_number
+end
+
+function pass_time(case::Case)::DateTime
+    pass_time = info(case).pass_time
+    return pass_time
 end
 
 function _filename_parts(case::Case)
