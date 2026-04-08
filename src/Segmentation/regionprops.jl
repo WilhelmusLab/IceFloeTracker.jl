@@ -305,7 +305,8 @@ function (f::PolygonConvexArea)(A)
             chull = convexhull(A .== i)
         catch e
             e isa ErrorException || rethrow()
-            convex_areas[i] = Float64(areas[i])
+            @warn "Convex hull calculation failed for label $i with error: $(e.msg). Setting convex area to NaN."
+            convex_areas[i] = NaN
             continue
         end
         N = length(chull)
@@ -341,20 +342,13 @@ function (f::PixelConvexArea)(A)
     bboxes = component_boxes(A)
     labels = unique(A)
     for i in labels
-        # treat convex area background and too-small objects as undefined
-        ((i == 0) || (areas[i] < f.minimum_area)) && begin
+        # treat convex area background and too-small objects as undefined 
+        (i == 0) || (areas[i] < f.minimum_area) && begin
             convex_areas[i] = NaN
             continue
         end
 
-        local chull
-        try
-            chull = convexhull(A .== i)
-        catch e
-            e isa ErrorException || rethrow()
-            convex_areas[i] = Float64(areas[i])
-            continue
-        end
+        chull = convexhull(A .== i)
         N = length(chull)
         x = getindex.(bboxes[i], 1)
         y = getindex.(bboxes[i], 2)
