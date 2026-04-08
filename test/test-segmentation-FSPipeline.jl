@@ -11,7 +11,7 @@
     @test length(segments.segment_labels) ≈ expected_segment_count rtol = 1.0
 end
 @testitem "FSPipeline.Segment - detailed" setup = [Segmentation] tags = [:e2e] begin
-    dataset = Watkins2026Dataset(; ref="v0.1")
+    dataset = Watkins2026Dataset(; ref="v0.2")
     (; labeled_fraction, recall, precision, F_score) = run_and_validate_segmentation(
         first(filter(c -> (c.case_number == 6 && c.satellite == "terra"), dataset)),
         FSPipeline.Segment();
@@ -53,7 +53,7 @@ end
     :e2e
 ] begin
     using StatsBase: mean
-    dataset = Watkins2026Dataset(; ref="v0.1")
+    dataset = Watkins2026Dataset(; ref="v0.2")
 
     #### Performance categories
     # 1. Clearly visible floes. The cases we want to see success with.

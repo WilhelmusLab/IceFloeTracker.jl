@@ -177,7 +177,7 @@ function (p::Segment)(
     @info "Building masks"
     # TODO: Make sure tests aren't over-sensitive to roundoff errors for Float32 vs Float64
     cloud_mask = create_cloudmask(falsecolor_image, p.cloud_mask_algorithm)
-
+    landmask = landmask .> 0 # make sure it's a bitmatrix
     # 2. Intermediate images - using coastal buffer on the FC image
     apply_landmask!(truecolor_image, landmask .|| cloud_mask)
     apply_landmask!(falsecolor_image, coastal_buffer_mask .|| cloud_mask)
