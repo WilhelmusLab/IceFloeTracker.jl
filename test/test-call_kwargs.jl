@@ -40,12 +40,12 @@ end
     using IceFloeTracker.Utils: call_kwargs
 
     output = IOBuffer()
-    function save_to_disk(x)
+    function echo(x)
         println(output, "Saving to disk: ", x)
         return nothing
     end
 
-    callback = call_kwargs(; segmentation_result=save_to_disk)
+    callback = call_kwargs(; segmentation_result=echo)
 
     callback(; segmentation_result="[Segmented image data]")
 
