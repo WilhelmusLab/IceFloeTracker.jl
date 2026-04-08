@@ -47,7 +47,7 @@ end
 
     callback = call_kwargs(; segmentation_result=save_to_disk)
 
-    result = callback(; segmentation_result="[Segmented image data]")
+    callback(; segmentation_result="[Segmented image data]")
 
     @test String(take!(output)) == "Saving to disk: [Segmented image data]\n"
 end
