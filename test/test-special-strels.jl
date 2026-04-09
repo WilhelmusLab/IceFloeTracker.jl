@@ -20,7 +20,7 @@
     end
 
     @testset "Large disk is approximately circular" begin
-        @test 1 - sum(strel_disk(400)) / (pi*400^2) < 1e-3
+        @test sum(strel_disk(400)) ≈ (pi*400^2) atol = 1e-3
     end
 
 
