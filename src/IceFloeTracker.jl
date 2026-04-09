@@ -5,11 +5,11 @@ using Reexport
 include("Utils/Utils.jl")
 @reexport using .Utils
 
-include("Data/Data.jl")
-@reexport using .Data
-
 include("ImageUtils/ImageUtils.jl")
 @reexport using .ImageUtils
+
+include("Data/Data.jl")
+@reexport using .Data
 
 include("Geospatial/Geospatial.jl")
 @reexport using .Geospatial
