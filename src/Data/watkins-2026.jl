@@ -19,7 +19,7 @@ import DataFrames: DataFrame
 import Dates: format, DateTime
 import Images: Gray, SegmentedImage
 
-import ..Preprocessing: binarize_mask
+import ..ImageUtils: binarize_mask
 
 """
     Watkins2026Dataset()
