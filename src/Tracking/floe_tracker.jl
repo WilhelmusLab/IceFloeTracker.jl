@@ -206,11 +206,9 @@ function floe_tracker(
             matched_uuids = matched_pairs.uuid
             unmatched = filter((f) -> !(f.uuid in matched_uuids), candidates)
             _start_new_trajectory!(unmatched)
-            _update_cols_to_match!(unmatched, matched_pairs)
-            _update_cols_to_match!(trajectories, matched_pairs)
 
             # Attach new matches and unmatched floes to trajectories
-            trajectories = vcat(trajectories, matched_pairs, unmatched)
+            trajectories = vcat(trajectories, matched_pairs, unmatched; cols=:union)
         end
     end
     trajectories = _drop_short_trajectories(trajectories, :trajectory_uuid)
@@ -272,13 +270,6 @@ function _drop_short_trajectories(trajectories::DataFrame, col::Symbol=:ID; min_
     )
     select!(trajectories, Not("count"))
     return trajectories
-end
-
-function _update_cols_to_match!(target::DataFrame, source::DataFrame; fill_value=missing)
-    missing_cols = [c for c in names(source) if c ∉ names(target)]
-    for c in missing_cols
-        target[!, c] .= fill_value
-    end
 end
 
 """
