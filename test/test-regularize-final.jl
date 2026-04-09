@@ -29,7 +29,7 @@
         )
 
         reg_sharpened = LopezAcosta2019Tiling.regularize_sharpening(
-            reg_holes_filled, L0mask, local_maxima_mask, segment_mask, se, 10, 2, 0.5
+            reg_holes_filled, L0mask, local_maxima_mask, segment_mask, se_erosion, 10, 2, 0.5
         )
 
         reg = LopezAcosta2019Tiling._regularize(
