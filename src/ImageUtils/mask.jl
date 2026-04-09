@@ -200,3 +200,22 @@ end
 function _mask_to_alpha(mask::AbstractArray{<:Real})
     return ones(size(mask)) - clamp.(mask, 0, 1)
 end
+
+"""
+    
+    binarize_mask(mask_image)
+    binarize_mask(mask_image; tol=0.1)
+
+Convert a 3-channel RGB or 1-channel Gray land mask image to a 1-channel binary matrix with land = 1, ocean = 0.
+Assumes that the input image is 0 over the ocean and some shade over land; the tol argument lets a higher threshold
+for land pixels be chosen.
+
+# Arguments
+- `mask_image`: mask image, e.g. land mask from NASA Worldview
+- `tol` (Optional): Values in the image larger than `tol` are considered land.
+"""
+function binarize_mask(
+    mask_image::AbstractArray{<:Union{AbstractGray,AbstractRGB,TransparentRGB}}; tol=0.1
+)::BitMatrix
+    return Gray.(mask_image) .> tol
+end
