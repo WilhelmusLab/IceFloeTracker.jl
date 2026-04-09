@@ -1,7 +1,7 @@
 @testitem "Data" begin
     using Images: RGBA, N0f8, SegmentedImage, Gray
     using DataFrames: nrow, DataFrame, DataFrameRow, subset
-    using IceFloeTracker: Case, Dataset, info, loader, Watkins2026Dataset
+    using Dates: DateTime
 
     @testset "Watkins2026Dataset" begin
         dataset = Watkins2026Dataset(; ref="v0.1")
@@ -28,6 +28,8 @@
         @testset "Case Data" begin
             dataset = Watkins2026Dataset(; ref="v0.1")
             case = first(dataset)
+            @test name(case) isa String
+            @test pass_time(case) isa DateTime
             @test modis_truecolor(case) isa AbstractArray{RGBA{N0f8},2}
             @test modis_falsecolor(case) isa AbstractArray{RGBA{N0f8},2}
             @test modis_landmask(case) isa AbstractArray{<:Gray{Bool},2}
