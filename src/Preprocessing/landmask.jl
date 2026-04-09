@@ -1,13 +1,18 @@
-import ..Morphology: se_disk50
+import ..Morphology: _generate_se!
 import Images: Gray, dilate, imfill
 import OffsetArrays: centered
 
 """
     make_landmask_se()
 
-Create a structuring element for dilating the landmask.
+Create a non-regular octagonal structuring element for dilating the landmask. 
+This structuring element matches a polygonal ``disk'' element used in the MATLAB IFT prototype.
 """
-make_landmask_se = se_disk50
+function make_landmask_se()
+    se = [sum(c.I) <= 29 for c in CartesianIndices((99, 99))]
+    _generate_se!(se)
+    return centered(se)
+end
 
 """
     create_landmask(landmask_image, struct_elem, fill_value_lower, fill_value_upper)
@@ -43,7 +48,9 @@ function create_landmask(landmask_image; strel=make_landmask_se())
 end
 
 """
+    create_coastal_buffer_mask(landmask_binary; fill_min_pixels, fill_max_pixels)
     create_coastal_buffer_mask(landmask_binary, structuring_element; fill_min_pixels, fill_max_pixels)
+
 
 Dilate the binary landmask using the provided structuring element, and fill holes in the dilated image. 
 In the input landmask, land = 1 and ocean = 0. 
@@ -54,7 +61,7 @@ The hole filling step can help fill in small gaps in the dilated mask that may o
 """
 function create_coastal_buffer_mask(
     landmask::AbstractMatrix{Bool},
-    structuring_element::AbstractMatrix{Bool};
+    structuring_element::AbstractMatrix{Bool}=make_landmask_se();
     fill_min_pixels::Int=0,
     fill_max_pixels::Int=2000,
 )::Matrix{Bool}
