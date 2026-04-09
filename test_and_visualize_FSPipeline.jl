@@ -14,7 +14,7 @@ begin
         tc_img = RGB.(load(joinpath(dataloc, "truecolor", tc_file)))
         fc_img = RGB.(load(joinpath(dataloc, "falsecolor", fc_file)))
 
-        segment = FSPipeline.Segment(tile_size_pixels=800)
+        segment = FSPipeline.Segment(tile_size_pixels=1200)
         @time begin
             segmentation_results = segment(tc_img, fc_img, landmask_img .> 0)
         end
