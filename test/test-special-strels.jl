@@ -4,7 +4,17 @@
     import Images: strel_diamond
 
     @testset "Octagon with radius 3 (se_disk4)" begin
-        @test sum(strel_octagon(3)) == 37
+        @test strel_octagon(3) == centered(
+            Bool[
+                0 0 1 1 1 0 0
+                0 1 1 1 1 1 0
+                1 1 1 1 1 1 1
+                1 1 1 1 1 1 1
+                1 1 1 1 1 1 1
+                0 1 1 1 1 1 0
+                0 0 1 1 1 0 0
+            ],
+        )
     end
 
     @testset "Octagon with radius 19 (se_disk20)" begin
