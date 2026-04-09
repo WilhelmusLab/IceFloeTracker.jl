@@ -1,6 +1,6 @@
 module LopezAcosta2019
 
-export Segment, IceDetectionLopezAcosta2019
+export Segment, Track, IceDetectionLopezAcosta2019
 
 import Images:
     Images,
@@ -72,6 +72,8 @@ import ..Segmentation:
     IceDetectionBrightnessPeaksMODIS721,
     IceDetectionThresholdMODIS721
 
+import ..Tracking: FloeTracker, FilterFunction, MinimumWeightMatchingFunction
+import Dates: Day
 import ..ImageUtils: imbrighten
 
 """ 
@@ -721,6 +723,18 @@ function morph_split_floes(
     floes_opened = opening(floes, opening_strel)
     mreconstruct!(dilate, floes_opened, floes, floes_opened)
     return floes_opened
+end
+
+function Track(
+    filter_function=FilterFunction(),
+    matching_function=MinimumWeightMatchingFunction(),
+    minimum_area=100,
+    maximum_area=90e3,
+    maximum_time_step=Day(2),
+)
+    return FloeTracker(;
+        filter_function, matching_function, minimum_area, maximum_area, maximum_time_step
+    )
 end
 
 end
