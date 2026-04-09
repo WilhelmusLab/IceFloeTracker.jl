@@ -215,7 +215,7 @@ for land pixels be chosen.
 - `tol` (Optional): Values in the image larger than `tol` are considered land.
 """
 function binarize_mask(
-    mask_image::AbstractArray{Union{AbstractGray,AbstractRGB,TransparentRGB}}; tol=0.1
+    mask_image::AbstractArray{<:Union{AbstractGray,AbstractRGB,TransparentRGB}}; tol=0.1
 )::BitMatrix
     return Gray.(mask_image) .> tol
 end
