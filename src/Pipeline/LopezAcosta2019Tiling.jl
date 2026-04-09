@@ -307,7 +307,7 @@ function (p::Segment)(
     return segmented
 end
 
-function get_holes(img, min_opening_area=20, se=strel_octagon(4))
+function get_holes(img, min_opening_area=20, se=strel_octagon(3))
     _img = area_opening(img; min_area=min_opening_area)
     hbreak!(_img)
 
