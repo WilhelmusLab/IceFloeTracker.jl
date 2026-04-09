@@ -206,9 +206,9 @@ end
     binarize_mask(mask_image)
     binarize_mask(mask_image; tol=0.1)
 
-Convert a 3-channel RGB or 1-channel Gray land mask image to a 1-channel binary matrix with land = 1, ocean = 0.
-Assumes that the input image is 0 over the ocean and some shade over land; the tol argument lets a higher threshold
-for land pixels be chosen.
+Convert a 3-channel RGB or 1-channel Gray mask image to a 1-channel binary matrix with mask = 1, everything else = 0.
+Assumes that the input image is 0 over the parts to be left unmasked, and some shade over the parts to be masked. 
+The tol argument lets a higher threshold for masked pixels be chosen.
 
 # Arguments
 - `mask_image`: mask image, e.g. land mask from NASA Worldview
