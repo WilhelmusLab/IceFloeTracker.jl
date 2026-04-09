@@ -133,8 +133,8 @@ rule segment_lopez:
         {config[IFT]} -e 'using IceFloeTracker, Images; LopezAcosta2019.Segment()(
             load("{input.truecolor}"),
             load("{input.falsecolor}"),
-            load("{input.landmask}") |> to_landmask,
-            load("{input.coastal_buffer_mask}") |> to_landmask;
+            load("{input.landmask}") |> binarize_mask,
+            load("{input.coastal_buffer_mask}") |> binarize_mask;
             intermediate_results_callback=call_kwargs(;
                 labels_map=l -> l .|> UInt16 |> save("{output.labels_map}"),
                 cloud_mask=save("{output.cloud_mask}"),
@@ -170,8 +170,8 @@ It is comprised of the following parts:
             )(
                 load("{input.truecolor}"),
                 load("{input.falsecolor}"),
-                load("{input.landmask}") |> to_landmask,
-                load("{input.coastal_buffer_mask}") |> to_landmask;
+                load("{input.landmask}") |> binarize_mask,
+                load("{input.coastal_buffer_mask}") |> binarize_mask;
                 intermediate_results_callback=call_kwargs(;
                     cloud_mask=save("{output.cloud_mask}"),
                     labels_map=l -> l .|> UInt16 |> save("{output.labels_map}"),
@@ -196,7 +196,7 @@ and will accept a series of arguments to run the actual calculation.
 The arguments are often images which have to be loaded. 
 - Images which need no conversion can be loaded simply like `load("{input.truecolor}")`,
 - Images which need conversion, for instance converting to a binary mask, 
-  can be piped to a converting function, e.g. `load("{input.landmask}") |> to_landmask`
+  can be piped to a converting function, e.g. `load("{input.landmask}") |> binarize_mask`
 
 For saving outputs, the high-level algorithms accept a callback function in the   
 `intermediate_results_callback` keyword argument. 

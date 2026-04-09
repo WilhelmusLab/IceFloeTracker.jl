@@ -210,7 +210,7 @@ rule load_landmask:
     shell:
         """
         {config[IFT]} -e 'using IceFloeTracker, Images; 
-            load("{input}") |> to_landmask .|> Bool .|> Gray |> save("{output}")
+            load("{input}") |> binarize_mask .|> Bool .|> Gray |> save("{output}")
         '
         """
 
@@ -222,7 +222,7 @@ rule load_coastal_buffer_mask:
     shell:
         """
         {config[IFT]} -e 'using IceFloeTracker, Images; 
-            load("{input.landmask}") |> to_landmask |> create_coastal_buffer_mask .|> Gray |> save("{output}")
+            load("{input.landmask}") |> binarize_mask |> create_coastal_buffer_mask .|> Gray |> save("{output}")
         '
         """
 
@@ -281,8 +281,8 @@ rule segment:
         segmentation_algorithm(
             load("{input.truecolor}"),
             load("{input.falsecolor}"),
-            load("{input.landmask}") |> to_landmask,
-            load("{input.coastal_buffer_mask}") |> to_landmask;
+            load("{input.landmask}") |> binarize_mask,
+            load("{input.coastal_buffer_mask}") |> binarize_mask;
             intermediate_results_callback=call_kwargs(;
                 labels_map=l -> l .|> UInt16 |> save("{output.labels_map}"),
                 cloud_mask=save("{output.cloud_mask}"),
