@@ -212,7 +212,7 @@ The tol argument lets a higher threshold for masked pixels be chosen.
 
 # Arguments
 - `mask_image`: mask image, e.g. land mask from NASA Worldview
-- `tol` (Optional): Values in the image larger than `tol` are considered land.
+- `tol` (Optional): Values in the image larger than `tol` are set to true (1).
 """
 function binarize_mask(
     mask_image::AbstractArray{<:Union{AbstractGray,AbstractRGB,TransparentRGB}}; tol=0.1
