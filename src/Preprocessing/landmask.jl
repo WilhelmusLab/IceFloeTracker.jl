@@ -43,7 +43,9 @@ function create_landmask(landmask_image; strel=make_landmask_se())
 end
 
 """
-    create_coastal_buffer_mask(landmask_binary, [structuring_element]; fill_min_pixels, fill_max_pixels)
+    create_coastal_buffer_mask(landmask_binary; fill_min_pixels, fill_max_pixels)
+    create_coastal_buffer_mask(landmask_binary, structuring_element; fill_min_pixels, fill_max_pixels)
+
 
 Dilate the binary landmask using the provided structuring element, and fill holes in the dilated image. 
 In the input landmask, land = 1 and ocean = 0. 
