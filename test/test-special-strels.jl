@@ -1,7 +1,7 @@
 
 @testitem "Special strels" begin
     import IceFloeTracker: strel_octagon, make_landmask_se, strel_disk
-    import Images: strel_diamond
+    import Images: strel_diamond, centered
 
     @testset "Octagon with radius 3 (se_disk4)" begin
         @test strel_octagon(3) == centered(
