@@ -2,7 +2,7 @@
     using IceFloeTracker
     using FileIO
     using Images
-    using IceFloeTracker.Data: to_landmask
+    using IceFloeTracker.Preprocessing: binarize_mask
     using IceFloeTracker.Utils: call_kwargs
 
     tempdir = mktempdir()
@@ -37,7 +37,7 @@
         segmented = seg(
             load(truecolor_path),
             load(falsecolor_path),
-            load(landmask_path) |> to_landmask;
+            load(landmask_path) |> binarize_mask;
             intermediate_results_callback=call_kwargs(;
                 labels_map=l -> l .|> UInt16 |> save(output_path),
                 ice_mask=save(ice_mask_path),
