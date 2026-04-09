@@ -2,7 +2,7 @@
     using IceFloeTracker
     using FileIO
     using Images
-    using IceFloeTracker.Preprocessing: binarize_mask
+    using IceFloeTracker.ImageUtils: binarize_mask
     using IceFloeTracker.Utils: call_kwargs
 
     tempdir = mktempdir()
