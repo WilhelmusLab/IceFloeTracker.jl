@@ -1,14 +1,19 @@
-import ..Morphology: se_disk50
 import ..ImageUtils: binarize_mask
+import ..Morphology: _generate_se!
 import Images: Gray, dilate, imfill
 import OffsetArrays: centered
 
 """
     make_landmask_se()
 
-Create a structuring element for dilating the landmask.
+Create a non-regular octagonal structuring element for dilating the landmask. 
+This structuring element matches a polygonal ``disk'' element used in the MATLAB IFT prototype.
 """
-make_landmask_se = se_disk50
+function make_landmask_se()
+    se = [sum(c.I) <= 29 for c in CartesianIndices((99, 99))]
+    _generate_se!(se)
+    return centered(se)
+end
 
 """
     create_landmask(landmask_image, struct_elem, fill_value_lower, fill_value_upper)

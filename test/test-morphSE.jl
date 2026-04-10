@@ -3,6 +3,7 @@
 
     import Images: opening, erode, bothat, dilate, mreconstruct, strel_box, centered
     import DelimitedFiles: readdlm
+    import IceFloeTracker: strel_octagon
 
     # Dilate -- Start with a pixel in the middle and dilate in one go to fill up the full image
     n = rand(11:2:21) # choose random odd number
@@ -19,7 +20,7 @@
     I[1:8, 3:6] .= 1
     I[[CartesianIndex(4, 4), CartesianIndex(5, 5)]] .= 0
     I
-    se = centered(se_disk4())
+    se = strel_octagon(3)
 
     #read in expected files from MATLAB
     path = joinpath(test_data_dir, "morphSE")
