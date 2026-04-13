@@ -1,3 +1,4 @@
+import ..ImageUtils: binarize_mask
 import ..Morphology: _generate_se!
 import Images: Gray, dilate, imfill
 import OffsetArrays: centered
@@ -32,7 +33,7 @@ function create_landmask(
     fill_value_lower::Int=0,
     fill_value_upper::Int=2000,
 ) where {T<:AbstractMatrix}
-    land_mask = binarize_landmask(landmask_image)
+    land_mask = binarize_mask(landmask_image)
     coastal_buffer_mask = create_coastal_buffer_mask(
         land_mask,
         struct_elem;
