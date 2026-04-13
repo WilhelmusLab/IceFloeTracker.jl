@@ -1,3 +1,4 @@
+import ..ImageUtils: binarize_mask
 import ..Morphology: _generate_se!
 import Images: Gray, dilate, imfill
 import OffsetArrays: centered
@@ -32,7 +33,7 @@ function create_landmask(
     fill_value_lower::Int=0,
     fill_value_upper::Int=2000,
 ) where {T<:AbstractMatrix}
-    land_mask = binarize_landmask(landmask_image)
+    land_mask = binarize_mask(landmask_image)
     coastal_buffer_mask = create_coastal_buffer_mask(
         land_mask,
         struct_elem;
@@ -69,21 +70,6 @@ function create_coastal_buffer_mask(
     mask_unfilled = dilate(landmask, centered_structuring_element)
     mask_filled = .!imfill(.!mask_unfilled, (fill_min_pixels, fill_max_pixels))
     return mask_filled
-end
-
-"""
-    binarize_landmask(landmask_image)
-
-Convert a 3-channel RGB or 1-channel Gray land mask image to a 1-channel binary matrix with land = 1, ocean = 0.
-Assumes that the input image is 0 over the ocean and some shade over land; the tol argument lets a higher threshold
-for land pixels be chosen.
-
-# Arguments
-- `landmask_image`: land mask image, e.g. from NASA Worldview
-- `tol` (Optional): Values in the image larger than `tol` are considered land.
-"""
-function binarize_landmask(landmask_image; tol=0.1)::BitMatrix
-    return Gray.(landmask_image) .> tol
 end
 
 """

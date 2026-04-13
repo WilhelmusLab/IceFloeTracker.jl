@@ -20,6 +20,8 @@ import DataFrames: DataFrame
 import Dates: format, DateTime
 import Images: Gray, SegmentedImage
 
+import ..ImageUtils: binarize_mask
+
 """
     Watkins2026Dataset()
     Watkins2026Dataset(; [ref, url, dataset_metadata_path, cache_dir])
@@ -198,7 +200,7 @@ function validated_binary_floes(case::Case)
     info(case).fl_analyst == "" && return nothing
     (; case_number, region, date, satellite) = _filename_parts(case)
     file = "data/validation_dataset/binary_floes/$(case_number)-$(region)-$(date)-$(satellite)-binary_floes.png"
-    img = file |> case.loader |> load .|> Gray |> (x -> x .> 0.5) .|> Gray
+    img = file |> case.loader |> load |> binarize_mask .|> Gray
     return img
 end
 
@@ -215,7 +217,7 @@ function validated_binary_landfast(case::Case)
     info(case).fl_analyst == "" && return nothing
     (; case_number, region, date, satellite) = _filename_parts(case)
     file = "data/validation_dataset/binary_landfast/$(case_number)-$(region)-$(date)-$(satellite)-binary_landfast.png"
-    img = file |> case.loader |> load .|> Gray |> (x -> x .> 0.5) .|> Gray
+    img = file |> case.loader |> load |> binarize_mask .|> Gray
     return img
 end
 
