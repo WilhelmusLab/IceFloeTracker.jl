@@ -1,6 +1,6 @@
 module LopezAcosta2019
 
-export Segment, IceDetectionLopezAcosta2019
+export Segment, Track, IceDetectionLopezAcosta2019
 
 import Images:
     Images,
@@ -53,7 +53,7 @@ import StatsBase: kurtosis, skewness, mean, std
 
 import ..Filtering:
     nonlinear_diffusion, PeronaMalikDiffusion, unsharp_mask, channelwise_adapthisteq
-import ..Morphology: hbreak, hbreak!, branch, bridge, fill_holes, se_disk4
+import ..Morphology: hbreak, hbreak!, branch, bridge, fill_holes, strel_octagon
 import ..Preprocessing:
     make_landmask_se,
     create_landmask,
@@ -72,6 +72,8 @@ import ..Segmentation:
     IceDetectionBrightnessPeaksMODIS721,
     IceDetectionThresholdMODIS721
 
+import ..Tracking: FloeTracker, FilterFunction, MinimumWeightMatchingFunction
+import Dates: Day
 import ..ImageUtils: imbrighten
 
 """ 
@@ -148,7 +150,7 @@ Note: This algorithm is under active development and the API will change in a fu
     )
     segF_params = (k=3, se=strel_diamond((5, 5)), min_area_opening=20)
     floe_splitting_settings = (
-        max_fill_area=1, min_area_opening=20, opening_strel=se_disk4()
+        max_fill_area=1, min_area_opening=20, opening_strel=strel_octagon(3)
     )
 end
 
@@ -705,7 +707,7 @@ Based on Lopez-Acosta et al. 2019, 2021.
 
 """
 function morph_split_floes(
-    binary_img, cloudmask; max_fill_area=1, min_area_opening=20, opening_strel=se_disk4()
+    binary_img, cloudmask; max_fill_area=1, min_area_opening=20, opening_strel=strel_octagon(3),
 )
     leads_branched = hbreak(binary_img) |> branch
     leads_filled = .!imfill(.!leads_branched, 0:max_fill_area)
@@ -721,6 +723,18 @@ function morph_split_floes(
     floes_opened = opening(floes, opening_strel)
     mreconstruct!(dilate, floes_opened, floes, floes_opened)
     return floes_opened
+end
+
+function Track(
+    filter_function=FilterFunction(),
+    matching_function=MinimumWeightMatchingFunction(),
+    minimum_area=100,
+    maximum_area=90e3,
+    maximum_time_step=Day(2),
+)
+    return FloeTracker(;
+        filter_function, matching_function, minimum_area, maximum_area, maximum_time_step
+    )
 end
 
 end

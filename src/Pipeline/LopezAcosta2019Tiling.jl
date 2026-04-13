@@ -1,6 +1,6 @@
 module LopezAcosta2019Tiling
 
-export Segment, IceDetectionLopezAcosta2019Tiling
+export Segment, Track, IceDetectionLopezAcosta2019Tiling
 
 import Images:
     area_opening,
@@ -50,9 +50,7 @@ import ..Morphology:
     reconstruct,
     branch,
     bridge,
-    se_disk4,
-    se_disk2,
-    se_disk20,
+    strel_octagon,
     imextendedmin,
     impose_minima,
     imregionalmin
@@ -63,6 +61,8 @@ import ..Segmentation:
     IceDetectionFirstNonZeroAlgorithm,
     IceDetectionBrightnessPeaksMODIS721,
     IceDetectionThresholdMODIS721
+import ..Tracking: FloeTracker, FilterFunction, MinimumWeightMatchingFunction
+import Dates: Day
 
 # Sample input parameters expected by the main function
 cloud_mask_thresholds = (
@@ -81,7 +81,7 @@ adapthisteq_params = (
 adjust_gamma_params = (gamma=1.5, gamma_factor=1.3, gamma_threshold=220)
 
 structuring_elements = (
-    se_disk1=collect(strel_diamond((3, 3))), se_disk2=se_disk2(), se_disk4=se_disk4()
+    se_disk1=strel_diamond((3, 3)), se_disk2=strel_diamond((5,5)), se_disk4=strel_octagon(3)
 )
 
 unsharp_mask_params = (radius=10, amount=2.0, factor=255)
@@ -309,7 +309,7 @@ function (p::Segment)(
     return segmented
 end
 
-function get_holes(img, min_opening_area=20, se=se_disk4())
+function get_holes(img, min_opening_area=20, se=strel_octagon(3))
     _img = area_opening(img; min_area=min_opening_area)
     hbreak!(_img)
 
@@ -360,7 +360,7 @@ function bwdist(bwimg::AbstractArray{Bool})::AbstractArray{Float64}
     return distance_transform(feature_transform(bwimg))
 end
 
-function _reconst_watershed(morph_residue::Matrix{<:Integer}, se::Matrix{Bool}=se_disk20())
+function _reconst_watershed(morph_residue::Matrix{<:Integer}, se=strel_octagon(19))
     mr_reconst = to_uint8(reconstruct(morph_residue, se, "erosion", false))
     mr_reconst .= to_uint8(reconstruct(mr_reconst, se, "dilation", true))
     mr_reconst .= imcomplement(mr_reconst)
@@ -553,4 +553,17 @@ function IceDetectionLopezAcosta2019Tiling(;
         10,
     )
 end
+
+function Track(
+    filter_function=FilterFunction(),
+    matching_function=MinimumWeightMatchingFunction(),
+    minimum_area=100,
+    maximum_area=90e3,
+    maximum_time_step=Day(2),
+)
+    return FloeTracker(;
+        filter_function, matching_function, minimum_area, maximum_area, maximum_time_step
+    )
+end
+
 end
