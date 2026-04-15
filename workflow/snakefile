@@ -83,6 +83,44 @@ rule region_case_results:
 
         """
 
+
+rule organize_input_file_by_filetype:
+    output: 
+        "{filetype}/{region}.{scale}m.{date}.{satellite}.{ext}"
+    input:
+        "{region}.{scale}m.{date}.{satellite}/{filetype}.{ext}"
+    shell:
+        "ln {input} {output}"
+
+
+rule organize_segmentation_results_by_pipeline:
+    output: 
+        "{filetype}/{pipeline}/{region}.{scale}m.{date}.{satellite}.{ext}"
+    input:
+        "{region}.{scale}m.{date}.{satellite}/{pipeline}/{filetype}.{ext}"
+    shell:
+        "ln {input} {output}"
+
+
+rule organize_results_by_region_filetype:
+    input:
+        ["{filetype}/{region}.{scale}m.{date_}.{satellite}.tiff".format(
+            case=case,region=case.region,scale=case.scale, date_=date_, satellite=satellite, filetype=filetype)
+            for filetype in ["truecolor", "falsecolor", "cloud", "landmask", "coastal_buffer_mask", "segment_mean_falsecolor"]
+            for case in cases.itertuples()
+            for date_ in daterange(date.fromisoformat(case.start), date.fromisoformat(case.end))
+            for satellite in config["SATELLITES"]
+        ]
+    output:
+        "region-case-results-reorganized.txt"
+    shell:        
+        """
+        for case in {input}; do
+            wc "$case" >> {output};
+        done
+
+        """
+
 # ============================================================================
 # OVERPASS TIME RULES
 # ============================================================================
