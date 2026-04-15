@@ -287,7 +287,7 @@ function (p::Segment)(
             falsecolor,
             landmask,
             coastal_buffer_mask,
-            cloudmask,
+            cloud_mask=cloudmask,
             ice_mask=IceDetectionLopezAcosta2019()(fc_masked),
             sharpened_grayscale_image=sharpened_grayscale_image,
             ice_water_discrim=ice_water_discrim,
@@ -297,13 +297,17 @@ function (p::Segment)(
             watersheds_segB_product=watersheds_product,
             final_floes=segF,
             labels=labels,
+            labels_map=labels,
+            segments,
+            segmented_truecolor=segments_truecolor,
+            segmented_falsecolor=segments_falsecolor,
             segment_mean_truecolor=map( # TODO Add "view_seg" code snippet
                 i -> segment_mean(segments_truecolor, i),
                 labels_map(segments_truecolor),
             ),
             segment_mean_falsecolor=map(
                 i -> segment_mean(segments_falsecolor, i), labels_map(segments_falsecolor)
-            ), # Add figure that overlays the segments
+            ), # TODO Add figure that overlays the segments
         )
     end
     return segments
