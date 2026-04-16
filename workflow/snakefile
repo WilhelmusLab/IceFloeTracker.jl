@@ -77,9 +77,9 @@ rule region_case_results:
 
 rule organize_input_file_by_filetype:
     output: 
-        "{filetype}/{region}.{scale}m.{date}.{satellite}.{ext}"
+        "{filetype}/{scene}.{ext}"
     input:
-        "{region}.{scale}m.{date}.{satellite}/{filetype}.{ext}"
+        "{scene}/{filetype}.{ext}"
     wildcard_constraints:
         filetype = "[^./]+"
     shell:
@@ -88,9 +88,9 @@ rule organize_input_file_by_filetype:
 
 rule organize_segmentation_results_by_pipeline:
     output: 
-        "{pipeline}.{filetype}/{region}.{scale}m.{date}.{satellite}.{ext}"
+        "{pipeline}.{filetype}/{scene}.{ext}"
     input:
-        "{region}.{scale}m.{date}.{satellite}/{pipeline}/{filetype}.{ext}"
+        "{scene}/{pipeline}/{filetype}.{ext}"
     wildcard_constraints:
         filetype = "[^./]+"
     shell:
