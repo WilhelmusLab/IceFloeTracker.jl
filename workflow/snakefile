@@ -110,7 +110,7 @@ rule init_ift:
         "init_ift"
     shell:
         """
-        {config[IFT]} -e "using IceFloeTracker; dump(IceFloeTracker); println(pkgversion(IceFloeTracker))" > {output}
+        {config[IFT]} -e "using IceFloeTracker; println(pkgversion(IceFloeTracker))" > {output}
         """
 
 
