@@ -73,15 +73,6 @@ rule region_case_results:
         expand("{case.region}.{case.scale}m.{case.start}.{case.end}.{case.segmentation}.tracked.csv",
             case=cases.itertuples(),
         )
-    output:
-        "region-case-results.txt"
-    shell:        
-        """
-        for case in {input}; do
-            wc "$case" >> {output};
-        done
-
-        """
 
 
 rule organize_input_file_by_filetype:
