@@ -112,6 +112,22 @@ Each row specifies:
 - the image scale in metres
 - the segmentation algorithm type.
 
+To reorganize the output files by filetype, use the `region_case_results_by_filetype` target: 
+```shell
+snakemake -c 4 region_case_results_by_filetype
+```
+
+which links each output file into a new subdirectory organized by filetype and, where appropriate, pipeline, 
+e.g.:
+
+|Type|Original path|Additional path organized by filetype|
+|----|--------|---|
+|Input file template|`{scene}/{filetype}.{extension}`|`{filetype}/{scene}.{extension}`|
+|Input file example|`beaufort_sea.250m.2019-03-23.aqua/falsecolor.tiff`|`falsecolor/beaufort_sea.250m.2019-03-23.aqua.tiff`|
+|Output file template|`{scene}/{pipeline}/{filetype}.{extension}`|`{pipeline}.{filetype}/{scene}.{extension}`|
+|Output file example|`beaufort_sea.250m.2019-03-23.aqua/LopezAcosta2019/segment_mean_falsecolor.tiff`|`LopezAcosta2019.segment_mean_falsecolor/beaufort_sea.250m.2019-03-23.aqua.tiff`|
+
+
 ## Anatomy of a Snakemake Rule
 
 The workflow relies on being able to call the IceFloeTracker.jl from the command line.
