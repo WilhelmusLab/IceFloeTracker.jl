@@ -101,7 +101,7 @@ Each region is identified by a name, and specified by:
 ## Batch processing
 
 To run the tracking pipeline on a series of time periods and regions, we can run:
-```
+```shell
 snakemake -c 4 region_case_results
 ```
 
