@@ -144,14 +144,6 @@ rule get_single_overpass_time:
         with open(output[0], "w") as f:
             f.write(overpass_time + "\n")
 
-rule get_case_overpass_time:
-    output:
-        "{region}.{scale}m.{year}-{month}-{day}.{satellite}/overpass.txt"
-    input:
-        "{region}.{scale}m.{year}-{month}-{day}.{satellite}/overpass.txt"
-    shell:
-        "cp {input} {output}"
-
 # ============================================================================
 # IMAGE LOADING RULES
 # ============================================================================
