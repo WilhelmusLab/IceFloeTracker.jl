@@ -102,7 +102,7 @@ Each region is identified by a name, and specified by:
 
 To run the tracking pipeline on a series of time periods and regions, we can run:
 ```
-snakemake -c 4 region-case-results.txt
+snakemake -c 4 region_case_results
 ```
 
 The [case.csv](./case.csv) file specifies which regions and which cases will be run. 
