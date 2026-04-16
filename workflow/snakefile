@@ -70,7 +70,7 @@ def get_region_target_bbox(region):
 
 rule region_case_results:
     input:
-        expand("{case.region}.{case.scale}m.{case.start}.{case.end}.{case.segmentation}.tracked.csv",
+        expand("{case.region}.{case.scale}m.{case.start}.{case.end}.{case.pipeline}.tracked.csv",
             case=cases.itertuples(),
         )
 
