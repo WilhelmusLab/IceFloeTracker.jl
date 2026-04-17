@@ -295,12 +295,18 @@ function (f::PolygonConvexArea)(A)
     convex_areas = zeros(Float64, 0:mx)
     for i in unique(A)
         # treat convex area background and too-small objects as undefined
-        (i == 0) || (areas[i] < f.minimum_area) && begin
+        if (i == 0) || (areas[i] < f.minimum_area)
             convex_areas[i] = NaN
             continue
         end
 
-        chull = convexhull(A .== i)
+        local chull
+        try
+            chull = convexhull(A .== i)
+        catch e
+            convex_areas[i] = NaN
+            continue
+        end
         N = length(chull)
 
         ca = 0
@@ -335,12 +341,18 @@ function (f::PixelConvexArea)(A)
     labels = unique(A)
     for i in labels
         # treat convex area background and too-small objects as undefined
-        (i == 0) || (areas[i] < f.minimum_area) && begin
+        if (i == 0) || (areas[i] < f.minimum_area)
             convex_areas[i] = NaN
             continue
         end
 
-        chull = convexhull(A .== i)
+        local chull
+        try
+            chull = convexhull(A .== i)
+        catch e
+            convex_areas[i] = NaN
+            continue
+        end
         N = length(chull)
         x = getindex.(bboxes[i], 1)
         y = getindex.(bboxes[i], 2)

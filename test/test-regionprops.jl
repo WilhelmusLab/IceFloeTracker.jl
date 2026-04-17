@@ -65,4 +65,26 @@
     regionprops(
         label_img; properties=["convex_area"], convex_area_algorithm=PixelConvexArea()
     )
+
+    # Regression test: cross-shaped region with 4 pixels should not error
+    # (see https://github.com/WilhelmusLab/IceFloeTracker.jl/issues/919)
+    cross_img = [
+        0 0 0 0
+        0 1 0 0
+        0 1 1 0
+        0 1 0 0
+        0 0 0 0
+    ]
+    @test_nowarn regionprops_table(
+        cross_img; properties=["convex_area"], convex_area_algorithm=PixelConvexArea()
+    )
+    @test_nowarn regionprops_table(
+        cross_img; properties=["convex_area"], convex_area_algorithm=PolygonConvexArea()
+    )
+    cross_result = regionprops_table(
+        cross_img; properties=["convex_area"], convex_area_algorithm=PixelConvexArea()
+    )
+    @test nrow(cross_result) == 1
+
+    @test isnan(cross_result.convex_area[1])
 end
