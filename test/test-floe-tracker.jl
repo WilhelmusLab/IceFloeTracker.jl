@@ -63,6 +63,24 @@
 end
 # TODO: Include tests for other floe_tracker utilities
 
+@testitem "Single one-pixel floe does not error" begin
+    using DataFrames
+    using IceFloeTracker: FloeTracker, FilterFunction, MinimumWeightMatchingFunction
+    using Dates
+
+    # Reproducer from issue: tracker should not crash with a single one-pixel floe
+    img = Int[0 0 0 0; 0 0 1 0; 0 0 0 0]
+    time = DateTime("2025-01-01T00:00:00")
+    tracker = FloeTracker(;
+        filter_function=FilterFunction(),
+        matching_function=MinimumWeightMatchingFunction(),
+        minimum_area=1,
+    )
+    # Should not throw an ArgumentError about stack on empty collection
+    result = tracker([img, img], [time, time])
+    @test isa(result, DataFrame)
+end
+
 @testitem "Basic cases" begin
     using Random
     using DataFrames
