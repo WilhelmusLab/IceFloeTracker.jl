@@ -110,7 +110,7 @@ Each row specifies:
 - the region name (from [region.csv](./region.csv)), 
 - the start and end dates (in ISO 8601 YYYY-MM-DD format)
 - the image scale in metres
-- the segmentation algorithm type.
+- the `pipeline` value, corresponding to the Julia pipeline/module used by the workflow.
 
 To reorganize the output files by filetype, use the `region_case_results_by_filetype` target: 
 ```shell
