@@ -213,8 +213,11 @@ function (p::Segment)(
             cluster_selection_algorithm=p.cluster_selection_algorithm
             )
     # Simpler cleanup
-    kmeans_result = opening(kmeans_result, se_disk(2))
-    kmeans_result .= imfill(kmeans_result, (0, p.min_floe_size))
+    # kmeans_result = opening(kmeans_result, se_disk(2))
+    # kmeans_result .= imfill(kmeans_result, (0, p.min_floe_size))
+
+    kmeans_result .= clean_binary_floes2(kmeans_result, prelim_ice_mask, cloud_mask)
+
     
     # check: are there any regions that are nonzero under the cloudmask, since it was applied in discriminate ice water?
     apply_landmask!(kmeans_result, landmask)
@@ -289,6 +292,8 @@ function (p::Segment)(
     # segF = morph_split_floes(ice_intersect, cloud_mask; max_fill_area=1, min_area_opening=20, opening_strel=se_disk(4))
 
     #### TBD: Test this subroutine and make into a function
+    # Will need to remove small objects or merge them with prune_segments
+
     # Restore the original boundaries
     bw = .!(segF_binarized .|| segF) # Use the segF results to fill holes in segF binarized
     dist = .- distance_transform(feature_transform(bw))
@@ -298,13 +303,12 @@ function (p::Segment)(
     # bw2 = original k-means result ### TBD: Test which binarized image comes closest to the true floe boundaries
     bw2 = .!(kmeans_result .|| segF)
     labels[bw2] .= 0
-    labels .= labels .* dilate(markers, se_disk(5))
+    labels .= labels .* dilate(markers .> 0, se_disk(5))
 
     # add removal of too-small objects here. This needs to be label based not binary
     labels .= labels .* imfill(labels .> 0, (0, p.min_floe_size))
 
     # add removal of too-large objects here
-
 
     @info "Labeling floes"
     # labels = label_components(segF)
@@ -702,6 +706,16 @@ function morph_split_floes(binary_img, cloudmask; max_fill_area=1, min_area_open
     floes_opened = opening(floes, opening_strel)
     mreconstruct!(dilate, floes_opened, floes, floes_opened)
     return floes_opened
+end
+
+function clean_binary_floes2(binary_img, icemask, cloudmask; strel=strel_box((5,5)), max_fill=100)
+    out = deepcopy(binary_img)
+    eroded_img = erode(out, strel)
+    filled = fill_holes(eroded_img, strel_diamond((3,3))) # Test how permissive this is.
+    filled .= filled .&& (icemask .|| cloudmask)
+    filled .= .!imfill(.!filled, (0, max_fill))
+    out[filled .> 0] .= 1
+    return out
 end
 
 end
