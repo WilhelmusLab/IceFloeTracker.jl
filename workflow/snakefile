@@ -115,12 +115,45 @@ rule region_case_results_by_filetype:
         
 
 # ============================================================================
+# INIT RULES
+# ============================================================================
+
+rule init_pass_time:
+    output:
+        "init_pass_time"
+    shell:
+        "{config[PASS_TIME]} --help > {output}"
+
+rule init_loader:
+    output:
+        "init_loader"
+    shell:
+        "{config[LOADER]} --help > {output}"
+
+rule init_fsdproc:
+    output:
+        "init_fsdproc"
+    shell:
+        "{config[FSDPROC]} --help > {output}"
+
+rule init_ift:
+    output:
+        "init_ift"
+    shell:
+        """
+        {config[IFT]} -e "using IceFloeTracker; println(pkgversion(IceFloeTracker))" > {output}
+        """
+
+
+# ============================================================================
 # OVERPASS TIME RULES
 # ============================================================================
 
 rule get_region_overpass_times:
     output:
         "{region}/{year}.overpasses.csv"
+    input:
+        init_pass_time = "init_pass_time"
     wildcard_constraints:
         year = "[0-9]{4}"
     params:
@@ -138,6 +171,8 @@ rule get_region_overpass_times:
 rule get_region_month_overpass_times:
     output:
         "{region}/{year}.{month}.overpasses.csv"
+    input:
+        init_pass_time = "init_pass_time"
     params:
         start = "{year}-{month}-01",
         end = lambda wc: last_day_of_month(
@@ -190,6 +225,8 @@ rule get_case_overpass_time:
 rule load_truecolor:
     output:
         "{region}.{scale}m.{date}.{satellite}/truecolor.tiff"
+    input:
+        init_loader = "init_loader"
     params:
         bbox = lambda wc: get_region_target_bbox(wc.region),
         crs = lambda wc: get_region_data(wc.region)["target_crs"]
@@ -201,6 +238,8 @@ rule load_truecolor:
 rule load_falsecolor:
     output:
         "{region}.{scale}m.{date}.{satellite}/falsecolor.tiff"
+    input:
+        init_loader = "init_loader"
     params:
         bbox = lambda wc: get_region_target_bbox(wc.region),
         crs = lambda wc: get_region_data(wc.region)["target_crs"]
@@ -212,6 +251,8 @@ rule load_falsecolor:
 rule load_cloud:
     output:
         "{region}.{scale}m.{date}.{satellite}/cloud.tiff"
+    input:
+        init_loader = "init_loader"
     params:
         bbox = lambda wc: get_region_target_bbox(wc.region),
         crs = lambda wc: get_region_data(wc.region)["target_crs"]
@@ -224,6 +265,8 @@ rule load_cloud:
 rule load_raw_landmask:
     output:
         "{region}/{scale}m.{year}.landmask_raw.tiff"
+    input:
+        init_loader = "init_loader"
     params:
         bbox = lambda wc: get_region_target_bbox(wc.region),
         crs = lambda wc: get_region_data(wc.region)["target_crs"]
@@ -237,11 +280,12 @@ rule load_landmask:
     output:
         "{stem}landmask.tiff"
     input:
-        "{stem}landmask_raw.tiff"
+        landmask = "{stem}landmask_raw.tiff",
+        init_ift = "init_ift"
     shell:
         """
         {config[IFT]} -e 'using IceFloeTracker, Images; 
-            load("{input}") |> binarize_mask .|> Bool .|> Gray |> save("{output}")
+            load("{input.landmask}") |> binarize_mask .|> Bool .|> Gray |> save("{output}")
         '
         """
 
@@ -249,7 +293,8 @@ rule load_coastal_buffer_mask:
     output:
         "{region}/{scale}m.{year}.coastal_buffer_mask.tiff"
     input:
-        landmask = "{region}/{scale}m.{year}.landmask.tiff"
+        landmask = "{region}/{scale}m.{year}.landmask.tiff",
+        init_ift = "init_ift"
     shell:
         """
         {config[IFT]} -e 'using IceFloeTracker, Images; 
@@ -301,6 +346,7 @@ rule segment:
         falsecolor = "{dir}/falsecolor.tiff",
         landmask = "{dir}/landmask.tiff",
         coastal_buffer_mask = "{dir}/coastal_buffer_mask.tiff",
+        init_ift = "init_ift",
     shell:
         """
         {config[IFT]} -e 'using IceFloeTracker, Images;
@@ -335,6 +381,7 @@ rule segment_buckley:
         truecolor = "{dir}/truecolor.tiff",
         cloud_map = "{dir}/cloud.tiff",
         landmask = "{dir}/landmask.tiff",
+        init_fsdproc = "init_fsdproc",
     shell:
         """
         mkdir -p {wildcards.dir}/buckley;
@@ -372,7 +419,8 @@ rule tracking:
                           date=daterange(date.fromisoformat(wc.start),
                                          date.fromisoformat(wc.end)),
                           **wc
-                          )
+                          ),
+        init_ift = "init_ift"
     shell:
         """
         {config[IFT]} -e 'using IceFloeTracker, Images, TimeZones, CSVFiles, DataFrames;
