@@ -1,5 +1,5 @@
 import ImageSegmentation:
-    SegmentedImage, labels_map, segment_labels, segment_mean, segment_pixel_count
+    SegmentedImage, labels_map, segment_labels, segment_mean, segment_pixel_count, feature_transform, distance_transform
 using DataFrames
 using Random
 
@@ -205,3 +205,38 @@ function view_seg_random(s; min_intensity=0.2)
     cview[labels_map(s) .== 0] .= RGB(0, 0, 0)
     return cview
 end
+
+"""
+    expand_labels(labeled_img, distance)
+
+Expand the labeled regions in labeled_img without overlap by a fixed pixel distance.
+
+```julia
+julia> A = zeros(Int64); A[2:4, 2:3] .= 2; A[4:5, 5:5] .= 1
+6×6 Matrix{Int64}:
+ 0  0  0  0  0  0
+ 0  2  2  0  0  0
+ 0  2  2  0  0  0
+ 0  2  2  0  1  0
+ 0  0  0  0  1  0
+ 0  0  0  0  0  0
+
+julia> expand_labels(A, 1)
+6×6 Matrix{Int64}:
+ 0  2  2  0  0  0
+ 2  2  2  2  0  0
+ 2  2  2  2  1  0
+ 2  2  2  2  1  1
+ 0  2  2  1  1  1
+ 0  0  0  0  1  0
+```
+"""
+function expand_labels(labeled_img::Matrix{Int64}, distance::Int64)
+    labels_out = deepcopy(labeled_img)
+    (maximum(labels_out) == 0) && return(labels_out)
+    F = feature_transform(labeled_img .> 0)
+    D = distance_transform(F)
+    labels_out[D .<= distance] .= labeled_img[F][D .<= distance]
+    return labels_out
+end
+
