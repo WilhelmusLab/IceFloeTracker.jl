@@ -1,13 +1,19 @@
-import ..Morphology: se_disk50
+import ..ImageUtils: binarize_mask
+import ..Morphology: _generate_se!
 import Images: Gray, dilate, imfill
 import OffsetArrays: centered
 
 """
     make_landmask_se()
 
-Create a structuring element for dilating the landmask.
+Create a non-regular octagonal structuring element for dilating the landmask. 
+This structuring element matches a polygonal ``disk'' element used in the MATLAB IFT prototype.
 """
-make_landmask_se = se_disk50
+function make_landmask_se()
+    se = [sum(c.I) <= 29 for c in CartesianIndices((99, 99))]
+    _generate_se!(se)
+    return centered(se)
+end
 
 """
     create_landmask(landmask_image, struct_elem, fill_value_lower, fill_value_upper)
@@ -27,7 +33,7 @@ function create_landmask(
     fill_value_lower::Int=0,
     fill_value_upper::Int=2000,
 ) where {T<:AbstractMatrix}
-    land_mask = binarize_landmask(landmask_image)
+    land_mask = binarize_mask(landmask_image)
     coastal_buffer_mask = create_coastal_buffer_mask(
         land_mask,
         struct_elem;
@@ -43,6 +49,7 @@ function create_landmask(landmask_image; strel=make_landmask_se())
 end
 
 """
+    create_coastal_buffer_mask(landmask_binary; fill_min_pixels, fill_max_pixels)
     create_coastal_buffer_mask(landmask_binary, structuring_element; fill_min_pixels, fill_max_pixels)
 
 Dilate the binary landmask using the provided structuring element, and fill holes in the dilated image. 
@@ -54,7 +61,7 @@ The hole filling step can help fill in small gaps in the dilated mask that may o
 """
 function create_coastal_buffer_mask(
     landmask::AbstractMatrix{Bool},
-    structuring_element::AbstractMatrix{Bool};
+    structuring_element::AbstractMatrix{Bool}=make_landmask_se();
     fill_min_pixels::Int=0,
     fill_max_pixels::Int=2000,
 )::Matrix{Bool}
@@ -62,21 +69,6 @@ function create_coastal_buffer_mask(
     mask_unfilled = dilate(landmask, centered_structuring_element)
     mask_filled = .!imfill(.!mask_unfilled, (fill_min_pixels, fill_max_pixels))
     return mask_filled
-end
-
-"""
-    binarize_landmask(landmask_image)
-
-Convert a 3-channel RGB or 1-channel Gray land mask image to a 1-channel binary matrix with land = 1, ocean = 0.
-Assumes that the input image is 0 over the ocean and some shade over land; the tol argument lets a higher threshold
-for land pixels be chosen.
-
-# Arguments
-- `landmask_image`: land mask image, e.g. from NASA Worldview
-- `tol` (Optional): Values in the image larger than `tol` are considered land.
-"""
-function binarize_landmask(landmask_image; tol=0.1)::BitMatrix
-    return Gray.(landmask_image) .> tol
 end
 
 """
