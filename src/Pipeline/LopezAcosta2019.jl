@@ -53,7 +53,7 @@ import StatsBase: kurtosis, skewness, mean, std
 
 import ..Filtering:
     nonlinear_diffusion, PeronaMalikDiffusion, unsharp_mask, channelwise_adapthisteq
-import ..Morphology: hbreak, hbreak!, branch, bridge, fill_holes, se_disk4
+import ..Morphology: hbreak, hbreak!, branch, bridge, fill_holes, strel_octagon
 import ..Preprocessing:
     make_landmask_se,
     create_landmask,
@@ -150,7 +150,7 @@ Note: This algorithm is under active development and the API will change in a fu
     )
     segF_params = (k=3, se=strel_diamond((5, 5)), min_area_opening=20)
     floe_splitting_settings = (
-        max_fill_area=1, min_area_opening=20, opening_strel=se_disk4()
+        max_fill_area=1, min_area_opening=20, opening_strel=strel_octagon(3)
     )
 end
 
@@ -291,7 +291,7 @@ function (p::Segment)(
             falsecolor,
             landmask,
             coastal_buffer_mask,
-            cloudmask,
+            cloud_mask=cloudmask,
             ice_mask=IceDetectionLopezAcosta2019()(fc_masked),
             sharpened_grayscale_image=sharpened_grayscale_image,
             ice_water_discrim=ice_water_discrim,
@@ -301,13 +301,17 @@ function (p::Segment)(
             watersheds_segB_product=watersheds_product,
             final_floes=segF,
             labels=labels,
+            labels_map=labels,
+            segments,
+            segmented_truecolor=segments_truecolor,
+            segmented_falsecolor=segments_falsecolor,
             segment_mean_truecolor=map( # TODO Add "view_seg" code snippet
                 i -> segment_mean(segments_truecolor, i),
                 labels_map(segments_truecolor),
             ),
             segment_mean_falsecolor=map(
                 i -> segment_mean(segments_falsecolor, i), labels_map(segments_falsecolor)
-            ), # Add figure that overlays the segments
+            ), # TODO Add figure that overlays the segments
         )
     end
     return segments
@@ -707,7 +711,7 @@ Based on Lopez-Acosta et al. 2019, 2021.
 
 """
 function morph_split_floes(
-    binary_img, cloudmask; max_fill_area=1, min_area_opening=20, opening_strel=se_disk4()
+    binary_img, cloudmask; max_fill_area=1, min_area_opening=20, opening_strel=strel_octagon(3),
 )
     leads_branched = hbreak(binary_img) |> branch
     leads_filled = .!imfill(.!leads_branched, 0:max_fill_area)
