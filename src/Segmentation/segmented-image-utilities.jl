@@ -233,6 +233,7 @@ julia> expand_labels(A, 1)
 """
 function expand_labels(labeled_img::Matrix{Int64}, distance::Int64)
     labels_out = deepcopy(labeled_img)
+    (maximum(labels_out) == 0) && return(labels_out)
     F = feature_transform(labeled_img .> 0)
     D = distance_transform(F)
     labels_out[D .<= distance] .= labeled_img[F][D .<= distance]

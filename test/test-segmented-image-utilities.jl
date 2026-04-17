@@ -129,6 +129,7 @@ end
           0  2  2  1  1  1
           0  0  0  0  1  0]
     @test expand_labels(A, 1) == B
+    @test expand_labels(zeros(size(A))) == zeros(size(A))
 end
 
 @testitem "segmentation_visualization" begin
