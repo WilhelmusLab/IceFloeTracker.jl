@@ -70,18 +70,49 @@ def get_region_target_bbox(region):
 
 rule region_case_results:
     input:
-        expand("{case.region}.{case.scale}m.{case.start}.{case.end}.{case.segmentation}.tracked.csv",
+        expand("{case.region}.{case.scale}m.{case.start}.{case.end}.{case.pipeline}.tracked.csv",
             case=cases.itertuples(),
         )
-    output:
-        "region-case-results.txt"
-    shell:        
-        """
-        for case in {input}; do
-            wc "$case" >> {output};
-        done
 
-        """
+
+rule organize_input_file_by_filetype:
+    output: 
+        "{filetype}/{scene}.{ext}"
+    input:
+        "{scene}/{filetype}.{ext}"
+    wildcard_constraints:
+        filetype = "[^./]+"
+    shell:
+        "ln {input} {output}"
+
+
+rule organize_segmentation_results_by_pipeline:
+    output: 
+        "{pipeline}.{filetype}/{scene}.{ext}"
+    input:
+        "{scene}/{pipeline}/{filetype}.{ext}"
+    wildcard_constraints:
+        filetype = "[^./]+"
+    shell:
+        "ln {input} {output}"
+
+
+rule region_case_results_by_filetype:
+    input:
+        ["{filetype}/{region}.{scale}m.{date_}.{satellite}.tiff".format(
+            region=case.region, scale=case.scale, date_=date_, satellite=satellite, filetype=filetype)
+            for filetype in ["truecolor", "falsecolor", "cloud", "landmask", "coastal_buffer_mask"]
+            for case in cases.itertuples()
+            for date_ in daterange(date.fromisoformat(case.start), date.fromisoformat(case.end))
+            for satellite in config["SATELLITES"]
+        ] + ["{pipeline}.{filetype}/{region}.{scale}m.{date_}.{satellite}.tiff".format(
+            region=case.region, scale=case.scale, date_=date_, satellite=satellite, filetype=filetype, pipeline=case.pipeline)
+            for filetype in ["segment_mean_falsecolor", "segment_mean_truecolor", "labels_map"]
+            for case in cases.itertuples()
+            for date_ in daterange(date.fromisoformat(case.start), date.fromisoformat(case.end))
+            for satellite in config["SATELLITES"]
+        ]
+        
 
 # ============================================================================
 # INIT RULES
@@ -304,7 +335,7 @@ rule load_case_coastal_buffer_mask:
 
 rule segment:
     output:
-        labels_map = "{dir}/{pipeline}.labels_map.tiff",
+        labels_map = "{dir}/{pipeline}/labels_map.tiff",
         cloud_mask = "{dir}/{pipeline}/cloud_mask.tiff",
         ice_mask = "{dir}/{pipeline}/ice_mask.tiff",
         config = "{dir}/{pipeline}/config.txt",
@@ -342,7 +373,7 @@ rule segment:
 
 rule segment_buckley:
     output:
-        labels_map = "{dir}/buckley.labels_map.tiff",
+        labels_map = "{dir}/buckley/labels_map.tiff",
         props = "{dir}/buckley/props.csv",
         truecolor_cloudmasked = "{dir}/buckley/cloud_mask_on_rgb.tif",
         truecolor_land_cloudmasked = "{dir}/buckley/land_cloud_mask_on_rgb.tif",
@@ -361,7 +392,7 @@ rule segment_buckley:
             {input.landmask} \
             {wildcards.dir}/buckley/
 
-        cp {wildcards.dir}/buckley/final.tif {output.labels_map}
+        ln {wildcards.dir}/buckley/final.tif {output.labels_map}
         """
 
 ruleorder: segment_buckley > segment
@@ -376,7 +407,7 @@ rule tracking:
         tracked = "{region}.{scale}m.{start}.{end}.{pipeline}.tracked.csv",
         config = "{region}.{scale}m.{start}.{end}.{pipeline}.tracked.config.txt"
     input:
-        labels_maps = lambda wc: expand("{region}.{scale}m.{date}.{satellite}/{pipeline}.labels_map.tiff",
+        labels_maps = lambda wc: expand("{region}.{scale}m.{date}.{satellite}/{pipeline}/labels_map.tiff",
                           satellite=config["SATELLITES"],
                           date=daterange(date.fromisoformat(wc.start),
                                          date.fromisoformat(wc.end)),

@@ -101,8 +101,8 @@ Each region is identified by a name, and specified by:
 ## Batch processing
 
 To run the tracking pipeline on a series of time periods and regions, we can run:
-```
-snakemake -c 4 region-case-results.txt
+```shell
+snakemake -c 4 region_case_results
 ```
 
 The [case.csv](./case.csv) file specifies which regions and which cases will be run. 
@@ -110,7 +110,23 @@ Each row specifies:
 - the region name (from [region.csv](./region.csv)), 
 - the start and end dates (in ISO 8601 YYYY-MM-DD format)
 - the image scale in metres
-- the segmentation algorithm type.
+- the `pipeline` value, corresponding to the Julia pipeline/module used by the workflow.
+
+To reorganize the output files by filetype, use the `region_case_results_by_filetype` target: 
+```shell
+snakemake -c 4 region_case_results_by_filetype
+```
+
+which links each output file into a new subdirectory organized by filetype and, where appropriate, pipeline, 
+e.g.:
+
+|Type|Original path|Additional path organized by filetype|
+|----|--------|---|
+|Input file template|`{scene}/{filetype}.{extension}`|`{filetype}/{scene}.{extension}`|
+|Input file example|`beaufort_sea.250m.2019-03-23.aqua/falsecolor.tiff`|`falsecolor/beaufort_sea.250m.2019-03-23.aqua.tiff`|
+|Output file template|`{scene}/{pipeline}/{filetype}.{extension}`|`{pipeline}.{filetype}/{scene}.{extension}`|
+|Output file example|`beaufort_sea.250m.2019-03-23.aqua/LopezAcosta2019/segment_mean_falsecolor.tiff`|`LopezAcosta2019.segment_mean_falsecolor/beaufort_sea.250m.2019-03-23.aqua.tiff`|
+
 
 ## Anatomy of a Snakemake Rule
 
