@@ -100,13 +100,13 @@ rule organize_segmentation_results_by_pipeline:
 rule region_case_results_by_filetype:
     input:
         ["{filetype}/{region}.{scale}m.{date_}.{satellite}.tiff".format(
-            case=case, region=case.region, scale=case.scale, date_=date_, satellite=satellite, filetype=filetype)
+            region=case.region, scale=case.scale, date_=date_, satellite=satellite, filetype=filetype)
             for filetype in ["truecolor", "falsecolor", "cloud", "landmask", "coastal_buffer_mask"]
             for case in cases.itertuples()
             for date_ in daterange(date.fromisoformat(case.start), date.fromisoformat(case.end))
             for satellite in config["SATELLITES"]
         ] + ["{pipeline}.{filetype}/{region}.{scale}m.{date_}.{satellite}.tiff".format(
-            case=case, region=case.region, scale=case.scale, date_=date_, satellite=satellite, filetype=filetype, pipeline=case.pipeline)
+            region=case.region, scale=case.scale, date_=date_, satellite=satellite, filetype=filetype, pipeline=case.pipeline)
             for filetype in ["segment_mean_falsecolor", "segment_mean_truecolor", "labels_map"]
             for case in cases.itertuples()
             for date_ in daterange(date.fromisoformat(case.start), date.fromisoformat(case.end))
