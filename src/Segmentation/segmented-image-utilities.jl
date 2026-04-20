@@ -1,5 +1,12 @@
-import ImageSegmentation:
-    SegmentedImage, labels_map, segment_labels, segment_mean, segment_pixel_count, feature_transform, distance_transform
+import Images:
+    SegmentedImage, 
+    labels_map, 
+    segment_labels,
+    segment_mean,
+    segment_pixel_count,
+    feature_transform,
+    distance_transform
+
 using DataFrames
 using Random
 
