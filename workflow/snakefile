@@ -83,7 +83,7 @@ rule organize_input_file_by_filetype:
     wildcard_constraints:
         filetype = "[^./]+"
     shell:
-        "ln {input} {output}"
+        "ln --force {input} {output}"
 
 
 rule organize_segmentation_results_by_pipeline:
@@ -94,7 +94,7 @@ rule organize_segmentation_results_by_pipeline:
     wildcard_constraints:
         filetype = "[^./]+"
     shell:
-        "ln {input} {output}"
+        "ln --force {input} {output}"
 
 
 rule region_case_results_by_filetype:
@@ -392,7 +392,7 @@ rule segment_buckley:
             {input.landmask} \
             {wildcards.dir}/buckley/
 
-        ln {wildcards.dir}/buckley/final.tif {output.labels_map}
+        ln --force {wildcards.dir}/buckley/final.tif {output.labels_map}
         """
 
 ruleorder: segment_buckley > segment
