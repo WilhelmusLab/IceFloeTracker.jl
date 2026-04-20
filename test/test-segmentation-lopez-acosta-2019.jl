@@ -1,7 +1,7 @@
 @testitem "LopezAcosta2019.Segment – simple case" tags = [:e2e, :smoke] begin
     import DataFrames: DataFrame, nrow
     import Images: RGB
-    dataset = Watkins2026Dataset(; ref="v0.1")
+    dataset = Watkins2026Dataset(; ref="v0.2")
 
     case = first(filter(c -> (c.case_number == 6 && c.satellite == "terra"), dataset))
     segments = LopezAcosta2019.Segment()(
@@ -13,7 +13,7 @@ end
 
 @testitem "LopezAcosta2019.Segment – sample of cases" setup = [Segmentation] tags = [:e2e] begin
     import StatsBase: mean
-    dataset = Watkins2026Dataset(; ref="v0.1")
+    dataset = Watkins2026Dataset(; ref="v0.2")
     results = run_and_validate_segmentation(
         filter(
             c -> (
@@ -55,7 +55,7 @@ end
 end
 
 @testitem "LopezAcosta2019.Segment – detailed tests" setup = [Segmentation] tags = [:e2e] begin
-    dataset = Watkins2026Dataset(; ref="v0.1")
+    dataset = Watkins2026Dataset(; ref="v0.2")
     (; labeled_fraction, recall, precision, F_score) = run_and_validate_segmentation(
         first(filter(c -> (c.case_number == 6 && c.satellite == "terra"), dataset)),
         LopezAcosta2019.Segment();
@@ -101,7 +101,7 @@ end
 
 @testitem "LopezAcosta2019.Segment – image types" setup = [Segmentation] tags = [:e2e] begin
     import Images: RGB, RGBA, n0f8, n6f10, n4f12, n2f14, n0f16, float32, float64
-    dataset = Watkins2026Dataset(; ref="v0.1")
+    dataset = Watkins2026Dataset(; ref="v0.2")
     case::Case = first(filter(c -> (c.case_number == 6 && c.satellite == "aqua"), dataset))
     algorithm = LopezAcosta2019.Segment()
     baseline = run_and_validate_segmentation(

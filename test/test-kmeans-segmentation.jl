@@ -1,7 +1,7 @@
 @testitem "k-means-segmentation" begin
     using IceFloeTracker
     import Images: Gray, segment_labels
-    dataset = Watkins2026Dataset(; ref="v0.1")
+    dataset = Watkins2026Dataset(; ref="v0.2")
     case = first(filter(c -> (c.case_number == 6 && c.satellite == "aqua"), dataset))
 
     ### standard
@@ -21,7 +21,7 @@ end
 @testitem "k-means-binarization" begin
     using IceFloeTracker
     import Images: Gray, segment_labels
-    dataset = Watkins2026Dataset(; ref="v0.1")
+    dataset = Watkins2026Dataset(; ref="v0.2")
     case = first(filter(c -> (c.case_number == 6 && c.satellite == "aqua"), dataset))
 
     ### standard
