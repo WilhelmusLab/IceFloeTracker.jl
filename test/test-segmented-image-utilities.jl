@@ -130,6 +130,118 @@ end
           0  0  0  0  1  0]
     @test expand_labels(A, 1) == B
     @test expand_labels(zeros(Int64, size(A)), 1) == zeros(Int64, size(A))
+# One region
+    @test expand_labels(
+        [
+            0 0 0 0 0
+            0 0 0 0 0
+            0 0 1 0 0
+            0 0 0 0 0
+            0 0 0 0 0
+        ],
+        1,
+    ) == [
+        0 0 0 0 0
+        0 0 1 0 0
+        0 1 1 1 0
+        0 0 1 0 0
+        0 0 0 0 0
+    ]
+
+    # Two adjacent regions
+    @test expand_labels(
+        [
+            0 0 0 0 0
+            0 1 1 2 2
+            0 1 1 2 2
+            0 0 0 0 0
+            0 0 0 0 0
+        ],
+        1,
+    ) == [
+        0 1 1 2 2
+        1 1 1 2 2
+        1 1 1 2 2
+        0 1 1 2 2
+        0 0 0 0 0
+    ]
+
+    # Three regions with one pixel between
+    @test expand_labels(
+        [
+            0 0 0 0 0 0 0
+            0 1 0 2 0 3 0
+            0 0 0 0 0 0 0
+        ],
+        1,
+    ) == [
+        0 1 0 2 0 3 0
+        1 1 1 2 2 3 3
+        0 1 0 2 0 3 0
+    ]
+
+    # Three regions with one pixel between
+    @test expand_labels(
+        [
+            0 0 0 0 0
+            0 1 0 2 0
+            0 0 0 0 0
+            0 0 3 0 0
+            0 0 0 0 0
+        ],
+        1,
+    ) == [
+        0 1 0 2 0
+        1 1 1 2 2
+        0 1 3 2 0
+        0 3 3 3 0
+        0 0 3 0 0
+    ]
+
+    # Three regions with one pixel between
+    @test expand_labels(
+        [
+            0 0 0 0 0
+            0 1 0 2 0
+            0 0 3 0 0
+            0 0 0 0 0
+            0 0 0 0 0
+        ],
+        1,
+    ) == [
+        0 1 0 2 0
+        1 1 1 2 2
+        0 1 3 3 0
+        0 0 3 0 0
+        0 0 0 0 0
+    ]
+
+    # expand_labels(..., 2)
+    @test expand_labels(
+        [
+            0 0 0 0 0 0 0 0 0
+            0 0 0 0 0 0 0 0 0
+            0 0 1 1 0 0 0 0 0
+            0 0 1 1 0 0 0 0 0
+            0 0 0 0 0 0 0 0 0
+            0 0 0 0 0 2 2 0 0
+            0 0 0 0 0 2 2 0 0
+            0 0 0 0 0 0 0 0 0
+            0 0 0 0 0 0 0 0 0
+        ],
+        2,
+    ) == [
+        0 0 1 1 0 0 0 0 0
+        0 1 1 1 1 0 0 0 0
+        1 1 1 1 1 1 0 0 0
+        1 1 1 1 1 1 2 0 0
+        0 1 1 1 1 2 2 2 0
+        0 0 1 1 2 2 2 2 2
+        0 0 0 2 2 2 2 2 2
+        0 0 0 0 2 2 2 2 0
+        0 0 0 0 0 2 2 0 0
+    ]
+
 end
 
 @testitem "segmentation_visualization" begin
