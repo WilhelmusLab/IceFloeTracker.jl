@@ -17,20 +17,54 @@ function (p::GitHubLoader)(file::AbstractString)::AbstractString
     return data
 end
 
-function _get_file(file_url::AbstractString, file_path::AbstractString)::AbstractString
-    @debug "looking for file at $(file_path). File exists: $(isfile(file_path))"
-    if !isfile(file_path)
-        try
-            mkpath(dirname(file_path))
-            download(file_url, file_path)
-        catch e
-            if isa(e, RequestError)
-                @debug "nothing at $(file_url)"
-                return nothing
-            else
-                rethrow(e)
-            end
+function _can_open_file(file_path::AbstractString)::Bool
+    try
+        open(file_path, "r") do io
+            read(io, UInt8)
         end
+        return true
+    catch e
+        @debug "file validation failed at $(file_path)" exception = e
+        return false
     end
-    return file_path
+end
+
+function _get_file(
+    file_url::AbstractString,
+    file_path::AbstractString;
+    max_retries::Integer=3,
+    download_fn::Function=download,
+    validate_fn::Function=_can_open_file,
+)::AbstractString
+    max_retries < 1 && throw(ArgumentError("max_retries must be at least 1."))
+
+    @debug "looking for file at $(file_path). File exists: $(isfile(file_path))"
+    mkpath(dirname(file_path))
+    last_error = nothing
+    for attempt = 1:max_retries
+        is_valid = isfile(file_path) && validate_fn(file_path)
+        is_valid && return file_path
+
+        isfile(file_path) && rm(file_path; force=true)
+
+        try
+            download_fn(file_url, file_path)
+        catch e
+            last_error = e
+            (attempt < max_retries) && continue
+            if isa(e, RequestError)
+                @debug "failed to download $(file_url) after $(max_retries) attempts" exception = e
+            end
+            rethrow(e)
+        end
+
+        validate_fn(file_path) && return file_path
+        last_error = ErrorException("downloaded file at $(file_path) cannot be opened")
+    end
+
+    if last_error !== nothing
+        throw(ErrorException("failed to fetch valid file from $(file_url): $(last_error)"))
+    end
+
+    throw(ErrorException("failed to fetch valid file from $(file_url)"))
 end
