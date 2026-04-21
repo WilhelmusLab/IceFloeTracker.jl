@@ -40,8 +40,8 @@ function _get_file(
 
     @debug "looking for file at $(file_path). File exists: $(isfile(file_path))"
     mkpath(dirname(file_path))
-    last_error = nothing
-    for attempt = 1:max_retries
+    last_error = ErrorException("unknown download/validation failure")
+    for retry_attempt = 1:max_retries
         is_valid = isfile(file_path) && validate_fn(file_path)
         is_valid && return file_path
 
@@ -51,7 +51,7 @@ function _get_file(
             download_fn(file_url, file_path)
         catch e
             last_error = e
-            attempt < max_retries && continue
+            retry_attempt < max_retries && continue
             if isa(e, RequestError)
                 @debug "failed to download $(file_url) after $(max_retries) attempts" exception = e
             end
@@ -62,5 +62,9 @@ function _get_file(
         last_error = ErrorException("downloaded file at $(file_path) cannot be opened")
     end
 
-    throw(ErrorException("failed to fetch valid file from $(file_url): $(last_error)"))
+    throw(
+        ErrorException(
+            "failed to fetch valid file from $(file_url): $(sprint(showerror, last_error))"
+        ),
+    )
 end
