@@ -359,7 +359,7 @@ end
     Load the validated labeled floes and pass times for a pair of satellite observations
     with the given `case_number` from the validation `dataset`.
 
-    Filters to observations that have validated floe labels (`fl_analyst != ""`),
+    Filters to observations that have validated floe labels (`number_floes != 0.0`),
     then sorts by pass time so the earliest observation comes first.
 
     Returns a tuple `(labeled_imgs, pass_times)` where:
@@ -367,7 +367,7 @@ end
     - `pass_times`: vector of DateTime observation times
     """
     function load_tracker_pair(dataset, case_number)
-        pair = filter(c -> c.case_number == case_number && c.fl_analyst != "", dataset)
+        pair = filter(c -> c.case_number == case_number && c.number_floes != 0.0, dataset)
         sort!([:pass_time], pair)
         labeled_imgs = validated_labeled_floes.(pair)
         pass_times = info(pair).pass_time
@@ -382,12 +382,13 @@ end
 
     # Iterates through a sample of common pairs from the Watkins 2026 validation dataset,
     # loading the validated labeled floes and pass times, and running the default tracker.
-    dataset = Watkins2026Dataset(; ref="v0.1")
+    dataset = Watkins2026Dataset(; ref="v0.2")
     tracker = FloeTracker(;
         filter_function=FilterFunction(), matching_function=MinimumWeightMatchingFunction()
     )
 
-    all_cases_with_validated_floes = case_number.(filter(c -> c.fl_analyst != "", dataset))
+    all_cases_with_validated_floes =
+        case_number.(filter(c -> c.number_floes != 0.0, dataset))
     known_broken_cases = [
         53, # https://github.com/WilhelmusLab/IceFloeTracker.jl/issues/913
         84, # https://github.com/WilhelmusLab/IceFloeTracker.jl/issues/913
