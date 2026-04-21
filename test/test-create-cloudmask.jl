@@ -40,7 +40,7 @@ end
         create_cloudmask,
         modis_falsecolor
 
-    dataset = Watkins2026Dataset(; ref="v0.1")
+    dataset = Watkins2026Dataset(; ref="v0.2")
     case = first(filter(c -> (c.case_number == 6 && c.satellite == "terra"), dataset))
 
     # Settings from Watkins et al. 2025

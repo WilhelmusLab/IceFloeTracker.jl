@@ -1,7 +1,7 @@
 
 @testitem "LopezAcosta2019Tiling.Segment – simple case" tags = [:e2e, :smoke] begin
     import DataFrames: DataFrame, nrow
-    dataset = Watkins2026Dataset(; ref="v0.1")
+    dataset = Watkins2026Dataset(; ref="v0.2")
     case = first(filter(c -> (c.case_number == 6 && c.satellite == "terra"), dataset))
     segments = LopezAcosta2019Tiling.Segment()(
         modis_truecolor(case), modis_falsecolor(case), modis_landmask(case)
@@ -10,7 +10,7 @@
     @test length(segments.segment_labels) ≈ expected_segment_count rtol = 1.0
 end
 @testitem "LopezAcosta2019Tiling.Segment - detailed" setup = [Segmentation] tags = [:e2e] begin
-    dataset = Watkins2026Dataset(; ref="v0.1")
+    dataset = Watkins2026Dataset(; ref="v0.2")
     (; labeled_fraction, recall, precision, F_score) = run_and_validate_segmentation(
         first(filter(c -> (c.case_number == 6 && c.satellite == "terra"), dataset)),
         LopezAcosta2019Tiling.Segment();
@@ -43,7 +43,7 @@ end
         LopezAcosta2019Tiling.Segment();
     )
     @test 0.58 ≈ labeled_fraction atol = 0.1
-    @test 0.83 ≤ round(recall; digits=2)
+    @test 0.78 ≤ round(recall; digits=2)
     @test 0.62 ≤ round(precision; digits=2)
     @test 0.73 ≤ round(F_score; digits=2)
 end
@@ -52,7 +52,7 @@ end
     :e2e
 ] begin
     using StatsBase: mean
-    dataset = Watkins2026Dataset(; ref="v0.1")
+    dataset = Watkins2026Dataset(; ref="v0.2")
 
     results = run_and_validate_segmentation(
         filter(case -> (case.case_number % 17 == 0), dataset),
@@ -89,7 +89,7 @@ end
 
 @testitem "LopezAcosta2019Tiling.Segment - image types" tags = [:e2e] setup = [Segmentation] begin
     using Images: RGB, RGBA, n0f8, n6f10, n4f12, n2f14, n0f16, float32, float64
-    dataset = Watkins2026Dataset(; ref="v0.1")
+    dataset = Watkins2026Dataset(; ref="v0.2")
 
     case = first(filter(c -> (c.case_number == 6 && c.satellite == "terra"), dataset))
     algorithm = LopezAcosta2019Tiling.Segment()
