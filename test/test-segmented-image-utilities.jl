@@ -121,15 +121,28 @@ end
 
 @testitem "expand_regions" begin
     import IceFloeTracker: expand_labels
-    A = zeros(Int64, (6,6)); A[2:4, 2:3] .= 2; A[4:5, 5:5] .= 1
-    B =  [0  2  2  0  0  0
-          2  2  2  2  0  0
-          2  2  2  2  1  0
-          2  2  2  2  1  1
-          0  2  2  1  1  1
-          0  0  0  0  1  0]
-    @test expand_labels(A, 1) == B
-    @test expand_labels(zeros(Int64, size(A)), 1) == zeros(Int64, size(A))
+    # No regions
+    @test expand_labels(zeros(Int64, (6, 6)), 1) == zeros(Int64, (6, 6))
+
+    # Two well-separated regions
+    @test expand_labels(
+        [
+            0 0 0 0 0 0
+            0 2 2 0 0 0
+            0 2 2 0 0 0
+            0 2 2 0 1 0
+            0 0 0 0 1 0
+            0 0 0 0 0 0
+        ],
+        1,
+    ) == [
+        0 2 2 0 0 0
+        2 2 2 2 0 0
+        2 2 2 2 1 0
+        2 2 2 2 1 1
+        0 2 2 1 1 1
+        0 0 0 0 1 0
+    ]
 # One region
     @test expand_labels(
         [
