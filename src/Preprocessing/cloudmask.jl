@@ -65,7 +65,7 @@ Example:
 using IceFloeTracker
 using IceFloeTracker: Watkins2026Dataset
 
-dataset = Watkins2026Dataset(; ref="v0.1")
+dataset = Watkins2026Dataset(; ref="v0.2")
 case = first(filter(c -> (c.case_number == 6 && c.satellite == "terra"), dataset))
 cm_algo = LopezAcostaCloudMask()
 cloud_mask = create_cloudmask(modis_falsecolor(case), cm_algo)
@@ -154,7 +154,7 @@ Example:
 using IceFloeTracker
 using IceFloeTracker: Watkins2026Dataset
 
-dataset = Watkins2026Dataset(; ref="v0.1")
+dataset = Watkins2026Dataset(; ref="v0.2")
 case = first(filter(c -> (c.case_number == 6 && c.satellite == "terra"), dataset))
 cm_algo = Watkins2025CloudMask()
 cloud_mask = create_cloudmask(modis_falsecolor(case), cm_algo)

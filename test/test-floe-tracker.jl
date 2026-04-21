@@ -261,7 +261,7 @@ end
         DistanceThresholdFilter,
         RelativeErrorThresholdFilter
 
-    dataset = Watkins2026Dataset(; ref="v0.1")
+    dataset = Watkins2026Dataset(; ref="v0.2")
 
     @testset "Basic functionality" begin
         filter!(c -> c.case_number == 6, dataset)

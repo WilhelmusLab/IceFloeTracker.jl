@@ -4,7 +4,7 @@
     using Dates: DateTime
 
     @testset "Watkins2026Dataset" begin
-        dataset = Watkins2026Dataset(; ref="v0.1")
+        dataset = Watkins2026Dataset(; ref="v0.2")
         @testset "Dataset Properties" begin
             @test dataset isa Dataset
             @test length(dataset) == 378
@@ -12,12 +12,12 @@
             @test info(dataset) isa DataFrame
         end
         @testset "Case" begin
-            dataset = Watkins2026Dataset(; ref="v0.1")
+            dataset = Watkins2026Dataset(; ref="v0.2")
             @test dataset[1] isa Case
             @test info(dataset[1]) isa DataFrameRow
         end
         @testset "Filtering and Subsetting" begin
-            dataset = Watkins2026Dataset(; ref="v0.1")
+            dataset = Watkins2026Dataset(; ref="v0.2")
             filtered_dataset = filter(c -> c.case_number in (1, 2), dataset)
             @test filtered_dataset isa Dataset
             @test length(filtered_dataset) == 4
@@ -26,7 +26,7 @@
             @test length(subsetted_dataset) == 4
         end
         @testset "Case Data" begin
-            dataset = Watkins2026Dataset(; ref="v0.1")
+            dataset = Watkins2026Dataset(; ref="v0.2")
             case = first(dataset)
             @test name(case) isa String
             @test pass_time(case) isa DateTime
