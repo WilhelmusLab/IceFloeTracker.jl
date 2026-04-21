@@ -390,9 +390,9 @@ end
     all_cases_with_validated_floes =
         case_number.(filter(c -> c.number_floes != 0.0, dataset))
     known_broken_cases = [
+        2, # https://github.com/WilhelmusLab/IceFloeTracker.jl/issues/913   
         53, # https://github.com/WilhelmusLab/IceFloeTracker.jl/issues/913
         84, # https://github.com/WilhelmusLab/IceFloeTracker.jl/issues/913
-        105, # https://github.com/WilhelmusLab/IceFloeTracker.jl/issues/913
         141, # https://github.com/WilhelmusLab/IceFloeTracker.jl/issues/913
         142, # https://github.com/WilhelmusLab/IceFloeTracker.jl/issues/913
         188, # https://github.com/WilhelmusLab/IceFloeTracker.jl/issues/913
