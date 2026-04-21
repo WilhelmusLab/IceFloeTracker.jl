@@ -51,7 +51,7 @@ function _get_file(
             download_fn(file_url, file_path)
         catch e
             last_error = e
-            (attempt < max_retries) && continue
+            attempt < max_retries && continue
             if isa(e, RequestError)
                 @debug "failed to download $(file_url) after $(max_retries) attempts" exception = e
             end
@@ -62,9 +62,5 @@ function _get_file(
         last_error = ErrorException("downloaded file at $(file_path) cannot be opened")
     end
 
-    if last_error !== nothing
-        throw(ErrorException("failed to fetch valid file from $(file_url): $(last_error)"))
-    end
-
-    throw(ErrorException("failed to fetch valid file from $(file_url)"))
+    throw(ErrorException("failed to fetch valid file from $(file_url): $(last_error)"))
 end
