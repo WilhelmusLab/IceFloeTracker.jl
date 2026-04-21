@@ -100,33 +100,55 @@ Each region is identified by a name, and specified by:
 
 ## Batch processing
 
-To run the tracking pipeline on a series of time periods and regions, we can run:
-```shell
-snakemake -c 4 region_case_results
-```
-
-The [case.csv](./case.csv) file specifies which regions and which cases will be run. 
+For batch processing, [case.csv](./case.csv) specifies which regions and which cases will be run in the batch. 
 Each row specifies: 
 - the region name (from [region.csv](./region.csv)), 
 - the start and end dates (in ISO 8601 YYYY-MM-DD format)
 - the image scale in metres
 - the `pipeline` value, corresponding to the Julia pipeline/module used by the workflow.
 
-To reorganize the output files by filetype, use the `region_case_results_by_filetype` target: 
-```shell
-snakemake -c 4 region_case_results_by_filetype
-```
+The supported batch processing rules are:
+- `region_case_results`: organize the segmentation results from `case.csv` in directories named `{region}.{scale}.{date}.{satellite}`,
+- `region_case_results_by_filetype`: reorganize the segmentation results from `case.csv` in directories by `{filetype}`. 
 
-which links each output file into a new subdirectory organized by filetype and, where appropriate, pipeline, 
-e.g.:
+The files are organized as follows:
 
-|Type|Original path|Additional path organized by filetype|
+|Type|`region_case_results` path|`region_case_results_by_filetype` path|
 |----|--------|---|
 |Input file template|`{scene}/{filetype}.{extension}`|`{filetype}/{scene}.{extension}`|
 |Input file example|`beaufort_sea.250m.2019-03-23.aqua/falsecolor.tiff`|`falsecolor/beaufort_sea.250m.2019-03-23.aqua.tiff`|
 |Output file template|`{scene}/{pipeline}/{filetype}.{extension}`|`{pipeline}.{filetype}/{scene}.{extension}`|
 |Output file example|`beaufort_sea.250m.2019-03-23.aqua/LopezAcosta2019/segment_mean_falsecolor.tiff`|`LopezAcosta2019.segment_mean_falsecolor/beaufort_sea.250m.2019-03-23.aqua.tiff`|
 
+
+To invoke the batch processing rule, call `snakemake <other arguments> <batch_processing_rule_name>`
+
+In all cases, the tracking results are stored in the top-level of the `results` directory, 
+named like `{region}.{scale}.{start date}.{end date}.{pipeline}.tracked.csv`.
+
+### `region_case_results`
+
+Organizes the segmentation results from `case.csv` in directories named 
+- `{region}.{scale}.{date}.{satellite}` for input files, and
+- `{region}.{scale}.{date}.{satellite}/{pipeline}` for output files. 
+
+Example invocation using 4 processing cores:
+```shell
+snakemake -c 4 region_case_results
+```
+
+### `region_case_results_by_filetype`
+
+Reorganize the segmentation results from `case.csv` in directories by 
+- `{filetype}` for input files, and
+- `{pipeline}.{filetype}` for output files. 
+
+Example invocation using 4 processing cores:
+```shell
+snakemake -c 4 region_case_results_by_filetype
+```
+
+The reorganized files are hard-linked (i.e., not copies), so they don't take up any additional space. 
 
 ## Anatomy of a Snakemake Rule
 
