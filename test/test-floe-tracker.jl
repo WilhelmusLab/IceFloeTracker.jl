@@ -403,6 +403,7 @@ end
     # Each of these cases should be fixed before being removed from this list.
     @testset "Known broken cases" begin
         for case_number in known_broken_cases
+            @info "Testing known broken case $case_number. This test should fail until the underlying issue is fixed."
             @test tracker_runs_without_error(dataset, case_number, tracker) broken = true
         end
     end
@@ -410,6 +411,7 @@ end
     # The rest of the cases should run without error.
     @testset "Working cases" begin
         for case_number in working_cases
+            @info "Testing case $case_number, which should run without error."
             @test tracker_runs_without_error(dataset, case_number, tracker)
         end
     end
