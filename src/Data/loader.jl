@@ -19,6 +19,8 @@ end
 
 function _can_open_file(file_path::AbstractString)::Bool
     try
+        !isfile(file_path) && return false
+        filesize(file_path) == 0 && return false
         open(file_path, "r") do io
             read(io, UInt8)
         end
@@ -41,6 +43,7 @@ function _get_file(
     @debug "looking for file at $(file_path). File exists: $(isfile(file_path))"
     mkpath(dirname(file_path))
     last_error = ErrorException("unknown download/validation failure")
+    last_failure_kind = "unknown"
     for retry_attempt = 1:max_retries
         is_valid = isfile(file_path) && validate_fn(file_path)
         is_valid && return file_path
@@ -51,6 +54,7 @@ function _get_file(
             download_fn(file_url, file_path)
         catch e
             last_error = e
+            last_failure_kind = "download"
             retry_attempt < max_retries && continue
             if isa(e, RequestError)
                 @debug "failed to download $(file_url) after $(max_retries) attempts" exception = e
@@ -60,11 +64,12 @@ function _get_file(
 
         validate_fn(file_path) && return file_path
         last_error = ErrorException("downloaded file at $(file_path) cannot be opened")
+        last_failure_kind = "validation"
     end
 
     throw(
         ErrorException(
-            "failed to fetch valid file from $(file_url): $(sprint(showerror, last_error))"
+            "failed to fetch valid file from $(file_url) after $(max_retries) attempts ($(last_failure_kind) failure): $(sprint(showerror, last_error))"
         ),
     )
 end
