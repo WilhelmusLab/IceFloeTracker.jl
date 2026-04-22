@@ -25,16 +25,16 @@ and process them in the correct order.
 
 For example, the command:
 ```bash
-snakemake -c 1 beaufort_sea-100km.250m.2019-03-22.2019-03-23.LopezAcosta2019Tiling.tracked.rotation.csv 
+snakemake -c 1 beaufort_sea-100km.250m.2019-03-22.2019-03-23.LopezAcosta2019Tiling.tracked.csv 
 ```
 - Will use one processor core (`-c 1`) 
-- to run tracking and rotation measurement (`....tracked.rotation.csv`)
+- to run tracking and rotation measurement (`....tracked.csv`)
 - on a 100km x 100km region in the Beaufort Sea, 
 - using 250m scale images, 
 - from 22nd to 23rd March 2019,
 - with the `Lopez2019Tiling.Segment` algorithm.
 
-It reports that 30 tasks of different types are planned before executing the first:
+It reports that 29 tasks of different types are planned before executing the first:
 ```
 Assuming unrestricted shared filesystem usage.
 host: c486485cb3cb
