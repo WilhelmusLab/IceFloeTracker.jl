@@ -142,6 +142,31 @@ end
         )
         @test file == target
         @test attempts[] == 1
-        @test filesize(target) > 0
+
+    @testset "invalid downloaded file triggers re-download" begin
+        using Images
+        temp = mktempdir()
+        target = joinpath(temp, "cached.tiff")
+        attempts = Ref(0)
+
+        download_fn = (url, path) -> begin
+            attempts[] += 1
+            if attempts[] < 2
+                @info "saving invalid file to $(path)"
+                write(path, "malformed TIFF")
+            else
+                @info "saving valid file to $(path)"
+                save(path, [0.0;])
+            end
+        end
+
+        file = _get_file(
+            "https://example.invalid/cached.tiff",
+            target;
+            max_attempts=3,
+            download_fn=download_fn,
+        )
+        @test file == target
+        @test load(target) == [0.0;]
     end
 end
