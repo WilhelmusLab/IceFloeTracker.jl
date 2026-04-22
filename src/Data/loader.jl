@@ -45,6 +45,7 @@ function _get_file(
         isfile(file_path) && rm(file_path; force=true)
         try
             download_fn(file_url, file_path)
+            validate_fn(file_path) && return file_path
         catch e
             if isa(e, RequestError) && e.code != 429
                 @debug "download attempt $(attempt) failed for $(file_url)" exception = e
@@ -53,7 +54,6 @@ function _get_file(
                 rethrow(e)
             end
         end
-        validate_fn(file_path) && return file_path
     end
     return error(
         "failed to fetch valid file from $(file_url) after $(max_attempts) attempts"
