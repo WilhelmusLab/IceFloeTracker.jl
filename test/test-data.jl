@@ -52,18 +52,19 @@ end
         target = joinpath(temp, "nested", "file.bin")
         attempts = Ref(0)
 
-        download_fn = (url, path) -> begin
-            attempts[] += 1
-            attempts[] < 2 && throw(Downloads.RequestError("transient", -1))
-            open(path, "w") do io
-                write(io, UInt8(0x01))
+        download_fn =
+            (url, path) -> begin
+                attempts[] += 1
+                attempts[] < 2 && throw(Downloads.RequestError("transient", -1))
+                open(path, "w") do io
+                    write(io, UInt8(0x01))
+                end
             end
-        end
 
         file = _get_file(
             "https://example.invalid/file.bin",
             target;
-            max_retries=3,
+            max_attempts=3,
             download_fn=download_fn,
         )
         @test file == target
@@ -87,7 +88,7 @@ end
         file = _get_file(
             "https://example.invalid/cached.csv",
             target;
-            max_retries=2,
+            max_attempts=2,
             download_fn=download_fn,
         )
         @test file == target

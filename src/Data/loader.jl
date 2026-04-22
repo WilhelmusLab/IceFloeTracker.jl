@@ -34,17 +34,17 @@ end
 function _get_file(
     file_url::AbstractString,
     file_path::AbstractString;
-    max_retries::Integer=3,
+    max_attempts::Integer=3,
     download_fn::Function=download,
     validate_fn::Function=_can_open_file,
 )::AbstractString
-    max_retries < 1 && throw(ArgumentError("max_retries must be at least 1."))
+    max_attempts < 1 && throw(ArgumentError("max_attempts must be at least 1."))
 
     @debug "looking for file at $(file_path). File exists: $(isfile(file_path))"
     mkpath(dirname(file_path))
     last_error = ErrorException("unknown download/validation failure")
     last_failure_kind = "unknown"
-    for retry_attempt = 1:max_retries
+    for attempt in 1:max_attempts
         is_valid = isfile(file_path) && validate_fn(file_path)
         is_valid && return file_path
 
@@ -55,9 +55,10 @@ function _get_file(
         catch e
             last_error = e
             last_failure_kind = "download"
-            retry_attempt < max_retries && continue
+            attempt < max_attempts && continue
             if isa(e, RequestError)
-                @debug "failed to download $(file_url) after $(max_retries) attempts" exception = e
+                @debug "failed to download $(file_url) after $(max_attempts) attempts" exception =
+                    e
             end
             rethrow(e)
         end
@@ -69,7 +70,7 @@ function _get_file(
 
     throw(
         ErrorException(
-            "failed to fetch valid file from $(file_url) after $(max_retries) attempts ($(last_failure_kind) failure): $(sprint(showerror, last_error))"
+            "failed to fetch valid file from $(file_url) after $(max_attempts) attempts ($(last_failure_kind) failure): $(sprint(showerror, last_error))",
         ),
     )
 end
