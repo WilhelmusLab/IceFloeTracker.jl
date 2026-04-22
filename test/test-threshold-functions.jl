@@ -39,7 +39,7 @@ end
     using IceFloeTracker
     using DataFrames
 
-    dataset = Watkins2026Dataset(; ref="v0.1")
+    dataset = Watkins2026Dataset(; ref="v0.2")
     dataset = filter(c -> c.case_number == 9, dataset)
     cases = [x for x in dataset]
     if occursin("terra", name(cases[1]))

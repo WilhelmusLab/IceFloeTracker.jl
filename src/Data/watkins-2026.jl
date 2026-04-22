@@ -1,4 +1,5 @@
 export Watkins2026Dataset,
+    case_number,
     info,
     name,
     modis_truecolor,
@@ -30,7 +31,7 @@ Validated ice floe data from [the Watkins 2026 Ice Floe Validation Dataset](http
 The dataset is initialized with a specific `git` tag, branch or commit ID from which to load the data.
 
 ```jldoctest Watkins2026Dataset; setup = :(using IceFloeTracker)
-julia> dataset = Watkins2026Dataset(; ref="v0.1")
+julia> dataset = Watkins2026Dataset(; ref="v0.2")
 ```
 
 `Watkins2026Dataset` fields: 
@@ -150,7 +151,7 @@ julia> modis_truecolor(first(dataset))
 """
 function Watkins2026Dataset(;
     url="https://github.com/danielmwatkins/ice-floe-validation-dataset/",
-    ref="v0.1",
+    ref="v0.2",
     cache_dir="/tmp/Watkins2026",
     metadata_path="data/validation_dataset/validation_dataset.csv",
 )::Dataset
@@ -196,7 +197,7 @@ function modis_cloudfraction(case::Case; ext="tiff")
 end
 
 function validated_binary_floes(case::Case)
-    info(case).fl_analyst == "" && return nothing
+    info(case).number_floes == 0 && return nothing
     (; case_number, region, date, satellite) = _filename_parts(case)
     file = "data/validation_dataset/binary_floes/$(case_number)-$(region)-$(date)-$(satellite)-binary_floes.png"
     img = file |> case.loader |> load |> binarize_mask .|> Gray
@@ -204,7 +205,7 @@ function validated_binary_floes(case::Case)
 end
 
 function validated_labeled_floes(case::Case; ext="tiff")
-    info(case).fl_analyst == "" && return nothing
+    info(case).number_floes == 0 && return nothing
     (; case_number, region, date, satellite) = _filename_parts(case)
     file = "data/validation_dataset/labeled_floes/$(case_number)-$(region)-$(date)-$(satellite)-labeled_floes.$(ext)"
     labels = file |> case.loader |> load .|> Int
@@ -213,7 +214,7 @@ function validated_labeled_floes(case::Case; ext="tiff")
 end
 
 function validated_binary_landfast(case::Case)
-    info(case).fl_analyst == "" && return nothing
+    info(case).number_floes == 0 && return nothing
     (; case_number, region, date, satellite) = _filename_parts(case)
     file = "data/validation_dataset/binary_landfast/$(case_number)-$(region)-$(date)-$(satellite)-binary_landfast.png"
     img = file |> case.loader |> load |> binarize_mask .|> Gray
@@ -221,7 +222,7 @@ function validated_binary_landfast(case::Case)
 end
 
 function validated_floe_properties(case::Case)::DataFrame
-    info(case).fl_analyst == "" && return nothing
+    info(case).number_floes == 0 && return nothing
     (; case_number, region, date, satellite) = _filename_parts(case)
     file = "data/validation_dataset/property_tables/$(satellite)/$(case_number)-$(region)-$(date)-$(satellite)-floe_properties.csv"
     img = file |> case.loader |> load |> DataFrame
@@ -251,6 +252,10 @@ function name(case::Case)::String
     return "$(case_number)-$(region)-$(image_scale)-$(date)-$(satellite)-$(pixel_scale)"
 end
 
+function case_number(case::Case)::Int
+    return info(case).case_number
+end
+
 function pass_time(case::Case)::DateTime
     pass_time = info(case).pass_time
     return pass_time
@@ -263,6 +268,6 @@ function _filename_parts(case::Case)
     date = format(m.start_date, "yyyymmdd")
     satellite = m.satellite
     pixel_scale = "250m"
-    image_scale = "100km"
+    image_scale = "100km" # TODO: Infer from case info table, so we can include larger images in the future
     return (; case_number, region, date, satellite, pixel_scale, image_scale)
 end
