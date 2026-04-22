@@ -28,7 +28,7 @@ For example, the command:
 snakemake -c 1 beaufort_sea-100km.250m.2019-03-22.2019-03-23.LopezAcosta2019Tiling.tracked.csv 
 ```
 - Will use one processor core (`-c 1`) 
-- to run tracking and rotation measurement (`....tracked.csv`)
+- to run tracking (`....tracked.csv`)
 - on a 100km x 100km region in the Beaufort Sea, 
 - using 250m scale images, 
 - from 22nd to 23rd March 2019,
