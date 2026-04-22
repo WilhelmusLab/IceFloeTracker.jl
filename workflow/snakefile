@@ -405,6 +405,7 @@ ruleorder: segment_buckley > segment
 rule tracking:
     output:
         tracked = "{region}.{scale}m.{start}.{end}.{pipeline}.tracked.csv",
+        rotation = "{region}.{scale}m.{start}.{end}.{pipeline}.tracked.rotation.csv",
         config = "{region}.{scale}m.{start}.{end}.{pipeline}.tracked.config.txt"
     input:
         labels_maps = lambda wc: expand("{region}.{scale}m.{date}.{satellite}/{pipeline}/labels_map.tiff",
@@ -434,13 +435,24 @@ rule tracking:
         order = sortperm(overpasses);
         overpasses = overpasses[order];
         segmented_imgs = segmented_imgs[order];
+        
         tracker = {wildcards.pipeline}.Track();
         open("{output.config}", "w") do io
             Base.println(io, "IceFloeTracker.jl $(pkgversion(IceFloeTracker)) \n")
             Base.dump(io, tracker)
         end;
+        
         tracked = tracker(segmented_imgs, overpasses);
-        select!(tracked, Not(:mask, :psi));
-        save("{output.tracked}", tracked);
+        save("{output.tracked}", select(tracked, Not(:mask, :psi)));
+        
+        rotation = get_rotation_measurements(
+            tracked; 
+            id_column=:ID, 
+            image_column=:mask, 
+            time_column=:passtime, 
+            lookback_days=1
+        );
+        save("{output.rotation}", select(rotation, Not(:mask1, :psi1, :mask2, :psi2)));
+
         '
         """
