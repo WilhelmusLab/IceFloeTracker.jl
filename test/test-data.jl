@@ -46,6 +46,7 @@ end
 
 @testitem "Data loader retries and validates files" begin
     using IceFloeTracker.Data: _get_file
+    using Downloads: RequestError
 
     @testset "retries failed download and succeeds" begin
         temp = mktempdir()
@@ -55,7 +56,7 @@ end
         download_fn =
             (url, path) -> begin
                 attempts[] += 1
-                attempts[] < 2 && throw(Downloads.RequestError("transient", -1))
+                attempts[] < 2 && throw(RequestError("transient", -1))
                 open(path, "w") do io
                     write(io, UInt8(0x01))
                 end
@@ -70,6 +71,23 @@ end
         @test file == target
         @test attempts[] == 2
         @test isfile(target)
+    end
+
+    @testset "A different kind of error just fails" begin
+        temp = mktempdir()
+        target = joinpath(temp, "nested", "file.bin")
+        attempts = Ref(0)
+
+        download_fn = (url, path) -> begin
+            attempts[] += 1
+            throw(ArgumentError("permanent", -1))
+        end
+
+        @test_throws ArgumentError _get_file(
+            "https://example.invalid/file.bin", target; download_fn=download_fn
+        )
+
+        @test attempts[] == 1
     end
 
     @testset "invalid cached file triggers re-download" begin
