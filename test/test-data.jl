@@ -122,26 +122,27 @@ end
     end
 
     @testset "invalid cached file triggers re-download" begin
+        using Images
         temp = mktempdir()
-        target = joinpath(temp, "cached.csv")
-        write(target, "")
+        target = joinpath(temp, "cached.tiff")
+        write(target, "malformed TIFF")
         attempts = Ref(0)
 
         download_fn = (url, path) -> begin
             attempts[] += 1
-            open(path, "w") do io
-                write(io, "x")
-            end
+            @info "saving valid file to $(path)"
+            save(path, [0.0;])
         end
 
         file = _get_file(
-            "https://example.invalid/cached.csv",
+            "https://example.invalid/cached.tiff",
             target;
-            max_attempts=2,
+            max_attempts=10,
             download_fn=download_fn,
         )
         @test file == target
         @test attempts[] == 1
+    end
 
     @testset "invalid downloaded file triggers re-download" begin
         using Images
