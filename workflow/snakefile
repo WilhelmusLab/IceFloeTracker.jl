@@ -374,6 +374,7 @@ ruleorder: segment_buckley > segment
 rule tracking:
     output:
         tracked = "{region}.{scale}m.{start}.{end}.{pipeline}.tracked.csv",
+        rotation = "{region}.{scale}m.{start}.{end}.{pipeline}.tracked.rotation.csv",
         config = "{region}.{scale}m.{start}.{end}.{pipeline}.tracked.config.txt"
     input:
         labels_maps = lambda wc: expand("{region}.{scale}m.{date}.{satellite}/{pipeline}.labels_map.tiff",
@@ -403,55 +404,24 @@ rule tracking:
         order = sortperm(overpasses);
         overpasses = overpasses[order];
         segmented_imgs = segmented_imgs[order];
+        
         tracker = {wildcards.pipeline}.Track();
         open("{output.config}", "w") do io
             Base.println(io, "IceFloeTracker.jl $(pkgversion(IceFloeTracker)) \n")
             Base.dump(io, tracker)
         end;
+        
         tracked = tracker(segmented_imgs, overpasses);
-        select!(tracked, Not(:psi));
-        save("{output.tracked}", tracked);
-        '
-        """
-
-rule rotation:
-    output:
-        rotated = "{region}.{scale}m.{start}.{end}.{pipeline}.tracked.rotation.csv",
-        config = "{region}.{scale}m.{start}.{end}.{pipeline}.tracked.rotation.config.txt"
-    input:
-        tracked = "{region}.{scale}m.{start}.{end}.{pipeline}.tracked.csv",
-        init_ift = "init_ift"
-    shell:
-        """
-        {config[IFT]} -e 'using IceFloeTracker, CSVFiles, DataFrames, TimeZones;
-
-        # Load the tracked data        
-        tracked = DataFrame(load("{input.tracked}"));
-        @info tracked
+        save("{output.tracked}", select(tracked, Not(:mask, :psi)));
         
-        # Specify columns and parameters for rotation measurement
-        id_column::Symbol = :ID
-        image_column::Symbol = :mask
-        time_column::Symbol = :passtime
-        lookback_days::Int = 1
+        rotation = get_rotation_measurements(
+            tracked; 
+            id_column=:ID, 
+            image_column=:mask, 
+            time_column=:passtime, 
+            lookback_days=1
+        );
+        save("{output.rotation}", select(rotation, Not(:mask1, :psi1, :mask2, :psi2)));
 
-        # Update the types of the columns as needed for rotation measurement
-        tracked[!, image_column] = eval.(Meta.parse.(tracked[:, image_column]))
-        tracked[!, time_column] = ZonedDateTime.(tracked[:, time_column], tz"UTC")
-        
-        # Initialize the rotation function and write its configuration to a file for reproducibility
-        rotation_function = get_rotation_measurements
-        open("{output.config}", "w") do io
-            Base.println(io, "IceFloeTracker.jl $(pkgversion(IceFloeTracker)) \n")
-            Base.dump(io, rotation_function)
-        end;
-        
-        # Get the rotation measurements for each tracked floe
-        rotations = get_rotation_measurements(
-            tracked; id_column, image_column, time_column, lookback_days
-        )
-
-        # Write out the results
-        CSVFiles.save("{output.rotated}", rotations);
         '
         """
