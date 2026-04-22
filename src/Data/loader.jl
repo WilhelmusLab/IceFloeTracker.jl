@@ -55,7 +55,7 @@ function _get_file(
         catch e
             last_error = e
             last_failure_kind = "download"
-            if isa(e, RequestError) && e.code != 429 # 429 Too Many Requests is a rate limit error that should not be retried immediately
+            if isa(e, RequestError) && e.code != 429 # if "Too Many Requests" don't retry
                 @debug "download attempt $(attempt) failed for $(file_url)" exception = e
                 attempt < max_attempts && continue
             else
