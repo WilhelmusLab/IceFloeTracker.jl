@@ -22,7 +22,7 @@ function _can_open_file(file_path::AbstractString)::Bool
         !isfile(file_path) && return false
         filesize(file_path) == 0 && return false
         open(file_path, "r") do io
-            read(io, UInt8)
+            read(io, UInt8) # read a single UInt8 from the file
         end
         return true
     catch e
