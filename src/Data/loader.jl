@@ -39,8 +39,6 @@ function _get_file(
     validate_fn::Function=_can_open_file,
 )::AbstractString
     max_attempts < 1 && throw(ArgumentError("max_attempts must be at least 1."))
-
-    @debug "looking for file at $(file_path). File exists: $(isfile(file_path))"
     mkpath(dirname(file_path))
     for attempt in 1:max_attempts
         is_valid = isfile(file_path) && validate_fn(file_path)
