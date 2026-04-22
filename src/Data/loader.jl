@@ -41,28 +41,20 @@ function _get_file(
     max_attempts < 1 && throw(ArgumentError("max_attempts must be at least 1."))
     mkpath(dirname(file_path))
     for attempt in 1:max_attempts
-        is_valid = isfile(file_path) && validate_fn(file_path)
-        is_valid && return file_path
-
+        isfile(file_path) && validate_fn(file_path) && return file_path
         isfile(file_path) && rm(file_path; force=true)
-
         try
             download_fn(file_url, file_path)
-            validate_fn(file_path) ||
-                error("downloaded file at $(file_path) cannot be opened")
-            return file_path
         catch e
-            if isa(e, RequestError) && e.code != 429 || isa(e, ErrorException)
+            if isa(e, RequestError) && e.code != 429
                 @debug "download attempt $(attempt) failed for $(file_url)" exception = e
                 attempt < max_attempts && continue
             else
-                @debug "download attempt $(attempt) failed for $(file_url) with error" exception =
-                    e
                 rethrow(e)
             end
         end
+        validate_fn(file_path) && return file_path
     end
-
     return error(
         "failed to fetch valid file from $(file_url) after $(max_attempts) attempts"
     )
