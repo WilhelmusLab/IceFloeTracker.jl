@@ -46,7 +46,7 @@ end
 
 @testitem "Data loader retries and validates files" begin
     using IceFloeTracker.Data: _get_file
-    using Downloads: RequestError
+    using Downloads: RequestError, Response
 
     @testset "retries failed download and succeeds" begin
         temp = mktempdir()
@@ -56,7 +56,14 @@ end
         download_fn =
             (url, path) -> begin
                 attempts[] += 1
-                attempts[] < 2 && throw(RequestError("transient", -1))
+                attempts[] < 2 && throw(
+                    RequestError(
+                        url,
+                        -1,
+                        "transient",
+                        Response("", "", 500, "Internal Server Error", []),
+                    ),
+                )
                 open(path, "w") do io
                     write(io, UInt8(0x01))
                 end
@@ -73,20 +80,44 @@ end
         @test isfile(target)
     end
 
-    @testset "A different kind of error just fails" begin
+    @testset "A generic permanent error just fails" begin
         temp = mktempdir()
         target = joinpath(temp, "nested", "file.bin")
         attempts = Ref(0)
 
         download_fn = (url, path) -> begin
             attempts[] += 1
-            throw(ArgumentError("permanent", -1))
+            throw(ArgumentError("permanent"))
         end
 
         @test_throws ArgumentError _get_file(
             "https://example.invalid/file.bin", target; download_fn=download_fn
         )
 
+        @test attempts[] == 1
+    end
+
+    @testset "An HTTP 429 Too Many Requests error stops retries" begin
+        temp = mktempdir()
+        target = joinpath(temp, "nested", "file.bin")
+        attempts = Ref(0)
+
+        download_fn =
+            (url, path) -> begin
+                attempts[] += 1
+                throw(
+                    RequestError(
+                        url,
+                        429,
+                        "Too Many Requests",
+                        Response("", "", 429, "Too Many Requests", []),
+                    ),
+                )
+            end
+
+        @test_throws RequestError _get_file(
+            "https://example.invalid/file.bin", target; download_fn=download_fn
+        )
         @test attempts[] == 1
     end
 
