@@ -74,6 +74,7 @@ end
             target;
             max_attempts=3,
             download_fn=download_fn,
+            validate_fn=isfile,
         )
         @test file == target
         @test attempts[] == 2
