@@ -218,7 +218,7 @@ end
 
 Expand the labeled regions in labeled_img without overlap by a fixed pixel distance.
 
-```julia
+```julia-repl
 julia> A = zeros(Int64); A[2:4, 2:3] .= 2; A[4:5, 5:5] .= 1
 6×6 Matrix{Int64}:
  0  0  0  0  0  0

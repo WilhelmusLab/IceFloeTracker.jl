@@ -38,7 +38,7 @@ Calculate the proportion of the area that is not covered by tiles of a given sid
 - `Float64`: The proportion of the area that is not covered by the tiles.
 
 # Examples
-```julia
+```julia-repl
 julia> get_area_missed(5, (10, 20))
 0.0
 
@@ -116,7 +116,7 @@ Adjust the tile dimensions by adding extra rows and columns.
 - `Tuple{UnitRange{Int}, UnitRange{Int}}`: A tuple of ranges representing the new tile dimensions.
 
 # Examples
-```julia
+```julia-repl
 julia> bump_tile((1:3, 1:4), (1, 1))
 (1:4, 1:5)
 ```
@@ -141,7 +141,7 @@ Calculate the dimensions of a tile.
 - `Tuple{Int,Int}`: A tuple representing the width and height of the tile.
 
 # Examples
-```julia
+```julia-repl
 julia> get_tile_dims((1:3, 1:4))
 (4, 3)
 ```
