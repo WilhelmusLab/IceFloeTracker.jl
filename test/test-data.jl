@@ -162,13 +162,13 @@ end
             end
         end
 
-        file = _get_file(
+        @test file = _get_file(
             "https://example.invalid/cached.tiff",
             target;
             max_attempts=3,
             download_fn=download_fn,
-        )
-        @test file == target
-        @test load(target) == [0.0;]
+        ) broken = true
+        @test file == target broken = true
+        @test load(target) == [0.0;] broken = true
     end
 end
