@@ -6,9 +6,9 @@ The root type for the candidate filter functions.
 abstract type AbstractFloeFilterFunction <: Function end
 
 function (f::AbstractFloeFilterFunction)(floe, candidates)
-    f(floe, candidates, Val(:raw))
-    subset!(candidates, [f.threshold_column] => r -> r .> 0)
-    return select!(candidates, Not(f.threshold_column))
+    updated_candidates = f(floe, candidates)
+    matching_subset = subset(updated_candidates, [f.threshold_column] => r -> r .> 0)
+    return matching_subset
 end
 
 # TODO: Update the DistanceThresholdFilter to allow geospatial columns (i.e., call latlon first)
@@ -51,17 +51,23 @@ Passing `Val{:raw}` as the third argument will forgo the subsetting step so that
     scaling_function = dt -> maximum_linear_distance(dt; umax=1.5, eps=250)
 end
 
-function (f::DistanceThresholdFilter)(
-    floe::DataFrameRow, candidates::DataFrame, _::Val{:raw}
-) # can we get the same behavior with a less opaque function call?
-    candidates[!, f.time_column] = candidates[!, :passtime] .- floe.passtime
-    candidates[!, f.dist_column] = euclidean_distance(floe, candidates)
-    candidates[!, f.scaled_dist_column] =
-        candidates[!, f.dist_column] ./ f.scaling_function.(candidates[!, f.time_column])
-    return transform!(
-        candidates,
+function (f::DistanceThresholdFilter)(floe::DataFrameRow, candidates::DataFrame)
+    transformed = copy(candidates)
+    transformed[:, f.time_column] = transformed[!, :passtime] .- floe.passtime
+    transformed[:, f.dist_column] = euclidean_distance(floe, transformed)
+    transformed[:, f.scaled_dist_column] =
+        transformed[!, f.dist_column] ./ f.scaling_function.(transformed[!, f.time_column])
+
+    transformed = transform(
+        transformed,
         [f.dist_column, f.time_column] => ByRow(f.threshold_function) => f.threshold_column,
     )
+    @assert names(candidates) ∪
+            String.([
+        f.time_column, f.dist_column, f.scaled_dist_column, f.threshold_column
+    ]) ⊆ names(transformed)
+
+    return transformed
 end
 
 """
@@ -107,18 +113,18 @@ results without subsetting it.
     threshold_function = PiecewiseLinearThresholdFunction()
 end
 
-function (f::RelativeErrorThresholdFilter)(
-    floe::DataFrameRow, candidates::DataFrame, _::Val{:raw}
-)
+function (f::RelativeErrorThresholdFilter)(floe::DataFrameRow, candidates::DataFrame)
+    transformed = copy(candidates)
     new_variable = Symbol(:relative_error_, f.variable)
     X = floe[f.variable]
     Y = candidates[!, f.variable]
-    candidates[!, new_variable] = abs.(X .- Y) ./ (0.5 .* (X .+ Y))
-    return transform!(
-        candidates,
+    transformed[!, new_variable] = abs.(X .- Y) ./ (0.5 .* (X .+ Y))
+    transformed = transform(
+        transformed,
         [f.area_variable, new_variable] =>
             ByRow(f.threshold_function) => f.threshold_column,
     )
+    return transformed
 end
 
 """
@@ -144,27 +150,28 @@ the `threshold_function` which is assumed to depend on area.
     threshold_function = PiecewiseLinearThresholdFunction(100, 800, 0.5, 0.3)
 end
 
-function (f::ShapeDifferenceThresholdFilter)(
-    floe::DataFrameRow, candidates::DataFrame, _::Val{:raw}
-)
-    function sd(mask, orientation)
-        return round(
-            shape_difference(floe.mask, floe.orientation, mask, orientation); digits=3
-        )
+function (f::ShapeDifferenceThresholdFilter)(floe::DataFrameRow, candidates::DataFrame)
+    function sd(mask, orientation; digits=3)
+        shape_difference_ = shape_difference(floe.mask, floe.orientation, mask, orientation)
+        rounded = round(shape_difference_; digits)
+        return rounded
     end
+    transformed = copy(candidates)
 
-    transform!(candidates, [:mask, :orientation] => ByRow(sd) => :shape_difference)
+    transformed = transform(
+        transformed, [:mask, :orientation] => ByRow(sd) => :shape_difference
+    )
 
-    candidates[!, :scaled_shape_difference] =
-        candidates[!, :shape_difference] ./ candidates[!, f.scale_by]
-    candidates[!, :scaled_shape_difference] .=
-        round.(candidates[!, :scaled_shape_difference], digits=3)
-
-    return transform!(
-        candidates,
+    transformed[!, :scaled_shape_difference] =
+        transformed[!, :shape_difference] ./ transformed[!, f.scale_by]
+    transformed[!, :scaled_shape_difference] .=
+        round.(transformed[!, :scaled_shape_difference], digits=3)
+    transformed = transform(
+        transformed,
         [f.area_variable, :scaled_shape_difference] =>
             ByRow(f.threshold_function) => f.threshold_column,
     )
+    return transformed
 end
 
 """
@@ -182,17 +189,19 @@ to the columns of `candidates`.
 end
 
 #TODO: Add option to include the confidence intervals with the normalized cross correlation tests.
-function (f::PsiSCorrelationThresholdFilter)(floe, candidates, _::Val{:raw})
+function (f::PsiSCorrelationThresholdFilter)(floe, candidates)
     rfloe(p2) = round(normalized_cross_correlation(floe.psi, p2); digits=3)
-    transform!(candidates, [:psi] => ByRow(rfloe) => :psi_s_correlation)
-    candidates[!, :psi_s_correlation_score] = 1 .- candidates[!, :psi_s_correlation]
+    transformed = copy(candidates)
+    transformed = transform(transformed, [:psi] => ByRow(rfloe) => :psi_s_correlation)
+    transformed[!, :psi_s_correlation_score] = 1 .- transformed[!, :psi_s_correlation]
 
     # Future work: add computation of the confidence intervals for psi-s corr here.
-    return transform!(
-        candidates,
+    transformed = transform(
+        transformed,
         [f.area_variable, :psi_s_correlation_score] =>
             ByRow(f.threshold_function) => f.threshold_column,
     )
+    return transformed
 end
 
 """
@@ -216,9 +225,11 @@ Each item in the list should be an AbstractFloeFilterFunction.
 end
 
 function (f::ChainedFilterFunction)(floe, candidates)
+    transformed = copy(candidates)
     for filter_fun in f.filters
-        filter_fun(floe, candidates)
+        transformed = filter_fun(floe, transformed)
     end
+    return transformed
 end
 
 """FilterFunction()

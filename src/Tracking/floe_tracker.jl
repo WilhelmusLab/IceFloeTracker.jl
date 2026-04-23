@@ -188,8 +188,7 @@ function floe_tracker(
 
             candidate_pairs = []
             for floe in eachrow(trajectory_heads)
-                candidates_subset = deepcopy(candidates)
-                filter_function(floe, candidates_subset)
+                candidates_subset = filter_function(floe, candidates_subset)
                 nrow(candidates_subset) > 0 && begin
                     candidates_subset[!, :head_uuid] .= floe.uuid
                     candidates_subset[!, :trajectory_uuid] .= floe.trajectory_uuid
