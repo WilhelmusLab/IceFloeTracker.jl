@@ -101,7 +101,10 @@ end
 """
     RelativeErrorThresholdFilter(variable, area_variable, threshold_column, threshold_function)
     RelativeErrorThresholdFilter(floe, candidates)
-    RelativeErrorThresholdFilter(floe, candidates, Var(:raw))
+    map(f::RelativeErrorThresholdFilter, floe, candidates)
+    map!(f::RelativeErrorThresholdFilter, floe, candidates)
+    filter(f::RelativeErrorThresholdFilter, floe, candidates)
+    filter!(f::RelativeErrorThresholdFilter, floe, candidates)
 
 Compute and test (absolute) relative error for `variable`. The relative error
 between scalar variables X and Y is defined as 
@@ -114,8 +117,14 @@ the variable name, `area_variable`, `threshold_column` name, and a `threshold_fu
 initializes the function and saves the parameter values. Once initialized, the function 
 takes a `DataFrameRow` and a `DataFrame` of candidate floes as arguments, and subsets
 the candidates to only those which evaluate as `true` using the `threshold_function`.
-Including the dummy variable `Var(:raw)` returns the candidates dataframe with the test 
-results without subsetting it.
+
+Function signatures:
+- `map(f::RelativeErrorThresholdFilter, floe, candidates)` applies the function to the candidates and returns a modified DataFrame with the new columns for relative error and threshold results. 
+- `map!(f::RelativeErrorThresholdFilter, ...)` modifies the candidates DataFrame in place. 
+- `filter(f::RelativeErrorThresholdFilter, ...)` applies the function and returns only the subset of candidates that pass the threshold test. 
+- `filter!(f::RelativeErrorThresholdFilter, ...)` filters the candidates DataFrame in place.
+
+
 """
 @kwdef struct RelativeErrorThresholdFilter <: AbstractFloeFilterFunction
     variable
