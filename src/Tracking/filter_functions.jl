@@ -58,7 +58,7 @@ function (f::DistanceThresholdFilter)(floe::DataFrameRow, candidates::DataFrame)
     transformed[:, f.scaled_dist_column] =
         transformed[!, f.dist_column] ./ f.scaling_function.(transformed[!, f.time_column])
 
-    transformed = transform(
+    transform!(
         transformed,
         [f.dist_column, f.time_column] => ByRow(f.threshold_function) => f.threshold_column,
     )
@@ -119,7 +119,7 @@ function (f::RelativeErrorThresholdFilter)(floe::DataFrameRow, candidates::DataF
     X = floe[f.variable]
     Y = candidates[!, f.variable]
     transformed[!, new_variable] = abs.(X .- Y) ./ (0.5 .* (X .+ Y))
-    transformed = transform(
+    transform!(
         transformed,
         [f.area_variable, new_variable] =>
             ByRow(f.threshold_function) => f.threshold_column,
@@ -158,15 +158,13 @@ function (f::ShapeDifferenceThresholdFilter)(floe::DataFrameRow, candidates::Dat
     end
     transformed = copy(candidates)
 
-    transformed = transform(
-        transformed, [:mask, :orientation] => ByRow(sd) => :shape_difference
-    )
+    transform!(transformed, [:mask, :orientation] => ByRow(sd) => :shape_difference)
 
     transformed[!, :scaled_shape_difference] =
         transformed[!, :shape_difference] ./ transformed[!, f.scale_by]
     transformed[!, :scaled_shape_difference] .=
         round.(transformed[!, :scaled_shape_difference], digits=3)
-    transformed = transform(
+    transform!(
         transformed,
         [f.area_variable, :scaled_shape_difference] =>
             ByRow(f.threshold_function) => f.threshold_column,
@@ -192,11 +190,11 @@ end
 function (f::PsiSCorrelationThresholdFilter)(floe, candidates)
     rfloe(p2) = round(normalized_cross_correlation(floe.psi, p2); digits=3)
     transformed = copy(candidates)
-    transformed = transform(transformed, [:psi] => ByRow(rfloe) => :psi_s_correlation)
+    transform!(transformed, [:psi] => ByRow(rfloe) => :psi_s_correlation)
     transformed[!, :psi_s_correlation_score] = 1 .- transformed[!, :psi_s_correlation]
 
     # Future work: add computation of the confidence intervals for psi-s corr here.
-    transformed = transform(
+    transform!(
         transformed,
         [f.area_variable, :psi_s_correlation_score] =>
             ByRow(f.threshold_function) => f.threshold_column,
