@@ -55,5 +55,5 @@ end
             [minimum_weight_matching_function.columns..., :head_uuid, :uuid],
         ),
     )
-    minimum_weight_matching_function(empty_dataframe)
+    @test minimum_weight_matching_function(empty_dataframe) broken = true
 end
