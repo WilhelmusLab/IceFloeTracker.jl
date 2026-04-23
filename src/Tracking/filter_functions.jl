@@ -2,6 +2,13 @@
     AbstractFloeFilterFunction
 
 The root type for the candidate filter functions.
+
+
+Function signatures:
+- `map(f::AbstractFloeFilterFunction, floe, candidates)` applies the function to the candidates and returns a modified DataFrame with the new columns for relative error and threshold results. 
+- `map!(f::AbstractFloeFilterFunction, ...)` modifies the candidates DataFrame in place. 
+- `filter(f::AbstractFloeFilterFunction, ...)` applies the function and returns only the subset of candidates that pass the threshold test. 
+- `filter!(f::AbstractFloeFilterFunction, ...)` filters the candidates DataFrame in place.
 """
 abstract type AbstractFloeFilterFunction <: Function end
 
@@ -49,7 +56,6 @@ julia> dt_test(floe, candidates)
 ```
 
 will modify `candidates` in place to include only rows in which the `LinearTimeDistanceFunction()` evaluates as true. 
-Passing `Val{:raw}` as the third argument will forgo the subsetting step so that the output of the test can be examined.
 
 ## Arguments
 - `time_column`: Name of the column to store pairwise floe time differences
@@ -118,12 +124,6 @@ initializes the function and saves the parameter values. Once initialized, the f
 takes a `DataFrameRow` and a `DataFrame` of candidate floes as arguments, and subsets
 the candidates to only those which evaluate as `true` using the `threshold_function`.
 
-Function signatures:
-- `map(f::RelativeErrorThresholdFilter, floe, candidates)` applies the function to the candidates and returns a modified DataFrame with the new columns for relative error and threshold results. 
-- `map!(f::RelativeErrorThresholdFilter, ...)` modifies the candidates DataFrame in place. 
-- `filter(f::RelativeErrorThresholdFilter, ...)` applies the function and returns only the subset of candidates that pass the threshold test. 
-- `filter!(f::RelativeErrorThresholdFilter, ...)` filters the candidates DataFrame in place.
-
 
 """
 @kwdef struct RelativeErrorThresholdFilter <: AbstractFloeFilterFunction
@@ -150,7 +150,6 @@ end
 """
     ShapeDifferenceThresholdFilter(area_variable, scale_by, threshold_column, threshold_function)
     ShapeDifferenceThresholdFilter(floe, candidates)
-    ShapeDifferenceThresholdFilter(floe, candidates, Val(:raw))
     
 
 Compute and test the scaled shape difference between input `floe` and each floe in the dataframe `candidates`.
@@ -194,7 +193,7 @@ end
 
 """
     PsiSCorrelationThresholdFunction(area_variable, threshold_column, threshold_function)
-    PsiSCorrelationThresholdFunction(floe, candidates, Val(:raw))
+    
 
 Compute the ψ-s correlation between a floe and a dataframe of candidate floes. Adds the 
 ψ-s correlation ``\\rho``,  ψ-s correlation score (1 - ``\\rho``), and the result of the threshold function
