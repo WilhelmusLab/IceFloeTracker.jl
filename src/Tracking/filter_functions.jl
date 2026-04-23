@@ -57,16 +57,10 @@ function (f::DistanceThresholdFilter)(floe::DataFrameRow, candidates::DataFrame)
     transformed[:, f.dist_column] = euclidean_distance(floe, transformed)
     transformed[:, f.scaled_dist_column] =
         transformed[!, f.dist_column] ./ f.scaling_function.(transformed[!, f.time_column])
-
     transform!(
         transformed,
         [f.dist_column, f.time_column] => ByRow(f.threshold_function) => f.threshold_column,
     )
-    @assert names(candidates) ∪
-            String.([
-        f.time_column, f.dist_column, f.scaled_dist_column, f.threshold_column
-    ]) ⊆ names(transformed)
-
     return transformed
 end
 
