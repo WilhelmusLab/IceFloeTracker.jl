@@ -189,7 +189,6 @@ function floe_tracker(
             candidate_pairs = DataFrame()
             for floe in eachrow(trajectory_heads)
                 candidates_subset = filter_function(floe, candidates)
-                @show names(candidates_subset), nrow(candidates_subset)
                 candidates_subset[!, :head_uuid] .= floe.uuid
                 candidates_subset[!, :trajectory_uuid] .= floe.trajectory_uuid
                 candidate_pairs = vcat(candidate_pairs, candidates_subset; cols=:union)
