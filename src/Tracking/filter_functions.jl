@@ -5,11 +5,28 @@ The root type for the candidate filter functions.
 """
 abstract type AbstractFloeFilterFunction <: Function end
 
-function (f::AbstractFloeFilterFunction)(floe, candidates)
-    updated_candidates = f(floe, candidates)
-    matching_subset = subset(updated_candidates, [f.threshold_column] => r -> r .> 0)
-    return matching_subset
+function Base.map(f::AbstractFloeFilterFunction, floe, candidates)
+    return f(floe, candidates)
 end
+
+function Base.map!(f::AbstractFloeFilterFunction, floe, candidates)
+    candidates = map(f, floe, candidates)
+    return nothing
+end
+
+function Base.filter(f::AbstractFloeFilterFunction, floe, candidates)
+    updated_candidates = map(f, floe, candidates)
+    matching_subset = subset(updated_candidates, [f.threshold_column] => r -> r .> 0)
+    matching_subset_without_threshold = select(matching_subset, Not(f.threshold_column))
+    return matching_subset_without_threshold
+end
+
+function Base.filter!(f::AbstractFloeFilterFunction, floe, candidates)
+    candidates = filter(f, floe, candidates)
+    return nothing
+end
+
+(f::AbstractFloeFilterFunction)(floe, candidates) = filter(f, floe, candidates)
 
 # TODO: Update the DistanceThresholdFilter to allow geospatial columns (i.e., call latlon first)
 """
@@ -219,7 +236,7 @@ end
 function (f::ChainedFilterFunction)(floe, candidates)
     transformed = copy(candidates)
     for filter_fun in f.filters
-        transformed = filter_fun(floe, transformed)
+        transformed = filter(filter_fun, floe, transformed)
     end
     return transformed
 end
