@@ -77,31 +77,29 @@ end
     candidates = props[1][2:end, :]
 
     n = nrow(candidates)
-    dt_test = DistanceThresholdFilter()
-    dt_test(floe, candidates, Val(:raw))
-    n2 = nrow(candidates)
-    dt_test(floe, candidates)
-    n3 = nrow(candidates)
-    # Check that using the Val(:raw) forces the test to skip the subset step
+    candidates_after_map = map(DistanceThresholdFilter(), floe, candidates)
+    n_after_map = nrow(candidates_after_map)
+    candidates_after_filter = filter(DistanceThresholdFilter(), floe, candidates)
+    n_after_filter = nrow(candidates_after_filter)
     # and that using it with just (floe, candidates) does the subsetting
-    @test (n == n2) && (n >= n3) && ("time_distance_test" ∉ names(candidates))
+    @test (n == n_after_map)
+    @test (n >= n_after_filter)
+    @test ("time_distance_test" ∉ names(candidates_after_filter))
 
     candidates = props[1][2:end, :]
-    re_test_area = RelativeErrorThresholdFilter(; variable=:area)
-    re_test_area(floe, candidates, Val(:raw))
-    re_test_convex_area = RelativeErrorThresholdFilter(; variable=:convex_area)
-    re_test_convex_area(floe, candidates, Val(:raw))
+    candidates = map(RelativeErrorThresholdFilter(; variable=:area), floe, candidates)
+    candidates = map(
+        RelativeErrorThresholdFilter(; variable=:convex_area), floe, candidates
+    )
     # Check that variable names are being passed through correctly
     @test ("relative_error_area" ∈ names(candidates)) &&
         ("relative_error_convex_area" ∈ names(candidates))
 
-    sd_test = ShapeDifferenceThresholdFilter()
-    sd_test(floe, candidates, Val(:raw))
+    candidates = map(ShapeDifferenceThresholdFilter(), floe, candidates)
     @test "shape_difference_test" ∈ names(candidates)
     @test candidates[1, :shape_difference] == 268
 
-    ps_test = PsiSCorrelationThresholdFilter()
-    ps_test(floe, candidates, Val(:raw))
+    candidates = map(PsiSCorrelationThresholdFilter(), floe, candidates)
     @test "psi_s_correlation" ∈ names(candidates)
     @test candidates[1, :psi_s_correlation] == 0.914
 end
