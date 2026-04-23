@@ -61,7 +61,7 @@ a sequence of thresholds on band 2 and band 7 and on the ratio of band 7 to band
 
 Example:
 
-```
+```julia
 using IceFloeTracker
 using IceFloeTracker: Watkins2026Dataset
 
@@ -150,7 +150,7 @@ the `max_fill_size` is passed to the imfill algorithm for filling holes that rem
 
 Example:
 
-```
+```julia
 using IceFloeTracker
 using IceFloeTracker: Watkins2026Dataset
 

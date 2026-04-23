@@ -14,12 +14,13 @@ Calculate how many tiles of a given side length fit into the given dimensions.
 - `Tuple{Int,Int}`: A tuple representing the number of tiles that fit along each dimension.
 
 # Examples
-```
+```julia-repl
 julia> getfit((10, 20), 5)
 (2, 4)
 
 julia> getfit((15, 25), 5)
 (3, 5)
+```
 """
 function getfit(dims::Tuple{Int,Int}, side_length::Int)::Tuple{Int,Int}
     return dims .÷ side_length
@@ -60,7 +61,7 @@ Calculate the optimal tile size in the range [l0-1, l0+1] for the given size `l0
 This function computes the optimal tile size for tiling an area with given dimensions. It ensures that the initial tile size `l0` is at least 2 and not larger than any of the given dimensions. The function evaluates candidate tile sizes and selects the one that minimizes the area missed by its corresponding tiling. In case of a tie, it prefers the larger tile size.
 
 # Example
-```
+```julia-repl
 julia> get_optimal_tile_size(3, (10, 7))
 2
 ```

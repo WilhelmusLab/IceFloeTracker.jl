@@ -91,7 +91,7 @@ end
 """
 Tests the travel distance and time to a linear estimate of maximum travel distance
 using the formula
-```
+```julia
 max_dx = max_vel * dt + eps
 ```
 Epsilon should be the uncertainty in position, such that if for example the positional
@@ -129,7 +129,7 @@ which is based on fitting a quadratic function to log-transformed displacements 
 drifting buoy data.
 
 ## Example
-```
+```julia
 distance_threshold(100, Hour(12), LopezAcostaTimeDistanceFunction())
 ```
 """

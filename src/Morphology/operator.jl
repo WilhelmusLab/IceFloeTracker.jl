@@ -42,7 +42,7 @@ end
 Get decimal representation of a bit vector `v` with the leading bit at its leftmost posistion.
 
 Example
-```
+```julia-repl
 julia> _bin9todec([0 0 0 0 0 0 0 0 0])
 0
 

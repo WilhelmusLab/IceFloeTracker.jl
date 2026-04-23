@@ -210,7 +210,7 @@ strel_box((3,3)) for 8-connectivity. The resulting function operates on a binary
 is assumed to contain a single object.
 
 # Examples
-```
+```julia-repl
 julia> A = [0 1 1; 1 1 1; 1 1 1];
 
 julia> BenkridCrookes(connectivity=4)(A)
