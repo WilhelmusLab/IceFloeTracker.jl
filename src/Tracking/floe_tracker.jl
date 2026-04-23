@@ -186,20 +186,18 @@ function floe_tracker(
                 trajectories, candidates[1, :passtime], maximum_time_step
             )
 
-            candidate_pairs = []
+            candidate_pairs = DataFrame()
             for floe in eachrow(trajectory_heads)
-                candidates_subset = deepcopy(candidates)
-                filter_function(floe, candidates_subset)
-                nrow(candidates_subset) > 0 && begin
-                    candidates_subset[!, :head_uuid] .= floe.uuid
-                    candidates_subset[!, :trajectory_uuid] .= floe.trajectory_uuid
-                    append!(candidate_pairs, eachrow(candidates_subset))
-                end
+                candidates_subset = filter_function(floe, candidates)
+                @show names(candidates_subset), nrow(candidates_subset)
+                candidates_subset[!, :head_uuid] .= floe.uuid
+                candidates_subset[!, :trajectory_uuid] .= floe.trajectory_uuid
+                candidate_pairs = vcat(candidate_pairs, candidates_subset; cols=:union)
             end
 
             # matching function will find best pairs (head_uuid, uuid)
             # and ensure that all pairs are unique
-            matched_pairs = DataFrame(candidate_pairs) |> matching_function
+            matched_pairs = candidate_pairs |> matching_function
 
             # Get unmatched floes in day 2 (iterations > 2)
             # This should handle the case where there are no trajectory heads available
