@@ -620,3 +620,27 @@
         ]
     end
 end
+
+@testitem "shape_difference returns 0 for cases with the same bool array and the same rotation" begin
+    #     0.7853981633974483
+    using IceFloeTracker.Tracking: shape_difference
+    shape_difference_same_mask_rotation(mask, rotation) =
+        shape_difference(mask, rotation, mask, rotation)
+    @test shape_difference_same_mask_rotation(Bool[1;;], 0) == 0
+    @test shape_difference_same_mask_rotation(Bool[1;;], 0.1) == 0
+    @test shape_difference_same_mask_rotation(Bool[1;;], 0.785) == 0
+    @test shape_difference_same_mask_rotation(
+        Bool[
+            1 1
+            1 0
+        ],
+        0.785,
+    ) == 0 broken = true
+    @test shape_difference_same_mask_rotation(
+        Bool[
+            1 1
+            1 0
+        ],
+        0.7853981633974483,
+    ) == 0 broken = true
+end
