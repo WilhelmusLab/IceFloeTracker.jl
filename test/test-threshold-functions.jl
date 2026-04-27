@@ -103,3 +103,72 @@ end
     @test "psi_s_correlation" ∈ names(candidates)
     @test candidates[1, :psi_s_correlation] == 0.914
 end
+
+@testitem "Filter function tests transform! syntax" begin
+    using IceFloeTracker
+    using DataFrames
+
+    dataset = Watkins2026Dataset(; ref="v0.2")
+    dataset = filter(c -> c.case_number == 9, dataset)
+    cases = [x for x in dataset]
+    if occursin("terra", name(cases[1]))
+        terra = cases[1]
+        aqua = cases[2]
+    else
+        aqua = cases[1]
+        terra = cases[2]
+    end
+
+    if info(aqua)[:pass_time] < info(terra)[:pass_time]
+        order = ["aqua", "terra"]
+        labeled_images = [
+            validated_labeled_floes(aqua).image_indexmap,
+            validated_labeled_floes(terra).image_indexmap,
+        ]
+        passtimes = [info(aqua)[:pass_time], info(terra)[:pass_time]] # True time delta
+
+    else
+        order = ["terra", "aqua"]
+        labeled_images = [
+            validated_labeled_floes(terra).image_indexmap,
+            validated_labeled_floes(aqua).image_indexmap,
+        ]
+        passtimes = [info(terra)[:pass_time], info(aqua)[:pass_time]] # True time delta
+    end
+    props = IceFloeTracker.regionprops_table.(labeled_images)
+
+    # Adding floe masks: it may be that we need a step in the shape difference and the
+    # psi-s curve test to check if the mask exists already, and only add it if it isn't there.
+    add_floemasks!.(props, labeled_images)
+    add_passtimes!.(props, passtimes)
+    add_ψs!.(props)
+    floe = props[1][1, :]
+    candidates = props[1][2:end, :]
+
+    n = nrow(candidates)
+    candidates_after_map = map(DistanceThresholdFilter(), floe, candidates)
+    n_after_map = nrow(candidates_after_map)
+    candidates_after_filter = filter(DistanceThresholdFilter(), floe, candidates)
+    n_after_filter = nrow(candidates_after_filter)
+    # and that using it with just (floe, candidates) does the subsetting
+    @test (n == n_after_map)
+    @test (n >= n_after_filter)
+    @test ("time_distance_test" ∉ names(candidates_after_filter))
+
+    candidates = props[1][2:end, :]
+    candidates = map(RelativeErrorThresholdFilter(; variable=:area), floe, candidates)
+    candidates = map(
+        RelativeErrorThresholdFilter(; variable=:convex_area), floe, candidates
+    )
+    # Check that variable names are being passed through correctly
+    @test ("relative_error_area" ∈ names(candidates)) &&
+        ("relative_error_convex_area" ∈ names(candidates))
+
+    candidates = map(ShapeDifferenceThresholdFilter(), floe, candidates)
+    @test "shape_difference_test" ∈ names(candidates)
+    @test candidates[1, :shape_difference] == 268
+
+    candidates = map(PsiSCorrelationThresholdFilter(), floe, candidates)
+    @test "psi_s_correlation" ∈ names(candidates)
+    @test candidates[1, :psi_s_correlation] == 0.914
+end
