@@ -65,6 +65,7 @@ import ..Preprocessing:
     LopezAcostaCloudMask
 
 import ..Segmentation:
+    expand_labels,
     IceFloeSegmentationAlgorithm,
     find_ice_mask,
     kmeans_binarization,
@@ -121,6 +122,9 @@ Segmentation algorithm for sea ice floe identification based on Lopez-Acosta 201
    input to the ImageContrastAdjustment GammaCorrection algorithm, `adjusted_ice_threshold` is a global threshold for the internal
    adjusted image, `alpha_level` controls the amount of the brightened image to use, and `fill_range_max` is the largest dark spot
    to fill in the binarized result.
+- `segF_params`: Parameters for the third segmentation stage. Again using k-means clustering, with k=3 clusters, and using morphological operations anre reconstruction.
+- `floe_splitting_settings`: Parameters for separating ice floes in the segF binarized result
+- `expand_labels_by`: Number of pixels to expand labels without overlap.
 
 ## Returns
 A segmented image with candidate sea ice floes.
@@ -152,6 +156,7 @@ Note: This algorithm is under active development and the API will change in a fu
     floe_splitting_settings = (
         max_fill_area=1, min_area_opening=20, opening_strel=strel_octagon(3)
     )
+    expand_labels_by=5
 end
 
 function (p::Segment)(
@@ -279,9 +284,11 @@ function (p::Segment)(
     @info "Splitting floes"
     segF = morph_split_floes(segF_binarized, cloudmask; p.floe_splitting_settings...)
     labels = label_components(segF)
+    (p.expand_labels_by > 0) && (labels .= expand_labels(labels, p.expand_labels_by))
 
     # Return the original truecolor image, segmented
     segments = SegmentedImage(truecolor, labels)
+
 
     if !isnothing(intermediate_results_callback)
         segments_truecolor = SegmentedImage(truecolor, labels)
