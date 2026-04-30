@@ -44,9 +44,9 @@ end
     @test mean_F_score ≥ 0.8 broken = true
 
     # Current performance should look at least as good as this:
-    @test mean_recall ≥ 0.38
-    @test mean_precision ≥ 0.21
-    @test round(mean_F_score; digits=1) ≥ 0.28
+    @test mean_recall ≥ 0.6
+    @test mean_precision ≥ 0.3
+    @test round(mean_F_score; digits=1) ≥ 0.38
 
     # return current performance
     @show mean_recall
@@ -61,7 +61,7 @@ end
         LopezAcosta2019.Segment();
         output_directory="./test_outputs/",
     )
-    @test 0.23 ≈ labeled_fraction atol = 0.1
+    @test 0.36 ≈ labeled_fraction atol = 0.1
     @test 0.27 ≤ round(recall; digits=2)
     @test 0.57 ≤ round(precision; digits=2)
     @test 0.40 ≤ round(F_score; digits=2)
@@ -71,7 +71,7 @@ end
         LopezAcosta2019.Segment();
         output_directory="./test_outputs/",
     )
-    @test 0.29 ≈ labeled_fraction atol = 0.1
+    @test 0.42 ≈ labeled_fraction atol = 0.1
     @test 0.40 ≤ round(recall; digits=2)
     @test 0.21 ≤ round(precision; digits=2) # Note: Decreased precision, I suspect an issue with Seg. A.
     @test 0.3 ≤ round(F_score; digits=2)
@@ -81,7 +81,7 @@ end
         LopezAcosta2019.Segment();
         output_directory="./test_outputs/",
     )
-    @test 0.25 ≈ labeled_fraction atol = 0.1
+    @test 0.36 ≈ labeled_fraction atol = 0.1
     @test 0.66 ≤ round(recall; digits=2)
     @test 0.52 ≤ round(precision; digits=2)
     @test 0.55 ≤ round(F_score; digits=2)
@@ -93,7 +93,7 @@ end
     )
     # Note: Validation dataset currently doesn't include the floes intersecting the edge.
     # Improving the segmentation lowered the scores here due to these floes.
-    @test labeled_fraction ≈ 0.45 rtol = 0.1
+    @test labeled_fraction ≈ 0.61 rtol = 0.1
     @test 0.5 ≤ round(recall; digits=2)
     @test 0.48 ≤ round(precision; digits=2)
     @test 0.55 ≤ round(F_score; digits=2)
