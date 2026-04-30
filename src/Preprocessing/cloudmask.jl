@@ -61,17 +61,14 @@ a sequence of thresholds on band 2 and band 7 and on the ratio of band 7 to band
 
 Example:
 
-```julia
-using IceFloeTracker
-using IceFloeTracker: Watkins2026Dataset
-
-dataset = Watkins2026Dataset(; ref="v0.2")
-case = first(filter(c -> (c.case_number == 6 && c.satellite == "terra"), dataset))
-cm_algo = LopezAcostaCloudMask()
-cloud_mask = create_cloudmask(modis_falsecolor(case), cm_algo)
-
-# show image:
-Gray.(cloud_mask)
+```julia-repl
+julia> using IceFloeTracker
+julia> using IceFloeTracker: Watkins2026Dataset
+julia> dataset = Watkins2026Dataset(; ref="v0.2")
+julia> case = first(filter(c -> (c.case_number == 6 && c.satellite == "terra"), dataset))
+julia> cm_algo = LopezAcostaCloudMask()
+julia> cloud_mask = create_cloudmask(modis_falsecolor(case), cm_algo)
+julia> Gray.(cloud_mask)
 ```
 """
 function (f::LopezAcostaCloudMask)(img::AbstractArray{<:Union{AbstractRGB,TransparentRGB}})
@@ -150,17 +147,14 @@ the `max_fill_size` is passed to the imfill algorithm for filling holes that rem
 
 Example:
 
-```julia
-using IceFloeTracker
-using IceFloeTracker: Watkins2026Dataset
-
-dataset = Watkins2026Dataset(; ref="v0.2")
-case = first(filter(c -> (c.case_number == 6 && c.satellite == "terra"), dataset))
-cm_algo = Watkins2025CloudMask()
-cloud_mask = create_cloudmask(modis_falsecolor(case), cm_algo)
-
-# show image:
-Gray.(cloud_mask)
+```julia-repl
+julia> using IceFloeTracker
+julia> using IceFloeTracker: Watkins2026Dataset
+julia> dataset = Watkins2026Dataset(; ref="v0.2")
+julia> case = first(filter(c -> (c.case_number == 6 && c.satellite == "terra"), dataset))
+julia> cm_algo = Watkins2025CloudMask()
+julia> cloud_mask = create_cloudmask(modis_falsecolor(case), cm_algo)
+julia> Gray.(cloud_mask)
 ```
 """
 function (f::Watkins2025CloudMask)(img::AbstractArray{<:Union{AbstractRGB,TransparentRGB}})

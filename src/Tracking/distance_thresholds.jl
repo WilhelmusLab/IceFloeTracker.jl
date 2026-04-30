@@ -91,8 +91,8 @@ end
 """
 Tests the travel distance and time to a linear estimate of maximum travel distance
 using the formula
-```julia
-max_dx = max_vel * dt + eps
+```julia-repl
+julia> max_dx = max_vel * dt + eps
 ```
 Epsilon should be the uncertainty in position, such that if for example the positional
 uncertainty is 250 m, then the maximum distance includes a 250 m buffer. The default maximum
@@ -129,8 +129,8 @@ which is based on fitting a quadratic function to log-transformed displacements 
 drifting buoy data.
 
 ## Example
-```julia
-distance_threshold(100, Hour(12), LopezAcostaTimeDistanceFunction())
+```julia-repl
+julia> distance_threshold(100, Hour(12), LopezAcostaTimeDistanceFunction())
 ```
 """
 # TODO: require dt to be milliseconds (or at least a timedelta), so we can do e.g. = Dates.seconds(passtimes[2] - passtimes[1])
