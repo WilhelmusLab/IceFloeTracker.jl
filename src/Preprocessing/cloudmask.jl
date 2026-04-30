@@ -190,26 +190,26 @@ end
 Cloud masks in the IFT are BitMatrix objects such that for an image I and cloudmask C, cloudy pixels can be selected by I[C], and clear-sky pixels can be selected with I[.!C]. Construction of a cloud mask uses the syntax
 
 ```julia-repl
-f = CloudMaskAlgorithm(parameters)
-C = create_cloudmask(img; CloudMaskAlgorithm)
+julia> f = CloudMaskAlgorithm(parameters)
+julia> C = create_cloudmask(img; CloudMaskAlgorithm)
 ```
 
 By default, `create_cloudmask` uses the algorithm found in [1]. This algorithm converts a 3-channel MODIS 7-2-1 false color image into a 1-channel binary matrix in which clouds = 1 and anything else = 0. The algorithm aims to identify patches of opaque cloud while allowing thin and transparent cloud to remain. This algorithm is instantiated using
 
 ```julia-repl
-f = LopezAcostaCloudMask()
+julia> f = LopezAcostaCloudMask()
 ```
 
 In this case, the default values are applied. It can also called using a set of customized parameters. These values must be real numbers between 0 and 1. To reproduce the default parameters, you may call
 
 ```julia-repl
-f = LopezAcostaCloudMask(prelim_threshold=110/255, band_7_threshold=200/255, band_2_threshold=190/255, ratio_lower=0.0, ratio_upper=0.75).
+julia> f = LopezAcostaCloudMask(prelim_threshold=110/255, band_7_threshold=200/255, band_2_threshold=190/255, ratio_lower=0.0, ratio_upper=0.75).
 ```
 
 A stricter cloud mask was defined in [2], covering more cloudy pixels while minimally impacting the masking of cloud-covered ice pixels.
 
 ```julia-repl
-f = LopezAcostaCloudMask(prelim_threshold=53/255, band_7_threshold=130/255, band_2_threshold=169/255, ratio_lower=0.0, ratio_upper=0.53).
+julia> f = LopezAcostaCloudMask(prelim_threshold=53/255, band_7_threshold=130/255, band_2_threshold=169/255, ratio_lower=0.0, ratio_upper=0.53).
 ```
 
 These parameters together define a piecewise linear partition of pixels based on their Band 7 and Band 2 callibrated reflectance. Pixels with intensity above `prelim_threshold` are considered as potential cloudy pixels. Then, pixels with Band 7 reflectance less than `band_7_threshold`, Band 2 reflectance greater than `band_2_threshold`, and Band 7 to Band 2 ratios between `ratio_lower` and `ratio_upper` are removed from the cloud mask (i.e., set to cloud-free).
