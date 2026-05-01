@@ -203,7 +203,7 @@ applied in sequence. Thus a filter function based on the distance threshold filt
 could be made as
 
 ```julia-repl
-filter_function = ChainedFilterFunction(
+julia> filter_function = ChainedFilterFunction(
     filters=[DistanceThresholdFilter(), RelativeErrorThresholdFilter(variable=:area)]
 )
 ```
