@@ -35,10 +35,8 @@ end
 function (f::MinimumWeightMatchingFunction)(candidate_pairs::DataFrame)
     # djw, jgh: Ideally, we woulnd't need this guard, it's not as clean as it could be, but is okay for now.
     if !(String.(f.columns) ⊆ names(candidate_pairs))
-        @info(
-            ArgumentError(
-                "Columns specified in MinimumWeightMatchingFunction not found in candidate_pairs DataFrame",
-            ),
+        @debug(
+            "Columns specified in MinimumWeightMatchingFunction not found in candidate_pairs DataFrame. Returning an empty dataframe.",
         )
         return DataFrame(; head_uuid=String[], uuid=String[]) # Return empty DataFrame if columns not found
     end
