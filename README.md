@@ -46,7 +46,7 @@ git config core.hooksPath ./hooks
 
 To help with passing git hooks, run the formatting script before staging files:
 
-```
+```shell
 ./scripts/format.jl
 git add .
 git commit -m "some informative message"
