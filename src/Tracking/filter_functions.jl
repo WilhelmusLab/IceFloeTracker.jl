@@ -22,12 +22,12 @@ is initialized with names for the time and distance columns, the threshold funct
 and the name of the column in which to store the results. 
 
 
-```julia
+```julia-repl
 julia> dt_test = DistanceThresholdFilter(time_colum=:Δt, dist_column=:Δx, threshold_function=LinearTimeDistanceFunction())
 ```
 Now, let's assume that `floe` and `candidates` are already defined. Then
 
-```julia
+```julia-repl
 julia> dt_test(floe, candidates)
 ```
 
@@ -202,8 +202,8 @@ A [`ChainedFilterFunction`](@ref) is a composite function based on a set of [`Ab
 applied in sequence. Thus a filter function based on the distance threshold filter and area relative error filter
 could be made as
 
-```julia
-filter_function = ChainedFilterFunction(
+```julia-repl
+julia> filter_function = ChainedFilterFunction(
     filters=[DistanceThresholdFilter(), RelativeErrorThresholdFilter(variable=:area)]
 )
 ```
