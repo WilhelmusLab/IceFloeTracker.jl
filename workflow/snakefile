@@ -475,15 +475,17 @@ rule observation_hdf5:
         
     shell:
         """
-        {config[IFT]} -e 'using IceFloeTracker, FileIO, Images;
-        save(
-            "{output}", 
-            Dict(
-                "passtime" => read("{input.passtime}", String) |> chomp,
-                "labels_map" => load("{input.labels_map}") |> channelview .|> x->reinterpret(UInt16, x),
-                "cloud_mask" => load("{input.cloud_mask}") |> channelview .|> x->reinterpret(UInt8, x),
-                "landmask" => load("{input.landmask}") |> channelview .|> x->reinterpret(UInt8, x),
-                "coastal_buffer_mask" => load("{input.coastal_buffer_mask}") |> channelview .|> x->reinterpret(UInt8, x),   
-            )
-        )'
+        {config[IFT]} -e 'using IceFloeTracker, HDF5, Images;
+        h5open("{output}", "w") do file
+            file["{wildcards.dir}/passtime"] = read("{input.passtime}", String) |> chomp
+            file["{wildcards.dir}/{wildcards.pipeline}/labels_map"] = load("{input.labels_map}") |> channelview .|> x->reinterpret(UInt16, x)
+            attributes(file["{wildcards.dir}/{wildcards.pipeline}/labels_map"])["CLASS"] = "IMAGE"
+            file["{wildcards.dir}/{wildcards.pipeline}/cloud_mask"] = load("{input.cloud_mask}") |> channelview .|> x->reinterpret(UInt8, x)
+            attributes(file["{wildcards.dir}/{wildcards.pipeline}/cloud_mask"])["CLASS"] = "IMAGE"
+            file["{wildcards.dir}/{wildcards.pipeline}/landmask"] = load("{input.landmask}") |> channelview .|> x->reinterpret(UInt8, x)
+            attributes(file["{wildcards.dir}/{wildcards.pipeline}/landmask"])["CLASS"] = "IMAGE"
+            file["{wildcards.dir}/{wildcards.pipeline}/coastal_buffer_mask"] = load("{input.coastal_buffer_mask}") |> channelview .|> x->reinterpret(UInt8, x)
+            attributes(file["{wildcards.dir}/{wildcards.pipeline}/coastal_buffer_mask"])["CLASS"] = "IMAGE"
+        end
+        '
         """
