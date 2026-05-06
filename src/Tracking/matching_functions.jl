@@ -33,6 +33,13 @@ the forward and backward grouped minimizations are identified as likely true mat
 end
 
 function (f::MinimumWeightMatchingFunction)(candidate_pairs::DataFrame)
+    # dmw, jgh: Ideally, we woulnd't need this guard, it's not as clean as it could be, but is okay for now.
+    if !(String.(f.columns) ⊆ names(candidate_pairs))
+        @debug(
+            "Columns specified in MinimumWeightMatchingFunction not found in candidate_pairs DataFrame. Returning an empty dataframe.",
+        )
+        return DataFrame(; head_uuid=String[], uuid=String[]) # Return empty DataFrame if columns not found
+    end
 
     # Potential future updates: replace sum with a weighted average
     candidate_pairs[!, :w] = sum.(eachrow(candidate_pairs[:, f.columns]))

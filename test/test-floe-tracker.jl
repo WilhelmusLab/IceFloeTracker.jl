@@ -389,31 +389,11 @@ end
 
     all_cases_with_validated_floes =
         case_number.(filter(c -> c.number_floes != 0.0, dataset))
-    known_broken_cases = [
-        2, # https://github.com/WilhelmusLab/IceFloeTracker.jl/issues/913   
-        53, # https://github.com/WilhelmusLab/IceFloeTracker.jl/issues/913
-        84, # https://github.com/WilhelmusLab/IceFloeTracker.jl/issues/913
-        141, # https://github.com/WilhelmusLab/IceFloeTracker.jl/issues/913
-        142, # https://github.com/WilhelmusLab/IceFloeTracker.jl/issues/913
-        188, # https://github.com/WilhelmusLab/IceFloeTracker.jl/issues/913
-    ]
-    working_cases = setdiff(all_cases_with_validated_floes, known_broken_cases)
 
-    # Some cases are known to be broken due to issues in the tracker.
-    # Each of these cases should be fixed before being removed from this list.
-    @testset "Known broken cases" begin
-        for case_number in known_broken_cases
-            @info "Testing known broken case $case_number. This test should fail until the underlying issue is fixed."
-            @test tracker_runs_without_error(dataset, case_number, tracker) broken = true
-        end
-    end
-
-    # The rest of the cases should run without error.
-    @testset "Working cases" begin
-        for case_number in working_cases
-            @info "Testing case $case_number, which should run without error."
-            @test tracker_runs_without_error(dataset, case_number, tracker)
-        end
+    # All cases should run without error.
+    for case_number in all_cases_with_validated_floes
+        @info "Testing case $case_number, which should run without error."
+        @test tracker_runs_without_error(dataset, case_number, tracker)
     end
 end
 
@@ -495,7 +475,7 @@ end
             0 0 1 0
             0 0 0 0
         ],
-    ) broken = true # https://github.com/WilhelmusLab/IceFloeTracker.jl/issues/913
+    )
     @test tracker_runs_without_error(
         tracker,
         Int[
@@ -504,7 +484,7 @@ end
             0 1 1 0
             0 0 0 0
         ],
-    ) broken = true # https://github.com/WilhelmusLab/IceFloeTracker.jl/issues/913
+    )
     @test tracker_runs_without_error(
         tracker,
         Int[
@@ -512,7 +492,7 @@ end
             0 1 1 1 0
             0 0 0 0 0
         ],
-    ) broken = true # https://github.com/WilhelmusLab/IceFloeTracker.jl/issues/913
+    )
     @test tracker_runs_without_error(
         tracker,
         Int[
@@ -522,7 +502,7 @@ end
             0 0 1 0 0
             0 0 0 0 0
         ],
-    ) broken = true # https://github.com/WilhelmusLab/IceFloeTracker.jl/issues/913
+    )
     @test tracker_runs_without_error(
         tracker,
         Int[
