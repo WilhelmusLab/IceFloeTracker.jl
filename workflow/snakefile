@@ -456,3 +456,34 @@ rule tracking:
 
         '
         """
+
+
+# ============================================================================
+# ARCHIVAL RULES
+# ============================================================================
+
+
+rule observation_hdf5:
+    output:
+        "{dir}/{pipeline}/observation.hdf5"
+    input:
+        labels_map = "{dir}/{pipeline}/labels_map.tiff",
+        cloud_mask = "{dir}/{pipeline}/cloud_mask.tiff",
+        landmask = "{dir}/landmask.tiff",
+        passtime = "{dir}/overpass.txt",
+        coastal_buffer_mask = "{dir}/coastal_buffer_mask.tiff",
+        
+    shell:
+        """
+        {config[IFT]} -e 'using IceFloeTracker, FileIO, Images;
+        save(
+            "{output}", 
+            Dict(
+                "passtime" => read("{input.passtime}", String) |> chomp,
+                "labels_map" => load("{input.labels_map}") |> channelview .|> x->reinterpret(UInt16, x),
+                "cloud_mask" => load("{input.cloud_mask}") |> channelview .|> x->reinterpret(UInt8, x),
+                "landmask" => load("{input.landmask}") |> channelview .|> x->reinterpret(UInt8, x),
+                "coastal_buffer_mask" => load("{input.coastal_buffer_mask}") |> channelview .|> x->reinterpret(UInt8, x),   
+            )
+        )'
+        """
