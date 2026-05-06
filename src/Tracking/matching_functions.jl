@@ -56,10 +56,9 @@ function (f::MinimumWeightMatchingFunction)(candidate_pairs::DataFrame)
         sdf -> sdf[argmin(sdf.w), :], groupby(candidate_pairs, :head_uuid)
     )
 
-    result = innerjoin(
+    return innerjoin(
         matches_fwd[:, [:head_uuid, :uuid]], matches_bwd; on=[:head_uuid, :uuid]
     )
-    return result
 end
 
 # TODO: Set up a GetNearest matching function
