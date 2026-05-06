@@ -33,7 +33,7 @@ the forward and backward grouped minimizations are identified as likely true mat
 end
 
 function (f::MinimumWeightMatchingFunction)(candidate_pairs::DataFrame)
-    # djw, jgh: Ideally, we woulnd't need this guard, it's not as clean as it could be, but is okay for now.
+    # dmw, jgh: Ideally, we woulnd't need this guard, it's not as clean as it could be, but is okay for now.
     if !(String.(f.columns) ⊆ names(candidate_pairs))
         @debug(
             "Columns specified in MinimumWeightMatchingFunction not found in candidate_pairs DataFrame. Returning an empty dataframe.",
