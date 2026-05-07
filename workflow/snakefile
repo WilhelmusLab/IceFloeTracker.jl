@@ -467,6 +467,8 @@ rule observation_hdf5:
     output:
         "{dir}/{pipeline}/observation.hdf5"
     input:
+        truecolor = "{dir}/truecolor.tiff",
+        falsecolor = "{dir}/falsecolor.tiff",
         labels_map = "{dir}/{pipeline}/labels_map.tiff",
         cloud_mask = "{dir}/{pipeline}/cloud_mask.tiff",
         landmask = "{dir}/landmask.tiff",
@@ -475,17 +477,73 @@ rule observation_hdf5:
         
     shell:
         """
-        {config[IFT]} -e 'using IceFloeTracker, HDF5, Images;
+        {config[IFT]} -e 'using IceFloeTracker, HDF5, Images, Dates, TimeZones, DataFrames;
+
+        function choose_dtype(mx::T) where {{T<:Integer}}
+            types = [UInt8, UInt16, UInt32, UInt64, UInt128]
+            for t_ in types
+                if typemin(t_) <= mx <= typemax(t_)
+                    return t_
+                end
+            end
+            throw("$mx cannot be represented by any of $types")
+        end
+
+        iftversion = pkgversion(IceFloeTracker)
+
+        ptsunix = Int64(Dates.datetime2unix(DateTime(read("{input.passtime}", String) |> chomp |> ZonedDateTime)))
+        
+        labeled = load("{input.labels_map}") |> channelview .|> x->reinterpret(UInt16, x)
+        cloud_mask = load("{input.cloud_mask}") |> channelview .|> x->reinterpret(UInt8, x)
+        landmask = load("{input.landmask}") |> channelview .|> x->reinterpret(UInt8, x)
+        coastal_buffer_mask = load("{input.coastal_buffer_mask}") |> channelview .|> x->reinterpret(UInt8, x)
+
+        # latlondata = latlon(truecolor)
+
+        props = regionprops_table(SegmentedImage(labeled, Int64.(labeled)))
+    
+        # converttounits!(props, latlondata, colstodrop)
+        @info props
+
         h5open("{output}", "w") do file
-            file["{wildcards.dir}/passtime"] = read("{input.passtime}", String) |> chomp
-            file["{wildcards.dir}/{wildcards.pipeline}/labels_map"] = load("{input.labels_map}") |> channelview .|> x->reinterpret(UInt16, x)
-            attributes(file["{wildcards.dir}/{wildcards.pipeline}/labels_map"])["CLASS"] = "IMAGE"
-            file["{wildcards.dir}/{wildcards.pipeline}/cloud_mask"] = load("{input.cloud_mask}") |> channelview .|> x->reinterpret(UInt8, x)
-            attributes(file["{wildcards.dir}/{wildcards.pipeline}/cloud_mask"])["CLASS"] = "IMAGE"
-            file["{wildcards.dir}/{wildcards.pipeline}/landmask"] = load("{input.landmask}") |> channelview .|> x->reinterpret(UInt8, x)
-            attributes(file["{wildcards.dir}/{wildcards.pipeline}/landmask"])["CLASS"] = "IMAGE"
-            file["{wildcards.dir}/{wildcards.pipeline}/coastal_buffer_mask"] = load("{input.coastal_buffer_mask}") |> channelview .|> x->reinterpret(UInt8, x)
-            attributes(file["{wildcards.dir}/{wildcards.pipeline}/coastal_buffer_mask"])["CLASS"] = "IMAGE"
+            @info "Add top-level attributes"
+            attrs(file)["fname_falsecolor"] = "{input.falsecolor}"
+            attrs(file)["fname_truecolor"] = "{input.truecolor}"
+            attrs(file)["iftversion"] = string(iftversion)
+            # attrs(file)["crs"] = latlondata[:crs]
+            attrs(file)["reference"] = "https://doi.org/10.1016/j.rse.2019.111406"
+            attrs(file)["contact"] = "mmwilhelmus@brown.edu"
+
+            @info "Create group index"
+            g = create_group(file, "index")
+            g["time"] = ptsunix
+            # g["x"] = latlondata[:X]
+            # g["y"] = latlondata[:Y]
+
+            @info "Create group floe_properties"
+            g = create_group(file, "floe_properties")
+            @show nrow(props)
+            if nrow(props) > 0
+                write_dataset(g, "properties", [copy(row) for row in eachrow(props)])  # `copy(row)` converts the DataSetRow to a NamedTuple
+                attrs(g)["Description of properties"] = "Area units (`area`, `convex_area`) are in sq. kilometers, length units (`minor_axis_length`, `major_axis_length`, and `perimeter`) in kilometers, and `orientation` in radians (see the description of properties attribute.) Latitude and longitude coordinates are in degrees, and the stereographic coordinates`x` and `y` are in meters relative to the NSIDC north polar stereographic projection. Generated using the `regionprops` function from the `skimage` package. See https://scikit-image.org/docs/0.20.x/api/skimage.measure.html#regionprops"
+            else
+                attrs(g)["Description of properties"] = "No floes detected"
+            end
+
+            @info "Choose labeled data type"
+            mx = maximum(labeled)
+            T = choose_dtype(mx)
+            
+            @info "Write labeled image"
+            imgdata = T.(permutedims(labeled))
+            obj, dtype = create_dataset(g, "labeled_image", imgdata)
+            attrs(obj)["CLASS"] = "IMAGE"
+            attrs(obj)["IMAGE_SUBCLASS"] = "IMAGE_INDEXED"
+            attrs(obj)["IMAGE_MINMAXRANGE"] = [minimum(imgdata), maximum(imgdata)]
+
+            @info "Add description"
+            attrs(obj)["description"] = "Connected components of the segmented floe image using a 3x3 structuring element. The property matrix consists of the properties of each connected component."
+            write_dataset(obj, dtype, imgdata)
         end
         '
         """
