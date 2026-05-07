@@ -72,19 +72,21 @@ function make_hdf5(
         attrs(file)["contact"] = contact
 
         @info "Create group index"
-        g = create_group(file, "index")
-        g["time"] = ptsunix
-        g["x"] = latlondata[:X]
-        g["y"] = latlondata[:Y]
+        group_index = create_group(file, "index")
+        group_index["time"] = ptsunix
+        group_index["x"] = latlondata[:X]
+        group_index["y"] = latlondata[:Y]
 
         @info "Create group floe_properties"
-        g = create_group(file, "floe_properties")
+        group_floe_properties = create_group(file, "floe_properties")
         @show nrow(props)
         if nrow(props) > 0
-            write_dataset(g, "properties", [copy(row) for row in eachrow(props)])  # `copy(row)` converts the DataSetRow to a NamedTuple
-            attrs(g)["Description of properties"] = """Area units (`area`, `convex_area`) are in sq. kilometers, length units (`minor_axis_length`, `major_axis_length`, and `perimeter`) in kilometers, and `orientation` in radians (see the description of properties attribute.) Latitude and longitude coordinates are in degrees, and the stereographic coordinates `x` and `y` are in meters relative to the $crs_name projection. """
+            write_dataset(
+                group_floe_properties, "properties", [copy(row) for row in eachrow(props)]
+            )  # `copy(row)` converts the DataSetRow to a NamedTuple
+            attrs(group_floe_properties)["Description of properties"] = """Area units (`area`, `convex_area`) are in sq. kilometers, length units (`minor_axis_length`, `major_axis_length`, and `perimeter`) in kilometers, and `orientation` in radians (see the description of properties attribute.) Latitude and longitude coordinates are in degrees, and the stereographic coordinates `x` and `y` are in meters relative to the $crs_name projection. """
         else
-            attrs(g)["Description of properties"] = "No floes detected"
+            attrs(group_floe_properties)["Description of properties"] = "No floes detected"
         end
 
         @info "Choose labeled data type"
@@ -92,15 +94,49 @@ function make_hdf5(
         T = choose_dtype(mx)
 
         @info "Write labeled image"
-        imgdata = T.(permutedims(labeled))
-        obj, dtype = create_dataset(g, "labeled_image", imgdata)
+        label_data = T.(permutedims(labeled))
+        obj, dtype = create_dataset(group_floe_properties, "labeled_image", label_data)
         attrs(obj)["CLASS"] = "IMAGE"
         attrs(obj)["IMAGE_SUBCLASS"] = "IMAGE_INDEXED"
-        attrs(obj)["IMAGE_MINMAXRANGE"] = [minimum(imgdata), maximum(imgdata)]
-
-        @info "Add description"
+        attrs(obj)["IMAGE_MINMAXRANGE"] = [minimum(label_data), maximum(label_data)]
         attrs(obj)["description"] = "Connected components of the segmented floe image using a 3x3 structuring element. The property matrix consists of the properties of each connected component."
-        write_dataset(obj, dtype, imgdata)
+        write_dataset(obj, dtype, label_data)
+
+        @info "Create group classifications"
+        group_classifications = create_group(file, "classifications")
+
+        @info "Write cloud mask"
+        cloud_mask_data = cloud_mask
+        obj, dtype = create_dataset(group_classifications, "cloud_mask", cloud_mask_data)
+        attrs(obj)["CLASS"] = "IMAGE"
+        attrs(obj)["IMAGE_SUBCLASS"] = "IMAGE_GRAYSCALE"
+        attrs(obj)["IMAGE_MINMAXRANGE"] = [
+            minimum(cloud_mask_data), maximum(cloud_mask_data)
+        ]
+        attrs(obj)["description"] = "Cloud mask."
+        write_dataset(obj, dtype, cloud_mask_data)
+
+        @info "Write landmask"
+        landmask_data = landmask
+        obj, dtype = create_dataset(group_classifications, "landmask", landmask_data)
+        attrs(obj)["CLASS"] = "IMAGE"
+        attrs(obj)["IMAGE_SUBCLASS"] = "IMAGE_GRAYSCALE"
+        attrs(obj)["IMAGE_MINMAXRANGE"] = [minimum(landmask_data), maximum(landmask_data)]
+        attrs(obj)["description"] = "Land mask."
+        write_dataset(obj, dtype, landmask_data)
+
+        @info "Write coastal buffer mask"
+        coastal_buffer_mask_data = coastal_buffer_mask
+        obj, dtype = create_dataset(
+            group_classifications, "coastal_buffer_mask", coastal_buffer_mask_data
+        )
+        attrs(obj)["CLASS"] = "IMAGE"
+        attrs(obj)["IMAGE_SUBCLASS"] = "IMAGE_GRAYSCALE"
+        attrs(obj)["IMAGE_MINMAXRANGE"] = [
+            minimum(coastal_buffer_mask_data), maximum(coastal_buffer_mask_data)
+        ]
+        attrs(obj)["description"] = "Coastal buffer mask. This mask is 1 for pixels within a specified distance of the coast, and 0 elsewhere."
+        write_dataset(obj, dtype, coastal_buffer_mask_data)
     end
 end
 
