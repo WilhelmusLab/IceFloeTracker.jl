@@ -474,6 +474,7 @@ rule observation_hdf5:
         landmask = "{dir}/landmask.tiff",
         passtime = "{dir}/overpass.txt",
         coastal_buffer_mask = "{dir}/coastal_buffer_mask.tiff",
+        ice_mask = "{dir}/{pipeline}/ice_mask.tiff",
         
     shell:
         """
@@ -487,6 +488,7 @@ rule observation_hdf5:
             labels_map_path = "{input.labels_map}",
             cloud_mask_path = "{input.cloud_mask}",
             landmask_path = "{input.landmask}",
+            ice_mask_path = "{input.ice_mask}",
             coastal_buffer_mask_path = "{input.coastal_buffer_mask}"
         )
         '

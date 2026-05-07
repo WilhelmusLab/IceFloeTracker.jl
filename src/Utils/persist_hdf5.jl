@@ -24,6 +24,7 @@ function make_hdf5(
     falsecolor_path::AbstractString,
     labels_map_path::AbstractString,
     cloud_mask_path::AbstractString,
+    ice_mask_path::AbstractString,
     landmask_path::AbstractString,
     coastal_buffer_mask_path::AbstractString,
     iftversion::VersionNumber=pkgversion(IceFloeTracker),
@@ -57,6 +58,7 @@ function make_hdf5(
     landmask = load(landmask_path) |> channelview .|> x -> reinterpret(UInt8, x)
     coastal_buffer_mask =
         load(coastal_buffer_mask_path) |> channelview .|> x -> reinterpret(UInt8, x)
+    ice_mask = load(ice_mask_path) |> channelview .|> x -> reinterpret(UInt8, x)
 
     colstodrop = [:row_centroid, :col_centroid, :min_row, :min_col, :max_row, :max_col]
     converttounits!(props, latlondata, colstodrop)
@@ -147,6 +149,19 @@ function make_hdf5(
         ]
         attrs(coastal_buffer_obj)["description"] = "Coastal buffer mask. This mask is 1 for pixels within a specified distance of the coast, and 0 elsewhere."
         write_dataset(coastal_buffer_obj, coastal_buffer_dtype, coastal_buffer_rectified)
+
+        @info "Write ice mask"
+        ice_mask_rectified = T.(permutedims(ice_mask))
+        ice_mask_obj, ice_mask_dtype = create_dataset(
+            group_classifications, "ice_mask", ice_mask_rectified
+        )
+        attrs(ice_mask_obj)["CLASS"] = "IMAGE"
+        attrs(ice_mask_obj)["IMAGE_SUBCLASS"] = "IMAGE_GRAYSCALE"
+        attrs(ice_mask_obj)["IMAGE_MINMAXRANGE"] = [
+            minimum(ice_mask_rectified), maximum(ice_mask_rectified)
+        ]
+        attrs(ice_mask_obj)["description"] = "Ice mask. This mask is 1 for pixels classified as ice, and 0 elsewhere."
+        write_dataset(ice_mask_obj, ice_mask_dtype, ice_mask_rectified)
     end
 end
 
