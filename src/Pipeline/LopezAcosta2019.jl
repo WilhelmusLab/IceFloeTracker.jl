@@ -299,7 +299,7 @@ function (p::Segment)(
             landmask,
             coastal_buffer_mask,
             cloud_mask=cloudmask,
-            ice_mask=IceDetectionLopezAcosta2019()(fc_masked),
+            ice_mask=p.cluster_selection_algorithm(fc_masked) .> 0,
             sharpened_grayscale_image=sharpened_grayscale_image,
             ice_water_discrim=ice_water_discrim,
             segA=segmentation_A,
