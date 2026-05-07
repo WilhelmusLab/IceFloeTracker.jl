@@ -498,11 +498,13 @@ rule observation_hdf5:
         landmask = load("{input.landmask}") |> channelview .|> x->reinterpret(UInt8, x)
         coastal_buffer_mask = load("{input.coastal_buffer_mask}") |> channelview .|> x->reinterpret(UInt8, x)
 
-        # latlondata = latlon(truecolor)
+        latlondata = latlon("{input.truecolor}")
 
         props = regionprops_table(SegmentedImage(labeled, Int64.(labeled)))
     
-        # converttounits!(props, latlondata, colstodrop)
+        colstodrop = [:row_centroid, :col_centroid, :min_row, :min_col, :max_row, :max_col]
+        @info props
+        converttounits!(props, latlondata, colstodrop)
         @info props
 
         h5open("{output}", "w") do file
@@ -510,15 +512,15 @@ rule observation_hdf5:
             attrs(file)["fname_falsecolor"] = "{input.falsecolor}"
             attrs(file)["fname_truecolor"] = "{input.truecolor}"
             attrs(file)["iftversion"] = string(iftversion)
-            # attrs(file)["crs"] = latlondata[:crs]
+            attrs(file)["crs"] = latlondata[:crs]
             attrs(file)["reference"] = "https://doi.org/10.1016/j.rse.2019.111406"
             attrs(file)["contact"] = "mmwilhelmus@brown.edu"
 
             @info "Create group index"
             g = create_group(file, "index")
             g["time"] = ptsunix
-            # g["x"] = latlondata[:X]
-            # g["y"] = latlondata[:Y]
+            g["x"] = latlondata[:X]
+            g["y"] = latlondata[:Y]
 
             @info "Create group floe_properties"
             g = create_group(file, "floe_properties")
