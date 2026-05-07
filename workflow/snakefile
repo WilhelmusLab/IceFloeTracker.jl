@@ -99,15 +99,28 @@ rule organize_segmentation_results_by_pipeline:
 
 rule region_case_results_by_filetype:
     input:
-        ["{filetype}/{region}.{scale}m.{date_}.{satellite}.tiff".format(
-            region=case.region, scale=case.scale, date_=date_, satellite=satellite, filetype=filetype)
-            for filetype in ["truecolor", "falsecolor", "cloud", "landmask", "coastal_buffer_mask"]
+        ["{filetype}/{region}.{scale}m.{date_}.{satellite}.{ext}".format(
+            region=case.region, scale=case.scale, date_=date_, satellite=satellite, filetype=filetype, ext=ext)
+            for filetype, ext in [
+                ("truecolor", "tiff"), 
+                ("falsecolor", "tiff"), 
+                ("cloud", "tiff"), 
+                ("landmask", "tiff"), 
+                ("coastal_buffer_mask", "tiff")
+            ]
             for case in cases.itertuples()
             for date_ in daterange(date.fromisoformat(case.start), date.fromisoformat(case.end))
             for satellite in config["SATELLITES"]
-        ] + ["{pipeline}.{filetype}/{region}.{scale}m.{date_}.{satellite}.tiff".format(
-            region=case.region, scale=case.scale, date_=date_, satellite=satellite, filetype=filetype, pipeline=case.pipeline)
-            for filetype in ["segment_mean_falsecolor", "segment_mean_truecolor", "labels_map"]
+        ] + ["{pipeline}.{filetype}/{region}.{scale}m.{date_}.{satellite}.{ext}".format(
+            region=case.region, scale=case.scale, date_=date_, satellite=satellite, filetype=filetype, pipeline=case.pipeline, ext=ext)
+            for filetype, ext in [
+                ("segment_mean_falsecolor", "tiff"), 
+                ("segment_mean_truecolor", "tiff"), 
+                ("labels_map", "tiff"), 
+                ("cloud_mask", "tiff"), 
+                ("ice_mask", "tiff"), 
+                ("config", "txt")
+            ]
             for case in cases.itertuples()
             for date_ in daterange(date.fromisoformat(case.start), date.fromisoformat(case.end))
             for satellite in config["SATELLITES"]
