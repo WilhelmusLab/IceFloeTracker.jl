@@ -94,49 +94,59 @@ function make_hdf5(
         T = choose_dtype(mx)
 
         @info "Write labeled image"
-        label_data = T.(permutedims(labeled))
-        obj, dtype = create_dataset(group_floe_properties, "labeled_image", label_data)
-        attrs(obj)["CLASS"] = "IMAGE"
-        attrs(obj)["IMAGE_SUBCLASS"] = "IMAGE_INDEXED"
-        attrs(obj)["IMAGE_MINMAXRANGE"] = [minimum(label_data), maximum(label_data)]
-        attrs(obj)["description"] = "Connected components of the segmented floe image using a 3x3 structuring element. The property matrix consists of the properties of each connected component."
-        write_dataset(obj, dtype, label_data)
+        labeled_rectified = T.(permutedims(labeled))
+        label_data_obj, label_data_dtype = create_dataset(
+            group_floe_properties, "labeled_image", labeled_rectified
+        )
+        attrs(label_data_obj)["CLASS"] = "IMAGE"
+        attrs(label_data_obj)["IMAGE_SUBCLASS"] = "IMAGE_INDEXED"
+        attrs(label_data_obj)["IMAGE_MINMAXRANGE"] = [
+            minimum(labeled_rectified), maximum(labeled_rectified)
+        ]
+        attrs(label_data_obj)["description"] = "Connected components of the segmented floe image using a 3x3 structuring element. The property matrix consists of the properties of each connected component."
+        write_dataset(label_data_obj, label_data_dtype, labeled_rectified)
 
         @info "Create group classifications"
         group_classifications = create_group(file, "classifications")
 
         @info "Write cloud mask"
-        cloud_mask_data = cloud_mask
-        obj, dtype = create_dataset(group_classifications, "cloud_mask", cloud_mask_data)
-        attrs(obj)["CLASS"] = "IMAGE"
-        attrs(obj)["IMAGE_SUBCLASS"] = "IMAGE_GRAYSCALE"
-        attrs(obj)["IMAGE_MINMAXRANGE"] = [
-            minimum(cloud_mask_data), maximum(cloud_mask_data)
+        cloud_mask_rectified = T.(permutedims(cloud_mask))
+        cloud_mask_obj, cloud_mask_dtype = create_dataset(
+            group_classifications, "cloud_mask", cloud_mask_rectified
+        )
+        attrs(cloud_mask_obj)["CLASS"] = "IMAGE"
+        attrs(cloud_mask_obj)["IMAGE_SUBCLASS"] = "IMAGE_GRAYSCALE"
+        attrs(cloud_mask_obj)["IMAGE_MINMAXRANGE"] = [
+            minimum(cloud_mask_rectified), maximum(cloud_mask_rectified)
         ]
-        attrs(obj)["description"] = "Cloud mask."
-        write_dataset(obj, dtype, cloud_mask_data)
+        attrs(cloud_mask_obj)["description"] = "Cloud mask."
+        write_dataset(cloud_mask_obj, cloud_mask_dtype, cloud_mask_rectified)
 
         @info "Write landmask"
-        landmask_data = landmask
-        obj, dtype = create_dataset(group_classifications, "landmask", landmask_data)
-        attrs(obj)["CLASS"] = "IMAGE"
-        attrs(obj)["IMAGE_SUBCLASS"] = "IMAGE_GRAYSCALE"
-        attrs(obj)["IMAGE_MINMAXRANGE"] = [minimum(landmask_data), maximum(landmask_data)]
-        attrs(obj)["description"] = "Land mask."
-        write_dataset(obj, dtype, landmask_data)
+        landmask_rectified = T.(permutedims(landmask))
+        landmask_obj, landmask_dtype = create_dataset(
+            group_classifications, "landmask", landmask_rectified
+        )
+        attrs(landmask_obj)["CLASS"] = "IMAGE"
+        attrs(landmask_obj)["IMAGE_SUBCLASS"] = "IMAGE_GRAYSCALE"
+        attrs(landmask_obj)["IMAGE_MINMAXRANGE"] = [
+            minimum(landmask_rectified), maximum(landmask_rectified)
+        ]
+        attrs(landmask_obj)["description"] = "Land mask."
+        write_dataset(landmask_obj, landmask_dtype, landmask_rectified)
 
         @info "Write coastal buffer mask"
-        coastal_buffer_mask_data = coastal_buffer_mask
-        obj, dtype = create_dataset(
-            group_classifications, "coastal_buffer_mask", coastal_buffer_mask_data
+        coastal_buffer_rectified = T.(permutedims(coastal_buffer_mask))
+        coastal_buffer_obj, coastal_buffer_dtype = create_dataset(
+            group_classifications, "coastal_buffer_mask", coastal_buffer_rectified
         )
-        attrs(obj)["CLASS"] = "IMAGE"
-        attrs(obj)["IMAGE_SUBCLASS"] = "IMAGE_GRAYSCALE"
-        attrs(obj)["IMAGE_MINMAXRANGE"] = [
-            minimum(coastal_buffer_mask_data), maximum(coastal_buffer_mask_data)
+        attrs(coastal_buffer_obj)["CLASS"] = "IMAGE"
+        attrs(coastal_buffer_obj)["IMAGE_SUBCLASS"] = "IMAGE_GRAYSCALE"
+        attrs(coastal_buffer_obj)["IMAGE_MINMAXRANGE"] = [
+            minimum(coastal_buffer_rectified), maximum(coastal_buffer_rectified)
         ]
-        attrs(obj)["description"] = "Coastal buffer mask. This mask is 1 for pixels within a specified distance of the coast, and 0 elsewhere."
-        write_dataset(obj, dtype, coastal_buffer_mask_data)
+        attrs(coastal_buffer_obj)["description"] = "Coastal buffer mask. This mask is 1 for pixels within a specified distance of the coast, and 0 elsewhere."
+        write_dataset(coastal_buffer_obj, coastal_buffer_dtype, coastal_buffer_rectified)
     end
 end
 
