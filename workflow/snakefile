@@ -479,7 +479,7 @@ rule tracking:
 
 rule observation_hdf5:
     output:
-        "{dir}/{pipeline}/segmentation_results.hdf5"
+        "{dir}/{pipeline}/segmentation.hdf5"
     input:
         truecolor = "{dir}/truecolor.tiff",
         falsecolor = "{dir}/falsecolor.tiff",
