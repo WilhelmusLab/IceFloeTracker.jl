@@ -111,6 +111,11 @@ rule region_case_results_by_filetype:
             for case in cases.itertuples()
             for date_ in daterange(date.fromisoformat(case.start), date.fromisoformat(case.end))
             for satellite in config["SATELLITES"]
+        ] + ["{pipeline}.segmentation_results/{region}.{scale}m.{date_}.{satellite}.hdf5".format(
+            region=case.region, scale=case.scale, date_=date_, satellite=satellite, pipeline=case.pipeline)
+            for case in cases.itertuples()
+            for date_ in daterange(date.fromisoformat(case.start), date.fromisoformat(case.end))
+            for satellite in config["SATELLITES"]
         ]
         
 
@@ -465,7 +470,7 @@ rule tracking:
 
 rule observation_hdf5:
     output:
-        "{dir}/{pipeline}/results.hdf5"
+        "{dir}/{pipeline}/segmentation_results.hdf5"
     input:
         truecolor = "{dir}/truecolor.tiff",
         falsecolor = "{dir}/falsecolor.tiff",

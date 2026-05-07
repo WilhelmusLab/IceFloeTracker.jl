@@ -45,4 +45,4 @@ jobs:
         env:
           SPACEUSER: ${{ vars.SPACEUSER }}
           SPACEPSWD: ${{ secrets.SPACEPSWD }}
-        run: "snakemake --cores 2 beaufort_sea.250m.20190322.aqua/LopezAcosta2019Tiling/results.hdf5"
+        run: "snakemake --cores 2 beaufort_sea.250m.20190322.aqua/LopezAcosta2019Tiling/segmentation_results.hdf5"
