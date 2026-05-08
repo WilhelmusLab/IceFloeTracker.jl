@@ -121,6 +121,12 @@ function converttounits!(propdf, latlondata, colstodrop)
     return nothing
 end
 
+function converttounits(propdf, latlondata, colstodrop)
+    output = deepcopy(propdf)
+    converttounits!(output, latlondata, colstodrop)
+    return output
+end
+
 """component_floes(indexmap; minimum_area=1)
 
 Given a labeled array, produce a dictionary where each entry is a binary array cropped to the
