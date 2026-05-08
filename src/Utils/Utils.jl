@@ -6,8 +6,8 @@ using Reexport
 include("call_kwargs.jl")
 include("callable_store.jl")
 include("persist.jl")
-include("persist_hdf5.jl")
+include("PersistHDF5.jl")
 
-@reexport using .persist_hdf5
+@reexport using .PersistHDF5
 
 end

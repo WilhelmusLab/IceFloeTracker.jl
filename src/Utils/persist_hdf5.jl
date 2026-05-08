@@ -1,5 +1,5 @@
 
-module persist_hdf5
+module PersistHDF5
 using IceFloeTracker
 using HDF5, Images, Dates, TimeZones, DataFrames
 
