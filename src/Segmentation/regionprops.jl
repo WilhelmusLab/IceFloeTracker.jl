@@ -66,7 +66,7 @@ end
     convertcentroid!(propdf, latlondata, colstodrop)
 
 Convert the centroid coordinates from row and column to latitude and longitude dropping unwanted
-columns specified in `colstodrop` for the output data structure. Addionally, add columns `x` and `y`
+columns specified in `colstodrop` for the output data structure. Additionally, add columns `x` and `y`
 with the pixel coordinates of the centroid.
 """
 function convertcentroid!(propdf, latlondata)
