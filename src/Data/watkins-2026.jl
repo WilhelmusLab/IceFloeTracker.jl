@@ -286,7 +286,7 @@ function validated_floe_properties_path(case::Case)
     return file |> case.loader
 end
 
-function validated_floe_properties(case::Case)::DataFrame
+function validated_floe_properties(case::Case)
     path = validated_floe_properties_path(case)
     isnothing(path) && return nothing
     return path |> load |> DataFrame
