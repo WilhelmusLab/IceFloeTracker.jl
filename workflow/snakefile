@@ -81,7 +81,9 @@ rule organize_input_file_by_filetype:
     input:
         "{scene}/{filetype}.{ext}"
     wildcard_constraints:
-        filetype = "[^./]+"
+        scene = "[^/]+",
+        filetype = "[^./]+",
+        pipeline = "[^/]+"
     shell:
         "ln --force {input} {output}"
 
@@ -92,7 +94,9 @@ rule organize_segmentation_results_by_pipeline:
     input:
         "{scene}/{pipeline}/{filetype}.{ext}"
     wildcard_constraints:
-        filetype = "[^./]+"
+        scene = "[^/]+",
+        filetype = "[^./]+",
+        pipeline = "[^/]+"
     shell:
         "ln --force {input} {output}"
 
