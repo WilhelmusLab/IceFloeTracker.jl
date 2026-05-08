@@ -72,7 +72,6 @@ function make_hdf5(
 
         @info "Create group floe_properties"
         group_floe_properties = create_group(file, "floe_properties")
-        @show nrow(props)
         if nrow(props) > 0
             write_dataset(
                 group_floe_properties, "properties", [copy(row) for row in eachrow(props)]
