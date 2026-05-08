@@ -24,11 +24,11 @@ function make_hdf5(
     crs_ref_image_path::AbstractString,
     truecolor_path::AbstractString,
     falsecolor_path::AbstractString,
-    labels_map_path::AbstractString,
-    cloud_mask_path::AbstractString,
-    ice_mask_path::AbstractString,
-    landmask_path::AbstractString,
-    coastal_buffer_mask_path::AbstractString,
+    labeled::AbstractMatrix,
+    cloud_mask::AbstractMatrix,
+    ice_mask::AbstractMatrix,
+    landmask::AbstractMatrix,
+    coastal_buffer_mask::AbstractMatrix,
     iftversion::VersionNumber=pkgversion(@__MODULE__),
     reference::AbstractString="https://doi.org/10.1016/j.rse.2019.111406",
     contact::AbstractString="mmwilhelmus@brown.edu",
@@ -52,15 +52,6 @@ function make_hdf5(
             rethrow(e)
         end
     end
-
-    labeled = load(labels_map_path) |> channelview .|> x -> reinterpret(UInt16, x)
-    props = regionprops_table(SegmentedImage(labeled, Int64.(labeled)))
-
-    cloud_mask = load(cloud_mask_path) |> channelview .|> x -> reinterpret(UInt8, x)
-    landmask = load(landmask_path) |> channelview .|> x -> reinterpret(UInt8, x)
-    coastal_buffer_mask =
-        load(coastal_buffer_mask_path) |> channelview .|> x -> reinterpret(UInt8, x)
-    ice_mask = load(ice_mask_path) |> channelview .|> x -> reinterpret(UInt8, x)
 
     colstodrop = [:row_centroid, :col_centroid, :min_row, :min_col, :max_row, :max_col]
     converttounits!(props, latlondata, colstodrop)
