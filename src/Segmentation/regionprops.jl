@@ -92,7 +92,7 @@ end
     converttounits!(propdf, latlondata)
     converttounits(propdf, latlondata)
 
-Convert the floe properties from pixels to kilometers and square kilometers where appropiate.
+Convert the floe properties from pixels to kilometers and square kilometers where appropriate.
 """
 function converttounits!(propdf, latlondata)
     if nrow(propdf) == 0
