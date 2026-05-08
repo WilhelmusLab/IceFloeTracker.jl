@@ -294,7 +294,7 @@ end
 
 function masie_landmask_path(case::Case)
     (; case_number, region, date, pixel_scale, image_scale) = _filename_parts(case)
-    file = "data/masie/landmask/$(case_number)-$(region)-$(image_scale)-$(date).masie.landmask.$(pixel_scale).$(ext)"
+    file = "data/masie/landmask/$(case_number)-$(region)-$(image_scale)-$(date).masie.landmask.$(pixel_scale).tiff"
     return file |> case.loader
 end
 
