@@ -217,5 +217,5 @@ The tol argument lets a higher threshold for masked pixels be chosen.
 function binarize_mask(
     mask_image::AbstractArray{<:Union{AbstractGray,AbstractRGB,TransparentRGB}}; tol=0
 )::BitMatrix
-    return Gray.(mask_image) .> tol
+    return mask_image .|> Gray .|> >(tol)
 end
