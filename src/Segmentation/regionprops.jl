@@ -56,8 +56,7 @@ Add columns `latitude`, `longitude`, and pixel coordinates `x`, `y` to `pairedfl
 """
 function addlatlon!(pairedfloesdf::DataFrame, refimage::AbstractString)
     latlondata = latlon(refimage)
-    colstodrop = [:row_centroid, :col_centroid, :min_row, :min_col, :max_row, :max_col]
-    converttounits!(pairedfloesdf, latlondata, colstodrop)
+    converttounits!(pairedfloesdf, latlondata)
     return nothing
 end
 
@@ -70,7 +69,7 @@ Convert the centroid coordinates from row and column to latitude and longitude d
 columns specified in `colstodrop` for the output data structure. Addionally, add columns `x` and `y`
 with the pixel coordinates of the centroid.
 """
-function convertcentroid!(propdf, latlondata, colstodrop)
+function convertcentroid!(propdf, latlondata)
     latitude, longitude = [
         [
             latlondata[c][Int(round(x)), Int(round(y))] for
@@ -87,19 +86,17 @@ function convertcentroid!(propdf, latlondata, colstodrop)
     propdf.longitude = longitude
     propdf.x = x
     propdf.y = y
-    select!(propdf, Not(colstodrop))
     return nothing
 end
 
 """
-    converttounits!(propdf, latlondata, colstodrop)
-    converttounits(propdf, latlondata, colstodrop)
+    converttounits!(propdf, latlondata, )
+    converttounits(propdf, latlondata, )
 
 Convert the floe properties from pixels to kilometers and square kilometers where appropiate. Also drop the columns specified in `colstodrop`.
 """
-function converttounits!(propdf, latlondata, colstodrop)
+function converttounits!(propdf, latlondata)
     if nrow(propdf) == 0
-        select!(propdf, Not(colstodrop))
         insertcols!(
             propdf,
             :latitude => Float64,
@@ -109,7 +106,7 @@ function converttounits!(propdf, latlondata, colstodrop)
         )
         return nothing
     end
-    convertcentroid!(propdf, latlondata, colstodrop)
+    convertcentroid!(propdf, latlondata)
     x = latlondata[:X]
     dx = abs(x[2] - x[1])
     convertarea(area) = area * dx^2 / 1e6
@@ -122,9 +119,9 @@ function converttounits!(propdf, latlondata, colstodrop)
     return nothing
 end
 
-function converttounits(propdf, latlondata, colstodrop)
+function converttounits(propdf, latlondata)
     output = deepcopy(propdf)
-    converttounits!(output, latlondata, colstodrop)
+    converttounits!(output, latlondata)
     return output
 end
 
