@@ -27,7 +27,7 @@ function make_hdf5(
     ice_mask_path::AbstractString,
     landmask_path::AbstractString,
     coastal_buffer_mask_path::AbstractString,
-    iftversion::VersionNumber=pkgversion(IceFloeTracker),
+    iftversion::VersionNumber=pkgversion(@__MODULE__),
     reference::AbstractString="https://doi.org/10.1016/j.rse.2019.111406",
     contact::AbstractString="mmwilhelmus@brown.edu",
 )
