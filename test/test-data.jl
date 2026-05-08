@@ -2,6 +2,7 @@
     using Images: RGBA, N0f8, SegmentedImage, Gray
     using DataFrames: nrow, DataFrame, DataFrameRow, subset
     using Dates: DateTime
+    using IceFloeTracker.Data: wkt
 
     @testset "Watkins2026Dataset" begin
         dataset = Watkins2026Dataset(; ref="v0.2")
@@ -40,6 +41,7 @@
             @test validated_floe_properties(case) isa DataFrame
             @test masie_seaice(case) isa AbstractArray{<:Gray,2}
             @test masie_landmask(case) isa AbstractArray{<:Gray,2}
+            @test wkt(case) isa String
         end
     end
 end
