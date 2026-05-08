@@ -45,7 +45,7 @@ jobs:
         env:
           SPACEUSER: ${{ vars.SPACEUSER }}
           SPACEPSWD: ${{ secrets.SPACEPSWD }}
-        run: "snakemake --cores 2 beaufort_sea.250m.20190322.aqua/LopezAcosta2019Tiling/segmentation.hdf5"
+        run: "snakemake --cores 2 beaufort_sea.250m.2019-03-22.aqua/LopezAcosta2019Tiling/segmentation.hdf5"
       - name: Get tracking results for realistic cases from the test set
         env:
           SPACEUSER: ${{ vars.SPACEUSER }}
