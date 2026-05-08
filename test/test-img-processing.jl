@@ -30,10 +30,10 @@
     end
 
     @testset "binarize_mask" begin
-        low_nonzero = Gray.(N0f8.([0.0 1 / 255; 2 / 255 0.0]))
+        near_zero_mask = Gray.(N0f8.([0.0 1 / 255; 2 / 255 0.0]))
 
-        @test binarize_mask(low_nonzero) == BitMatrix([0 1; 1 0])
-        @test binarize_mask(low_nonzero; tol=0.01) == BitMatrix([0 0; 0 0])
-        @test binarize_mask(low_nonzero; tol=1 / 255) == BitMatrix([0 0; 1 0])
+        @test binarize_mask(near_zero_mask) == BitMatrix([0 1; 1 0])
+        @test binarize_mask(near_zero_mask; tol=0.01) == BitMatrix([0 0; 0 0])
+        @test binarize_mask(near_zero_mask; tol=1 / 255) == BitMatrix([0 0; 1 0])
     end
 end
