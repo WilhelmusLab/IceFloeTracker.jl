@@ -25,6 +25,7 @@ function make_hdf5(
     truecolor_path::AbstractString,
     falsecolor_path::AbstractString,
     labeled::AbstractMatrix,
+    props::DataFrame,
     cloud_mask::AbstractMatrix,
     ice_mask::AbstractMatrix,
     landmask::AbstractMatrix,
@@ -52,9 +53,6 @@ function make_hdf5(
             rethrow(e)
         end
     end
-
-    colstodrop = [:row_centroid, :col_centroid, :min_row, :min_col, :max_row, :max_col]
-    converttounits!(props, latlondata, colstodrop)
 
     h5open(output_path, "w") do file
         @info "Add top-level attributes"
