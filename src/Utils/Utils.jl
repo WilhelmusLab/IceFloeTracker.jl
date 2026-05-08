@@ -1,7 +1,6 @@
 module Utils
-export @persist, callable_store, call_kwargs
 
-using Reexport
+export @persist, callable_store, call_kwargs
 
 include("call_kwargs.jl")
 include("callable_store.jl")
