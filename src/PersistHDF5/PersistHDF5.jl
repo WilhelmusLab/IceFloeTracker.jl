@@ -1,6 +1,9 @@
 
 module PersistHDF5
+
 using HDF5, Images, Dates, TimeZones, DataFrames
+import ..Geospatial: latlon
+import ..Segmentation: regionprops_table, converttounits!
 
 export make_hdf5
 
