@@ -108,7 +108,6 @@ Each Case has functions to access its contents:
 - `validated_floe_properties`: CSV file of validated floe properties
 - `wkt`: WKT string of the case's coordinate reference system
 
-
 For lower-level access, the `..._path` functions return the path to the file for each of these data types:
 - `modis_truecolor_path`
 - `modis_falsecolor_path`
