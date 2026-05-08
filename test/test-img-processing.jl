@@ -1,6 +1,7 @@
 
 @testitem "misc. image processing" begin
     using IceFloeTracker.LopezAcosta2019Tiling: adjustgamma, get_holes
+    using IceFloeTracker.ImageUtils: binarize_mask
     using Images
     using ZipFile
     import DelimitedFiles: readdlm
@@ -26,5 +27,13 @@
     @testset "get_holes" begin
         bw = coins .> 100
         @test sum(get_holes(bw)) == 2536
+    end
+
+    @testset "binarize_mask" begin
+        low_nonzero = Gray.(N0f8.([0.0 1 / 255; 2 / 255 0.0]))
+
+        @test binarize_mask(low_nonzero) == BitMatrix([0 1; 1 0])
+        @test binarize_mask(low_nonzero; tol=0.01) == BitMatrix([0 0; 0 0])
+        @test binarize_mask(low_nonzero; tol=1 / 255) == BitMatrix([0 0; 1 0])
     end
 end
