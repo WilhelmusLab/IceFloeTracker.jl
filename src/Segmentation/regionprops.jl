@@ -93,6 +93,7 @@ end
 
 """
     converttounits!(propdf, latlondata, colstodrop)
+    converttounits(propdf, latlondata, colstodrop)
 
 Convert the floe properties from pixels to kilometers and square kilometers where appropiate. Also drop the columns specified in `colstodrop`.
 """
