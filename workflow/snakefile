@@ -412,8 +412,8 @@ rule region_props_crs:
         segmented = SegmentedImage(labels_map, Int.(labels_map));
         props_raw = regionprops_table(segmented);
         latlondata = latlon("{input.crs_ref_image}");
-        colstodrop = [:row_centroid, :col_centroid, :min_row, :min_col, :max_row, :max_col]
-        props_crs = converttounits(props_raw, latlondata, colstodrop)
+        props_crs = converttounits(props_raw, latlondata);
+        select!(props_crs, Not([:row_centroid, :col_centroid, :min_row, :min_col, :max_row, :max_col]))
         save("{output.props_raw}", props_raw)
         save("{output.props_crs}", props_crs)
         '
