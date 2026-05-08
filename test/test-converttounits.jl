@@ -29,3 +29,25 @@
     @test converted.longitude[top_right] > converted.longitude[top_left]
     @test converted.longitude[bottom_right] > converted.longitude[bottom_left]
 end
+
+@testitem "converttounits copes with empty data frames" begin
+    using IceFloeTracker
+    import DataFrames: DataFrame
+
+    refimage = "test_inputs/latlon/latlon_test_image-2020-06-21T00_00_00Z.tif"
+    latlondata = latlon(refimage)
+    latitude = latlondata[:latitude]
+    nrows, ncols = size(latitude)
+
+    propdf = DataFrame(;
+        row_centroid=[],
+        col_centroid=[],
+        area=Float64[],
+        convex_area=Float64[],
+        minor_axis_length=Float64[],
+        major_axis_length=Float64[],
+        perimeter=Float64[],
+    )
+
+    @test converttounits(propdf, latlondata) isa DataFrame # doesn't crash
+end
