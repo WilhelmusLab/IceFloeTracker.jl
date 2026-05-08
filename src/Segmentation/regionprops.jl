@@ -66,7 +66,7 @@ end
     convertcentroid!(propdf, latlondata)
 
 Convert the centroid coordinates from row and column to latitude and longitude. 
-Addionally, add columns `x` and `y` with the pixel coordinates of the centroid.
+Additionally, add columns `x` and `y` with the pixel coordinates of the centroid.
 """
 function convertcentroid!(propdf, latlondata)
     latitude, longitude = [
