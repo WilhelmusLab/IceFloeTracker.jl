@@ -481,6 +481,7 @@ rule observation_hdf5:
     output:
         "{dir}/{pipeline}/segmentation.hdf5"
     input:
+        crs_ref_image = "{dir}/truecolor.tiff",
         truecolor = "{dir}/truecolor.tiff",
         falsecolor = "{dir}/falsecolor.tiff",
         labels_map = "{dir}/{pipeline}/labels_map.tiff",
@@ -499,7 +500,7 @@ rule observation_hdf5:
         make_hdf5(
             "{output}";
             passtime = read("{input.passtime}", String) |> chomp |> ZonedDateTime,
-            crs_ref_image_path = "{input.truecolor}",
+            crs_ref_image_path = "{input.crs_ref_image}",
             truecolor_path = "{input.truecolor}",
             falsecolor_path = "{input.falsecolor}",
             labeled = labels_map,
