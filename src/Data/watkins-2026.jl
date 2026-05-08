@@ -109,17 +109,17 @@ Each Case has functions to access its contents:
 - `wkt`: WKT string of the case's coordinate reference system
 
 
-For lower-level access, the `..._filename` functions return the path to the file for each of these data types:
-- `modis_truecolor_filename`
-- `modis_falsecolor_filename`
-- `modis_landmask_filename`
-- `modis_cloudfraction_filename`
-- `masie_landmask_filename`
-- `masie_seaice_filename`
-- `validated_binary_floes_filename`
-- `validated_labeled_floes_filename`
-- `validated_binary_landfast_filename`
-- `validated_floe_properties_filename`
+For lower-level access, the `..._path` functions return the path to the file for each of these data types:
+- `modis_truecolor_path`
+- `modis_falsecolor_path`
+- `modis_landmask_path`
+- `modis_cloudfraction_path`
+- `masie_landmask_path`
+- `masie_seaice_path`
+- `validated_binary_floes_path`
+- `validated_labeled_floes_path`
+- `validated_binary_landfast_path`
+- `validated_floe_properties_path`
 
 The `dataset` can be iterated over to get each `Case`:
 Example:
@@ -186,7 +186,7 @@ function Watkins2026Dataset(;
     return Dataset(loader, info)
 end
 
-function modis_truecolor_filename(case)
+function modis_truecolor_path(case)
     (; case_number, region, date, satellite, pixel_scale, image_scale) = _filename_parts(
         case
     )
@@ -195,10 +195,10 @@ function modis_truecolor_filename(case)
     return path
 end
 
-modis_truecolor(case::Case) = modis_truecolor_filename(case) |> load
-wkt(case::Case) = modis_truecolor_filename(case) |> case.loader |> readraster |> getproj
+modis_truecolor(case::Case) = modis_truecolor_path(case) |> load
+wkt(case::Case) = modis_truecolor_path(case) |> case.loader |> readraster |> getproj
 
-function modis_falsecolor_filename(case::Case)
+function modis_falsecolor_path(case::Case)
     (; case_number, region, date, satellite, pixel_scale, image_scale) = _filename_parts(
         case
     )
@@ -207,10 +207,10 @@ function modis_falsecolor_filename(case::Case)
 end
 
 function modis_falsecolor(case::Case)
-    return modis_falsecolor_filename(case) |> load
+    return modis_falsecolor_path(case) |> load
 end
 
-function modis_landmask_filename(case::Case)
+function modis_landmask_path(case::Case)
     (; case_number, region, date, satellite, pixel_scale, image_scale) = _filename_parts(
         case
     )
@@ -219,10 +219,10 @@ function modis_landmask_filename(case::Case)
 end
 
 function modis_landmask(case::Case)
-    return modis_landmask_filename(case) |> load .|> Gray .|> (x -> x .> 0.1) .|> Gray
+    return modis_landmask_path(case) |> load .|> Gray .|> (x -> x .> 0.1) .|> Gray
 end
 
-function modis_cloudfraction_filename(case::Case)
+function modis_cloudfraction_path(case::Case)
     (; case_number, region, date, satellite, pixel_scale, image_scale) = _filename_parts(
         case
     )
@@ -231,10 +231,10 @@ function modis_cloudfraction_filename(case::Case)
 end
 
 function modis_cloudfraction(case::Case)
-    return modis_cloudfraction_filename(case) |> load
+    return modis_cloudfraction_path(case) |> load
 end
 
-function validated_binary_floes_filename(case::Case)
+function validated_binary_floes_path(case::Case)
     info(case).number_floes == 0 && return nothing
     (; case_number, region, date, satellite) = _filename_parts(case)
     file = "data/validation_dataset/binary_floes/$(case_number)-$(region)-$(date)-$(satellite)-binary_floes.png"
@@ -242,12 +242,12 @@ function validated_binary_floes_filename(case::Case)
 end
 
 function validated_binary_floes(case::Case)
-    path = validated_binary_floes_filename(case)
+    path = validated_binary_floes_path(case)
     isnothing(path) && return nothing
     return path |> load |> binarize_mask .|> Gray
 end
 
-function validated_labeled_floes_filename(case::Case)
+function validated_labeled_floes_path(case::Case)
     info(case).number_floes == 0 && return nothing
     (; case_number, region, date, satellite) = _filename_parts(case)
     file = "data/validation_dataset/labeled_floes/$(case_number)-$(region)-$(date)-$(satellite)-labeled_floes.tiff"
@@ -255,13 +255,13 @@ function validated_labeled_floes_filename(case::Case)
 end
 
 function validated_labeled_floes(case::Case)
-    path = validated_labeled_floes_filename(case)
+    path = validated_labeled_floes_path(case)
     isnothing(path) && return nothing
     labels = path |> load .|> Int
     return SegmentedImage(modis_truecolor(case), labels)
 end
 
-function validated_binary_landfast_filename(case::Case)
+function validated_binary_landfast_path(case::Case)
     info(case).number_floes == 0 && return nothing
     (; case_number, region, date, satellite) = _filename_parts(case)
     file = "data/validation_dataset/binary_landfast/$(case_number)-$(region)-$(date)-$(satellite)-binary_landfast.png"
@@ -269,12 +269,12 @@ function validated_binary_landfast_filename(case::Case)
 end
 
 function validated_binary_landfast(case::Case)
-    path = validated_binary_landfast_filename(case)
+    path = validated_binary_landfast_path(case)
     isnothing(path) && return nothing
     return path |> load |> binarize_mask .|> Gray
 end
 
-function validated_floe_properties_filename(case::Case)
+function validated_floe_properties_path(case::Case)
     info(case).number_floes == 0 && return nothing
     (; case_number, region, date, satellite) = _filename_parts(case)
     file = "data/validation_dataset/property_tables/$(satellite)/$(case_number)-$(region)-$(date)-$(satellite)-floe_properties.csv"
@@ -282,12 +282,12 @@ function validated_floe_properties_filename(case::Case)
 end
 
 function validated_floe_properties(case::Case)::DataFrame
-    path = validated_floe_properties_filename(case)
+    path = validated_floe_properties_path(case)
     isnothing(path) && return nothing
     return path |> load |> DataFrame
 end
 
-function masie_landmask_filename(case::Case)
+function masie_landmask_path(case::Case)
     (; case_number, region, date, pixel_scale, image_scale) = _filename_parts(case)
     file = "data/masie/landmask/$(case_number)-$(region)-$(image_scale)-$(date).masie.landmask.$(pixel_scale).$(ext)"
     return file |> case.loader
@@ -295,18 +295,18 @@ end
 
 function masie_landmask(case::Case)
     @warn "MASIE landmask data is all zeroes."
-    return masie_landmask_filename(case) |> load
+    return masie_landmask_path(case) |> load
 end
 
-function masie_seaice_filename(case::Case)
+function masie_seaice_path(case::Case)
     (; case_number, region, date, pixel_scale, image_scale) = _filename_parts(case)
     file = "data/masie/seaice/$(case_number)-$(region)-$(image_scale)-$(date).masie.seaice.$(pixel_scale).tiff"
     return file |> case.loader
 end
 
-function masie_seaice(case::Case; ext="tiff")
+function masie_seaice(case::Case)
     @warn "MASIE sea ice data is all zeroes."
-    return masie_seaice_filename(case; ext) |> load
+    return masie_seaice_path(case) |> load
 end
 
 function name(case::Case)::String
