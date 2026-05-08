@@ -512,21 +512,18 @@ rule observation_hdf5:
         passtime = "{dir}/overpass.txt",
         coastal_buffer_mask = "{dir}/coastal_buffer_mask.tiff",
         ice_mask = "{dir}/{pipeline}/ice_mask.tiff",
-        
+        props_crs = "{dir}/{pipeline}/props_crs.csv"
     shell:
         """
         {config[IFT]} -e 'using IceFloeTracker, TimeZones, FileIO, Images, DataFrames;
-        labels_map = load("{input.labels_map}") .|> x-> reinterpret(UInt16, x)
-        segmented = SegmentedImage(labels_map, Int.(labels_map));
-        props = regionprops_table(segmented)
         make_hdf5(
             "{output}";
             passtime = read("{input.passtime}", String) |> chomp |> ZonedDateTime,
             crs_ref_image_path = "{input.crs_ref_image}",
             truecolor_path = "{input.truecolor}",
             falsecolor_path = "{input.falsecolor}",
-            labeled = labels_map,
-            props,
+            labeled = load("{input.labels_map}") .|> x-> reinterpret(UInt16, x),
+            props = load("{input.props_crs}")|> DataFrame,
             landmask = load("{input.landmask}") |> binarize_mask,
             coastal_buffer_mask = load("{input.coastal_buffer_mask}") |> binarize_mask,
             ice_mask = load("{input.ice_mask}") |> binarize_mask,
