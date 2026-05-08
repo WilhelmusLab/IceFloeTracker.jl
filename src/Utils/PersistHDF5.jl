@@ -1,6 +1,5 @@
 
 module PersistHDF5
-using IceFloeTracker
 using HDF5, Images, Dates, TimeZones, DataFrames
 
 export make_hdf5
