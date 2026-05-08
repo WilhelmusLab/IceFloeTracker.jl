@@ -196,7 +196,7 @@ function modis_truecolor_path(case::Case)
 end
 
 modis_truecolor(case::Case) = modis_truecolor_path(case) |> load
-wkt(case::Case) = modis_truecolor_path(case) |> case.loader |> readraster |> getproj
+wkt(case::Case) = modis_truecolor_path(case) |> readraster |> getproj
 
 function modis_falsecolor_path(case::Case)
     (; case_number, region, date, satellite, pixel_scale, image_scale) = _filename_parts(
