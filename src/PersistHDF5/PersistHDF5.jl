@@ -14,7 +14,7 @@ function choose_dtype(mx::T) where {T<:Integer}
             return t_
         end
     end
-    throw("$mx cannot be represented by any of $types")
+    return error("$mx cannot be represented by any of $types")
 end
 
 function make_hdf5(
