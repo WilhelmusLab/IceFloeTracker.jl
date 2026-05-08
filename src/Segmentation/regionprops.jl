@@ -119,7 +119,7 @@ function converttounits!(propdf, latlondata)
 end
 
 function converttounits(propdf, latlondata)
-    output = deepcopy(propdf)
+    output = DataFrame(propdf; copycols=true)
     converttounits!(output, latlondata)
     return output
 end
