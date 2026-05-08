@@ -2,7 +2,6 @@
     using Images: RGBA, N0f8, SegmentedImage, Gray
     using DataFrames: nrow, DataFrame, DataFrameRow, subset
     using Dates: DateTime
-    using IceFloeTracker.Data: wkt
 
     @testset "Watkins2026Dataset" begin
         dataset = Watkins2026Dataset(; ref="v0.2")
