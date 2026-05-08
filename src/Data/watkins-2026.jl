@@ -3,25 +3,25 @@ export Watkins2026Dataset,
     info,
     name,
     modis_truecolor,
-    modis_truecolor_filename,
+    modis_truecolor_path,
     modis_falsecolor,
-    modis_falsecolor_filename,
+    modis_falsecolor_path,
     modis_landmask,
-    modis_landmask_filename,
+    modis_landmask_path,
     modis_cloudfraction,
-    modis_cloudfraction_filename,
+    modis_cloudfraction_path,
     masie_landmask,
-    masie_landmask_filename,
+    masie_landmask_path,
     masie_seaice,
-    masie_seaice_filename,
+    masie_seaice_path,
     validated_binary_floes,
-    validated_binary_floes_filename,
+    validated_binary_floes_path,
     validated_binary_landfast,
-    validated_binary_landfast_filename,
+    validated_binary_landfast_path,
     validated_labeled_floes,
-    validated_labeled_floes_filename,
+    validated_labeled_floes_path,
     validated_floe_properties,
-    validated_floe_properties_filename,
+    validated_floe_properties_path,
     pass_time,
     wkt
 
@@ -185,7 +185,7 @@ function Watkins2026Dataset(;
     return Dataset(loader, info)
 end
 
-function modis_truecolor_path(case)
+function modis_truecolor_path(case::Case)
     (; case_number, region, date, satellite, pixel_scale, image_scale) = _filename_parts(
         case
     )
@@ -195,7 +195,12 @@ function modis_truecolor_path(case)
 end
 
 modis_truecolor(case::Case) = modis_truecolor_path(case) |> load
-wkt(case::Case) = modis_truecolor_path(case) |> case.loader |> readraster |> getproj
+
+function wkt(case::Case)
+    path = modis_truecolor_path(case)
+    isnothing(path) && return nothing
+    return path |> readraster |> getproj
+end
 
 function modis_falsecolor_path(case::Case)
     (; case_number, region, date, satellite, pixel_scale, image_scale) = _filename_parts(
@@ -280,7 +285,7 @@ function validated_floe_properties_path(case::Case)
     return file |> case.loader
 end
 
-function validated_floe_properties(case::Case)::DataFrame
+function validated_floe_properties(case::Case)
     path = validated_floe_properties_path(case)
     isnothing(path) && return nothing
     return path |> load |> DataFrame
@@ -288,7 +293,7 @@ end
 
 function masie_landmask_path(case::Case)
     (; case_number, region, date, pixel_scale, image_scale) = _filename_parts(case)
-    file = "data/masie/landmask/$(case_number)-$(region)-$(image_scale)-$(date).masie.landmask.$(pixel_scale).$(ext)"
+    file = "data/masie/landmask/$(case_number)-$(region)-$(image_scale)-$(date).masie.landmask.$(pixel_scale).tiff"
     return file |> case.loader
 end
 
