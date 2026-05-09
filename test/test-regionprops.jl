@@ -67,6 +67,40 @@
     )
 end
 
+@testitem "addlatlon! adds latitude and longitude columns to regionprops table" begin
+    using IceFloeTracker
+    import DataFrames: DataFrame
+    using FileIO
+
+    refimage = "test_inputs/latlon/latlon_test_image-2020-06-21T00_00_00Z.tif"
+    data = load(refimage)
+    nrows, ncols = size(data)
+
+    propdf = DataFrame(;
+        row_centroid=[1.0, 1.0, Float64(nrows), Float64(nrows)],
+        col_centroid=[1.0, Float64(ncols), 1.0, Float64(ncols)],
+        area=ones(4),
+        convex_area=ones(4),
+        minor_axis_length=ones(4),
+        major_axis_length=ones(4),
+        perimeter=ones(4),
+    )
+
+    addlatlon!(propdf, refimage)
+
+    @test all(["latitude", "longitude"] ⊆ names(propdf)) # check new columns added
+    @info propdf
+    top_left, top_right, bottom_left, bottom_right = 1, 2, 3, 4
+
+    # For this georeferenced image, northern pixels (top rows) should have higher latitude.
+    @test propdf.latitude[top_left] > propdf.latitude[bottom_left]
+    @test propdf.latitude[top_right] > propdf.latitude[bottom_right]
+
+    # Longitudes should increase from left to right at both top and bottom rows.
+    @test propdf.longitude[top_right] > propdf.longitude[top_left]
+    @test propdf.longitude[bottom_right] > propdf.longitude[bottom_left]
+end
+
 @testitem "converttounits maps corner centroids to sensible lat/lon ordering" begin
     using IceFloeTracker
     import DataFrames: DataFrame
