@@ -12,13 +12,15 @@ export Watkins2026Dataset,
     validated_binary_landfast,
     validated_labeled_floes,
     validated_floe_properties,
-    pass_time
+    pass_time,
+    wkt
 
 import FileIO: load
 using CSVFiles
 import DataFrames: DataFrame
 import Dates: format, DateTime
 import Images: Gray, SegmentedImage
+import ArchGDAL: readraster, getproj
 
 import ..ImageUtils: binarize_mask
 
@@ -94,6 +96,7 @@ Each Case has functions to access its contents:
 - `validated_binary_floes`: binary image of validated floes
 - `validated_labeled_floes`: labeled image of validated floes
 - `validated_floe_properties`: CSV file of validated floe properties
+- `wkt`: WKT string of the case's coordinate reference system
 
 The `dataset` can be iterated over to get each `Case`:
 Example:
@@ -167,6 +170,15 @@ function modis_truecolor(case::Case; ext="tiff")
     file = "data/modis/truecolor/$(case_number)-$(region)-$(image_scale)-$(date).$(satellite).truecolor.$(pixel_scale).$(ext)"
     img = file |> case.loader |> load
     return img
+end
+
+function wkt(case::Case)
+    (; case_number, region, date, satellite, pixel_scale, image_scale) = _filename_parts(
+        case
+    )
+    file = "data/modis/truecolor/$(case_number)-$(region)-$(image_scale)-$(date).$(satellite).truecolor.$(pixel_scale).tiff"
+    wkt_ = file |> case.loader |> readraster |> getproj
+    return wkt_
 end
 
 function modis_falsecolor(case::Case; ext="tiff")
