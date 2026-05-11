@@ -129,7 +129,7 @@ rule region_case_results_by_filetype:
             for case in cases.itertuples()
             for date_ in daterange(date.fromisoformat(case.start), date.fromisoformat(case.end))
             for satellite in config["SATELLITES"]
-        ] 
+        ]
         
 
 # ============================================================================
