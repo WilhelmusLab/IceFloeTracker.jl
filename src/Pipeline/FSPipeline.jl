@@ -30,13 +30,15 @@ import ..Preprocessing:
 import ..ImageUtils: get_tiles, imbrighten
 import ..Segmentation: 
     IceFloeSegmentationAlgorithm, 
+    expand_labels,
     find_ice_mask, 
     kmeans_binarization,
     tiled_adaptive_binarization,
     IceDetectionBrightnessPeaksMODIS721,
     IceDetectionBrightnessPeaksMODIS134,
     stitch_clusters,
-    view_seg
+    view_seg,
+    view_seg_random
 
 abstract type IceFloePreprocessingAlgorithm end
 
@@ -63,14 +65,17 @@ end
 function (p::Preprocess)(
     truecolor_image::AbstractArray{<:Union{AbstractRGB,TransparentRGB}}, 
     landmask,
-    cloud_mask
+    cloud_mask,
+    tiles
 )
     # Cast to grayscale first to save compute time
     proc_img = Gray.(truecolor_image)
     apply_landmask!(proc_img, landmask .|| cloud_mask)
 
     # Diffusion and sharpening
-    proc_img .= nonlinear_diffusion(proc_img, p.diffusion_algorithm)
+    for tile in tiles
+        proc_img[tile...] .= nonlinear_diffusion(proc_img[tile...], p.diffusion_algorithm)
+    end
 
     adjust_histogram!(proc_img,
         ContrastLimitedAdaptiveHistogramEqualization(
@@ -117,7 +122,7 @@ The image preprocessing is supplied as an function in the functor setup.
     minimum_window_size=400,
     threshold_percentage=0,
     minimum_brightness=100/255)`: Settings for the adaptive threshold binarization
-- `watershed_strel = se_disk(5)`
+- `watershed_strel = strel_disk(5)`
 - `floe_splitting_settings = (max_fill_area=1, min_area_opening=20, opening_strel=se_disk(2))`
 """
 @kwdef struct Segment <: IceFloeSegmentationAlgorithm # Tried making this an IceFloeSegmentationAlgorithm but julia complains about ambiguity when I do so. Need to fix this to be able to use the run and validate function.
@@ -196,21 +201,16 @@ function (p::Segment)(
     @info "Splitting floes"
     # how to tile this?
     split_floes = dist_morph_split(kmeans_result; max_distance=7) # update to have morph split settings
-    
-    # Remove too-small floes
-
-    # Filter floes based on the edge properties, colors
-
-    # re-label 
-    labels = label_components(labels) # reset labels
+    # TBD: Filter floes based on the edge properties, colors
 
     # Return the original truecolor image, segmented
-    segments = SegmentedImage(truecolor, labels)
+    segments_tc = SegmentedImage(truecolor, split_floes)
+    segments_fc = SegmentedImage(truecolor, split_floes)
 
     if !isnothing(intermediate_results_callback)
-        colorview_truecolor = view_seg(SegmentedImage(truecolor, labels))
-        colorview_falsecolor = view_seg(SegmentedImage(falsecolor, labels))
-        colorview_random =  view_seg_random(SegmentedImage(truecolor, labels))
+        colorview_truecolor = view_seg(segments_tc)
+        colorview_falsecolor = view_seg(segments_fc)
+        colorview_random =  view_seg_random(segments_tc)
         intermediate_results_callback(;
             truecolor,
             falsecolor,
@@ -225,7 +225,7 @@ function (p::Segment)(
             segment_mean_truecolor=colorview_truecolor,
             ) 
     end
-    return segments
+    return segments_tc
 end
 
 function clean_binary_floes(binary_img, icemask, cloudmask;
@@ -252,16 +252,6 @@ function clean_binary_floes(binary_img, icemask, cloudmask;
     return out
 end
 
-# Expand labels by distance without overlap
-function expand_labels(labels, distance)
-    labels_out = deepcopy(labels)
-    maximum(labels_out) == 0 && return labels_out
-    F = feature_transform(labels .> 0)
-    D = distance_transform(F)
-    labels_out[D .<= distance] .= labels[F][D .<= distance]
-    return labels_out
-end
-
 # Find markers by selecting locations greater than dist threshold from background
 function dist_morph_split(
         binary_floes::BitMatrix;
@@ -269,7 +259,7 @@ function dist_morph_split(
         max_hole_fill::Int64=2000,
         max_distance::Int64=5,
         max_expand::Int64=3,
-        strel=se_disk(3)
+        strel=strel_disk(3)
     )
     bw = .!imfill(binary_floes, (0, min_floe_size))
     dist = distance_transform(feature_transform(bw))
@@ -306,12 +296,22 @@ function dist_morph_split(
         end
     end
     final_labels .= label_components(final_labels)
-    areas = component_lengths(final_labels)
-    indices = component_indices(final_labels)
-    for L in keys(areas)
-        (areas[L] < min_floe_size) && (final_labels[indices[L]] .= 0)
-    end
+    remove_small_floes!(final_labels, min_floe_size)
     return final_labels
 end
+
+function remove_small_floes!(labels, min_size)
+    areas = component_lengths(labels)
+    indices = component_indices(labels)
+
+    for L in keys(areas)
+        (L != 0) && begin
+            (areas[L] < min_size) && begin
+                labels[indices[L]] .= 0
+            end
+        end
+    end
+end
+
 
 end

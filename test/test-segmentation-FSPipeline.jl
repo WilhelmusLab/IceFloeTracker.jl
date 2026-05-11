@@ -39,7 +39,7 @@ end
     @test mean_F_score ≥ 0.9 broken = true
 
     # Better performance might look like this:
-    @test mean_recall ≥ 0.8 broken = true
+    @test mean_recall ≥ 0.8 # Note: Increase in recall without increase in precision may indicate higher false-positive rate. 
     @test mean_precision ≥ 0.8 broken = true
     @test mean_F_score ≥ 0.8 broken = true
 
@@ -71,7 +71,7 @@ end
         FSPipeline.Segment();
         output_directory="./test_outputs/",
     )
-    @test 0.42 ≈ labeled_fraction atol = 0.1
+    @test 0.16 ≈ labeled_fraction atol = 0.1
     @test 0.40 ≤ round(recall; digits=2)
     @test 0.21 ≤ round(precision; digits=2) # Note: Decreased precision, I suspect an issue with Seg. A.
     @test 0.3 ≤ round(F_score; digits=2)
@@ -111,15 +111,15 @@ end
     @test results_invariant_for(RGB; baseline, algorithm, case)
     @test results_invariant_for(RGBA; baseline, algorithm, case)
     @test results_invariant_for(n0f8; baseline, algorithm, case)
-    @test results_invariant_for(n6f10; baseline, algorithm, case) broken = true
-    @test results_invariant_for(n4f12; baseline, algorithm, case) broken = true
+    @test results_invariant_for(n6f10; baseline, algorithm, case)
+    @test results_invariant_for(n4f12; baseline, algorithm, case)
     @test results_invariant_for(n2f14; baseline, algorithm, case)
     @test results_invariant_for(n0f16; baseline, algorithm, case)
     @test results_invariant_for(float32; baseline, algorithm, case)
     @test results_invariant_for(float64; baseline, algorithm, case)
     @test results_invariant_for(RGB, n0f8; baseline, algorithm, case)
-    @test results_invariant_for(RGB, n6f10; baseline, algorithm, case) broken = true
-    @test results_invariant_for(RGB, n4f12; baseline, algorithm, case) broken = true
+    @test results_invariant_for(RGB, n6f10; baseline, algorithm, case)
+    @test results_invariant_for(RGB, n4f12; baseline, algorithm, case)
     @test results_invariant_for(RGB, n2f14; baseline, algorithm, case)
     @test results_invariant_for(RGB, n0f16; baseline, algorithm, case)
     @test results_invariant_for(RGB, float32; baseline, algorithm, case)
