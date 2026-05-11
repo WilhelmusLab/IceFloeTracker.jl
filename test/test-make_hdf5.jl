@@ -50,10 +50,8 @@ end
     @test choose_dtype(-100000) == Int32
     @test choose_dtype(10000000000) == UInt64
     @test choose_dtype(-10000000000) == Int64
-    @test choose_dtype(100000000000000000000) == UInt128
-    @test choose_dtype(-100000000000000000000) == Int128
-    @test choose_dtype(BigInt(2)^128 - 1) == UInt128
-    @test choose_dtype(-BigInt(2)^127) == Int128
-    @test_throws ErrorException choose_dtype(BigInt(2)^128 + 1)
-    @test_throws ErrorException choose_dtype(-BigInt(2)^127 - 1)
+    @test choose_dtype(BigInt(2)^64 - 1) == UInt64
+    @test choose_dtype(-BigInt(2)^63) == Int64
+    @test_throws ErrorException choose_dtype(BigInt(2)^64 + 1)
+    @test_throws ErrorException choose_dtype(-BigInt(2)^63 - 1)
 end
