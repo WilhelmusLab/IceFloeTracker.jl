@@ -81,7 +81,9 @@ rule organize_input_file_by_filetype:
     input:
         "{scene}/{filetype}.{ext}"
     wildcard_constraints:
-        filetype = "[^./]+"
+        scene = "[^/]+",
+        filetype = "[^./]+",
+        pipeline = "[^/]+"
     shell:
         "ln --force {input} {output}"
 
@@ -92,7 +94,9 @@ rule organize_segmentation_results_by_pipeline:
     input:
         "{scene}/{pipeline}/{filetype}.{ext}"
     wildcard_constraints:
-        filetype = "[^./]+"
+        scene = "[^/]+",
+        filetype = "[^./]+",
+        pipeline = "[^/]+"
     shell:
         "ln --force {input} {output}"
 
@@ -411,6 +415,29 @@ rule segment_buckley:
 
 ruleorder: segment_buckley > segment
 
+
+rule region_props_crs:
+    input: 
+        crs_ref_image = "{dir}/truecolor.tiff",
+        labels_map = "{dir}/{pipeline}/labels_map.tiff"
+    output:
+        props_raw = "{dir}/{pipeline}/props_raw.csv",
+        props_crs = "{dir}/{pipeline}/props_crs.csv"
+    shell:
+        """
+        {config[IFT]} -e 'using IceFloeTracker, Images, DataFrames;
+        labels_map = load("{input.labels_map}") .|> x-> reinterpret(UInt16, x)
+        segmented = SegmentedImage(labels_map, Int.(labels_map));
+        props_raw = regionprops_table(segmented);
+        latlondata = latlon("{input.crs_ref_image}");
+        props_crs = converttounits(props_raw, latlondata);
+        select!(props_crs, Not([:row_centroid, :col_centroid, :min_row, :min_col, :max_row, :max_col]))
+        save("{output.props_raw}", props_raw)
+        save("{output.props_crs}", props_crs)
+        '
+        """
+
+
 # ============================================================================
 # TRACKING RULES
 # ============================================================================
@@ -475,29 +502,6 @@ rule tracking:
 # ============================================================================
 # ARCHIVAL RULES
 # ============================================================================
-
-
-rule region_props_crs:
-    input: 
-        crs_ref_image = "{dir}/truecolor.tiff",
-        labels_map = "{dir}/{pipeline}/labels_map.tiff"
-    output:
-        props_raw = "{dir}/{pipeline}/props_raw.csv",
-        props_crs = "{dir}/{pipeline}/props_crs.csv"
-    shell:
-        """
-        {config[IFT]} -e 'using IceFloeTracker, Images, DataFrames;
-        labels_map = load("{input.labels_map}") .|> x-> reinterpret(UInt16, x)
-        segmented = SegmentedImage(labels_map, Int.(labels_map));
-        props_raw = regionprops_table(segmented);
-        latlondata = latlon("{input.crs_ref_image}");
-        props_crs = converttounits(props_raw, latlondata);
-        select!(props_crs, Not([:row_centroid, :col_centroid, :min_row, :min_col, :max_row, :max_col]))
-        save("{output.props_raw}", props_raw)
-        save("{output.props_crs}", props_crs)
-        '
-        """
-
 
 rule observation_hdf5:
     output:

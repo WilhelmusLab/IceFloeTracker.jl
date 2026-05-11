@@ -63,11 +63,10 @@ end
 ## LatLon functions originally from IFTPipeline.jl
 # TODO: Add example with reference geotiff image.
 """
-    convertcentroid!(propdf, latlondata, colstodrop)
+    convertcentroid!(propdf, latlondata)
 
-Convert the centroid coordinates from row and column to latitude and longitude dropping unwanted
-columns specified in `colstodrop` for the output data structure. Addionally, add columns `x` and `y`
-with the pixel coordinates of the centroid.
+Convert the centroid coordinates from row and column to latitude and longitude. 
+Additionally, add columns `x` and `y` with the pixel coordinates of the centroid.
 """
 function convertcentroid!(propdf, latlondata)
     latitude, longitude = [
@@ -90,10 +89,10 @@ function convertcentroid!(propdf, latlondata)
 end
 
 """
-    converttounits!(propdf, latlondata, )
-    converttounits(propdf, latlondata, )
+    converttounits!(propdf, latlondata)
+    converttounits(propdf, latlondata)
 
-Convert the floe properties from pixels to kilometers and square kilometers where appropiate. Also drop the columns specified in `colstodrop`.
+Convert the floe properties from pixels to kilometers and square kilometers where appropriate.
 """
 function converttounits!(propdf, latlondata)
     if nrow(propdf) == 0
@@ -120,7 +119,7 @@ function converttounits!(propdf, latlondata)
 end
 
 function converttounits(propdf, latlondata)
-    output = deepcopy(propdf)
+    output = DataFrame(propdf; copycols=true)
     converttounits!(output, latlondata)
     return output
 end
