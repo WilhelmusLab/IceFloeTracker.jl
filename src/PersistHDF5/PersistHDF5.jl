@@ -8,7 +8,7 @@ import ..Segmentation: regionprops_table, converttounits!
 export make_hdf5
 
 function choose_dtype(mx::T) where {T<:Integer}
-    types = [UInt8, UInt16, UInt32, UInt64, UInt128]
+    types = [UInt8, Int8, UInt16, Int16, UInt32, Int32, UInt64, Int64, UInt128, Int128]
     for t_ in types
         if typemin(t_) <= mx <= typemax(t_)
             return t_
