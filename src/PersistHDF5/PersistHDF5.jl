@@ -45,8 +45,9 @@ function make_hdf5(
         3857 => "EPSG:3857 Web Mercator",
     )
     crs_name = get(crs_dict, crs_code) do
-        @warn "CRS $crs_code not recognized. CRS will be recorded as EPSG:$(string(crs_code)) in the output file attributes, but no short name will be provided."
-        "EPSG:$(string(crs_code))"
+        crs_name_ = "EPSG:$(string(crs_code))"
+        @warn "CRS $crs_code not recognized. CRS will be recorded as $crs_name_ in the output file attributes, but no short name will be provided."
+        crs_name_
     end
 
     h5open(output_path, "w") do file
