@@ -37,21 +37,15 @@ function make_hdf5(
     ptsunix = Int64(Dates.datetime2unix(DateTime(passtime)))
     latlondata = latlon(crs_ref_image_path)
 
-    local crs_name::String
-    try
-        crs_name = Dict(
-            3413 => "EPSG:3413 NSIDC north polar stereographic",
-            3031 => "EPSG:3031 NSIDC south polar stereographic",
-            4326 => "EPSG:4326 WGS84 lat/lon",
-            3857 => "EPSG:3857 Web Mercator",
-        )[latlondata[:crs]]
-    catch e
-        if e isa KeyError
-            @warn "CRS $(latlondata[:crs]) not recognized. CRS will be recorded as EPSG:$(string(latlondata[:crs])) in the output file attributes, but no short name will be provided."
-            crs_name = "EPSG:$(string(latlondata[:crs]))"
-        else
-            rethrow(e)
-        end
+    crs_dict = Dict(
+        3413 => "EPSG:3413 NSIDC north polar stereographic",
+        3031 => "EPSG:3031 NSIDC south polar stereographic",
+        4326 => "EPSG:4326 WGS84 lat/lon",
+        3857 => "EPSG:3857 Web Mercator",
+    )
+    crs_name = get(crs_dict, crs_code) do
+        @warn "CRS $crs_code not recognized. CRS will be recorded as EPSG:$(string(crs_code)) in the output file attributes, but no short name will be provided."
+        "EPSG:$(string(crs_code))"
     end
 
     h5open(output_path, "w") do file
