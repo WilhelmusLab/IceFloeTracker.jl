@@ -37,6 +37,7 @@ function make_hdf5(
     ptsunix = Int64(Dates.datetime2unix(DateTime(passtime)))
     latlondata = latlon(crs_ref_image_path)
 
+    crs_code = latlondata[:crs]
     crs_dict = Dict(
         3413 => "EPSG:3413 NSIDC north polar stereographic",
         3031 => "EPSG:3031 NSIDC south polar stereographic",
