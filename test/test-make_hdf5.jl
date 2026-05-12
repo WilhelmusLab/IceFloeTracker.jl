@@ -13,14 +13,11 @@
     using FileIO
     using Images
     using DataFrames
+    using HDF5
 
     mktemp() do output_path, _
-        @info "Getting input files from validation dataset"
         dataset = Watkins2026Dataset()
         case = first(dataset)
-
-        @show validated_floe_properties(case)
-
         make_hdf5(
             output_path;
             passtime=ZonedDateTime(pass_time(case), tz"UTC"),
@@ -33,9 +30,26 @@
             cloud_mask=modis_landmask(case), # placeholder for another mask type
             ice_mask=modis_landmask(case), # placeholder for another mask type
             coastal_buffer_mask=modis_landmask(case), # placeholder for another mask type
+            iftversion=VersionNumber("0.0.0"),
+            reference="https://doi.org/00.0000",
+            contact="contact@example.com",
         )
 
-        @test isfile(output_path)
+        h5open(output_path, "r") do file
+            @test attrs(file)["iftversion"] === "0.0.0"
+            @test attrs(file)["reference"] === "https://doi.org/00.0000"
+            @test attrs(file)["contact"] === "contact@example.com"
+            @test attrs(file)["fname_truecolor"] == modis_truecolor_path(case)
+            @test attrs(file)["crs_name"] === "EPSG:3413 NSIDC north polar stereographic"
+            @test haskey(file, "index")
+            @test haskey(file, "floe_properties")
+            @test haskey(file["floe_properties"], "labeled_image")
+            @test haskey(file["floe_properties"], "properties")
+            @test haskey(file, "classifications")
+            @test haskey(file["classifications"], "landmask")
+            @test haskey(file["classifications"], "ice_mask")
+            @test haskey(file["classifications"], "coastal_buffer_mask")
+        end
     end
 end
 
