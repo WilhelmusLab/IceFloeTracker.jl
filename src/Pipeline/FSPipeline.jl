@@ -58,7 +58,7 @@ abstract type IceFloePreprocessingAlgorithm end
 """
 @kwdef struct Preprocess <: IceFloePreprocessingAlgorithm
     diffusion_algorithm = PeronaMalikDiffusion(λ=0.1, K=0.1, niters=5, g="exponential")
-    adapthisteq_params = (nbins=256, rblocks=8, cblocks=8, clip=0.99) # rblocks/cblocks not used yet -- add with CLAHE.jl
+    adapthisteq_params = (nbins=256, rblocks=16, cblocks=8, clip=5) # rblocks/cblocks not used yet -- add with CLAHE.jl
     unsharp_mask_params = (radius=50, amount=0.2, threshold=0.01)
 end
 
@@ -140,6 +140,7 @@ The image preprocessing is supplied as an function in the functor setup.
         join_method="union",
         minimum_prominence=0.01)
     floe_splitting_settings = (max_fill_area=1, min_area_opening=20, opening_strel=strel_disk(2))
+    # TBD: Add updated floe splitting settings, add params for k-means cleanup
 end 
 
 function (p::Segment)(
@@ -195,7 +196,6 @@ function (p::Segment)(
             random_seed=p.kmeans_params.random_seed,
             cluster_selection_algorithm=p.cluster_selection_algorithm
             )
-
     kmeans_result .= clean_binary_floes(kmeans_result, prelim_ice_mask, cloud_mask) # update to have settings
 
     @info "Splitting floes"
