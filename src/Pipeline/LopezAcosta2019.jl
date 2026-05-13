@@ -297,15 +297,9 @@ function (p::Segment)(
             truecolor,
             falsecolor,
             landmask,
-<<<<<<< HEAD
-            coastal_buffer=coastal_buffer_mask,
-            cloudmask,
-            ice_mask=IceDetectionLopezAcosta2019()(fc_masked),
-=======
             coastal_buffer_mask,
             cloud_mask=cloudmask,
             ice_mask=p.cluster_selection_algorithm(fc_masked) .> 0,
->>>>>>> 670299c2f2e303530392c44a2f22565654bca810
             sharpened_grayscale_image=sharpened_grayscale_image,
             ice_water_discrim=ice_water_discrim,
             segA=segmentation_A,
