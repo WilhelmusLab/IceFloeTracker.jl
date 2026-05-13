@@ -73,9 +73,8 @@ function (p::Preprocess)(
     apply_landmask!(proc_img, landmask .|| cloud_mask)
 
     # Diffusion and sharpening
-    for tile in tiles
-        proc_img[tile...] .= nonlinear_diffusion(proc_img[tile...], p.diffusion_algorithm)
-    end
+    nonlinear_diffusion(proc_img, tiles, p.diffusion_algorithm)
+   
 
     adjust_histogram!(proc_img,
         ContrastLimitedAdaptiveHistogramEqualization(
