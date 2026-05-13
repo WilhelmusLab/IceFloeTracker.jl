@@ -12,13 +12,11 @@ using Images.ImageCore: comp1, AbstractGray, Color3, YIQ, channelview
 using TiledIteration: TileIterator
 
 """
-```
     ContrastLimitedAdaptiveHistogramEqualization <: AbstractHistogramAdjustmentAlgorithm
     ContrastLimitedAdaptiveHistogramEqualization(; nbins = 128, minval = 0, maxval = 1, rblocks = 8, cblocks = 8, clip = 0.1)
 
     adjust_histogram([T,] img, f::ContrastLimitedAdaptiveHistogramEqualization)
     adjust_histogram!([out,] img, f::ContrastLimitedAdaptiveHistogramEqualization)
-```
 
 Performs Contrast Limited Adaptive Histogram Equalisation (CLAHE) on the input
 image.

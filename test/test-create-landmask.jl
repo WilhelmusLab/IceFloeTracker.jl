@@ -1,9 +1,8 @@
-@testitem "Create Landmask" begin
+@testitem "Create Landmask" setup = [ImageSimilarity] begin
     using Dates: Dates
     import DelimitedFiles: readdlm
     import Images: load
     include("config.jl")
-    include("test_error_rate.jl")
 
     strel_file = "$(test_data_dir)/se.csv"
     struct_elem = readdlm(strel_file, ',', Bool) # read in original matlab structuring element -  a disk-shaped kernel with radius of 50 px

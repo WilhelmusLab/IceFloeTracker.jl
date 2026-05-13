@@ -1,6 +1,6 @@
 module LopezAcosta2019
 
-export Segment, IceDetectionLopezAcosta2019
+export Segment, Track, IceDetectionLopezAcosta2019
 
 import Images:
     Images,
@@ -53,7 +53,7 @@ import StatsBase: kurtosis, skewness, mean, std
 
 import ..Filtering:
     nonlinear_diffusion, PeronaMalikDiffusion, unsharp_mask, channelwise_adapthisteq
-import ..Morphology: hbreak, hbreak!, branch, bridge, fill_holes, se_disk4
+import ..Morphology: hbreak, hbreak!, branch, bridge, fill_holes, strel_octagon
 import ..Preprocessing:
     make_landmask_se,
     create_landmask,
@@ -65,6 +65,7 @@ import ..Preprocessing:
     LopezAcostaCloudMask
 
 import ..Segmentation:
+    expand_labels,
     IceFloeSegmentationAlgorithm,
     find_ice_mask,
     kmeans_binarization,
@@ -72,6 +73,8 @@ import ..Segmentation:
     IceDetectionBrightnessPeaksMODIS721,
     IceDetectionThresholdMODIS721
 
+import ..Tracking: FloeTracker, FilterFunction, MinimumWeightMatchingFunction
+import Dates: Day
 import ..ImageUtils: imbrighten
 
 """ 
@@ -119,6 +122,9 @@ Segmentation algorithm for sea ice floe identification based on Lopez-Acosta 201
    input to the ImageContrastAdjustment GammaCorrection algorithm, `adjusted_ice_threshold` is a global threshold for the internal
    adjusted image, `alpha_level` controls the amount of the brightened image to use, and `fill_range_max` is the largest dark spot
    to fill in the binarized result.
+- `segF_params`: Parameters for the third segmentation stage. Again using k-means clustering, with k=3 clusters, and using morphological operations anre reconstruction.
+- `floe_splitting_settings`: Parameters for separating ice floes in the segF binarized result
+- `expand_labels_by`: Number of pixels to expand labels without overlap.
 
 ## Returns
 A segmented image with candidate sea ice floes.
@@ -148,8 +154,9 @@ Note: This algorithm is under active development and the API will change in a fu
     )
     segF_params = (k=3, se=strel_diamond((5, 5)), min_area_opening=20)
     floe_splitting_settings = (
-        max_fill_area=1, min_area_opening=20, opening_strel=se_disk4()
+        max_fill_area=1, min_area_opening=20, opening_strel=strel_octagon(3)
     )
+    expand_labels_by=5
 end
 
 function (p::Segment)(
@@ -277,9 +284,11 @@ function (p::Segment)(
     @info "Splitting floes"
     segF = morph_split_floes(segF_binarized, cloudmask; p.floe_splitting_settings...)
     labels = label_components(segF)
+    (p.expand_labels_by > 0) && (labels .= expand_labels(labels, p.expand_labels_by))
 
     # Return the original truecolor image, segmented
     segments = SegmentedImage(truecolor, labels)
+
 
     if !isnothing(intermediate_results_callback)
         segments_truecolor = SegmentedImage(truecolor, labels)
@@ -288,9 +297,15 @@ function (p::Segment)(
             truecolor,
             falsecolor,
             landmask,
+<<<<<<< HEAD
             coastal_buffer=coastal_buffer_mask,
             cloudmask,
             ice_mask=IceDetectionLopezAcosta2019()(fc_masked),
+=======
+            coastal_buffer_mask,
+            cloud_mask=cloudmask,
+            ice_mask=p.cluster_selection_algorithm(fc_masked) .> 0,
+>>>>>>> 670299c2f2e303530392c44a2f22565654bca810
             sharpened_grayscale_image=sharpened_grayscale_image,
             ice_water_discrim=ice_water_discrim,
             segA=segmentation_A,
@@ -299,13 +314,17 @@ function (p::Segment)(
             watersheds_segB_product=watersheds_product,
             final_floes=segF,
             labels=labels,
+            labels_map=labels,
+            segments,
+            segmented_truecolor=segments_truecolor,
+            segmented_falsecolor=segments_falsecolor,
             segment_mean_truecolor=map( # TODO Add "view_seg" code snippet
                 i -> segment_mean(segments_truecolor, i),
                 labels_map(segments_truecolor),
             ),
             segment_mean_falsecolor=map(
                 i -> segment_mean(segments_falsecolor, i), labels_map(segments_falsecolor)
-            ), # Add figure that overlays the segments
+            ), # TODO Add figure that overlays the segments
         )
     end
     return segments
@@ -705,7 +724,7 @@ Based on Lopez-Acosta et al. 2019, 2021.
 
 """
 function morph_split_floes(
-    binary_img, cloudmask; max_fill_area=1, min_area_opening=20, opening_strel=se_disk4()
+    binary_img, cloudmask; max_fill_area=1, min_area_opening=20, opening_strel=strel_octagon(3),
 )
     leads_branched = hbreak(binary_img) |> branch
     leads_filled = .!imfill(.!leads_branched, 0:max_fill_area)
@@ -721,6 +740,18 @@ function morph_split_floes(
     floes_opened = opening(floes, opening_strel)
     mreconstruct!(dilate, floes_opened, floes, floes_opened)
     return floes_opened
+end
+
+function Track(
+    filter_function=FilterFunction(),
+    matching_function=MinimumWeightMatchingFunction(),
+    minimum_area=100,
+    maximum_area=90e3,
+    maximum_time_step=Day(2),
+)
+    return FloeTracker(;
+        filter_function, matching_function, minimum_area, maximum_area, maximum_time_step
+    )
 end
 
 end

@@ -5,11 +5,11 @@ using Reexport
 include("Utils/Utils.jl")
 @reexport using .Utils
 
-include("Data/Data.jl")
-@reexport using .Data
-
 include("ImageUtils/ImageUtils.jl")
 @reexport using .ImageUtils
+
+include("Data/Data.jl")
+@reexport using .Data
 
 include("Geospatial/Geospatial.jl")
 @reexport using .Geospatial
@@ -28,6 +28,10 @@ include("Segmentation/Segmentation.jl")
 
 include("Tracking/Tracking.jl")
 @reexport using .Tracking
+
+# Persistence
+include("PersistHDF5/PersistHDF5.jl")
+@reexport using .PersistHDF5
 
 # Pipelines
 include("Pipeline/FSPipeline.jl")

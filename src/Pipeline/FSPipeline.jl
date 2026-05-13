@@ -17,7 +17,11 @@ import ..Filtering:
     unsharp_mask, 
     ContrastLimitedAdaptiveHistogramEqualization
 
+<<<<<<< HEAD
 import ..Morphology: hbreak, hbreak!, branch, bridge, fill_holes, se_disk4
+=======
+import ..Morphology: hbreak, hbreak!, branch, bridge, fill_holes, strel_disk
+>>>>>>> 670299c2f2e303530392c44a2f22565654bca810
 import ..Preprocessing:
     create_landmask,
     create_cloudmask,
@@ -30,12 +34,17 @@ import ..Preprocessing:
 import ..ImageUtils: get_tiles, imbrighten
 import ..Segmentation: 
     IceFloeSegmentationAlgorithm, 
+<<<<<<< HEAD
+=======
+    expand_labels,
+>>>>>>> 670299c2f2e303530392c44a2f22565654bca810
     find_ice_mask, 
     kmeans_binarization,
     tiled_adaptive_binarization,
     IceDetectionBrightnessPeaksMODIS721,
     IceDetectionBrightnessPeaksMODIS134,
     stitch_clusters,
+<<<<<<< HEAD
     view_seg
 
 abstract type IceFloePreprocessingAlgorithm end
@@ -47,18 +56,38 @@ abstract type IceFloePreprocessingAlgorithm end
         cloud_mask_algorithm = Watkins2025CloudMask()
         diffusion_algorithm = PeronaMalikDiffusion(lambda=0.1, kappa=0.1, niters=5, g="exponential")
         adapthisteq_params = (nbins=256, rblocks=8, cblocks=8, clip=0.95)
+=======
+    view_seg,
+    view_seg_random
+
+abstract type IceFloePreprocessingAlgorithm end
+
+"""
+   Preprocess(
+        diffusion_algorithm = PeronaMalikDiffusion(λ=0.1, K=0.1, niters=5, g="exponential")
+        adapthisteq_params = (nbins=256, rblocks=8, cblocks=8, clip=0.99) # rblocks/cblocks not used yet -- add with CLAHE.jl
+>>>>>>> 670299c2f2e303530392c44a2f22565654bca810
         unsharp_mask_params = (radius=50, amount=0.2, threshold=0.01)
     )
     Preprocess()(img, cloudmask, landmask)
 
     Converts input image to grayscale, then preprocesses by appling nonlinear diffusion, 
     adaptive histogram equalization, and unsharp masking. Diffusion and unsharp masking are applied 
+<<<<<<< HEAD
     to each tile, while the adaptive histogram equalization is divided according to the parameter specifications.
+=======
+    to each tile, while the adaptive histogram equalization is divided according to the parameter
+    specifications.
+>>>>>>> 670299c2f2e303530392c44a2f22565654bca810
 
 """
 @kwdef struct Preprocess <: IceFloePreprocessingAlgorithm
     diffusion_algorithm = PeronaMalikDiffusion(λ=0.1, K=0.1, niters=5, g="exponential")
+<<<<<<< HEAD
     adapthisteq_params = (nbins=256, rblocks=8, cblocks=8, clip=0.99) # rblocks/cblocks not used yet -- add with CLAHE.jl
+=======
+    adapthisteq_params = (nbins=256, rblocks=16, cblocks=8, clip=5) # rblocks/cblocks not used yet -- add with CLAHE.jl
+>>>>>>> 670299c2f2e303530392c44a2f22565654bca810
     unsharp_mask_params = (radius=50, amount=0.2, threshold=0.01)
 end
 
@@ -73,8 +102,15 @@ function (p::Preprocess)(
     apply_landmask!(proc_img, landmask .|| cloud_mask)
 
     # Diffusion and sharpening
+<<<<<<< HEAD
     proc_img .= nonlinear_diffusion(proc_img, tiles, p.diffusion_algorithm)
     
+=======
+    for tile in tiles
+        proc_img[tile...] .= nonlinear_diffusion(proc_img[tile...], p.diffusion_algorithm)
+    end
+
+>>>>>>> 670299c2f2e303530392c44a2f22565654bca810
     adjust_histogram!(proc_img,
         ContrastLimitedAdaptiveHistogramEqualization(
             nbins=p.adapthisteq_params.nbins,
@@ -83,6 +119,7 @@ function (p::Preprocess)(
             clip=p.adapthisteq_params.clip)
     )
 
+<<<<<<< HEAD
     for tile in tiles
         proc_img[tile...] .= unsharp_mask(proc_img[tile...],
                 p.unsharp_mask_params.radius,
@@ -96,6 +133,19 @@ function (p::Preprocess)(
     return proc_img
 end
 
+=======
+    proc_img .= unsharp_mask(proc_img,
+        p.unsharp_mask_params.radius,
+        p.unsharp_mask_params.amount,
+        p.unsharp_mask_params.threshold
+    )
+            
+    apply_landmask!(proc_img, landmask .|| cloud_mask)
+    return proc_img
+end
+
+
+>>>>>>> 670299c2f2e303530392c44a2f22565654bca810
 """
     FSPipeline.Segment()
 
@@ -122,14 +172,24 @@ The image preprocessing is supplied as an function in the functor setup.
     minimum_window_size=400,
     threshold_percentage=0,
     minimum_brightness=100/255)`: Settings for the adaptive threshold binarization
+<<<<<<< HEAD
 - `watershed_strel = se_disk(5)`
+=======
+- `watershed_strel = strel_disk(5)`
+>>>>>>> 670299c2f2e303530392c44a2f22565654bca810
 - `floe_splitting_settings = (max_fill_area=1, min_area_opening=20, opening_strel=se_disk(2))`
 """
 @kwdef struct Segment <: IceFloeSegmentationAlgorithm # Tried making this an IceFloeSegmentationAlgorithm but julia complains about ambiguity when I do so. Need to fix this to be able to use the run and validate function.
     coastal_buffer_structuring_element::AbstractMatrix{Bool} = strel_box((51,51))
+<<<<<<< HEAD
     cloud_mask_algorithm = LopezAcostaCloudMask()
     preprocessing_algorithm = Preprocess()
     tile_size_pixels=1000
+=======
+    cloud_mask_algorithm = Watkins2025CloudMask()
+    preprocessing_algorithm = Preprocess()
+    tile_size_pixels=1200
+>>>>>>> 670299c2f2e303530392c44a2f22565654bca810
     min_tile_ice_pixel_count=300
     min_floe_size=100
     kmeans_params = (k=4, maxiter=50, random_seed=45)
@@ -139,6 +199,7 @@ The image preprocessing is supplied as an function in the functor setup.
         possible_ice_threshold=0.3,
         join_method="union",
         minimum_prominence=0.01)
+<<<<<<< HEAD
     brightening_factor = 0.3 # Fraction to brighten floes by (e.g., 0 = no brightening, 1 = doubling brightness)
     adaptive_binarization_settings = (
         minimum_window_size=400,
@@ -146,6 +207,10 @@ The image preprocessing is supplied as an function in the functor setup.
         minimum_brightness=100/255)
     watershed_strel = se_disk(5) # 
     floe_splitting_settings = (max_fill_area=1, min_area_opening=20, opening_strel=se_disk(2))
+=======
+    floe_splitting_settings = (max_fill_area=1, min_area_opening=20, opening_strel=strel_disk(2))
+    # TBD: Add updated floe splitting settings, add params for k-means cleanup
+>>>>>>> 670299c2f2e303530392c44a2f22565654bca810
 end 
 
 function (p::Segment)(
@@ -179,7 +244,11 @@ function (p::Segment)(
     cloud_mask = create_cloudmask(falsecolor_image, p.cloud_mask_algorithm)
     landmask = landmask .> 0 # make sure it's a bitmatrix
     # 2. Intermediate images - using coastal buffer on the FC image
+<<<<<<< HEAD
     apply_landmask!(truecolor_image, landmask .|| cloud_mask)
+=======
+    apply_landmask!(truecolor_image, landmask)
+>>>>>>> 670299c2f2e303530392c44a2f22565654bca810
     apply_landmask!(falsecolor_image, coastal_buffer_mask .|| cloud_mask)
 
     prelim_ice_mask = p.preliminary_ice_mask(truecolor_image, tiles)
@@ -188,6 +257,7 @@ function (p::Segment)(
 
     @info "Preprocessing truecolor image"
     preproc_gray = float64.(p.preprocessing_algorithm(
+<<<<<<< HEAD
         truecolor_image, landmask, cloud_mask, filtered_tiles));
     
     # @info "Enhancing grayscale image"
@@ -205,6 +275,14 @@ function (p::Segment)(
     # Compare to Segmentation A from LopezAcosta2019
     kmeans_result = kmeans_binarization(
             Gray.(preproc_gray),
+=======
+        truecolor_image, landmask, landmask, filtered_tiles));
+        # Uses the landmask twice here -- intentionaly bypassing the cloud mask!
+    
+    # We use the cloud mask in finding the bright floes - the bright floe cluster can't be cloud.
+    kmeans_result = kmeans_binarization(
+            preproc_gray,
+>>>>>>> 670299c2f2e303530392c44a2f22565654bca810
             falsecolor_image, 
             filtered_tiles;
             k=p.kmeans_params.k,
@@ -212,6 +290,7 @@ function (p::Segment)(
             random_seed=p.kmeans_params.random_seed,
             cluster_selection_algorithm=p.cluster_selection_algorithm
             )
+<<<<<<< HEAD
     # Simpler cleanup
     # kmeans_result = opening(kmeans_result, se_disk(2))
     # kmeans_result .= imfill(kmeans_result, (0, p.min_floe_size))
@@ -714,8 +793,127 @@ function clean_binary_floes2(binary_img, icemask, cloudmask; strel=strel_box((5,
     filled = fill_holes(eroded_img, strel_diamond((3,3))) # Test how permissive this is.
     filled .= filled .&& (icemask .|| cloudmask)
     filled .= .!imfill(.!filled, (0, max_fill))
+=======
+    kmeans_result .= clean_binary_floes(kmeans_result, prelim_ice_mask, cloud_mask) # update to have settings
+
+    @info "Splitting floes"
+    # how to tile this?
+    split_floes = dist_morph_split(kmeans_result; max_distance=7) # update to have morph split settings
+    # TBD: Filter floes based on the edge properties, colors
+
+    # Return the original truecolor image, segmented
+    segments_tc = SegmentedImage(truecolor, split_floes)
+    segments_fc = SegmentedImage(truecolor, split_floes)
+
+    if !isnothing(intermediate_results_callback)
+        colorview_truecolor = view_seg(segments_tc)
+        colorview_falsecolor = view_seg(segments_fc)
+        colorview_random =  view_seg_random(segments_tc)
+        intermediate_results_callback(;
+            truecolor,
+            falsecolor,
+            coastal_buffer_mask=Gray.(coastal_buffer_mask),
+            cloud_mask=Gray.(cloud_mask),
+            ice_mask=Gray.(prelim_ice_mask),
+            preprocessed=preproc_gray,
+            bright_ice_mask=p.cluster_selection_algorithm(falsecolor_image),            
+            binarized=kmeans_result,
+            final_floes = colorview_random,
+            segment_mean_falsecolor=colorview_falsecolor,
+            segment_mean_truecolor=colorview_truecolor,
+            ) 
+    end
+    return segments_tc
+end
+
+function clean_binary_floes(binary_img, icemask, cloudmask;
+        erosion_strel=strel_box((7,7)),
+        filling_strel=strel_diamond((3,3)),
+        max_fill=100
+    )
+    out = deepcopy(binary_img)
+    # 1. Shrink objects using the provided structuring element
+    eroded_img = erode(out, erosion_strel)
+
+    # 2. After shrinking, fill holes
+    filled = fill_holes(eroded_img, filling_strel) # Test how permissive this is. Should we use imfill instead?
+
+    # 3. Identify filled holes which are part of the ice mask or the cloud mask
+    filled .= filled .&& (icemask .|| cloudmask)
+    filled .= .!imfill(.!filled, (0, max_fill))
+
+    # 4. Use morphological closing to further limit openings
+    closing!(filled)
+
+    # 5. Finally, set any of these filled pixels to 1 in the output image.
+>>>>>>> 670299c2f2e303530392c44a2f22565654bca810
     out[filled .> 0] .= 1
     return out
 end
 
+<<<<<<< HEAD
+=======
+# Find markers by selecting locations greater than dist threshold from background
+function dist_morph_split(
+        binary_floes::BitMatrix;
+        min_floe_size::Int64=64,
+        max_hole_fill::Int64=2000,
+        max_distance::Int64=5,
+        max_expand::Int64=3,
+        strel=strel_disk(3)
+    )
+    bw = .!imfill(binary_floes, (0, min_floe_size))
+    dist = distance_transform(feature_transform(bw))
+    levels = Dict(0 => label_components(opening(dist .> 0, strel))) # Initialize with one run of opening
+    ### Build pyramid ###
+    for dist_threshold in 1:max_distance
+        markers = opening(dist .> dist_threshold, strel)
+        markers .= .!imfill(.!markers, (0, 2000))
+        levels[dist_threshold] = label_components(markers)
+    end
+    final_labels = deepcopy(levels[max_distance])
+
+    ### Descend pyramid ####
+    for dist_threshold in max_distance:-1:1
+        # Get indices of next level down
+        indices = component_indices(levels[dist_threshold - 1])
+
+        # Expand indices of current level
+        expanded = expand_labels(levels[dist_threshold], max_expand)
+        for L in keys(indices)
+            (L > 0) && begin
+                matched_labels = unique(levels[dist_threshold][indices[L]])
+                
+                # If no higher levels or only one higher level, set to current label
+                if (0 ∈ matched_labels) && (length(matched_labels) <= 2)
+                    final_labels[indices[L]] .= L
+                else
+                    # Otherwise, expand the current level, and set the next level down to the expanded indices.
+                    # May need to check the number of matched labels in the expanded image.
+                    levels[dist_threshold - 1][indices[L]] .= expanded[indices[L]]
+                    final_labels[indices[L]] .= expanded[indices[L]]
+                end
+            end
+        end
+    end
+    final_labels .= label_components(final_labels)
+    remove_small_floes!(final_labels, min_floe_size)
+    return final_labels
+end
+
+function remove_small_floes!(labels, min_size)
+    areas = component_lengths(labels)
+    indices = component_indices(labels)
+
+    for L in keys(areas)
+        (L != 0) && begin
+            (areas[L] < min_size) && begin
+                labels[indices[L]] .= 0
+            end
+        end
+    end
+end
+
+
+>>>>>>> 670299c2f2e303530392c44a2f22565654bca810
 end

@@ -3,8 +3,6 @@
     import DelimitedFiles: readdlm
     import Images: strel_diamond
 
-    se = collect(strel_diamond((3, 3)))
-
     test_files_dir = joinpath(@__DIR__, "test_inputs/regularize")
 
     morph_residue = readdlm(joinpath(test_files_dir, "morph_residue.csv"), ',', Int)
@@ -19,8 +17,8 @@
     )
 
     get_final_input = readdlm(joinpath(test_files_dir, "get_final.csv"), ',', Bool)
-    se_erosion = se
-    se_dilation = se_disk2()
+    se_erosion = strel_diamond((3,3))
+    se_dilation = strel_diamond((5,5))
     get_final_expected = readdlm(
         joinpath(test_files_dir, "get_final_expected.csv"), ',', Bool
     )
@@ -31,7 +29,7 @@
         )
 
         reg_sharpened = LopezAcosta2019Tiling.regularize_sharpening(
-            reg_holes_filled, L0mask, local_maxima_mask, segment_mask, se, 10, 2, 0.5
+            reg_holes_filled, L0mask, local_maxima_mask, segment_mask, se_erosion, 10, 2, 0.5
         )
 
         reg = LopezAcosta2019Tiling._regularize(
@@ -39,7 +37,7 @@
             local_maxima_mask,
             segment_mask,
             L0mask,
-            se;
+            se_erosion;
             factor=(0.3, 0.5),
             radius=10,
             amount=2,

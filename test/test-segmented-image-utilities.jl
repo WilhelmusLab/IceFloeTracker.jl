@@ -119,6 +119,144 @@ end
     @test all(stitched_segments[2:9, 2:9] .== 1)
 end
 
+@testitem "expand_regions" begin
+    import IceFloeTracker: expand_labels
+    # No regions
+    @test expand_labels(zeros(Int64, (6, 6)), 1) == zeros(Int64, (6, 6))
+
+    # Two well-separated regions
+    @test expand_labels(
+        [
+            0 0 0 0 0 0
+            0 2 2 0 0 0
+            0 2 2 0 0 0
+            0 2 2 0 1 0
+            0 0 0 0 1 0
+            0 0 0 0 0 0
+        ],
+        1,
+    ) == [
+        0 2 2 0 0 0
+        2 2 2 2 0 0
+        2 2 2 2 1 0
+        2 2 2 2 1 1
+        0 2 2 1 1 1
+        0 0 0 0 1 0
+    ]
+# One region
+    @test expand_labels(
+        [
+            0 0 0 0 0
+            0 0 0 0 0
+            0 0 1 0 0
+            0 0 0 0 0
+            0 0 0 0 0
+        ],
+        1,
+    ) == [
+        0 0 0 0 0
+        0 0 1 0 0
+        0 1 1 1 0
+        0 0 1 0 0
+        0 0 0 0 0
+    ]
+
+    # Two adjacent regions
+    @test expand_labels(
+        [
+            0 0 0 0 0
+            0 1 1 2 2
+            0 1 1 2 2
+            0 0 0 0 0
+            0 0 0 0 0
+        ],
+        1,
+    ) == [
+        0 1 1 2 2
+        1 1 1 2 2
+        1 1 1 2 2
+        0 1 1 2 2
+        0 0 0 0 0
+    ]
+
+    # Three regions with one pixel between
+    @test expand_labels(
+        [
+            0 0 0 0 0 0 0
+            0 1 0 2 0 3 0
+            0 0 0 0 0 0 0
+        ],
+        1,
+    ) == [
+        0 1 0 2 0 3 0
+        1 1 1 2 2 3 3
+        0 1 0 2 0 3 0
+    ]
+
+    # Three regions with one pixel between
+    @test expand_labels(
+        [
+            0 0 0 0 0
+            0 1 0 2 0
+            0 0 0 0 0
+            0 0 3 0 0
+            0 0 0 0 0
+        ],
+        1,
+    ) == [
+        0 1 0 2 0
+        1 1 1 2 2
+        0 1 3 2 0
+        0 3 3 3 0
+        0 0 3 0 0
+    ]
+
+    # Three regions with one pixel between
+    @test expand_labels(
+        [
+            0 0 0 0 0
+            0 1 0 2 0
+            0 0 3 0 0
+            0 0 0 0 0
+            0 0 0 0 0
+        ],
+        1,
+    ) == [
+        0 1 0 2 0
+        1 1 1 2 2
+        0 1 3 3 0
+        0 0 3 0 0
+        0 0 0 0 0
+    ]
+
+    # expand_labels(..., 2)
+    @test expand_labels(
+        [
+            0 0 0 0 0 0 0 0 0
+            0 0 0 0 0 0 0 0 0
+            0 0 1 1 0 0 0 0 0
+            0 0 1 1 0 0 0 0 0
+            0 0 0 0 0 0 0 0 0
+            0 0 0 0 0 2 2 0 0
+            0 0 0 0 0 2 2 0 0
+            0 0 0 0 0 0 0 0 0
+            0 0 0 0 0 0 0 0 0
+        ],
+        2,
+    ) == [
+        0 0 1 1 0 0 0 0 0
+        0 1 1 1 1 0 0 0 0
+        1 1 1 1 1 1 0 0 0
+        1 1 1 1 1 1 2 0 0
+        0 1 1 1 1 2 2 2 0
+        0 0 1 1 2 2 2 2 2
+        0 0 0 2 2 2 2 2 2
+        0 0 0 0 2 2 2 2 0
+        0 0 0 0 0 2 2 0 0
+    ]
+
+end
+
 @testitem "segmentation_visualization" begin
     using IceFloeTracker: IceFloeTracker
     import IceFloeTracker: view_seg, view_seg_random
