@@ -29,6 +29,10 @@ include("Segmentation/Segmentation.jl")
 include("Tracking/Tracking.jl")
 @reexport using .Tracking
 
+# Persistence
+include("PersistHDF5/PersistHDF5.jl")
+@reexport using .PersistHDF5
+
 # Pipelines
 include("Pipeline/FSPipeline.jl")
 export FSPipeline
