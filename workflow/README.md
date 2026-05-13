@@ -73,6 +73,26 @@ To keep going if a single function in the pipeline fails,
 use the `--keep-going` flag to continue to continue to run any independent tasks.
 However, any tasks which depend on failed jobs will still fail.
 
+### Files produced in the workflow
+
+Files produced in the workflow include:
+
+- Observation specific files, organized by observation directory `{region}.{scale}m.{date_}.{satellite}/`, e.g. `beaufort_sea.250m.2019-03-23.aqua/`:
+  - `truecolor.tiff` – the input truecolor image (MODIS bands 143),
+  - `falsecolor.tiff` – the input falsecolor image (MODIS bands 721),
+  - `cloud.tiff` – the input cloud mask from the MODIS observations,
+  - `landmask.tiff` – the landmask for the region,
+  - `coastal_buffer_mask.tiff` – the dilated landmask,
+- Observation and pipeline results files, organized by observation and pipeline directory `{region}.{scale}m.{date_}.{satellite}/{pipeline}/`, e.g. `beaufort_sea.250m.2019-03-23.aqua/LopezAcosta2019/`:
+  - `segmentation.hdf5` – the combined results file with segmentation results, floe masks, floe properties etc.,
+  - `labels_map.tiff` – the floe labels from the segmentation,
+  - `segment_mean_truecolor.tiff` – each region in `labels_map.tiff` with the mean color of that region from `truecolor.tiff`,
+  - `segment_mean_falsecolor.tiff` – each region in `labels_map.tiff` with the mean color of that region from `falsecolor.tiff`,
+  - `cloud_mask.tiff` – regions where cloud is detected in the image,
+  - `ice_mask.tiff` – regions where ice is detected in the image,
+  - `config.txt` – listing of the parameters used in the segmentation,
+
+
 ## Satellite Overpass Identification Tool Concurrency Limit
 
 The Satellite Overpass Identification Tool depends on the rate limits of space-track.org. 

@@ -123,7 +123,8 @@ rule region_case_results_by_filetype:
                 ("labels_map", "tiff"), 
                 ("cloud_mask", "tiff"), 
                 ("ice_mask", "tiff"), 
-                ("config", "txt")
+                ("config", "txt"), 
+                ("segmentation", "hdf5")
             ]
             for case in cases.itertuples()
             for date_ in daterange(date.fromisoformat(case.start), date.fromisoformat(case.end))
@@ -494,5 +495,43 @@ rule tracking:
         );
         save("{output.rotation}", select(rotation, Not(:mask1, :psi1, :mask2, :psi2)));
 
+        '
+        """
+
+
+# ============================================================================
+# ARCHIVAL RULES
+# ============================================================================
+
+rule observation_hdf5:
+    output:
+        "{dir}/{pipeline}/segmentation.hdf5"
+    input:
+        crs_ref_image = "{dir}/truecolor.tiff",
+        truecolor = "{dir}/truecolor.tiff",
+        falsecolor = "{dir}/falsecolor.tiff",
+        labels_map = "{dir}/{pipeline}/labels_map.tiff",
+        cloud_mask = "{dir}/{pipeline}/cloud_mask.tiff",
+        landmask = "{dir}/landmask.tiff",
+        passtime = "{dir}/overpass.txt",
+        coastal_buffer_mask = "{dir}/coastal_buffer_mask.tiff",
+        ice_mask = "{dir}/{pipeline}/ice_mask.tiff",
+        props_crs = "{dir}/{pipeline}/props_crs.csv"
+    shell:
+        """
+        {config[IFT]} -e 'using IceFloeTracker, TimeZones, FileIO, Images, DataFrames;
+        make_hdf5(
+            "{output}";
+            passtime = read("{input.passtime}", String) |> chomp |> ZonedDateTime,
+            crs_ref_image_path = "{input.crs_ref_image}",
+            truecolor_path = "{input.truecolor}",
+            falsecolor_path = "{input.falsecolor}",
+            labeled = load("{input.labels_map}") .|> x-> reinterpret(UInt16, x),
+            props = load("{input.props_crs}")|> DataFrame,
+            landmask = load("{input.landmask}") |> binarize_mask,
+            coastal_buffer_mask = load("{input.coastal_buffer_mask}") |> binarize_mask,
+            ice_mask = load("{input.ice_mask}") |> binarize_mask,
+            cloud_mask = load("{input.cloud_mask}") |> binarize_mask,
+        )
         '
         """
