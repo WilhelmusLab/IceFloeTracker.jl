@@ -61,10 +61,11 @@ end
         LopezAcosta2019.Segment();
         output_directory="./test_outputs/",
     )
+   
     @test 0.36 ≈ labeled_fraction atol = 0.1
-    @test 0.27 ≤ round(recall; digits=2)
-    @test 0.57 ≤ round(precision; digits=2)
-    @test 0.40 ≤ round(F_score; digits=2)
+    @test 0.68 ≤ round(recall; digits=2)
+    @test 0.59 ≤ round(precision; digits=2)
+    @test 0.63 ≤ round(F_score; digits=2)
 
     (; labeled_fraction, recall, precision, F_score) = run_and_validate_segmentation(
         first(filter(c -> (c.case_number == 14 && c.satellite == "aqua"), dataset)),
@@ -72,19 +73,20 @@ end
         output_directory="./test_outputs/",
     )
     @test 0.16 ≈ labeled_fraction atol = 0.1
-    @test 0.40 ≤ round(recall; digits=2)
-    @test 0.21 ≤ round(precision; digits=2) # Note: Decreased precision, I suspect an issue with Seg. A.
-    @test 0.3 ≤ round(F_score; digits=2)
+    @test 0.81 ≤ round(recall; digits=2)
+    @test 0.78 ≤ round(precision; digits=2)
+    @test 0.80 ≤ round(F_score; digits=2)
 
     (; labeled_fraction, recall, precision, F_score) = run_and_validate_segmentation(
         first(filter(c -> (c.case_number == 61 && c.satellite == "aqua"), dataset)),
         FSPipeline.Segment();
         output_directory="./test_outputs/",
     )
-    @test 0.36 ≈ labeled_fraction atol = 0.1
-    @test 0.66 ≤ round(recall; digits=2)
-    @test 0.52 ≤ round(precision; digits=2)
-    @test 0.55 ≤ round(F_score; digits=2)
+
+    @test 0.26 ≈ labeled_fraction atol = 0.1
+    @test 0.64 ≤ round(recall; digits=2)
+    @test 0.86 ≤ round(precision; digits=2)
+    @test 0.73 ≤ round(F_score; digits=2)
 
     (; labeled_fraction, recall, precision, F_score) = run_and_validate_segmentation(
         first(filter(c -> (c.case_number == 63 && c.satellite == "aqua"), dataset)),
@@ -93,10 +95,11 @@ end
     )
     # Note: Validation dataset currently doesn't include the floes intersecting the edge.
     # Improving the segmentation lowered the scores here due to these floes.
-    @test labeled_fraction ≈ 0.61 rtol = 0.1
-    @test 0.5 ≤ round(recall; digits=2)
-    @test 0.48 ≤ round(precision; digits=2)
-    @test 0.55 ≤ round(F_score; digits=2)
+    
+    @test labeled_fraction ≈ 0.56 rtol = 0.1
+    @test 0.90 ≤ round(recall; digits=2)
+    @test 0.98 ≤ round(precision; digits=2)
+    @test 0.93 ≤ round(F_score; digits=2)
 end
 
 @testitem "FSPipeline.Segment – image types" setup = [Segmentation] tags = [:e2e] begin
