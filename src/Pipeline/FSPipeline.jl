@@ -42,6 +42,7 @@ import ..Segmentation:
 
 abstract type IceFloePreprocessingAlgorithm end
 
+# TODO: In calibration, find a minimum usable rblock/cblock size in pixels.
 """
    Preprocess(
         diffusion_algorithm = PeronaMalikDiffusion(λ=0.1, K=0.1, niters=5, g="exponential")
@@ -55,10 +56,13 @@ abstract type IceFloePreprocessingAlgorithm end
     to each tile, while the adaptive histogram equalization is divided according to the parameter
     specifications.
 
+    Note: results are strongly sensitive to the choice of rblocks, cblocks, and clipping. Large clipping parameters with
+    small blocks results in noisy images and poor performance. With larger blocks, a higher clipping parameter can help.
+
 """
 @kwdef struct Preprocess <: IceFloePreprocessingAlgorithm
     diffusion_algorithm = PeronaMalikDiffusion(λ=0.1, K=0.1, niters=5, g="exponential")
-    adapthisteq_params = (nbins=256, rblocks=16, cblocks=8, clip=5) # rblocks/cblocks not used yet -- add with CLAHE.jl
+    adapthisteq_params = (nbins=256, rblocks=4, cblocks=4, clip=1)
     unsharp_mask_params = (radius=50, amount=0.2, threshold=0.01)
 end
 
@@ -75,7 +79,6 @@ function (p::Preprocess)(
     # Diffusion and sharpening
     nonlinear_diffusion(proc_img, tiles, p.diffusion_algorithm)
    
-
     adjust_histogram!(proc_img,
         ContrastLimitedAdaptiveHistogramEqualization(
             nbins=p.adapthisteq_params.nbins,
@@ -104,11 +107,11 @@ The image preprocessing is supplied as an function in the functor setup.
 
 # Parameters
 - `coastal_buffer_structuring_element::AbstractMatrix{Bool} = strel_box((51,51))`: Structuring element for the `create_landmask` function
-- `cloud_mask_algorithm = LopezAcostaCloudMask()`: Cloud mask algorithm
+- `cloud_mask_algorithm = Watkins2025CloudMask()`: Cloud mask algorithm
 - `preprocessing_algorithm = Preprocess()`: Function to sharpen and equalize the truecolor image
 - `tile_size_pixels=1000`: Nominal tile size in pixels
-- `min_tile_ice_pixel_count=300`: Smallest number of likely sea ice floes in tile
-- `min_floe_size=100`: Smallest floe to retain in image
+- `min_tile_ice_pixel_count=300`: Smallest number of required sea ice pixels in tile
+- `min_floe_size=100`: Smallest floe size to retain
 - `preliminary_ice_mask = IceDetectionBrightnessPeaksMODIS134(band_7_max=0.1, possible_ice_threshold=0.3)`: Function to use to identify likely ice pixels for filtering.
 - `kmeans_params = (k=4, maxiter=50, random_seed=45)`: Parameters for `kmeans_binarization`
 - `cluster_selection_algorithm = IceDetectionBrightnessPeaksMODIS721(
@@ -116,13 +119,8 @@ The image preprocessing is supplied as an function in the functor setup.
     possible_ice_threshold=0.3,
     join_method="union",
     minimum_prominence=0.01)`: Function to use to select a k-means cluster in the `kmeans_binarization` workflow
-- `brightening_factor = 0.3`
-- `adaptive_binarization_settings = (
-    minimum_window_size=400,
-    threshold_percentage=0,
-    minimum_brightness=100/255)`: Settings for the adaptive threshold binarization
-- `watershed_strel = strel_disk(5)`
-- `floe_splitting_settings = (max_fill_area=1, min_area_opening=20, opening_strel=se_disk(2))`
+- `clean_binary_floes_params`: Parameters for the preliminary binary image cleanup
+- `floe_splitting_params`: Parameters for the `dist_morph_split` floe splitting algorithm
 """
 @kwdef struct Segment <: IceFloeSegmentationAlgorithm # Tried making this an IceFloeSegmentationAlgorithm but julia complains about ambiguity when I do so. Need to fix this to be able to use the run and validate function.
     coastal_buffer_structuring_element::AbstractMatrix{Bool} = strel_box((51,51))
@@ -252,7 +250,8 @@ function clean_binary_floes(binary_img, icemask, cloudmask;
 end
 
 # Find markers by selecting locations greater than dist threshold from background
-function dist_morph_split(
+"""
+    dist_morph_split(
         binary_floes::BitMatrix;
         min_floe_size::Int64=64,
         max_hole_fill::Int64=2000,
@@ -260,29 +259,56 @@ function dist_morph_split(
         max_expand::Int64=3,
         strel=strel_disk(3)
     )
+
+Method to split objects in a binary image using image morphology and the distance transform. The algorithm 
+operates by calculating the distance transform, which computes the distance from each labeled pixel to the background.
+There are two steps: creating a ``pyramid'', then stepping down from the top of the pyramid and re-labeling or expanding 
+shapes as needed. 
+
+For each distance d up to `max_distance`, select pixels that are greater than that distance. Perform morphological opening, 
+fill holes up to `max_hole_fill`, then label components. Each of these layers is a level in the pyramid.
+
+Then, starting from the highest level of the pyramid, check to see whether objects in the next layer down contain multiple 
+objects in the current layer. If an object at layer ``d-1`` contains only object at layer ``d``, then keep the object at layer ``d-1``. 
+Otherwise, expand the labels by `max_expand`, then intersect the expanded labels with the containing object at layer ``d-1``.
+
+After traversing the pyramid, relabel matrix, and remove any objects smaller than the `min_floe_size`.
+
+"""
+function dist_morph_split(
+        binary_floes::BitMatrix;
+        min_floe_size::Int64=64,
+        max_hole_fill::Int64=2000,
+        max_distance::Int64=5,
+        max_expand::Int64=3,
+        opening_strel=strel_disk(3)
+    )
+
+    ### Remove objects below the minimum floe size, then create distance pyramid
     bw = .!imfill(binary_floes, (0, min_floe_size))
     dist = distance_transform(feature_transform(bw))
-    levels = Dict(0 => label_components(opening(dist .> 0, strel))) # Initialize with one run of opening
-    ### Build pyramid ###
+    levels = Dict(0 => label_components(opening(dist .> 0, opening_strel))) # Initialize with one run of opening
+
+    ### Build pyramid - each size is the opened and filled thresholded image
     for dist_threshold in 1:max_distance
-        markers = opening(dist .> dist_threshold, strel)
-        markers .= .!imfill(.!markers, (0, 2000))
+        markers = opening(dist .> dist_threshold, opening_strel)
+        markers .= .!imfill(.!markers, (0, max_hole_fill))
         levels[dist_threshold] = label_components(markers)
     end
     final_labels = deepcopy(levels[max_distance])
 
-    ### Descend pyramid ####
+    ### Descend pyramid 
     for dist_threshold in max_distance:-1:1
-        # Get indices of next level down
+        # Get indices from level d-1
         indices = component_indices(levels[dist_threshold - 1])
 
-        # Expand indices of current level
+        # Expand indices at level d 
         expanded = expand_labels(levels[dist_threshold], max_expand)
         for L in keys(indices)
             (L > 0) && begin
                 matched_labels = unique(levels[dist_threshold][indices[L]])
                 
-                # If no higher levels or only one higher level, set to current label
+                # If intersection of the label at level 
                 if (0 ∈ matched_labels) && (length(matched_labels) <= 2)
                     final_labels[indices[L]] .= L
                 else
@@ -295,11 +321,19 @@ function dist_morph_split(
         end
     end
     final_labels .= label_components(final_labels)
-    remove_small_floes!(final_labels, min_floe_size)
+    remove_small_segments!(final_labels, min_floe_size)
+    # TODO: objectwise_fill_holes!()
     return final_labels
 end
 
-function remove_small_floes!(labels, min_size)
+# TODO: Add function to segmented image utilities and add test
+"""
+    remove_small_segments!(labels, min_size)
+
+Checks the area of each labeled object in `labels` and sets it to 0 if it is less than `min_size`.
+
+"""
+function remove_small_segments!(labels, min_size)
     areas = component_lengths(labels)
     indices = component_indices(labels)
 
@@ -312,5 +346,18 @@ function remove_small_floes!(labels, min_size)
     end
 end
 
+
+# TODO: Update parameters for FilterFunction to match cal-val paper results. Consider adding some parameters to the top of the file.
+function Track(
+    filter_function=FilterFunction(),
+    matching_function=MinimumWeightMatchingFunction(),
+    minimum_area=100,
+    maximum_area=90e3,
+    maximum_time_step=Day(2),
+)
+    return FloeTracker(;
+        filter_function, matching_function, minimum_area, maximum_area, maximum_time_step
+    )
+end
 
 end
