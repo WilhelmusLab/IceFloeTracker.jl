@@ -40,6 +40,10 @@
             @test validated_floe_properties(case) isa DataFrame
             @test masie_seaice(case) isa AbstractArray{<:Gray,2}
             @test masie_landmask(case) isa AbstractArray{<:Gray,2}
+            _wkt = wkt(case)
+            @test _wkt isa String
+            @test !isempty(_wkt)
+            @test occursin(r"PROJCS|GEOGCS|AUTHORITY|EPSG", _wkt)
         end
     end
 end
