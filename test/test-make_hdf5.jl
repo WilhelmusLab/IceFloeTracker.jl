@@ -50,6 +50,24 @@
             @test haskey(file["classifications"], "ice_mask")
             @test haskey(file["classifications"], "coastal_buffer_mask")
         end
+
+        reloaded = load_hdf5(output_path)
+        @test reloaded.passtime == data.passtime
+        @test reloaded.crs_ref_image_path == data.crs_ref_image_path
+        @test reloaded.truecolor_path == data.truecolor_path
+        @test reloaded.falsecolor_path == data.falsecolor_path
+        @test reloaded.labeled == data.labeled
+        @test reloaded.props == data.props
+        @test reloaded.cloud_mask == data.cloud_mask
+        @test reloaded.ice_mask == data.ice_mask
+        @test reloaded.landmask == data.landmask
+        @test reloaded.coastal_buffer_mask == data.coastal_buffer_mask
+        @test reloaded.iftversion == data.iftversion
+        @test reloaded.reference == data.reference
+        @test reloaded.contact == data.contact
+
+        @show reloaded.landmask.size, data.landmask.size
+        @show eltype(reloaded.landmask), eltype(data.landmask)
     end
 end
 
