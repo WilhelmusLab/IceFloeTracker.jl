@@ -71,6 +71,17 @@
     end
 end
 
+@testitem "unknown HDF5 files aren't loaded" begin
+    using IceFloeTracker.PersistHDF5: load_hdf5
+    using HDF5
+    mktemp() do output_path, _
+        h5open(output_path, "w") do file
+            attrs(file)["file_version"] = "0.0.0"
+        end
+        @test_throws "file version" load_hdf5(output_path)
+    end
+end
+
 @testitem "choose_dtype" begin
     using IceFloeTracker.PersistHDF5: choose_dtype
 
