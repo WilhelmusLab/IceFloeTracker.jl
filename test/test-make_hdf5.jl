@@ -1,5 +1,5 @@
 
-@testitem "make_hdf5" begin
+@testitem "save_hdf5" begin
     using TimeZones
     using IceFloeTracker.Data:
         Watkins2026Dataset,
@@ -33,7 +33,7 @@
             reference="https://doi.org/00.0000",
             contact="contact@example.com",
         )
-        make_hdf5(output_path, data;)
+        save_hdf5(output_path, data;)
 
         h5open(output_path, "r") do file
             @test attrs(file)["iftversion"] === "0.0.0"
