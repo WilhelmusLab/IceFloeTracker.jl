@@ -19,13 +19,26 @@ pipx inject snakemake pyproj pandas
 
 ## Run the workflow
 
-To run the workflow, specify the output files which are desired, 
+To run the workflow, call:
+```bash
+snakemake -c 1
+```
+
+This will use one processor core (`-c 1`) 
+to run the workflow to calculate all the tracking results for the cases in [case.csv](./case.csv)
+which uses the region definitions from [region.csv](./region.csv). 
+The results will be written to the `./results` directory which is not checked into the repository. 
+
+(This command is equivalent to `snakemake -c 1 region_case_results_by_filetype` 
+which is the default target of the snakemake workflow.)
+
+You can also specify the output files which are desired, 
 and Snakemake should download or create any (missing) prerequisites 
 and process them in the correct order.
 
 For example, the command:
 ```bash
-snakemake -c 1 beaufort_sea-100km.250m.2019-03-22.2019-03-23.LopezAcosta2019Tiling.tracked.csv 
+snakemake -c 2 beaufort_sea-100km.250m.2019-03-22.2019-03-23.LopezAcosta2019Tiling.tracked.csv 
 ```
 - Will use one processor core (`-c 1`) 
 - to run tracking (`....tracked.csv`)
