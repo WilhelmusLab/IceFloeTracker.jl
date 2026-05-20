@@ -1,5 +1,5 @@
 
-@testitem "make_hdf5" begin
+@testitem "HDF5 saving and loading" begin
     using TimeZones
     using IceFloeTracker.Data:
         Watkins2026Dataset,
