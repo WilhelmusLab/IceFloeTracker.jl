@@ -68,6 +68,38 @@ def get_region_target_bbox(region):
 # Batch Targets
 # ============================================================================
 
+
+rule region_case_results_by_filetype:
+    input:
+        ["filetype/{filetype}/{region}.{scale}m.{date_}.{satellite}.{ext}".format(
+            region=case.region, scale=case.scale, date_=date_, satellite=satellite, filetype=filetype, ext=ext)
+            for filetype, ext in [
+                ("truecolor", "tiff"), 
+                ("falsecolor", "tiff"), 
+                ("cloud", "tiff"), 
+                ("landmask", "tiff"), 
+                ("coastal_buffer_mask", "tiff")
+            ]
+            for case in cases.itertuples()
+            for date_ in daterange(date.fromisoformat(case.start), date.fromisoformat(case.end))
+            for satellite in config["SATELLITES"]
+        ] + ["filetype/{pipeline}.{filetype}/{region}.{scale}m.{date_}.{satellite}.{ext}".format(
+            region=case.region, scale=case.scale, date_=date_, satellite=satellite, filetype=filetype, pipeline=case.pipeline, ext=ext)
+            for filetype, ext in [
+                ("segment_mean_falsecolor", "tiff"), 
+                ("segment_mean_truecolor", "tiff"), 
+                ("labels_map", "tiff"), 
+                ("cloud_mask", "tiff"), 
+                ("ice_mask", "tiff"), 
+                ("config", "txt"), 
+                ("segmentation", "hdf5")
+            ]
+            for case in cases.itertuples()
+            for date_ in daterange(date.fromisoformat(case.start), date.fromisoformat(case.end))
+            for satellite in config["SATELLITES"]
+        ]
+        
+
 rule region_case_results:
     input:
         expand("track/{case.region}.{case.scale}m.{case.start}.{case.end}.{case.pipeline}.tracked.csv",
@@ -100,37 +132,6 @@ rule organize_segmentation_results_by_pipeline:
     shell:
         "ln --force {input} {output}"
 
-
-rule region_case_results_by_filetype:
-    input:
-        ["filetype/{filetype}/{region}.{scale}m.{date_}.{satellite}.{ext}".format(
-            region=case.region, scale=case.scale, date_=date_, satellite=satellite, filetype=filetype, ext=ext)
-            for filetype, ext in [
-                ("truecolor", "tiff"), 
-                ("falsecolor", "tiff"), 
-                ("cloud", "tiff"), 
-                ("landmask", "tiff"), 
-                ("coastal_buffer_mask", "tiff")
-            ]
-            for case in cases.itertuples()
-            for date_ in daterange(date.fromisoformat(case.start), date.fromisoformat(case.end))
-            for satellite in config["SATELLITES"]
-        ] + ["filetype/{pipeline}.{filetype}/{region}.{scale}m.{date_}.{satellite}.{ext}".format(
-            region=case.region, scale=case.scale, date_=date_, satellite=satellite, filetype=filetype, pipeline=case.pipeline, ext=ext)
-            for filetype, ext in [
-                ("segment_mean_falsecolor", "tiff"), 
-                ("segment_mean_truecolor", "tiff"), 
-                ("labels_map", "tiff"), 
-                ("cloud_mask", "tiff"), 
-                ("ice_mask", "tiff"), 
-                ("config", "txt"), 
-                ("segmentation", "hdf5")
-            ]
-            for case in cases.itertuples()
-            for date_ in daterange(date.fromisoformat(case.start), date.fromisoformat(case.end))
-            for satellite in config["SATELLITES"]
-        ]
-        
 
 # ============================================================================
 # INIT RULES
