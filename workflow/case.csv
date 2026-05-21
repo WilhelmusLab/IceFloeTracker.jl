@@ -1,6 +1,4 @@
 region,start,end,scale,pipeline
 beaufort_sea-100km,2019-03-23,2019-03-24,250,LopezAcosta2019
 beaufort_sea-100km,2019-03-23,2019-03-24,250,LopezAcosta2019Tiling
-weddell-sea-300km,2019-12-24,2019-12-25,250,LopezAcosta2019
-weddell-sea-300km,2019-12-24,2019-12-25,250,LopezAcosta2019Tiling
-george_VI_sound-100km,2026-01-21,2026-01-21,250,LopezAcosta2019Tiling
+ross_sea-100km,2025-12-30,2025-12-30,250,LopezAcosta2019Tiling
