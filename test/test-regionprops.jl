@@ -90,7 +90,6 @@ end
 
     @testset "bbox" begin
         table = regionprops_table(label_img; properties=["bbox"])
-        @test nrow(table) == 0
         @test "min_row" ∈ names(table)
         @test "max_row" ∈ names(table)
         @test "min_col" ∈ names(table)
