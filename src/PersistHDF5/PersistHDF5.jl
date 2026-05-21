@@ -36,7 +36,7 @@ end
         contact::AbstractString = "mmwilhelmus@brown.edu",
     )
 
-An object with results from a single segmentation to be saved as an HDF5 file. 
+An object with results from a single segmentation to be saved as an HDF5 file with [`save_hdf5`](@ref). 
 
 Includes:
 
@@ -76,6 +76,55 @@ Includes:
     contact::AbstractString = "mmwilhelmus@brown.edu"
 end
 
+"""
+    save_hdf5(path, V1(args...))
+
+Write the [`V1`](@ref) object to storage.
+
+The structure is:
+🗂️ HDF5.File: (read-only) /workspaces/IceFloeTracker.jl/workflow/results/scene/beaufort_sea-100km.250m.2019-03-23.aqua/LopezAcosta2019Tiling/segmentation.hdf5
+├─ 🏷️ file_version
+├─ 🏷️ iftversion
+├─ 🏷️ contact
+├─ 🏷️ reference
+├─ 🏷️ crs
+├─ 🏷️ crs_name
+├─ 🏷️ fname_falsecolor
+├─ 🏷️ fname_truecolor
+├─ 📂 classifications
+│  ├─ 🔢 cloud_mask
+│  │  ├─ 🏷️ CLASS
+│  │  ├─ 🏷️ IMAGE_MINMAXRANGE
+│  │  ├─ 🏷️ IMAGE_SUBCLASS
+│  │  └─ 🏷️ description
+│  ├─ 🔢 coastal_buffer_mask
+│  │  ├─ 🏷️ CLASS
+│  │  ├─ 🏷️ IMAGE_MINMAXRANGE
+│  │  ├─ 🏷️ IMAGE_SUBCLASS
+│  │  └─ 🏷️ description
+│  ├─ 🔢 ice_mask
+│  │  ├─ 🏷️ CLASS
+│  │  ├─ 🏷️ IMAGE_MINMAXRANGE
+│  │  ├─ 🏷️ IMAGE_SUBCLASS
+│  │  └─ 🏷️ description
+│  └─ 🔢 landmask
+│     ├─ 🏷️ CLASS
+│     ├─ 🏷️ IMAGE_MINMAXRANGE
+│     ├─ 🏷️ IMAGE_SUBCLASS
+│     └─ 🏷️ description
+├─ 📂 floe_properties
+│  ├─ 🏷️ Description of properties
+│  ├─ 🔢 labeled_image
+│  │  ├─ 🏷️ CLASS
+│  │  ├─ 🏷️ IMAGE_MINMAXRANGE
+│  │  ├─ 🏷️ IMAGE_SUBCLASS
+│  │  └─ 🏷️ description
+│  └─ 🔢 properties
+└─ 📂 index
+   ├─ 🔢 time
+   ├─ 🔢 x
+   └─ 🔢 y
+"""
 function make_hdf5(output_path::AbstractString, v1::V1;)
     ptsunix = Int64(Dates.datetime2unix(DateTime(v1.passtime)))
     latlondata = latlon(v1.crs_ref_image_path)
