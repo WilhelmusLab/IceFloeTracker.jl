@@ -18,7 +18,7 @@
     mktemp() do output_path, _
         dataset = Watkins2026Dataset()
         case = first(dataset)
-        data = IceFloeTracker.PersistHDF5.V1(;
+        data = IceFloeTracker.HDF5.V1(;
             passtime=ZonedDateTime(pass_time(case), tz"UTC"),
             crs_ref_image_path=modis_truecolor_path(case),
             truecolor_path=modis_truecolor_path(case),
@@ -33,7 +33,7 @@
             reference="https://doi.org/00.0000",
             contact="contact@example.com",
         )
-        make_hdf5(output_path, data;)
+        save_hdf5(output_path, data;)
 
         h5open(output_path, "r") do file
             @test attrs(file)["iftversion"] === "0.0.0"
@@ -83,7 +83,7 @@ end
 end
 
 @testitem "choose_dtype" begin
-    using IceFloeTracker.PersistHDF5: choose_dtype
+    using IceFloeTracker.HDF5: choose_dtype
 
     @test choose_dtype(100) == UInt8
     @test choose_dtype(-100) == Int8

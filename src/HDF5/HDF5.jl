@@ -1,12 +1,12 @@
 
-module PersistHDF5
+module HDF5
 
 using HDF5, Images, Dates, TimeZones, DataFrames
 import ..Geospatial: latlon
 import ..Segmentation: regionprops_table, converttounits!
 import ..ImageUtils: binarize_mask
 
-export make_hdf5, load_hdf5
+export save_hdf5, load_hdf5
 
 function choose_dtype(mx::T) where {T<:Integer}
     types = [UInt8, Int8, UInt16, Int16, UInt32, Int32, UInt64, Int64]
@@ -125,7 +125,7 @@ The structure is:
    ├─ 🔢 x
    └─ 🔢 y
 """
-function make_hdf5(output_path::AbstractString, v1::V1;)
+function save_hdf5(output_path::AbstractString, v1::V1;)
     ptsunix = Int64(Dates.datetime2unix(DateTime(v1.passtime)))
     latlondata = latlon(v1.crs_ref_image_path)
 
