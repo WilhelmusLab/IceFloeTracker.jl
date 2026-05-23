@@ -277,7 +277,7 @@ After traversing the pyramid, relabel matrix, and remove any objects smaller tha
 """
 function dist_morph_split(
         binary_floes::BitMatrix;
-        min_floe_size::Int64=64,
+        min_floe_size::Int64=64, # TBD: add maximum floe size
         max_hole_fill::Int64=2000,
         max_distance::Int64=5,
         max_expand::Int64=3,
@@ -288,9 +288,8 @@ function dist_morph_split(
     bw = .!imfill(binary_floes, (0, min_floe_size))
     dist = distance_transform(feature_transform(bw))
     levels = Dict(0 => label_components(opening(dist .> 0, opening_strel))) # Initialize with one run of opening
-
     ### Build pyramid - each size is the opened and filled thresholded image
-    for dist_threshold in 1:max_distance
+    for dist_threshold in 0:max_distance
         markers = opening(dist .> dist_threshold, opening_strel)
         markers .= .!imfill(.!markers, (0, max_hole_fill))
         levels[dist_threshold] = label_components(markers)
