@@ -62,7 +62,7 @@ abstract type IceFloePreprocessingAlgorithm end
 """
 @kwdef struct Preprocess <: IceFloePreprocessingAlgorithm
     diffusion_algorithm = PeronaMalikDiffusion(λ=0.1, K=0.1, niters=5, g="exponential")
-    adapthisteq_params = (nbins=256, rblocks=4, cblocks=4, clip=1)
+    adapthisteq_params = (nbins=256, rblocks=8, cblocks=8, clip=5)
     unsharp_mask_params = (radius=50, amount=0.2, threshold=0.01)
 end
 
@@ -345,15 +345,89 @@ function remove_small_segments!(labels, min_size)
     end
 end
 
+"""
+    Track()
 
-# TODO: Update parameters for FilterFunction to match cal-val paper results. Consider adding some parameters to the top of the file.
+Track shapes across images using the LogLogQuadratic distance filter, the ChainedFilterFunction,
+and the MinimumWeightMatchingFunction.
+
+"""
 function Track(
-    filter_function=FilterFunction(),
-    matching_function=MinimumWeightMatchingFunction(),
-    minimum_area=100,
-    maximum_area=90e3,
-    maximum_time_step=Day(2),
-)
+    filter_function=ChainedFilterFunction(;
+        filters=[
+            DistanceThresholdFilter(
+                threshold_function=LogLogQuadraticTimeDistanceFunction(),
+            ),
+            RelativeErrorThresholdFilter(;
+                variable=:area,
+                threshold_function=PiecewiseLinearThresholdFunction(;
+                    minimum_area = 100,
+                    maximum_area = 700,
+                    minimum_value=0.43,
+                    maximum_value=0.17,
+                ),
+            ),
+            RelativeErrorThresholdFilter(;
+                variable=:convex_area,
+                threshold_function=PiecewiseLinearThresholdFunction(;
+                    minimum_area = 100,
+                    maximum_area = 700,
+                    minimum_value=0.44,
+                    maximum_value=0.25,
+                ),
+            ),
+            RelativeErrorThresholdFilter(;
+                variable=:major_axis_length,
+                threshold_function=PiecewiseLinearThresholdFunction(;
+                    minimum_area = 100,
+                    maximum_area = 700,
+                    minimum_value=0.27,
+                    maximum_value=0.13,
+                ),
+            ),
+            RelativeErrorThresholdFilter(;
+                variable=:minor_axis_length,
+                threshold_function=PiecewiseLinearThresholdFunction(;
+                    minimum_area = 100,
+                    maximum_area = 700,
+                    minimum_value=0.28,
+                    maximum_value=0.1,
+                ),
+            ),
+            ShapeDifferenceThresholdFilter(;
+                threshold_function=PiecewiseLinearThresholdFunction(;
+                    minimum_area = 100,
+                    maximum_area = 700,
+                    minimum_value=0.47,
+                    maximum_value=0.31,
+                ),
+            ),
+            PsiSCorrelationThresholdFilter(;
+                threshold_function=PiecewiseLinearThresholdFunction(;
+                    minimum_area = 100,
+                    maximum_area = 700,
+                    minimum_value=0.86,
+                    maximum_value=0.96,
+                ),
+            ),
+        ],
+    ),
+    matching_function=MinimumWeightMatchingFunction(
+        columns = [
+        :scaled_distance,
+        :relative_error_area,
+        :relative_error_convex_area,
+        :relative_error_major_axis_length,
+        :relative_error_minor_axis_length,
+        :psi_s_correlation_score,
+        :scaled_shape_difference,
+        ],
+        weights = ones(7)
+    ),
+    minimum_area=100, # Minimum floe area for tracking
+    maximum_area=90e3, # Maximum floe area for tracking
+    maximum_time_step=Day(2), # Maximum length of time to skip
+    )
     return FloeTracker(;
         filter_function, matching_function, minimum_area, maximum_area, maximum_time_step
     )
