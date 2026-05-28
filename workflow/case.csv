@@ -1,3 +1,3 @@
 region,start,end,scale,pipeline
-beaufort_sea-100km,2019-03-23,2019-03-24,250,LopezAcosta2019
-beaufort_sea-100km,2019-03-23,2019-03-24,250,LopezAcosta2019Tiling
+baffin_bay-full,2025-04-01,2025-05-01,250,FSPipeline
+baffin_bay-full,2025-05-01,2025-06-01,250,FSPipeline
