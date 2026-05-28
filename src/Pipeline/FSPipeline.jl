@@ -8,6 +8,7 @@ Update of the LopezAcosta2019 algorithm for the Fram Strait floe trajectory data
 """
 
 using Images
+import Dates: Day
 import Peaks: findmaxima
 import StatsBase: kurtosis, skewness, mean, std
 
@@ -39,6 +40,17 @@ import ..Segmentation:
     stitch_clusters,
     view_seg,
     view_seg_random
+
+import ..Tracking:
+    ChainedFilterFunction,
+    DistanceThresholdFilter,
+    FloeTracker,
+    LogLogQuadraticTimeDistanceFunction,
+    MinimumWeightMatchingFunction,
+    PiecewiseLinearThresholdFunction,
+    RelativeErrorThresholdFilter,
+    ShapeDifferenceThresholdFilter,
+    PsiSCorrelationThresholdFilter
 
 abstract type IceFloePreprocessingAlgorithm end
 
@@ -218,6 +230,7 @@ function (p::Segment)(
             bright_ice_mask=p.cluster_selection_algorithm(falsecolor_image),            
             binarized=kmeans_result,
             final_floes = colorview_random,
+            labels_map = split_floes,
             segment_mean_falsecolor=colorview_falsecolor,
             segment_mean_truecolor=colorview_truecolor,
             ) 
