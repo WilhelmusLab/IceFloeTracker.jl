@@ -140,7 +140,7 @@ the `threshold_function` which is assumed to depend on area.
 @kwdef struct ShapeDifferenceThresholdFilter <: AbstractFloeFilterFunction
     area_variable = :area
     scale_by = :area
-    threshold_column = :shape_difference_test
+    threshold_column = :shape_difference_test    
     threshold_function = PiecewiseLinearThresholdFunction(100, 800, 0.5, 0.3)
 end
 
@@ -232,43 +232,63 @@ applying 7 individual [`AbstractFloeFilterFunctions`](@ref) in sequence:
 Filters in step 2 use the [`PiecewiseLinearThresholdFunction`](@ref) for thresholds, while Filter 1 uses a [`LinearTimeDistanceFunction`](@ref).
 """ # TODO: Add reference to cal-val paper when ready.
 FilterFunction() = ChainedFilterFunction(;
-    filters=[
-        DistanceThresholdFilter(),
-        RelativeErrorThresholdFilter(;
-            variable=:area,
-            threshold_function=PiecewiseLinearThresholdFunction(;
-                minimum_value=0.43, maximum_value=0.17
+        filters=[
+            DistanceThresholdFilter(
+                threshold_function=LogLogQuadraticTimeDistanceFunction(),
             ),
-        ),
-        RelativeErrorThresholdFilter(;
-            variable=:convex_area,
-            threshold_function=PiecewiseLinearThresholdFunction(;
-                minimum_value=0.44, maximum_value=0.25
+            RelativeErrorThresholdFilter(;
+                variable=:area,
+                threshold_function=PiecewiseLinearThresholdFunction(;
+                    minimum_area = 100,
+                    maximum_area = 700,
+                    minimum_value=0.43,
+                    maximum_value=0.17,
+                ),
             ),
-        ),
-        RelativeErrorThresholdFilter(;
-            variable=:major_axis_length,
-            threshold_function=PiecewiseLinearThresholdFunction(;
-                minimum_value=0.27, maximum_value=0.13
+            RelativeErrorThresholdFilter(;
+                variable=:convex_area,
+                threshold_function=PiecewiseLinearThresholdFunction(;
+                    minimum_area = 100,
+                    maximum_area = 700,
+                    minimum_value=0.44,
+                    maximum_value=0.25,
+                ),
             ),
-        ),
-        RelativeErrorThresholdFilter(;
-            variable=:minor_axis_length,
-            threshold_function=PiecewiseLinearThresholdFunction(;
-                minimum_value=0.28, maximum_value=0.1
+            RelativeErrorThresholdFilter(;
+                variable=:major_axis_length,
+                threshold_function=PiecewiseLinearThresholdFunction(;
+                    minimum_area = 100,
+                    maximum_area = 700,
+                    minimum_value=0.27,
+                    maximum_value=0.13,
+                ),
             ),
-        ),
-        ShapeDifferenceThresholdFilter(;
-            threshold_function=PiecewiseLinearThresholdFunction(;
-                minimum_value=0.47, maximum_value=0.31
+            RelativeErrorThresholdFilter(;
+                variable=:minor_axis_length,
+                threshold_function=PiecewiseLinearThresholdFunction(;
+                    minimum_area = 100,
+                    maximum_area = 700,
+                    minimum_value=0.28,
+                    maximum_value=0.1,
+                ),
             ),
-        ),
-        PsiSCorrelationThresholdFilter(;
-            threshold_function=PiecewiseLinearThresholdFunction(;
-                minimum_value=0.86, maximum_value=0.96
+            ShapeDifferenceThresholdFilter(;
+                threshold_function=PiecewiseLinearThresholdFunction(;
+                    minimum_area = 100,
+                    maximum_area = 700,
+                    minimum_value=0.47,
+                    maximum_value=0.31,
+                ),
             ),
-        ),
-    ],
+            PsiSCorrelationThresholdFilter(;
+                threshold_function=PiecewiseLinearThresholdFunction(;
+                    minimum_area = 100,
+                    maximum_area = 700,
+                    minimum_value=0.86,
+                    maximum_value=0.96,
+                ),
+            ),
+        ],
 )
 
 """
