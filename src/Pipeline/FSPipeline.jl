@@ -217,7 +217,8 @@ function (p::Segment)(
             random_seed=p.kmeans_params.random_seed,
             cluster_selection_algorithm=p.cluster_selection_algorithm
             )
-    kmeans_result .= clean_binary_floes(kmeans_result, prelim_ice_mask, cloud_mask) # update to have settings
+     # update to have settings accessible from top
+    kmeans_result .= clean_binary_floes(kmeans_result, prelim_ice_mask, cloud_mask)
 
     @info "Splitting floes"
     # Could tile this, but doesn't seem to be a major bottleneck
@@ -225,24 +226,17 @@ function (p::Segment)(
     # TBD: Filter floes based on the edge properties, colors
 
     @info "Filtering floes"
+    
     # Remove floes which intersect the coastal buffer
-    
+    # This one could be a separate function like remove_small_segments!
     overlap = unique(split_floes[coastal_buffer_mask])
-    indices = component_indices(split_floes)
-    
+    indices = component_indices(split_floes)    
     for L in overlap
         split_floes[indices[L]] .= 0        
     end
 
-    areas = component_lengths(split_floes)
-
-    # Remove floes smaller than the minimum floe size
-    for L in unique(split_floes)
-        areas[L] < p.min_floe_size && begin
-            split_floes[indices[L]] .= 0
-        end
-    end
-
+    remove_small_segments!(split_floes, p.min_floe_size)
+    
     # Re-label to fill where regions were deleted
     split_floes .= label_components(split_floes)
 
@@ -296,6 +290,8 @@ function clean_binary_floes(binary_img, icemask, cloudmask;
     return out
 end
 
+
+### TODO: Set up this function as a "FloeSplittingAlgorithm" 
 # Find markers by selecting locations greater than dist threshold from background
 """
     dist_morph_split(
@@ -392,6 +388,9 @@ function remove_small_segments!(labels, min_size)
     end
 end
 
+#### TODO: Add object-wise hole filling method
+#### TODO: Add Track() method for configured tracker (including alternative similarity measures)
+
 """
     Track()
 
@@ -471,7 +470,7 @@ function Track(
         ],
         weights = ones(7)
     ),
-    minimum_area=100, # Minimum floe area for tracking
+    minimum_area=300, # Minimum floe area for tracking
     maximum_area=90e3, # Maximum floe area for tracking
     maximum_time_step=Day(2), # Maximum length of time to skip
     )
