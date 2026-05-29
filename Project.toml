@@ -20,7 +20,6 @@ Dates = "ade2ca70-3891-5945-98fb-dc099432e06a"
 Distributed = "8ba89e20-285c-5b6f-9357-94700520ee1b"
 Downloads = "f43a241f-c20a-4ad4-852c-f6b1247861c6"
 FileIO = "5789e2e9-d7fb-5bc7-8068-2c6fae9b9549"
-HDF5 = "f67ccb44-e63f-5c2f-98bd-6dc0ccc4ba2f"
 ImageBinarization = "cbc4b850-ae4b-5111-9e64-df94c024a13d"
 ImageSegmentation = "80713f31-8817-5129-9cf8-209ff8fb23e1"
 Images = "916415d5-f1e6-5110-898d-aaa5f9f070e0"
@@ -35,6 +34,12 @@ StatsBase = "2913bbd2-ae8a-5f71-8c99-4fb6c76f3a91"
 TiffImages = "731e570b-9d59-4bfa-96dc-6df516fadf69"
 TiledIteration = "06e1c1a7-607b-532d-9fad-de7d9aa2abac"
 TimeZones = "f269a46b-ccf7-5d73-abea-4c690281aa53"
+
+[weakdeps]
+HDF5 = "f67ccb44-e63f-5c2f-98bd-6dc0ccc4ba2f"
+
+[extensions]
+HDF5Ext = ["HDF5"]
 
 [compat]
 ArchGDAL = "0.10.8"
@@ -74,6 +79,7 @@ ZipFile = "a5390f91-8eb1-5f08-bee0-b1d1ffed6cea"
 notebooks = ["Plots"]
 test = [
     "DelimitedFiles",
+    "HDF5",
     "LinearAlgebra",
     "Serialization",
     "Test",

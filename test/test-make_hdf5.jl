@@ -83,19 +83,20 @@ end
     end
 end
 
-@testitem "choose_dtype" begin
-    using IceFloeTracker.HDF5: choose_dtype
+@testitem "_choose_dtype" begin
+    using HDF5
+    ext = Base.get_extension(IceFloeTracker, :HDF5Ext)
 
-    @test choose_dtype(100) == UInt8
-    @test choose_dtype(-100) == Int8
-    @test choose_dtype(1000) == UInt16
-    @test choose_dtype(-1000) == Int16
-    @test choose_dtype(100000) == UInt32
-    @test choose_dtype(-100000) == Int32
-    @test choose_dtype(10000000000) == UInt64
-    @test choose_dtype(-10000000000) == Int64
-    @test choose_dtype(BigInt(2)^64 - 1) == UInt64
-    @test choose_dtype(-BigInt(2)^63) == Int64
-    @test_throws ErrorException choose_dtype(BigInt(2)^64 + 1)
-    @test_throws ErrorException choose_dtype(-BigInt(2)^63 - 1)
+    @test ext._choose_dtype(100) == UInt8
+    @test ext._choose_dtype(-100) == Int8
+    @test ext._choose_dtype(1000) == UInt16
+    @test ext._choose_dtype(-1000) == Int16
+    @test ext._choose_dtype(100000) == UInt32
+    @test ext._choose_dtype(-100000) == Int32
+    @test ext._choose_dtype(10000000000) == UInt64
+    @test ext._choose_dtype(-10000000000) == Int64
+    @test ext._choose_dtype(BigInt(2)^64 - 1) == UInt64
+    @test ext._choose_dtype(-BigInt(2)^63) == Int64
+    @test_throws ErrorException ext._choose_dtype(BigInt(2)^64 + 1)
+    @test_throws ErrorException ext._choose_dtype(-BigInt(2)^63 - 1)
 end
