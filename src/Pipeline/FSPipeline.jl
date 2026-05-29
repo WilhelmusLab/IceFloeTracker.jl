@@ -37,6 +37,7 @@ import ..Segmentation:
     expand_labels,
     find_ice_mask, 
     kmeans_binarization,
+    kmeans_segmentation,
     tiled_adaptive_binarization,
     IceDetectionBrightnessPeaksMODIS721,
     IceDetectionBrightnessPeaksMODIS134,
@@ -77,7 +78,7 @@ abstract type IceFloePreprocessingAlgorithm end
 """
 @kwdef struct Preprocess <: IceFloePreprocessingAlgorithm
     diffusion_algorithm = PeronaMalikDiffusion(λ=0.1, K=0.1, niters=5, g="exponential")
-    adapthisteq_params = (nbins=256, rblocks=8, cblocks=8, clip=5)
+    adapthisteq_params = (nbins=256, rblocks=16, cblocks=8, clip=5)
     unsharp_mask_params = (radius=50, amount=0.2, threshold=0.01)
 end
 
@@ -140,7 +141,7 @@ The image preprocessing is supplied as an function in the functor setup.
     coastal_buffer_structuring_element::AbstractMatrix{Bool} = strel_box((51,51))
     cloud_mask_algorithm = Watkins2025CloudMask()
     preprocessing_algorithm = Preprocess()
-    tile_size_pixels = 1200
+    tile_size_pixels = 600
     min_tile_ice_pixel_count=300
     min_floe_size=100
     kmeans_params = (k=4, maxiter=50, random_seed=45)
@@ -153,7 +154,6 @@ The image preprocessing is supplied as an function in the functor setup.
     floe_splitting_settings = (max_fill_area=1, min_area_opening=20, opening_strel=strel_disk(2))
     # TBD: Add updated floe splitting settings, add params for k-means cleanup
 end 
-
 
 function (p::Segment)(
     truecolor::T₁,
@@ -217,6 +217,15 @@ function (p::Segment)(
             random_seed=p.kmeans_params.random_seed,
             cluster_selection_algorithm=p.cluster_selection_algorithm
             )
+
+    kmeans_seg = kmeans_segmentation(
+            preproc_gray,
+            filtered_tiles;
+            k=p.kmeans_params.k,
+            maxiter=p.kmeans_params.maxiter,
+            random_seed=p.kmeans_params.random_seed
+            )
+
      # update to have settings accessible from top
     kmeans_result .= clean_binary_floes(kmeans_result, prelim_ice_mask, cloud_mask)
 
@@ -225,8 +234,7 @@ function (p::Segment)(
     split_floes = dist_morph_split(kmeans_result; max_distance=7) # update to have morph split settings
     # TBD: Filter floes based on the edge properties, colors
 
-    @info "Filtering floes"
-    
+    @info "Filtering floes"    
     # Remove floes which intersect the coastal buffer
     # This one could be a separate function like remove_small_segments!
     overlap = unique(split_floes[coastal_buffer_mask])
@@ -237,17 +245,22 @@ function (p::Segment)(
 
     remove_small_segments!(split_floes, p.min_floe_size)
     
+    # TBD: Object-based analysis section. Use the edge strength, circularity, uniqueness, etc.
+
+
     # Re-label to fill where regions were deleted
     split_floes .= label_components(split_floes)
 
     # Return the original truecolor image, segmented
-    segments_tc = SegmentedImage(truecolor_image, split_floes)
-    segments_fc = SegmentedImage(falsecolor_image, split_floes)
+    segments_tc = SegmentedImage(truecolor, split_floes)
+    segments_fc = SegmentedImage(falsecolor, split_floes)
+    
 
     if !isnothing(intermediate_results_callback)
         colorview_truecolor = view_seg(segments_tc)
         colorview_falsecolor = view_seg(segments_fc)
         colorview_random =  view_seg_random(segments_tc)
+        kmeans_colorized = view_seg_random(kmeans_seg)
         intermediate_results_callback(;
             truecolor,
             falsecolor,
@@ -261,6 +274,7 @@ function (p::Segment)(
             labels_map = split_floes,
             segment_mean_falsecolor=colorview_falsecolor,
             segment_mean_truecolor=colorview_truecolor,
+            kmeans_colorized=kmeans_colorized
             ) 
     end
     return segments_tc
