@@ -67,6 +67,42 @@
     )
 end
 
+@testitem "regionprops table output should include all implied columns even if there are no rows" begin
+    using DataFrames: nrow
+
+    label_img = zeros(Int, 5, 5)
+    @testset "defaults" begin
+        table = regionprops_table(label_img)
+        @test "min_row" ∈ names(table)
+        @test "max_row" ∈ names(table)
+        @test "min_col" ∈ names(table)
+        @test "max_col" ∈ names(table)
+        @test "row_centroid" ∈ names(table)
+        @test "col_centroid" ∈ names(table)
+        @test "label" ∈ names(table)
+        @test "area" ∈ names(table)
+        @test "major_axis_length" ∈ names(table)
+        @test "minor_axis_length" ∈ names(table)
+        @test "convex_area" ∈ names(table)
+        @test "perimeter" ∈ names(table)
+        @test "orientation" ∈ names(table)
+    end
+
+    @testset "bbox" begin
+        table = regionprops_table(label_img; properties=["bbox"])
+        @test "min_row" ∈ names(table)
+        @test "max_row" ∈ names(table)
+        @test "min_col" ∈ names(table)
+        @test "max_col" ∈ names(table)
+    end
+
+    @testset "centroid" begin
+        table = regionprops_table(label_img; properties=["centroid"])
+        @test "row_centroid" ∈ names(table)
+        @test "col_centroid" ∈ names(table)
+    end
+end
+
 @testitem "addlatlon! adds latitude and longitude columns to regionprops table" begin
     using IceFloeTracker
     import DataFrames: DataFrame
