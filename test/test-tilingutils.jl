@@ -77,3 +77,18 @@
         @test (b, d) == size(array)
     end
 end
+
+@testitem "get_tiles" begin
+    array = rand(6000, 3556)
+
+    @test get_tiles(rand(1, 1), 1) == [(1:1, 1:1);;]
+    @test get_tiles(rand(1, 2), 1) == [(1:1, 1:1) (1:1, 2:2);]
+    @test get_tiles(rand(1, 3), 1) == [(1:1, 1:1) (1:1, 2:2) (1:1, 3:3);]
+    @test get_tiles(rand(2, 2), 1) == [(1:1, 1:1) (1:1, 2:2); (2:2, 1:1) (2:2, 2:2)]
+
+    # These cases skip the last row of tiles.
+    @test get_tiles(rand(4, 3), 2) == [(1:2, 1:3); (3:4, 1:3)] broken = true
+    @test get_tiles(rand(6, 4), 3) == [(1:3, 1:4); (4:6, 1:4)] broken = true
+    @test get_tiles(rand(10, 6), 5) == [(1:5, 1:6); (6:10, 1:6)] broken = true
+    @test get_tiles(rand(20, 11), 10) == [(1:10, 1:11); (11:20, 1:11)] broken = true
+end
