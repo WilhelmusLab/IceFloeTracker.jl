@@ -526,7 +526,17 @@ function regionprops(
 
     maximum(labels) == 0 && begin
         @warn "Labeled image is empty!"
-        return Dict(p => [] for p in properties)
+        properties_ = Symbol[]
+        for p in properties
+            if p == :bbox
+                append!(properties_, [:min_row, :max_row, :min_col, :max_col])
+            elseif p == :centroid
+                append!(properties_, [:row_centroid, :col_centroid])
+            else
+                append!(properties_, [p])
+            end
+        end
+        return Dict(p => [] for p in properties_)
     end
 
     data = Dict{Symbol,Any}()

@@ -1,5 +1,4 @@
-
-@testitem "save_hdf5" begin
+@testitem "HDF5 saving and loading" begin
     using TimeZones
     using IceFloeTracker.Data:
         Watkins2026Dataset,
@@ -35,39 +34,53 @@
         )
         save_hdf5(output_path, data;)
 
-        h5open(output_path, "r") do file
-            @test attrs(file)["iftversion"] === "0.0.0"
-            @test attrs(file)["reference"] === "https://doi.org/00.0000"
-            @test attrs(file)["contact"] === "contact@example.com"
-            @test attrs(file)["fname_truecolor"] == modis_truecolor_path(case)
-            @test attrs(file)["crs_name"] === "EPSG:3413 NSIDC north polar stereographic"
-            @test haskey(file, "index")
-            @test haskey(file, "floe_properties")
-            @test haskey(file["floe_properties"], "labeled_image")
-            @test haskey(file["floe_properties"], "properties")
-            @test haskey(file, "classifications")
-            @test haskey(file["classifications"], "landmask")
-            @test haskey(file["classifications"], "ice_mask")
-            @test haskey(file["classifications"], "coastal_buffer_mask")
+        @testset "file structure" begin
+            h5open(output_path, "r") do file
+                @test attrs(file)["file_version"] === "1.0.0"
+                @test attrs(file)["iftversion"] === "0.0.0"
+                @test attrs(file)["reference"] === "https://doi.org/00.0000"
+                @test attrs(file)["contact"] === "contact@example.com"
+                @test attrs(file)["fname_truecolor"] == modis_truecolor_path(case)
+                @test attrs(file)["crs_name"] ===
+                    "EPSG:3413 NSIDC north polar stereographic"
+                @test haskey(file, "index")
+                @test haskey(file, "floe_properties")
+                @test haskey(file["floe_properties"], "labeled_image")
+                @test haskey(file["floe_properties"], "properties")
+                @test haskey(file, "classifications")
+                @test haskey(file["classifications"], "landmask")
+                @test haskey(file["classifications"], "ice_mask")
+                @test haskey(file["classifications"], "coastal_buffer_mask")
+            end
         end
 
-        reloaded = load_hdf5(output_path)
-        @test reloaded.passtime == data.passtime
-        @test reloaded.crs_ref_image_path == data.crs_ref_image_path
-        @test reloaded.truecolor_path == data.truecolor_path
-        @test reloaded.falsecolor_path == data.falsecolor_path
-        @test reloaded.labeled == data.labeled
-        @test reloaded.props == data.props
-        @test reloaded.cloud_mask == data.cloud_mask
-        @test reloaded.ice_mask == data.ice_mask
-        @test reloaded.landmask == data.landmask
-        @test reloaded.coastal_buffer_mask == data.coastal_buffer_mask
-        @test reloaded.iftversion == data.iftversion
-        @test reloaded.reference == data.reference
-        @test reloaded.contact == data.contact
+        @testset "loading" begin
+            reloaded = load_hdf5(output_path)
+            @test reloaded.passtime == data.passtime
+            @test reloaded.crs_ref_image_path == data.crs_ref_image_path
+            @test reloaded.truecolor_path == data.truecolor_path
+            @test reloaded.falsecolor_path == data.falsecolor_path
+            @test reloaded.labeled == data.labeled
+            @test reloaded.props == data.props
+            @test reloaded.cloud_mask == data.cloud_mask
+            @test reloaded.ice_mask == data.ice_mask
+            @test reloaded.landmask == data.landmask
+            @test reloaded.coastal_buffer_mask == data.coastal_buffer_mask
+            @test reloaded.iftversion == data.iftversion
+            @test reloaded.reference == data.reference
+            @test reloaded.contact == data.contact
+        end
+    end
+end
 
-        @show reloaded.landmask.size, data.landmask.size
-        @show eltype(reloaded.landmask), eltype(data.landmask)
+@testitem "unknown HDF5 files aren't loaded" begin
+    using IceFloeTracker.PersistHDF5: load_hdf5
+    using HDF5
+    mktemp() do output_path, _
+        h5open(output_path, "w") do file
+            attrs(file)["file_version"] = "0.0.0"
+        end
+        @test_throws "file version" load_hdf5(output_path)
     end
 end
 

@@ -156,18 +156,23 @@ function save_hdf5(output_path::AbstractString, v1::V1;)
     end
 end
 
+"""
+    load_hdf5(input_path::AbstractString)
+
+Load an IceFloeTracker.jl HDF5 file. 
+"""
 function load_hdf5(input_path::AbstractString)
     h5open(input_path, "r") do file
         version = VersionNumber(attrs(file)["file_version"])
         if version == VersionNumber("1.0.0")
-            return load_v1(file)
+            return _load_v1(file)
         else
             error("Unsupported file version: $version")
         end
     end
 end
 
-function load_v1(file)
+function _load_v1(file)
     passtime = ZonedDateTime(unix2datetime(read(file["index/time"])), tz"UTC")
     crs_ref_image_path = attrs(file)["fname_truecolor"]
     truecolor_path = attrs(file)["fname_truecolor"]
