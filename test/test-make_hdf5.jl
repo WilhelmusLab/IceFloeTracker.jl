@@ -37,6 +37,7 @@
 
         @testset "HDF5 file structure" begin
             h5open(output_path, "r") do file
+                @test attrs(file)["file_version"] === "1.0.0"
                 @test attrs(file)["iftversion"] === "0.0.0"
                 @test attrs(file)["reference"] === "https://doi.org/00.0000"
                 @test attrs(file)["contact"] === "contact@example.com"
