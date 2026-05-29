@@ -1,11 +1,12 @@
 
-module PersistHDF5
+module HDF5
 
 using HDF5, Images, Dates, TimeZones, DataFrames
 import ..Geospatial: latlon
 import ..Segmentation: regionprops_table, converttounits!
+import ..ImageUtils: binarize_mask
 
-export make_hdf5
+export make_hdf5, load_hdf5
 
 function choose_dtype(mx::T) where {T<:Integer}
     types = [UInt8, Int8, UInt16, Int16, UInt32, Int32, UInt64, Int64]
@@ -29,6 +30,7 @@ end
     landmask::AbstractMatrix
     coastal_buffer_mask::AbstractMatrix
     iftversion::VersionNumber = pkgversion(@__MODULE__)
+    file_version::VersionNumber = VersionNumber("1.0.0")
     reference::AbstractString = "https://doi.org/10.1016/j.rse.2019.111406"
     contact::AbstractString = "mmwilhelmus@brown.edu"
 end
@@ -52,6 +54,7 @@ function make_hdf5(output_path::AbstractString, v1::V1;)
 
     h5open(output_path, "w") do file
         @info "Add top-level attributes"
+        attrs(file)["file_version"] = string(v1.file_version)
         attrs(file)["fname_falsecolor"] = v1.falsecolor_path
         attrs(file)["fname_truecolor"] = v1.truecolor_path
         attrs(file)["iftversion"] = string(v1.iftversion)
@@ -151,6 +154,58 @@ function make_hdf5(output_path::AbstractString, v1::V1;)
         attrs(ice_mask_obj)["description"] = "Ice mask. This mask is 1 for pixels classified as ice, and 0 elsewhere."
         write_dataset(ice_mask_obj, ice_mask_dtype, ice_mask_rectified)
     end
+end
+
+"""
+    load_hdf5(input_path::AbstractString)
+
+Load an IceFloeTracker.jl HDF5 file. 
+"""
+function load_hdf5(input_path::AbstractString)
+    h5open(input_path, "r") do file
+        version = VersionNumber(attrs(file)["file_version"])
+        if version == VersionNumber("1.0.0")
+            return _load_v1(file)
+        else
+            error("Unsupported file version: $version")
+        end
+    end
+end
+
+function _load_v1(file)
+    passtime = ZonedDateTime(unix2datetime(read(file["index/time"])), tz"UTC")
+    crs_ref_image_path = attrs(file)["fname_truecolor"]
+    truecolor_path = attrs(file)["fname_truecolor"]
+    falsecolor_path = attrs(file)["fname_falsecolor"]
+    labeled = permutedims(read(file["floe_properties/labeled_image"])) .|> Int
+    props = DataFrame(read(file["floe_properties/properties"]))
+    landmask = permutedims(read(file["classifications/landmask"])) |> binarize_mask .|> Gray
+    cloud_mask =
+        permutedims(read(file["classifications/cloud_mask"])) |> binarize_mask .|> Gray
+    ice_mask = permutedims(read(file["classifications/ice_mask"])) |> binarize_mask .|> Gray
+    coastal_buffer_mask =
+        permutedims(read(file["classifications/coastal_buffer_mask"])) |>
+        binarize_mask .|>
+        Gray
+    iftversion = VersionNumber(attrs(file)["iftversion"])
+    reference = attrs(file)["reference"]
+    contact = attrs(file)["contact"]
+
+    return V1(;
+        passtime,
+        crs_ref_image_path,
+        truecolor_path,
+        falsecolor_path,
+        labeled,
+        props,
+        cloud_mask,
+        ice_mask,
+        landmask,
+        coastal_buffer_mask,
+        iftversion,
+        reference,
+        contact,
+    )
 end
 
 end

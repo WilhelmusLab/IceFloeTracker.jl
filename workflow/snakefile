@@ -520,7 +520,7 @@ rule observation_hdf5:
     shell:
         """
         {config[IFT]} -e 'using IceFloeTracker, TimeZones, FileIO, Images, DataFrames;
-        data = IceFloeTracker.PersistHDF5.V1(
+        data = IceFloeTracker.HDF5.V1(
             passtime = read("{input.passtime}", String) |> chomp |> ZonedDateTime,
             crs_ref_image_path = "{input.crs_ref_image}",
             truecolor_path = "{input.truecolor}",
