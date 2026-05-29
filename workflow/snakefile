@@ -519,7 +519,7 @@ rule observation_hdf5:
         props_crs = "{dir}/{pipeline}/props_crs.csv"
     shell:
         """
-        {config[IFT]} -e 'using IceFloeTracker, TimeZones, FileIO, Images, DataFrames;
+        {config[IFT]} -e 'using IceFloeTracker, TimeZones, FileIO, Images, DataFrames, HDF5;
         data = IceFloeTracker.HDF5.V1(
             passtime = read("{input.passtime}", String) |> chomp |> ZonedDateTime,
             crs_ref_image_path = "{input.crs_ref_image}",
