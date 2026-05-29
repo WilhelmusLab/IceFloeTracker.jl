@@ -65,9 +65,6 @@
         @test reloaded.iftversion == data.iftversion
         @test reloaded.reference == data.reference
         @test reloaded.contact == data.contact
-
-        @show reloaded.landmask.size, data.landmask.size
-        @show eltype(reloaded.landmask), eltype(data.landmask)
     end
 end
 
