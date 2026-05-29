@@ -18,7 +18,10 @@ import ..Filtering:
     unsharp_mask, 
     ContrastLimitedAdaptiveHistogramEqualization
 
-import ..Morphology: hbreak, hbreak!, branch, bridge, fill_holes, strel_disk
+import ..Morphology:
+    fill_holes,
+    strel_disk
+
 import ..Preprocessing:
     create_landmask,
     create_cloudmask,
@@ -81,13 +84,11 @@ end
 function (p::Preprocess)(
     truecolor_image::AbstractArray{<:Union{AbstractRGB,TransparentRGB}}, 
     landmask,
-    cloud_mask,
     tiles
 )
     # Cast to grayscale first to save compute time
     proc_img = Gray.(truecolor_image)
-    apply_landmask!(proc_img, landmask .|| cloud_mask)
-
+    
     # Diffusion and sharpening
     nonlinear_diffusion(proc_img, tiles, p.diffusion_algorithm)
    
@@ -105,7 +106,8 @@ function (p::Preprocess)(
         p.unsharp_mask_params.threshold
     )
             
-    apply_landmask!(proc_img, landmask .|| cloud_mask)
+    # Re-apply mask so sharpening doesn't bleed into land
+    apply_landmask!(proc_img, landmask)
     return proc_img
 end
 
@@ -121,7 +123,7 @@ The image preprocessing is supplied as an function in the functor setup.
 - `coastal_buffer_structuring_element::AbstractMatrix{Bool} = strel_box((51,51))`: Structuring element for the `create_landmask` function
 - `cloud_mask_algorithm = Watkins2025CloudMask()`: Cloud mask algorithm
 - `preprocessing_algorithm = Preprocess()`: Function to sharpen and equalize the truecolor image
-- `tile_size_pixels=1000`: Nominal tile size in pixels
+- `tile_size_pixels=1200`: Nominal tile size in pixels
 - `min_tile_ice_pixel_count=300`: Smallest number of required sea ice pixels in tile
 - `min_floe_size=100`: Smallest floe size to retain
 - `preliminary_ice_mask = IceDetectionBrightnessPeaksMODIS134(band_7_max=0.1, possible_ice_threshold=0.3)`: Function to use to identify likely ice pixels for filtering.
@@ -134,11 +136,11 @@ The image preprocessing is supplied as an function in the functor setup.
 - `clean_binary_floes_params`: Parameters for the preliminary binary image cleanup
 - `floe_splitting_params`: Parameters for the `dist_morph_split` floe splitting algorithm
 """
-@kwdef struct Segment <: IceFloeSegmentationAlgorithm # Tried making this an IceFloeSegmentationAlgorithm but julia complains about ambiguity when I do so. Need to fix this to be able to use the run and validate function.
+@kwdef struct Segment <: IceFloeSegmentationAlgorithm 
     coastal_buffer_structuring_element::AbstractMatrix{Bool} = strel_box((51,51))
     cloud_mask_algorithm = Watkins2025CloudMask()
     preprocessing_algorithm = Preprocess()
-    tile_size_pixels=1200
+    tile_size_pixels = 1200
     min_tile_ice_pixel_count=300
     min_floe_size=100
     kmeans_params = (k=4, maxiter=50, random_seed=45)
@@ -151,6 +153,7 @@ The image preprocessing is supplied as an function in the functor setup.
     floe_splitting_settings = (max_fill_area=1, min_area_opening=20, opening_strel=strel_disk(2))
     # TBD: Add updated floe splitting settings, add params for k-means cleanup
 end 
+
 
 function (p::Segment)(
     truecolor::T₁,
@@ -168,6 +171,9 @@ function (p::Segment)(
     # the full range of image formats
     truecolor_image = float64.(RGB.(truecolor))
     falsecolor_image = float64.(RGB.(falsecolor))
+    landmask = landmask .> 0 # make sure it's a bitmatrix, in case it's passed as Gray
+    apply_landmask!(truecolor_image, landmask)
+    apply_landmask!(falsecolor_image, landmask)
 
     n, m = size(truecolor_image)
     tile_size_pixels = p.tile_size_pixels
@@ -175,30 +181,36 @@ function (p::Segment)(
         @warn "Tile size too large, defaulting to image size"
             tile_size_pixels = minimum([n, m])
     end
-    # TODO: Option to supply number of row and cols 
-    tiles = get_tiles(truecolor_image, tile_size_pixels)
- 
+    
+    (nr, nc) = round.(Int, size(truecolor_image) ./ tile_size_pixels)
+    tiles = get_tiles(truecolor_image; rblocks=nr, cblocks=nc)
     @info "Building masks"
-    # TODO: Make sure tests aren't over-sensitive to roundoff errors for Float32 vs Float64
     cloud_mask = create_cloudmask(falsecolor_image, p.cloud_mask_algorithm)
-    landmask = landmask .> 0 # make sure it's a bitmatrix
-    # 2. Intermediate images - using coastal buffer on the FC image
-    apply_landmask!(truecolor_image, landmask)
-    apply_landmask!(falsecolor_image, coastal_buffer_mask .|| cloud_mask)
+    
+    # 2. Intermediate images - apply coastal buffer and cloud mask
+    joint_mask = coastal_buffer_mask .|| cloud_mask
+    tc_masked = apply_landmask(truecolor_image, joint_mask)
+    fc_masked = apply_landmask(falsecolor_image, joint_mask)
 
-    prelim_ice_mask = p.preliminary_ice_mask(truecolor_image, tiles)
+    # First check for sufficient non-land and non-cloud pixels
     filtered_tiles = filter(
-        t -> sum(prelim_ice_mask[t...]) > p.min_tile_ice_pixel_count, tiles);
+                t -> sum(.!joint_mask[t...]) > p.min_tile_ice_pixel_count, tiles);
+
+    # Then check for sufficient possible sea ice pixels
+    prelim_ice_mask = p.preliminary_ice_mask(tc_masked, filtered_tiles)
+    filtered_tiles = filter(
+        t -> sum(prelim_ice_mask[t...]) > p.min_tile_ice_pixel_count, filtered_tiles);
 
     @info "Preprocessing truecolor image"
     preproc_gray = float64.(p.preprocessing_algorithm(
-        truecolor_image, landmask, landmask, filtered_tiles));
-        # Uses the landmask twice here -- intentionaly bypassing the cloud mask!
-    
-    # We use the cloud mask in finding the bright floes - the bright floe cluster can't be cloud.
+        truecolor_image, landmask, filtered_tiles));
+
+    # We use the cloud mask in finding the bright floes - the bright floe cluster can't be cloud -
+    # and allow the k-means cluster to overlap with the cloud mask by using the preproc gray with
+    # only the landmask applied to it
     kmeans_result = kmeans_binarization(
-            preproc_gray,
-            falsecolor_image, 
+            apply_landmask(preproc_gray, cloud_mask),
+            fc_masked,
             filtered_tiles;
             k=p.kmeans_params.k,
             maxiter=p.kmeans_params.maxiter,
@@ -208,13 +220,35 @@ function (p::Segment)(
     kmeans_result .= clean_binary_floes(kmeans_result, prelim_ice_mask, cloud_mask) # update to have settings
 
     @info "Splitting floes"
-    # how to tile this?
+    # Could tile this, but doesn't seem to be a major bottleneck
     split_floes = dist_morph_split(kmeans_result; max_distance=7) # update to have morph split settings
     # TBD: Filter floes based on the edge properties, colors
 
+    @info "Filtering floes"
+    # Remove floes which intersect the coastal buffer
+    
+    overlap = unique(split_floes[coastal_buffer_mask])
+    indices = component_indices(split_floes)
+    
+    for L in overlap
+        split_floes[indices[L]] .= 0        
+    end
+
+    areas = component_lengths(split_floes)
+
+    # Remove floes smaller than the minimum floe size
+    for L in unique(split_floes)
+        areas[L] < p.min_floe_size && begin
+            split_floes[indices[L]] .= 0
+        end
+    end
+
+    # Re-label to fill where regions were deleted
+    split_floes .= label_components(split_floes)
+
     # Return the original truecolor image, segmented
-    segments_tc = SegmentedImage(truecolor, split_floes)
-    segments_fc = SegmentedImage(truecolor, split_floes)
+    segments_tc = SegmentedImage(truecolor_image, split_floes)
+    segments_fc = SegmentedImage(falsecolor_image, split_floes)
 
     if !isnothing(intermediate_results_callback)
         colorview_truecolor = view_seg(segments_tc)
