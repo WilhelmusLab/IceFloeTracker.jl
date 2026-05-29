@@ -520,8 +520,7 @@ rule observation_hdf5:
     shell:
         """
         {config[IFT]} -e 'using IceFloeTracker, TimeZones, FileIO, Images, DataFrames;
-        make_hdf5(
-            "{output}";
+        data = IceFloeTracker.HDF5.V1(
             passtime = read("{input.passtime}", String) |> chomp |> ZonedDateTime,
             crs_ref_image_path = "{input.crs_ref_image}",
             truecolor_path = "{input.truecolor}",
@@ -533,5 +532,6 @@ rule observation_hdf5:
             ice_mask = load("{input.ice_mask}") |> binarize_mask,
             cloud_mask = load("{input.cloud_mask}") |> binarize_mask,
         )
+        make_hdf5("{output}", data)
         '
         """
