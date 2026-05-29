@@ -1,5 +1,5 @@
 
-module PersistHDF5
+module HDF5
 
 using HDF5, Images, Dates, TimeZones, DataFrames
 import ..Geospatial: latlon
