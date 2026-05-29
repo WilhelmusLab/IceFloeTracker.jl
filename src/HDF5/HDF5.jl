@@ -82,7 +82,7 @@ end
 Write the [`V1`](@ref) object to storage.
 
 The structure is:
-🗂️ HDF5.File: (read-only) /workspaces/IceFloeTracker.jl/workflow/results/scene/beaufort_sea-100km.250m.2019-03-23.aqua/LopezAcosta2019Tiling/segmentation.hdf5
+🗂️ HDF5.File:
 ├─ 🏷️ file_version
 ├─ 🏷️ iftversion
 ├─ 🏷️ contact
