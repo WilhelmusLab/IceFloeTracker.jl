@@ -2,7 +2,7 @@
 # Executables
 #--------------------------------------------------
 
-IFT: "julia --project=../../" # relative to workdir
+IFT: "julia --project=/users/jholla10/IceFloeTracker.jl" # relative to directory containing snakefile
 FSDPROC: "pipx run --spec git+https://github.com/WilhelmusLab/ebseg@v1.0.1 fsdproc"
 PASS_TIME: "pipx run --spec git+https://github.com/wilhelmuslab/satellite-overpass-identification-tool@v3.2.1 satellite-overpass-identification-tool"
 LOADER: "pipx run --spec git+https://github.com/brown-ccv/earthdata-downloader@v1.0 earthdata-downloader load"
@@ -10,8 +10,8 @@ LOADER: "pipx run --spec git+https://github.com/brown-ccv/earthdata-downloader@v
 #--------------------------------------------------
 # Config files
 #--------------------------------------------------
-REGION_CSV: "../region.csv" # relative to workdir
-CASE_CSV: "../case.csv" # relative to workdir
+REGION_CSV: "region.csv"
+CASE_CSV: "case.csv" 
 
 #--------------------------------------------------
 # Satellites
