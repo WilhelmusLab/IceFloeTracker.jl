@@ -1,3 +1,6 @@
+resources: 
+  soit_api_calls: 2
+
 executor: slurm
 jobs: 4
 default-resources:
