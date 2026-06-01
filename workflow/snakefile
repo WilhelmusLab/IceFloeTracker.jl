@@ -157,7 +157,19 @@ rule init_ift:
     shell:
         """
         pwd
-        {config[IFT]} -e "using IceFloeTracker; println(pkgversion(IceFloeTracker))" > {output}
+        {config[IFT]} -e '
+        using Pkg; 
+        {config[IFT_INSTALL]}
+        Pkg.add([
+            \"CSVFiles\",
+            \"DataFrames\",
+            \"HDF5\",
+            \"Images\",
+            \"TimeZones\"
+        ])
+        using IceFloeTracker;
+        println(pkgversion(IceFloeTracker))
+        ' > {output}
         """
 
 

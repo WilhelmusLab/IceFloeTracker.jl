@@ -1,8 +1,8 @@
 #--------------------------------------------------
 # Executables
 #--------------------------------------------------
-
-IFT: "julia --project=/users/jholla10/IceFloeTracker.jl" # relative to directory containing snakefile
+IFT: julia --project=.julia-project
+IFT_INSTALL: Pkg.add(PackageSpec(name="IceFloeTracker", rev="main")) # e.g. rev="v0.1.0" or rev="e98ac8d" for a specific version
 FSDPROC: "pipx run --spec git+https://github.com/WilhelmusLab/ebseg@v1.0.1 fsdproc"
 PASS_TIME: "pipx run --spec git+https://github.com/wilhelmuslab/satellite-overpass-identification-tool@v3.2.1 satellite-overpass-identification-tool"
 LOADER: "pipx run --spec git+https://github.com/brown-ccv/earthdata-downloader@v1.0 earthdata-downloader load"
