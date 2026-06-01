@@ -156,7 +156,6 @@ rule init_ift:
         "init_ift"
     shell:
         """
-        pwd
         {config[IFT]} -e '
         using Pkg; 
         {config[IFT_INSTALL]}
