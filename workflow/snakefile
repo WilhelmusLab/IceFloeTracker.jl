@@ -151,7 +151,7 @@ rule init_fsdproc:
     shell:
         "{config[FSDPROC]} --help > {output}"
 
-rule init_ift:
+rule init_icefloetracker_julia_environment:
     output:
         "init_ift"
     shell:
