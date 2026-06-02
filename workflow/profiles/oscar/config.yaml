@@ -1,4 +1,5 @@
-# Configuration for OSCAR cluster
+# Configuration for OSCAR cluster at Brown University
+
 executor: slurm
 jobs: 16
 default-resources:
@@ -9,7 +10,8 @@ default-resources:
 set-resources:
   init_ift:
     runtime: "30m"
-    mem: "16g"
+    mem: "32g"
+    cpus_per_task: 16
   segment:
     runtime: "30m"
     mem: "32g"
