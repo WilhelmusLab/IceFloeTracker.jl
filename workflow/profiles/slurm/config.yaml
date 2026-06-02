@@ -1,10 +1,22 @@
 executor: slurm
-jobs: 4
+jobs: 16
 default-resources:
   slurm_partition: "batch"  
   slurm_account: "default"  # OSCAR: condo account
-  mem_mb_per_cpu: 2000
-  runtime: 60  # seconds
+  runtime: "10m"
+
+set-resources:
+  init_ift:
+    runtime: "30m"
+    mem: "16g"
+  segment:
+    runtime: "30m"
+    mem: "32g"
+  tracking:
+    runtime: "8h"
+    mem: "64g"
+  
+
 
 partitions:
   batch:
