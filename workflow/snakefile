@@ -166,6 +166,7 @@ rule init_icefloetracker_julia_environment:
             \"Images\",
             \"TimeZones\"
         ])
+        Pkg.instantiate();
         using IceFloeTracker;
         println(pkgversion(IceFloeTracker))
         ' > {output}
