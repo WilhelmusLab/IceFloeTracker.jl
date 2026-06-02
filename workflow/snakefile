@@ -4,7 +4,6 @@ import pyproj
 import pandas as pd
 
 configfile: workflow.source_path("config.yaml")
-# The profile in workflow/profiles/default/config.yaml sets default values for this workflow.
 
 regions = pd.read_csv(workflow.source_path(config["REGION_CSV"])).set_index("region")
 cases = pd.read_csv(workflow.source_path(config["CASE_CSV"]))
@@ -519,7 +518,7 @@ rule observation_hdf5:
     shell:
         """
         {config[IFT]} -e 'using IceFloeTracker, TimeZones, FileIO, Images, DataFrames;
-        data = IceFloeTracker.PersistHDF5.V1(
+        data = IceFloeTracker.HDF5.V1(
             passtime = read("{input.passtime}", String) |> chomp |> ZonedDateTime,
             crs_ref_image_path = "{input.crs_ref_image}",
             truecolor_path = "{input.truecolor}",
@@ -531,6 +530,6 @@ rule observation_hdf5:
             ice_mask = load("{input.ice_mask}") |> binarize_mask,
             cloud_mask = load("{input.cloud_mask}") |> binarize_mask,
         )
-        make_hdf5("{output}", data)
+        save_hdf5("{output}", data)
         '
         """

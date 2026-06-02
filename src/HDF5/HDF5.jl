@@ -1,11 +1,12 @@
 
-module PersistHDF5
+module HDF5
 
 using HDF5, Images, Dates, TimeZones, DataFrames
 import ..Geospatial: latlon
 import ..Segmentation: regionprops_table, converttounits!
+import ..ImageUtils: binarize_mask
 
-export make_hdf5
+export save_hdf5, load_hdf5
 
 function choose_dtype(mx::T) where {T<:Integer}
     types = [UInt8, Int8, UInt16, Int16, UInt32, Int32, UInt64, Int64]
@@ -17,6 +18,47 @@ function choose_dtype(mx::T) where {T<:Integer}
     return error("$mx cannot be represented by any of $types")
 end
 
+"""
+    IceFloeTracker.HDF5.V1(;
+        passtime::ZonedDateTime,
+        crs_ref_image_path::AbstractString,
+        truecolor_path::AbstractString,
+        falsecolor_path::AbstractString,
+        labeled::AbstractMatrix,
+        props::DataFrame,
+        cloud_mask::AbstractMatrix,
+        ice_mask::AbstractMatrix,
+        landmask::AbstractMatrix,
+        coastal_buffer_mask::AbstractMatrix,
+        iftversion::VersionNumber = pkgversion(@__MODULE__),
+        file_version::VersionNumber = VersionNumber("1.0.0"),
+        reference::AbstractString = "https://doi.org/10.1016/j.rse.2019.111406",
+        contact::AbstractString = "mmwilhelmus@brown.edu",
+    )
+
+An object with results from a single segmentation to be saved as an HDF5 file with [`save_hdf5`](@ref). 
+
+Includes:
+
+- References
+  - `passtime`: the timepoint of the observation
+  - `crs_ref_image_path`: the path to a georeferenced image
+  - `truecolor_path`: the path to the truecolor image
+  - `falsecolor_path`: the path to the falsecolor image
+  - `iftversion`: the version of IceFloeTracker.jl used to save the file
+  - `file_version`: the version of the file format (for this object, "1.0.0")
+  - `reference`: a DOI for the dataset to which the file belongs
+  - `contact`: contact information for the author
+- Images
+  - `labeled`: the labeled image of connected components
+  - `cloud_mask`: the cloud mask
+  - `ice_mask`: the ice mask
+  - `landmask`: the land mask
+  - `coastal_buffer_mask`: the coastal buffer mask
+- DataFrames
+  - `props`: the measured properties of the floes
+
+"""
 @kwdef struct V1
     passtime::ZonedDateTime
     crs_ref_image_path::AbstractString
@@ -29,11 +71,61 @@ end
     landmask::AbstractMatrix
     coastal_buffer_mask::AbstractMatrix
     iftversion::VersionNumber = pkgversion(@__MODULE__)
+    file_version::VersionNumber = VersionNumber("1.0.0")
     reference::AbstractString = "https://doi.org/10.1016/j.rse.2019.111406"
     contact::AbstractString = "mmwilhelmus@brown.edu"
 end
 
-function make_hdf5(output_path::AbstractString, v1::V1;)
+"""
+    save_hdf5(path, V1(args...))
+
+Write the [`V1`](@ref) object to storage.
+
+The structure is:
+🗂️ HDF5.File:
+├─ 🏷️ file_version
+├─ 🏷️ iftversion
+├─ 🏷️ contact
+├─ 🏷️ reference
+├─ 🏷️ crs
+├─ 🏷️ crs_name
+├─ 🏷️ fname_falsecolor
+├─ 🏷️ fname_truecolor
+├─ 📂 classifications
+│  ├─ 🔢 cloud_mask
+│  │  ├─ 🏷️ CLASS
+│  │  ├─ 🏷️ IMAGE_MINMAXRANGE
+│  │  ├─ 🏷️ IMAGE_SUBCLASS
+│  │  └─ 🏷️ description
+│  ├─ 🔢 coastal_buffer_mask
+│  │  ├─ 🏷️ CLASS
+│  │  ├─ 🏷️ IMAGE_MINMAXRANGE
+│  │  ├─ 🏷️ IMAGE_SUBCLASS
+│  │  └─ 🏷️ description
+│  ├─ 🔢 ice_mask
+│  │  ├─ 🏷️ CLASS
+│  │  ├─ 🏷️ IMAGE_MINMAXRANGE
+│  │  ├─ 🏷️ IMAGE_SUBCLASS
+│  │  └─ 🏷️ description
+│  └─ 🔢 landmask
+│     ├─ 🏷️ CLASS
+│     ├─ 🏷️ IMAGE_MINMAXRANGE
+│     ├─ 🏷️ IMAGE_SUBCLASS
+│     └─ 🏷️ description
+├─ 📂 floe_properties
+│  ├─ 🏷️ Description of properties
+│  ├─ 🔢 labeled_image
+│  │  ├─ 🏷️ CLASS
+│  │  ├─ 🏷️ IMAGE_MINMAXRANGE
+│  │  ├─ 🏷️ IMAGE_SUBCLASS
+│  │  └─ 🏷️ description
+│  └─ 🔢 properties
+└─ 📂 index
+   ├─ 🔢 time
+   ├─ 🔢 x
+   └─ 🔢 y
+"""
+function save_hdf5(output_path::AbstractString, v1::V1;)
     ptsunix = Int64(Dates.datetime2unix(DateTime(v1.passtime)))
     latlondata = latlon(v1.crs_ref_image_path)
 
@@ -52,6 +144,7 @@ function make_hdf5(output_path::AbstractString, v1::V1;)
 
     h5open(output_path, "w") do file
         @info "Add top-level attributes"
+        attrs(file)["file_version"] = string(v1.file_version)
         attrs(file)["fname_falsecolor"] = v1.falsecolor_path
         attrs(file)["fname_truecolor"] = v1.truecolor_path
         attrs(file)["iftversion"] = string(v1.iftversion)
@@ -151,6 +244,58 @@ function make_hdf5(output_path::AbstractString, v1::V1;)
         attrs(ice_mask_obj)["description"] = "Ice mask. This mask is 1 for pixels classified as ice, and 0 elsewhere."
         write_dataset(ice_mask_obj, ice_mask_dtype, ice_mask_rectified)
     end
+end
+
+"""
+    load_hdf5(input_path::AbstractString)
+
+Load an IceFloeTracker.jl HDF5 file. 
+"""
+function load_hdf5(input_path::AbstractString)
+    h5open(input_path, "r") do file
+        version = VersionNumber(attrs(file)["file_version"])
+        if version == VersionNumber("1.0.0")
+            return _load_v1(file)
+        else
+            error("Unsupported file version: $version")
+        end
+    end
+end
+
+function _load_v1(file)
+    passtime = ZonedDateTime(unix2datetime(read(file["index/time"])), tz"UTC")
+    crs_ref_image_path = attrs(file)["fname_truecolor"]
+    truecolor_path = attrs(file)["fname_truecolor"]
+    falsecolor_path = attrs(file)["fname_falsecolor"]
+    labeled = permutedims(read(file["floe_properties/labeled_image"])) .|> Int
+    props = DataFrame(read(file["floe_properties/properties"]))
+    landmask = permutedims(read(file["classifications/landmask"])) |> binarize_mask .|> Gray
+    cloud_mask =
+        permutedims(read(file["classifications/cloud_mask"])) |> binarize_mask .|> Gray
+    ice_mask = permutedims(read(file["classifications/ice_mask"])) |> binarize_mask .|> Gray
+    coastal_buffer_mask =
+        permutedims(read(file["classifications/coastal_buffer_mask"])) |>
+        binarize_mask .|>
+        Gray
+    iftversion = VersionNumber(attrs(file)["iftversion"])
+    reference = attrs(file)["reference"]
+    contact = attrs(file)["contact"]
+
+    return V1(;
+        passtime,
+        crs_ref_image_path,
+        truecolor_path,
+        falsecolor_path,
+        labeled,
+        props,
+        cloud_mask,
+        ice_mask,
+        landmask,
+        coastal_buffer_mask,
+        iftversion,
+        reference,
+        contact,
+    )
 end
 
 end

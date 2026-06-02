@@ -10,8 +10,8 @@ LOADER: "pipx run --spec git+https://github.com/brown-ccv/earthdata-downloader@v
 #--------------------------------------------------
 # Config files
 #--------------------------------------------------
-REGION_CSV: "region.csv"
-CASE_CSV: "case.csv" 
+REGION_CSV: region.csv # relative to snakefile
+CASE_CSV: case.csv # relative to snakefile
 
 #--------------------------------------------------
 # Satellites
