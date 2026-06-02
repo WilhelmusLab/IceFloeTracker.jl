@@ -164,7 +164,8 @@ rule init_icefloetracker_julia_environment:
             \"DataFrames\",
             \"HDF5\",
             \"Images\",
-            \"TimeZones\"
+            \"TimeZones\",
+            \"FileIO\",
         ])
         Pkg.instantiate();
         using IceFloeTracker, HDF5, CSVFiles, DataFrames, Images, TimeZones;
