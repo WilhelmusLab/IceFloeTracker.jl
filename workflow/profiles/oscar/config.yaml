@@ -1,3 +1,4 @@
+# Configuration for OSCAR cluster
 executor: slurm
 jobs: 16
 default-resources:
