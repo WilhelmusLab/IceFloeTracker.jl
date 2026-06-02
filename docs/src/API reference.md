@@ -48,7 +48,8 @@ Private = false
 Modules = [
     IceFloeTracker.Geospatial, 
     IceFloeTracker.ImageUtils,
-    IceFloeTracker.Utils
+    IceFloeTracker.Utils,
+    IceFloeTracker.HDF5
 ]
 Private = false
 ```

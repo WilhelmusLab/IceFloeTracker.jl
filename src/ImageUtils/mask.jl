@@ -219,3 +219,20 @@ function binarize_mask(
 )::BitMatrix
     return Gray.(mask_image) .> tol
 end
+
+"""
+    
+    binarize_mask(mask_image)
+    binarize_mask(mask_image; tol=0)
+
+Convert an array of Integers to a 1-channel binary matrix with mask = 1, everything else = 0.
+Assumes that the input image is 0 over the parts to be left unmasked, and some shade over the parts to be masked. 
+The tol argument lets a higher threshold for masked pixels be chosen.
+
+# Arguments
+- `mask_image`: mask image, e.g. loaded from an 8-bit TIFF
+- `tol` (Optional): Values in the image larger than `tol` are set to true (1).
+"""
+function binarize_mask(mask_image::AbstractArray{<:Integer}; tol=0)::BitMatrix
+    return mask_image .> tol
+end
