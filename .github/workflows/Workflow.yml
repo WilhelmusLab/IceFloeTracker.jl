@@ -31,7 +31,7 @@ jobs:
       - name: Install workflow dependencies
         run: ".devcontainer/setup-workflow-dependencies.sh"
       - name: Install Julia dependencies
-        run: "snakemake --cores 2 --config IFT_INSTALL='Pkg.develop(PackageSpec(path=\"${{ github.workspace }}\"))' init_ift"
+        run: "snakemake init_ift --cores 2 --config IFT_INSTALL='Pkg.develop(PackageSpec(path=\"${{ github.workspace }}\"))'"
       - name: Get tracking results for an example region
         env:
           SPACEUSER: ${{ vars.SPACEUSER }}
