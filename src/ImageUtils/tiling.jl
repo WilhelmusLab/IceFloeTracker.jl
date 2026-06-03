@@ -1,5 +1,5 @@
 
-import TiledIteration: TileIterator, split as tile_split, cover1d
+import TiledIteration: TileIterator, split as _split, cover1d as _cover1d
 
 """
     getfit(dims::Tuple{Int,Int}, side_length::Int)::Tuple{Int,Int}
@@ -187,13 +187,13 @@ struct MergeLastTileIfSmallerThanHalf{N}
     tilesize::Dims{N}
 end
 
-function tile_split(strategy::MergeLastTileIfSmallerThanHalf)
+function _split(strategy::MergeLastTileIfSmallerThanHalf)
     map(strategy.tilesize) do s
         MergeLastTileIfSmallerThanHalf((s,))
     end
 end
 
-function cover1d(ax, strategy::MergeLastTileIfSmallerThanHalf{1})
+function _cover1d(ax, strategy::MergeLastTileIfSmallerThanHalf{1})
     covered_range = UnitRange{Int64}[]
     tilelen = first(strategy.tilesize)
     lo = first(ax)
