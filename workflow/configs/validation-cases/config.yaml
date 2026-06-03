@@ -1,0 +1,5 @@
+#--------------------------------------------------
+# Config files
+#--------------------------------------------------
+REGION_CSV: configs/validation-cases/validation-region-case.csv # relative to snakefile
+CASE_CSV: configs/validation-cases/validation-region-case.csv # relative to snakefile
