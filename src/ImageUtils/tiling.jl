@@ -105,32 +105,6 @@ function get_tile_meta(tile)
 end
 
 """
-    bump_tile(tile::Tuple{UnitRange{Int64}, UnitRange{Int64}}, dims::Tuple{Int,Int})::Tuple{UnitRange{Int}, UnitRange{Int}}
-
-Adjust the tile dimensions by adding extra rows and columns.
-
-# Arguments
-- `tile::Tuple{Int,Int,Int,Int}`: A tuple representing the tile dimensions (a, b, c, d).
-- `dims::Tuple{Int,Int}`: A tuple representing the extra rows and columns to add (extrarows, extracols).
-
-# Returns
-- `Tuple{UnitRange{Int}, UnitRange{Int}}`: A tuple of ranges representing the new tile dimensions.
-
-# Examples
-```julia-repl
-julia> bump_tile((1:3, 1:4), (1, 1))
-(1:4, 1:5)
-```
-"""
-function bump_tile(tile::Tuple{UnitRange{S},UnitRange{S}}, dims::Tuple{S,S}) where {S<:Int}
-    extrarows, extracols = dims
-    a, b, c, d = get_tile_meta(tile)
-    b += extrarows
-    d += extracols
-    return (a:b, c:d)
-end
-
-"""
     get_tile_dims(tile)
 
 Calculate the dimensions of a tile.

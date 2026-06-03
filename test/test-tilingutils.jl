@@ -28,12 +28,6 @@
         @test get_tile_meta(tile) == [1, 2, 3, 4]
     end
 
-    @testset "bump_tile" begin
-        extrarows, extracols = rand(1:100, 2)
-        bumpby = (extrarows, extracols)
-        @test bump_tile(tile, bumpby) == (1:(2 + extrarows), 3:(4 + extracols))
-    end
-
     @testset "get_tiles" begin
         # unadjusted tiles
         _get_tiles(array, side_length) =
