@@ -74,7 +74,12 @@ use the `--keep-going` flag to continue to continue to run any independent tasks
 However, any tasks which depend on failed jobs will still fail.
 
 To run the workflow on [OSCAR, Brown University's Supercomputer](https://docs.ccv.brown.edu/oscar),
-use the OSCAR profile: 
+load a Julia module, e.g.:
+```bash
+module load julia
+```
+
+and then use the OSCAR profile: 
 ```bash
 snakemake --profile workflow/profiles/oscar
 ```
