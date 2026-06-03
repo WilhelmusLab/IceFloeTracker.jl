@@ -103,17 +103,23 @@ end
     @test TileIterator((1:1,), MergeLastTile((1,))) == [(1:1,)]
     @test TileIterator((1:2,), MergeLastTile((1,))) == [(1:1,), (2:2,)]
     @test TileIterator((1:3,), MergeLastTile((1,))) == [(1:1,), (2:2,), (3:3,)]
-    @test TileIterator((1:4,), MergeLastTile((2,))) == [(1:2,); (3:4,)]
+
     @test TileIterator((1:3,), MergeLastTile((2,))) == [(1:3,)]
+    @test TileIterator((1:4,), MergeLastTile((2,))) == [(1:2,); (3:4,)]
     @test TileIterator((1:7,), MergeLastTile((2,))) == [(1:2,); (3:4,); (5:7,)]
-    @test TileIterator((1:6,), MergeLastTile((3,))) == [(1:3,); (4:6,)]
+
     @test TileIterator((1:4,), MergeLastTile((3,))) == [(1:4,)]
+    @test TileIterator((1:6,), MergeLastTile((3,))) == [(1:3,); (4:6,)]
+
     @test TileIterator((1:10,), MergeLastTile((5,))) == [(1:5,); (6:10,)]
     @test TileIterator((1:12,), MergeLastTile((5,))) == [(1:5,); (6:12,)]
     @test TileIterator((1:16,), MergeLastTile((5,))) == [(1:5,); (6:10,); (11:16,)]
+
     @test TileIterator((1:11,), MergeLastTile((10,))) == [(1:11,)]
+
     @test TileIterator((1:6000,), MergeLastTile((1000,))) ==
         [(1:1000,), (1001:2000,), (2001:3000,), (3001:4000,), (4001:5000,), (5001:6000,)]
+
     @test TileIterator((1:3556,), MergeLastTile((1000,))) ==
         [(1:1000,), (1001:2000,), (2001:3556,)]
 end
@@ -127,12 +133,13 @@ end
     @test TileIterator((1:3,), MergeLastTileIfSmallerThanHalf((1,))) ==
         [(1:1,), (2:2,), (3:3,)]
 
-    @test TileIterator((1:4,), MergeLastTileIfSmallerThanHalf((2,))) == [(1:2,), (3:4,)]
     @test TileIterator((1:3,), MergeLastTileIfSmallerThanHalf((2,))) == [(1:2,), (3:3,)]
+    @test TileIterator((1:4,), MergeLastTileIfSmallerThanHalf((2,))) == [(1:2,), (3:4,)]
     @test TileIterator((1:7,), MergeLastTileIfSmallerThanHalf((2,))) ==
         [(1:2,), (3:4,), (5:6,), (7:7,)]
 
     @test TileIterator((1:4,), MergeLastTileIfSmallerThanHalf((3,))) == [(1:4,)]
+    @test TileIterator((1:5,), MergeLastTileIfSmallerThanHalf((3,))) == [(1:3,), (4:5,)]
     @test TileIterator((1:6,), MergeLastTileIfSmallerThanHalf((3,))) == [(1:3,), (4:6,)]
     @test TileIterator((1:7,), MergeLastTileIfSmallerThanHalf((3,))) == [(1:3,), (4:7,)]
     @test TileIterator((1:8,), MergeLastTileIfSmallerThanHalf((3,))) ==
