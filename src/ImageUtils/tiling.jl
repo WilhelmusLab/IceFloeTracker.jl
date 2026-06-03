@@ -161,7 +161,7 @@ Generate a collection of tiles from an array.
 The function adjusts the bottom and right edges of the tile matrix if they are smaller than half the tile sizes in `t`.
 """
 function get_tiles(array, t::Tuple{T,T}) where {T<:Union{Int,Int64}}
-    tiles = TileIterator(axes(array), MergeLastTile(t)) |> collect
+    tiles = TileIterator(axes(array), MergeLastTileIfSmallerThanHalf(t)) |> collect
     return tiles
 end
 
@@ -223,6 +223,56 @@ function cover1d(ax, strategy::MergeLastTile{1})
     hi = last(ax)
     current = lo
     while (hi - current + 1) >= 2 * tilelen
+        push!(covered_range, current:(current + tilelen - 1))
+        current += tilelen
+    end
+    if (hi - current + 1) > 0
+        push!(covered_range, current:hi)
+    end
+    return covered_range
+end
+
+"""
+    MergeLastTileIfSmallerThanHalf(tilesize)
+
+Tiling strategy, that permits the size of the last tiles along each dimension to be larger
+than `tilesize` if it would be smaller than half of `tilesize`. All other tiles are of size `tilesize`.
+
+# Examples
+```jldoctest
+julia> using TiledIteration
+
+julia> collect(TileIterator((1:4,), MergeLastTileIfSmallerThanHalf((2,))))
+2-element Array{Tuple{UnitRange{Int64}},1}:
+ (1:2,)
+ (3:4,)
+
+julia> collect(TileIterator((1:7,), MergeLastTileIfSmallerThanHalf((2,))))
+3-element Array{Tuple{UnitRange{Int64}},1}:
+ (1:2,)
+ (3:4,)
+ (5:7,)
+```
+
+See also [`TileIterator`](@ref).
+"""
+struct MergeLastTileIfSmallerThanHalf{N}
+    tilesize::Dims{N}
+end
+
+function tile_split(strategy::MergeLastTileIfSmallerThanHalf)
+    map(strategy.tilesize) do s
+        MergeLastTileIfSmallerThanHalf((s,))
+    end
+end
+
+function cover1d(ax, strategy::MergeLastTileIfSmallerThanHalf{1})
+    covered_range = UnitRange{Int64}[]
+    tilelen = first(strategy.tilesize)
+    lo = first(ax)
+    hi = last(ax)
+    current = lo
+    while (hi - current + 1) >= 1.5 * tilelen
         push!(covered_range, current:(current + tilelen - 1))
         current += tilelen
     end
