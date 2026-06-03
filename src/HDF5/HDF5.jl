@@ -6,7 +6,7 @@ import ..Geospatial: latlon
 import ..Segmentation: regionprops_table, converttounits!
 import ..ImageUtils: binarize_mask
 
-export make_hdf5, load_hdf5
+export save_hdf5, load_hdf5
 
 function choose_dtype(mx::T) where {T<:Integer}
     types = [UInt8, Int8, UInt16, Int16, UInt32, Int32, UInt64, Int64]
@@ -18,6 +18,47 @@ function choose_dtype(mx::T) where {T<:Integer}
     return error("$mx cannot be represented by any of $types")
 end
 
+"""
+    IceFloeTracker.HDF5.V1(;
+        passtime::ZonedDateTime,
+        crs_ref_image_path::AbstractString,
+        truecolor_path::AbstractString,
+        falsecolor_path::AbstractString,
+        labeled::AbstractMatrix,
+        props::DataFrame,
+        cloud_mask::AbstractMatrix,
+        ice_mask::AbstractMatrix,
+        landmask::AbstractMatrix,
+        coastal_buffer_mask::AbstractMatrix,
+        iftversion::VersionNumber = pkgversion(@__MODULE__),
+        file_version::VersionNumber = VersionNumber("1.0.0"),
+        reference::AbstractString = "https://doi.org/10.1016/j.rse.2019.111406",
+        contact::AbstractString = "mmwilhelmus@brown.edu",
+    )
+
+An object with results from a single segmentation to be saved as an HDF5 file with [`save_hdf5`](@ref). 
+
+Includes:
+
+- References
+  - `passtime`: the timepoint of the observation
+  - `crs_ref_image_path`: the path to a georeferenced image
+  - `truecolor_path`: the path to the truecolor image
+  - `falsecolor_path`: the path to the falsecolor image
+  - `iftversion`: the version of IceFloeTracker.jl used to save the file
+  - `file_version`: the version of the file format (for this object, "1.0.0")
+  - `reference`: a DOI for the dataset to which the file belongs
+  - `contact`: contact information for the author
+- Images
+  - `labeled`: the labeled image of connected components
+  - `cloud_mask`: the cloud mask
+  - `ice_mask`: the ice mask
+  - `landmask`: the land mask
+  - `coastal_buffer_mask`: the coastal buffer mask
+- DataFrames
+  - `props`: the measured properties of the floes
+
+"""
 @kwdef struct V1
     passtime::ZonedDateTime
     crs_ref_image_path::AbstractString
@@ -35,7 +76,56 @@ end
     contact::AbstractString = "mmwilhelmus@brown.edu"
 end
 
-function make_hdf5(output_path::AbstractString, v1::V1;)
+"""
+    save_hdf5(path, V1(args...))
+
+Write the [`V1`](@ref) object to storage.
+
+The structure is:
+🗂️ HDF5.File:
+├─ 🏷️ file_version
+├─ 🏷️ iftversion
+├─ 🏷️ contact
+├─ 🏷️ reference
+├─ 🏷️ crs
+├─ 🏷️ crs_name
+├─ 🏷️ fname_falsecolor
+├─ 🏷️ fname_truecolor
+├─ 📂 classifications
+│  ├─ 🔢 cloud_mask
+│  │  ├─ 🏷️ CLASS
+│  │  ├─ 🏷️ IMAGE_MINMAXRANGE
+│  │  ├─ 🏷️ IMAGE_SUBCLASS
+│  │  └─ 🏷️ description
+│  ├─ 🔢 coastal_buffer_mask
+│  │  ├─ 🏷️ CLASS
+│  │  ├─ 🏷️ IMAGE_MINMAXRANGE
+│  │  ├─ 🏷️ IMAGE_SUBCLASS
+│  │  └─ 🏷️ description
+│  ├─ 🔢 ice_mask
+│  │  ├─ 🏷️ CLASS
+│  │  ├─ 🏷️ IMAGE_MINMAXRANGE
+│  │  ├─ 🏷️ IMAGE_SUBCLASS
+│  │  └─ 🏷️ description
+│  └─ 🔢 landmask
+│     ├─ 🏷️ CLASS
+│     ├─ 🏷️ IMAGE_MINMAXRANGE
+│     ├─ 🏷️ IMAGE_SUBCLASS
+│     └─ 🏷️ description
+├─ 📂 floe_properties
+│  ├─ 🏷️ Description of properties
+│  ├─ 🔢 labeled_image
+│  │  ├─ 🏷️ CLASS
+│  │  ├─ 🏷️ IMAGE_MINMAXRANGE
+│  │  ├─ 🏷️ IMAGE_SUBCLASS
+│  │  └─ 🏷️ description
+│  └─ 🔢 properties
+└─ 📂 index
+   ├─ 🔢 time
+   ├─ 🔢 x
+   └─ 🔢 y
+"""
+function save_hdf5(output_path::AbstractString, v1::V1;)
     ptsunix = Int64(Dates.datetime2unix(DateTime(v1.passtime)))
     latlondata = latlon(v1.crs_ref_image_path)
 

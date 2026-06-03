@@ -4,12 +4,9 @@ import calendar
 import pyproj
 import pandas as pd
 
-configfile: "workflow/config.yaml"
-workdir: "workflow/results"
-# The profile in workflow/profiles/default/config.yaml sets default values for this workflow.
-
-regions = pd.read_csv(config["REGION_CSV"]).set_index("region")
-cases = pd.read_csv(config["CASE_CSV"])
+configfile: workflow.source_path("config.yaml")
+regions = pd.read_csv(workflow.source_path(config["REGION_CSV"])).set_index("region")
+cases = pd.read_csv(workflow.source_path(config["CASE_CSV"]))
 
 def daterange(start_date, end_date):
     """Generates dates from start_date to end_date (inclusive)."""
@@ -85,7 +82,7 @@ rule organize_input_file_by_filetype:
         filetype = "[^./]+",
         pipeline = "[^/]+"
     shell:
-        "ln --force {input} {output}"
+        "ln -f {input} {output}"
 
 
 rule organize_segmentation_results_by_pipeline:
@@ -98,7 +95,7 @@ rule organize_segmentation_results_by_pipeline:
         filetype = "[^./]+",
         pipeline = "[^/]+"
     shell:
-        "ln --force {input} {output}"
+        "ln -f {input} {output}"
 
 
 rule region_case_results_by_filetype:
@@ -410,7 +407,7 @@ rule segment_buckley:
             {input.landmask} \
             {wildcards.dir}/buckley/
 
-        ln --force {wildcards.dir}/buckley/final.tif {output.labels_map}
+        ln -f {wildcards.dir}/buckley/final.tif {output.labels_map}
         """
 
 ruleorder: segment_buckley > segment
@@ -532,6 +529,6 @@ rule observation_hdf5:
             ice_mask = load("{input.ice_mask}") |> binarize_mask,
             cloud_mask = load("{input.cloud_mask}") |> binarize_mask,
         )
-        make_hdf5("{output}", data)
+        save_hdf5("{output}", data)
         '
         """
