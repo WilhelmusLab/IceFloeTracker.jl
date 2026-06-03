@@ -73,6 +73,8 @@ To keep going if a single function in the pipeline fails,
 use the `--keep-going` flag to continue to continue to run any independent tasks.
 However, any tasks which depend on failed jobs will still fail.
 
+### Profiles: OSCAR
+
 To run the workflow on [OSCAR, Brown University's Supercomputer](https://docs.ccv.brown.edu/oscar),
 load a Julia module, e.g.:
 ```bash
