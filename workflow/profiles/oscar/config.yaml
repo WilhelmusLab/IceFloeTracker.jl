@@ -4,7 +4,7 @@ executor: slurm
 jobs: unlimited
 default-resources:
   slurm_partition: "batch"
-  slurm_account: "default"  # OSCAR: condo account
+  slurm_account: "default"
   runtime: "10m"
 
 set-resources:
@@ -24,8 +24,6 @@ set-resources:
   tracking:
     runtime: "8h"
     mem: "32g"
-  
-
 
 partitions:
   batch:
