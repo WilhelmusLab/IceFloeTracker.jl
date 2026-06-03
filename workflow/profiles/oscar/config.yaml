@@ -3,7 +3,7 @@
 executor: slurm
 jobs: unlimited
 default-resources:
-  slurm_partition: "batch"  
+  slurm_partition: "batch"
   slurm_account: "default"  # OSCAR: condo account
   runtime: "10m"
 
@@ -11,13 +11,19 @@ set-resources:
   init_ift:
     runtime: "30m"
     mem: "32g"
-    cpus_per_task: 16
+    cpus_per_task: 4
+  load_coastal_buffer_mask:
+    mem: "16g"
+  load_landmask:
+    mem: "16g"
+  get_region_month_overpass_times:
+    mem: "8g"
   segment:
-    runtime: "30m"
+    runtime: "2h"
     mem: "32g"
   tracking:
     runtime: "8h"
-    mem: "64g"
+    mem: "32g"
   
 
 
@@ -25,4 +31,3 @@ partitions:
   batch:
     max_runtime: 720
     max_nodes: 1
-    max_cpus_per_task: 16
