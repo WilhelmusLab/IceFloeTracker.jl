@@ -73,6 +73,32 @@ To keep going if a single function in the pipeline fails,
 use the `--keep-going` flag to continue to continue to run any independent tasks.
 However, any tasks which depend on failed jobs will still fail.
 
+### Configuration
+
+By default, the [default configuration file](./configs/default/config.yaml) will be used. 
+
+It specifies:
+- the [default case list](./configs/default/case.csv)
+- the [default region list](./configs/default/region.csv)
+- which Julia environment is used to run IceFloeTracker.jl commands
+- and other commands used in the workflow.
+
+If an additional configuration is specified on the command line using `--configfile`
+it will be combined with the default configuration
+and can override variables from the default configuration.
+
+Example configurations are included:
+- [with regions and timepoints in a single CSV file](./configs/case-region-file/config.yaml), 
+  call
+  ```bash
+  snakemake --configfile workflow/configs/case-region-file/config.yaml
+  ```
+- [a large validation dataset](https://github.com/danielmwatkins/ice-floe-validation-dataset/blob/main/data/validation_dataset/validation_dataset.csv) 
+  call
+  ```bash
+  snakemake --configfile workflow/configs/validation-cases/config.yaml
+  ```
+
 ### Files produced in the workflow
 
 Files produced in the workflow include:
