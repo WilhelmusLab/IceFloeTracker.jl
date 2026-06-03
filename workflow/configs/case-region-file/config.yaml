@@ -1,5 +1,5 @@
 #--------------------------------------------------
 # Config files
 #--------------------------------------------------
-REGION_CSV: workflow/configs/case-region-file/case_region.csv
-CASE_CSV: workflow/configs/case-region-file/case_region.csv
+REGION_CSV: configs/case-region-file/case_region.csv # relative to snakefile
+CASE_CSV: configs/case-region-file/case_region.csv # relative to snakefile
