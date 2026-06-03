@@ -25,9 +25,9 @@ and process them in the correct order.
 
 For example, the command:
 ```bash
-snakemake -c 1 beaufort_sea-100km.250m.2019-03-22.2019-03-23.LopezAcosta2019Tiling.tracked.csv 
+snakemake beaufort_sea-100km.250m.2019-03-22.2019-03-23.LopezAcosta2019Tiling.tracked.csv 
 ```
-- Will use one processor core (`-c 1`) 
+- Will use the number of cores from the [default profile](./profiles/default/config.yaml)
 - to run tracking (`....tracked.csv`)
 - on a 100km x 100km region in the Beaufort Sea, 
 - using 250m scale images, 

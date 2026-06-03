@@ -1,3 +1,4 @@
+cores: 1
 resources: 
   soit_api_calls: 4
 directory: workflow/results
