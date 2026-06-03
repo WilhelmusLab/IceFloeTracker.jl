@@ -1,5 +1,5 @@
 
-using TiledIteration: TileIterator
+import TiledIteration: TileIterator, split as tile_split, cover1d
 
 """
     getfit(dims::Tuple{Int,Int}, side_length::Int)::Tuple{Int,Int}
@@ -161,34 +161,8 @@ Generate a collection of tiles from an array.
 The function adjusts the bottom and right edges of the tile matrix if they are smaller than half the tile sizes in `t`.
 """
 function get_tiles(array, t::Tuple{T,T}) where {T<:Union{Int,Int64}}
-    a, b = t
-    tiles = TileIterator(axes(array), (a, b)) |> collect
-    _a, _b = size(array)
-
-    bottombump = mod(_a, a)
-    rightbump = mod(_b, b)
-
-    if bottombump == 0 && rightbump == 0
-        return tiles
-    end
-
-    crop_height, crop_width = 0, 0
-
-    # Adjust bottom edge if necessary
-    if bottombump <= a ÷ 2
-        bottom_edge = tiles[end - 1, :]
-        tiles[end - 1, :] .= bump_tile.(bottom_edge, Ref((bottombump, 0)))
-        crop_height += 1
-    end
-
-    # Adjust right edge if necessary
-    if rightbump <= b ÷ 2
-        right_edge = tiles[:, end - 1]
-        tiles[:, end - 1] .= bump_tile.(right_edge, Ref((0, rightbump)))
-        crop_width += 1
-    end
-
-    return tiles[1:(end - crop_height), 1:(end - crop_width)]
+    tiles = TileIterator(axes(array), MergeLastTile(t)) |> collect
+    return tiles
 end
 
 """
@@ -206,4 +180,54 @@ function get_tiles(array; rblocks, cblocks)
     rtile, ctile = size(array)
     tile_size = (rtile ÷ rblocks, ctile ÷ cblocks)
     return TileIterator(axes(array), tile_size)
+end
+
+"""
+    MergeLastTile(tilesize)
+
+Tiling strategy, that permits the size of the last tiles along each dimension to be larger
+than `tilesize` if needed. All other tiles are of size `tilesize`.
+
+# Examples
+```jldoctest
+julia> using TiledIteration
+
+julia> collect(TileIterator((1:4,), MergeLastTile((2,))))
+2-element Array{Tuple{UnitRange{Int64}},1}:
+ (1:2,)
+ (3:4,)
+
+julia> collect(TileIterator((1:7,), MergeLastTile((2,))))
+3-element Array{Tuple{UnitRange{Int64}},1}:
+ (1:2,)
+ (3:4,)
+ (5:7,)
+```
+
+See also [`TileIterator`](@ref).
+"""
+struct MergeLastTile{N}
+    tilesize::Dims{N}
+end
+
+function tile_split(strategy::MergeLastTile)
+    map(strategy.tilesize) do s
+        MergeLastTile((s,))
+    end
+end
+
+function cover1d(ax, strategy::MergeLastTile{1})
+    covered_range = UnitRange{Int64}[]
+    tilelen = first(strategy.tilesize)
+    lo = first(ax)
+    hi = last(ax)
+    current = lo
+    while (hi - current + 1) >= 2 * tilelen
+        push!(covered_range, current:(current + tilelen - 1))
+        current += tilelen
+    end
+    if (hi - current + 1) > 0
+        push!(covered_range, current:hi)
+    end
+    return covered_range
 end

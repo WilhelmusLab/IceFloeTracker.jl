@@ -79,16 +79,27 @@
 end
 
 @testitem "get_tiles" begin
-    array = rand(6000, 3556)
-
     @test get_tiles(rand(1, 1), 1) == [(1:1, 1:1);;]
     @test get_tiles(rand(1, 2), 1) == [(1:1, 1:1) (1:1, 2:2);]
     @test get_tiles(rand(1, 3), 1) == [(1:1, 1:1) (1:1, 2:2) (1:1, 3:3);]
     @test get_tiles(rand(2, 2), 1) == [(1:1, 1:1) (1:1, 2:2); (2:2, 1:1) (2:2, 2:2)]
 
     # These cases skip the last row of tiles.
-    @test get_tiles(rand(4, 3), 2) == [(1:2, 1:3); (3:4, 1:3)] broken = true
-    @test get_tiles(rand(6, 4), 3) == [(1:3, 1:4); (4:6, 1:4)] broken = true
-    @test get_tiles(rand(10, 6), 5) == [(1:5, 1:6); (6:10, 1:6)] broken = true
-    @test get_tiles(rand(20, 11), 10) == [(1:10, 1:11); (11:20, 1:11)] broken = true
+    @test get_tiles(rand(4, 3), 2) == [(1:2, 1:3); (3:4, 1:3);;]
+    @test get_tiles(rand(6, 4), 3) == [(1:3, 1:4); (4:6, 1:4);;]
+    @test get_tiles(rand(10, 6), 5) == [(1:5, 1:6); (6:10, 1:6);;]
+    @test get_tiles(rand(12, 16), 5) == [
+        (1:5, 1:5) (1:5, 6:10) (1:5, 11:16)
+        (6:12, 1:5) (6:12, 6:10) (6:12, 11:16)
+    ]
+    @test get_tiles(rand(20, 11), 10) == [(1:10, 1:11); (11:20, 1:11);;]
+    @test get_tiles(rand(6000, 3556), (2000, 3556)) ==
+        [(1:2000, 1:3556); (2001:4000, 1:3556); (4001:6000, 1:3556);;]
+end
+
+@testitem "MergeLastTile" begin
+    using TiledIteration: TileIterator
+    using IceFloeTracker.ImageUtils: MergeLastTile
+    @test collect(TileIterator((1:4,), MergeLastTile((2,)))) == [(1:2,); (3:4,)]
+    @test collect(TileIterator((1:7,), MergeLastTile((2,)))) == [(1:2,); (3:4,); (5:7,)]
 end
