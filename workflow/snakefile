@@ -5,6 +5,7 @@ import pyproj
 import pandas as pd
 
 configfile: workflow.source_path("config.yaml")
+
 regions = pd.read_csv(workflow.source_path(config["REGION_CSV"])).set_index("region")
 cases = pd.read_csv(workflow.source_path(config["CASE_CSV"]))
 

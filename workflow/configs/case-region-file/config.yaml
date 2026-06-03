@@ -1,0 +1,5 @@
+#--------------------------------------------------
+# Config files
+#--------------------------------------------------
+REGION_CSV: workflow/configs/case-region-file/case_region.csv
+CASE_CSV: workflow/configs/case-region-file/case_region.csv
