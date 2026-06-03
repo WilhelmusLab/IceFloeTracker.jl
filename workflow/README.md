@@ -73,6 +73,18 @@ To keep going if a single function in the pipeline fails,
 use the `--keep-going` flag to continue to continue to run any independent tasks.
 However, any tasks which depend on failed jobs will still fail.
 
+To run the workflow on [OSCAR, Brown University's Supercomputer](https://docs.ccv.brown.edu/oscar),
+use the OSCAR profile: 
+```bash
+snakemake --profile workflow/profiles/oscar
+```
+
+[The OSCAR profile's config.yaml file](profiles/oscar/config.yaml) 
+sets a default number of parallel jobs,
+and some default resources including memory, CPU cores, walltime
+for each rule. 
+These can be edited as required.
+
 ### Files produced in the workflow
 
 Files produced in the workflow include:
