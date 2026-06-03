@@ -242,16 +242,19 @@ than `tilesize` if it would be smaller than half of `tilesize`. All other tiles 
 ```jldoctest
 julia> using TiledIteration
 
-julia> collect(TileIterator((1:4,), MergeLastTileIfSmallerThanHalf((2,))))
-2-element Array{Tuple{UnitRange{Int64}},1}:
- (1:2,)
- (3:4,)
+julia> collect(TileIterator((1:4,), MergeLastTileIfSmallerThanHalf((3,))))
+1-element Array{Tuple{UnitRange{Int64}},1}:
+ (1:4,)
 
-julia> collect(TileIterator((1:7,), MergeLastTileIfSmallerThanHalf((2,))))
-3-element Array{Tuple{UnitRange{Int64}},1}:
- (1:2,)
- (3:4,)
- (5:7,)
+julia> collect(TileIterator((1:5,), MergeLastTileIfSmallerThanHalf((3,))))
+2-element Array{Tuple{UnitRange{Int64}},1}:
+ (1:3,)
+ (4:5,)
+ 
+julia> collect(TileIterator((1:6,), MergeLastTileIfSmallerThanHalf((3,))))
+2-element Array{Tuple{UnitRange{Int64}},1}:
+ (1:3,)
+ (4:6,)
 ```
 
 See also [`TileIterator`](@ref).
