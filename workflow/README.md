@@ -85,10 +85,9 @@ snakemake --profile workflow/profiles/oscar
 ```
 
 [The OSCAR profile's config.yaml file](profiles/oscar/config.yaml) 
-sets a default number of parallel jobs,
-and some default resources including memory, CPU cores, walltime
+sets default resources including memory, CPU cores, walltime
 for each rule. 
-These can be edited as required.
+The defaults may not be appropriate for a particular image size or time period. 
 
 ### Files produced in the workflow
 

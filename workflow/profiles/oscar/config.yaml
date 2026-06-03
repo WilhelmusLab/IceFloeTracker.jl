@@ -1,7 +1,7 @@
 # Configuration for OSCAR cluster at Brown University
 
 executor: slurm
-jobs: 16
+jobs: unlimited
 default-resources:
   slurm_partition: "batch"  
   slurm_account: "default"  # OSCAR: condo account
