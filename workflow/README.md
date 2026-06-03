@@ -38,10 +38,10 @@ and process them in the correct order.
 
 For example, the command:
 ```bash
-snakemake -c 2 track/beaufort_sea-100km.250m.2019-03-22.2019-03-23.LopezAcosta2019Tiling.tracked.csv 
+snakemake track/beaufort_sea-100km.250m.2019-03-22.2019-03-23.LopezAcosta2019Tiling.tracked.csv 
 ```
-- Will use one processor core (`-c 1`) 
-- to run tracking (`track/....tracked.csv`)
+- Will use the number of cores from the [default profile](./profiles/default/config.yaml)
+- to run tracking (`track/...tracked.csv`)
 - on a 100km x 100km region in the Beaufort Sea, 
 - using 250m scale images, 
 - from 22nd to 23rd March 2019,
