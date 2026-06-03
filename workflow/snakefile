@@ -68,7 +68,6 @@ def get_region_target_bbox(region):
 # Batch Targets
 # ============================================================================
 
-
 rule region_case_results_by_filetype:
     input:
         ["filetype/{filetype}/{region}.{scale}m.{date_}.{satellite}.{ext}".format(
@@ -405,7 +404,7 @@ rule segment_buckley:
             {input.landmask} \
             {wildcards.dir}/buckley/
 
-        ln --force {wildcards.dir}/buckley/final.tif {output.labels_map}
+        ln -f {wildcards.dir}/buckley/final.tif {output.labels_map}
         """
 
 ruleorder: segment_buckley > segment
