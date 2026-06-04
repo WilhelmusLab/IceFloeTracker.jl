@@ -194,8 +194,9 @@ function _split(strategy::MergeLastTileIfSmallerThanHalf)
 end
 
 function _cover1d(ax, strategy::MergeLastTileIfSmallerThanHalf{1})
-    covered_range = UnitRange{Int64}[]
     tilelen = first(strategy.tilesize)
+    tilelen >= 1 || throw(ArgumentError("tilesize must be >= 1, got $tilelen"))
+    covered_range = UnitRange{Int64}[]
     lo = first(ax)
     hi = last(ax)
     current = lo
