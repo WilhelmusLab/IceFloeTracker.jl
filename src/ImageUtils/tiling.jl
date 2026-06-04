@@ -199,7 +199,7 @@ function _cover1d(ax, strategy::MergeLastTileIfSmallerThanHalf{1})
     lo = first(ax)
     hi = last(ax)
     current = lo
-    while (hi - current + 1) >= 1.5 * tilelen
+    while 2 * (hi - current + 1) >= 3 * tilelen
         push!(covered_range, current:(current + tilelen - 1))
         current += tilelen
     end
