@@ -89,7 +89,7 @@ end
         [(1:2000, 1:3556); (2001:4000, 1:3556); (4001:6000, 1:3556);;]
 end
 
-@testitem "MergeLastTileIfSmallerThanHalf" begin
+@testitem "MergeLastTileIfSmallerThanHalf examples" begin
     using TiledIteration: TileIterator
     using IceFloeTracker.ImageUtils: MergeLastTileIfSmallerThanHalf
 
@@ -98,6 +98,9 @@ end
     @test TileIterator((1:3,), MergeLastTileIfSmallerThanHalf((1,))) ==
         [(1:1,), (2:2,), (3:3,)]
 
+    @test TileIterator((0:1,), MergeLastTileIfSmallerThanHalf((2,))) == [(0:1,)]
+    @test TileIterator((-1:0,), MergeLastTileIfSmallerThanHalf((1,))) == [(-1:-1,), (0:0,)]
+    @test TileIterator((-1:0,), MergeLastTileIfSmallerThanHalf((1,))) == [(-1:-1,), (0:0,)]
     @test TileIterator((1:3,), MergeLastTileIfSmallerThanHalf((2,))) == [(1:2,), (3:3,)]
     @test TileIterator((1:4,), MergeLastTileIfSmallerThanHalf((2,))) == [(1:2,), (3:4,)]
     @test TileIterator((1:7,), MergeLastTileIfSmallerThanHalf((2,))) ==
@@ -130,4 +133,31 @@ end
     @test_throws "tilesize must be >= 1" TileIterator(
         (1:10,), MergeLastTileIfSmallerThanHalf((0,))
     )
+end
+
+@testitem "MergeLastTileIfSmallerThanHalf generic tests" begin
+    using TiledIteration: TileIterator
+    using IceFloeTracker.ImageUtils: MergeLastTileIfSmallerThanHalf
+
+    for start in [-100_000, -4223, -9, 0, 1, 5605, 31093],
+        length_ in [0, 1, 2, 3, 4, 5, 17, 154, 2312],
+        tile_size in [1, 2, 3, 4, 5, 13, 538, 13209]
+
+        range = start:(start + length_)
+
+        tiles =
+            TileIterator((range,), MergeLastTileIfSmallerThanHalf((tile_size,))) |> collect
+
+        @testset "subranges cover the original range precisely" begin
+            range_expanded = collect(range)
+            all_subranges_expanded = tiles .|> first .|> collect
+            all_subranges_expanded_combined = vcat(all_subranges_expanded...)
+            @test range_expanded == all_subranges_expanded_combined
+        end
+
+        @testset "subrange lengths are all less than 3/2 of the requested tile size:" begin
+            subrange_lengths = tiles .|> first .|> length
+            @test all((2 .* subrange_lengths) .<= 3 * tile_size)
+        end
+    end
 end
