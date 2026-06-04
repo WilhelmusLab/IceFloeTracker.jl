@@ -126,4 +126,8 @@ end
         [(1:1000,), (1001:2000,), (2001:3000,), (3001:4000,), (4001:5000,), (5001:6000,)]
     @test TileIterator((1:3556,), MergeLastTileIfSmallerThanHalf((1000,))) ==
         [(1:1000,), (1001:2000,), (2001:3000,), (3001:3556,)]
+
+    @test_throws "tilesize must be >= 1" TileIterator(
+        (1:10,), MergeLastTileIfSmallerThanHalf((0,))
+    )
 end
