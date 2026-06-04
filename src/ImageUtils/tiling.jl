@@ -204,7 +204,7 @@ function _cover1d(ax, strategy::MergeLastTileIfSmallerThanHalf{1})
         push!(covered_range, current:(current + tilelen - 1))
         current += tilelen
     end
-    if (hi - current + 1) > 0
+    if hi >= current
         push!(covered_range, current:hi)
     end
     return covered_range
