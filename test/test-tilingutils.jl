@@ -77,8 +77,6 @@ end
     @test get_tiles(rand(1, 2), 1) == [(1:1, 1:1) (1:1, 2:2);]
     @test get_tiles(rand(1, 3), 1) == [(1:1, 1:1) (1:1, 2:2) (1:1, 3:3);]
     @test get_tiles(rand(2, 2), 1) == [(1:1, 1:1) (1:1, 2:2); (2:2, 1:1) (2:2, 2:2)]
-
-    # These cases skip the last row of tiles.
     @test get_tiles(rand(4, 3), 2) == [(1:2, 1:2) (1:2, 3:3); (3:4, 1:2) (3:4, 3:3)]
     @test get_tiles(rand(6, 4), 3) == [(1:3, 1:4); (4:6, 1:4);;]
     @test get_tiles(rand(10, 6), 5) == [(1:5, 1:6); (6:10, 1:6);;]
