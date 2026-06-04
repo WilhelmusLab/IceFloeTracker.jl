@@ -60,7 +60,7 @@
 
         # zero remainder on one axis should not crop that dimension
         @test get_tiles(rand(4, 3), 2) |> size == (2, 1)
-        @test get_tiles(rand(3, 4), 2) |> size == (2, 1)
+        @test get_tiles(rand(3, 4), 2) |> size == (1, 2)
         @test get_tiles(rand(6000, 3665), 1000) |> size == (6, 4)
         @test get_tiles(rand(3665, 6000), 1000) |> size == (4, 6)
 
