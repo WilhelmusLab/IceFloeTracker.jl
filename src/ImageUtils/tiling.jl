@@ -175,14 +175,14 @@ function get_tiles(array, t::Tuple{T,T}) where {T<:Union{Int,Int64}}
     crop_height, crop_width = 0, 0
 
     # Adjust bottom edge if necessary
-    if bottombump <= a ÷ 2
+    if 0 < bottombump <= a ÷ 2
         bottom_edge = tiles[end - 1, :]
         tiles[end - 1, :] .= bump_tile.(bottom_edge, Ref((bottombump, 0)))
         crop_height += 1
     end
 
     # Adjust right edge if necessary
-    if rightbump <= b ÷ 2
+    if 0 < rightbump <= b ÷ 2
         right_edge = tiles[:, end - 1]
         tiles[:, end - 1] .= bump_tile.(right_edge, Ref((0, rightbump)))
         crop_width += 1
