@@ -165,6 +165,7 @@ than `tilesize` if it would be smaller than half of `tilesize`. All other tiles 
 # Examples
 ```jldoctest
 julia> using TiledIteration
+julia> using IceFloeTracker.ImageUtils: MergeLastTileIfSmallerThanHalf
 
 julia> collect(TileIterator((1:4,), MergeLastTileIfSmallerThanHalf((3,))))
 1-element Array{Tuple{UnitRange{Int64}},1}:
