@@ -58,6 +58,12 @@
         adjusted_tiles = get_tiles(array, side_length)
         @test all(size(tiles) .- size(adjusted_tiles) .== (0, 1))
 
+        # zero remainder on one axis should not crop that dimension
+        @test get_tiles(rand(4, 3), 2) |> size == (2, 1)
+        @test get_tiles(rand(3, 4), 2) |> size == (2, 1)
+        @test get_tiles(rand(6000, 3665), 1000) |> size == (6, 4)
+        @test get_tiles(rand(3665, 6000), 1000) |> size == (4, 6)
+
         # general case with both edges adjusted
         expected_tiles = [
             (1:5, 1:5) (1:5, 6:10) (1:5, 11:16)
