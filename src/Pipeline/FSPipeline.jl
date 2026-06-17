@@ -78,7 +78,7 @@ abstract type IceFloePreprocessingAlgorithm end
 """
 @kwdef struct Preprocess <: IceFloePreprocessingAlgorithm
     diffusion_algorithm = PeronaMalikDiffusion(λ=0.1, K=0.1, niters=5, g="exponential")
-    adapthisteq_params = (nbins=256, rblocks=16, cblocks=8, clip=5)
+    adapthisteq_params = (nbins=256, rblocks=16, cblocks=8, clip=2)
     unsharp_mask_params = (radius=50, amount=0.2, threshold=0.01)
 end
 
@@ -209,7 +209,7 @@ function (p::Segment)(
     # and allow the k-means cluster to overlap with the cloud mask by using the preproc gray with
     # only the landmask applied to it
     kmeans_result = kmeans_binarization(
-            apply_landmask(preproc_gray, cloud_mask),
+            preproc_gray,
             fc_masked,
             filtered_tiles;
             k=p.kmeans_params.k,
@@ -257,16 +257,16 @@ function (p::Segment)(
     
 
     if !isnothing(intermediate_results_callback)
-        colorview_truecolor = view_seg(segments_tc)
-        colorview_falsecolor = view_seg(segments_fc)
-        colorview_random =  view_seg_random(segments_tc)
-        kmeans_colorized = view_seg_random(kmeans_seg)
+        colorview_truecolor = n0f8.(view_seg(segments_tc))
+        colorview_falsecolor = n0f8.(view_seg(segments_fc))
+        colorview_random =  n0f8.(view_seg_random(segments_tc))
+        kmeans_colorized = n0f8.(view_seg_random(kmeans_seg))
         intermediate_results_callback(;
             truecolor,
             falsecolor,
-            coastal_buffer_mask=Gray.(coastal_buffer_mask),
-            cloud_mask=Gray.(cloud_mask),
-            ice_mask=Gray.(prelim_ice_mask),
+            coastal_buffer_mask=coastal_buffer_mask,
+            cloud_mask=cloud_mask,
+            ice_mask=prelim_ice_mask,
             preprocessed=preproc_gray,
             bright_ice_mask=p.cluster_selection_algorithm(falsecolor_image),            
             binarized=kmeans_result,
