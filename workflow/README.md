@@ -19,16 +19,29 @@ pipx inject snakemake pyproj pandas
 
 ## Run the workflow
 
-To run the workflow, specify the output files which are desired, 
+To run the workflow, call:
+```bash
+snakemake -c 1
+```
+
+This will use one processor core (`-c 1`) 
+to run the workflow to calculate all the tracking results for the cases in [case.csv](./case.csv)
+which uses the region definitions from [region.csv](./region.csv). 
+The results will be written to the `./results` directory which is not checked into the repository. 
+
+(This command is equivalent to `snakemake -c 1 region_case_results_by_filetype` 
+which is the default target of the snakemake workflow.)
+
+You can also specify the output files which are desired, 
 and Snakemake should download or create any (missing) prerequisites 
 and process them in the correct order.
 
 For example, the command:
 ```bash
-snakemake beaufort_sea-100km.250m.2019-03-22.2019-03-23.LopezAcosta2019Tiling.tracked.csv 
+snakemake track/beaufort_sea-100km.250m.2019-03-22.2019-03-23.LopezAcosta2019Tiling.tracked.csv 
 ```
 - Will use the number of cores from the [default profile](./profiles/default/config.yaml)
-- to run tracking (`....tracked.csv`)
+- to run tracking (`track/...tracked.csv`)
 - on a 100km x 100km region in the Beaufort Sea, 
 - using 250m scale images, 
 - from 22nd to 23rd March 2019,
@@ -61,7 +74,7 @@ total                                 29
 
 Intermediate files can be made in the same way, e.g.:
 ```bash
-snakemake -c 4 hudson_bay-1500km.250m.2023-03-{22..25}.terra/falsecolor.tiff
+snakemake -c 4 scene/hudson_bay-1500km.250m.2023-03-{22..25}.terra/falsecolor.tiff
 ```
 - will use four cores (`-c 4`)
 - to load falsecolor images (`.../falsecolor.tiff`)
@@ -77,13 +90,13 @@ However, any tasks which depend on failed jobs will still fail.
 
 Files produced in the workflow include:
 
-- Observation specific files, organized by observation directory `{region}.{scale}m.{date_}.{satellite}/`, e.g. `beaufort_sea.250m.2019-03-23.aqua/`:
+- Observation specific files, organized by observation directory `scene/{region}.{scale}m.{date_}.{satellite}/`, e.g. `beaufort_sea.250m.2019-03-23.aqua/`:
   - `truecolor.tiff` – the input truecolor image (MODIS bands 143),
   - `falsecolor.tiff` – the input falsecolor image (MODIS bands 721),
   - `cloud.tiff` – the input cloud mask from the MODIS observations,
   - `landmask.tiff` – the landmask for the region,
   - `coastal_buffer_mask.tiff` – the dilated landmask,
-- Observation and pipeline results files, organized by observation and pipeline directory `{region}.{scale}m.{date_}.{satellite}/{pipeline}/`, e.g. `beaufort_sea.250m.2019-03-23.aqua/LopezAcosta2019/`:
+- Observation and pipeline results files, organized by observation and pipeline directory `scene/{region}.{scale}m.{date_}.{satellite}/{pipeline}/`, e.g. `scene/beaufort_sea.250m.2019-03-23.aqua/LopezAcosta2019/`:
   - `segmentation.hdf5` – the combined results file with segmentation results, floe masks, floe properties etc.,
   - `labels_map.tiff` – the floe labels from the segmentation,
   - `segment_mean_truecolor.tiff` – each region in `labels_map.tiff` with the mean color of that region from `truecolor.tiff`,
@@ -135,10 +148,10 @@ The files are organized as follows:
 
 |Type|`region_case_results` path|`region_case_results_by_filetype` path|
 |----|--------|---|
-|Input file template|`{scene}/{filetype}.{extension}`|`{filetype}/{scene}.{extension}`|
-|Input file example|`beaufort_sea.250m.2019-03-23.aqua/falsecolor.tiff`|`falsecolor/beaufort_sea.250m.2019-03-23.aqua.tiff`|
-|Output file template|`{scene}/{pipeline}/{filetype}.{extension}`|`{pipeline}.{filetype}/{scene}.{extension}`|
-|Output file example|`beaufort_sea.250m.2019-03-23.aqua/LopezAcosta2019/segment_mean_falsecolor.tiff`|`LopezAcosta2019.segment_mean_falsecolor/beaufort_sea.250m.2019-03-23.aqua.tiff`|
+|Input file template|`scene/{scene}/{filetype}.{extension}`|`filetype/{filetype}/{scene}.{extension}`|
+|Input file example|`scene/beaufort_sea.250m.2019-03-23.aqua/falsecolor.tiff`|`filetype/falsecolor/beaufort_sea.250m.2019-03-23.aqua.tiff`|
+|Output file template|`scene/{scene}/{pipeline}/{filetype}.{extension}`|`filetype/{pipeline}/{filetype}/{scene}.{extension}`|
+|Output file example|`scene/beaufort_sea.250m.2019-03-23.aqua/LopezAcosta2019/segment_mean_falsecolor.tiff`|`filetype/LopezAcosta2019/segment_mean_falsecolor/beaufort_sea.250m.2019-03-23.aqua.tiff`|
 
 
 To invoke the batch processing rule, call `snakemake <other arguments> <batch_processing_rule_name>`
@@ -149,8 +162,8 @@ named like `{region}.{scale}.{start date}.{end date}.{pipeline}.tracked.csv`.
 ### `region_case_results`
 
 Organizes the segmentation results from `case.csv` in directories named 
-- `{region}.{scale}.{date}.{satellite}` for input files, and
-- `{region}.{scale}.{date}.{satellite}/{pipeline}` for output files. 
+- `scene/{region}.{scale}.{date}.{satellite}` for input files, and
+- `scene/{region}.{scale}.{date}.{satellite}/{pipeline}` for output files. 
 
 Example invocation using 4 processing cores:
 ```shell
@@ -161,7 +174,7 @@ snakemake -c 4 region_case_results
 
 Reorganize the segmentation results from `case.csv` in directories by 
 - `{filetype}` for input files, and
-- `{pipeline}.{filetype}` for output files. 
+- `{pipeline}/{filetype}` for output files. 
 
 Example invocation using 4 processing cores:
 ```shell
