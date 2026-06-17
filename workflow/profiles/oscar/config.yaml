@@ -2,11 +2,13 @@
 
 executor: slurm
 jobs: unlimited
+directory: workflow/results
+resources:
+  soit_api_calls: 4
 default-resources:
   slurm_partition: "batch"
   slurm_account: "default"
   runtime: "10m"
-
 set-resources:
   init_ift:
     runtime: "30m"
