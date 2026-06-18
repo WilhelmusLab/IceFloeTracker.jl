@@ -2,8 +2,7 @@
 # Executables
 #--------------------------------------------------
 
-JULIA_PROJECT: .julia-project
-IFT: julia --project=.julia-project
+IFT: julia --project=.julia
 FSDPROC: "pipx run --spec git+https://github.com/WilhelmusLab/ebseg@v1.0.1 fsdproc"
 PASS_TIME: "pipx run --spec git+https://github.com/wilhelmuslab/satellite-overpass-identification-tool@v3.2.1 satellite-overpass-identification-tool"
 LOADER: "pipx run --spec git+https://github.com/brown-ccv/earthdata-downloader@v1.0 earthdata-downloader load"

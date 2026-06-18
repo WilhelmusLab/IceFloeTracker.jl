@@ -158,12 +158,12 @@ rule init_ift:
         project_toml
     output:
         "init/init_ift",
-        ".julia-project/Project.toml",
-        ".julia-project/Manifest.toml"
+        ".julia/Project.toml",
+        ".julia/Manifest.toml"
     shell:
         """
-        mkdir -p .julia-project/
-        cp {project_toml} .julia-project/Project.toml
+        mkdir -p .julia/
+        cp {project_toml} .julia/Project.toml
         {config[IFT]} -e '
         using Pkg;
         Pkg.resolve();
