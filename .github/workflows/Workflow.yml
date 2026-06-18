@@ -8,6 +8,10 @@ on:
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: ${{ startsWith(github.ref, 'refs/pull/') }}
+
+env:
+  SNAKEMAKE: "snakemake --cores 2 --configfile 'workflow/configs/ift-from-this-repo/config.yaml'"
+
 jobs:
   test:
     name: Julia ${{ matrix.version }} - ${{ matrix.os }} - ${{ matrix.arch }} - ${{ github.event_name }}
@@ -30,20 +34,18 @@ jobs:
           python-version: '3.x'
       - name: Install workflow dependencies
         run: ".devcontainer/setup-workflow-dependencies.sh"
-      - name: Install Julia dependencies
-        run: "snakemake init_ift --cores 2 --config IFT_INSTALL='Pkg.develop(PackageSpec(path=\"${{ github.workspace }}\"))'"        
       - name: Get tracking results for an example region
         env:
           SPACEUSER: ${{ vars.SPACEUSER }}
           SPACEPSWD: ${{ secrets.SPACEPSWD }}
-        run: "snakemake --cores 2 track/beaufort_sea.250m.20190322.20190323.LopezAcosta2019Tiling.tracked.csv"
+        run: "$SNAKEMAKE track/beaufort_sea.250m.20190322.20190323.LopezAcosta2019Tiling.tracked.csv"
       - name: Get results for one observation as an HDF5 file
         env:
           SPACEUSER: ${{ vars.SPACEUSER }}
           SPACEPSWD: ${{ secrets.SPACEPSWD }}
-        run: "snakemake --cores 2 scene/beaufort_sea.250m.2019-03-22.aqua/LopezAcosta2019Tiling/segmentation.hdf5"
+        run: "$SNAKEMAKE scene/beaufort_sea.250m.2019-03-22.aqua/LopezAcosta2019Tiling/segmentation.hdf5"
       - name: Get tracking results for realistic cases from the test set
         env:
           SPACEUSER: ${{ vars.SPACEUSER }}
           SPACEPSWD: ${{ secrets.SPACEPSWD }}
-        run: "snakemake --cores 2 region_case_results_by_filetype"
+        run: "$SNAKEMAKE region_case_results_by_filetype"

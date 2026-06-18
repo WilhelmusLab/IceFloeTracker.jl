@@ -6,6 +6,7 @@ import pandas as pd
 configfile: workflow.source_path("configs/default/config.yaml")
 regions = pd.read_csv(workflow.source_path(config["REGION_CSV"])).set_index("region")
 cases = pd.read_csv(workflow.source_path(config["CASE_CSV"]))
+project_toml = workflow.source_path(config["PROJECT_TOML"])
 
 def daterange(start_date, end_date):
     """Generates dates from start_date to end_date (inclusive)."""
@@ -150,26 +151,25 @@ rule init_fsdproc:
     shell:
         "{config[FSDPROC]} --help > {output}"
 
+
 rule init_ift:
+    input:
+        project_toml
     output:
-        "init/init_ift"
+        "init/init_ift",
+        ".julia/Project.toml",
+        ".julia/Manifest.toml"
     shell:
         """
+        mkdir -p .julia/
+        cp {project_toml} .julia/Project.toml
         {config[IFT]} -e '
-        using Pkg; 
-        {config[IFT_INSTALL]}
-        Pkg.add([
-            "CSVFiles",
-            "DataFrames",
-            "HDF5",
-            "Images",
-            "TimeZones",
-            "FileIO",
-        ])
+        using Pkg;
+        Pkg.resolve();
         Pkg.instantiate();
         using IceFloeTracker, HDF5, CSVFiles, DataFrames, Images, TimeZones;
         println(pkgversion(IceFloeTracker))
-        ' > {output}
+        ' > {output} 2>&1
         """
 
 
