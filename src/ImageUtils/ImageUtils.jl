@@ -15,7 +15,6 @@ export masker,
     imcomplement,
     to_uint8,
     get_tile_meta,
-    bump_tile,
     binarize_mask
 
 include("brighten.jl")

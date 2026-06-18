@@ -28,12 +28,6 @@
         @test get_tile_meta(tile) == [1, 2, 3, 4]
     end
 
-    @testset "bump_tile" begin
-        extrarows, extracols = rand(1:100, 2)
-        bumpby = (extrarows, extracols)
-        @test bump_tile(tile, bumpby) == (1:(2 + extrarows), 3:(4 + extracols))
-    end
-
     @testset "get_tiles" begin
         # unadjusted tiles
         _get_tiles(array, side_length) =
@@ -75,5 +69,95 @@
         lowerright_tile = newtiles[end, end]
         _, _, _, d = get_tile_meta(lowerright_tile)
         @test (b, d) == size(array)
+    end
+end
+
+@testitem "get_tiles" begin
+    @test get_tiles(rand(1, 1), 1) == [(1:1, 1:1);;]
+    @test get_tiles(rand(1, 2), 1) == [(1:1, 1:1) (1:1, 2:2);]
+    @test get_tiles(rand(1, 3), 1) == [(1:1, 1:1) (1:1, 2:2) (1:1, 3:3);]
+    @test get_tiles(rand(2, 2), 1) == [(1:1, 1:1) (1:1, 2:2); (2:2, 1:1) (2:2, 2:2)]
+    @test get_tiles(rand(4, 3), 2) == [(1:2, 1:2) (1:2, 3:3); (3:4, 1:2) (3:4, 3:3)]
+    @test get_tiles(rand(6, 4), 3) == [(1:3, 1:4); (4:6, 1:4);;]
+    @test get_tiles(rand(10, 6), 5) == [(1:5, 1:6); (6:10, 1:6);;]
+    @test get_tiles(rand(12, 16), 5) == [
+        (1:5, 1:5) (1:5, 6:10) (1:5, 11:16)
+        (6:12, 1:5) (6:12, 6:10) (6:12, 11:16)
+    ]
+    @test get_tiles(rand(20, 11), 10) == [(1:10, 1:11); (11:20, 1:11);;]
+    @test get_tiles(rand(6000, 3556), (2000, 3556)) ==
+        [(1:2000, 1:3556); (2001:4000, 1:3556); (4001:6000, 1:3556);;]
+end
+
+@testitem "MergeLastTileIfSmallerThanHalf examples" begin
+    using TiledIteration: TileIterator
+    using IceFloeTracker.ImageUtils: MergeLastTileIfSmallerThanHalf
+
+    @test TileIterator((1:1,), MergeLastTileIfSmallerThanHalf((1,))) == [(1:1,)]
+    @test TileIterator((1:2,), MergeLastTileIfSmallerThanHalf((1,))) == [(1:1,), (2:2,)]
+    @test TileIterator((1:3,), MergeLastTileIfSmallerThanHalf((1,))) ==
+        [(1:1,), (2:2,), (3:3,)]
+
+    @test TileIterator((0:1,), MergeLastTileIfSmallerThanHalf((2,))) == [(0:1,)]
+    @test TileIterator((-1:0,), MergeLastTileIfSmallerThanHalf((1,))) == [(-1:-1,), (0:0,)]
+    @test TileIterator((-1:0,), MergeLastTileIfSmallerThanHalf((1,))) == [(-1:-1,), (0:0,)]
+    @test TileIterator((1:3,), MergeLastTileIfSmallerThanHalf((2,))) == [(1:2,), (3:3,)]
+    @test TileIterator((1:4,), MergeLastTileIfSmallerThanHalf((2,))) == [(1:2,), (3:4,)]
+    @test TileIterator((1:7,), MergeLastTileIfSmallerThanHalf((2,))) ==
+        [(1:2,), (3:4,), (5:6,), (7:7,)]
+
+    @test TileIterator((1:4,), MergeLastTileIfSmallerThanHalf((3,))) == [(1:4,)]
+    @test TileIterator((1:5,), MergeLastTileIfSmallerThanHalf((3,))) == [(1:3,), (4:5,)]
+    @test TileIterator((1:6,), MergeLastTileIfSmallerThanHalf((3,))) == [(1:3,), (4:6,)]
+    @test TileIterator((1:7,), MergeLastTileIfSmallerThanHalf((3,))) == [(1:3,), (4:7,)]
+    @test TileIterator((1:8,), MergeLastTileIfSmallerThanHalf((3,))) ==
+        [(1:3,), (4:6,), (7:8,)]
+
+    @test TileIterator((1:8,), MergeLastTileIfSmallerThanHalf((4,))) == [(1:4,), (5:8,)]
+    @test TileIterator((1:9,), MergeLastTileIfSmallerThanHalf((4,))) == [(1:4,), (5:9,)]
+    @test TileIterator((1:10,), MergeLastTileIfSmallerThanHalf((4,))) ==
+        [(1:4,), (5:8,), (9:10,)]
+
+    @test TileIterator((1:10,), MergeLastTileIfSmallerThanHalf((5,))) == [(1:5,), (6:10,)]
+    @test TileIterator((1:12,), MergeLastTileIfSmallerThanHalf((5,))) == [(1:5,), (6:12,)]
+    @test TileIterator((1:16,), MergeLastTileIfSmallerThanHalf((5,))) ==
+        [(1:5,), (6:10,), (11:16,)]
+
+    @test TileIterator((1:11,), MergeLastTileIfSmallerThanHalf((10,))) == [(1:11,)]
+
+    @test TileIterator((1:6000,), MergeLastTileIfSmallerThanHalf((1000,))) ==
+        [(1:1000,), (1001:2000,), (2001:3000,), (3001:4000,), (4001:5000,), (5001:6000,)]
+    @test TileIterator((1:3556,), MergeLastTileIfSmallerThanHalf((1000,))) ==
+        [(1:1000,), (1001:2000,), (2001:3000,), (3001:3556,)]
+
+    @test_throws "tilesize must be >= 1" TileIterator(
+        (1:10,), MergeLastTileIfSmallerThanHalf((0,))
+    )
+end
+
+@testitem "MergeLastTileIfSmallerThanHalf generic tests" begin
+    using TiledIteration: TileIterator
+    using IceFloeTracker.ImageUtils: MergeLastTileIfSmallerThanHalf
+
+    for start in [-100_000, -4223, -9, 0, 1, 5605, 31093],
+        length_ in [0, 1, 2, 3, 4, 5, 17, 154, 2312],
+        tile_size in [1, 2, 3, 4, 5, 13, 538, 13209]
+
+        range = start:(start + length_)
+
+        tiles =
+            TileIterator((range,), MergeLastTileIfSmallerThanHalf((tile_size,))) |> collect
+
+        @testset "subranges cover the original range precisely" begin
+            range_expanded = collect(range)
+            all_subranges_expanded = tiles .|> first .|> collect
+            all_subranges_expanded_combined = vcat(all_subranges_expanded...)
+            @test range_expanded == all_subranges_expanded_combined
+        end
+
+        @testset "subrange lengths are all less than 3/2 of the requested tile size:" begin
+            subrange_lengths = tiles .|> first .|> length
+            @test all((2 .* subrange_lengths) .<= 3 * tile_size)
+        end
     end
 end
