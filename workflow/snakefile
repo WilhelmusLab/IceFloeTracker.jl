@@ -4,12 +4,9 @@ import calendar
 import pyproj
 import pandas as pd
 
-configfile: "workflow/config.yaml"
-workdir: "workflow/results"
-# The profile in workflow/profiles/default/config.yaml sets default values for this workflow.
-
-regions = pd.read_csv(config["REGION_CSV"]).set_index("region")
-cases = pd.read_csv(config["CASE_CSV"])
+configfile: workflow.source_path("configs/default/config.yaml")
+regions = pd.read_csv(workflow.source_path(config["REGION_CSV"])).set_index("region")
+cases = pd.read_csv(workflow.source_path(config["CASE_CSV"]))
 
 def daterange(start_date, end_date):
     """Generates dates from start_date to end_date (inclusive)."""
@@ -68,42 +65,9 @@ def get_region_target_bbox(region):
 # Batch Targets
 # ============================================================================
 
-rule region_case_results:
-    input:
-        expand("{case.region}.{case.scale}m.{case.start}.{case.end}.{case.pipeline}.tracked.csv",
-            case=cases.itertuples(),
-        )
-
-
-rule organize_input_file_by_filetype:
-    output: 
-        "{filetype}/{scene}.{ext}"
-    input:
-        "{scene}/{filetype}.{ext}"
-    wildcard_constraints:
-        scene = "[^/]+",
-        filetype = "[^./]+",
-        pipeline = "[^/]+"
-    shell:
-        "ln -f {input} {output}"
-
-
-rule organize_segmentation_results_by_pipeline:
-    output: 
-        "{pipeline}.{filetype}/{scene}.{ext}"
-    input:
-        "{scene}/{pipeline}/{filetype}.{ext}"
-    wildcard_constraints:
-        scene = "[^/]+",
-        filetype = "[^./]+",
-        pipeline = "[^/]+"
-    shell:
-        "ln -f {input} {output}"
-
-
 rule region_case_results_by_filetype:
     input:
-        ["{filetype}/{region}.{scale}m.{date_}.{satellite}.{ext}".format(
+        ["filetype/{filetype}/{region}.{scale}m.{date_}.{satellite}.{ext}".format(
             region=case.region, scale=case.scale, date_=date_, satellite=satellite, filetype=filetype, ext=ext)
             for filetype, ext in [
                 ("truecolor", "tiff"), 
@@ -115,7 +79,7 @@ rule region_case_results_by_filetype:
             for case in cases.itertuples()
             for date_ in daterange(date.fromisoformat(case.start), date.fromisoformat(case.end))
             for satellite in config["SATELLITES"]
-        ] + ["{pipeline}.{filetype}/{region}.{scale}m.{date_}.{satellite}.{ext}".format(
+        ] + ["filetype/{pipeline}/{filetype}/{region}.{scale}m.{date_}.{satellite}.{ext}".format(
             region=case.region, scale=case.scale, date_=date_, satellite=satellite, filetype=filetype, pipeline=case.pipeline, ext=ext)
             for filetype, ext in [
                 ("segment_mean_falsecolor", "tiff"), 
@@ -132,31 +96,64 @@ rule region_case_results_by_filetype:
         ]
         
 
+rule region_case_results:
+    input:
+        expand("track/{case.region}.{case.scale}m.{case.start}.{case.end}.{case.pipeline}.tracked.csv",
+            case=cases.itertuples(),
+        )
+
+
+rule organize_input_file_by_filetype:
+    output: 
+        "filetype/{filetype}/{scene}.{ext}"
+    input:
+        "scene/{scene}/{filetype}.{ext}"
+    wildcard_constraints:
+        scene = "[^/]+",
+        filetype = "[^./]+",
+        pipeline = "[^/]+"
+    shell:
+        "ln -f {input} {output}"
+
+
+rule organize_segmentation_results_by_pipeline:
+    output: 
+        "filetype/{pipeline}/{filetype}/{scene}.{ext}"
+    input:
+        "scene/{scene}/{pipeline}/{filetype}.{ext}"
+    wildcard_constraints:
+        scene = "[^/]+",
+        filetype = "[^./]+",
+        pipeline = "[^/]+"
+    shell:
+        "ln -f {input} {output}"
+
+
 # ============================================================================
 # INIT RULES
 # ============================================================================
 
 rule init_pass_time:
     output:
-        "init_pass_time"
+        "init/init_pass_time"
     shell:
         "{config[PASS_TIME]} --help > {output}"
 
 rule init_loader:
     output:
-        "init_loader"
+        "init/init_loader"
     shell:
         "{config[LOADER]} --help > {output}"
 
 rule init_fsdproc:
     output:
-        "init_fsdproc"
+        "init/init_fsdproc"
     shell:
         "{config[FSDPROC]} --help > {output}"
 
 rule init_ift:
     output:
-        "init_ift"
+        "init/init_ift"
     shell:
         """
         {config[IFT]} -e "using IceFloeTracker; println(pkgversion(IceFloeTracker))" > {output}
@@ -169,9 +166,9 @@ rule init_ift:
 
 rule get_region_overpass_times:
     output:
-        "{region}/{year}.overpasses.csv"
+        "region/{region}/{year}.overpasses.csv"
     input:
-        init_pass_time = "init_pass_time"
+        init_pass_time = "init/init_pass_time"
     wildcard_constraints:
         year = "[0-9]{4}"
     params:
@@ -188,9 +185,9 @@ rule get_region_overpass_times:
 
 rule get_region_month_overpass_times:
     output:
-        "{region}/{year}.{month}.overpasses.csv"
+        "region/{region}/{year}.{month}.overpasses.csv"
     input:
-        init_pass_time = "init_pass_time"
+        init_pass_time = "init/init_pass_time"
     params:
         start = "{year}-{month}-01",
         end = lambda wc: last_day_of_month(
@@ -207,9 +204,9 @@ rule get_region_month_overpass_times:
 
 rule get_single_overpass_time:
     output:
-        "{region}.{scale}m.{year}-{month}-{day}.{satellite}/overpass.txt"
+        "scene/{region}.{scale}m.{year}-{month}-{day}.{satellite}/overpass.txt"
     input:
-        "{region}/{year}.{month}.overpasses.csv"
+        "region/{region}/{year}.{month}.overpasses.csv"
     wildcard_constraints:
         year = "[0-9]{4}",
         month = "[0-9]{2}",
@@ -228,13 +225,7 @@ rule get_single_overpass_time:
         with open(output[0], "w") as f:
             f.write(overpass_time + "\n")
 
-rule get_case_overpass_time:
-    output:
-        "{region}.{scale}m.{year}-{month}-{day}.{satellite}/overpass.txt"
-    input:
-        "{region}.{scale}m.{year}-{month}-{day}.{satellite}/overpass.txt"
-    shell:
-        "cp {input} {output}"
+
 
 # ============================================================================
 # IMAGE LOADING RULES
@@ -242,9 +233,9 @@ rule get_case_overpass_time:
 
 rule load_truecolor:
     output:
-        "{region}.{scale}m.{date}.{satellite}/truecolor.tiff"
+        "scene/{region}.{scale}m.{date}.{satellite}/truecolor.tiff"
     input:
-        init_loader = "init_loader"
+        init_loader = "init/init_loader"
     params:
         bbox = lambda wc: get_region_target_bbox(wc.region),
         crs = lambda wc: get_region_data(wc.region)["target_crs"]
@@ -255,9 +246,9 @@ rule load_truecolor:
 
 rule load_falsecolor:
     output:
-        "{region}.{scale}m.{date}.{satellite}/falsecolor.tiff"
+        "scene/{region}.{scale}m.{date}.{satellite}/falsecolor.tiff"
     input:
-        init_loader = "init_loader"
+        init_loader = "init/init_loader"
     params:
         bbox = lambda wc: get_region_target_bbox(wc.region),
         crs = lambda wc: get_region_data(wc.region)["target_crs"]
@@ -268,9 +259,9 @@ rule load_falsecolor:
 
 rule load_cloud:
     output:
-        "{region}.{scale}m.{date}.{satellite}/cloud.tiff"
+        "scene/{region}.{scale}m.{date}.{satellite}/cloud.tiff"
     input:
-        init_loader = "init_loader"
+        init_loader = "init/init_loader"
     params:
         bbox = lambda wc: get_region_target_bbox(wc.region),
         crs = lambda wc: get_region_data(wc.region)["target_crs"]
@@ -282,9 +273,9 @@ rule load_cloud:
 
 rule load_raw_landmask:
     output:
-        "{region}/{scale}m.{year}.landmask_raw.tiff"
+        "region/{region}/{scale}m.{year}.landmask_raw.tiff"
     input:
-        init_loader = "init_loader"
+        init_loader = "init/init_loader"
     params:
         bbox = lambda wc: get_region_target_bbox(wc.region),
         crs = lambda wc: get_region_data(wc.region)["target_crs"]
@@ -299,7 +290,7 @@ rule load_landmask:
         "{stem}landmask.tiff"
     input:
         landmask = "{stem}landmask_raw.tiff",
-        init_ift = "init_ift"
+        init_ift = "init/init_ift"
     shell:
         """
         {config[IFT]} -e 'using IceFloeTracker, Images; 
@@ -309,10 +300,10 @@ rule load_landmask:
 
 rule load_coastal_buffer_mask:
     output:
-        "{region}/{scale}m.{year}.coastal_buffer_mask.tiff"
+        "region/{region}/{scale}m.{year}.coastal_buffer_mask.tiff"
     input:
-        landmask = "{region}/{scale}m.{year}.landmask.tiff",
-        init_ift = "init_ift"
+        landmask = "region/{region}/{scale}m.{year}.landmask.tiff",
+        init_ift = "init/init_ift"
     shell:
         """
         {config[IFT]} -e 'using IceFloeTracker, Images; 
@@ -323,18 +314,18 @@ rule load_coastal_buffer_mask:
 
 rule load_case_landmask:
     output:
-        "{region}.{scale}m.{year}-{month}-{day}.{satellite}/landmask.tiff"
+        "scene/{region}.{scale}m.{year}-{month}-{day}.{satellite}/landmask.tiff"
     input:
-        "{region}/{scale}m.{year}.landmask.tiff"
+        "region/{region}/{scale}m.{year}.landmask.tiff"
     shell:
         "cp {input} {output}"
 
 
 rule load_case_coastal_buffer_mask:
     output:
-        "{region}.{scale}m.{year}-{month}-{day}.{satellite}/coastal_buffer_mask.tiff"
+        "scene/{region}.{scale}m.{year}-{month}-{day}.{satellite}/coastal_buffer_mask.tiff"
     input:
-        "{region}/{scale}m.{year}.coastal_buffer_mask.tiff"
+        "region/{region}/{scale}m.{year}.coastal_buffer_mask.tiff"
     shell:
         "cp {input} {output}"
 
@@ -364,7 +355,7 @@ rule segment:
         falsecolor = "{dir}/falsecolor.tiff",
         landmask = "{dir}/landmask.tiff",
         coastal_buffer_mask = "{dir}/coastal_buffer_mask.tiff",
-        init_ift = "init_ift",
+        init_ift = "init/init_ift",
     shell:
         """
         {config[IFT]} -e 'using IceFloeTracker, Images;
@@ -399,7 +390,7 @@ rule segment_buckley:
         truecolor = "{dir}/truecolor.tiff",
         cloud_map = "{dir}/cloud.tiff",
         landmask = "{dir}/landmask.tiff",
-        init_fsdproc = "init_fsdproc",
+        init_fsdproc = "init/init_fsdproc",
     shell:
         """
         mkdir -p {wildcards.dir}/buckley;
@@ -445,24 +436,24 @@ rule region_props_crs:
 
 rule tracking:
     output:
-        tracked = "{region}.{scale}m.{start}.{end}.{pipeline}.tracked.csv",
-        rotation = "{region}.{scale}m.{start}.{end}.{pipeline}.tracked.rotation.csv",
-        config = "{region}.{scale}m.{start}.{end}.{pipeline}.tracked.config.txt"
+        tracked = "track/{region}.{scale}m.{start}.{end}.{pipeline}.tracked.csv",
+        rotation = "track/{region}.{scale}m.{start}.{end}.{pipeline}.tracked.rotation.csv",
+        config = "track/{region}.{scale}m.{start}.{end}.{pipeline}.tracked.config.txt"
     input:
-        labels_maps = lambda wc: expand("{region}.{scale}m.{date}.{satellite}/{pipeline}/labels_map.tiff",
+        labels_maps = lambda wc: expand("scene/{region}.{scale}m.{date}.{satellite}/{pipeline}/labels_map.tiff",
                           satellite=config["SATELLITES"],
                           date=daterange(date.fromisoformat(wc.start),
                                          date.fromisoformat(wc.end)),
                           **wc
                           ),
 
-        overpasses = lambda wc: expand("{region}.{scale}m.{date}.{satellite}/overpass.txt",
+        overpasses = lambda wc: expand("scene/{region}.{scale}m.{date}.{satellite}/overpass.txt",
                           satellite=config["SATELLITES"],
                           date=daterange(date.fromisoformat(wc.start),
                                          date.fromisoformat(wc.end)),
                           **wc
                           ),
-        init_ift = "init_ift"
+        init_ift = "init/init_ift"
     shell:
         """
         {config[IFT]} -e 'using IceFloeTracker, Images, TimeZones, CSVFiles, DataFrames;
@@ -516,7 +507,8 @@ rule observation_hdf5:
         passtime = "{dir}/overpass.txt",
         coastal_buffer_mask = "{dir}/coastal_buffer_mask.tiff",
         ice_mask = "{dir}/{pipeline}/ice_mask.tiff",
-        props_crs = "{dir}/{pipeline}/props_crs.csv"
+        props_crs = "{dir}/{pipeline}/props_crs.csv",
+        init_ift = "init/init_ift"
     shell:
         """
         {config[IFT]} -e 'using IceFloeTracker, TimeZones, FileIO, Images, DataFrames;
@@ -532,6 +524,6 @@ rule observation_hdf5:
             ice_mask = load("{input.ice_mask}") |> binarize_mask,
             cloud_mask = load("{input.cloud_mask}") |> binarize_mask,
         )
-        make_hdf5("{output}", data)
+        save_hdf5("{output}", data)
         '
         """

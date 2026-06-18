@@ -1,4 +1,3 @@
-
 @testitem "HDF5 saving and loading" begin
     using TimeZones
     using IceFloeTracker.Data:
@@ -33,9 +32,9 @@
             reference="https://doi.org/00.0000",
             contact="contact@example.com",
         )
-        make_hdf5(output_path, data;)
+        save_hdf5(output_path, data;)
 
-        @testset "HDF5 file structure" begin
+        @testset "file structure" begin
             h5open(output_path, "r") do file
                 @test attrs(file)["file_version"] === "1.0.0"
                 @test attrs(file)["iftversion"] === "0.0.0"
@@ -55,7 +54,7 @@
             end
         end
 
-        @testset "HDF5 loading" begin
+        @testset "loading" begin
             reloaded = load_hdf5(output_path)
             @test reloaded.passtime == data.passtime
             @test reloaded.crs_ref_image_path == data.crs_ref_image_path
@@ -75,8 +74,8 @@
 end
 
 @testitem "unknown HDF5 files aren't loaded" begin
-    using IceFloeTracker.PersistHDF5: load_hdf5
     using HDF5
+  
     mktemp() do output_path, _
         h5open(output_path, "w") do file
             attrs(file)["file_version"] = "0.0.0"
