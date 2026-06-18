@@ -2,8 +2,8 @@
 # Executables
 #--------------------------------------------------
 
+JULIA_PROJECT: .julia-project
 IFT: julia --project=.julia-project
-IFT_INSTALL: Pkg.add(PackageSpec(name="IceFloeTracker", rev="main")) # e.g. rev="v0.1.0" or rev="e98ac8d" for a specific version
 FSDPROC: "pipx run --spec git+https://github.com/WilhelmusLab/ebseg@v1.0.1 fsdproc"
 PASS_TIME: "pipx run --spec git+https://github.com/wilhelmuslab/satellite-overpass-identification-tool@v3.2.1 satellite-overpass-identification-tool"
 LOADER: "pipx run --spec git+https://github.com/brown-ccv/earthdata-downloader@v1.0 earthdata-downloader load"
@@ -13,6 +13,7 @@ LOADER: "pipx run --spec git+https://github.com/brown-ccv/earthdata-downloader@v
 #--------------------------------------------------
 REGION_CSV: configs/default/region.csv # relative to snakefile
 CASE_CSV: configs/default/case.csv # relative to snakefile
+PROJECT_TOML: configs/default/Project.toml # relative to snakefile
 
 #--------------------------------------------------
 # Satellites

@@ -1,0 +1,1 @@
+PROJECT_TOML: configs/ift-from-this-repo/Project.toml # relative to snakefile
