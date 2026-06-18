@@ -34,8 +34,6 @@ jobs:
           python-version: '3.x'
       - name: Install workflow dependencies
         run: ".devcontainer/setup-workflow-dependencies.sh"
-      - name: Install Julia dependencies
-        run: "$SNAKEMAKE init_ift"        
       - name: Get tracking results for an example region
         env:
           SPACEUSER: ${{ vars.SPACEUSER }}
