@@ -10,7 +10,7 @@ concurrency:
   cancel-in-progress: ${{ startsWith(github.ref, 'refs/pull/') }}
 
 env:
-  SNAKEMAKE: "snakemake --configfile workflow/configs/ift-from-this-repo/config.yaml --cores 2"
+  SNAKEMAKE: "snakemake --cores=2 --configfile=workflow/configs/ift-from-this-repo/config.yaml"
 
 jobs:
   test:
