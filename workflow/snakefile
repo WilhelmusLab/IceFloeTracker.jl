@@ -160,8 +160,6 @@ rule init_ift:
         "init/init_ift",
         ".julia/Project.toml",
         ".julia/Manifest.toml"
-    log: 
-        "init/init_ift.log"
     shell:
         """
         mkdir -p .julia/
@@ -172,7 +170,7 @@ rule init_ift:
         Pkg.instantiate();
         using IceFloeTracker;
         println(pkgversion(IceFloeTracker))
-        ' 1> {output[0]}  2> {log}
+        ' 1> {output[0]}
         """
 
 
