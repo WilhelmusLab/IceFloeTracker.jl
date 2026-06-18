@@ -170,7 +170,7 @@ rule init_ift:
         Pkg.instantiate();
         using IceFloeTracker;
         println(pkgversion(IceFloeTracker))
-        ' 1> {output[0]}
+        ' > {output[0]}
         """
 
 
