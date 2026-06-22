@@ -307,8 +307,12 @@ function (f::PolygonConvexArea)(A)
         try
             chull = convexhull(A .== i)
         catch e
-            convex_areas[i] = NaN
-            continue
+            if e isa ErrorException
+                convex_areas[i] = NaN
+                continue
+            else
+                rethrow(e)
+            end
         end
         N = length(chull)
 
@@ -353,8 +357,12 @@ function (f::PixelConvexArea)(A)
         try
             chull = convexhull(A .== i)
         catch e
-            convex_areas[i] = NaN
-            continue
+            if e isa ErrorException
+                convex_areas[i] = NaN
+                continue
+            else
+                rethrow(e)
+            end
         end
         N = length(chull)
         x = getindex.(bboxes[i], 1)
