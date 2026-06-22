@@ -314,11 +314,11 @@ function (p::Segment)(
             segmented_truecolor=segments_truecolor,
             segmented_falsecolor=segments_falsecolor,
             segment_mean_truecolor=map( # TODO Add "view_seg" code snippet
-                i -> (n0f8(segment_mean(segments_truecolor, i))),
+                i -> n0f8(segment_mean(segments_truecolor, i)),
                 labels_map(segments_truecolor),
             ),
             segment_mean_falsecolor=map(
-                i -> (n0f8(segment_mean(segments_falsecolor, i))),
+                i -> n0f8(segment_mean(segments_falsecolor, i)),
                 labels_map(segments_falsecolor),
             ), # TODO Add figure that overlays the segments
         )

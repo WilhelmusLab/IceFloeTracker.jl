@@ -309,10 +309,10 @@ function (p::Segment)(
             segments_truecolor,
             segments_falsecolor,
             segment_mean_truecolor=map(
-                i -> (n0f8(segment_mean(segments_truecolor, i))), labels
+                i -> n0f8(segment_mean(segments_truecolor, i)), labels
             ),
             segment_mean_falsecolor=map(
-                i -> (n0f8(segment_mean(segments_falsecolor, i))), labels
+                i -> n0f8(segment_mean(segments_falsecolor, i)), labels
             ),
         )
     end
