@@ -167,9 +167,9 @@ rule init_ift:
         using Pkg;
         Pkg.resolve();
         Pkg.instantiate();
-        using IceFloeTracker, HDF5, CSVFiles, DataFrames, Images, TimeZones;
+        using IceFloeTracker;
         println(pkgversion(IceFloeTracker))
-        ' > {output} 2>&1
+        ' > {output[0]}
         """
 
 
