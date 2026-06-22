@@ -166,6 +166,7 @@ rule init_ift:
         cp {project_toml} .julia/Project.toml
         {config[IFT]} -e '
         using Pkg;
+        Pkg.Registry.add("General")
         Pkg.resolve();
         Pkg.instantiate();
         using IceFloeTracker;
