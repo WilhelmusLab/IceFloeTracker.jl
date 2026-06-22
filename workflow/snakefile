@@ -294,7 +294,7 @@ rule load_landmask:
     shell:
         """
         {config[IFT]} -e 'using IceFloeTracker, Images; 
-            load("{input.landmask}") |> binarize_mask .|> Bool .|> Gray |> save("{output}")
+            load("{input.landmask}") |> binarize_mask .|> N0f8 .|> Gray |> save("{output}")
         '
         """
 
@@ -307,7 +307,7 @@ rule load_coastal_buffer_mask:
     shell:
         """
         {config[IFT]} -e 'using IceFloeTracker, Images; 
-            load("{input.landmask}") |> binarize_mask |> create_coastal_buffer_mask .|> Gray |> save("{output}")
+            load("{input.landmask}") |> binarize_mask |> create_coastal_buffer_mask .|> N0f8 .|> Gray |> save("{output}")
         '
         """
 
