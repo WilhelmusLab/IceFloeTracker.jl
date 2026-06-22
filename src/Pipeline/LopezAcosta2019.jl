@@ -21,6 +21,7 @@ import Images:
     SegmentedImage,
     segment_mean,
     float64,
+    n0f8,
     channelview,
     build_histogram,
     adjust_histogram,
@@ -313,11 +314,12 @@ function (p::Segment)(
             segmented_truecolor=segments_truecolor,
             segmented_falsecolor=segments_falsecolor,
             segment_mean_truecolor=map( # TODO Add "view_seg" code snippet
-                i -> segment_mean(segments_truecolor, i),
+                i -> (segment_mean(segments_truecolor, i) |> n0f8),
                 labels_map(segments_truecolor),
             ),
             segment_mean_falsecolor=map(
-                i -> segment_mean(segments_falsecolor, i), labels_map(segments_falsecolor)
+                i -> (segment_mean(segments_falsecolor, i) |> n0f8),
+                labels_map(segments_falsecolor),
             ), # TODO Add figure that overlays the segments
         )
     end
