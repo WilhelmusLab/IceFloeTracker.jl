@@ -33,7 +33,7 @@
             band_7_max=5 / 255, possible_ice_threshold=75 / 255
         )
 
-        dataset = Watkins2026Dataset(; ref="v0.1")
+        dataset = Watkins2026Dataset(; ref="v0.2")
         case = first(filter(c -> (c.case_number == 12 && c.satellite == "terra"), dataset))
 
         # There is only one pixel in this image marked as peak
@@ -65,7 +65,7 @@
     @testset "IceDetectionLopezAcosta2019" begin
         fc = IceDetectionLopezAcosta2019()
 
-        dataset = Watkins2026Dataset(; ref="v0.1")
+        dataset = Watkins2026Dataset(; ref="v0.2")
         case = first(filter(c -> (c.case_number == 12 && c.satellite == "terra"), dataset))
 
         bc = binarize(modis_falsecolor(case), fc)
@@ -79,7 +79,7 @@
 
     @testset "IceDetectionBrightnessPeaksMODIS134" begin
         f = IceDetectionBrightnessPeaksMODIS134()
-        dataset = Watkins2026Dataset(; ref="v0.1")
+        dataset = Watkins2026Dataset(; ref="v0.2")
         case = first(filter(c -> (c.case_number == 111 && c.satellite == "terra"), dataset))
         floes = validated_binary_floes(case) .> 0
         clouds = Watkins2025CloudMask()(modis_falsecolor(case))
@@ -112,7 +112,7 @@ end
 
     @testset "interface checks" begin
         @testset "functor version" begin
-            dataset = Watkins2026Dataset(; ref="v0.1")
+            dataset = Watkins2026Dataset(; ref="v0.2")
             case = first(
                 filter(c -> (c.case_number == 12 && c.satellite == "terra"), dataset)
             )
@@ -256,7 +256,7 @@ end
             end
         end
         @testset "validated data" begin
-            dataset = Watkins2026Dataset(; ref="v0.1")
+            dataset = Watkins2026Dataset(; ref="v0.2")
             case = first(
                 filter(c -> (c.case_number == 12 && c.satellite == "terra"), dataset)
             )

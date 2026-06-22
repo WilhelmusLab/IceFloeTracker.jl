@@ -1,3 +1,4 @@
+import Images: centered
 """
     _generate_se!(se)
 
@@ -11,25 +12,23 @@ function _generate_se!(se)
     return nothing
 end
 
-function se_disk50()
-    se = [sum(c.I) <= 29 for c in CartesianIndices((99, 99))]
-    _generate_se!(se)
-    return se
-end
+"""
+    se_octagon(r)
 
-function se_disk4()
-    se = [sum(c.I) <= 3 for c in CartesianIndices((7, 7))]
-    _generate_se!(se)
-    return se
-end
-function se_disk20()
-    se = [sum(c.I) <= 11 for c in CartesianIndices((39, 39))]
-    _generate_se!(se)
-    return se
-end
+Construct an octagonal structuring element with radius r.
 
-function se_disk2()
-    se = [sum(c.I) <= 3 for c in CartesianIndices((5, 5))]
+""" # dmw: should this have the same offset indexing we get in ImageMorphology?
+function strel_octagon(r)
+    se = [sum(c.I) <= r/2 + 2 for c in CartesianIndices((2*r + 1, 2*r + 1))]
     _generate_se!(se)
-    return se
+    return centered(se)
+end
+"""
+    strel_disk(r)
+
+Construct a disk-shaped structuring element with radius r, diameter 2r+1.
+"""
+function strel_disk(r)
+    se = [sum(abs.(c.I .- (r + 1)) .^ 2) for c in CartesianIndices((2*r + 1, 2*r + 1))]
+    return centered(sqrt.(se) .<= r)
 end

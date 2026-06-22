@@ -39,10 +39,10 @@ end
 """
     _bin9todec(v)
 
-Get decimal representation of a bit vector `v` with the leading bit at its leftmost posistion.
+Get decimal representation of a bit vector `v` with the leading bit at its leftmost position.
 
 Example
-```
+```julia-repl
 julia> _bin9todec([0 0 0 0 0 0 0 0 0])
 0
 

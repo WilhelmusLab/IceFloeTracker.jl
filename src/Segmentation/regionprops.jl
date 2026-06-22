@@ -56,21 +56,19 @@ Add columns `latitude`, `longitude`, and pixel coordinates `x`, `y` to `pairedfl
 """
 function addlatlon!(pairedfloesdf::DataFrame, refimage::AbstractString)
     latlondata = latlon(refimage)
-    colstodrop = [:row_centroid, :col_centroid, :min_row, :min_col, :max_row, :max_col]
-    converttounits!(pairedfloesdf, latlondata, colstodrop)
+    converttounits!(pairedfloesdf, latlondata)
     return nothing
 end
 
 ## LatLon functions originally from IFTPipeline.jl
 # TODO: Add example with reference geotiff image.
 """
-    convertcentroid!(propdf, latlondata, colstodrop)
+    convertcentroid!(propdf, latlondata)
 
-Convert the centroid coordinates from row and column to latitude and longitude dropping unwanted
-columns specified in `colstodrop` for the output data structure. Addionally, add columns `x` and `y`
-with the pixel coordinates of the centroid.
+Convert the centroid coordinates from row and column to latitude and longitude. 
+Additionally, add columns `x` and `y` with the pixel coordinates of the centroid.
 """
-function convertcentroid!(propdf, latlondata, colstodrop)
+function convertcentroid!(propdf, latlondata)
     latitude, longitude = [
         [
             latlondata[c][Int(round(x)), Int(round(y))] for
@@ -87,18 +85,17 @@ function convertcentroid!(propdf, latlondata, colstodrop)
     propdf.longitude = longitude
     propdf.x = x
     propdf.y = y
-    select!(propdf, Not(colstodrop))
     return nothing
 end
 
 """
-    converttounits!(propdf, latlondata, colstodrop)
+    converttounits!(propdf, latlondata)
+    converttounits(propdf, latlondata)
 
-Convert the floe properties from pixels to kilometers and square kilometers where appropiate. Also drop the columns specified in `colstodrop`.
+Convert the floe properties from pixels to kilometers and square kilometers where appropriate.
 """
-function converttounits!(propdf, latlondata, colstodrop)
+function converttounits!(propdf, latlondata)
     if nrow(propdf) == 0
-        select!(propdf, Not(colstodrop))
         insertcols!(
             propdf,
             :latitude => Float64,
@@ -108,7 +105,7 @@ function converttounits!(propdf, latlondata, colstodrop)
         )
         return nothing
     end
-    convertcentroid!(propdf, latlondata, colstodrop)
+    convertcentroid!(propdf, latlondata)
     x = latlondata[:X]
     dx = abs(x[2] - x[1])
     convertarea(area) = area * dx^2 / 1e6
@@ -119,6 +116,12 @@ function converttounits!(propdf, latlondata, colstodrop)
     propdf.major_axis_length .= convertlength(propdf.major_axis_length)
     propdf.perimeter .= convertlength(propdf.perimeter)
     return nothing
+end
+
+function converttounits(propdf, latlondata)
+    output = DataFrame(propdf; copycols=true)
+    converttounits!(output, latlondata)
+    return output
 end
 
 """component_floes(indexmap; minimum_area=1)
@@ -210,7 +213,7 @@ strel_box((3,3)) for 8-connectivity. The resulting function operates on a binary
 is assumed to contain a single object.
 
 # Examples
-```
+```julia-repl
 julia> A = [0 1 1; 1 1 1; 1 1 1];
 
 julia> BenkridCrookes(connectivity=4)(A)
@@ -535,7 +538,17 @@ function regionprops(
 
     maximum(labels) == 0 && begin
         @warn "Labeled image is empty!"
-        return Dict(p => [] for p in properties)
+        properties_ = Symbol[]
+        for p in properties
+            if p == :bbox
+                append!(properties_, [:min_row, :max_row, :min_col, :max_col])
+            elseif p == :centroid
+                append!(properties_, [:row_centroid, :col_centroid])
+            else
+                append!(properties_, [p])
+            end
+        end
+        return Dict(p => [] for p in properties_)
     end
 
     data = Dict{Symbol,Any}()
