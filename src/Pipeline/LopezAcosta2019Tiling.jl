@@ -21,6 +21,7 @@ import Images:
     RGB,
     Gray,
     float64,
+    n0f8,
     red,
     green,
     blue,
