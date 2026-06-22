@@ -34,6 +34,7 @@ jobs:
           python-version: '3.x'
       - name: Install workflow dependencies
         run: ".devcontainer/setup-workflow-dependencies.sh"
+      - uses: julia-actions/julia-buildpkg@v1
       - name: Get tracking results for an example region
         env:
           SPACEUSER: ${{ vars.SPACEUSER }}
