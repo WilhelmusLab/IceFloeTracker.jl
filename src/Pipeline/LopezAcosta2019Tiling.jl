@@ -282,6 +282,8 @@ function (p::Segment)(
     if !isnothing(intermediate_results_callback)
         segments_truecolor = SegmentedImage(truecolor, labels)
         segments_falsecolor = SegmentedImage(falsecolor, labels)
+        segment_mean_truecolor=map(i -> n0f8(segment_mean(segments_truecolor, i)), labels)
+        segment_mean_falsecolor=map(i -> n0f8(segment_mean(segments_falsecolor, i)), labels)
         intermediate_results_callback(;
             falsecolor,
             truecolor,
@@ -308,12 +310,8 @@ function (p::Segment)(
             segments=segmented,
             segments_truecolor,
             segments_falsecolor,
-            segment_mean_truecolor=map(
-                i -> n0f8(segment_mean(segments_truecolor, i)), labels
-            ),
-            segment_mean_falsecolor=map(
-                i -> n0f8(segment_mean(segments_falsecolor, i)), labels
-            ),
+            segment_mean_truecolor,
+            segment_mean_falsecolor,
         )
     end
 
