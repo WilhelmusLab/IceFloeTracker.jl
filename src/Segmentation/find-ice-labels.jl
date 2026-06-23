@@ -317,7 +317,7 @@ function tiled_adaptive_binarization(
     img = deepcopy(img)
     img[Gray.(img) .< minimum_brightness] .= 0
     for tile in tiles
-        L = Int64.(round.(minimum(length.(tile)) / 8, digits=0))
+        L = Int64.(round.(minimum(length.(tile)) / 8; digits=0))
         L < minimum_window_size && (L = minimum_window_size)
 
         f = AdaptiveThreshold(img[tile...]; window_size=L, percentage=threshold_percentage)
@@ -346,19 +346,26 @@ tiles can be provided and the algorithm will be run on each tile.
     nbins=64
 end
 
-function (f::IceDetectionBrightnessPeaksMODIS134)(truecolor_image::AbstractArray{<:Union{AbstractRGB, TransparentRGB}}) 
+function (f::IceDetectionBrightnessPeaksMODIS134)(
+    truecolor_image::AbstractArray{<:Union{AbstractRGB,TransparentRGB}}
+)
     banddata = red.(truecolor_image)
     edges, bincounts = build_histogram(banddata, f.nbins; minval=0, maxval=1)
-    ice_peak = get_ice_peaks(edges, bincounts;
+    ice_peak = get_ice_peaks(
+        edges,
+        bincounts;
         possible_ice_threshold=f.band_1_min,
         minimum_prominence=f.minimum_prominence,
-        window_size=f.window_size)
+        window_size=f.window_size,
+    )
     isinf(ice_peak) && (ice_peak = f.band_1_min)
-    thresh = 0.5 * (f.band_1_min + ice_peak) 
+    thresh = 0.5 * (f.band_1_min + ice_peak)
     return banddata .> thresh
 end
 
-function (f::IceDetectionBrightnessPeaksMODIS134)(truecolor_image::AbstractArray{<:Union{AbstractRGB, TransparentRGB}}, tiles) 
+function (f::IceDetectionBrightnessPeaksMODIS134)(
+    truecolor_image::AbstractArray{<:Union{AbstractRGB,TransparentRGB}}, tiles
+)
     out = falses(size(truecolor_image))
     for tile in tiles
         out[tile...] .= f(truecolor_image[tile...])

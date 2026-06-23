@@ -267,12 +267,9 @@ end
         filter!(c -> c.case_number == 6, dataset)
         sort!([:pass_time], dataset)
         segmenter = LopezAcosta2019Tiling.Segment()
-        segmentation_results =
-            segmenter.(
-                modis_truecolor.(dataset),
-                modis_falsecolor.(dataset),
-                modis_landmask.(dataset),
-            )
+        segmentation_results = segmenter.(
+            modis_truecolor.(dataset), modis_falsecolor.(dataset), modis_landmask.(dataset)
+        )
         tracker = FloeTracker(;
             filter_function=FilterFunction(),
             matching_function=MinimumWeightMatchingFunction(),
@@ -289,12 +286,9 @@ end
         filter!(c -> c.case_number == 6, dataset)
         sort!([:pass_time], dataset)
         segmenter = LopezAcosta2019Tiling.Segment()
-        segmentation_results =
-            segmenter.(
-                modis_truecolor.(dataset),
-                modis_falsecolor.(dataset),
-                modis_landmask.(dataset),
-            )
+        segmentation_results = segmenter.(
+            modis_truecolor.(dataset), modis_falsecolor.(dataset), modis_landmask.(dataset)
+        )
 
         tracker = FloeTracker(;
             filter_function=ChainedFilterFunction(;
@@ -387,8 +381,9 @@ end
         filter_function=FilterFunction(), matching_function=MinimumWeightMatchingFunction()
     )
 
-    all_cases_with_validated_floes =
-        case_number.(filter(c -> c.number_floes != 0.0, dataset))
+    all_cases_with_validated_floes = case_number.(
+        filter(c -> c.number_floes != 0.0, dataset)
+    )
 
     # All cases should run without error.
     for case_number in all_cases_with_validated_floes

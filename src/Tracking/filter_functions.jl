@@ -75,7 +75,7 @@ have rows `row_centroid` and `col_centroid`.
 function euclidean_distance(floe, candidates; r=250)
     return sqrt.(
         (floe.row_centroid .- candidates.row_centroid) .^ 2 .+
-        (floe.col_centroid .- candidates.col_centroid) .^ 2
+        (floe.col_centroid .- candidates.col_centroid) .^ 2,
     ) * r
 end
 
@@ -157,8 +157,9 @@ function (f::ShapeDifferenceThresholdFilter)(
 
     candidates[!, :scaled_shape_difference] =
         candidates[!, :shape_difference] ./ candidates[!, f.scale_by]
-    candidates[!, :scaled_shape_difference] .=
-        round.(candidates[!, :scaled_shape_difference], digits=3)
+    candidates[!, :scaled_shape_difference] .= round.(
+        candidates[!, :scaled_shape_difference]; digits=3
+    )
 
     return transform!(
         candidates,
@@ -231,45 +232,47 @@ applying 7 individual [`AbstractFloeFilterFunctions`](@ref) in sequence:
     4. `PsiSCorrelationThresholdFilter`  
 Filters in step 2 use the [`PiecewiseLinearThresholdFunction`](@ref) for thresholds, while Filter 1 uses a [`LinearTimeDistanceFunction`](@ref).
 """ # TODO: Add reference to cal-val paper when ready.
-FilterFunction() = ChainedFilterFunction(;
-    filters=[
-        DistanceThresholdFilter(),
-        RelativeErrorThresholdFilter(;
-            variable=:area,
-            threshold_function=PiecewiseLinearThresholdFunction(;
-                minimum_value=0.43, maximum_value=0.17
+function FilterFunction()
+    return ChainedFilterFunction(;
+        filters=[
+            DistanceThresholdFilter(),
+            RelativeErrorThresholdFilter(;
+                variable=:area,
+                threshold_function=PiecewiseLinearThresholdFunction(;
+                    minimum_value=0.43, maximum_value=0.17
+                ),
             ),
-        ),
-        RelativeErrorThresholdFilter(;
-            variable=:convex_area,
-            threshold_function=PiecewiseLinearThresholdFunction(;
-                minimum_value=0.44, maximum_value=0.25
+            RelativeErrorThresholdFilter(;
+                variable=:convex_area,
+                threshold_function=PiecewiseLinearThresholdFunction(;
+                    minimum_value=0.44, maximum_value=0.25
+                ),
             ),
-        ),
-        RelativeErrorThresholdFilter(;
-            variable=:major_axis_length,
-            threshold_function=PiecewiseLinearThresholdFunction(;
-                minimum_value=0.27, maximum_value=0.13
+            RelativeErrorThresholdFilter(;
+                variable=:major_axis_length,
+                threshold_function=PiecewiseLinearThresholdFunction(;
+                    minimum_value=0.27, maximum_value=0.13
+                ),
             ),
-        ),
-        RelativeErrorThresholdFilter(;
-            variable=:minor_axis_length,
-            threshold_function=PiecewiseLinearThresholdFunction(;
-                minimum_value=0.28, maximum_value=0.1
+            RelativeErrorThresholdFilter(;
+                variable=:minor_axis_length,
+                threshold_function=PiecewiseLinearThresholdFunction(;
+                    minimum_value=0.28, maximum_value=0.1
+                ),
             ),
-        ),
-        ShapeDifferenceThresholdFilter(;
-            threshold_function=PiecewiseLinearThresholdFunction(;
-                minimum_value=0.47, maximum_value=0.31
+            ShapeDifferenceThresholdFilter(;
+                threshold_function=PiecewiseLinearThresholdFunction(;
+                    minimum_value=0.47, maximum_value=0.31
+                ),
             ),
-        ),
-        PsiSCorrelationThresholdFilter(;
-            threshold_function=PiecewiseLinearThresholdFunction(;
-                minimum_value=0.86, maximum_value=0.96
+            PsiSCorrelationThresholdFilter(;
+                threshold_function=PiecewiseLinearThresholdFunction(;
+                    minimum_value=0.86, maximum_value=0.96
+                ),
             ),
-        ),
-    ],
-)
+        ],
+    )
+end
 
 """
     LopezAcosta2019ChainedFilterFunction(floe, candidates)

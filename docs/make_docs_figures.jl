@@ -7,28 +7,26 @@ using Images
 
 test_region = (1:2000, 1001:3000)
 
-truecolor_image =
-    float64.(
-        RGB.(
-            load(
-                joinpath(
-                    HOME,
-                    "test/test_inputs/beaufort-chukchi-seas_truecolor.2020162.aqua.250m.tiff",
-                ),
-            )[test_region...]
-        )
-    )
-falsecolor_image =
-    float64.(
-        RGB.(
-            load(
-                joinpath(
-                    HOME,
-                    "test/test_inputs/beaufort-chukchi-seas_falsecolor.2020162.aqua.250m.tiff",
-                ),
-            )[test_region...]
-        )
-    )
+truecolor_image = float64.(
+    RGB.(
+        load(
+            joinpath(
+                HOME,
+                "test/test_inputs/beaufort-chukchi-seas_truecolor.2020162.aqua.250m.tiff",
+            ),
+        )[test_region...],
+    ),
+)
+falsecolor_image = float64.(
+    RGB.(
+        load(
+            joinpath(
+                HOME,
+                "test/test_inputs/beaufort-chukchi-seas_falsecolor.2020162.aqua.250m.tiff",
+            ),
+        )[test_region...],
+    ),
+)
 
 land_mask_img = load(joinpath(HOME, "test/test_inputs/landmask.tiff"))[test_region...]
 

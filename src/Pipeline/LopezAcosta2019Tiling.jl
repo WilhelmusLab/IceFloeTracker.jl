@@ -81,7 +81,9 @@ adapthisteq_params = (
 adjust_gamma_params = (gamma=1.5, gamma_factor=1.3, gamma_threshold=220)
 
 structuring_elements = (
-    se_disk1=strel_diamond((3, 3)), se_disk2=strel_diamond((5,5)), se_disk4=strel_octagon(3)
+    se_disk1=strel_diamond((3, 3)),
+    se_disk2=strel_diamond((5, 5)),
+    se_disk4=strel_octagon(3),
 )
 
 unsharp_mask_params = (radius=10, amount=2.0, factor=255)
@@ -200,8 +202,9 @@ function (p::Segment)(
         )
         adjusting_mask =
             equalized_gray_sharpened_reconstructed_adjusted .> agp.gamma_threshold
-        morphed_residue[adjusting_mask] .=
-            to_uint8.(morphed_residue[adjusting_mask] .* agp.gamma_factor)
+        morphed_residue[adjusting_mask] .= to_uint8.(
+            morphed_residue[adjusting_mask] .* agp.gamma_factor
+        )
     end
 
     begin
