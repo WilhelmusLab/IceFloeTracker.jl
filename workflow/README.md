@@ -111,6 +111,16 @@ Example configurations are included:
   ```bash
   snakemake --configfile workflow/configs/validation-cases/config.yaml
   ```
+- [use the version of IceFloeTracker.jl from this repo](./configs/ift-from-this-repo/config.yaml)
+  ```bash
+  snakemake --configfile workflow/configs/ift-from-this-repo/config.yaml
+  ```
+
+> [!TIP]
+> Multiple config files can be used at once, e.g.:
+> ```bash
+> snakemake --configfile workflow/configs/ift-from-this-repo/config.yaml --configfile workflow/configs/validation-cases/config.yaml
+> ```
 
 ### Files produced in the workflow
 
