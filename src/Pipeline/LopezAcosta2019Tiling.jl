@@ -21,6 +21,7 @@ import Images:
     RGB,
     Gray,
     float64,
+    n0f8,
     red,
     green,
     blue,
@@ -60,7 +61,8 @@ import ..Segmentation:
     kmeans_binarization,
     IceDetectionFirstNonZeroAlgorithm,
     IceDetectionBrightnessPeaksMODIS721,
-    IceDetectionThresholdMODIS721
+    IceDetectionThresholdMODIS721,
+    segment_mean_map
 import ..Tracking: FloeTracker, FilterFunction, MinimumWeightMatchingFunction
 import Dates: Day
 
@@ -281,6 +283,8 @@ function (p::Segment)(
     if !isnothing(intermediate_results_callback)
         segments_truecolor = SegmentedImage(truecolor, labels)
         segments_falsecolor = SegmentedImage(falsecolor, labels)
+        segment_mean_truecolor=n0f8.(segment_mean_map(segments_truecolor))
+        segment_mean_falsecolor=n0f8.(segment_mean_map(segments_falsecolor))
         intermediate_results_callback(;
             falsecolor,
             truecolor,
@@ -307,8 +311,8 @@ function (p::Segment)(
             segments=segmented,
             segments_truecolor,
             segments_falsecolor,
-            segment_mean_truecolor=map(i -> segment_mean(segments_truecolor, i), labels),
-            segment_mean_falsecolor=map(i -> segment_mean(segments_falsecolor, i), labels),
+            segment_mean_truecolor,
+            segment_mean_falsecolor,
         )
     end
 

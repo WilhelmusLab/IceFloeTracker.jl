@@ -21,6 +21,7 @@ import Images:
     SegmentedImage,
     segment_mean,
     float64,
+    n0f8,
     channelview,
     build_histogram,
     adjust_histogram,
@@ -71,7 +72,8 @@ import ..Segmentation:
     kmeans_binarization,
     IceDetectionFirstNonZeroAlgorithm,
     IceDetectionBrightnessPeaksMODIS721,
-    IceDetectionThresholdMODIS721
+    IceDetectionThresholdMODIS721,
+    segment_mean_map
 
 import ..Tracking: FloeTracker, FilterFunction, MinimumWeightMatchingFunction
 import Dates: Day
@@ -289,17 +291,19 @@ function (p::Segment)(
     # Return the original truecolor image, segmented
     segments = SegmentedImage(truecolor, labels)
 
-
     if !isnothing(intermediate_results_callback)
-        segments_truecolor = SegmentedImage(truecolor, labels)
-        segments_falsecolor = SegmentedImage(falsecolor, labels)
+        segmented_truecolor = SegmentedImage(truecolor, labels)
+        segmented_falsecolor = SegmentedImage(falsecolor, labels)
+        segment_mean_truecolor=n0f8.(segment_mean_map(segmented_truecolor))
+        segment_mean_falsecolor=n0f8.(segment_mean_map(segmented_falsecolor))
+        ice_mask=p.cluster_selection_algorithm(fc_masked) .> 0
         intermediate_results_callback(;
             truecolor,
             falsecolor,
             landmask,
             coastal_buffer_mask,
             cloud_mask=cloudmask,
-            ice_mask=p.cluster_selection_algorithm(fc_masked) .> 0,
+            ice_mask,
             sharpened_grayscale_image=sharpened_grayscale_image,
             ice_water_discrim=ice_water_discrim,
             segA=segmentation_A,
@@ -310,15 +314,12 @@ function (p::Segment)(
             labels=labels,
             labels_map=labels,
             segments,
-            segmented_truecolor=segments_truecolor,
-            segmented_falsecolor=segments_falsecolor,
-            segment_mean_truecolor=map( # TODO Add "view_seg" code snippet
-                i -> segment_mean(segments_truecolor, i),
-                labels_map(segments_truecolor),
-            ),
-            segment_mean_falsecolor=map(
-                i -> segment_mean(segments_falsecolor, i), labels_map(segments_falsecolor)
-            ), # TODO Add figure that overlays the segments
+            segmented_truecolor,
+            segmented_falsecolor,
+            segment_mean_truecolor,
+            segment_mean_falsecolor,
+            # TODO Add figure that overlays the segments
+            # TODO Add "view_seg" code snippet
         )
     end
     return segments
