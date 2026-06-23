@@ -296,13 +296,14 @@ function (p::Segment)(
         segments_falsecolor = SegmentedImage(falsecolor, labels)
         segment_mean_truecolor=map(i -> n0f8(segment_mean(segments_truecolor, i)), labels)
         segment_mean_falsecolor=map(i -> n0f8(segment_mean(segments_falsecolor, i)), labels)
+        ice_mask=p.cluster_selection_algorithm(fc_masked) .> 0
         intermediate_results_callback(;
             truecolor,
             falsecolor,
             landmask,
             coastal_buffer_mask,
             cloud_mask=cloudmask,
-            ice_mask=p.cluster_selection_algorithm(fc_masked) .> 0,
+            ice_mask,
             sharpened_grayscale_image=sharpened_grayscale_image,
             ice_water_discrim=ice_water_discrim,
             segA=segmentation_A,
