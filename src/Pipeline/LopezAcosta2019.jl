@@ -290,12 +290,13 @@ function (p::Segment)(
     # Return the original truecolor image, segmented
     segments = SegmentedImage(truecolor, labels)
 
-
     if !isnothing(intermediate_results_callback)
-        segments_truecolor = SegmentedImage(truecolor, labels)
-        segments_falsecolor = SegmentedImage(falsecolor, labels)
-        segment_mean_truecolor=map(i -> n0f8(segment_mean(segments_truecolor, i)), labels)
-        segment_mean_falsecolor=map(i -> n0f8(segment_mean(segments_falsecolor, i)), labels)
+        segmented_truecolor = SegmentedImage(truecolor, labels)
+        segmented_falsecolor = SegmentedImage(falsecolor, labels)
+        segment_mean_truecolor=map(i -> n0f8(segment_mean(segmented_truecolor, i)), labels)
+        segment_mean_falsecolor=map(
+            i -> n0f8(segment_mean(segmented_falsecolor, i)), labels
+        )
         ice_mask=p.cluster_selection_algorithm(fc_masked) .> 0
         intermediate_results_callback(;
             truecolor,
@@ -314,8 +315,8 @@ function (p::Segment)(
             labels=labels,
             labels_map=labels,
             segments,
-            segmented_truecolor=segments_truecolor,
-            segmented_falsecolor=segments_falsecolor,
+            segmented_truecolor,
+            segmented_falsecolor,
             segment_mean_truecolor,
             segment_mean_falsecolor,
             # TODO Add figure that overlays the segments
