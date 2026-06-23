@@ -248,9 +248,9 @@ function expand_labels(labeled_img::Matrix{Int64}, distance::Int64)
 end
 
 """
-    segment_mean_map(s::SegmentedImage, label::Int)
+    segment_mean_map(s::SegmentedImage)
 
-Map each segment in the segmented image `s` to the mean intensity or color of that segment.
+Return an array like `s` where each pixel has the mean intensity or color of its segment.
 """
 function segment_mean_map(s::SegmentedImage)
     map(i -> (segment_mean(s, i)), labels_map(s))
