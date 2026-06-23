@@ -281,13 +281,13 @@ function component_convex_areas(
 end
 
 """
-    _convexhull_or_nothing(A::AbstractMatrix{Bool})
+    _convexhull_or_nothing(img::AbstractMatrix{Bool})
 
-Compute the convex hull of a binary matrix. Returns `nothing` if there are not enough points to compute the convex hull.
+Compute the convex hull of a binary image. Returns `nothing` if there are not enough points to compute the convex hull.
 """
-function _convexhull_or_nothing(A::AbstractMatrix{Bool})
+function _convexhull_or_nothing(img::AbstractMatrix{Bool})
     try
-        return convexhull(A)
+        return convexhull(img)
     catch e
         if e isa ErrorException &&
             sprint(showerror, e) == "Not enough points to compute convex hull."
