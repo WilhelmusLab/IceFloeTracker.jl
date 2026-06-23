@@ -246,3 +246,12 @@ function expand_labels(labeled_img::Matrix{Int64}, distance::Int64)
     labels_out[D .<= distance] .= labeled_img[F][D .<= distance]
     return labels_out
 end
+
+"""
+    segment_mean_map(s::SegmentedImage)
+
+Return an array like `s` where each pixel has the mean intensity or color of its segment.
+"""
+function segment_mean_map(s::SegmentedImage)
+    map(i -> (segment_mean(s, i)), labels_map(s))
+end
