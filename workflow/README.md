@@ -111,6 +111,34 @@ Example configurations are included:
   ```bash
   snakemake --configfile workflow/configs/validation-cases/config.yaml
   ```
+- [use the version of IceFloeTracker.jl from this repo](./configs/ift-from-this-repo/config.yaml)
+  ```bash
+  snakemake --configfile workflow/configs/ift-from-this-repo/config.yaml
+  ```
+
+> [!TIP]
+> Multiple config files can be used at once, e.g.:
+> ```bash
+> snakemake --configfile workflow/configs/ift-from-this-repo/config.yaml --configfile workflow/configs/validation-cases/config.yaml
+> ```
+
+### Profiles: OSCAR
+
+To run the workflow on [OSCAR, Brown University's Supercomputer](https://docs.ccv.brown.edu/oscar),
+load a Julia module, e.g.:
+```bash
+module load julia
+```
+
+and then use the OSCAR profile: 
+```bash
+snakemake --profile workflow/profiles/oscar
+```
+
+[The OSCAR profile's config.yaml file](profiles/oscar/config.yaml) 
+sets default resources including memory, CPU cores, walltime
+for each rule. 
+The defaults may not be appropriate for a particular image size or time period. 
 
 ### Files produced in the workflow
 

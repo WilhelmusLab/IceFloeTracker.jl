@@ -144,7 +144,7 @@ ensuring that no angles are repeated (since -π rad == π rad),
 and ordered so that smaller absolute angles which are positive will be returned in the event of a tie in the shape difference.
 """
 register_default_angles_rad = sort(
-    reverse(range(; start=-π, stop=π, step=π / 36)[1:(end - 1)]); by=abs
+    reverse(range(; start=(-π), stop=π, step=π / 36)[1:(end - 1)]); by=abs
 )
 
 """
@@ -225,7 +225,7 @@ function mismatch(
     fixed::AbstractArray, moving::AbstractArray, mxrot::Real=180, step::Real=5
 )
     test_angles = sort(
-        reverse(range(; start=-mxrot, stop=mxrot, step=step)[1:(end - 1)]); by=abs
+        reverse(range(; start=(-mxrot), stop=mxrot, step=step)[1:(end - 1)]); by=abs
     )
     return mismatch(fixed, moving, test_angles)
 end

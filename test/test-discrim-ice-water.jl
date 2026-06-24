@@ -12,8 +12,9 @@
         BitMatrix, float64.(load(landmask_no_dilate_file)[test_region...])
     )
     cloudmask = create_cloudmask(falsecolor_image) # reversed cloudmask
-    matlab_ice_water_discrim =
-        float64.(load("$(test_data_dir)/matlab_ice_water_discrim.png"))
+    matlab_ice_water_discrim = float64.(
+        load("$(test_data_dir)/matlab_ice_water_discrim.png")
+    )
     matlab_sharpened = float64.(load("$(test_data_dir)/matlab_sharpened.png"))
     fc_masked = apply_landmask(falsecolor_image, landmask)
     ice_water_discrim = LopezAcosta2019.discriminate_ice_water(

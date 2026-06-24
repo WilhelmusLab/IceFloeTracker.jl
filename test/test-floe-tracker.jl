@@ -63,6 +63,29 @@
 end
 # TODO: Include tests for other floe_tracker utilities
 
+@testitem "Regression: cross-shaped floe does not raise convex hull error" begin
+    using Dates
+
+    # Regression test for: https://github.com/WilhelmusLab/IceFloeTracker.jl/issues/919
+    # A cross-shaped region with 4 pixels produces only 3 boundary points when scanned
+    # column-by-column, causing ImageMorphology.convexhull to fail after removing the
+    # starting point (leaving < 3 points). The fix wraps convexhull in a try-catch.
+    img = [
+        0 0 0 0
+        0 1 0 0
+        0 1 1 0
+        0 1 0 0
+        0 0 0 0
+    ]
+    time = DateTime("2025-01-01T00:00:00")
+    tracker = FloeTracker(;
+        filter_function=FilterFunction(),
+        matching_function=MinimumWeightMatchingFunction(),
+        minimum_area=1,
+    )
+    @test_nowarn tracker([img, img], [time, time])
+end
+
 @testitem "FloeTracker – basic cases" begin
     using Random
     using DataFrames
@@ -267,12 +290,9 @@ end
         filter!(c -> c.case_number == 6, dataset)
         sort!([:pass_time], dataset)
         segmenter = LopezAcosta2019Tiling.Segment()
-        segmentation_results =
-            segmenter.(
-                modis_truecolor.(dataset),
-                modis_falsecolor.(dataset),
-                modis_landmask.(dataset),
-            )
+        segmentation_results = segmenter.(
+            modis_truecolor.(dataset), modis_falsecolor.(dataset), modis_landmask.(dataset)
+        )
         tracker = FloeTracker(;
             filter_function=FilterFunction(),
             matching_function=MinimumWeightMatchingFunction(),
@@ -289,12 +309,9 @@ end
         filter!(c -> c.case_number == 6, dataset)
         sort!([:pass_time], dataset)
         segmenter = LopezAcosta2019Tiling.Segment()
-        segmentation_results =
-            segmenter.(
-                modis_truecolor.(dataset),
-                modis_falsecolor.(dataset),
-                modis_landmask.(dataset),
-            )
+        segmentation_results = segmenter.(
+            modis_truecolor.(dataset), modis_falsecolor.(dataset), modis_landmask.(dataset)
+        )
 
         tracker = FloeTracker(;
             filter_function=ChainedFilterFunction(;
@@ -387,8 +404,9 @@ end
         filter_function=FilterFunction(), matching_function=MinimumWeightMatchingFunction()
     )
 
-    all_cases_with_validated_floes =
-        case_number.(filter(c -> c.number_floes != 0.0, dataset))
+    all_cases_with_validated_floes = case_number.(
+        filter(c -> c.number_floes != 0.0, dataset)
+    )
 
     # All cases should run without error.
     for case_number in all_cases_with_validated_floes
@@ -521,7 +539,7 @@ end
             0 1 0 0
             0 0 0 0
         ],
-    ) broken = true # https://github.com/WilhelmusLab/IceFloeTracker.jl/issues/919
+    )
     @test tracker_runs_without_error(
         tracker,
         Int[
@@ -529,7 +547,7 @@ end
             0 1 1 1 1 0
             0 0 0 0 0 0
         ],
-    ) broken = true # https://github.com/WilhelmusLab/IceFloeTracker.jl/issues/919
+    )
     @test tracker_runs_without_error(
         tracker,
         Int[
@@ -567,7 +585,7 @@ end
             0 1 1 1 1 0
             0 0 0 0 0 0
         ],
-    ) broken = true # https://github.com/WilhelmusLab/IceFloeTracker.jl/issues/919
+    )
     @test tracker_runs_without_error(
         tracker,
         Int[
@@ -575,7 +593,7 @@ end
             0 1 1 1 1 1 0
             0 0 0 0 0 0 0
         ],
-    ) broken = true # https://github.com/WilhelmusLab/IceFloeTracker.jl/issues/919
+    )
     @test tracker_runs_without_error(
         tracker,
         Int[
@@ -604,7 +622,7 @@ end
             0 1 0 0 0
             0 0 0 0 0
         ],
-    ) broken = true # https://github.com/WilhelmusLab/IceFloeTracker.jl/issues/919
+    )
     @test tracker_runs_without_error(
         tracker,
         Int[

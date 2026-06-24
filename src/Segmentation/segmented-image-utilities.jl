@@ -1,6 +1,6 @@
 import Images:
-    SegmentedImage, 
-    labels_map, 
+    SegmentedImage,
+    labels_map,
     segment_labels,
     segment_mean,
     segment_pixel_count,
@@ -240,10 +240,18 @@ julia> expand_labels(A, 1)
 """
 function expand_labels(labeled_img::Matrix{Int64}, distance::Int64)
     labels_out = deepcopy(labeled_img)
-    (maximum(labels_out) == 0) && return(labels_out)
+    (maximum(labels_out) == 0) && return (labels_out)
     F = feature_transform(labeled_img .> 0)
     D = distance_transform(F)
     labels_out[D .<= distance] .= labeled_img[F][D .<= distance]
     return labels_out
 end
 
+"""
+    segment_mean_map(s::SegmentedImage)
+
+Return an array like `s` where each pixel has the mean intensity or color of its segment.
+"""
+function segment_mean_map(s::SegmentedImage)
+    map(i -> (segment_mean(s, i)), labels_map(s))
+end

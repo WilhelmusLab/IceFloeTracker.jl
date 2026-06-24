@@ -38,7 +38,8 @@ export addlatlon!,
     segmentation_summary,
     stitch_clusters,
     view_seg,
-    view_seg_random
+    view_seg_random,
+    segment_mean_map
 
 include("abstract-algorithms.jl")
 include("find-ice-labels.jl")

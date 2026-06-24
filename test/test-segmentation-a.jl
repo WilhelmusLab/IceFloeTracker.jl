@@ -7,8 +7,9 @@
 
     include("config.jl")
 
-    ice_water_discriminated_image =
-        float64.(load("$(test_data_dir)/matlab_ice_water_discrim.png"))
+    ice_water_discriminated_image = float64.(
+        load("$(test_data_dir)/matlab_ice_water_discrim.png")
+    )
     cloudmask = .!convert(BitMatrix, load(cloudmask_test_file))
     landmask = convert(BitMatrix, load(current_landmask_file)[test_region...])
     ice_labels = readdlm("$(test_data_dir)/ice_labels_julia.csv", ',')

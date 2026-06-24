@@ -290,6 +290,7 @@ function FilterFunction()
                     maximum_value=0.96,
                 ),
             ),
+
         ],
     )
 end

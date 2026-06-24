@@ -280,6 +280,23 @@ function component_convex_areas(
     return algorithm(A)
 end
 
+"""
+    _convexhull_or_nothing(img::AbstractMatrix{Bool})
+
+Compute the convex hull of a binary image. Returns `nothing` if there are not enough points to compute the convex hull.
+"""
+function _convexhull_or_nothing(img::AbstractMatrix{Bool})
+    try
+        return convexhull(img)
+    catch e
+        if e isa ErrorException &&
+            sprint(showerror, e) == "Not enough points to compute convex hull."
+            return nothing
+        end
+        rethrow()
+    end
+end
+
 """PolygonConvexArea(minimum_area=4)
 
 Estimate the convex area by integrating the area of the convex hull polygon.
@@ -303,7 +320,12 @@ function (f::PolygonConvexArea)(A)
             continue
         end
 
-        chull = convexhull(A .== i)
+        chull = _convexhull_or_nothing(A .== i)
+        if isnothing(chull)
+            convex_areas[i] = NaN
+            continue
+        end
+
         N = length(chull)
 
         ca = 0
@@ -343,7 +365,12 @@ function (f::PixelConvexArea)(A)
             continue
         end
 
-        chull = convexhull(A .== i)
+        chull = _convexhull_or_nothing(A .== i)
+        if isnothing(chull)
+            convex_areas[i] = NaN
+            continue
+        end
+
         N = length(chull)
         x = getindex.(bboxes[i], 1)
         y = getindex.(bboxes[i], 2)

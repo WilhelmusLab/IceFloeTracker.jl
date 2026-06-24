@@ -21,6 +21,7 @@ import Images:
     RGB,
     Gray,
     float64,
+    n0f8,
     red,
     green,
     blue,
@@ -60,7 +61,8 @@ import ..Segmentation:
     kmeans_binarization,
     IceDetectionFirstNonZeroAlgorithm,
     IceDetectionBrightnessPeaksMODIS721,
-    IceDetectionThresholdMODIS721
+    IceDetectionThresholdMODIS721,
+    segment_mean_map
 import ..Tracking: FloeTracker, FilterFunction, MinimumWeightMatchingFunction
 import Dates: Day
 
@@ -81,7 +83,9 @@ adapthisteq_params = (
 adjust_gamma_params = (gamma=1.5, gamma_factor=1.3, gamma_threshold=220)
 
 structuring_elements = (
-    se_disk1=strel_diamond((3, 3)), se_disk2=strel_diamond((5,5)), se_disk4=strel_octagon(3)
+    se_disk1=strel_diamond((3, 3)),
+    se_disk2=strel_diamond((5, 5)),
+    se_disk4=strel_octagon(3),
 )
 
 unsharp_mask_params = (radius=10, amount=2.0, factor=255)
@@ -200,8 +204,9 @@ function (p::Segment)(
         )
         adjusting_mask =
             equalized_gray_sharpened_reconstructed_adjusted .> agp.gamma_threshold
-        morphed_residue[adjusting_mask] .=
-            to_uint8.(morphed_residue[adjusting_mask] .* agp.gamma_factor)
+        morphed_residue[adjusting_mask] .= to_uint8.(
+            morphed_residue[adjusting_mask] .* agp.gamma_factor
+        )
     end
 
     begin
@@ -281,6 +286,8 @@ function (p::Segment)(
     if !isnothing(intermediate_results_callback)
         segments_truecolor = SegmentedImage(truecolor, labels)
         segments_falsecolor = SegmentedImage(falsecolor, labels)
+        segment_mean_truecolor=n0f8.(segment_mean_map(segments_truecolor))
+        segment_mean_falsecolor=n0f8.(segment_mean_map(segments_falsecolor))
         intermediate_results_callback(;
             falsecolor,
             truecolor,
@@ -307,8 +314,8 @@ function (p::Segment)(
             segments=segmented,
             segments_truecolor,
             segments_falsecolor,
-            segment_mean_truecolor=map(i -> segment_mean(segments_truecolor, i), labels),
-            segment_mean_falsecolor=map(i -> segment_mean(segments_falsecolor, i), labels),
+            segment_mean_truecolor,
+            segment_mean_falsecolor,
         )
     end
 
