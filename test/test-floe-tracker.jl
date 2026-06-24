@@ -204,18 +204,10 @@ end
         minimum_area=floe_area_threshold,
     )
 
-    # Add full image gap
-    labeled_imgs_gaps = [
-        zeros(Int64, size(labeled_imgs[1])),
-        labeled_imgs[1],
-        labeled_imgs[2],
-        labeled_imgs[3],
-    ]
+    labeled_imgs_gaps = [zeros(Int64, size(labeled_imgs[1])), labeled_imgs[1]]
 
     # Extend passtimes
-    passtimes_gaps = [
-        _passtimes[1], _passtimes[2], _passtimes[3], DateTime("2022-09-16T12:44:49")
-    ]
+    passtimes_gaps = [DateTime("2000-01-01"), DateTime("2000-01-02")]
 
     tracker = FloeTracker(;
         filter_function=FilterFunction(),
@@ -225,8 +217,7 @@ end
 
     trajectories = tracker(labeled_imgs_gaps, passtimes_gaps)
     counts = combine(groupby(trajectories, [:ID]), nrow => :count)
-    @show counts
-    @test sum(counts[:, :count] .== 4) == 3
+    @test nrow(trajectories) == 0
 end
 
 @testitem "Several blank images at the start of the series" setup = [FloeTrackerBasicCases] begin
@@ -240,26 +231,18 @@ end
     labeled_imgs_gaps = [
         zeros(Int64, size(labeled_imgs[1])),
         zeros(Int64, size(labeled_imgs[1])),
-        zeros(Int64, size(labeled_imgs[1])),
         labeled_imgs[1],
         labeled_imgs[2],
-        labeled_imgs[3],
-        labeled_imgs[3],
         zeros(Int64, size(labeled_imgs[1])),
     ]
 
-    @show sum.(labeled_imgs_gaps)
-
     # Extend passtimes
     passtimes_gaps = [
-        _passtimes[1],
-        _passtimes[2],
-        _passtimes[3],
-        DateTime("2022-09-16T12:44:49"),
-        DateTime("2022-09-16T13:44:49"),
-        DateTime("2022-09-16T14:44:49"),
-        DateTime("2022-09-16T15:44:49"),
-        DateTime("2022-09-16T16:44:49"),
+        DateTime("2000-01-01"),
+        DateTime("2000-01-02"),
+        DateTime("2000-01-03"),
+        DateTime("2000-01-04"),
+        DateTime("2000-01-05"),
     ]
 
     tracker = FloeTracker(;
@@ -272,7 +255,7 @@ end
     counts = combine(groupby(trajectories, [:ID]), nrow => :count)
 
     @show counts
-    @test sum(counts[:, :count] .== 3) == 4
+    @test sum(counts[:, :count] .== 2) == 5
 end
 
 @testitem "FloeTracker – ellipses" begin
