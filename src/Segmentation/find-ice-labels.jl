@@ -58,12 +58,18 @@ function get_ice_peaks(
     # we don't want to include in the normalization. If no potential
     # ice pixels, then return early
     counts = normalizer > 0 ? counts ./ normalizer : return Inf
-    pks = findmaxima(counts, window_size) |> peakproms! |> peakwidths!
+    local pks
+    try
+        pks = findmaxima(counts, window_size) |> peakproms! |> peakwidths!
+    catch
+        return Inf
+    end
     pks_df = DataFrame(pks[Not(:data)])
     pks_df = sort(pks_df, :proms; rev=true)
     mx, argmx = findmax(pks_df.proms)
     mx < minimum_prominence && return Inf
     return edges[pks_df[argmx, :indices]]
+
 end
 
 """
