@@ -144,6 +144,7 @@ The image preprocessing is supplied as an function in the functor setup.
     tile_size_pixels = 600
     min_tile_ice_pixel_count=300
     min_floe_size=100
+    max_floe_size=50_000
     kmeans_params = (k=4, maxiter=50, random_seed=45)
     preliminary_ice_mask = IceDetectionBrightnessPeaksMODIS134(band_1_min=0.3)
     cluster_selection_algorithm = IceDetectionBrightnessPeaksMODIS721(
@@ -231,7 +232,11 @@ function (p::Segment)(
 
     @info "Splitting floes"
     # Could tile this, but doesn't seem to be a major bottleneck
-    split_floes = dist_morph_split(kmeans_result; max_distance=7) # update to have morph split settings
+    split_floes = dist_morph_split(kmeans_result;
+        max_distance=7,
+        min_floe_size=p.min_floe_size,
+        max_floe_size=p.max_floe_size
+    ) # update to have morph split settings
     # TBD: Filter floes based on the edge properties, colors
 
     @info "Filtering floes"    
@@ -334,7 +339,8 @@ After traversing the pyramid, relabel matrix, and remove any objects smaller tha
 """
 function dist_morph_split(
         binary_floes::BitMatrix;
-        min_floe_size::Int64=64, # TBD: add maximum floe size
+        min_floe_size::Real=64, # TBD: add maximum floe size
+        max_floe_size::Real=50_000, # This should be an integer, but for some reason a Float is coming through
         max_hole_fill::Int64=2000,
         max_distance::Int64=5,
         max_expand::Int64=3,
@@ -378,6 +384,7 @@ function dist_morph_split(
     end
     final_labels .= label_components(final_labels)
     remove_small_segments!(final_labels, min_floe_size)
+    remove_large_segments!(final_labels, max_floe_size)
     # TODO: objectwise_fill_holes!()
     return final_labels
 end
@@ -402,6 +409,25 @@ function remove_small_segments!(labels, min_size)
     end
 end
 
+"""
+    remove_small_segments!(labels, min_size)
+
+Checks the area of each labeled object in `labels` and sets it to 0 if it is less than `min_size`.
+
+"""
+function remove_large_segments!(labels, max_size)
+    areas = component_lengths(labels)
+    indices = component_indices(labels)
+
+    for L in keys(areas)
+        (L != 0) && begin
+            (areas[L] > max_size) && begin
+                labels[indices[L]] .= 0
+            end
+        end
+    end
+end
+
 #### TODO: Add object-wise hole filling method
 #### TODO: Add Track() method for configured tracker (including alternative similarity measures)
 
@@ -412,7 +438,7 @@ Track shapes across images using the LogLogQuadratic distance filter, the Chaine
 and the MinimumWeightMatchingFunction.
 
 """
-function Track(
+function Track(;
     filter_function=ChainedFilterFunction(;
         filters=[
             DistanceThresholdFilter(
