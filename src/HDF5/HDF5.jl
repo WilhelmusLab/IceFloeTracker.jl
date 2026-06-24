@@ -19,6 +19,21 @@ function choose_dtype(mx::T) where {T<:Integer}
 end
 
 """
+    convert_missing_to_nan!(df)
+
+Convert missing values in Float64 columns of the DataFrame `df` to `NaN` to allow saving as HDF5.
+"""
+function convert_missing_to_nan!(df::DataFrame)
+    for (col_name, col_data) in pairs(eachcol(df))
+        @show eltype(col_data), eltype(col_data) <: Union{Missing,<:Float64}
+        if eltype(col_data) <: Union{Missing,Float64}
+            col_data .= coalesce.(col_data, NaN)
+            disallowmissing!(df, col_name)
+        end
+    end
+end
+
+"""
     IceFloeTracker.HDF5.V1(;
         passtime::ZonedDateTime,
         crs_ref_image_path::AbstractString,
@@ -161,6 +176,9 @@ function save_hdf5(output_path::AbstractString, v1::V1;)
 
         @info "Create group floe_properties"
         group_floe_properties = create_group(file, "floe_properties")
+
+        convert_missing_to_nan!(v1.props) # TODO: make this not in-place
+
         if nrow(v1.props) > 0
             write_dataset(
                 group_floe_properties,
