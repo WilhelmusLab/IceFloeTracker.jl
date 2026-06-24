@@ -25,7 +25,6 @@ Convert missing values in Float64 columns of the DataFrame `df` to `NaN` to allo
 """
 function convert_missing_to_nan!(df::DataFrame)
     for (col_name, col_data) in pairs(eachcol(df))
-        @show eltype(col_data), eltype(col_data) <: Union{Missing,<:Float64}
         if eltype(col_data) <: Union{Missing,Float64}
             col_data .= coalesce.(col_data, NaN)
             disallowmissing!(df, col_name)
