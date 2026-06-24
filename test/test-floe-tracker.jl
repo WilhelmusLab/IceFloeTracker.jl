@@ -197,6 +197,84 @@ end
     @test sum(counts[:, :count] .== 3) == 4 && sum(counts[:, :count] .== 2) == 1
 end
 
+@testitem "One blank image at the start of the series" setup = [FloeTrackerBasicCases] begin
+    tracker = FloeTracker(;
+        filter_function=FilterFunction(),
+        matching_function=MinimumWeightMatchingFunction(),
+        minimum_area=floe_area_threshold,
+    )
+
+    # Add full image gap
+    labeled_imgs_gaps = [
+        zeros(Int64, size(labeled_imgs[1])),
+        labeled_imgs[1],
+        labeled_imgs[2],
+        labeled_imgs[3],
+    ]
+
+    # Extend passtimes
+    passtimes_gaps = [
+        _passtimes[1], _passtimes[2], _passtimes[3], DateTime("2022-09-16T12:44:49")
+    ]
+
+    tracker = FloeTracker(;
+        filter_function=FilterFunction(),
+        matching_function=MinimumWeightMatchingFunction(),
+        minimum_area=floe_area_threshold,
+    )
+
+    trajectories = tracker(labeled_imgs_gaps, passtimes_gaps)
+    counts = combine(groupby(trajectories, [:ID]), nrow => :count)
+    @show counts
+    @test sum(counts[:, :count] .== 4) == 3
+end
+
+@testitem "Several blank images at the start of the series" setup = [FloeTrackerBasicCases] begin
+    tracker = FloeTracker(;
+        filter_function=FilterFunction(),
+        matching_function=MinimumWeightMatchingFunction(),
+        minimum_area=floe_area_threshold,
+    )
+
+    # Add full image gap
+    labeled_imgs_gaps = [
+        zeros(Int64, size(labeled_imgs[1])),
+        zeros(Int64, size(labeled_imgs[1])),
+        zeros(Int64, size(labeled_imgs[1])),
+        labeled_imgs[1],
+        labeled_imgs[2],
+        labeled_imgs[3],
+        labeled_imgs[3],
+        zeros(Int64, size(labeled_imgs[1])),
+    ]
+
+    @show sum.(labeled_imgs_gaps)
+
+    # Extend passtimes
+    passtimes_gaps = [
+        _passtimes[1],
+        _passtimes[2],
+        _passtimes[3],
+        DateTime("2022-09-16T12:44:49"),
+        DateTime("2022-09-16T13:44:49"),
+        DateTime("2022-09-16T14:44:49"),
+        DateTime("2022-09-16T15:44:49"),
+        DateTime("2022-09-16T16:44:49"),
+    ]
+
+    tracker = FloeTracker(;
+        filter_function=FilterFunction(),
+        matching_function=MinimumWeightMatchingFunction(),
+        minimum_area=floe_area_threshold,
+    )
+
+    trajectories = tracker(labeled_imgs_gaps, passtimes_gaps)
+    counts = combine(groupby(trajectories, [:ID]), nrow => :count)
+
+    @show counts
+    @test sum(counts[:, :count] .== 3) == 4
+end
+
 @testitem "FloeTracker – ellipses" begin
     using CSVFiles
     using DataFrames
