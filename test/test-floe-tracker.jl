@@ -254,7 +254,6 @@ end
     trajectories = tracker(labeled_imgs_gaps, passtimes_gaps)
     counts = combine(groupby(trajectories, [:ID]), nrow => :count)
 
-    @show counts
     @test sum(counts[:, :count] .== 2) == 5
 end
 
