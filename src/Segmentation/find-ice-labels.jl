@@ -61,7 +61,9 @@ function get_ice_peaks(
     local pks
     try
         pks = findmaxima(counts, window_size) |> peakproms! |> peakwidths!
-    catch
+    catch e
+        e is a BoundsError || rethrow()
+        @debug "Peak finder failed (peak near boundary), returning `Inf`."
         return Inf
     end
     pks_df = DataFrame(pks[Not(:data)])
