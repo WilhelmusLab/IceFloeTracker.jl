@@ -74,6 +74,15 @@ end
         @test reloaded.contact == data.contact
     end
 end
+
+@testitem "HDF5.V1 can be saved with NaNs in the props" setup = [HDF5V1] begin
+    @show data.props
+    data.props[2, :convex_area] = NaN
+    @show data.props
+    mktemp() do output_path, _
+        save_hdf5(output_path, data;)
+        reloaded = load_hdf5(output_path)
+        @test isequal(reloaded.props, data.props)
     end
 end
 
