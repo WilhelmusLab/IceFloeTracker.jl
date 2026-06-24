@@ -62,7 +62,7 @@ function get_ice_peaks(
     try
         pks = findmaxima(counts, window_size) |> peakproms! |> peakwidths!
     catch e
-        e is a BoundsError || rethrow()
+        e isa BoundsError || rethrow()
         @debug "Peak finder failed (peak near boundary), returning `Inf`."
         return Inf
     end
