@@ -59,7 +59,7 @@ end
     function save_to_disk(x)
         file = joinpath(dir, "result.txt")
         open(file, "w") do io
-            println(io, "Saving to disk: ", x)
+            return println(io, "Saving to disk: ", x)
         end
         return nothing
     end

@@ -16,8 +16,9 @@
 
     expected_lat = readdlm("test_inputs/latlon/latitude.csv", ',', Float64)
     expected_lon = readdlm("test_inputs/latlon/longitude.csv", ',', Float64)
-    expected_lat, expected_lon, expected_X, expected_Y =
-        round4.([expected_lat, expected_lon, expected_X, expected_Y])
+    expected_lat, expected_lon, expected_X, expected_Y = round4.([
+        expected_lat, expected_lon, expected_X, expected_Y
+    ])
 
     @testset "latlon.jl" begin
         _, lon, lat, X, Y = latlon(imgpth)

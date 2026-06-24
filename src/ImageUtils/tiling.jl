@@ -190,7 +190,7 @@ end
 
 function _split(strategy::MergeLastTileIfSmallerThanHalf)
     map(strategy.tilesize) do s
-        MergeLastTileIfSmallerThanHalf((s,))
+        return MergeLastTileIfSmallerThanHalf((s,))
     end
 end
 

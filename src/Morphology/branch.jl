@@ -33,7 +33,7 @@ Generate lookup table (lut) for 3x3 neighborhoods according to `lutfunc`.
 """
 function make_lut(lutfunc::Function)::Vector{Int}
     lut = vec(zeros(Int, 512))
-    @inbounds @simd for i in 1:(2^9)
+    @inbounds @simd for i in 1:(2 ^ 9)
         v = parse.(Int, reverse(collect(bitstring(UInt16(i - 1))[8:end])))
         lut[i] = lutfunc(SMatrix{3,3}(v))
     end

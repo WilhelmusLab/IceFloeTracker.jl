@@ -75,10 +75,10 @@ end
 
 @testitem "unknown HDF5 files aren't loaded" begin
     using HDF5
-  
+
     mktemp() do output_path, _
         h5open(output_path, "w") do file
-            attrs(file)["file_version"] = "0.0.0"
+            return attrs(file)["file_version"] = "0.0.0"
         end
         @test_throws "file version" load_hdf5(output_path)
     end

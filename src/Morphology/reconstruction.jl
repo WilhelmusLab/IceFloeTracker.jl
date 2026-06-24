@@ -19,7 +19,7 @@ function reconstruct(img, se, type, invert::Bool=true)
     type == "dilation" && (morphed = to_uint8(dilate(img, se)))
     type == "erosion" && (morphed = to_uint8(erode(img, se)))
 
-    invert && (morphed = imcomplement(to_uint8(morphed)); img = imcomplement(img))
+    invert && (morphed=imcomplement(to_uint8(morphed)); img=imcomplement(img))
 
     type == "dilation" && return mreconstruct(dilate, morphed, img)
 

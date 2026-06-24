@@ -26,12 +26,10 @@
     end
 
     @testset "Small disk is the same as a diamond" begin
-        @test strel_disk(1) == strel_diamond((3,3))
+        @test strel_disk(1) == strel_diamond((3, 3))
     end
 
     @testset "Large disk is approximately circular" begin
         @test sum(strel_disk(400)) ≈ (pi*400^2) rtol = 1e-3
     end
-
-
 end

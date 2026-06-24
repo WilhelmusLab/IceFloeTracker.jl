@@ -14,10 +14,9 @@
         )
         landmask = float64.(load(joinpath(data_dir, "matlab_landmask_dilated.png"))) .> 0
         ref_image, landmask = [img[region...] for img in (ref_image, landmask)]
-        morph_residue =
-            Gray.(
-                readdlm(joinpath(data_dir, "ice_masks/morph_residue.csv"), ',', Int) / 255
-            )
+        morph_residue = Gray.(
+            readdlm(joinpath(data_dir, "ice_masks/morph_residue.csv"), ',', Int) / 255
+        )
     end
 
     tiles = get_tiles(ref_image; rblocks=2, cblocks=3)

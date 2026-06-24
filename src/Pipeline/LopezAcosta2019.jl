@@ -719,7 +719,11 @@ Based on Lopez-Acosta et al. 2019, 2021.
 
 """
 function morph_split_floes(
-    binary_img, cloudmask; max_fill_area=1, min_area_opening=20, opening_strel=strel_octagon(3),
+    binary_img,
+    cloudmask;
+    max_fill_area=1,
+    min_area_opening=20,
+    opening_strel=strel_octagon(3),
 )
     leads_branched = hbreak(binary_img) |> branch
     leads_filled = .!imfill(.!leads_branched, 0:max_fill_area)

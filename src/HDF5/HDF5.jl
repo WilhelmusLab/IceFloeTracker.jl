@@ -139,7 +139,7 @@ function save_hdf5(output_path::AbstractString, v1::V1;)
     crs_name = get(crs_dict, crs_code) do
         crs_name_ = "EPSG:$(string(crs_code))"
         @warn "CRS $crs_code not recognized. CRS will be recorded as $crs_name_ in the output file attributes, but no short name will be provided."
-        crs_name_
+        return crs_name_
     end
 
     h5open(output_path, "w") do file
@@ -242,7 +242,7 @@ function save_hdf5(output_path::AbstractString, v1::V1;)
             minimum(ice_mask_rectified), maximum(ice_mask_rectified)
         ]
         attrs(ice_mask_obj)["description"] = "Ice mask. This mask is 1 for pixels classified as ice, and 0 elsewhere."
-        write_dataset(ice_mask_obj, ice_mask_dtype, ice_mask_rectified)
+        return write_dataset(ice_mask_obj, ice_mask_dtype, ice_mask_rectified)
     end
 end
 

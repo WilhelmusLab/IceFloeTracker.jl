@@ -290,12 +290,9 @@ end
         filter!(c -> c.case_number == 6, dataset)
         sort!([:pass_time], dataset)
         segmenter = LopezAcosta2019Tiling.Segment()
-        segmentation_results =
-            segmenter.(
-                modis_truecolor.(dataset),
-                modis_falsecolor.(dataset),
-                modis_landmask.(dataset),
-            )
+        segmentation_results = segmenter.(
+            modis_truecolor.(dataset), modis_falsecolor.(dataset), modis_landmask.(dataset)
+        )
         tracker = FloeTracker(;
             filter_function=FilterFunction(),
             matching_function=MinimumWeightMatchingFunction(),
@@ -312,12 +309,9 @@ end
         filter!(c -> c.case_number == 6, dataset)
         sort!([:pass_time], dataset)
         segmenter = LopezAcosta2019Tiling.Segment()
-        segmentation_results =
-            segmenter.(
-                modis_truecolor.(dataset),
-                modis_falsecolor.(dataset),
-                modis_landmask.(dataset),
-            )
+        segmentation_results = segmenter.(
+            modis_truecolor.(dataset), modis_falsecolor.(dataset), modis_landmask.(dataset)
+        )
 
         tracker = FloeTracker(;
             filter_function=ChainedFilterFunction(;
