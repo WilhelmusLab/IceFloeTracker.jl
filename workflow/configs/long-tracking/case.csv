@@ -1,5 +1,5 @@
 region,start,end,scale,pipeline
-beaufort_sea-100km,2019-01-01,2019-05-30,250,LopezAcosta2019Tiling
+beaufort_sea-100km,2019-02-09,2019-05-30,250,LopezAcosta2019Tiling
 beaufort_sea-100km,2019-03-01,2019-03-24,250,LopezAcosta2019Tiling
 beaufort_sea-100km,2019-03-20,2019-03-24,250,LopezAcosta2019Tiling
 beaufort_sea-100km,2019-03-23,2019-03-24,250,LopezAcosta2019Tiling
