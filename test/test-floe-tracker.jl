@@ -86,7 +86,7 @@ end
     @test_nowarn tracker([img, img], [time, time])
 end
 
-@testitem "FloeTracker – basic cases" begin
+@testsnippet FloeTrackerBasicCases begin
     using Random
     using DataFrames
     using IceFloeTracker: floe_tracker, FilterFunction, MinimumWeightMatchingFunction
@@ -104,100 +104,98 @@ end
     end
 
     floe_area_threshold = 400
+end
 
-    @testset "Case 1" begin
-        # Every floe is matched in every day
-        tracker = FloeTracker(;
-            filter_function=FilterFunction(),
-            matching_function=MinimumWeightMatchingFunction(),
-            minimum_area=floe_area_threshold,
-        )
-        trajectories = tracker(labeled_imgs, _passtimes)
+@testitem "Every floe is matched in every day" setup = [FloeTrackerBasicCases] begin
+    tracker = FloeTracker(;
+        filter_function=FilterFunction(),
+        matching_function=MinimumWeightMatchingFunction(),
+        minimum_area=floe_area_threshold,
+    )
+    trajectories = tracker(labeled_imgs, _passtimes)
 
-        # Expected: 5 trajectories, all of which have length 3
-        # (other floes are below the area threshold)
-        counts = combine(groupby(trajectories, [:ID]), nrow => :count)
-        @test nrow(counts) == 5
-        @test all(counts[!, :count] .== 3)
-    end
+    # Expected: 5 trajectories, all of which have length 3
+    # (other floes are below the area threshold)
+    counts = combine(groupby(trajectories, [:ID]), nrow => :count)
+    @test nrow(counts) == 5
+    @test all(counts[!, :count] .== 3)
+end
 
-    @testset "Case 2" begin
-        # Add single floe gaps
-        labeled_imgs_gaps = deepcopy(labeled_imgs)
-        labeled_imgs_gaps[2][labeled_imgs_gaps[2] .== 36] .= 0
-        labeled_imgs_gaps[3][labeled_imgs_gaps[3] .== 33] .= 0
+@testitem "Single floes are missing" setup = [FloeTrackerBasicCases] begin
+    labeled_imgs_gaps = deepcopy(labeled_imgs)
+    labeled_imgs_gaps[2][labeled_imgs_gaps[2] .== 36] .= 0
+    labeled_imgs_gaps[3][labeled_imgs_gaps[3] .== 33] .= 0
 
-        tracker = FloeTracker(;
-            filter_function=FilterFunction(),
-            matching_function=MinimumWeightMatchingFunction(),
-            minimum_area=floe_area_threshold,
-        )
+    tracker = FloeTracker(;
+        filter_function=FilterFunction(),
+        matching_function=MinimumWeightMatchingFunction(),
+        minimum_area=floe_area_threshold,
+    )
 
-        trajectories = tracker(labeled_imgs_gaps, _passtimes)
+    trajectories = tracker(labeled_imgs_gaps, _passtimes)
 
-        # Expected: 5 trajectories, 4 of which have length 3 and 1 of which have length 2
-        counts = combine(groupby(trajectories, [:ID]), nrow => :count)
-        @test sum(counts[:, :count] .== 3) == 4 && sum(counts[:, :count] .== 2) == 1
-    end
+    # Expected: 5 trajectories, 4 of which have length 3 and 1 of which have length 2
+    counts = combine(groupby(trajectories, [:ID]), nrow => :count)
+    @test sum(counts[:, :count] .== 3) == 4 && sum(counts[:, :count] .== 2) == 1
+end
 
-    @testset "Test gaps" begin
-        @testset "Case 3" begin
-            # Every floe is matched in every day for which there is data
-            # Here we insert a blank image into the series
-            labeled_imgs_gaps = [
-                labeled_imgs[1], labeled_imgs[2], labeled_imgs[2] * 0, labeled_imgs[3]
-            ]
-            tracker = FloeTracker(;
-                filter_function=FilterFunction(),
-                matching_function=MinimumWeightMatchingFunction(),
-                minimum_area=floe_area_threshold,
-            )
-            # Add an extra pass-time to simulate a longer time series
-            passtimes_gaps = [
-                _passtimes[1], _passtimes[2], _passtimes[3], DateTime("2022-09-16T12:44:49")
-            ]
+@testitem "One blank image in the middle of the series" setup = [FloeTrackerBasicCases] begin
+    # Every floe is matched in every day for which there is data
+    labeled_imgs_gaps = [
+        labeled_imgs[1], labeled_imgs[2], labeled_imgs[2] * 0, labeled_imgs[3]
+    ]
+    tracker = FloeTracker(;
+        filter_function=FilterFunction(),
+        matching_function=MinimumWeightMatchingFunction(),
+        minimum_area=floe_area_threshold,
+    )
+    # Add an extra pass-time to simulate a longer time series
+    passtimes_gaps = [
+        _passtimes[1], _passtimes[2], _passtimes[3], DateTime("2022-09-16T12:44:49")
+    ]
 
-            trajectories = tracker(labeled_imgs_gaps, passtimes_gaps)
+    trajectories = tracker(labeled_imgs_gaps, passtimes_gaps)
 
-            # Expected: 5 trajectories, all of which have length 3 as in test case 1
-            IDs = trajectories[!, :ID]
-            counts = combine(groupby(trajectories, [:ID]), nrow => :count)
-            @test nrow(counts) == 5
-            @test all(counts[!, :count] .== 3)
-        end
+    # Expected: 5 trajectories, all of which have length 3 as in test case 1
+    IDs = trajectories[!, :ID]
+    counts = combine(groupby(trajectories, [:ID]), nrow => :count)
+    @test nrow(counts) == 5
+    @test all(counts[!, :count] .== 3)
+end
 
-        @testset "Case 4" begin
-            tracker = FloeTracker(;
-                filter_function=FilterFunction(),
-                matching_function=MinimumWeightMatchingFunction(),
-                minimum_area=floe_area_threshold,
-            )
+@testitem "One blank image in the middle of the series with single floe gaps" setup = [
+    FloeTrackerBasicCases
+] begin
+    tracker = FloeTracker(;
+        filter_function=FilterFunction(),
+        matching_function=MinimumWeightMatchingFunction(),
+        minimum_area=floe_area_threshold,
+    )
 
-            # Add full image gap
-            labeled_imgs_gaps = [
-                labeled_imgs[1], labeled_imgs[2], labeled_imgs[2] * 0, labeled_imgs[3]
-            ]
+    # Add full image gap
+    labeled_imgs_gaps = [
+        labeled_imgs[1], labeled_imgs[2], labeled_imgs[2] * 0, labeled_imgs[3]
+    ]
 
-            # Add single floe gaps
-            labeled_imgs_gaps[2][labeled_imgs_gaps[2] .== 36] .= 0
-            labeled_imgs_gaps[4][labeled_imgs_gaps[4] .== 33] .= 0
+    # Add single floe gaps
+    labeled_imgs_gaps[2][labeled_imgs_gaps[2] .== 36] .= 0
+    labeled_imgs_gaps[4][labeled_imgs_gaps[4] .== 33] .= 0
 
-            # Extend passtimes
-            passtimes_gaps = [
-                _passtimes[1], _passtimes[2], _passtimes[3], DateTime("2022-09-16T12:44:49")
-            ]
+    # Extend passtimes
+    passtimes_gaps = [
+        _passtimes[1], _passtimes[2], _passtimes[3], DateTime("2022-09-16T12:44:49")
+    ]
 
-            tracker = FloeTracker(;
-                filter_function=FilterFunction(),
-                matching_function=MinimumWeightMatchingFunction(),
-                minimum_area=floe_area_threshold,
-            )
+    tracker = FloeTracker(;
+        filter_function=FilterFunction(),
+        matching_function=MinimumWeightMatchingFunction(),
+        minimum_area=floe_area_threshold,
+    )
 
-            trajectories = tracker(labeled_imgs_gaps, passtimes_gaps)
-            counts = combine(groupby(trajectories, [:ID]), nrow => :count)
-            @test sum(counts[:, :count] .== 3) == 4 && sum(counts[:, :count] .== 2) == 1
-        end
-    end
+    trajectories = tracker(labeled_imgs_gaps, passtimes_gaps)
+    counts = combine(groupby(trajectories, [:ID]), nrow => :count)
+    @test sum(counts[:, :count] .== 3) == 4 && sum(counts[:, :count] .== 2) == 1
+end
 end
 
 @testitem "FloeTracker – ellipses" begin
