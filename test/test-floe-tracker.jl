@@ -196,7 +196,6 @@ end
     counts = combine(groupby(trajectories, [:ID]), nrow => :count)
     @test sum(counts[:, :count] .== 3) == 4 && sum(counts[:, :count] .== 2) == 1
 end
-end
 
 @testitem "FloeTracker – ellipses" begin
     using CSVFiles
