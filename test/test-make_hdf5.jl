@@ -86,6 +86,20 @@ end
     end
 end
 
+@testitem "HDF5.V1 can be saved with missing in DataFrame, which convert to NaN" setup = [
+    HDF5V1
+] begin
+    convex_area = allowmissing!(data.props, :convex_area)
+    data.props[2, :convex_area] = missing
+    mktemp() do output_path, _
+        save_hdf5(output_path, data;)
+        reloaded = load_hdf5(output_path)
+        @test isequal(reloaded.props[1, :], data.props[1, :])
+        @test isequal(reloaded.props[2, :convex_area], NaN)  # missing becomes a NaN when saved and reloaded
+        @test isequal(reloaded.props[3:end, :], data.props[3:end, :])
+    end
+end
+
 @testitem "unknown HDF5 files aren't loaded" begin
     using HDF5
 
