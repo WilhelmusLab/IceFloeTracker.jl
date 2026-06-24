@@ -64,7 +64,7 @@ end
         @test reloaded.truecolor_path == data.truecolor_path
         @test reloaded.falsecolor_path == data.falsecolor_path
         @test reloaded.labeled == data.labeled
-        @test reloaded.props == data.props
+        @test isequal(reloaded.props, data.props)
         @test reloaded.cloud_mask == data.cloud_mask
         @test reloaded.ice_mask == data.ice_mask
         @test reloaded.landmask == data.landmask
