@@ -53,7 +53,7 @@ Includes:
     landmask::AbstractMatrix
     coastal_buffer_mask::AbstractMatrix
     iftversion::VersionNumber = pkgversion(@__MODULE__)
-    file_version::VersionNumber = VersionNumber("1.0.0")
+    file_version::VersionNumber = VersionNumber("2.0.0")
     reference::AbstractString = "https://doi.org/10.1016/j.rse.2019.111406"
     contact::AbstractString = "mmwilhelmus@brown.edu"
 end
