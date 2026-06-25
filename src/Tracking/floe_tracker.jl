@@ -179,7 +179,7 @@ function floe_tracker(
     trajectories = props[init_idx]
     _start_new_trajectory!(trajectories)
 
-    for candidates in props[2:end]
+    for candidates in props[(init_idx + 1):end]
         # Note: assumes each property table comes from a single observation time!
         nrow(candidates) > 0 && begin
             trajectory_heads = _get_trajectory_heads(

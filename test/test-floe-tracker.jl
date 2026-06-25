@@ -197,6 +197,95 @@ end
     @test sum(counts[:, :count] .== 3) == 4 && sum(counts[:, :count] .== 2) == 1
 end
 
+@testitem "One blank image at the start of the series" setup = [FloeTrackerBasicCases] begin
+    tracker = FloeTracker(;
+        filter_function=FilterFunction(),
+        matching_function=MinimumWeightMatchingFunction(),
+        minimum_area=floe_area_threshold,
+    )
+
+    labeled_imgs_gaps = [zeros(Int64, size(labeled_imgs[1])), labeled_imgs[1]]
+
+    # Extend passtimes
+    passtimes_gaps = [DateTime("2000-01-01"), DateTime("2000-01-02")]
+
+    tracker = FloeTracker(;
+        filter_function=FilterFunction(),
+        matching_function=MinimumWeightMatchingFunction(),
+        minimum_area=floe_area_threshold,
+    )
+
+    trajectories = tracker(labeled_imgs_gaps, passtimes_gaps)
+    counts = combine(groupby(trajectories, [:ID]), nrow => :count)
+    @test nrow(trajectories) == 0
+end
+
+@testitem "Several blank images at the start of the series" setup = [FloeTrackerBasicCases] begin
+    tracker = FloeTracker(;
+        filter_function=FilterFunction(),
+        matching_function=MinimumWeightMatchingFunction(),
+        minimum_area=floe_area_threshold,
+    )
+
+    # Add full image gap
+    labeled_imgs_gaps = [
+        zeros(Int64, size(labeled_imgs[1])),
+        zeros(Int64, size(labeled_imgs[1])),
+        labeled_imgs[1],
+        labeled_imgs[2],
+        zeros(Int64, size(labeled_imgs[1])),
+    ]
+
+    # Extend passtimes
+    passtimes_gaps = [
+        DateTime("2000-01-01"),
+        DateTime("2000-01-02"),
+        DateTime("2000-01-03"),
+        DateTime("2000-01-04"),
+        DateTime("2000-01-05"),
+    ]
+
+    tracker = FloeTracker(;
+        filter_function=FilterFunction(),
+        matching_function=MinimumWeightMatchingFunction(),
+        minimum_area=floe_area_threshold,
+    )
+
+    trajectories = tracker(labeled_imgs_gaps, passtimes_gaps)
+    counts = combine(groupby(trajectories, [:ID]), nrow => :count)
+
+    @test sum(counts[:, :count] .== 2) == 5
+end
+
+@testitem "Only blank images" setup = [FloeTrackerBasicCases] begin
+    tracker = FloeTracker(;
+        filter_function=FilterFunction(),
+        matching_function=MinimumWeightMatchingFunction(),
+        minimum_area=floe_area_threshold,
+    )
+
+    # Add full image gap
+    labeled_imgs_gaps = [
+        zeros(Int64, size(labeled_imgs[1])),
+        zeros(Int64, size(labeled_imgs[1])),
+        zeros(Int64, size(labeled_imgs[1])),
+    ]
+
+    # Set passtimes
+    passtimes_gaps = [
+        DateTime("2000-01-01"), DateTime("2000-01-02"), DateTime("2000-01-03")
+    ]
+
+    tracker = FloeTracker(;
+        filter_function=FilterFunction(),
+        matching_function=MinimumWeightMatchingFunction(),
+        minimum_area=floe_area_threshold,
+    )
+
+    trajectories = tracker(labeled_imgs_gaps, passtimes_gaps)
+    @test nrow(trajectories) == 0
+end
+
 @testitem "FloeTracker – ellipses" begin
     using CSVFiles
     using DataFrames
