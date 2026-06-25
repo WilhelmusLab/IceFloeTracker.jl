@@ -286,15 +286,12 @@ function create_rgb_rgba_dataset(
 )
     img_rectified = permutedims(rawview(channelview(RGB.(img))), (2, 3, 1))
     el = eltype(img_rectified)
-
-    @show size(img_rectified)
-    @show eltype(img_rectified)
     img_obj, img_dtype = create_dataset(group, name, img_rectified)
     attrs(img_obj)["CLASS"] = "IMAGE"
     attrs(img_obj)["IMAGE_SUBCLASS"] = "IMAGE_TRUECOLOR"
     attrs(img_obj)["IMAGE_VERSION"] = "1.2"
     attrs(img_obj)["INTERLACE_MODE"] = "INTERLACE_PLANE"
-    attrs(img_obj)["IMAGE_MINMAXRANGE"] = [typemin(el), typemax(el)]
+    attrs(img_obj)["IMAGE_MINMAXRANGE"] = [el(typemin(el)), el(typemax(el))]
     # attrs(img_obj)["IMAGE_TRANSPARENCY"] = 3
     attrs(img_obj)["description"] = description
     write_dataset(img_obj, img_dtype, img_rectified)
