@@ -207,16 +207,13 @@ function _load_v2(file)
     crs_ref_image_path = attrs(file)["fname_truecolor"]
     truecolor_path = attrs(file)["fname_truecolor"]
     falsecolor_path = attrs(file)["fname_falsecolor"]
-    labeled = permutedims(read(file["floe_properties/labeled_image"])) .|> Int
+    labeled = read(file["floe_properties/labeled_image"]) .|> Int
     props = DataFrame(read(file["floe_properties/properties"]))
-    landmask = permutedims(read(file["classifications/landmask"])) |> binarize_mask .|> Gray
-    cloud_mask =
-        permutedims(read(file["classifications/cloud_mask"])) |> binarize_mask .|> Gray
-    ice_mask = permutedims(read(file["classifications/ice_mask"])) |> binarize_mask .|> Gray
+    landmask = read(file["classifications/landmask"]) |> binarize_mask .|> Gray
+    cloud_mask = read(file["classifications/cloud_mask"]) |> binarize_mask .|> Gray
+    ice_mask = read(file["classifications/ice_mask"]) |> binarize_mask .|> Gray
     coastal_buffer_mask =
-        permutedims(read(file["classifications/coastal_buffer_mask"])) |>
-        binarize_mask .|>
-        Gray
+        read(file["classifications/coastal_buffer_mask"]) |> binarize_mask .|> Gray
     iftversion = VersionNumber(attrs(file)["iftversion"])
     reference = attrs(file)["reference"]
     contact = attrs(file)["contact"]
