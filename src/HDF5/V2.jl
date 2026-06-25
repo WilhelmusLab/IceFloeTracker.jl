@@ -1,4 +1,4 @@
-import HDF5: Group, File
+import HDF5: Group, File, create_dataset
 
 """
     IceFloeTracker.HDF5.V2(;
@@ -131,10 +131,33 @@ function save_hdf5(output_path::AbstractString, s::V2;)
         create_color_dataset(group_inputs, "falsecolor", s.falsecolor, "Falsecolor image")
         create_color_dataset(group_inputs, "truecolor", s.truecolor, "Truecolor image")
         attrs(file)["iftversion"] = string(s.iftversion)
-        attrs(file)["crs"] = latlondata[:crs]
+        attrs(file)["crs"] = "EPSG:$(latlondata[:crs])"
         attrs(file)["crs_name"] = crs_name
+        attrs(file)["crs_wkt"] = latlondata[:crs_wkt]
         attrs(file)["reference"] = s.reference
         attrs(file)["contact"] = s.contact
+
+        attrs(file)["Spatial_Extent"] = [
+            minimum(latlondata[:Y]),
+            minimum(latlondata[:X]),
+            maximum(latlondata[:X]),
+            maximum(latlondata[:Y]),
+        ]
+
+        @info "Create dataset polar_stereographic"
+        dset = create_dataset(file, "polar_stereographic", String, (1,))
+        attrs(dset)["crs_wkt"] = latlondata[:crs_wkt]
+        attrs(dset)["spatial_ref"] = latlondata[:crs_wkt]
+        attrs(dset)["long_name"] = "CRS Definition"
+        attrs(dset)["GeoTransform"] = "-2115152 250 0 -167056 0 -250" # fix this
+        file["x"] = latlondata[:X]
+        attrs(file["x"])["standard_name"] = "projection_x_coordinate"
+        attrs(file["x"])["long_name"] = "x coordinate of projection"
+        attrs(file["x"])["units"] = "m"
+        file["y"] = latlondata[:Y]
+        attrs(file["y"])["standard_name"] = "projection_y_coordinate"
+        attrs(file["y"])["long_name"] = "y coordinate of projection"
+        attrs(file["y"])["units"] = "m"
 
         @info "Create group index"
         group_index = create_group(file, "index")
@@ -288,5 +311,7 @@ function create_color_dataset(
     attrs(img_obj)["INTERLACE_MODE"] = "INTERLACE_PLANE"
     attrs(img_obj)["IMAGE_MINMAXRANGE"] = [el(typemin(el)), el(typemax(el))]
     attrs(img_obj)["description"] = description
+    attrs(img_obj)["grid_mapping"] = "polar_stereographic"
+
     write_dataset(img_obj, img_dtype, img_rectified)
 end
