@@ -135,13 +135,6 @@ function save_hdf5(output_path::AbstractString, s::V2;)
         attrs(file)["reference"] = s.reference
         attrs(file)["contact"] = s.contact
 
-        attrs(file)["Spatial_Extent"] = [
-            minimum(latlondata[:Y]),
-            minimum(latlondata[:X]),
-            maximum(latlondata[:X]),
-            maximum(latlondata[:Y]),
-        ]
-
         create_color_dataset(file, "falsecolor", s.falsecolor, "Falsecolor image")
         create_color_dataset(file, "truecolor", s.truecolor, "Truecolor image")
 
