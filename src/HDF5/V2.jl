@@ -129,9 +129,6 @@ function save_hdf5(output_path::AbstractString, s::V2;)
         attrs(file)["file_version"] = string(s.file_version)
 
         attrs(file)["iftversion"] = string(s.iftversion)
-        attrs(file)["crs"] = "EPSG:$(latlondata[:crs])"
-        attrs(file)["crs_name"] = crs_name
-        attrs(file)["crs_wkt"] = latlondata[:crs_wkt]
         attrs(file)["reference"] = s.reference
         attrs(file)["contact"] = s.contact
 
