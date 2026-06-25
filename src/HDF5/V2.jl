@@ -150,7 +150,8 @@ function save_hdf5(output_path::AbstractString, s::V2;)
         attrs(dset)["crs_wkt"] = latlondata[:crs_wkt]
         attrs(dset)["spatial_ref"] = latlondata[:crs_wkt]
         attrs(dset)["long_name"] = "CRS Definition"
-        attrs(dset)["GeoTransform"] = "-2115152 250 0 -167056 0 -250" # fix this
+        attrs(dset)["GeoTransform"] = join(Int64.(latlondata[:geotransform]), " ")
+
         file["x"] = latlondata[:X]
         attrs(file["x"])["standard_name"] = "projection_x_coordinate"
         attrs(file["x"])["long_name"] = "x coordinate of projection"

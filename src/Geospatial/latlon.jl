@@ -57,6 +57,7 @@ function latlon(imgpath::AbstractString)
         latitude=lat,
         X=X,
         Y=Y,
+        geotransform=getgeotransform(im),
     )
 
     return data
