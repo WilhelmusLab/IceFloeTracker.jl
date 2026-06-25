@@ -527,11 +527,11 @@ rule observation_hdf5:
     shell:
         """
         {config[IFT]} -e 'using IceFloeTracker, TimeZones, FileIO, Images, DataFrames;
-        data = IceFloeTracker.HDF5.V1(
+        data = IceFloeTracker.HDF5.V2(
             passtime = read("{input.passtime}", String) |> chomp |> ZonedDateTime,
             crs_ref_image_path = "{input.crs_ref_image}",
-            truecolor_path = "{input.truecolor}",
-            falsecolor_path = "{input.falsecolor}",
+            truecolor = load("{input.truecolor}"),
+            falsecolor = load("{input.falsecolor}"),
             labeled = load("{input.labels_map}") .|> x-> reinterpret(UInt16, x),
             props = load("{input.props_crs}")|> DataFrame,
             landmask = load("{input.landmask}") |> binarize_mask,
