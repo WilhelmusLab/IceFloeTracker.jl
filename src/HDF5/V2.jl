@@ -127,9 +127,7 @@ function save_hdf5(output_path::AbstractString, s::V2;)
     h5open(output_path, "w") do file
         @info "Add top-level attributes"
         attrs(file)["file_version"] = string(s.file_version)
-        group_inputs = create_group(file, "inputs")
-        create_color_dataset(group_inputs, "falsecolor", s.falsecolor, "Falsecolor image")
-        create_color_dataset(group_inputs, "truecolor", s.truecolor, "Truecolor image")
+
         attrs(file)["iftversion"] = string(s.iftversion)
         attrs(file)["crs"] = "EPSG:$(latlondata[:crs])"
         attrs(file)["crs_name"] = crs_name
@@ -143,6 +141,9 @@ function save_hdf5(output_path::AbstractString, s::V2;)
             maximum(latlondata[:X]),
             maximum(latlondata[:Y]),
         ]
+
+        create_color_dataset(file, "falsecolor", s.falsecolor, "Falsecolor image")
+        create_color_dataset(file, "truecolor", s.truecolor, "Truecolor image")
 
         @info "Create dataset polar_stereographic"
         dset = create_dataset(file, "polar_stereographic", String, (1,))
