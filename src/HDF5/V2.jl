@@ -135,8 +135,19 @@ function save_hdf5(output_path::AbstractString, s::V2;)
         create_color_dataset(file, "falsecolor", s.falsecolor, "Falsecolor image")
         create_color_dataset(file, "truecolor", s.truecolor, "Truecolor image")
 
-        @info "Create dataset polar_stereographic"
-        dset = create_dataset(file, "polar_stereographic", String, (1,))
+        @info "Create geolocation dataset"
+        crs_short_name_dict::String = Dict(
+            3413 => "north_polar_stereographic",
+            3031 => "south_polar_stereographic",
+            4326 => "wgs84_lat_lon",
+            3857 => "web_mercator",
+        )
+        projection_dataset_name = get(crs_short_name_dict, crs_code) do
+            crs_name_ = "geolocation"
+            return crs_name_
+        end
+
+        dset = create_dataset(file, projection_dataset_name, String, (1,))
         attrs(dset)["crs_wkt"] = latlondata[:crs_wkt]
         attrs(dset)["spatial_ref"] = latlondata[:crs_wkt]
         attrs(dset)["long_name"] = "CRS Definition"
@@ -177,6 +188,7 @@ function save_hdf5(output_path::AbstractString, s::V2;)
             "labeled_image",
             s.labeled,
             "Connected components of the segmented floe image using a 3x3 structuring element. The property matrix consists of the properties of each connected component.",
+            projection_dataset_name,
         )
 
         @info "Create group classifications"
@@ -188,6 +200,7 @@ function save_hdf5(output_path::AbstractString, s::V2;)
             "cloud_mask",
             s.cloud_mask,
             "Cloud mask. This mask is 1 for pixels classified as cloud, and 0 elsewhere.",
+            projection_dataset_name,
         )
 
         @info "Write landmask"
@@ -196,6 +209,7 @@ function save_hdf5(output_path::AbstractString, s::V2;)
             "landmask",
             s.landmask,
             "Land mask. This mask is 1 for pixels classified as land, and 0 elsewhere.",
+            projection_dataset_name,
         )
 
         @info "Write coastal buffer mask"
@@ -204,6 +218,7 @@ function save_hdf5(output_path::AbstractString, s::V2;)
             "coastal_buffer_mask",
             s.coastal_buffer_mask,
             "Coastal buffer mask. This mask is 1 for pixels within a specified distance of the coast, and 0 elsewhere.",
+            projection_dataset_name,
         )
 
         @info "Write ice mask"
@@ -212,6 +227,7 @@ function save_hdf5(output_path::AbstractString, s::V2;)
             "ice_mask",
             s.ice_mask,
             "Ice mask. This mask is 1 for pixels classified as ice, and 0 elsewhere.",
+            projection_dataset_name,
         )
     end
     return nothing
@@ -255,6 +271,7 @@ function create_mask_dataset(
     name::AbstractString,
     mask::AbstractMatrix,
     description::AbstractString="",
+    projection_dataset_name::AbstractString="geolocation",
 )
     mx = maximum(mask)
     T = choose_dtype(mx)
@@ -266,6 +283,7 @@ function create_mask_dataset(
         minimum(mask_rectified), maximum(mask_rectified)
     ]
     attrs(mask_obj)["description"] = description
+    attrs(mask_obj)["grid_mapping"] = projection_dataset_name
     write_dataset(mask_obj, mask_dtype, mask_rectified)
 end
 
@@ -274,6 +292,7 @@ function create_labeled_dataset(
     name::AbstractString,
     labeled::AbstractMatrix,
     description::AbstractString="",
+    projection_dataset_name::AbstractString="geolocation",
 )
     mx = maximum(labeled)
     T = choose_dtype(mx)
@@ -285,6 +304,7 @@ function create_labeled_dataset(
         minimum(labeled_rectified), maximum(labeled_rectified)
     ]
     attrs(label_data_obj)["description"] = description
+    attrs(label_data_obj)["grid_mapping"] = projection_dataset_name
     write_dataset(label_data_obj, label_data_dtype, labeled_rectified)
 end
 
@@ -293,6 +313,7 @@ function create_color_dataset(
     name::AbstractString,
     img::AbstractMatrix{<:Union{RGB,RGBA}},
     description::AbstractString="",
+    projection_dataset_name::AbstractString="geolocation",
 )
     img_rectified = permutedims(rawview(channelview(img)), (2, 3, 1))
     el = eltype(img_rectified)
@@ -303,7 +324,7 @@ function create_color_dataset(
     attrs(img_obj)["INTERLACE_MODE"] = "INTERLACE_PLANE"
     attrs(img_obj)["IMAGE_MINMAXRANGE"] = [el(typemin(el)), el(typemax(el))]
     attrs(img_obj)["description"] = description
-    attrs(img_obj)["grid_mapping"] = "polar_stereographic"
+    attrs(img_obj)["grid_mapping"] = projection_dataset_name
 
     write_dataset(img_obj, img_dtype, img_rectified)
 end
