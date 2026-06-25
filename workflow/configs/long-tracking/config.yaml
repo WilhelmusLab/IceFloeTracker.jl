@@ -1,6 +1,5 @@
 #--------------------------------------------------
 # Config files
 #--------------------------------------------------
-REGION_CSV: configs/long-tracking/region.csv # relative to snakefile
 CASE_CSV: configs/long-tracking/case.csv # relative to snakefile
 
