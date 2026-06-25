@@ -128,10 +128,8 @@ function save_hdf5(output_path::AbstractString, s::V2;)
         @info "Add top-level attributes"
         attrs(file)["file_version"] = string(s.file_version)
         group_inputs = create_group(file, "inputs")
-        create_rgb_rgba_dataset(
-            group_inputs, "falsecolor", s.falsecolor, "Falsecolor image"
-        )
-        create_rgb_rgba_dataset(group_inputs, "truecolor", s.truecolor, "Truecolor image")
+        create_color_dataset(group_inputs, "falsecolor", s.falsecolor, "Falsecolor image")
+        create_color_dataset(group_inputs, "truecolor", s.truecolor, "Truecolor image")
         attrs(file)["iftversion"] = string(s.iftversion)
         attrs(file)["crs"] = latlondata[:crs]
         attrs(file)["crs_name"] = crs_name
@@ -278,7 +276,7 @@ function create_labeled_dataset(
     write_dataset(label_data_obj, label_data_dtype, labeled_rectified)
 end
 
-function create_rgb_rgba_dataset(
+function create_color_dataset(
     group::Union{File,Group},
     name::AbstractString,
     img::AbstractMatrix{<:Union{RGB,RGBA}},
