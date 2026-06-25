@@ -248,7 +248,7 @@ function create_mask_dataset(
 )
     mx = maximum(mask)
     T = choose_dtype(mx)
-    mask_rectified = T.(permutedims(mask))
+    mask_rectified = T.(mask)
     mask_obj, mask_dtype = create_dataset(group, name, mask_rectified)
     attrs(mask_obj)["CLASS"] = "IMAGE"
     attrs(mask_obj)["IMAGE_SUBCLASS"] = "IMAGE_GRAYSCALE"
@@ -267,7 +267,7 @@ function create_labeled_dataset(
 )
     mx = maximum(labeled)
     T = choose_dtype(mx)
-    labeled_rectified = T.(permutedims(labeled))
+    labeled_rectified = T.(labeled)
     label_data_obj, label_data_dtype = create_dataset(group, name, labeled_rectified)
     attrs(label_data_obj)["CLASS"] = "IMAGE"
     attrs(label_data_obj)["IMAGE_SUBCLASS"] = "IMAGE_INDEXED"
@@ -285,6 +285,7 @@ function create_rgb_rgba_dataset(
     description::AbstractString="",
 )
     img_rectified = permutedims(rawview(channelview(RGB.(img))), (2, 3, 1))
+    el = eltype(img_rectified)
 
     @show size(img_rectified)
     @show eltype(img_rectified)
@@ -293,7 +294,7 @@ function create_rgb_rgba_dataset(
     attrs(img_obj)["IMAGE_SUBCLASS"] = "IMAGE_TRUECOLOR"
     attrs(img_obj)["IMAGE_VERSION"] = "1.2"
     attrs(img_obj)["INTERLACE_MODE"] = "INTERLACE_PLANE"
-    attrs(img_obj)["IMAGE_MINMAXRANGE"] = [0, 255]
+    attrs(img_obj)["IMAGE_MINMAXRANGE"] = [typemin(el), typemax(el)]
     # attrs(img_obj)["IMAGE_TRANSPARENCY"] = 3
     attrs(img_obj)["description"] = description
     write_dataset(img_obj, img_dtype, img_rectified)
