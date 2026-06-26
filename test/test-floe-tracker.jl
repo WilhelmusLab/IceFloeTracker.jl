@@ -104,14 +104,15 @@ end
     end
 
     floe_area_threshold = 400
-end
 
-@testitem "Every floe is matched in every day" setup = [FloeTrackerBasicCases] begin
     tracker = FloeTracker(;
         filter_function=FilterFunction(),
         matching_function=MinimumWeightMatchingFunction(),
         minimum_area=floe_area_threshold,
     )
+end
+
+@testitem "Every floe is matched in every day" setup = [FloeTrackerBasicCases] begin
     trajectories = tracker(labeled_imgs, _passtimes)
 
     # Expected: 5 trajectories, all of which have length 3
@@ -126,12 +127,6 @@ end
     labeled_imgs_gaps[2][labeled_imgs_gaps[2] .== 36] .= 0
     labeled_imgs_gaps[3][labeled_imgs_gaps[3] .== 33] .= 0
 
-    tracker = FloeTracker(;
-        filter_function=FilterFunction(),
-        matching_function=MinimumWeightMatchingFunction(),
-        minimum_area=floe_area_threshold,
-    )
-
     trajectories = tracker(labeled_imgs_gaps, _passtimes)
 
     # Expected: 5 trajectories, 4 of which have length 3 and 1 of which have length 2
@@ -144,11 +139,7 @@ end
     labeled_imgs_gaps = [
         labeled_imgs[1], labeled_imgs[2], labeled_imgs[2] * 0, labeled_imgs[3]
     ]
-    tracker = FloeTracker(;
-        filter_function=FilterFunction(),
-        matching_function=MinimumWeightMatchingFunction(),
-        minimum_area=floe_area_threshold,
-    )
+
     # Add an extra pass-time to simulate a longer time series
     passtimes_gaps = [
         _passtimes[1], _passtimes[2], _passtimes[3], DateTime("2022-09-16T12:44:49")
@@ -166,13 +157,7 @@ end
 @testitem "One blank image in the middle of the series with single floe gaps" setup = [
     FloeTrackerBasicCases
 ] begin
-    tracker = FloeTracker(;
-        filter_function=FilterFunction(),
-        matching_function=MinimumWeightMatchingFunction(),
-        minimum_area=floe_area_threshold,
-    )
-
-    # Add full image gap
+    # Add full image gap    
     labeled_imgs_gaps = [
         labeled_imgs[1], labeled_imgs[2], labeled_imgs[2] * 0, labeled_imgs[3]
     ]
@@ -186,15 +171,63 @@ end
         _passtimes[1], _passtimes[2], _passtimes[3], DateTime("2022-09-16T12:44:49")
     ]
 
-    tracker = FloeTracker(;
-        filter_function=FilterFunction(),
-        matching_function=MinimumWeightMatchingFunction(),
-        minimum_area=floe_area_threshold,
-    )
-
     trajectories = tracker(labeled_imgs_gaps, passtimes_gaps)
     counts = combine(groupby(trajectories, [:ID]), nrow => :count)
     @test sum(counts[:, :count] .== 3) == 4 && sum(counts[:, :count] .== 2) == 1
+end
+
+@testitem "One blank image at the start of the series" setup = [FloeTrackerBasicCases] begin
+    labeled_imgs_gaps = [zeros(Int64, size(labeled_imgs[1])), labeled_imgs[1]]
+
+    # Extend passtimes
+    passtimes_gaps = [DateTime("2000-01-01"), DateTime("2000-01-02")]
+
+    trajectories = tracker(labeled_imgs_gaps, passtimes_gaps)
+    counts = combine(groupby(trajectories, [:ID]), nrow => :count)
+    @test nrow(trajectories) == 0
+end
+
+@testitem "Several blank images at the start of the series" setup = [FloeTrackerBasicCases] begin
+    # Add full image gap
+    labeled_imgs_gaps = [
+        zeros(Int64, size(labeled_imgs[1])),
+        zeros(Int64, size(labeled_imgs[1])),
+        labeled_imgs[1],
+        labeled_imgs[2],
+        zeros(Int64, size(labeled_imgs[1])),
+    ]
+
+    # Extend passtimes
+    passtimes_gaps = [
+        DateTime("2000-01-01"),
+        DateTime("2000-01-02"),
+        DateTime("2000-01-03"),
+        DateTime("2000-01-04"),
+        DateTime("2000-01-05"),
+    ]
+
+    trajectories = tracker(labeled_imgs_gaps, passtimes_gaps)
+    counts = combine(groupby(trajectories, [:ID]), nrow => :count)
+
+    @test sum(counts[:, :count] .== 2) == 5
+end
+
+@testitem "Only blank images" setup = [FloeTrackerBasicCases] begin
+
+    # Add full image gap
+    labeled_imgs_gaps = [
+        zeros(Int64, size(labeled_imgs[1])),
+        zeros(Int64, size(labeled_imgs[1])),
+        zeros(Int64, size(labeled_imgs[1])),
+    ]
+
+    # Set passtimes
+    passtimes_gaps = [
+        DateTime("2000-01-01"), DateTime("2000-01-02"), DateTime("2000-01-03")
+    ]
+
+    trajectories = tracker(labeled_imgs_gaps, passtimes_gaps)
+    @test nrow(trajectories) == 0
 end
 
 @testitem "FloeTracker – ellipses" begin
