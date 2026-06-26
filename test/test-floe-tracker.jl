@@ -209,11 +209,6 @@ end
     # Extend passtimes
     passtimes_gaps = [DateTime("2000-01-01"), DateTime("2000-01-02")]
 
-    tracker = FloeTracker(;
-        filter_function=FilterFunction(),
-        matching_function=MinimumWeightMatchingFunction(),
-        minimum_area=floe_area_threshold,
-    )
 
     trajectories = tracker(labeled_imgs_gaps, passtimes_gaps)
     counts = combine(groupby(trajectories, [:ID]), nrow => :count)
