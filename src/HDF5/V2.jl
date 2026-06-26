@@ -112,42 +112,17 @@ function save_hdf5(output_path::AbstractString, s::V2;)
     latlondata = latlon(s.crs_ref_image_path)
 
     crs_code = latlondata[:crs]
-    crs_dict = Dict(
-        3413 => "EPSG:3413 NSIDC north polar stereographic",
-        3031 => "EPSG:3031 NSIDC south polar stereographic",
-        4326 => "EPSG:4326 WGS84 lat/lon",
-        3857 => "EPSG:3857 Web Mercator",
-    )
-    crs_name = get(crs_dict, crs_code) do
-        crs_name_ = "EPSG:$(string(crs_code))"
-        @warn "CRS $crs_code not recognized. CRS will be recorded as $crs_name_ in the output file attributes, but no short name will be provided."
-        return crs_name_
-    end
+    crs_name = get_crs_name(crs_code)
+    projection_dataset_name = get_projection_name(crs_code)
 
     h5open(output_path, "w") do file
-        @info "Add top-level attributes"
         attrs(file)["file_version"] = string(s.file_version)
-
         attrs(file)["iftversion"] = string(s.iftversion)
         attrs(file)["reference"] = s.reference
         attrs(file)["contact"] = s.contact
 
-        create_color_dataset(file, "falsecolor", s.falsecolor, "Falsecolor image")
-        create_color_dataset(file, "truecolor", s.truecolor, "Truecolor image")
-
-        @info "Create geolocation dataset"
-        crs_short_name_dict::String = Dict(
-            3413 => "north_polar_stereographic",
-            3031 => "south_polar_stereographic",
-            4326 => "wgs84_lat_lon",
-            3857 => "web_mercator",
-        )
-        projection_dataset_name = get(crs_short_name_dict, crs_code) do
-            crs_name_ = "geolocation"
-            return crs_name_
-        end
-
         dset = create_dataset(file, projection_dataset_name, String, (1,))
+        attrs(dset)["name"] = crs_name
         attrs(dset)["crs_wkt"] = latlondata[:crs_wkt]
         attrs(dset)["spatial_ref"] = latlondata[:crs_wkt]
         attrs(dset)["long_name"] = "CRS Definition"
@@ -157,44 +132,36 @@ function save_hdf5(output_path::AbstractString, s::V2;)
         attrs(file["x"])["standard_name"] = "projection_x_coordinate"
         attrs(file["x"])["long_name"] = "x coordinate of projection"
         attrs(file["x"])["units"] = "m"
+
         file["y"] = latlondata[:Y]
         attrs(file["y"])["standard_name"] = "projection_y_coordinate"
         attrs(file["y"])["long_name"] = "y coordinate of projection"
         attrs(file["y"])["units"] = "m"
 
-        @info "Create group index"
-        group_index = create_group(file, "index")
-        group_index["time"] = ptsunix
-        group_index["x"] = latlondata[:X]
-        group_index["y"] = latlondata[:Y]
+        file["time"] = ptsunix
 
-        @info "Create group floe_properties"
-        group_floe_properties = create_group(file, "floe_properties")
+        create_color_dataset(
+            file, "falsecolor", s.falsecolor, "Falsecolor image", projection_dataset_name
+        )
+        create_color_dataset(
+            file, "truecolor", s.truecolor, "Truecolor image", projection_dataset_name
+        )
 
-        props = convert_missing_to_nan(s.props)
+        floe_properties_group = create_group(file, "floe_properties")
+        create_floe_properties_dataset(
+            floe_properties_group, s.props, "floe-properties", crs_name
+        )
 
-        if nrow(props) > 0
-            write_dataset(
-                group_floe_properties, "properties", [copy(row) for row in eachrow(props)]
-            )  # `copy(row)` converts the DataSetRow to a NamedTuple
-            attrs(group_floe_properties)["Description of properties"] = """Area units (`area`, `convex_area`) are in sq. kilometers, length units (`minor_axis_length`, `major_axis_length`, and `perimeter`) in kilometers, and `orientation` in radians (see the description of properties attribute.) Latitude and longitude coordinates are in degrees, and the stereographic coordinates `x` and `y` are in meters relative to the $crs_name projection. """
-        else
-            attrs(group_floe_properties)["Description of properties"] = "No floes detected"
-        end
-
-        @info "Write labeled image"
         create_labeled_dataset(
-            group_floe_properties,
+            file,
             "labeled_image",
             s.labeled,
             "Connected components of the segmented floe image using a 3x3 structuring element. The property matrix consists of the properties of each connected component.",
             projection_dataset_name,
         )
 
-        @info "Create group classifications"
         group_classifications = create_group(file, "classifications")
 
-        @info "Write cloud mask"
         create_mask_dataset(
             group_classifications,
             "cloud_mask",
@@ -203,7 +170,6 @@ function save_hdf5(output_path::AbstractString, s::V2;)
             projection_dataset_name,
         )
 
-        @info "Write landmask"
         create_mask_dataset(
             group_classifications,
             "landmask",
@@ -212,7 +178,6 @@ function save_hdf5(output_path::AbstractString, s::V2;)
             projection_dataset_name,
         )
 
-        @info "Write coastal buffer mask"
         create_mask_dataset(
             group_classifications,
             "coastal_buffer_mask",
@@ -221,7 +186,6 @@ function save_hdf5(output_path::AbstractString, s::V2;)
             projection_dataset_name,
         )
 
-        @info "Write ice mask"
         create_mask_dataset(
             group_classifications,
             "ice_mask",
@@ -264,6 +228,54 @@ function _load_v2(file)
         reference,
         contact,
     )
+end
+
+function get_crs_name(crs_code)
+    crs_dict = Dict(
+        3413 => "EPSG:3413 NSIDC north polar stereographic",
+        3031 => "EPSG:3031 NSIDC south polar stereographic",
+        4326 => "EPSG:4326 WGS84 lat/lon",
+        3857 => "EPSG:3857 Web Mercator",
+    )
+    crs_name = get(crs_dict, crs_code) do
+        crs_name_ = "EPSG:$(string(crs_code))"
+        @warn "CRS $crs_code not recognized. CRS will be recorded as $crs_name_ in the output file attributes, but no short name will be provided."
+        return crs_name_
+    end
+    return crs_name
+end
+
+function get_projection_name(crs_code)::String
+    @show crs_code
+    crs_short_name_dict = Dict(
+        3413 => "north_polar_stereographic",
+        3031 => "south_polar_stereographic",
+        4326 => "wgs84_lat_lon",
+        3857 => "web_mercator",
+    )
+    projection_dataset_name = get(crs_short_name_dict, crs_code) do
+        crs_name_ = "geolocation"
+        return crs_name_
+    end
+    return projection_dataset_name
+end
+
+function create_floe_properties_dataset(
+    group::Union{File,Group},
+    props::DataFrame,
+    name::AbstractString="floe-properties",
+    crs_name::AbstractString="",
+)
+    @show props
+    props_ = convert_missing_to_nan(props)
+    @show props_
+    if nrow(props_) > 0
+        create_dataset(group, name, [copy(row) for row in eachrow(props_)])  # `copy(row)` converts the DataSetRow to a NamedTuple
+        attrs(group)["Description"] = """Area units (`area`, `convex_area`) are in sq. kilometers, length units (`minor_axis_length`, `major_axis_length`, and `perimeter`) in kilometers, and `orientation` in radians (see the description of properties attribute.) Latitude and longitude coordinates are in degrees, and the stereographic coordinates `x` and `y` are in meters relative to the $crs_name projection. """
+    else
+        create_dataset(group, name, [])
+        attrs(group)["Description"] = "No floes detected"
+    end
 end
 
 function create_mask_dataset(
