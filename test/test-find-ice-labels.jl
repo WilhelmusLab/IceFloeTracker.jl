@@ -124,6 +124,18 @@ end
             @test binarize(falsecolor, algorithm) == algorithm(falsecolor)
         end
     end
+    @testset "all-cloud case" begin
+        @testset "functor version" begin
+            dataset = Watkins2026Dataset(; ref="v0.2")
+            case = first(
+                filter(c -> (c.case_number == 174 && c.satellite == "aqua"), dataset)
+            )
+            landmask = modis_landmask(case)
+            falsecolor = modis_falsecolor(case)
+            algorithm = IceDetectionLopezAcosta2019()
+            @test binarize(falsecolor, algorithm) == algorithm(falsecolor)
+        end
+    end
     @testset "find_ice_labels" begin
         @testset "matlab comparison" begin
             falsecolor_image = float64.(load(falsecolor_test_image_file)[test_region...])
