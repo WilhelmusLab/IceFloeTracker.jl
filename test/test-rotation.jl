@@ -570,12 +570,29 @@ end
 end
 
 @testitem "get_rotation_measurements(df; ...)" setup = [RotationSetup] begin
-    @testset "no observations" begin
-        df = DataFrame(time=DateTime[], mask=Bool[], id=Int[])
-        @test isempty(df)
+    @testset "no observations doesn't crash" begin
+        df = DataFrame(id=Int[], time=DateTime[], mask=Matrix{Bool}[])
         result = get_rotation_measurements(
             df, id_column=:id, image_column=:mask, time_column=:time
         )
+        @test isempty(result)
+    end
+
+    @testset "no observations has same names and types as the regular output" begin
+        empty_df = DataFrame(
+            id=Int[], time=DateTime[], mask=Matrix{Bool}[], satellite=String[]
+        )
+        not_empty_df = DataFrame([
+            (id=1, time=DateTime("2020-01-12T12:00:00"), mask=masks[0], satellite="aqua"),
+            (id=1, time=DateTime("2020-01-12T13:00:00"), mask=masks[15], satellite="terra"),
+        ])
+
+        result_empty, result_not_empty = get_rotation_measurements.(
+            [empty_df, not_empty_df], id_column=:id, image_column=:mask, time_column=:time
+        )
+
+        @test names(result_empty) == names(result_not_empty)
+        @test eltype.(eachcol(result_empty)) == eltype.(eachcol(result_not_empty))
     end
     @testset "include additional source columns" begin
         df = DataFrame([
