@@ -570,6 +570,13 @@ end
 end
 
 @testitem "get_rotation_measurements(df; ...)" setup = [RotationSetup] begin
+    @testset "no observations" begin
+        df = DataFrame(time=DateTime[], mask=Bool[], id=Int[])
+        @test isempty(df)
+        result = get_rotation_measurements(
+            df, id_column=:id, image_column=:mask, time_column=:time
+        )
+    end
     @testset "include additional source columns" begin
         df = DataFrame([
             (id=1, time=DateTime("2020-01-12T12:00:00"), mask=masks[0], satellite="aqua"),
