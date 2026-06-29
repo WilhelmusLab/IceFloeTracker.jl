@@ -127,3 +127,14 @@ end
     @test_throws ErrorException choose_dtype(BigInt(2)^64 + 1)
     @test_throws ErrorException choose_dtype(-BigInt(2)^63 - 1)
 end
+
+@testitem "convert_missing_to_nan" begin
+    using DataFrames
+    using IceFloeTracker.HDF5: convert_missing_to_nan
+
+    df = DataFrame(a=[1.0, 2.0, missing], b=[missing, 4.0, 5.0], c=[6.0, 7.0, 8.0])
+    df_converted = convert_missing_to_nan(df)
+    @test isequal(df_converted.a, [1.0, 2.0, NaN])
+    @test isequal(df_converted.b, [NaN, 4.0, 5.0])
+    @test isequal(df_converted.c, [6.0, 7.0, 8.0])
+end
