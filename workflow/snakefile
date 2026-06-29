@@ -255,7 +255,7 @@ rule load_truecolor:
     shell:
         "{config[LOADER]} {output} --kind truecolor "
         "--crs {params.crs} --bbox {params.bbox} --scale {wildcards.scale} "
-        "--datetime {wildcards.date} --satellite {wildcards.satellite}"
+        "--datetime {wildcards.date} --satellite {wildcards.satellite} --no-validate"
 
 rule load_falsecolor:
     output:
@@ -268,7 +268,7 @@ rule load_falsecolor:
     shell:
         "{config[LOADER]} {output} --kind bands721 "
         "--crs {params.crs} --bbox {params.bbox} --scale {wildcards.scale} "
-        "--datetime {wildcards.date} --satellite {wildcards.satellite}"
+        "--datetime {wildcards.date} --satellite {wildcards.satellite} --no-validate"
 
 rule load_cloud:
     output:
@@ -281,7 +281,7 @@ rule load_cloud:
     shell:
         "{config[LOADER]} {output} --kind cloud "
         "--crs {params.crs} --bbox {params.bbox} --scale {wildcards.scale} "
-        "--datetime {wildcards.date} --satellite {wildcards.satellite}"
+        "--datetime {wildcards.date} --satellite {wildcards.satellite} --no-validate"
 
 
 rule load_raw_landmask:
@@ -295,7 +295,7 @@ rule load_raw_landmask:
     shell:
         "{config[LOADER]} {output} --kind landmask "
         "--crs {params.crs} --bbox {params.bbox} --scale {wildcards.scale} "
-        "--datetime {wildcards.year}-01-01"
+        "--datetime {wildcards.year}-01-01 --no-validate"
 
 
 rule load_landmask:
