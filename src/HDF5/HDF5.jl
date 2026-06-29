@@ -19,6 +19,27 @@ function choose_dtype(mx::T) where {T<:Integer}
 end
 
 """
+    convert_missing_to_nan!(df)
+    convert_missing_to_nan(df)
+
+Convert missing values in Float64 columns of the DataFrame `df` to `NaN` to allow saving as HDF5.
+"""
+function convert_missing_to_nan!(df::DataFrame)
+    for (col_name, col_data) in pairs(eachcol(df))
+        if eltype(col_data) <: Union{Missing,Float64}
+            col_data .= coalesce.(col_data, NaN)
+            disallowmissing!(df, col_name)
+        end
+    end
+end
+
+function convert_missing_to_nan(df::DataFrame)
+    df_copy = copy(df)
+    convert_missing_to_nan!(df_copy)
+    return df_copy
+end
+
+"""
     IceFloeTracker.HDF5.V1(;
         passtime::ZonedDateTime,
         crs_ref_image_path::AbstractString,
@@ -161,11 +182,12 @@ function save_hdf5(output_path::AbstractString, v1::V1;)
 
         @info "Create group floe_properties"
         group_floe_properties = create_group(file, "floe_properties")
-        if nrow(v1.props) > 0
+
+        props = convert_missing_to_nan(v1.props)
+
+        if nrow(props) > 0
             write_dataset(
-                group_floe_properties,
-                "properties",
-                [copy(row) for row in eachrow(v1.props)],
+                group_floe_properties, "properties", [copy(row) for row in eachrow(props)]
             )  # `copy(row)` converts the DataSetRow to a NamedTuple
             attrs(group_floe_properties)["Description of properties"] = """Area units (`area`, `convex_area`) are in sq. kilometers, length units (`minor_axis_length`, `major_axis_length`, and `perimeter`) in kilometers, and `orientation` in radians (see the description of properties attribute.) Latitude and longitude coordinates are in degrees, and the stereographic coordinates `x` and `y` are in meters relative to the $crs_name projection. """
         else
