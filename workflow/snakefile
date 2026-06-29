@@ -88,7 +88,9 @@ rule region_case_results_by_filetype:
                 ("cloud_mask", "tiff"), 
                 ("ice_mask", "tiff"), 
                 ("config", "txt"), 
-                ("segmentation", "hdf5")
+                ("segmentation", "hdf5"),
+                ("props_raw", "csv"),
+                ("props_crs", "csv")
             ]
             for case in cases.itertuples()
             for date_ in daterange(date.fromisoformat(case.start), date.fromisoformat(case.end))
