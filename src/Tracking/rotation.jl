@@ -33,16 +33,15 @@ function get_rotation_measurements(
     if nrow(df) == 0
         @debug "No observations in the input DataFrame, returning an empty dataframe with the correct column names"
         original_names, original_types = names(df), eltype.(eachcol(df))
-        new_column_names_types = [
-            ("theta_rad", Float64),
-            ("dt_sec", Float64),
-            ("omega_rad_per_sec", Float64),
-            ("omega_rad_per_day", Float64),
-            ("theta_deg", Float64),
-            ("omega_deg_per_day", Float64),
+        new_column_names = [
+            "theta_rad",
+            "dt_sec",
+            "omega_rad_per_sec",
+            "omega_rad_per_day",
+            "theta_deg",
+            "omega_deg_per_day",
         ]
-        new_column_names = [n for (n, _) in new_column_names_types]
-        new_column_types = [t for (_, t) in new_column_names_types]
+        new_column_types = fill(Float64, length(new_column_names))
         old_column_names_1 = original_names .* "1"
         old_column_names_2 = original_names .* "2"
         df = DataFrame(
