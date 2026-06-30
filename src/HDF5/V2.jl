@@ -193,6 +193,8 @@ function save_hdf5(output_path::AbstractString, s::V2;)
             "Ice mask. This mask is 1 for pixels classified as ice, and 0 elsewhere.",
             projection_dataset_name,
         )
+
+        show(file)
     end
     return nothing
 end
@@ -246,7 +248,6 @@ function get_crs_name(crs_code)
 end
 
 function get_projection_name(crs_code)::String
-    @show crs_code
     crs_short_name_dict = Dict(
         3413 => "north_polar_stereographic",
         3031 => "south_polar_stereographic",
@@ -266,9 +267,7 @@ function create_floe_properties_dataset(
     name::AbstractString="floe-properties",
     crs_name::AbstractString="",
 )
-    @show props
     props_ = convert_missing_to_nan(props)
-    @show props_
     if nrow(props_) > 0
         create_dataset(group, name, [copy(row) for row in eachrow(props_)])  # `copy(row)` converts the DataSetRow to a NamedTuple
         attrs(group)["Description"] = """Area units (`area`, `convex_area`) are in sq. kilometers, length units (`minor_axis_length`, `major_axis_length`, and `perimeter`) in kilometers, and `orientation` in radians (see the description of properties attribute.) Latitude and longitude coordinates are in degrees, and the stereographic coordinates `x` and `y` are in meters relative to the $crs_name projection. """
