@@ -62,6 +62,7 @@ end
     save_hdf5(path, V2(args...))
 
 Write the [`V2`](@ref) object to storage.
+This file can be imported as NetCDF-4.
 
 The structure is:
 🗂️ HDF5.File:
@@ -69,43 +70,73 @@ The structure is:
 ├─ 🏷️ iftversion
 ├─ 🏷️ contact
 ├─ 🏷️ reference
-├─ 🏷️ crs
-├─ 🏷️ crs_name
-├─ 🏷️ fname_falsecolor
-├─ 🏷️ fname_truecolor
 ├─ 📂 classifications
 │  ├─ 🔢 cloud_mask
 │  │  ├─ 🏷️ CLASS
 │  │  ├─ 🏷️ IMAGE_MINMAXRANGE
 │  │  ├─ 🏷️ IMAGE_SUBCLASS
-│  │  └─ 🏷️ description
+│  │  ├─ 🏷️ description
+│  │  └─ 🏷️ grid_mapping
 │  ├─ 🔢 coastal_buffer_mask
 │  │  ├─ 🏷️ CLASS
 │  │  ├─ 🏷️ IMAGE_MINMAXRANGE
 │  │  ├─ 🏷️ IMAGE_SUBCLASS
-│  │  └─ 🏷️ description
+│  │  ├─ 🏷️ description
+│  │  └─ 🏷️ grid_mapping
 │  ├─ 🔢 ice_mask
 │  │  ├─ 🏷️ CLASS
 │  │  ├─ 🏷️ IMAGE_MINMAXRANGE
 │  │  ├─ 🏷️ IMAGE_SUBCLASS
-│  │  └─ 🏷️ description
-│  └─ 🔢 landmask
-│     ├─ 🏷️ CLASS
-│     ├─ 🏷️ IMAGE_MINMAXRANGE
-│     ├─ 🏷️ IMAGE_SUBCLASS
-│     └─ 🏷️ description
-├─ 📂 floe_properties
-│  ├─ 🏷️ Description of properties
+│  │  ├─ 🏷️ description
+│  │  └─ 🏷️ grid_mapping
 │  ├─ 🔢 labeled_image
 │  │  ├─ 🏷️ CLASS
 │  │  ├─ 🏷️ IMAGE_MINMAXRANGE
 │  │  ├─ 🏷️ IMAGE_SUBCLASS
-│  │  └─ 🏷️ description
-│  └─ 🔢 properties
-└─ 📂 index
-   ├─ 🔢 time
-   ├─ 🔢 x
-   └─ 🔢 y
+│  │  ├─ 🏷️ description
+│  │  └─ 🏷️ grid_mapping
+│  └─ 🔢 landmask
+│     ├─ 🏷️ CLASS
+│     ├─ 🏷️ IMAGE_MINMAXRANGE
+│     ├─ 🏷️ IMAGE_SUBCLASS
+│     ├─ 🏷️ description
+│     └─ 🏷️ grid_mapping
+├─ 📂 floe-properties
+│  ├─ 🏷️ Description
+│  └─ 🔢 table
+├─ 📂 inputs
+│  ├─ 🔢 falsecolor
+│  │  ├─ 🏷️ CLASS
+│  │  ├─ 🏷️ IMAGE_MINMAXRANGE
+│  │  ├─ 🏷️ IMAGE_SUBCLASS
+│  │  ├─ 🏷️ IMAGE_VERSION
+│  │  ├─ 🏷️ INTERLACE_MODE
+│  │  ├─ 🏷️ description
+│  │  └─ 🏷️ grid_mapping
+│  └─ 🔢 truecolor
+│     ├─ 🏷️ CLASS
+│     ├─ 🏷️ IMAGE_MINMAXRANGE
+│     ├─ 🏷️ IMAGE_SUBCLASS
+│     ├─ 🏷️ IMAGE_VERSION
+│     ├─ 🏷️ INTERLACE_MODE
+│     ├─ 🏷️ description
+│     └─ 🏷️ grid_mapping
+├─ 🔢 north_polar_stereographic
+│  ├─ 🏷️ GeoTransform
+│  ├─ 🏷️ crs_wkt
+│  ├─ 🏷️ long_name
+│  ├─ 🏷️ name
+│  └─ 🏷️ spatial_ref
+├─ 🔢 time
+├─ 🔢 x
+│  ├─ 🏷️ long_name
+│  ├─ 🏷️ standard_name
+│  └─ 🏷️ units
+└─ 🔢 y
+   ├─ 🏷️ long_name
+   ├─ 🏷️ standard_name
+   └─ 🏷️ units
+
 """
 function save_hdf5(output_path::AbstractString, s::V2;)
     ptsunix = Int64(Dates.datetime2unix(DateTime(s.passtime)))
@@ -140,27 +171,35 @@ function save_hdf5(output_path::AbstractString, s::V2;)
 
         file["time"] = ptsunix
 
+        group_inputs = create_group(file, "inputs")
+
         create_color_dataset(
-            file, "falsecolor", s.falsecolor, "Falsecolor image", projection_dataset_name
+            group_inputs,
+            "falsecolor",
+            s.falsecolor,
+            "Falsecolor image",
+            projection_dataset_name,
         )
         create_color_dataset(
-            file, "truecolor", s.truecolor, "Truecolor image", projection_dataset_name
+            group_inputs,
+            "truecolor",
+            s.truecolor,
+            "Truecolor image",
+            projection_dataset_name,
         )
 
-        floe_properties_group = create_group(file, "floe_properties")
-        create_floe_properties_dataset(
-            floe_properties_group, s.props, "floe-properties", crs_name
-        )
+        floe_properties_group = create_group(file, "floe-properties")
+        create_floe_properties_dataset(floe_properties_group, s.props, "table", crs_name)
+
+        group_classifications = create_group(file, "classifications")
 
         create_labeled_dataset(
-            file,
+            group_classifications,
             "labeled_image",
             s.labeled,
             "Connected components of the segmented floe image using a 3x3 structuring element. The property matrix consists of the properties of each connected component.",
             projection_dataset_name,
         )
-
-        group_classifications = create_group(file, "classifications")
 
         create_mask_dataset(
             group_classifications,
