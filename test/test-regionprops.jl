@@ -212,3 +212,54 @@ end
 
     @test converttounits(propdf, latlondata) isa DataFrame # doesn't crash
 end
+
+@testitem "_component_moment_measures: empty input" begin
+    using IceFloeTracker.Segmentation: _component_moment_measures
+    result = _component_moment_measures([0 0 0; 0 0 0; 0 0 0], [])
+    @test result == Dict(
+        :minor_axis_length=>[],
+        :major_axis_length=>[],
+        :row_centroid=>[],
+        :col_centroid=>[],
+        :orientation=>[],
+    )
+end
+
+@testitem "_component_moment_measures: happy path" begin
+    using IceFloeTracker.Segmentation: _component_moment_measures
+    result = _component_moment_measures([0 0 0 0 0; 0 1 1 1 0; 0 0 0 0 0], [1])
+    @test result == Dict(
+        :minor_axis_length => [0.0],
+        :major_axis_length => [3.265986323710904],
+        :row_centroid => [2.0],
+        :col_centroid => [3.0],
+        :orientation => [1.5707963267948966],
+    )
+    result = _component_moment_measures([0 1 1 1 0; 0 2 2 2 0; 0 3 3 3 0], [1, 2, 3])
+    @test result == Dict(
+        :minor_axis_length => [0.0, 0.0, 0.0],
+        :major_axis_length => [3.265986323710904, 3.265986323710904, 3.265986323710904],
+        :row_centroid => [1.0, 2.0, 3.0],
+        :col_centroid => [3.0, 3.0, 3.0],
+        :orientation => [1.5707963267948966, 1.5707963267948966, 1.5707963267948966],
+    )
+end
+
+@testitem "regionprops: bboxes: happy path" begin
+    result = regionprops([0 0 0 0 0; 0 1 1 1 0; 0 0 0 0 0]; properties=[:bbox])
+    @test result == Dict(:min_row => [2], :max_row => [2], :min_col => [2], :max_col => [4])
+
+    result = regionprops([0 1 1 1 0; 0 2 2 2 0; 0 3 3 3 0]; properties=[:bbox])
+    @test result == Dict(
+        :min_col => [2, 2, 2],
+        :max_col => [4, 4, 4],
+        :min_row => [1, 2, 3],
+        :max_row => [1, 2, 3],
+    )
+end
+
+@testitem "bboxes for too-small regions" begin
+    result = regionprops([0 0 0; 0 1 0; 0 0 0]; properties=[:bbox])
+    @test result ==
+        Dict(:min_row => Int[], :max_row => Int[], :min_col => Int[], :max_col => Int[])
+end
