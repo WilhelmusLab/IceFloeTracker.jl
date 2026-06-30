@@ -1,7 +1,7 @@
 
 module HDF5
 
-using HDF5, Images, Dates, TimeZones, DataFrames
+using HDF5, NCDatasets, Images, Dates, TimeZones, DataFrames
 import ..Geospatial: latlon
 import ..Segmentation: regionprops_table, converttounits!
 import ..ImageUtils: binarize_mask
@@ -57,5 +57,6 @@ end
 
 include("./V1.jl")
 include("./V2.jl")
+include("./V3.jl")
 
 end

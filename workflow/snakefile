@@ -563,7 +563,7 @@ rule observation_netcdf:
     shell:
         """
         {config[IFT]} -e 'using IceFloeTracker, TimeZones, FileIO, Images, DataFrames;
-        data = IceFloeTracker.HDF5.V2(
+        data = IceFloeTracker.HDF5.V3(
             passtime = read("{input.passtime}", String) |> chomp |> ZonedDateTime,
             crs_ref_image_path = "{input.crs_ref_image}",
             truecolor = load("{input.truecolor}"),
