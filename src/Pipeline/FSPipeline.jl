@@ -252,7 +252,6 @@ function (p::Segment)(
     
     # TBD: Object-based analysis section. Use the edge strength, circularity, uniqueness, etc.
 
-
     # Re-label to fill where regions were deleted
     split_floes .= label_components(split_floes)
 
@@ -260,7 +259,6 @@ function (p::Segment)(
     segments_tc = SegmentedImage(truecolor, split_floes)
     segments_fc = SegmentedImage(falsecolor, split_floes)
     
-
     if !isnothing(intermediate_results_callback)
         colorview_truecolor = n0f8.(view_seg(segments_tc))
         colorview_falsecolor = n0f8.(view_seg(segments_fc))
@@ -315,7 +313,8 @@ end
 """
     dist_morph_split(
         binary_floes::BitMatrix;
-        min_floe_size::Int64=64,
+        min_floe_size::Real=64,
+        max_floe_size::Real=50_000,
         max_hole_fill::Int64=2000,
         max_distance::Int64=5,
         max_expand::Int64=3,
