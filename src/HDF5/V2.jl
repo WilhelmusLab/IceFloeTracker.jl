@@ -194,7 +194,7 @@ function save_hdf5(output_path::AbstractString, s::V2;)
             projection_dataset_name,
         )
 
-        show(file)
+        display(file)
     end
     return nothing
 end
