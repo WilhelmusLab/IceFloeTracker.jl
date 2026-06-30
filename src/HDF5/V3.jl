@@ -231,6 +231,14 @@ function save_hdf5(output_path::AbstractString, s::V3;)
         for path in image_paths
             attrs(file[path])["CLASS"] = "IMAGE"
         end
+        API.h5l_create_hard(
+            file.id,
+            "/classifications/labeled_image",
+            file.id,
+            "/floe-properties/labeled_image",
+            API.H5P_DEFAULT,
+            API.H5P_DEFAULT,
+        )
     end
 
     return nothing
@@ -251,8 +259,8 @@ function nc_create_mask_dataset(
     description::AbstractString="",
     projection_dataset_name::AbstractString="geolocation",
 )
-    mask_uint8 = Array(UInt8.(Bool.(mask)))  # (ny, nx)
-    v = defVar(grp, name, UInt8, ("y", "x"))
+    mask_uint8 = permutedims(UInt8.(Bool.(mask)), (2, 1))  # (nx, ny)
+    v = defVar(grp, name, UInt8, ("x", "y"))
     v.attrib["IMAGE_SUBCLASS"] = "IMAGE_GRAYSCALE"
     v.attrib["IMAGE_MINMAXRANGE"] = UInt8[minimum(mask_uint8), maximum(mask_uint8)]
     v.attrib["description"] = description
@@ -277,8 +285,8 @@ function nc_create_labeled_dataset(
 )
     mx = Int64(maximum(labeled))
     T = choose_dtype(mx)
-    labeled_T = Array(T.(labeled))  # (ny, nx)
-    v = defVar(grp, name, T, ("y", "x"))
+    labeled_T = permutedims(T.(labeled), (2, 1))  # (nx, ny)
+    v = defVar(grp, name, T, ("x", "y"))
     v.attrib["IMAGE_SUBCLASS"] = "IMAGE_INDEXED"
     v.attrib["IMAGE_MINMAXRANGE"] = T[T(minimum(labeled)), maximum(labeled_T)]
     v.attrib["description"] = description
@@ -301,8 +309,8 @@ function nc_create_color_dataset(
     description::AbstractString="",
     projection_dataset_name::AbstractString="geolocation",
 )
-    img_raw = Array(UInt8.(rawview(channelview(img))))  # (nchannels, ny, nx)
-    v = defVar(grp, name, UInt8, ("band", "y", "x"))
+    img_raw = permutedims(UInt8.(rawview(channelview(img))), (3, 2, 1))  # (nx, ny, nchannels)
+    v = defVar(grp, name, UInt8, ("x", "y", "band"))
     v.attrib["IMAGE_SUBCLASS"] = "IMAGE_TRUECOLOR"
     v.attrib["IMAGE_VERSION"] = "1.2"
     v.attrib["INTERLACE_MODE"] = "INTERLACE_PLANE"
