@@ -72,28 +72,25 @@ Structure:
 ```
 📦 netCDF-4 file
 ├─ 🏷️ file_version, iftversion, contact, reference   (global attributes)
+├─ 🏷️ Description, label_variable, labeled_image     (floe-properties attributes)
 ├─ 🔢 geolocation   (scalar Int32, CRS grid-mapping variable)
 │  └─ 🏷️ name, crs_wkt, spatial_ref, long_name, GeoTransform
 ├─ 🔢 x(x)          (projection x / easting coordinates, metres)
 ├─ 🔢 y(y)          (projection y / northing coordinates, metres)
 ├─ 🔢 time(time)    (seconds since 1970-01-01)
-├─ 📂 inputs
-│  ├─ 🔢 falsecolor(band, y, x)
-│  │  └─ 🏷️ CLASS, IMAGE_MINMAXRANGE, IMAGE_SUBCLASS, IMAGE_VERSION,
-│  │        INTERLACE_MODE, description, grid_mapping
-│  └─ 🔢 truecolor(band, y, x)
-│     └─ (same attributes as falsecolor)
-├─ 📂 classifications
-│  ├─ 🔢 labeled_image(y, x)
-│  │  └─ 🏷️ CLASS, IMAGE_MINMAXRANGE, IMAGE_SUBCLASS, description, grid_mapping
-│  ├─ 🔢 cloud_mask(y, x)
-│  ├─ 🔢 coastal_buffer_mask(y, x)
-│  ├─ 🔢 ice_mask(y, x)
-│  └─ 🔢 landmask(y, x)
-└─ 📂 floe-properties
-   ├─ 🏷️ Description, label_variable, labeled_image   (group attributes)
-   ├─ 🔢 label(floe)   (links pixel values in labeled_image to rows here)
-   └─ 🔢 <column>(floe) for every other column in the props DataFrame
+├─ 🔢 falsecolor(x, y, band_falsecolor)
+│  └─ 🏷️ CLASS, IMAGE_MINMAXRANGE, IMAGE_SUBCLASS, IMAGE_VERSION,
+│        INTERLACE_MODE, description, grid_mapping
+├─ 🔢 truecolor(x, y, band_truecolor)
+│  └─ (same attributes as falsecolor)
+├─ 🔢 labeled_image(x, y)
+│  └─ 🏷️ CLASS, IMAGE_MINMAXRANGE, IMAGE_SUBCLASS, description, grid_mapping
+├─ 🔢 cloud_mask(x, y)
+├─ 🔢 coastal_buffer_mask(x, y)
+├─ 🔢 ice_mask(x, y)
+├─ 🔢 landmask(x, y)
+├─ 🔢 label(floe)   (links pixel values in labeled_image to rows here)
+└─ 🔢 <column>(floe) for every other column in the props DataFrame
 ```
 
 """
@@ -152,25 +149,31 @@ function save_hdf5(output_path::AbstractString, s::V3;)
         vt.attrib["long_name"] = "time of satellite overpass"
         vt[:] = [ptsunix]
 
-        # inputs group: colour imagery
-        grp_inputs = defGroup(ds, "inputs")
-        nchannels = size(channelview(s.truecolor), 1)
-        defDim(grp_inputs, "band", nchannels)
+        # colour imagery
+        nchannels_tc = size(channelview(s.truecolor), 1)
+        nchannels_fc = size(channelview(s.falsecolor), 1)
+        defDim(ds, "band_truecolor", nchannels_tc)
+        defDim(ds, "band_falsecolor", nchannels_fc)
         nc_create_color_dataset(
-            grp_inputs,
+            ds,
             "falsecolor",
             s.falsecolor,
             "Falsecolor image",
             projection_dataset_name,
+            "band_falsecolor",
         )
         nc_create_color_dataset(
-            grp_inputs, "truecolor", s.truecolor, "Truecolor image", projection_dataset_name
+            ds,
+            "truecolor",
+            s.truecolor,
+            "Truecolor image",
+            projection_dataset_name,
+            "band_truecolor",
         )
 
-        # classifications group: masks + labelled segmentation map
-        grp_class = defGroup(ds, "classifications")
+        # masks + labelled segmentation map
         nc_create_labeled_dataset(
-            grp_class,
+            ds,
             "labeled_image",
             s.labeled,
             "Connected components of the segmented floe image using a 3x3 " *
@@ -179,21 +182,21 @@ function save_hdf5(output_path::AbstractString, s::V3;)
             projection_dataset_name,
         )
         nc_create_mask_dataset(
-            grp_class,
+            ds,
             "cloud_mask",
             s.cloud_mask,
             "Cloud mask. This mask is 1 for pixels classified as cloud, and 0 elsewhere.",
             projection_dataset_name,
         )
         nc_create_mask_dataset(
-            grp_class,
+            ds,
             "landmask",
             s.landmask,
             "Land mask. This mask is 1 for pixels classified as land, and 0 elsewhere.",
             projection_dataset_name,
         )
         nc_create_mask_dataset(
-            grp_class,
+            ds,
             "coastal_buffer_mask",
             s.coastal_buffer_mask,
             "Coastal buffer mask. This mask is 1 for pixels within a specified " *
@@ -201,44 +204,33 @@ function save_hdf5(output_path::AbstractString, s::V3;)
             projection_dataset_name,
         )
         nc_create_mask_dataset(
-            grp_class,
+            ds,
             "ice_mask",
             s.ice_mask,
             "Ice mask. This mask is 1 for pixels classified as ice, and 0 elsewhere.",
             projection_dataset_name,
         )
 
-        # floe-properties group: one variable per property column
-        grp_props = defGroup(ds, "floe-properties")
-        nc_create_floe_properties(
-            grp_props, s.props, crs_name, "classifications/labeled_image"
-        )
+        # floe properties: one variable per property column
+        nc_create_floe_properties(ds, s.props, crs_name, "labeled_image")
     end
 
     # The netCDF-C library reserves the "CLASS" attribute name (it is used
     # internally by HDF5 for typed datasets).  We set it after closing the
     # NCDatasets handle by writing directly to the underlying HDF5 file.
     image_paths = [
-        "/inputs/falsecolor",
-        "/inputs/truecolor",
-        "/classifications/labeled_image",
-        "/classifications/cloud_mask",
-        "/classifications/landmask",
-        "/classifications/coastal_buffer_mask",
-        "/classifications/ice_mask",
+        "/falsecolor",
+        "/truecolor",
+        "/labeled_image",
+        "/cloud_mask",
+        "/landmask",
+        "/coastal_buffer_mask",
+        "/ice_mask",
     ]
     h5open(output_path, "r+") do file
         for path in image_paths
             attrs(file[path])["CLASS"] = "IMAGE"
         end
-        API.h5l_create_hard(
-            file.id,
-            "/classifications/labeled_image",
-            file.id,
-            "/floe-properties/labeled_image",
-            API.H5P_DEFAULT,
-            API.H5P_DEFAULT,
-        )
     end
 
     return nothing
@@ -296,11 +288,11 @@ function nc_create_labeled_dataset(
 end
 
 """
-    nc_create_color_dataset(grp, name, img, description, projection_dataset_name)
+    nc_create_color_dataset(grp, name, img, description, projection_dataset_name, band_dim_name)
 
-Define a `UInt8` colour image variable with dimensions `(band, y, x)` in the
-NCDatasets group `grp`. The group must already define a `band` dimension, and the
-parent group must supply the `x` and `y` dimensions.
+Define a `UInt8` colour image variable with dimensions `(x, y, band_dim_name)` in the
+NCDatasets group `grp`. The group must already define a dimension named `band_dim_name`,
+and the parent group must supply the `x` and `y` dimensions.
 """
 function nc_create_color_dataset(
     grp::NCDataset,
@@ -308,9 +300,10 @@ function nc_create_color_dataset(
     img::AbstractMatrix{<:Union{RGB,RGBA}},
     description::AbstractString="",
     projection_dataset_name::AbstractString="geolocation",
+    band_dim_name::AbstractString="band",
 )
     img_raw = permutedims(UInt8.(rawview(channelview(img))), (3, 2, 1))  # (nx, ny, nchannels)
-    v = defVar(grp, name, UInt8, ("x", "y", "band"))
+    v = defVar(grp, name, UInt8, ("x", "y", band_dim_name))
     v.attrib["IMAGE_SUBCLASS"] = "IMAGE_TRUECOLOR"
     v.attrib["IMAGE_VERSION"] = "1.2"
     v.attrib["INTERLACE_MODE"] = "INTERLACE_PLANE"
@@ -334,7 +327,7 @@ function nc_create_floe_properties(
     grp::NCDataset,
     props::DataFrame,
     crs_name::AbstractString="",
-    labeled_image_path::AbstractString="classifications/labeled_image",
+    labeled_image_path::AbstractString="labeled_image",
 )
     props_ = convert_missing_to_nan(props)
     nfloes = nrow(props_)
@@ -346,22 +339,27 @@ function nc_create_floe_properties(
         "length units (`minor_axis_length`, `major_axis_length`, and `perimeter`) " *
         "in kilometers, and `orientation` in radians. " *
         "Latitude and longitude coordinates are in degrees, and the " *
-        "stereographic coordinates `x` and `y` are in metres relative to the " *
+        "stereographic coordinates `x_crs` and `y_crs` are in metres relative to the " *
         "$crs_name projection."
     )
     grp.attrib["label_variable"] = "label"
     grp.attrib["labeled_image"] = labeled_image_path
 
+    # "x" and "y" are already taken by the root-level coordinate variables;
+    # remap the floe stereographic-coordinate columns to avoid the name clash.
+    col_name_map = Dict("x" => "x_crs", "y" => "y_crs")
+
     for col_name in names(props_)
+        nc_name = get(col_name_map, col_name, col_name)
         col_data = props_[!, col_name]
         T = eltype(col_data)
 
         v = if T <: Integer
-            defVar(grp, col_name, Int64, ("floe",))
+            defVar(grp, nc_name, Int64, ("floe",))
         elseif T <: AbstractFloat
-            defVar(grp, col_name, Float64, ("floe",); fillvalue=NaN)
+            defVar(grp, nc_name, Float64, ("floe",); fillvalue=NaN)
         else
-            defVar(grp, col_name, String, ("floe",))
+            defVar(grp, nc_name, String, ("floe",))
         end
 
         if col_name == "label"
