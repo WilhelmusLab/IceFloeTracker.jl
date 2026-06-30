@@ -606,13 +606,15 @@ function regionprops(
     end
 
     :bbox ∈ properties && begin
+        push!(data, :min_row => Int[], :max_row => Int[], :min_col => Int[], :max_col => Int[])
         bboxes_init = component_boxes(labels)
-        bboxes = stack(_get_bounds.(bboxes_init[s] for s in img_labels))
-
-        push!(data, :min_row => bboxes[1, :])
-        push!(data, :max_row => bboxes[2, :])
-        push!(data, :min_col => bboxes[3, :])
-        push!(data, :max_col => bboxes[4, :])
+        bboxes = _get_bounds.(bboxes_init[s] for s in img_labels)
+        for (min_row, max_row, min_col, max_col) in bboxes
+            push!(data[:min_row], min_row)
+            push!(data[:max_row], max_row)
+            push!(data[:min_col], min_col)
+            push!(data[:max_col], max_col)
+        end
     end
 
     :perimeter ∈ properties && begin
