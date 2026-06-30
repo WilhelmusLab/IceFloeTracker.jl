@@ -45,13 +45,17 @@ end
 Load an IceFloeTracker.jl HDF5 file. 
 """
 function load_hdf5(input_path::AbstractString)
-    h5open(input_path, "r") do file
-        version = VersionNumber(attrs(file)["file_version"])
-        if version == VersionNumber("1.0.0")
+    version = h5open(input_path, "r") do file
+        VersionNumber(attrs(file)["file_version"])
+    end
+    if version == VersionNumber("1.0.0")
+        h5open(input_path, "r") do file
             return _load_v1(file)
-        else
-            error("Unsupported file version: $version")
         end
+    elseif version == VersionNumber("3.0.0")
+        return _load_v3(input_path)
+    else
+        error("Unsupported file version: $version")
     end
 end
 

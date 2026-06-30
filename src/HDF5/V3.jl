@@ -113,6 +113,7 @@ function save_hdf5(output_path::AbstractString, s::V3;)
         ds.attrib["iftversion"] = string(s.iftversion)
         ds.attrib["reference"] = s.reference
         ds.attrib["contact"] = s.contact
+        ds.attrib["crs_ref_image_path"] = s.crs_ref_image_path
 
         # Dimensions defined at root are inherited by all groups
         defDim(ds, "x", nx)
@@ -372,4 +373,77 @@ function nc_create_floe_properties(
         end
     end
     return nothing
+end
+
+"""
+    _load_v3(input_path)
+
+Load a V3 netCDF-4 file written by [`save_hdf5`](@ref) and return a [`V3`](@ref) object.
+"""
+function _load_v3(input_path::AbstractString)
+    NCDataset(input_path, "r") do ds
+        # Global attributes
+        iftversion = VersionNumber(ds.attrib["iftversion"])
+        file_version = VersionNumber(ds.attrib["file_version"])
+        reference = ds.attrib["reference"]
+        contact = ds.attrib["contact"]
+        crs_ref_image_path = ds.attrib["crs_ref_image_path"]
+
+        # passtime — raw Int64 stored as "seconds since 1970-01-01"
+        ptsunix = Int64(ds["time"].var[1])
+        passtime = ZonedDateTime(Dates.unix2datetime(ptsunix), tz"UTC")
+
+        # Colour images: stored as (nx, ny, nb) UInt8 → reconstruct Matrix{RGB/RGBA}
+        function read_color(varname)
+            raw = collect(permutedims(Array(ds[varname].var), (3, 2, 1)))  # (nb, ny, nx)
+            nb = size(raw, 1)
+            n0f8 = reinterpret(N0f8, raw)
+            return nb == 3 ? collect(colorview(RGB{N0f8}, n0f8)) :
+                   collect(colorview(RGBA{N0f8}, n0f8))
+        end
+        truecolor = read_color("truecolor")
+        falsecolor = read_color("falsecolor")
+
+        # Labeled image: stored as (nx, ny) → (ny, nx)
+        labeled = permutedims(Array(ds["labeled_image"].var), (2, 1)) .|> Int
+
+        # Masks: stored as (nx, ny) UInt8 → (ny, nx) BitMatrix
+        function read_mask(varname)
+            return permutedims(Array(ds[varname].var), (2, 1)) |> binarize_mask
+        end
+        cloud_mask = read_mask("cloud_mask")
+        landmask = read_mask("landmask")
+        ice_mask = read_mask("ice_mask")
+        coastal_buffer_mask = read_mask("coastal_buffer_mask")
+
+        # Floe properties: all variables sharing the "floe" dimension, in file order.
+        # Reverse the x_crs/y_crs name remapping applied during save.
+        col_name_remap = Dict("x_crs" => "x", "y_crs" => "y")
+        prop_cols = Pair{String, AbstractVector}[]
+        for varname in keys(ds)
+            v = ds[varname]
+            "floe" ∈ dimnames(v) || continue
+            col_name = get(col_name_remap, varname, varname)
+            # Use .var to bypass fill-value masking so NaN is preserved as NaN
+            push!(prop_cols, col_name => Array(v.var))
+        end
+        props = isempty(prop_cols) ? DataFrame() : DataFrame(prop_cols)
+
+        return V3(;
+            passtime,
+            crs_ref_image_path,
+            truecolor,
+            falsecolor,
+            labeled,
+            props,
+            cloud_mask,
+            ice_mask,
+            landmask,
+            coastal_buffer_mask,
+            iftversion,
+            file_version,
+            reference,
+            contact,
+        )
+    end
 end

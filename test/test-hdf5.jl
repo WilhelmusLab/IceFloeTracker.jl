@@ -238,3 +238,23 @@ end
         @test_nowarn save_hdf5(output_path, data)
     end
 end
+
+@testitem "HDF5.V3 saved can be reloaded correctly" setup = [HDF5V3] begin
+    mktemp() do output_path, _
+        save_hdf5(output_path, data)
+        reloaded = load_hdf5(output_path)
+        @test reloaded.passtime == data.passtime
+        @test reloaded.crs_ref_image_path == data.crs_ref_image_path
+        @test reloaded.iftversion == data.iftversion
+        @test reloaded.reference == data.reference
+        @test reloaded.contact == data.contact
+        @test reloaded.truecolor == data.truecolor
+        @test reloaded.falsecolor == data.falsecolor
+        @test reloaded.labeled == data.labeled
+        @test reloaded.cloud_mask == Bool.(data.cloud_mask)
+        @test reloaded.landmask == Bool.(data.landmask)
+        @test reloaded.ice_mask == Bool.(data.ice_mask)
+        @test reloaded.coastal_buffer_mask == Bool.(data.coastal_buffer_mask)
+        @test isequal(reloaded.props, data.props)
+    end
+end
