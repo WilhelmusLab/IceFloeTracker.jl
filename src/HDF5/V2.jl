@@ -287,7 +287,7 @@ function create_mask_dataset(
 )
     mx = maximum(mask)
     T = choose_dtype(mx)
-    mask_rectified = T.(mask)
+    mask_rectified = T.(permutedims(mask, (2, 1)))
     mask_obj, mask_dtype = create_dataset(group, name, mask_rectified)
     attrs(mask_obj)["CLASS"] = "IMAGE"
     attrs(mask_obj)["IMAGE_SUBCLASS"] = "IMAGE_GRAYSCALE"
@@ -308,7 +308,7 @@ function create_labeled_dataset(
 )
     mx = maximum(labeled)
     T = choose_dtype(mx)
-    labeled_rectified = T.(labeled)
+    labeled_rectified = T.(permutedims(labeled, (2, 1)))
     label_data_obj, label_data_dtype = create_dataset(group, name, labeled_rectified)
     attrs(label_data_obj)["CLASS"] = "IMAGE"
     attrs(label_data_obj)["IMAGE_SUBCLASS"] = "IMAGE_INDEXED"
@@ -327,7 +327,7 @@ function create_color_dataset(
     description::AbstractString="",
     projection_dataset_name::AbstractString="geolocation",
 )
-    img_rectified = permutedims(rawview(channelview(img)), (2, 3, 1))
+    img_rectified = permutedims(rawview(channelview(img)), (3, 2, 1))
     el = eltype(img_rectified)
     img_obj, img_dtype = create_dataset(group, name, img_rectified)
     attrs(img_obj)["CLASS"] = "IMAGE"
