@@ -478,7 +478,7 @@ end
             0 1 0
             0 0 0
         ],
-    ) broken = true # https://github.com/WilhelmusLab/IceFloeTracker.jl/issues/911
+    )
 
     @test tracker_runs_without_error(
         tracker,
