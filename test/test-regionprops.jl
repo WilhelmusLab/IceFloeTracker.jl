@@ -244,3 +244,16 @@ end
         :orientation => [1.5707963267948966, 1.5707963267948966, 1.5707963267948966],
     )
 end
+
+@testitem "regionprops: bboxes: happy path" begin
+    result = regionprops([0 0 0 0 0; 0 1 1 1 0; 0 0 0 0 0]; properties=[:bbox])
+    @test result == Dict(:min_row => [2], :max_row => [2], :min_col => [2], :max_col => [4])
+
+    result = regionprops([0 1 1 1 0; 0 2 2 2 0; 0 3 3 3 0]; properties=[:bbox])
+    @test result == Dict(
+        :min_col => [2, 2, 2],
+        :max_col => [4, 4, 4],
+        :min_row => [1, 2, 3],
+        :max_row => [1, 2, 3],
+    )
+end
