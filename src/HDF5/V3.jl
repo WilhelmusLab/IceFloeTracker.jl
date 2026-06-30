@@ -340,7 +340,7 @@ function nc_create_floe_properties(
         "length units (`minor_axis_length`, `major_axis_length`, and `perimeter`) " *
         "in kilometers, and `orientation` in radians. " *
         "Latitude and longitude coordinates are in degrees, and the " *
-        "stereographic coordinates `x_crs` and `y_crs` are in metres relative to the " *
+        "stereographic coordinates `x_floe` and `y_floe` are in metres relative to the " *
         "$crs_name projection."
     )
     grp.attrib["label_variable"] = "label"
@@ -348,7 +348,7 @@ function nc_create_floe_properties(
 
     # "x" and "y" are already taken by the root-level coordinate variables;
     # remap the floe stereographic-coordinate columns to avoid the name clash.
-    col_name_map = Dict("x" => "x_crs", "y" => "y_crs")
+    col_name_map = Dict("x" => "x_floe", "y" => "y_floe")
 
     for col_name in names(props_)
         nc_name = get(col_name_map, col_name, col_name)
@@ -366,6 +366,14 @@ function nc_create_floe_properties(
         if col_name == "label"
             v.attrib["long_name"] = "floe label"
             v.attrib["comment"] = "Pixel values in $labeled_image_path equal these labels"
+        elseif col_name == "x"
+            v.attrib["standard_name"] = "projection_x_coordinate"
+            v.attrib["long_name"] = "x coordinate of floe centroid"
+            v.attrib["units"] = "m"
+        elseif col_name == "y"
+            v.attrib["standard_name"] = "projection_y_coordinate"
+            v.attrib["long_name"] = "y coordinate of floe centroid"
+            v.attrib["units"] = "m"
         end
 
         if nfloes > 0
@@ -417,8 +425,8 @@ function _load_v3(input_path::AbstractString)
         coastal_buffer_mask = read_mask("coastal_buffer_mask")
 
         # Floe properties: all variables sharing the "floe" dimension, in file order.
-        # Reverse the x_crs/y_crs name remapping applied during save.
-        col_name_remap = Dict("x_crs" => "x", "y_crs" => "y")
+        # Reverse the x_floe/y_floe name remapping applied during save.
+        col_name_remap = Dict("x_floe" => "x", "y_floe" => "y")
         prop_cols = Pair{String, AbstractVector}[]
         for varname in keys(ds)
             v = ds[varname]

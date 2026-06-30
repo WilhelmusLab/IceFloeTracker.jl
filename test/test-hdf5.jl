@@ -203,9 +203,9 @@ end
             @test haskey(ds, "area")
             @test haskey(ds, "convex_area")
             # x/y prop columns must be remapped to avoid clashing with dimension names
-            @test haskey(ds, "x_crs")
-            @test haskey(ds, "y_crs")
-            @test !haskey(ds, "x_floe")
+            @test haskey(ds, "x_floe")
+            @test haskey(ds, "y_floe")
+            @test !haskey(ds, "x_crs")
         end
     end
 end
