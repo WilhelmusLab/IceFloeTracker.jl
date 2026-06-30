@@ -30,6 +30,22 @@ function get_rotation_measurements(
     registration_function::Function=register,
     lookback_days::Integer=1,
 )
+    if nrow(df) == 0
+        @debug "No observations in the input DataFrame, returning an empty dataframe with the correct column names"
+        new_column_names = [
+            :theta_rad,
+            :dt_sec,
+            :omega_rad_per_sec,
+            :omega_rad_per_day,
+            :theta_deg,
+            :omega_deg_per_day,
+        ]
+        new_columns = fill(Float64[], length(new_column_names))
+        measurements_empty = DataFrame(new_columns, new_column_names)
+        df = hcat(measurements_empty, _add_suffix("1", df), _add_suffix("2", df))
+        return df
+    end
+
     results = []
     for measurement in eachrow(df)
         filtered_df = subset(
