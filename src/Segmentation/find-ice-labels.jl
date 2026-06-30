@@ -71,7 +71,6 @@ function get_ice_peaks(
     mx, argmx = findmax(pks_df.proms)
     mx < minimum_prominence && return Inf
     return edges[pks_df[argmx, :indices]]
-
 end
 
 """
