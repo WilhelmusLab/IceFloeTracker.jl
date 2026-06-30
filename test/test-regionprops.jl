@@ -257,3 +257,9 @@ end
         :max_row => [1, 2, 3],
     )
 end
+
+@testitem "bboxes for too-small regions" begin
+    result = regionprops([0 0 0; 0 1 0; 0 0 0]; properties=[:bbox])
+    @test result ==
+        Dict(:min_row => Int[], :max_row => Int[], :min_col => Int[], :max_col => Int[])
+end
