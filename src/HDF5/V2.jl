@@ -121,7 +121,7 @@ The structure is:
 │     ├─ 🏷️ INTERLACE_MODE
 │     ├─ 🏷️ description
 │     └─ 🏷️ grid_mapping
-├─ 🔢 north_polar_stereographic
+├─ 🔢 geolocation
 │  ├─ 🏷️ GeoTransform
 │  ├─ 🏷️ crs_wkt
 │  ├─ 🏷️ long_name
@@ -144,7 +144,7 @@ function save_hdf5(output_path::AbstractString, s::V2;)
 
     crs_code = latlondata[:crs]
     crs_name = get_crs_name(crs_code)
-    projection_dataset_name = get_projection_name(crs_code)
+    projection_dataset_name = "geolocation"
 
     h5open(output_path, "w") do file
         attrs(file)["file_version"] = string(s.file_version)
@@ -284,20 +284,6 @@ function get_crs_name(crs_code)
         return crs_name_
     end
     return crs_name
-end
-
-function get_projection_name(crs_code)::String
-    crs_short_name_dict = Dict(
-        3413 => "north_polar_stereographic",
-        3031 => "south_polar_stereographic",
-        4326 => "wgs84_lat_lon",
-        3857 => "web_mercator",
-    )
-    projection_dataset_name = get(crs_short_name_dict, crs_code) do
-        crs_name_ = "geolocation"
-        return crs_name_
-    end
-    return projection_dataset_name
 end
 
 function create_floe_properties_dataset(
