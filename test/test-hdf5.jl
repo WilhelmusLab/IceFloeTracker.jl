@@ -127,3 +127,114 @@ end
     @test_throws ErrorException choose_dtype(BigInt(2)^64 + 1)
     @test_throws ErrorException choose_dtype(-BigInt(2)^63 - 1)
 end
+
+@testsnippet HDF5V3 begin
+    using TimeZones
+    using IceFloeTracker.Data:
+        Watkins2026Dataset,
+        modis_truecolor,
+        modis_falsecolor,
+        modis_landmask,
+        modis_truecolor_path,
+        pass_time,
+        validated_labeled_floes,
+        validated_floe_properties
+    using FileIO
+    using Images
+    using DataFrames
+    using NCDatasets
+
+    dataset = Watkins2026Dataset()
+    case = first(dataset)
+    mask = modis_landmask(case)
+    props = select(validated_floe_properties(case), Not(:boundary))
+    # add the stereographic coordinate columns that the real pipeline produces
+    props[!, :x] = zeros(nrow(props))
+    props[!, :y] = zeros(nrow(props))
+    data = IceFloeTracker.HDF5.V3(;
+        passtime=ZonedDateTime(pass_time(case), tz"UTC"),
+        crs_ref_image_path=modis_truecolor_path(case),
+        truecolor=modis_truecolor(case),
+        falsecolor=modis_falsecolor(case),
+        labeled=validated_labeled_floes(case) |> labels_map,
+        props=props,
+        landmask=mask,
+        cloud_mask=mask,
+        ice_mask=mask,
+        coastal_buffer_mask=mask,
+        iftversion=VersionNumber("0.0.0"),
+        reference="https://doi.org/00.0000",
+        contact="contact@example.com",
+    )
+end
+
+@testitem "HDF5.V3 saved has the right global attributes" setup = [HDF5V3] begin
+    mktemp() do output_path, _
+        save_hdf5(output_path, data)
+        NCDataset(output_path, "r") do ds
+            @test ds.attrib["file_version"] == "3.0.0"
+            @test ds.attrib["iftversion"] == "0.0.0"
+            @test ds.attrib["reference"] == "https://doi.org/00.0000"
+            @test ds.attrib["contact"] == "contact@example.com"
+        end
+    end
+end
+
+@testitem "HDF5.V3 saved has the right variables" setup = [HDF5V3] begin
+    mktemp() do output_path, _
+        save_hdf5(output_path, data)
+        NCDataset(output_path, "r") do ds
+            # coordinate variables
+            @test haskey(ds, "x")
+            @test haskey(ds, "y")
+            @test haskey(ds, "time")
+            @test haskey(ds, "geolocation")
+            # colour imagery
+            @test haskey(ds, "truecolor")
+            @test haskey(ds, "falsecolor")
+            # segmentation outputs
+            @test haskey(ds, "labeled_image")
+            @test haskey(ds, "cloud_mask")
+            @test haskey(ds, "landmask")
+            @test haskey(ds, "ice_mask")
+            @test haskey(ds, "coastal_buffer_mask")
+            # floe properties
+            @test haskey(ds, "label")
+            @test haskey(ds, "area")
+            @test haskey(ds, "convex_area")
+            # x/y prop columns must be remapped to avoid clashing with dimension names
+            @test haskey(ds, "x_crs")
+            @test haskey(ds, "y_crs")
+            @test !haskey(ds, "x_floe")
+        end
+    end
+end
+
+@testitem "HDF5.V3 truecolor and falsecolor have separate band dimensions" setup = [HDF5V3] begin
+    mktemp() do output_path, _
+        save_hdf5(output_path, data)
+        NCDataset(output_path, "r") do ds
+            @test "band_truecolor" in dimnames(ds["truecolor"])
+            @test "band_falsecolor" in dimnames(ds["falsecolor"])
+            @test !("band_falsecolor" in dimnames(ds["truecolor"]))
+            @test !("band_truecolor" in dimnames(ds["falsecolor"]))
+        end
+    end
+end
+
+@testitem "HDF5.V3 can be saved with NaNs in the props" setup = [HDF5V3] begin
+    data.props[2, :convex_area] = NaN
+    mktemp() do output_path, _
+        @test_nowarn save_hdf5(output_path, data)
+    end
+end
+
+@testitem "HDF5.V3 can be saved with missing in DataFrame, which converts to NaN" setup = [
+    HDF5V3
+] begin
+    allowmissing!(data.props, :convex_area)
+    data.props[2, :convex_area] = missing
+    mktemp() do output_path, _
+        @test_nowarn save_hdf5(output_path, data)
+    end
+end
