@@ -436,13 +436,8 @@ function _load_v1(input_path::AbstractString)
         file_version = VersionNumber(ds.attrib["file_version"])
         reference = ds.attrib["reference"]
         contact = ds.attrib["contact"]
-        creation_date = let raw = get(ds.attrib, "creation_date", "")
-            if isempty(raw)
-                ZonedDateTime(DateTime(0), tz"UTC")
-            else
-                ZonedDateTime(DateTime(raw, dateformat"yyyy-mm-ddTHH:MM:SS"), tz"UTC")
-            end
-        end
+        creation_date = ZonedDateTime(ds.attrib["creation_date"])
+        ift_configuration = ds.attrib["ift_configuration"]
 
         # Reconstruct CRS data from the geolocation variable
         geoloc = ds["geolocation"]
