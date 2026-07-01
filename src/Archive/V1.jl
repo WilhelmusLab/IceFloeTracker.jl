@@ -1,5 +1,5 @@
 """
-    IceFloeTracker.Archive.V3(;
+    IceFloeTracker.Archive.V1(;
         passtime::ZonedDateTime,
         crs::NamedTuple,
         modis_truecolor::AbstractMatrix{<:Union{RGB,RGBA}},
@@ -12,7 +12,7 @@
         landmask::AbstractMatrix,
         coastal_buffer_mask::AbstractMatrix,
         iftversion::VersionNumber = pkgversion(@__MODULE__),
-        file_version::VersionNumber = VersionNumber("3.0.0"),
+        file_version::VersionNumber = VersionNumber("1.0.0"),
         reference::AbstractString = "https://doi.org/10.1016/j.rse.2019.111406",
         contact::AbstractString = "mmwilhelmus@brown.edu",
     )
@@ -29,7 +29,7 @@ Includes:
   - `modis_falsecolor`: MODIS falsecolor image (bands 7, 2, 1)
   - `modis_cloud`: the MODIS cloud RGB image
   - `iftversion`: the version of IceFloeTracker.jl used to save the file
-  - `file_version`: the version of the file format (for this object, "3.0.0")
+  - `file_version`: the version of the file format (for this object, "1.0.0")
   - `reference`: a DOI for the dataset to which the file belongs
   - `contact`: contact information for the author
 - Images
@@ -42,7 +42,7 @@ Includes:
   - `props`: the measured properties of the floes
 
 """
-@kwdef struct V3
+@kwdef struct V1
     passtime::ZonedDateTime
     crs::NamedTuple
     modis_truecolor::AbstractMatrix{<:Union{RGB,RGBA}}
@@ -55,15 +55,15 @@ Includes:
     landmask::AbstractMatrix
     coastal_buffer_mask::AbstractMatrix
     iftversion::VersionNumber = pkgversion(@__MODULE__)
-    file_version::VersionNumber = VersionNumber("3.0.0")
+    file_version::VersionNumber = VersionNumber("1.0.0")
     reference::AbstractString = "https://doi.org/10.1016/j.rse.2019.111406"
     contact::AbstractString = "mmwilhelmus@brown.edu"
 end
 
 """
-    save(path, V3(args...))
+    save(path, V1(args...))
 
-Write the [`V3`](@ref) object to storage as a proper netCDF-4 file.
+Write the [`V1`](@ref) object to storage as a proper netCDF-4 file.
 
 The file uses `NCDatasets` and follows CF conventions. The `x`, `y`, and `time`
 dimensions are defined at the root level and inherited by all groups.
@@ -96,7 +96,7 @@ Structure:
 ```
 
 """
-function save(output_path::AbstractString, s::V3;)
+function save(output_path::AbstractString, s::V1;)
     ptsunix = Int64(Dates.datetime2unix(DateTime(s.passtime)))
     latlondata = s.crs
 
@@ -408,11 +408,11 @@ function nc_create_floe_properties(
 end
 
 """
-    _load_v3(input_path)
+    _load_v1(input_path)
 
-Load a V3 netCDF-4 file written by [`save`](@ref) and return a [`V3`](@ref) object.
+Load a V1 netCDF-4 file written by [`save`](@ref) and return a [`V1`](@ref) object.
 """
-function _load_v3(input_path::AbstractString)
+function _load_v1(input_path::AbstractString)
     NCDataset(input_path, "r") do ds
         # Global attributes
         iftversion = VersionNumber(ds.attrib["iftversion"])
@@ -472,7 +472,7 @@ function _load_v3(input_path::AbstractString)
         end
         props = isempty(prop_cols) ? DataFrame() : DataFrame(prop_cols)
 
-        return V3(;
+        return V1(;
             passtime,
             crs,
             modis_truecolor,

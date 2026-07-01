@@ -46,13 +46,13 @@ function load(input_path::AbstractString)
     version = NCDataset(input_path, "r") do file
         VersionNumber(file.attrib["file_version"])
     end
-    if version == VersionNumber("3.0.0")
-        return _load_v3(input_path)
+    if version == VersionNumber("1.0.0")
+        return _load_v1(input_path)
     else
         error("Unsupported file version: $version")
     end
 end
 
-include("./V3.jl")
+include("./V1.jl")
 
 end

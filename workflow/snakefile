@@ -529,7 +529,7 @@ rule observation_netcdf:
     shell:
         """
         {config[IFT]} -e 'using IceFloeTracker, TimeZones, FileIO, Images, DataFrames;
-        data = IceFloeTracker.Archive.V3(
+        data = IceFloeTracker.Archive.V1(
             passtime = read("{input.passtime}", String) |> chomp |> ZonedDateTime,
             crs = latlon("{input.crs_ref_image}"),
             modis_truecolor = load("{input.truecolor}"),

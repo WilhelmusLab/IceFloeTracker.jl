@@ -26,7 +26,7 @@ end
     @test_throws ErrorException choose_dtype(-BigInt(2)^63 - 1)
 end
 
-@testsnippet ArchiveV3 begin
+@testsnippet ArchiveV1 begin
     using TimeZones
     using IceFloeTracker.Data:
         Watkins2026Dataset,
@@ -50,7 +50,7 @@ end
     # add the stereographic coordinate columns that the real pipeline produces
     props[!, :x] = zeros(nrow(props))
     props[!, :y] = zeros(nrow(props))
-    data = IceFloeTracker.Archive.V3(;
+    data = IceFloeTracker.Archive.V1(;
         passtime=ZonedDateTime(pass_time(case), tz"UTC"),
         crs=latlon(modis_truecolor_path(case)),
         modis_truecolor=modis_truecolor(case),
@@ -68,11 +68,11 @@ end
     )
 end
 
-@testitem "Archive.V3 saved has the right global attributes" setup = [ArchiveV3] begin
+@testitem "Archive.V1 saved has the right global attributes" setup = [ArchiveV1] begin
     mktemp() do output_path, _
         Archive.save(output_path, data)
         NCDataset(output_path, "r") do ds
-            @test ds.attrib["file_version"] == "3.0.0"
+            @test ds.attrib["file_version"] == "1.0.0"
             @test ds.attrib["iftversion"] == "0.0.0"
             @test ds.attrib["reference"] == "https://doi.org/00.0000"
             @test ds.attrib["contact"] == "contact@example.com"
@@ -80,7 +80,7 @@ end
     end
 end
 
-@testitem "Archive.V3 saved has the right variables" setup = [ArchiveV3] begin
+@testitem "Archive.V1 saved has the right variables" setup = [ArchiveV1] begin
     mktemp() do output_path, _
         Archive.save(output_path, data)
         NCDataset(output_path, "r") do ds
@@ -111,8 +111,8 @@ end
     end
 end
 
-@testitem "Archive.V3 truecolor and falsecolor have separate band dimensions" setup = [
-    ArchiveV3
+@testitem "Archive.V1 truecolor and falsecolor have separate band dimensions" setup = [
+    ArchiveV1
 ] begin
     mktemp() do output_path, _
         Archive.save(output_path, data)
@@ -125,15 +125,15 @@ end
     end
 end
 
-@testitem "Archive.V3 can be saved with NaNs in the props" setup = [ArchiveV3] begin
+@testitem "Archive.V1 can be saved with NaNs in the props" setup = [ArchiveV1] begin
     data.props[2, :convex_area] = NaN
     mktemp() do output_path, _
         @test_nowarn Archive.save(output_path, data)
     end
 end
 
-@testitem "Archive.V3 can be saved with missing in DataFrame, which converts to NaN" setup = [
-    ArchiveV3
+@testitem "Archive.V1 can be saved with missing in DataFrame, which converts to NaN" setup = [
+    ArchiveV1
 ] begin
     allowmissing!(data.props, :convex_area)
     data.props[2, :convex_area] = missing
@@ -142,7 +142,7 @@ end
     end
 end
 
-@testitem "Archive.V3 saved can be reloaded correctly" setup = [ArchiveV3] begin
+@testitem "Archive.V1 saved can be reloaded correctly" setup = [ArchiveV1] begin
     mktemp() do output_path, _
         Archive.save(output_path, data)
         reloaded = Archive.load(output_path)
