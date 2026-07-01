@@ -2,8 +2,9 @@
     IceFloeTracker.HDF5.V3(;
         passtime::ZonedDateTime,
         crs::NamedTuple,
-        truecolor::AbstractMatrix{<:Union{RGB,RGBA}},
-        falsecolor::AbstractMatrix{<:Union{RGB,RGBA}},
+        modis_truecolor::AbstractMatrix{<:Union{RGB,RGBA}},
+        modis_falsecolor::AbstractMatrix{<:Union{RGB,RGBA}},
+        modis_cloud::AbstractMatrix{<:Union{RGB,RGBA}},
         labeled::AbstractMatrix,
         props::DataFrame,
         cloud_mask::AbstractMatrix,
@@ -24,8 +25,9 @@ Includes:
 - References
   - `passtime`: the timepoint of the observation
   - `crs`: the CRS and geospatial data for the image, as returned by [`latlon`](@ref)
-  - `truecolor`: the truecolor image
-  - `falsecolor`: the falsecolor image
+  - `modis_truecolor`: MODIS truecolor image (bands 1, 4, 3)
+  - `modis_falsecolor`: MODIS falsecolor image (bands 7, 2, 1)
+  - `modis_cloud`: the MODIS cloud RGB image
   - `iftversion`: the version of IceFloeTracker.jl used to save the file
   - `file_version`: the version of the file format (for this object, "3.0.0")
   - `reference`: a DOI for the dataset to which the file belongs
@@ -43,8 +45,9 @@ Includes:
 @kwdef struct V3
     passtime::ZonedDateTime
     crs::NamedTuple
-    truecolor::AbstractMatrix{<:Union{RGB,RGBA}}
-    falsecolor::AbstractMatrix{<:Union{RGB,RGBA}}
+    modis_truecolor::AbstractMatrix{<:Union{RGB,RGBA}}
+    modis_falsecolor::AbstractMatrix{<:Union{RGB,RGBA}}
+    modis_cloud::AbstractMatrix{<:Union{RGB,RGBA}}
     labeled::AbstractMatrix
     props::DataFrame
     cloud_mask::AbstractMatrix
@@ -76,10 +79,12 @@ Structure:
 ├─ 🔢 x(x)          (projection x / easting coordinates, metres)
 ├─ 🔢 y(y)          (projection y / northing coordinates, metres)
 ├─ 🔢 time(time)    (seconds since 1970-01-01)
-├─ 🔢 falsecolor(x, y, band_falsecolor)
+├─ 🔢 modis_falsecolor(x, y, band_modis_falsecolor)
 │  └─ 🏷️ description, grid_mapping
-├─ 🔢 truecolor(x, y, band_truecolor)
-│  └─ (same attributes as falsecolor)
+├─ 🔢 modis_cloud(x, y, band_modis_cloud)
+│  └─ 🏷️ description, grid_mapping
+├─ 🔢 modis_truecolor(x, y, band_modis_truecolor)
+│  └─ (same attributes as modis_falsecolor)
 ├─ 🔢 labeled_image(x, y)
 │  └─ 🏷️ description, grid_mapping
 ├─ 🔢 cloud_mask(x, y)
@@ -148,25 +153,35 @@ function save_hdf5(output_path::AbstractString, s::V3;)
         vt[:] = [ptsunix]
 
         # colour imagery
-        nchannels_tc = size(channelview(s.truecolor), 1)
-        nchannels_fc = size(channelview(s.falsecolor), 1)
-        defDim(ds, "band_truecolor", nchannels_tc)
-        defDim(ds, "band_falsecolor", nchannels_fc)
+        nchannels_tc = size(channelview(s.modis_truecolor), 1)
+        nchannels_fc = size(channelview(s.modis_falsecolor), 1)
+        nchannels_mc = size(channelview(s.modis_cloud), 1)
+        defDim(ds, "band_modis_truecolor", nchannels_tc)
+        defDim(ds, "band_modis_falsecolor", nchannels_fc)
+        defDim(ds, "band_modis_cloud", nchannels_mc)
         nc_create_color_dataset(
             ds,
-            "falsecolor",
-            s.falsecolor,
-            "Falsecolor image",
+            "modis_falsecolor",
+            s.modis_falsecolor,
+            "MODIS falsecolor image (bands 7, 2, 1)",
             projection_dataset_name,
-            "band_falsecolor",
+            "band_modis_falsecolor",
         )
         nc_create_color_dataset(
             ds,
-            "truecolor",
-            s.truecolor,
-            "Truecolor image",
+            "modis_truecolor",
+            s.modis_truecolor,
+            "MODIS truecolor image (bands 1, 4, 3)",
             projection_dataset_name,
-            "band_truecolor",
+            "band_modis_truecolor",
+        )
+        nc_create_color_dataset(
+            ds,
+            "modis_cloud",
+            s.modis_cloud,
+            "MODIS cloud RGB image",
+            projection_dataset_name,
+            "band_modis_cloud",
         )
 
         # masks + labelled segmentation map
@@ -406,8 +421,9 @@ function _load_v3(input_path::AbstractString)
                 collect(colorview(RGBA{N0f8}, n0f8))
             end
         end
-        truecolor = read_color("truecolor")
-        falsecolor = read_color("falsecolor")
+        modis_truecolor = read_color("modis_truecolor")
+        modis_falsecolor = read_color("modis_falsecolor")
+        modis_cloud = read_color("modis_cloud")
 
         # Labeled image: stored as (nx, ny) → (ny, nx)
         labeled = permutedims(Array(ds["labeled_image"].var), (2, 1)) .|> Int
@@ -437,8 +453,9 @@ function _load_v3(input_path::AbstractString)
         return V3(;
             passtime,
             crs,
-            truecolor,
-            falsecolor,
+            modis_truecolor,
+            modis_falsecolor,
+            modis_cloud,
             labeled,
             props,
             cloud_mask,

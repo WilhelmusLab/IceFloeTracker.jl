@@ -136,6 +136,7 @@ end
         modis_falsecolor,
         modis_landmask,
         modis_truecolor_path,
+        modis_cloudfraction,
         pass_time,
         validated_labeled_floes,
         validated_floe_properties
@@ -154,8 +155,9 @@ end
     data = IceFloeTracker.HDF5.V3(;
         passtime=ZonedDateTime(pass_time(case), tz"UTC"),
         crs=latlon(modis_truecolor_path(case)),
-        truecolor=modis_truecolor(case),
-        falsecolor=modis_falsecolor(case),
+        modis_truecolor=modis_truecolor(case),
+        modis_falsecolor=modis_falsecolor(case),
+        modis_cloud=RGB.(modis_cloudfraction(case)),
         labeled=validated_labeled_floes(case) |> labels_map,
         props=props,
         landmask=mask,
@@ -190,8 +192,9 @@ end
             @test haskey(ds, "time")
             @test haskey(ds, "geolocation")
             # colour imagery
-            @test haskey(ds, "truecolor")
-            @test haskey(ds, "falsecolor")
+            @test haskey(ds, "modis_truecolor")
+            @test haskey(ds, "modis_falsecolor")
+            @test haskey(ds, "modis_cloud")
             # segmentation outputs
             @test haskey(ds, "labeled_image")
             @test haskey(ds, "cloud_mask")
@@ -214,10 +217,10 @@ end
     mktemp() do output_path, _
         save_hdf5(output_path, data)
         NCDataset(output_path, "r") do ds
-            @test "band_truecolor" in dimnames(ds["truecolor"])
-            @test "band_falsecolor" in dimnames(ds["falsecolor"])
-            @test !("band_falsecolor" in dimnames(ds["truecolor"]))
-            @test !("band_truecolor" in dimnames(ds["falsecolor"]))
+            @test "band_modis_truecolor" in dimnames(ds["modis_truecolor"])
+            @test "band_modis_falsecolor" in dimnames(ds["modis_falsecolor"])
+            @test !("band_modis_falsecolor" in dimnames(ds["modis_truecolor"]))
+            @test !("band_modis_truecolor" in dimnames(ds["modis_falsecolor"]))
         end
     end
 end
@@ -249,8 +252,9 @@ end
         @test reloaded.iftversion == data.iftversion
         @test reloaded.reference == data.reference
         @test reloaded.contact == data.contact
-        @test reloaded.truecolor == data.truecolor
-        @test reloaded.falsecolor == data.falsecolor
+        @test reloaded.modis_truecolor == data.modis_truecolor
+        @test reloaded.modis_falsecolor == data.modis_falsecolor
+        @test reloaded.modis_cloud == data.modis_cloud
         @test reloaded.labeled == data.labeled
         @test reloaded.cloud_mask == Bool.(data.cloud_mask)
         @test reloaded.landmask == Bool.(data.landmask)
