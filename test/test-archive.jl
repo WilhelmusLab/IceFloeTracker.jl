@@ -202,12 +202,12 @@ end
             @test haskey(ds, "ice_mask")
             @test haskey(ds, "coastal_buffer_mask")
             # floe properties
-            @test haskey(ds, "label")
-            @test haskey(ds, "area")
-            @test haskey(ds, "convex_area")
+            @test haskey(ds, "floe_label")
+            @test haskey(ds, "floe_area")
+            @test haskey(ds, "floe_convex_area")
             # x/y prop columns must be remapped to avoid clashing with dimension names
-            @test haskey(ds, "x_floe")
-            @test haskey(ds, "y_floe")
+            @test haskey(ds, "floe_x")
+            @test haskey(ds, "floe_y")
             @test !haskey(ds, "x_crs")
         end
     end
