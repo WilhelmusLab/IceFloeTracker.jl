@@ -1,5 +1,5 @@
 """
-    IceFloeTracker.HDF5.V3(;
+    IceFloeTracker.Archive.V3(;
         passtime::ZonedDateTime,
         crs::NamedTuple,
         modis_truecolor::AbstractMatrix{<:Union{RGB,RGBA}},

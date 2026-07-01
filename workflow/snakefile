@@ -528,7 +528,7 @@ rule observation_hdf5:
     shell:
         """
         {config[IFT]} -e 'using IceFloeTracker, TimeZones, FileIO, Images, DataFrames;
-        data = IceFloeTracker.HDF5.V1(
+        data = IceFloeTracker.Archive.V1(
             passtime = read("{input.passtime}", String) |> chomp |> ZonedDateTime,
             crs_ref_image_path = "{input.crs_ref_image}",
             truecolor_path = "{input.truecolor}",
@@ -564,7 +564,7 @@ rule observation_netcdf:
     shell:
         """
         {config[IFT]} -e 'using IceFloeTracker, TimeZones, FileIO, Images, DataFrames;
-        data = IceFloeTracker.HDF5.V3(
+        data = IceFloeTracker.Archive.V3(
             passtime = read("{input.passtime}", String) |> chomp |> ZonedDateTime,
             crs = latlon("{input.crs_ref_image}"),
             modis_truecolor = load("{input.truecolor}"),

@@ -1,5 +1,5 @@
 
-module HDF5
+module Archive
 
 using HDF5, NCDatasets, Images, Dates, TimeZones, DataFrames
 import ..Geospatial: latlon
@@ -60,7 +60,6 @@ function load_hdf5(input_path::AbstractString)
 end
 
 include("./V1.jl")
-include("./V2.jl")
 include("./V3.jl")
 
 end

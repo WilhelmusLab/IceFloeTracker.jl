@@ -1,6 +1,6 @@
 
 """
-    IceFloeTracker.HDF5.V1(;
+    IceFloeTracker.Archive.V1(;
         passtime::ZonedDateTime,
         crs_ref_image_path::AbstractString,
         truecolor_path::AbstractString,

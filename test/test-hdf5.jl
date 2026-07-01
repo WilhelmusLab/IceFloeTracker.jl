@@ -16,7 +16,7 @@
 
     dataset = Watkins2026Dataset()
     case = first(dataset)
-    data = IceFloeTracker.HDF5.V1(;
+    data = IceFloeTracker.Archive.V1(;
         passtime=ZonedDateTime(pass_time(case), tz"UTC"),
         crs_ref_image_path=modis_truecolor_path(case),
         truecolor_path=modis_truecolor_path(case),
@@ -33,7 +33,7 @@
     )
 end
 
-@testitem "HDF5.V1 saved have the right fields" setup = [HDF5V1] begin
+@testitem "Archive.V1 saved have the right fields" setup = [HDF5V1] begin
     mktemp() do output_path, _
         save_hdf5(output_path, data;)
         h5open(output_path, "r") do file
@@ -55,7 +55,7 @@ end
     end
 end
 
-@testitem "HDF5.V1 saved can be reloaded correctly" setup = [HDF5V1] begin
+@testitem "Archive.V1 saved can be reloaded correctly" setup = [HDF5V1] begin
     mktemp() do output_path, _
         save_hdf5(output_path, data;)
         reloaded = load_hdf5(output_path)
@@ -75,7 +75,7 @@ end
     end
 end
 
-@testitem "HDF5.V1 can be saved with NaNs in the props" setup = [HDF5V1] begin
+@testitem "Archive.V1 can be saved with NaNs in the props" setup = [HDF5V1] begin
     @show data.props
     data.props[2, :convex_area] = NaN
     @show data.props
@@ -86,7 +86,7 @@ end
     end
 end
 
-@testitem "HDF5.V1 can be saved with missing in DataFrame, which convert to NaN" setup = [
+@testitem "Archive.V1 can be saved with missing in DataFrame, which convert to NaN" setup = [
     HDF5V1
 ] begin
     convex_area = allowmissing!(data.props, :convex_area)
@@ -112,7 +112,7 @@ end
 end
 
 @testitem "choose_dtype" begin
-    using IceFloeTracker.HDF5: choose_dtype
+    using IceFloeTracker.Archive: choose_dtype
 
     @test choose_dtype(100) == UInt8
     @test choose_dtype(-100) == Int8
@@ -152,7 +152,7 @@ end
     # add the stereographic coordinate columns that the real pipeline produces
     props[!, :x] = zeros(nrow(props))
     props[!, :y] = zeros(nrow(props))
-    data = IceFloeTracker.HDF5.V3(;
+    data = IceFloeTracker.Archive.V3(;
         passtime=ZonedDateTime(pass_time(case), tz"UTC"),
         crs=latlon(modis_truecolor_path(case)),
         modis_truecolor=modis_truecolor(case),
@@ -170,7 +170,7 @@ end
     )
 end
 
-@testitem "HDF5.V3 saved has the right global attributes" setup = [HDF5V3] begin
+@testitem "Archive.V3 saved has the right global attributes" setup = [HDF5V3] begin
     mktemp() do output_path, _
         save_hdf5(output_path, data)
         NCDataset(output_path, "r") do ds
@@ -182,7 +182,7 @@ end
     end
 end
 
-@testitem "HDF5.V3 saved has the right variables" setup = [HDF5V3] begin
+@testitem "Archive.V3 saved has the right variables" setup = [HDF5V3] begin
     mktemp() do output_path, _
         save_hdf5(output_path, data)
         NCDataset(output_path, "r") do ds
@@ -213,7 +213,9 @@ end
     end
 end
 
-@testitem "HDF5.V3 truecolor and falsecolor have separate band dimensions" setup = [HDF5V3] begin
+@testitem "Archive.V3 truecolor and falsecolor have separate band dimensions" setup = [
+    HDF5V3
+] begin
     mktemp() do output_path, _
         save_hdf5(output_path, data)
         NCDataset(output_path, "r") do ds
@@ -225,14 +227,14 @@ end
     end
 end
 
-@testitem "HDF5.V3 can be saved with NaNs in the props" setup = [HDF5V3] begin
+@testitem "Archive.V3 can be saved with NaNs in the props" setup = [HDF5V3] begin
     data.props[2, :convex_area] = NaN
     mktemp() do output_path, _
         @test_nowarn save_hdf5(output_path, data)
     end
 end
 
-@testitem "HDF5.V3 can be saved with missing in DataFrame, which converts to NaN" setup = [
+@testitem "Archive.V3 can be saved with missing in DataFrame, which converts to NaN" setup = [
     HDF5V3
 ] begin
     allowmissing!(data.props, :convex_area)
@@ -242,7 +244,7 @@ end
     end
 end
 
-@testitem "HDF5.V3 saved can be reloaded correctly" setup = [HDF5V3] begin
+@testitem "Archive.V3 saved can be reloaded correctly" setup = [HDF5V3] begin
     mktemp() do output_path, _
         save_hdf5(output_path, data)
         reloaded = load_hdf5(output_path)
