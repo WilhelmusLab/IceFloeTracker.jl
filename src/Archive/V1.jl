@@ -227,6 +227,7 @@ function save(output_path::AbstractString, s::V1;)
             s.cloud_mask,
             "Cloud mask. This mask is 1 for pixels classified as cloud, and 0 elsewhere.",
             projection_dataset_name,
+            "background cloud",
         )
         nc_create_mask_dataset(
             ds,
@@ -234,6 +235,7 @@ function save(output_path::AbstractString, s::V1;)
             s.landmask,
             "Land mask. This mask is 1 for pixels classified as land, and 0 elsewhere.",
             projection_dataset_name,
+            "background land",
         )
         nc_create_mask_dataset(
             ds,
@@ -242,6 +244,7 @@ function save(output_path::AbstractString, s::V1;)
             "Coastal buffer mask. This mask is 1 for pixels within a specified " *
             "distance of the coast, and 0 elsewhere.",
             projection_dataset_name,
+            "background coastal_buffer",
         )
         nc_create_mask_dataset(
             ds,
@@ -249,6 +252,7 @@ function save(output_path::AbstractString, s::V1;)
             s.ice_mask,
             "Ice mask. This mask is 1 for pixels classified as ice, and 0 elsewhere.",
             projection_dataset_name,
+            "background sea_ice",
         )
 
         # floe properties: one variable per property column
@@ -259,10 +263,14 @@ function save(output_path::AbstractString, s::V1;)
 end
 
 """
-    nc_create_mask_dataset(grp, name, mask, description, projection_dataset_name)
+    nc_create_mask_dataset(grp, name, mask, description, projection_dataset_name, flag_meanings)
 
 Define a `UInt8` binary mask variable with dimensions `(x, y)` in the NCDatasets
 group `grp`. The parent group must supply the `x` and `y` dimensions.
+
+CF `flag_values` (`[0x00, 0x01]`) and `flag_meanings` attributes are written to the
+variable. `flag_meanings` should be a space-separated string of two labels, e.g.
+`"background cloud"` or `"background sea_ice"`.
 """
 function nc_create_mask_dataset(
     grp::NCDataset,
@@ -270,11 +278,14 @@ function nc_create_mask_dataset(
     mask::AbstractMatrix,
     description::AbstractString="",
     projection_dataset_name::AbstractString="geolocation",
+    flag_meanings::AbstractString="background flag",
 )
     mask_uint8 = permutedims(UInt8.(Bool.(mask)), (2, 1))  # (nx, ny)
     v = defVar(grp, name, UInt8, ("x", "y"))
     v.attrib["description"] = description
     v.attrib["grid_mapping"] = projection_dataset_name
+    v.attrib["flag_values"] = UInt8[0, 1]
+    v.attrib["flag_meanings"] = flag_meanings
     v[:, :] = mask_uint8
     return v
 end
