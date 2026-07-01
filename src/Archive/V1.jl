@@ -15,7 +15,7 @@
         file_version::VersionNumber = VersionNumber("1.0.0"),
         reference::AbstractString = "https://doi.org/10.1016/j.rse.2019.111406",
         contact::AbstractString = "mmwilhelmus@brown.edu",
-        creation_date::DateTime = Dates.now(Dates.UTC),
+        creation_date::ZonedDateTime = now(tz"UTC"),
     )
 
 An object with results from a single segmentation to be saved as a proper
@@ -60,7 +60,7 @@ Includes:
     file_version::VersionNumber = VersionNumber("1.0.0")
     reference::AbstractString = "https://doi.org/10.1016/j.rse.2019.111406"
     contact::AbstractString = "mmwilhelmus@brown.edu"
-    creation_date::DateTime = Dates.now(Dates.UTC)
+    creation_date::ZonedDateTime = now(tz"UTC")
 end
 
 """
@@ -119,7 +119,7 @@ function save(output_path::AbstractString, s::V1;)
         ds.attrib["reference"] = s.reference
         ds.attrib["contact"] = s.contact
         ds.attrib["creation_date"] = Dates.format(
-            s.creation_date, dateformat"yyyy-mm-ddTHH:MM:SS"
+            s.creation_date, dateformat"yyyy-mm-ddTHH:MM:SSz"
         )
 
         # Dimensions defined at root are inherited by all groups
@@ -436,11 +436,11 @@ function _load_v1(input_path::AbstractString)
         file_version = VersionNumber(ds.attrib["file_version"])
         reference = ds.attrib["reference"]
         contact = ds.attrib["contact"]
-        creation_date = let s = get(ds.attrib, "creation_date", "")
-            if isempty(s)
-                DateTime(0)
+        creation_date = let raw = get(ds.attrib, "creation_date", "")
+            if isempty(raw)
+                ZonedDateTime(DateTime(0), tz"UTC")
             else
-                DateTime(rstrip(s, 'Z'), dateformat"yyyy-mm-ddTHH:MM:SS")
+                ZonedDateTime(DateTime(raw, dateformat"yyyy-mm-ddTHH:MM:SS"), tz"UTC")
             end
         end
 
