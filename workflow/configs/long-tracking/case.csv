@@ -1,0 +1,4 @@
+region,start,end,scale,pipeline,comment
+beaufort_sea-100km,2019-02-01,2019-05-31,250,LopezAcosta2019Tiling,"tracking run over a full season"
+beaufort_sea-100km,2019-02-01,2019-05-31,250,LopezAcosta2019,"tracking run over a full season"
+fram_strait-100km,2003-05-11,2003-05-13,250,FSPipeline,"disruption"

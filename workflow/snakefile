@@ -88,9 +88,7 @@ rule region_case_results_by_filetype:
                 ("cloud_mask", "tiff"), 
                 ("ice_mask", "tiff"), 
                 ("config", "txt"), 
-                ("segmentation", "hdf5"),
-                ("props_raw", "csv"),
-                ("props_crs", "csv")
+                ("segmentation", "nc")
             ]
             for case in cases.itertuples()
             for date_ in daterange(date.fromisoformat(case.start), date.fromisoformat(case.end))
@@ -511,13 +509,15 @@ rule tracking:
 # ARCHIVAL RULES
 # ============================================================================
 
-rule observation_hdf5:
+
+rule observation_netcdf:
     output:
-        "{dir}/{pipeline}/segmentation.hdf5"
+        "{dir}/{pipeline}/segmentation.nc"
     input:
         crs_ref_image = "{dir}/truecolor.tiff",
         truecolor = "{dir}/truecolor.tiff",
         falsecolor = "{dir}/falsecolor.tiff",
+        cloud = "{dir}/cloud.tiff",        
         labels_map = "{dir}/{pipeline}/labels_map.tiff",
         cloud_mask = "{dir}/{pipeline}/cloud_mask.tiff",
         landmask = "{dir}/landmask.tiff",
@@ -529,11 +529,12 @@ rule observation_hdf5:
     shell:
         """
         {config[IFT]} -e 'using IceFloeTracker, TimeZones, FileIO, Images, DataFrames;
-        data = IceFloeTracker.HDF5.V1(
+        data = IceFloeTracker.Archive.V3(
             passtime = read("{input.passtime}", String) |> chomp |> ZonedDateTime,
-            crs_ref_image_path = "{input.crs_ref_image}",
-            truecolor_path = "{input.truecolor}",
-            falsecolor_path = "{input.falsecolor}",
+            crs = latlon("{input.crs_ref_image}"),
+            modis_truecolor = load("{input.truecolor}"),
+            modis_falsecolor = load("{input.falsecolor}"),
+            modis_cloud = load("{input.cloud}"),
             labeled = load("{input.labels_map}") .|> x-> reinterpret(UInt16, x),
             props = load("{input.props_crs}")|> DataFrame,
             landmask = load("{input.landmask}") |> binarize_mask,
@@ -541,6 +542,6 @@ rule observation_hdf5:
             ice_mask = load("{input.ice_mask}") |> binarize_mask,
             cloud_mask = load("{input.cloud_mask}") |> binarize_mask,
         )
-        save_hdf5("{output}", data)
+        Archive.save("{output}", data)
         '
         """

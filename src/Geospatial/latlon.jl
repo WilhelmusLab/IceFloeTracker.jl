@@ -1,5 +1,13 @@
 import ArchGDAL:
-    readraster, toPROJ4, importEPSG, toEPSG, getproj, toPROJ4, getgeotransform, importWKT
+    readraster,
+    toPROJ4,
+    importEPSG,
+    toEPSG,
+    getproj,
+    toPROJ4,
+    getgeotransform,
+    importWKT,
+    toWKT
 import Proj: Transformation
 
 # px2xy function from creator of ArchGDAL https://github.com/yeesian/ArchGDAL.jl/issues/68
@@ -42,6 +50,15 @@ function latlon(imgpath::AbstractString)
     lonlat = [trans(x, y) for y in Y, x in X]
     lon = first.(lonlat)
     lat = last.(lonlat)
+    data = (;
+        crs=toEPSG(importWKT(p)),
+        crs_wkt=toWKT(importWKT(p)),
+        longitude=lon,
+        latitude=lat,
+        X=X,
+        Y=Y,
+        geotransform=getgeotransform(im),
+    )
 
-    return (crs=toEPSG(importWKT(p)), longitude=lon, latitude=lat, X=X, Y=Y)
+    return data
 end
