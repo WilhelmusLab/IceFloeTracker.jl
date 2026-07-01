@@ -88,7 +88,9 @@ rule region_case_results_by_filetype:
                 ("cloud_mask", "tiff"), 
                 ("ice_mask", "tiff"), 
                 ("config", "txt"), 
-                ("segmentation", "nc")
+                ("props_raw", "csv"),
+                ("props_crs", "csv"),
+                ("segmentation", "nc"),
             ]
             for case in cases.itertuples()
             for date_ in daterange(date.fromisoformat(case.start), date.fromisoformat(case.end))
@@ -545,4 +547,3 @@ rule observation_netcdf:
         Archive.save("{output}", data)
         '
         """
-        
