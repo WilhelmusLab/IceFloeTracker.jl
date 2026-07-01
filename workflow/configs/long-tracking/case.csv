@@ -1,0 +1,3 @@
+region,start,end,scale,pipeline,comment
+fram_strait-100km,2003-05-11,2003-05-13,250,LopezAcosta2019Tiling,"disruption"
+fram_strait-100km,2003-05-11,2003-05-13,250,LopezAcosta2019,"disruption"

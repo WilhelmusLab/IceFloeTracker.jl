@@ -28,6 +28,7 @@ end
 
 @testsnippet ArchiveV1 begin
     using TimeZones
+    using Dates
     using IceFloeTracker.Data:
         Watkins2026Dataset,
         modis_truecolor,
@@ -65,6 +66,7 @@ end
         iftversion=VersionNumber("0.0.0"),
         reference="https://doi.org/00.0000",
         contact="contact@example.com",
+        creation_date=DateTime(2024, 6, 15, 12, 0, 0),
     )
 end
 
@@ -76,6 +78,7 @@ end
             @test ds.attrib["iftversion"] == "0.0.0"
             @test ds.attrib["reference"] == "https://doi.org/00.0000"
             @test ds.attrib["contact"] == "contact@example.com"
+            @test ds.attrib["creation_date"] == "2024-06-15T12:00:00"
         end
     end
 end
@@ -152,6 +155,7 @@ end
         @test reloaded.iftversion == data.iftversion
         @test reloaded.reference == data.reference
         @test reloaded.contact == data.contact
+        @test reloaded.creation_date == data.creation_date
         @test reloaded.modis_truecolor == data.modis_truecolor
         @test reloaded.modis_falsecolor == data.modis_falsecolor
         @test reloaded.modis_cloud == data.modis_cloud

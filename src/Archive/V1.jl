@@ -15,6 +15,7 @@
         file_version::VersionNumber = VersionNumber("1.0.0"),
         reference::AbstractString = "https://doi.org/10.1016/j.rse.2019.111406",
         contact::AbstractString = "mmwilhelmus@brown.edu",
+        creation_date::DateTime = Dates.now(Dates.UTC),
     )
 
 An object with results from a single segmentation to be saved as a proper
@@ -32,6 +33,7 @@ Includes:
   - `file_version`: the version of the file format (for this object, "1.0.0")
   - `reference`: a DOI for the dataset to which the file belongs
   - `contact`: contact information for the author
+  - `creation_date`: ISO8601 timestamp of when the object was created (defaults to now)
 - Images
   - `labeled`: the labeled image of connected components
   - `cloud_mask`: the cloud mask
@@ -58,6 +60,7 @@ Includes:
     file_version::VersionNumber = VersionNumber("1.0.0")
     reference::AbstractString = "https://doi.org/10.1016/j.rse.2019.111406"
     contact::AbstractString = "mmwilhelmus@brown.edu"
+    creation_date::DateTime = Dates.now(Dates.UTC)
 end
 
 """
@@ -115,6 +118,9 @@ function save(output_path::AbstractString, s::V1;)
         ds.attrib["iftversion"] = string(s.iftversion)
         ds.attrib["reference"] = s.reference
         ds.attrib["contact"] = s.contact
+        ds.attrib["creation_date"] = Dates.format(
+            s.creation_date, dateformat"yyyy-mm-ddTHH:MM:SS"
+        )
 
         # Dimensions defined at root are inherited by all groups
         defDim(ds, "x", nx)
@@ -430,6 +436,13 @@ function _load_v1(input_path::AbstractString)
         file_version = VersionNumber(ds.attrib["file_version"])
         reference = ds.attrib["reference"]
         contact = ds.attrib["contact"]
+        creation_date = let s = get(ds.attrib, "creation_date", "")
+            if isempty(s)
+                DateTime(0)
+            else
+                DateTime(rstrip(s, 'Z'), dateformat"yyyy-mm-ddTHH:MM:SS")
+            end
+        end
 
         # Reconstruct CRS data from the geolocation variable
         geoloc = ds["geolocation"]
@@ -499,6 +512,7 @@ function _load_v1(input_path::AbstractString)
             file_version,
             reference,
             contact,
+            creation_date,
         )
     end
 end
