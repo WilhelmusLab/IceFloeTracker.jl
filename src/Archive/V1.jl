@@ -11,7 +11,7 @@
         ice_mask::AbstractMatrix,
         landmask::AbstractMatrix,
         coastal_buffer_mask::AbstractMatrix,
-        iftversion::VersionNumber = pkgversion(@__MODULE__),
+        ift_version::VersionNumber = pkgversion(@__MODULE__),
         file_version::VersionNumber = VersionNumber("1.0.0"),
         reference::AbstractString = "https://doi.org/10.1016/j.rse.2019.111406",
         contact::AbstractString = "mmwilhelmus@brown.edu",
@@ -30,7 +30,7 @@ Includes:
   - `modis_truecolor`: MODIS truecolor image (bands 1, 4, 3)
   - `modis_falsecolor`: MODIS falsecolor image (bands 7, 2, 1)
   - `modis_cloud`: the MODIS cloud RGB image
-  - `iftversion`: the version of IceFloeTracker.jl used to save the file
+  - `ift_version`: the version of IceFloeTracker.jl used to save the file
   - `file_version`: the version of the file format (for this object, "1.0.0")
   - `reference`: a DOI for the dataset to which the file belongs
   - `contact`: contact information for the author
@@ -58,7 +58,7 @@ Includes:
     ice_mask::AbstractMatrix
     landmask::AbstractMatrix
     coastal_buffer_mask::AbstractMatrix
-    iftversion::VersionNumber = pkgversion(@__MODULE__)
+    ift_version::VersionNumber = pkgversion(@__MODULE__)
     file_version::VersionNumber = VersionNumber("1.0.0")
     reference::AbstractString = "https://doi.org/10.1016/j.rse.2019.111406"
     contact::AbstractString = "mmwilhelmus@brown.edu"
@@ -78,7 +78,7 @@ Structure:
 
 ```
 📦 netCDF-4 file
-├─ 🏷️ file_version, iftversion, contact, reference   (global attributes)
+├─ 🏷️ file_version, ift_version, contact, reference   (global attributes)
 ├─ 🏷️ Description, label_variable, labeled_image     (floe-properties attributes)
 ├─ 🔢 geolocation   (scalar Int32, CRS grid-mapping variable)
 │  └─ 🏷️ name, crs_wkt, spatial_ref, long_name, GeoTransform
@@ -118,7 +118,7 @@ function save(output_path::AbstractString, s::V1;)
     NCDataset(output_path, "c") do ds
         # Global attributes
         ds.attrib["file_version"] = string(s.file_version)
-        ds.attrib["iftversion"] = string(s.iftversion)
+        ds.attrib["ift_version"] = string(s.ift_version)
         ds.attrib["reference"] = s.reference
         ds.attrib["contact"] = s.contact
         ds.attrib["creation_date"] = Dates.format(
@@ -436,7 +436,7 @@ Load a V1 netCDF-4 file written by [`save`](@ref) and return a [`V1`](@ref) obje
 function _load_v1(input_path::AbstractString)
     NCDataset(input_path, "r") do ds
         # Global attributes
-        iftversion = VersionNumber(ds.attrib["iftversion"])
+        ift_version = VersionNumber(ds.attrib["ift_version"])
         file_version = VersionNumber(ds.attrib["file_version"])
         reference = ds.attrib["reference"]
         contact = ds.attrib["contact"]
@@ -507,7 +507,7 @@ function _load_v1(input_path::AbstractString)
             ice_mask,
             landmask,
             coastal_buffer_mask,
-            iftversion,
+            ift_version,
             file_version,
             reference,
             contact,

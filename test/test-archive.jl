@@ -62,7 +62,7 @@ end
         cloud_mask=mask,
         ice_mask=mask,
         coastal_buffer_mask=mask,
-        iftversion=VersionNumber("0.0.0"),
+        ift_version=VersionNumber("0.0.0"),
         reference="https://doi.org/00.0000",
         contact="contact@example.com",
         creation_date=ZonedDateTime(2024, 6, 15, 12, 6, 3, tz"UTC"),
@@ -75,7 +75,7 @@ end
         Archive.save(output_path, data)
         NCDataset(output_path, "r") do ds
             @test ds.attrib["file_version"] == "1.0.0"
-            @test ds.attrib["iftversion"] == "0.0.0"
+            @test ds.attrib["ift_version"] == "0.0.0"
             @test ds.attrib["reference"] == "https://doi.org/00.0000"
             @test ds.attrib["contact"] == "contact@example.com"
             @test ds.attrib["creation_date"] == "2024-06-15T12:06:03+00:00"
@@ -154,7 +154,7 @@ end
         @test reloaded.passtime == data.passtime
         @test reloaded.crs[:crs_wkt] == data.crs[:crs_wkt]
         @test reloaded.crs[:crs] == data.crs[:crs]
-        @test reloaded.iftversion == data.iftversion
+        @test reloaded.ift_version == data.ift_version
         @test reloaded.reference == data.reference
         @test reloaded.contact == data.contact
         @test reloaded.creation_date == data.creation_date
