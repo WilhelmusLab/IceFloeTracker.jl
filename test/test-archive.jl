@@ -1,4 +1,4 @@
-@testsnippet HDF5V1 begin
+@testsnippet ArchiveV1 begin
     using TimeZones
     using IceFloeTracker.Data:
         Watkins2026Dataset,
@@ -33,7 +33,7 @@
     )
 end
 
-@testitem "Archive.V1 saved have the right fields" setup = [HDF5V1] begin
+@testitem "Archive.V1 saved have the right fields" setup = [ArchiveV1] begin
     mktemp() do output_path, _
         save_hdf5(output_path, data;)
         h5open(output_path, "r") do file
@@ -55,7 +55,7 @@ end
     end
 end
 
-@testitem "Archive.V1 saved can be reloaded correctly" setup = [HDF5V1] begin
+@testitem "Archive.V1 saved can be reloaded correctly" setup = [ArchiveV1] begin
     mktemp() do output_path, _
         save_hdf5(output_path, data;)
         reloaded = load_hdf5(output_path)
@@ -75,7 +75,7 @@ end
     end
 end
 
-@testitem "Archive.V1 can be saved with NaNs in the props" setup = [HDF5V1] begin
+@testitem "Archive.V1 can be saved with NaNs in the props" setup = [ArchiveV1] begin
     @show data.props
     data.props[2, :convex_area] = NaN
     @show data.props
@@ -87,7 +87,7 @@ end
 end
 
 @testitem "Archive.V1 can be saved with missing in DataFrame, which convert to NaN" setup = [
-    HDF5V1
+    ArchiveV1
 ] begin
     convex_area = allowmissing!(data.props, :convex_area)
     data.props[2, :convex_area] = missing
@@ -128,7 +128,7 @@ end
     @test_throws ErrorException choose_dtype(-BigInt(2)^63 - 1)
 end
 
-@testsnippet HDF5V3 begin
+@testsnippet ArchiveV3 begin
     using TimeZones
     using IceFloeTracker.Data:
         Watkins2026Dataset,
@@ -170,7 +170,7 @@ end
     )
 end
 
-@testitem "Archive.V3 saved has the right global attributes" setup = [HDF5V3] begin
+@testitem "Archive.V3 saved has the right global attributes" setup = [ArchiveV3] begin
     mktemp() do output_path, _
         save_hdf5(output_path, data)
         NCDataset(output_path, "r") do ds
@@ -182,7 +182,7 @@ end
     end
 end
 
-@testitem "Archive.V3 saved has the right variables" setup = [HDF5V3] begin
+@testitem "Archive.V3 saved has the right variables" setup = [ArchiveV3] begin
     mktemp() do output_path, _
         save_hdf5(output_path, data)
         NCDataset(output_path, "r") do ds
@@ -214,7 +214,7 @@ end
 end
 
 @testitem "Archive.V3 truecolor and falsecolor have separate band dimensions" setup = [
-    HDF5V3
+    ArchiveV3
 ] begin
     mktemp() do output_path, _
         save_hdf5(output_path, data)
@@ -227,7 +227,7 @@ end
     end
 end
 
-@testitem "Archive.V3 can be saved with NaNs in the props" setup = [HDF5V3] begin
+@testitem "Archive.V3 can be saved with NaNs in the props" setup = [ArchiveV3] begin
     data.props[2, :convex_area] = NaN
     mktemp() do output_path, _
         @test_nowarn save_hdf5(output_path, data)
@@ -235,7 +235,7 @@ end
 end
 
 @testitem "Archive.V3 can be saved with missing in DataFrame, which converts to NaN" setup = [
-    HDF5V3
+    ArchiveV3
 ] begin
     allowmissing!(data.props, :convex_area)
     data.props[2, :convex_area] = missing
@@ -244,7 +244,7 @@ end
     end
 end
 
-@testitem "Archive.V3 saved can be reloaded correctly" setup = [HDF5V3] begin
+@testitem "Archive.V3 saved can be reloaded correctly" setup = [ArchiveV3] begin
     mktemp() do output_path, _
         save_hdf5(output_path, data)
         reloaded = load_hdf5(output_path)
