@@ -101,7 +101,7 @@ function save_hdf5(output_path::AbstractString, s::V3;)
     latlondata = s.crs
 
     crs_code = latlondata[:crs]
-    crs_name = get_crs_name(crs_code)
+    crs_name = _get_crs_name(crs_code)
     projection_dataset_name = "geolocation"
 
     X = Float64.(latlondata[:X])
@@ -495,4 +495,19 @@ function _load_v3(input_path::AbstractString)
             contact,
         )
     end
+end
+
+function _get_crs_name(crs_code)
+    crs_dict = Dict(
+        3413 => "EPSG:3413 NSIDC north polar stereographic",
+        3031 => "EPSG:3031 NSIDC south polar stereographic",
+        4326 => "EPSG:4326 WGS84 lat/lon",
+        3857 => "EPSG:3857 Web Mercator",
+    )
+    crs_name = get(crs_dict, crs_code) do
+        crs_name_ = "EPSG:$(string(crs_code))"
+        @warn "CRS $crs_code not recognized. CRS will be recorded as $crs_name_ in the output file attributes, but no short name will be provided."
+        return crs_name_
+    end
+    return crs_name
 end
