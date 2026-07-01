@@ -58,7 +58,7 @@ end
 @testitem "Archive.V1 saved can be reloaded correctly" setup = [ArchiveV1] begin
     mktemp() do output_path, _
         Archive.save(output_path, data;)
-        reloaded = load_hdf5(output_path)
+        reloaded = Archive.load(output_path)
         @test reloaded.passtime == data.passtime
         @test reloaded.crs_ref_image_path == data.crs_ref_image_path
         @test reloaded.truecolor_path == data.truecolor_path
@@ -81,7 +81,7 @@ end
     @show data.props
     mktemp() do output_path, _
         Archive.save(output_path, data;)
-        reloaded = load_hdf5(output_path)
+        reloaded = Archive.load(output_path)
         @test isequal(reloaded.props, data.props)
     end
 end
@@ -93,7 +93,7 @@ end
     data.props[2, :convex_area] = missing
     mktemp() do output_path, _
         Archive.save(output_path, data;)
-        reloaded = load_hdf5(output_path)
+        reloaded = Archive.load(output_path)
         @test isequal(reloaded.props[1, :], data.props[1, :])
         @test isequal(reloaded.props[2, :convex_area], NaN)  # missing becomes a NaN when saved and reloaded
         @test isequal(reloaded.props[3:end, :], data.props[3:end, :])
@@ -107,7 +107,7 @@ end
         h5open(output_path, "w") do file
             return attrs(file)["file_version"] = "0.0.0"
         end
-        @test_throws "file version" load_hdf5(output_path)
+        @test_throws "file version" Archive.load(output_path)
     end
 end
 
@@ -247,7 +247,7 @@ end
 @testitem "Archive.V3 saved can be reloaded correctly" setup = [ArchiveV3] begin
     mktemp() do output_path, _
         Archive.save(output_path, data)
-        reloaded = load_hdf5(output_path)
+        reloaded = Archive.load(output_path)
         @test reloaded.passtime == data.passtime
         @test reloaded.crs[:crs_wkt] == data.crs[:crs_wkt]
         @test reloaded.crs[:crs] == data.crs[:crs]
