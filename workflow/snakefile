@@ -527,6 +527,7 @@ rule observation_netcdf:
         coastal_buffer_mask = "{dir}/coastal_buffer_mask.tiff",
         ice_mask = "{dir}/{pipeline}/ice_mask.tiff",
         props_crs = "{dir}/{pipeline}/props_crs.csv",
+        ift_config = "{dir}/{pipeline}/config.txt",
         init_ift = "init/init_ift"
     shell:
         """
@@ -543,6 +544,7 @@ rule observation_netcdf:
             coastal_buffer_mask = load("{input.coastal_buffer_mask}") |> binarize_mask,
             ice_mask = load("{input.ice_mask}") |> binarize_mask,
             cloud_mask = load("{input.cloud_mask}") |> binarize_mask,
+            ift_configuration = read("{input.ift_config}", String),
         )
         Archive.save("{output}", data)
         '
