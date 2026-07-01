@@ -62,10 +62,8 @@ end
 
 Write the [`V3`](@ref) object to storage as a proper netCDF-4 file.
 
-The file uses `NCDatasets` and follows CF conventions. Image variables carry
-`CLASS`/`IMAGE_SUBCLASS` attributes so viewers that recognise those conventions
-can display them directly. The `x`, `y`, and `time` dimensions are defined at
-the root level and inherited by all groups.
+The file uses `NCDatasets` and follows CF conventions. The `x`, `y`, and `time`
+dimensions are defined at the root level and inherited by all groups.
 
 Structure:
 
@@ -79,12 +77,11 @@ Structure:
 ├─ 🔢 y(y)          (projection y / northing coordinates, metres)
 ├─ 🔢 time(time)    (seconds since 1970-01-01)
 ├─ 🔢 falsecolor(x, y, band_falsecolor)
-│  └─ 🏷️ CLASS, IMAGE_MINMAXRANGE, IMAGE_SUBCLASS, IMAGE_VERSION,
-│        INTERLACE_MODE, description, grid_mapping
+│  └─ 🏷️ description, grid_mapping
 ├─ 🔢 truecolor(x, y, band_truecolor)
 │  └─ (same attributes as falsecolor)
 ├─ 🔢 labeled_image(x, y)
-│  └─ 🏷️ CLASS, IMAGE_MINMAXRANGE, IMAGE_SUBCLASS, description, grid_mapping
+│  └─ 🏷️ description, grid_mapping
 ├─ 🔢 cloud_mask(x, y)
 ├─ 🔢 coastal_buffer_mask(x, y)
 ├─ 🔢 ice_mask(x, y)
@@ -216,34 +213,14 @@ function save_hdf5(output_path::AbstractString, s::V3;)
         nc_create_floe_properties(ds, s.props, "labeled_image")
     end
 
-    # The netCDF-C library reserves the "CLASS" attribute name (it is used
-    # internally by HDF5 for typed datasets).  We set it after closing the
-    # NCDatasets handle by writing directly to the underlying HDF5 file.
-    image_paths = [
-        "/falsecolor",
-        "/truecolor",
-        "/labeled_image",
-        "/cloud_mask",
-        "/landmask",
-        "/coastal_buffer_mask",
-        "/ice_mask",
-    ]
-    h5open(output_path, "r+") do file
-        for path in image_paths
-            attrs(file[path])["CLASS"] = "IMAGE"
-        end
-    end
-
     return nothing
 end
 
 """
     nc_create_mask_dataset(grp, name, mask, description, projection_dataset_name)
 
-Define a `UInt8` binary mask variable with dimensions `(y, x)` in the NCDatasets
-group `grp`. The parent group must supply the `x` and `y` dimensions. Standard
-image attributes (`CLASS`, `IMAGE_SUBCLASS`, `IMAGE_MINMAXRANGE`, `grid_mapping`,
-`description`) are attached to the variable.
+Define a `UInt8` binary mask variable with dimensions `(x, y)` in the NCDatasets
+group `grp`. The parent group must supply the `x` and `y` dimensions.
 """
 function nc_create_mask_dataset(
     grp::NCDataset,
@@ -254,8 +231,6 @@ function nc_create_mask_dataset(
 )
     mask_uint8 = permutedims(UInt8.(Bool.(mask)), (2, 1))  # (nx, ny)
     v = defVar(grp, name, UInt8, ("x", "y"))
-    v.attrib["IMAGE_SUBCLASS"] = "IMAGE_GRAYSCALE"
-    v.attrib["IMAGE_MINMAXRANGE"] = UInt8[minimum(mask_uint8), maximum(mask_uint8)]
     v.attrib["description"] = description
     v.attrib["grid_mapping"] = projection_dataset_name
     v[:, :] = mask_uint8
@@ -280,8 +255,6 @@ function nc_create_labeled_dataset(
     T = choose_dtype(mx)
     labeled_T = permutedims(T.(labeled), (2, 1))  # (nx, ny)
     v = defVar(grp, name, T, ("x", "y"))
-    v.attrib["IMAGE_SUBCLASS"] = "IMAGE_INDEXED"
-    v.attrib["IMAGE_MINMAXRANGE"] = T[T(minimum(labeled)), maximum(labeled_T)]
     v.attrib["description"] = description
     v.attrib["grid_mapping"] = projection_dataset_name
     v[:, :] = labeled_T
@@ -305,10 +278,6 @@ function nc_create_color_dataset(
 )
     img_raw = permutedims(UInt8.(rawview(channelview(img))), (3, 2, 1))  # (nx, ny, nchannels)
     v = defVar(grp, name, UInt8, ("x", "y", band_dim_name))
-    v.attrib["IMAGE_SUBCLASS"] = "IMAGE_TRUECOLOR"
-    v.attrib["IMAGE_VERSION"] = "1.2"
-    v.attrib["INTERLACE_MODE"] = "INTERLACE_PLANE"
-    v.attrib["IMAGE_MINMAXRANGE"] = UInt8[0, 255]
     v.attrib["description"] = description
     v.attrib["grid_mapping"] = projection_dataset_name
     v[:, :, :] = img_raw
