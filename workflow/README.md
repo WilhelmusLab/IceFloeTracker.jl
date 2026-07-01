@@ -152,7 +152,7 @@ Files produced in the workflow include:
   - `landmask.tiff` – the landmask for the region,
   - `coastal_buffer_mask.tiff` – the dilated landmask,
 - Observation and pipeline results files, organized by observation and pipeline directory `scene/{region}.{scale}m.{date_}.{satellite}/{pipeline}/`, e.g. `scene/beaufort_sea.250m.2019-03-23.aqua/LopezAcosta2019/`:
-  - `segmentation.hdf5` – the combined results file with segmentation results, floe masks, floe properties etc.,
+  - `segmentation.nc` – the combined results file with segmentation results, floe masks, floe properties etc.,
   - `labels_map.tiff` – the floe labels from the segmentation,
   - `segment_mean_truecolor.tiff` – each region in `labels_map.tiff` with the mean color of that region from `truecolor.tiff`,
   - `segment_mean_falsecolor.tiff` – each region in `labels_map.tiff` with the mean color of that region from `falsecolor.tiff`,

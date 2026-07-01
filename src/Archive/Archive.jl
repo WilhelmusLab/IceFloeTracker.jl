@@ -1,7 +1,7 @@
 
 module Archive
 
-using HDF5, NCDatasets, Images, Dates, TimeZones, DataFrames
+using NCDatasets, Images, Dates, TimeZones, DataFrames
 import ..Geospatial: latlon
 import ..Segmentation: regionprops_table, converttounits!
 import ..ImageUtils: binarize_mask
@@ -20,7 +20,7 @@ end
     convert_missing_to_nan!(df)
     convert_missing_to_nan(df)
 
-Convert missing values in Float64 columns of the DataFrame `df` to `NaN` to allow saving as HDF5.
+Convert missing values in Float64 columns of the DataFrame `df` to `NaN` to allow saving as HDF5/NetCDF.
 """
 function convert_missing_to_nan!(df::DataFrame)
     for (col_name, col_data) in pairs(eachcol(df))
@@ -40,24 +40,19 @@ end
 """
     load(input_path::AbstractString)
 
-Load an IceFloeTracker.jl HDF5 file. 
+Load an IceFloeTracker.jl archive file. 
 """
 function load(input_path::AbstractString)
-    version = h5open(input_path, "r") do file
-        VersionNumber(attrs(file)["file_version"])
+    version = NCDataset(input_path, "r") do file
+        VersionNumber(file.attrib["file_version"])
     end
-    if version == VersionNumber("1.0.0")
-        h5open(input_path, "r") do file
-            return _load_v1(file)
-        end
-    elseif version == VersionNumber("3.0.0")
+    if version == VersionNumber("3.0.0")
         return _load_v3(input_path)
     else
         error("Unsupported file version: $version")
     end
 end
 
-include("./V1.jl")
 include("./V3.jl")
 
 end
