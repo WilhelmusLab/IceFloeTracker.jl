@@ -38,11 +38,11 @@ function convert_missing_to_nan(df::DataFrame)
 end
 
 """
-    load_hdf5(input_path::AbstractString)
+    load(input_path::AbstractString)
 
 Load an IceFloeTracker.jl HDF5 file. 
 """
-function load_hdf5(input_path::AbstractString)
+function load(input_path::AbstractString)
     version = h5open(input_path, "r") do file
         VersionNumber(attrs(file)["file_version"])
     end
