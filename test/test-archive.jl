@@ -2,7 +2,7 @@
     using NCDatasets
     mktemp() do output_path, _
         NCDataset(output_path, "c") do ds
-            ds.attrib["file_version"] = "0.0.0"
+            ds.attrib["ift_archive_version"] = "0.0.0"
             return nothing
         end
         @test_throws "file version" Archive.load(output_path)
@@ -74,7 +74,7 @@ end
     mktemp() do output_path, _
         Archive.save(output_path, data)
         NCDataset(output_path, "r") do ds
-            @test ds.attrib["file_version"] == "1.0.0"
+            @test ds.attrib["ift_archive_version"] == "1.0.0"
             @test ds.attrib["ift_version"] == "0.0.0"
             @test ds.attrib["reference"] == "https://doi.org/00.0000"
             @test ds.attrib["contact"] == "contact@example.com"
