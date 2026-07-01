@@ -213,7 +213,7 @@ function save_hdf5(output_path::AbstractString, s::V3;)
         )
 
         # floe properties: one variable per property column
-        nc_create_floe_properties(ds, s.props, crs_name, "labeled_image")
+        nc_create_floe_properties(ds, s.props, "labeled_image")
     end
 
     # The netCDF-C library reserves the "CLASS" attribute name (it is used
@@ -322,33 +322,57 @@ Define one netCDF variable per column in the `props` DataFrame, all sharing a
 `floe` dimension. Integer columns are stored as `Int64`; floating-point columns
 as `Float64` with a `NaN` fill value; other columns as `String`. The `label`
 variable links each floe back to pixel values in the labeled image via the group
-attributes `label_variable` and `labeled_image`.
+attributes `label_variable` and `labeled_image`. CF `units`, `long_name`, and
+`standard_name` attributes are attached to each recognized column.
 """
 function nc_create_floe_properties(
-    grp::NCDataset,
-    props::DataFrame,
-    crs_name::AbstractString="",
-    labeled_image_path::AbstractString="labeled_image",
+    grp::NCDataset, props::DataFrame, labeled_image_path::AbstractString="labeled_image"
 )
     props_ = convert_missing_to_nan(props)
     nfloes = nrow(props_)
 
     defDim(grp, "floe", nfloes)
 
-    grp.attrib["Description"] = (
-        "Area units (`area`, `convex_area`) are in sq. kilometers, " *
-        "length units (`minor_axis_length`, `major_axis_length`, and `perimeter`) " *
-        "in kilometers, and `orientation` in radians. " *
-        "Latitude and longitude coordinates are in degrees, and the " *
-        "stereographic coordinates `x_floe` and `y_floe` are in metres relative to the " *
-        "$crs_name projection."
-    )
     grp.attrib["label_variable"] = "label"
     grp.attrib["labeled_image"] = labeled_image_path
 
     # "x" and "y" are already taken by the root-level coordinate variables;
     # remap the floe stereographic-coordinate columns to avoid the name clash.
     col_name_map = Dict("x" => "x_floe", "y" => "y_floe")
+
+    # CF units and metadata keyed by the original DataFrame column name.
+    col_attrs = Dict(
+        "label" => (
+            long_name="floe label",
+            comment="Pixel values in $labeled_image_path equal these labels",
+        ),
+        "area" => (units="km^2", long_name="floe area"),
+        "convex_area" => (units="km^2", long_name="convex hull area"),
+        "minor_axis_length" => (units="km", long_name="minor axis length"),
+        "major_axis_length" => (units="km", long_name="major axis length"),
+        "perimeter" => (units="km", long_name="perimeter"),
+        "orientation" => (units="rad", long_name="orientation angle"),
+        "latitude" => (
+            units="degrees_north",
+            standard_name="latitude",
+            long_name="latitude of floe centroid",
+        ),
+        "longitude" => (
+            units="degrees_east",
+            standard_name="longitude",
+            long_name="longitude of floe centroid",
+        ),
+        "x" => (
+            units="m",
+            standard_name="projection_x_coordinate",
+            long_name="x coordinate of floe centroid",
+        ),
+        "y" => (
+            units="m",
+            standard_name="projection_y_coordinate",
+            long_name="y coordinate of floe centroid",
+        ),
+    )
 
     for col_name in names(props_)
         nc_name = get(col_name_map, col_name, col_name)
@@ -363,17 +387,10 @@ function nc_create_floe_properties(
             defVar(grp, nc_name, String, ("floe",))
         end
 
-        if col_name == "label"
-            v.attrib["long_name"] = "floe label"
-            v.attrib["comment"] = "Pixel values in $labeled_image_path equal these labels"
-        elseif col_name == "x"
-            v.attrib["standard_name"] = "projection_x_coordinate"
-            v.attrib["long_name"] = "x coordinate of floe centroid"
-            v.attrib["units"] = "m"
-        elseif col_name == "y"
-            v.attrib["standard_name"] = "projection_y_coordinate"
-            v.attrib["long_name"] = "y coordinate of floe centroid"
-            v.attrib["units"] = "m"
+        if haskey(col_attrs, col_name)
+            for (k, val) in pairs(col_attrs[col_name])
+                v.attrib[string(k)] = val
+            end
         end
 
         if nfloes > 0
@@ -414,8 +431,11 @@ function _load_v3(input_path::AbstractString)
             raw = collect(permutedims(Array(ds[varname].var), (3, 2, 1)))  # (nb, ny, nx)
             nb = size(raw, 1)
             n0f8 = reinterpret(N0f8, raw)
-            return nb == 3 ? collect(colorview(RGB{N0f8}, n0f8)) :
-                   collect(colorview(RGBA{N0f8}, n0f8))
+            return if nb == 3
+                collect(colorview(RGB{N0f8}, n0f8))
+            else
+                collect(colorview(RGBA{N0f8}, n0f8))
+            end
         end
         truecolor = read_color("truecolor")
         falsecolor = read_color("falsecolor")
@@ -435,7 +455,7 @@ function _load_v3(input_path::AbstractString)
         # Floe properties: all variables sharing the "floe" dimension, in file order.
         # Reverse the x_floe/y_floe name remapping applied during save.
         col_name_remap = Dict("x_floe" => "x", "y_floe" => "y")
-        prop_cols = Pair{String, AbstractVector}[]
+        prop_cols = Pair{String,AbstractVector}[]
         for varname in keys(ds)
             v = ds[varname]
             "floe" ∈ dimnames(v) || continue
