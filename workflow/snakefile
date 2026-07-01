@@ -88,7 +88,7 @@ rule region_case_results_by_filetype:
                 ("cloud_mask", "tiff"), 
                 ("ice_mask", "tiff"), 
                 ("config", "txt"), 
-                ("segmentation", "hdf5"),
+                ("segmentation", "nc"),
                 ("props_raw", "csv"),
                 ("props_crs", "csv")
             ]
@@ -259,7 +259,7 @@ rule load_truecolor:
     shell:
         "{config[LOADER]} {output} --kind truecolor "
         "--crs {params.crs} --bbox {params.bbox} --scale {wildcards.scale} "
-        "--datetime {wildcards.date} --satellite {wildcards.satellite}"
+        "--datetime {wildcards.date} --satellite {wildcards.satellite} --no-validate"
 
 rule load_falsecolor:
     output:
@@ -272,7 +272,7 @@ rule load_falsecolor:
     shell:
         "{config[LOADER]} {output} --kind bands721 "
         "--crs {params.crs} --bbox {params.bbox} --scale {wildcards.scale} "
-        "--datetime {wildcards.date} --satellite {wildcards.satellite}"
+        "--datetime {wildcards.date} --satellite {wildcards.satellite} --no-validate"
 
 rule load_cloud:
     output:
@@ -285,7 +285,7 @@ rule load_cloud:
     shell:
         "{config[LOADER]} {output} --kind cloud "
         "--crs {params.crs} --bbox {params.bbox} --scale {wildcards.scale} "
-        "--datetime {wildcards.date} --satellite {wildcards.satellite}"
+        "--datetime {wildcards.date} --satellite {wildcards.satellite} --no-validate"
 
 
 rule load_raw_landmask:
@@ -299,7 +299,7 @@ rule load_raw_landmask:
     shell:
         "{config[LOADER]} {output} --kind landmask "
         "--crs {params.crs} --bbox {params.bbox} --scale {wildcards.scale} "
-        "--datetime {wildcards.year}-01-01"
+        "--datetime {wildcards.year}-01-01 --no-validate"
 
 
 rule load_landmask:
@@ -511,13 +511,15 @@ rule tracking:
 # ARCHIVAL RULES
 # ============================================================================
 
-rule observation_hdf5:
+
+rule observation_netcdf:
     output:
-        "{dir}/{pipeline}/segmentation.hdf5"
+        "{dir}/{pipeline}/segmentation.nc"
     input:
         crs_ref_image = "{dir}/truecolor.tiff",
         truecolor = "{dir}/truecolor.tiff",
         falsecolor = "{dir}/falsecolor.tiff",
+        cloud = "{dir}/cloud.tiff",        
         labels_map = "{dir}/{pipeline}/labels_map.tiff",
         cloud_mask = "{dir}/{pipeline}/cloud_mask.tiff",
         landmask = "{dir}/landmask.tiff",
@@ -525,22 +527,25 @@ rule observation_hdf5:
         coastal_buffer_mask = "{dir}/coastal_buffer_mask.tiff",
         ice_mask = "{dir}/{pipeline}/ice_mask.tiff",
         props_crs = "{dir}/{pipeline}/props_crs.csv",
+        ift_config = "{dir}/{pipeline}/config.txt",
         init_ift = "init/init_ift"
     shell:
         """
         {config[IFT]} -e 'using IceFloeTracker, TimeZones, FileIO, Images, DataFrames;
-        data = IceFloeTracker.HDF5.V1(
+        data = IceFloeTracker.Archive.V1(
             passtime = read("{input.passtime}", String) |> chomp |> ZonedDateTime,
-            crs_ref_image_path = "{input.crs_ref_image}",
-            truecolor_path = "{input.truecolor}",
-            falsecolor_path = "{input.falsecolor}",
+            crs = latlon("{input.crs_ref_image}"),
+            modis_truecolor = load("{input.truecolor}"),
+            modis_falsecolor = load("{input.falsecolor}"),
+            modis_cloud = load("{input.cloud}"),
             labeled = load("{input.labels_map}") .|> x-> reinterpret(UInt16, x),
             props = load("{input.props_crs}")|> DataFrame,
             landmask = load("{input.landmask}") |> binarize_mask,
             coastal_buffer_mask = load("{input.coastal_buffer_mask}") |> binarize_mask,
             ice_mask = load("{input.ice_mask}") |> binarize_mask,
             cloud_mask = load("{input.cloud_mask}") |> binarize_mask,
+            ift_configuration = read("{input.ift_config}", String),
         )
-        save_hdf5("{output}", data)
+        Archive.save("{output}", data)
         '
         """

@@ -30,8 +30,8 @@ include("Tracking/Tracking.jl")
 @reexport using .Tracking
 
 # Persistence
-include("HDF5/HDF5.jl")
-@reexport using .HDF5
+include("Archive/Archive.jl")
+@reexport using .Archive
 
 # Pipelines
 include("Pipeline/LopezAcosta2019.jl")
