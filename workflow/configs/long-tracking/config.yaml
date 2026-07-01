@@ -1,1 +1,0 @@
-CASE_CSV: configs/long-tracking/case.csv # relative to snakefile
