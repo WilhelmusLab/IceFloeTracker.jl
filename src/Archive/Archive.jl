@@ -6,8 +6,6 @@ import ..Geospatial: latlon
 import ..Segmentation: regionprops_table, converttounits!
 import ..ImageUtils: binarize_mask
 
-export save_hdf5, load_hdf5
-
 function choose_dtype(mx::T) where {T<:Integer}
     types = [UInt8, Int8, UInt16, Int16, UInt32, Int32, UInt64, Int64]
     for t_ in types

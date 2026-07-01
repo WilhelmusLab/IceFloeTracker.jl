@@ -540,7 +540,7 @@ rule observation_hdf5:
             ice_mask = load("{input.ice_mask}") |> binarize_mask,
             cloud_mask = load("{input.cloud_mask}") |> binarize_mask,
         )
-        save_hdf5("{output}", data)
+        Archive.save("{output}", data)
         '
         """
 
@@ -577,6 +577,6 @@ rule observation_netcdf:
             ice_mask = load("{input.ice_mask}") |> binarize_mask,
             cloud_mask = load("{input.cloud_mask}") |> binarize_mask,
         )
-        save_hdf5("{output}", data)
+        Archive.save("{output}", data)
         '
         """

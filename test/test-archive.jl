@@ -35,7 +35,7 @@ end
 
 @testitem "Archive.V1 saved have the right fields" setup = [ArchiveV1] begin
     mktemp() do output_path, _
-        save_hdf5(output_path, data;)
+        Archive.save(output_path, data;)
         h5open(output_path, "r") do file
             @test attrs(file)["file_version"] === "1.0.0"
             @test attrs(file)["iftversion"] === "0.0.0"
@@ -57,7 +57,7 @@ end
 
 @testitem "Archive.V1 saved can be reloaded correctly" setup = [ArchiveV1] begin
     mktemp() do output_path, _
-        save_hdf5(output_path, data;)
+        Archive.save(output_path, data;)
         reloaded = load_hdf5(output_path)
         @test reloaded.passtime == data.passtime
         @test reloaded.crs_ref_image_path == data.crs_ref_image_path
@@ -80,7 +80,7 @@ end
     data.props[2, :convex_area] = NaN
     @show data.props
     mktemp() do output_path, _
-        save_hdf5(output_path, data;)
+        Archive.save(output_path, data;)
         reloaded = load_hdf5(output_path)
         @test isequal(reloaded.props, data.props)
     end
@@ -92,7 +92,7 @@ end
     convex_area = allowmissing!(data.props, :convex_area)
     data.props[2, :convex_area] = missing
     mktemp() do output_path, _
-        save_hdf5(output_path, data;)
+        Archive.save(output_path, data;)
         reloaded = load_hdf5(output_path)
         @test isequal(reloaded.props[1, :], data.props[1, :])
         @test isequal(reloaded.props[2, :convex_area], NaN)  # missing becomes a NaN when saved and reloaded
@@ -172,7 +172,7 @@ end
 
 @testitem "Archive.V3 saved has the right global attributes" setup = [ArchiveV3] begin
     mktemp() do output_path, _
-        save_hdf5(output_path, data)
+        Archive.save(output_path, data)
         NCDataset(output_path, "r") do ds
             @test ds.attrib["file_version"] == "3.0.0"
             @test ds.attrib["iftversion"] == "0.0.0"
@@ -184,7 +184,7 @@ end
 
 @testitem "Archive.V3 saved has the right variables" setup = [ArchiveV3] begin
     mktemp() do output_path, _
-        save_hdf5(output_path, data)
+        Archive.save(output_path, data)
         NCDataset(output_path, "r") do ds
             # coordinate variables
             @test haskey(ds, "x")
@@ -217,7 +217,7 @@ end
     ArchiveV3
 ] begin
     mktemp() do output_path, _
-        save_hdf5(output_path, data)
+        Archive.save(output_path, data)
         NCDataset(output_path, "r") do ds
             @test "band_modis_truecolor" in dimnames(ds["modis_truecolor"])
             @test "band_modis_falsecolor" in dimnames(ds["modis_falsecolor"])
@@ -230,7 +230,7 @@ end
 @testitem "Archive.V3 can be saved with NaNs in the props" setup = [ArchiveV3] begin
     data.props[2, :convex_area] = NaN
     mktemp() do output_path, _
-        @test_nowarn save_hdf5(output_path, data)
+        @test_nowarn Archive.save(output_path, data)
     end
 end
 
@@ -240,13 +240,13 @@ end
     allowmissing!(data.props, :convex_area)
     data.props[2, :convex_area] = missing
     mktemp() do output_path, _
-        @test_nowarn save_hdf5(output_path, data)
+        @test_nowarn Archive.save(output_path, data)
     end
 end
 
 @testitem "Archive.V3 saved can be reloaded correctly" setup = [ArchiveV3] begin
     mktemp() do output_path, _
-        save_hdf5(output_path, data)
+        Archive.save(output_path, data)
         reloaded = load_hdf5(output_path)
         @test reloaded.passtime == data.passtime
         @test reloaded.crs[:crs_wkt] == data.crs[:crs_wkt]

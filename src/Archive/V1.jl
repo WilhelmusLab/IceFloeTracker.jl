@@ -17,7 +17,7 @@
         contact::AbstractString = "mmwilhelmus@brown.edu",
     )
 
-An object with results from a single segmentation to be saved as an HDF5 file with [`save_hdf5`](@ref). 
+An object with results from a single segmentation to be saved as an HDF5 file with [`save`](@ref). 
 
 Includes:
 
@@ -58,7 +58,7 @@ Includes:
 end
 
 """
-    save_hdf5(path, V1(args...))
+    save(path, V1(args...))
 
 Write the [`V1`](@ref) object to storage.
 
@@ -106,7 +106,7 @@ The structure is:
    ├─ 🔢 x
    └─ 🔢 y
 """
-function save_hdf5(output_path::AbstractString, v1::V1;)
+function save(output_path::AbstractString, v1::V1;)
     ptsunix = Int64(Dates.datetime2unix(DateTime(v1.passtime)))
     latlondata = latlon(v1.crs_ref_image_path)
 

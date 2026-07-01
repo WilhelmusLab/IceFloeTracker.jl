@@ -18,7 +18,7 @@
     )
 
 An object with results from a single segmentation to be saved as a proper
-netCDF-4 file with [`save_hdf5`](@ref).
+netCDF-4 file with [`save`](@ref).
 
 Includes:
 
@@ -61,7 +61,7 @@ Includes:
 end
 
 """
-    save_hdf5(path, V3(args...))
+    save(path, V3(args...))
 
 Write the [`V3`](@ref) object to storage as a proper netCDF-4 file.
 
@@ -96,7 +96,7 @@ Structure:
 ```
 
 """
-function save_hdf5(output_path::AbstractString, s::V3;)
+function save(output_path::AbstractString, s::V3;)
     ptsunix = Int64(Dates.datetime2unix(DateTime(s.passtime)))
     latlondata = s.crs
 
@@ -414,7 +414,7 @@ end
 """
     _load_v3(input_path)
 
-Load a V3 netCDF-4 file written by [`save_hdf5`](@ref) and return a [`V3`](@ref) object.
+Load a V3 netCDF-4 file written by [`save`](@ref) and return a [`V3`](@ref) object.
 """
 function _load_v3(input_path::AbstractString)
     NCDataset(input_path, "r") do ds
