@@ -91,8 +91,8 @@ Structure:
 ├─ 🔢 coastal_buffer_mask(x, y)
 ├─ 🔢 ice_mask(x, y)
 ├─ 🔢 landmask(x, y)
-├─ 🔢 label(floe)   (links pixel values in labeled_image to rows here)
-└─ 🔢 <column>(floe) for every other column in the props DataFrame
+├─ 🔢 floe_label(floe_label)   (links pixel values in labeled_image to rows here)
+└─ 🔢 floe_<column>(floe_label) for every other column in the props DataFrame
 ```
 
 """
@@ -330,7 +330,7 @@ end
     nc_create_floe_properties(grp, props, crs_name, labeled_image_path)
 
 Define one netCDF variable per column in the `props` DataFrame, all sharing a
-`floe` dimension. Integer columns are stored as `Int64`; floating-point columns
+`floe_label` dimension. Integer columns are stored as `Int64`; floating-point columns
 as `Float64` with a `NaN` fill value; other columns as `String`. The `label`
 variable links each floe back to pixel values in the labeled image via the group
 attributes `label_variable` and `labeled_image`. CF `units`, `long_name`, and
@@ -342,14 +342,10 @@ function nc_create_floe_properties(
     props_ = convert_missing_to_nan(props)
     nfloes = nrow(props_)
 
-    defDim(grp, "floe", nfloes)
+    defDim(grp, "floe_label", nfloes)
 
-    grp.attrib["label_variable"] = "label"
+    grp.attrib["label_variable"] = "floe_label"
     grp.attrib["labeled_image"] = labeled_image_path
-
-    # "x" and "y" are already taken by the root-level coordinate variables;
-    # remap the floe stereographic-coordinate columns to avoid the name clash.
-    col_name_map = Dict("x" => "x_floe", "y" => "y_floe")
 
     # CF units and metadata keyed by the original DataFrame column name.
     col_attrs = Dict(
@@ -386,16 +382,16 @@ function nc_create_floe_properties(
     )
 
     for col_name in names(props_)
-        nc_name = get(col_name_map, col_name, col_name)
+        nc_name = "floe_" * col_name
         col_data = props_[!, col_name]
         T = eltype(col_data)
 
         v = if T <: Integer
-            defVar(grp, nc_name, Int64, ("floe",))
+            defVar(grp, nc_name, Int64, ("floe_label",))
         elseif T <: AbstractFloat
-            defVar(grp, nc_name, Float64, ("floe",); fillvalue=NaN)
+            defVar(grp, nc_name, Float64, ("floe_label",); fillvalue=NaN)
         else
-            defVar(grp, nc_name, String, ("floe",))
+            defVar(grp, nc_name, String, ("floe_label",))
         end
 
         if haskey(col_attrs, col_name)
@@ -464,14 +460,13 @@ function _load_v3(input_path::AbstractString)
         ice_mask = read_mask("ice_mask")
         coastal_buffer_mask = read_mask("coastal_buffer_mask")
 
-        # Floe properties: all variables sharing the "floe" dimension, in file order.
-        # Reverse the x_floe/y_floe name remapping applied during save.
-        col_name_remap = Dict("x_floe" => "x", "y_floe" => "y")
+        # Floe properties: all variables sharing the "floe_label" dimension, in file order.
+        # Strip the "floe_" prefix to recover original DataFrame column names.
         prop_cols = Pair{String,AbstractVector}[]
         for varname in keys(ds)
             v = ds[varname]
-            "floe" ∈ dimnames(v) || continue
-            col_name = get(col_name_remap, varname, varname)
+            "floe_label" ∈ dimnames(v) || continue
+            col_name = startswith(varname, "floe_") ? varname[6:end] : varname
             # Use .var to bypass fill-value masking so NaN is preserved as NaN
             push!(prop_cols, col_name => Array(v.var))
         end
