@@ -33,10 +33,6 @@ include("Tracking/Tracking.jl")
 include("Archive/Archive.jl")
 @reexport using .Archive
 
-# Pipelines
-include("Pipeline/FSPipeline.jl")
-export FSPipeline
-
 include("Pipeline/LopezAcosta2019.jl")
 export LopezAcosta2019
 
