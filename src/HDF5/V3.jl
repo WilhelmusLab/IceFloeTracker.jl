@@ -1,7 +1,7 @@
 """
     IceFloeTracker.HDF5.V3(;
         passtime::ZonedDateTime,
-        crs_ref_image_path::AbstractString,
+        crs::NamedTuple,
         truecolor::AbstractMatrix{<:Union{RGB,RGBA}},
         falsecolor::AbstractMatrix{<:Union{RGB,RGBA}},
         labeled::AbstractMatrix,
@@ -23,7 +23,7 @@ Includes:
 
 - References
   - `passtime`: the timepoint of the observation
-  - `crs_ref_image_path`: the path to a georeferenced image
+  - `crs`: the CRS and geospatial data for the image, as returned by [`latlon`](@ref)
   - `truecolor`: the truecolor image
   - `falsecolor`: the falsecolor image
   - `iftversion`: the version of IceFloeTracker.jl used to save the file
@@ -42,7 +42,7 @@ Includes:
 """
 @kwdef struct V3
     passtime::ZonedDateTime
-    crs_ref_image_path::AbstractString
+    crs::NamedTuple
     truecolor::AbstractMatrix{<:Union{RGB,RGBA}}
     falsecolor::AbstractMatrix{<:Union{RGB,RGBA}}
     labeled::AbstractMatrix
@@ -96,7 +96,7 @@ Structure:
 """
 function save_hdf5(output_path::AbstractString, s::V3;)
     ptsunix = Int64(Dates.datetime2unix(DateTime(s.passtime)))
-    latlondata = latlon(s.crs_ref_image_path)
+    latlondata = s.crs
 
     crs_code = latlondata[:crs]
     crs_name = get_crs_name(crs_code)
@@ -113,7 +113,6 @@ function save_hdf5(output_path::AbstractString, s::V3;)
         ds.attrib["iftversion"] = string(s.iftversion)
         ds.attrib["reference"] = s.reference
         ds.attrib["contact"] = s.contact
-        ds.attrib["crs_ref_image_path"] = s.crs_ref_image_path
 
         # Dimensions defined at root are inherited by all groups
         defDim(ds, "x", nx)
@@ -127,6 +126,7 @@ function save_hdf5(output_path::AbstractString, s::V3;)
         vcrs.attrib["spatial_ref"] = latlondata[:crs_wkt]
         vcrs.attrib["long_name"] = "CRS Definition"
         vcrs.attrib["GeoTransform"] = join(Int64.(latlondata[:geotransform]), " ")
+        vcrs.attrib["EPSG"] = Int32(latlondata[:crs])
         vcrs[] = Int32(0)
 
         # x coordinate variable
@@ -395,7 +395,15 @@ function _load_v3(input_path::AbstractString)
         file_version = VersionNumber(ds.attrib["file_version"])
         reference = ds.attrib["reference"]
         contact = ds.attrib["contact"]
-        crs_ref_image_path = ds.attrib["crs_ref_image_path"]
+
+        # Reconstruct CRS data from the geolocation variable
+        geoloc = ds["geolocation"]
+        crs_wkt = geoloc.attrib["crs_wkt"]
+        crs_code = Int64(geoloc.attrib["EPSG"])
+        geotransform = parse.(Float64, split(geoloc.attrib["GeoTransform"]))
+        X = Array(ds["x"].var)
+        Y = Array(ds["y"].var)
+        crs = (crs=crs_code, crs_wkt=crs_wkt, X=X, Y=Y, geotransform=geotransform)
 
         # passtime — raw Int64 stored as "seconds since 1970-01-01"
         ptsunix = Int64(ds["time"].var[1])
@@ -439,7 +447,7 @@ function _load_v3(input_path::AbstractString)
 
         return V3(;
             passtime,
-            crs_ref_image_path,
+            crs,
             truecolor,
             falsecolor,
             labeled,

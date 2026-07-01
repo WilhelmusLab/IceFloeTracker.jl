@@ -153,7 +153,7 @@ end
     props[!, :y] = zeros(nrow(props))
     data = IceFloeTracker.HDF5.V3(;
         passtime=ZonedDateTime(pass_time(case), tz"UTC"),
-        crs_ref_image_path=modis_truecolor_path(case),
+        crs=latlon(modis_truecolor_path(case)),
         truecolor=modis_truecolor(case),
         falsecolor=modis_falsecolor(case),
         labeled=validated_labeled_floes(case) |> labels_map,
@@ -244,7 +244,8 @@ end
         save_hdf5(output_path, data)
         reloaded = load_hdf5(output_path)
         @test reloaded.passtime == data.passtime
-        @test reloaded.crs_ref_image_path == data.crs_ref_image_path
+        @test reloaded.crs[:crs_wkt] == data.crs[:crs_wkt]
+        @test reloaded.crs[:crs] == data.crs[:crs]
         @test reloaded.iftversion == data.iftversion
         @test reloaded.reference == data.reference
         @test reloaded.contact == data.contact
