@@ -30,7 +30,7 @@
 
     @testset "IceDetectionBrightnessPeaksMODIS721" begin
         f = IceDetectionBrightnessPeaksMODIS721(;
-            band_7_max=5 / 255, possible_ice_threshold=75 / 255, nbins=64
+            band_7_max=5 / 255, possible_ice_threshold=75 / 255
         )
 
         dataset = Watkins2026Dataset(; ref="v0.2")
@@ -48,7 +48,7 @@
 
         # Make sure we can all the new option
         f2 = IceDetectionBrightnessPeaksMODIS721(;
-            band_7_max=5 / 255, possible_ice_threshold=75 / 255, nbins=64, join_method="union"
+            band_7_max=5 / 255, possible_ice_threshold=75 / 255, join_method="union"
         )
         intersect_method = binarize(modis_falsecolor(case), f)
         union_method = binarize(modis_falsecolor(case), f2)
@@ -56,7 +56,7 @@
 
         # Test whether it will default to intersect as intended
         f3 = IceDetectionBrightnessPeaksMODIS721(;
-            band_7_max=5 / 255, possible_ice_threshold=75 / 255, nbins=64, join_method="divide"
+            band_7_max=5 / 255, possible_ice_threshold=75 / 255, join_method="divide"
         )
         alt_method = binarize(modis_falsecolor(case), f3)
         @test allequal(alt_method .== intersect_method)
