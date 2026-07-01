@@ -66,6 +66,7 @@ end
         reference="https://doi.org/00.0000",
         contact="contact@example.com",
         creation_date=ZonedDateTime(2024, 6, 15, 12, 6, 3, tz"UTC"),
+        ift_configuration="IceFloeTracker.jl v0.0.0\n\nLopezAcosta2019Tiling.Segment\n",
     )
 end
 
@@ -78,6 +79,8 @@ end
             @test ds.attrib["reference"] == "https://doi.org/00.0000"
             @test ds.attrib["contact"] == "contact@example.com"
             @test ds.attrib["creation_date"] == "2024-06-15T12:06:03+00:00"
+            @test ds.attrib["ift_configuration"] ==
+                "IceFloeTracker.jl v0.0.0\n\nLopezAcosta2019Tiling.Segment\n"
         end
     end
 end
@@ -164,5 +167,6 @@ end
         @test reloaded.ice_mask == Bool.(data.ice_mask)
         @test reloaded.coastal_buffer_mask == Bool.(data.coastal_buffer_mask)
         @test isequal(reloaded.props, data.props)
+        @test reloaded.ift_configuration == data.ift_configuration
     end
 end

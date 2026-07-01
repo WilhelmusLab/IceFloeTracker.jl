@@ -16,6 +16,7 @@
         reference::AbstractString = "https://doi.org/10.1016/j.rse.2019.111406",
         contact::AbstractString = "mmwilhelmus@brown.edu",
         creation_date::ZonedDateTime = now(tz"UTC"),
+        ift_configuration::AbstractString = "",
     )
 
 An object with results from a single segmentation to be saved as a proper
@@ -34,6 +35,7 @@ Includes:
   - `reference`: a DOI for the dataset to which the file belongs
   - `contact`: contact information for the author
   - `creation_date`: ISO8601 timestamp of when the object was created (defaults to now)
+  - `ift_configuration`: free-text description of the IFT configuration used to produce the file (e.g. the contents of `config.txt`)
 - Images
   - `labeled`: the labeled image of connected components
   - `cloud_mask`: the cloud mask
@@ -61,6 +63,7 @@ Includes:
     reference::AbstractString = "https://doi.org/10.1016/j.rse.2019.111406"
     contact::AbstractString = "mmwilhelmus@brown.edu"
     creation_date::ZonedDateTime = now(tz"UTC")
+    ift_configuration::AbstractString = ""
 end
 
 """
@@ -121,6 +124,7 @@ function save(output_path::AbstractString, s::V1;)
         ds.attrib["creation_date"] = Dates.format(
             s.creation_date, dateformat"yyyy-mm-ddTHH:MM:SSz"
         )
+        ds.attrib["ift_configuration"] = s.ift_configuration
 
         # Dimensions defined at root are inherited by all groups
         defDim(ds, "x", nx)
@@ -508,6 +512,7 @@ function _load_v1(input_path::AbstractString)
             reference,
             contact,
             creation_date,
+            ift_configuration,
         )
     end
 end
