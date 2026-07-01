@@ -50,7 +50,7 @@ function latlon(imgpath::AbstractString)
     lonlat = [trans(x, y) for y in Y, x in X]
     lon = first.(lonlat)
     lat = last.(lonlat)
-    data = (
+    data = (;
         crs=toEPSG(importWKT(p)),
         crs_wkt=toWKT(importWKT(p)),
         longitude=lon,
