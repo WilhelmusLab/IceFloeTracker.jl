@@ -139,8 +139,8 @@ The image preprocessing is supplied as an function in the functor setup.
     preprocessing_algorithm = Preprocess()
     tile_size_pixels = 1200
     min_tile_ice_pixel_count=300
-    min_floe_size=100,
-    max_floe_size=50_000,
+    min_floe_size=100
+    max_floe_size=50_000
     kmeans_params = (k=4, maxiter=50, random_seed=45)
     preliminary_ice_mask = IceDetectionBrightnessPeaksMODIS134(band_1_min=0.3)
     cluster_selection_algorithm = IceDetectionBrightnessPeaksMODIS721(
