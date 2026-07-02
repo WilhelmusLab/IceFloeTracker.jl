@@ -1,4 +1,5 @@
-import ..Morphology: fill_holes
+import ..Morphology: fill_holes, strel_disk
+import ..Segmentation: remove_small_segments!, remove_low_contrast_segments!
 import Images:
     AbstractRGB,
     TransparentRGB,
@@ -8,6 +9,7 @@ import Images:
     green,
     channelview,
     colorview,
+    label_components,
     StackedView,
     strel_diamond,
     strel_box,
@@ -15,6 +17,7 @@ import Images:
     opening,
     mreconstruct,
     imfill
+
 
 abstract type AbstractCloudMaskAlgorithm end
 
@@ -222,24 +225,24 @@ function (f::Watkins2026CloudMask)(img::AbstractArray{<:Union{AbstractRGB,Transp
 
     b2 = green.(img)
     b7 = red.(img)
-    init_mask = (b2 .> tau_b2) .&& (b7 .> tau_b7)
+    init_mask = (b2 .> f.band_2_threshold) .&& (b7 .> f.band_7_threshold)
     
     # end early if no pixels flagged
     !maximum(init_mask) && return init_mask
 
     # remove speckle
-    init_mask .= opening(init_mask, opening_strel)
+    init_mask .= opening(init_mask, f.opening_strel)
 
     # expand mask
-    init_mask .= dilate(init_mask, dilation_strel)
+    init_mask .= dilate(init_mask, f.dilation_strel)
 
     # label blank components for object-based methods (background == clouds)
     labels = label_components(.!init_mask) 
-    remove_small_segments!(labels, min_hole_size)
+    remove_small_segments!(labels, f.min_hole_size)
     maximum(labels) .== 0 && return labels .== 0
 
     # remove low-contrast segments
-    remove_low_contrast_segments!(labels, b2, min_contrast, max_fill_size)
+    remove_low_contrast_segments!(labels, b2, f.min_contrast, f.max_fill_size)
 
     return labels .== 0
 end
