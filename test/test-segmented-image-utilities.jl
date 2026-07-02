@@ -292,3 +292,27 @@ end
     @test 0.2 > minimum(Float64.(Gray.(cview1))) > 0.1
     @test 0.6 > minimum(Float64.(Gray.(cview2))) > 0.5
 end
+
+@testitem "remove segments" begin
+    
+    using IceFloeTracker
+
+    A = [   0 0 0 0 0 0 0 0 0
+            0 1 1 1 0 0 0 0 0
+            0 1 1 1 0 0 0 0 0
+            0 1 1 1 0 0 0 0 0
+            0 0 0 0 0 0 0 0 0
+            0 0 0 0 0 2 2 0 0
+            0 0 0 0 0 2 2 0 0
+            0 0 0 0 0 0 0 0 0
+            0 0 0 0 0 0 0 0 0
+        ]
+
+    remove_small_segments!(A, 5)
+    @test unique(A) == [0, 1]
+
+    remove_large_segments!(A, 5)
+    @test unique(A) == [0]
+
+end
+

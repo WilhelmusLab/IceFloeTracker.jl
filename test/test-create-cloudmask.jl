@@ -59,4 +59,7 @@ end
     cmask_orig_img = create_cloudmask(modis_falsecolor(case), cmask_orig)
     cmask_morpho_img = create_cloudmask(modis_falsecolor(case), cmask_morpho)
     @test sum(cmask_orig_img) >= sum(cmask_morpho_img)
+
+    cmask_object_img = create_cloudmask(modis_falsecolor(case), Watkins2026CloudMask())
+    @test sum(cmask_orig_img) <= sum(cmask_object_img)
 end
