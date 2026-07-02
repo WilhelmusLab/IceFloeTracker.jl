@@ -1,5 +1,5 @@
 import ..Morphology: fill_holes, strel_disk
-import ..Segmentation: remove_small_segments!, remove_low_contrast_segments!
+import IceFloeTracker.Segmentation: remove_small_segments!, remove_low_contrast_segments!
 import Images:
     AbstractRGB,
     TransparentRGB,
