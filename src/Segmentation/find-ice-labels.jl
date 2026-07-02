@@ -71,7 +71,6 @@ function get_ice_peaks(
     mx, argmx = findmax(pks_df.proms)
     mx < minimum_prominence && return Inf
     return edges[pks_df[argmx, :indices]]
-
 end
 
 """
@@ -155,7 +154,7 @@ IceDetectionBrightnessPeaksMODIS721(0.0196078431372549, 0.29411764705882354, 64,
 @kwdef struct IceDetectionBrightnessPeaksMODIS721 <: IceDetectionAlgorithm
     band_7_max::Real
     possible_ice_threshold::Real
-    nbins::Int64 = 64
+    nbins::Int64 = 128
     minimum_prominence::Float64 = 0.01
     window_size::Int64 = 3
     join_method = "intersection"
@@ -351,7 +350,7 @@ tiles can be provided and the algorithm will be run on each tile.
     band_1_min=0.3
     window_size=3
     minimum_prominence=0.01
-    nbins=64
+    nbins=128
 end
 
 function (f::IceDetectionBrightnessPeaksMODIS134)(
