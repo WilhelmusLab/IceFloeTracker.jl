@@ -1,10 +1,8 @@
 module FSPipeline
 """
-Update of the LopezAcosta2019 algorithm for the Fram Strait floe trajectory dataset. Key updates:
-    * Separating segmentation algorithm components for clearer functions
-    * Implementation of the tiling workflow
-    * Simpler watershed transformation steps
-    * Exposure of algorithm settings to the user
+
+Simplified segmentation pipeline with calibrated parameters for the Greenland Sea / Fram Strait workflow.
+
 """
 
 using Images
@@ -37,7 +35,6 @@ import ..Segmentation:
     expand_labels,
     find_ice_mask, 
     kmeans_binarization,
-    kmeans_segmentation,
     tiled_adaptive_binarization,
     IceDetectionBrightnessPeaksMODIS721,
     IceDetectionBrightnessPeaksMODIS134,
@@ -78,7 +75,7 @@ abstract type IceFloePreprocessingAlgorithm end
 """
 @kwdef struct Preprocess <: IceFloePreprocessingAlgorithm
     diffusion_algorithm = PeronaMalikDiffusion(λ=0.1, K=0.1, niters=5, g="exponential")
-    adapthisteq_params = (nbins=256, rblocks=16, cblocks=8, clip=2)
+    adapthisteq_params = (nbins=256, rblocks=8, cblocks=4, clip=5)
     unsharp_mask_params = (radius=50, amount=0.2, threshold=0.01)
 end
 
@@ -112,7 +109,6 @@ function (p::Preprocess)(
     return proc_img
 end
 
-
 """
     FSPipeline.Segment()
 
@@ -141,10 +137,10 @@ The image preprocessing is supplied as an function in the functor setup.
     coastal_buffer_structuring_element::AbstractMatrix{Bool} = strel_box((51,51))
     cloud_mask_algorithm = Watkins2025CloudMask()
     preprocessing_algorithm = Preprocess()
-    tile_size_pixels = 600
+    tile_size_pixels = 1200
     min_tile_ice_pixel_count=300
-    min_floe_size=100
-    max_floe_size=50_000
+    min_floe_size=100,
+    max_floe_size=50_000,
     kmeans_params = (k=4, maxiter=50, random_seed=45)
     preliminary_ice_mask = IceDetectionBrightnessPeaksMODIS134(band_1_min=0.3)
     cluster_selection_algorithm = IceDetectionBrightnessPeaksMODIS721(
@@ -155,6 +151,7 @@ The image preprocessing is supplied as an function in the functor setup.
     floe_splitting_settings = (max_fill_area=1, min_area_opening=20, opening_strel=strel_disk(2))
     # TBD: Add updated floe splitting settings, add params for k-means cleanup
 end 
+
 
 function (p::Segment)(
     truecolor::T₁,
@@ -209,8 +206,9 @@ function (p::Segment)(
     # We use the cloud mask in finding the bright floes - the bright floe cluster can't be cloud -
     # and allow the k-means cluster to overlap with the cloud mask by using the preproc gray with
     # only the landmask applied to it
+    # Alternative approach: simply use the adaptive threshold binarization. 
     kmeans_result = kmeans_binarization(
-            preproc_gray,
+            apply_landmask(preproc_gray, cloud_mask),
             fc_masked,
             filtered_tiles;
             k=p.kmeans_params.k,
@@ -218,28 +216,23 @@ function (p::Segment)(
             random_seed=p.kmeans_params.random_seed,
             cluster_selection_algorithm=p.cluster_selection_algorithm
             )
-
-    kmeans_seg = kmeans_segmentation(
-            preproc_gray,
-            filtered_tiles;
-            k=p.kmeans_params.k,
-            maxiter=p.kmeans_params.maxiter,
-            random_seed=p.kmeans_params.random_seed
-            )
-
      # update to have settings accessible from top
+    kmeans_result .= clean_binary_floes(kmeans_result, prelim_ice_mask, cloud_mask)
+    # kmeans_result = tiled_adaptive_binarization(apply_landmask(preproc_gray, cloud_mask),
+    #     filtered_tiles;
+    #     minimum_window_size=400,
+    #     minimum_brightness=0.3,
+    #     threshold_percentage=0
+    #     ) .> 0 
     kmeans_result .= clean_binary_floes(kmeans_result, prelim_ice_mask, cloud_mask)
 
     @info "Splitting floes"
     # Could tile this, but doesn't seem to be a major bottleneck
-    split_floes = dist_morph_split(kmeans_result;
-        max_distance=7,
-        min_floe_size=p.min_floe_size,
-        max_floe_size=p.max_floe_size
-    ) # update to have morph split settings
+    split_floes = dist_morph_split(kmeans_result; max_distance=7) # update to have morph split settings
     # TBD: Filter floes based on the edge properties, colors
 
-    @info "Filtering floes"    
+    @info "Filtering floes"
+    
     # Remove floes which intersect the coastal buffer
     # This one could be a separate function like remove_small_segments!
     overlap = unique(split_floes[coastal_buffer_mask])
@@ -249,27 +242,24 @@ function (p::Segment)(
     end
 
     remove_small_segments!(split_floes, p.min_floe_size)
-    
-    # TBD: Object-based analysis section. Use the edge strength, circularity, uniqueness, etc.
-
+    remove_large_segments!(split_floes, p.max_floe_size)
     # Re-label to fill where regions were deleted
     split_floes .= label_components(split_floes)
 
     # Return the original truecolor image, segmented
-    segments_tc = SegmentedImage(truecolor, split_floes)
-    segments_fc = SegmentedImage(falsecolor, split_floes)
-    
+    segments_tc = SegmentedImage(truecolor_image, split_floes)
+    segments_fc = SegmentedImage(falsecolor_image, split_floes)
+
     if !isnothing(intermediate_results_callback)
-        colorview_truecolor = n0f8.(view_seg(segments_tc))
-        colorview_falsecolor = n0f8.(view_seg(segments_fc))
-        colorview_random =  n0f8.(view_seg_random(segments_tc))
-        kmeans_colorized = n0f8.(view_seg_random(kmeans_seg))
+        colorview_truecolor = view_seg(segments_tc)
+        colorview_falsecolor = view_seg(segments_fc)
+        colorview_random =  view_seg_random(segments_tc)
         intermediate_results_callback(;
             truecolor,
             falsecolor,
-            coastal_buffer_mask=coastal_buffer_mask,
-            cloud_mask=cloud_mask,
-            ice_mask=prelim_ice_mask,
+            coastal_buffer_mask=Gray.(coastal_buffer_mask),
+            cloud_mask=Gray.(cloud_mask),
+            ice_mask=Gray.(prelim_ice_mask),
             preprocessed=preproc_gray,
             bright_ice_mask=p.cluster_selection_algorithm(falsecolor_image),            
             binarized=kmeans_result,
@@ -277,7 +267,6 @@ function (p::Segment)(
             labels_map = split_floes,
             segment_mean_falsecolor=colorview_falsecolor,
             segment_mean_truecolor=colorview_truecolor,
-            kmeans_colorized=kmeans_colorized
             ) 
     end
     return segments_tc
@@ -313,8 +302,7 @@ end
 """
     dist_morph_split(
         binary_floes::BitMatrix;
-        min_floe_size::Real=64,
-        max_floe_size::Real=50_000,
+        min_floe_size::Int64=64,
         max_hole_fill::Int64=2000,
         max_distance::Int64=5,
         max_expand::Int64=3,
@@ -338,8 +326,7 @@ After traversing the pyramid, relabel matrix, and remove any objects smaller tha
 """
 function dist_morph_split(
         binary_floes::BitMatrix;
-        min_floe_size::Real=64, # TBD: add maximum floe size
-        max_floe_size::Real=50_000, # This should be an integer, but for some reason a Float is coming through
+        min_floe_size::Int64=64, # TBD: add maximum floe size
         max_hole_fill::Int64=2000,
         max_distance::Int64=5,
         max_expand::Int64=3,
@@ -383,8 +370,6 @@ function dist_morph_split(
     end
     final_labels .= label_components(final_labels)
     remove_small_segments!(final_labels, min_floe_size)
-    remove_large_segments!(final_labels, max_floe_size)
-    # TODO: objectwise_fill_holes!()
     return final_labels
 end
 
@@ -437,7 +422,7 @@ Track shapes across images using the LogLogQuadratic distance filter, the Chaine
 and the MinimumWeightMatchingFunction.
 
 """
-function Track(;
+function Track(
     filter_function=ChainedFilterFunction(;
         filters=[
             DistanceThresholdFilter(
