@@ -7,7 +7,9 @@ import Images:
     feature_transform,
     distance_transform,
     component_lengths,
-    component_indices
+    component_indices,
+    N0f8
+    
 
 using DataFrames
 using Random
