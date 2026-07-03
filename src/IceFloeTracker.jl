@@ -34,10 +34,6 @@ include("HDF5/HDF5.jl")
 @reexport using .HDF5
 
 # Pipelines
-include("Pipeline/LopezAcosta2019.jl")
-export LopezAcosta2019
-
-include("Pipeline/LopezAcosta2019Tiling.jl")
-export LopezAcosta2019Tiling
+include("Pipeline/Pipeline.jl")
 
 end

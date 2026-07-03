@@ -23,7 +23,6 @@ export addlatlon!,
     IceDetectionBrightnessPeaksMODIS134,
     IceDetectionBrightnessPeaksMODIS721,
     IceDetectionFirstNonZeroAlgorithm,
-    IceFloeSegmentationAlgorithm,
     PerimeterEstimationAlgorithm,
     PolygonConvexArea,
     PixelConvexArea,
@@ -32,14 +31,14 @@ export addlatlon!,
     remove_small_segments!,
     remove_large_segments!,
     remove_low_contrast_segments!,
+    segment_mean_map,
     SegmentationComparison,
     segmentation_comparison,
     SegmentationSummary,
     segmentation_summary,
     stitch_clusters,
     view_seg,
-    view_seg_random,
-    segment_mean_map
+    view_seg_random
 
 include("abstract-algorithms.jl")
 include("find-ice-labels.jl")
