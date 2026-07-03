@@ -89,13 +89,7 @@
         water = sum(.! prelim_ice .&& .! clouds .&& .! land) ./ prod(size(land))
         @test 0.26 < water < 0.28
     end
-end
 
-@testitem "get_ice_peaks" begin
-    using Images: binarize, n0f8, float64, n4f12, n0f8, float64, n4f12, load, Gray
-    import DelimitedFiles: readdlm, writedlm
-
-    include("config.jl")
     @testset "get_ice_peaks" begin
         using Random
         using Images: build_histogram
@@ -176,61 +170,66 @@ end
         pk = get_ice_peaks(edges, counts)
         @test pk == 0.859375
     end
-    @testset "binarize" begin
-        @testset "matlab comparison" begin
-            @testset "example 1" begin
-                import IceFloeTracker.LopezAcosta2019: IceDetectionLopezAcosta2019
-                import Images: gray
-                falsecolor_image = float64.(
-                    load(falsecolor_test_image_file)[test_region...]
-                )
-                landmask = convert(BitMatrix, load(current_landmask_file)[test_region...])
-                ice_labels_matlab = readdlm("$(test_data_dir)/ice_labels_matlab.csv", ',')
-                ice_labels_matlab = vec(ice_labels_matlab)
-                ice_binary_new = binarize(
-                    masker(landmask)(falsecolor_image), IceDetectionLopezAcosta2019()
-                )
-                get_ice_labels = r -> findall(vec(gray.(r)) .> 0)
-                ice_labels_julia_new = get_ice_labels(ice_binary_new)
-                @test ice_labels_julia_new == ice_labels_matlab
-            end
-        end
-        @testset "validated data" begin
+end
+
+@testitem "Binarization" begin
+    using Images: binarize, n0f8, float64, n4f12, n0f8, float64, n4f12, load, Gray
+    import DelimitedFiles: readdlm, writedlm
+
+    include("config.jl")
+    
+    @testset "MATLAB comparison" begin
+        import IceFloeTracker.LopezAcosta2019: IceDetectionLopezAcosta2019
+        import Images: gray
+        falsecolor_image = float64.(
+            load(falsecolor_test_image_file)[test_region...]
+        )
+        landmask = convert(BitMatrix, load(current_landmask_file)[test_region...])
+        ice_labels_matlab = readdlm("$(test_data_dir)/ice_labels_matlab.csv", ',')
+        ice_labels_matlab = vec(ice_labels_matlab)
+        ice_binary_new = binarize(
+            masker(landmask)(falsecolor_image), IceDetectionLopezAcosta2019()
+        )
+        get_ice_labels = r -> findall(vec(gray.(r)) .> 0)
+        ice_labels_julia_new = get_ice_labels(ice_binary_new)
+        @test ice_labels_julia_new == ice_labels_matlab
+    end
+
+    @testset "validated data" begin
+        import IceFloeTracker.LopezAcosta2019: IceDetectionLopezAcosta2019
+        dataset = Watkins2026Dataset(; ref="v0.2")
+        case = first(
+            filter(c -> (c.case_number == 12 && c.satellite == "terra"), dataset)
+        )
+        landmask = modis_landmask(case)
+        falsecolor = modis_falsecolor(case)
+        baseline = binarize(falsecolor, IceDetectionLopezAcosta2019())
+        baseline_mask = binarize(
+            masker(landmask)(falsecolor), IceDetectionLopezAcosta2019()
+        )
+        fc_masked = masker(landmask)(falsecolor)
+
+        @testset "IceDetectionLopezAcosta2019 type invariant" begin
             import IceFloeTracker.LopezAcosta2019: IceDetectionLopezAcosta2019
-            dataset = Watkins2026Dataset(; ref="v0.2")
-            case = first(
-                filter(c -> (c.case_number == 12 && c.satellite == "terra"), dataset)
-            )
-            landmask = modis_landmask(case)
-            falsecolor = modis_falsecolor(case)
-            baseline = binarize(falsecolor, IceDetectionLopezAcosta2019())
-            baseline_mask = binarize(
-                masker(landmask)(falsecolor), IceDetectionLopezAcosta2019()
-            )
-            fc_masked = masker(landmask)(falsecolor)
+            algorithm = IceDetectionLopezAcosta2019()
+            @test binarize(n0f8.(falsecolor), algorithm) == baseline
+            @test binarize(float64.(falsecolor), algorithm) == baseline
+            @test binarize(n4f12.(falsecolor), algorithm) == baseline broken = true
+            @test binarize(n0f8.(fc_masked), algorithm) == baseline_mask
+            @test binarize(float64.(fc_masked), algorithm) == baseline_mask
+            @test binarize(n4f12.(fc_masked), algorithm) == baseline_mask broken = true
+        end
 
-            @testset "IceDetectionLopezAcosta2019 type invariant" begin
-                import IceFloeTracker.LopezAcosta2019: IceDetectionLopezAcosta2019
-                algorithm = IceDetectionLopezAcosta2019()
-                @test binarize(n0f8.(falsecolor), algorithm) == baseline
-                @test binarize(float64.(falsecolor), algorithm) == baseline
-                @test binarize(n4f12.(falsecolor), algorithm) == baseline broken = true
-                @test binarize(n0f8.(fc_masked), algorithm) == baseline_mask
-                @test binarize(float64.(fc_masked), algorithm) == baseline_mask
-                @test binarize(n4f12.(fc_masked), algorithm) == baseline_mask broken = true
-            end
-
-            @testset "IceDetectionThresholdMODIS721 type invariant" begin
-                algorithm = IceDetectionThresholdMODIS721(;
-                    band_7_max=(5 / 255), band_2_min=(230 / 255), band_1_min=(240 / 255)
-                )
-                @test binarize(n0f8.(falsecolor), algorithm) == baseline
-                @test binarize(float64.(falsecolor), algorithm) == baseline
-                @test binarize(n4f12.(falsecolor), algorithm) == baseline broken = true
-                @test binarize(n0f8.(fc_masked), algorithm) == baseline_mask
-                @test binarize(float64.(fc_masked), algorithm) == baseline_mask
-                @test binarize(n4f12.(fc_masked), algorithm) == baseline_mask broken = true
-            end
+        @testset "IceDetectionThresholdMODIS721 type invariant" begin
+            algorithm = IceDetectionThresholdMODIS721(;
+                band_7_max=(5 / 255), band_2_min=(230 / 255), band_1_min=(240 / 255)
+            )
+            @test binarize(n0f8.(falsecolor), algorithm) == baseline
+            @test binarize(float64.(falsecolor), algorithm) == baseline
+            @test binarize(n4f12.(falsecolor), algorithm) == baseline broken = true
+            @test binarize(n0f8.(fc_masked), algorithm) == baseline_mask
+            @test binarize(float64.(fc_masked), algorithm) == baseline_mask
+            @test binarize(n4f12.(fc_masked), algorithm) == baseline_mask broken = true
         end
     end
 end
