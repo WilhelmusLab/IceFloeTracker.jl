@@ -35,7 +35,7 @@ include("HDF5/HDF5.jl")
 
 # Pipelines
 include("Pipeline/Pipeline.jl")
-@rexport using .Pipeline
+@reexport using .Pipeline
 
 include("Pipeline/LopezAcosta2019.jl")
 export LopezAcosta2019
