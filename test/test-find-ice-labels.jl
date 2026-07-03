@@ -163,7 +163,7 @@ end
         end
         @testset "get_ice_peaks" begin
             using Random
-            using Images: build_histogram
+            using Images: build_histogram, Gray
             Random.seed!(123)
             img = Gray.(rand(0:255, 10, 10) ./ 255)
             edges, counts = build_histogram(img, 64; minval=0, maxval=1)
@@ -252,7 +252,7 @@ end
                 ice_labels_matlab = readdlm("$(test_data_dir)/ice_labels_matlab.csv", ',')
                 ice_labels_matlab = vec(ice_labels_matlab)
                 ice_binary_new = binarize(
-                    masker(landmask)(falsecolor_image), IceDetectionLopezAcosta2019()
+                    masker(landmask)(falsecolor_image), LopezAcosta2019.IceDetectionLopezAcosta2019()
                 )
                 ice_labels_julia_new = get_ice_labels(ice_binary_new)
                 @test ice_labels_julia_new == ice_labels_matlab
@@ -265,7 +265,7 @@ end
                 ice_labels_ice_floe_region_new = get_ice_labels(
                     binarize(
                         masker(landmask)(falsecolor_image)[ice_floe_test_region...],
-                        IceDetectionLopezAcosta2019(),
+                        LopezAcosta2019.IceDetectionLopezAcosta2019(),
                     ),
                 )
                 @test ice_labels_ice_floe_region_new == [84787, 107015]
