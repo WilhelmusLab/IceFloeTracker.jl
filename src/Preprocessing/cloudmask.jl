@@ -1,5 +1,5 @@
 import ..Morphology: fill_holes, strel_disk
-import IceFloeTracker.Segmentation: remove_small_segments!, remove_low_contrast_segments!
+import ..Segmentation: remove_small_segments!, remove_low_contrast_segments!
 import Images:
     AbstractRGB,
     TransparentRGB,
@@ -286,6 +286,7 @@ function create_cloudmask(
     return f(false_color_image)
 end
 
+# dmw: I think the apply_cloudmask functions can all be removed
 """
     apply_cloudmask(false_color_image, cloudmask)
 
