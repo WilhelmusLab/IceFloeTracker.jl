@@ -63,7 +63,7 @@
     end
 
     @testset "IceDetectionLopezAcosta2019" begin
-        fc = IceDetectionLopezAcosta2019()
+        fc = LopezAcosta2019.IceDetectionLopezAcosta2019()
 
         dataset = Watkins2026Dataset(; ref="v0.2")
         case = first(filter(c -> (c.case_number == 12 && c.satellite == "terra"), dataset))
@@ -120,7 +120,7 @@ end
             )
             landmask = modis_landmask(case)
             falsecolor = modis_falsecolor(case)
-            algorithm = IceDetectionLopezAcosta2019()
+            algorithm = LopezAcosta2019.IceDetectionLopezAcosta2019()
             @test binarize(falsecolor, algorithm) == algorithm(falsecolor)
         end
     end
@@ -132,7 +132,7 @@ end
             )
             landmask = modis_landmask(case)
             falsecolor = modis_falsecolor(case)
-            algorithm = IceDetectionLopezAcosta2019()
+            algorithm = LopezAcosta2019.IceDetectionLopezAcosta2019()
             @test binarize(falsecolor, algorithm) == algorithm(falsecolor)
         end
     end
@@ -272,6 +272,7 @@ end
             end
         end
         @testset "validated data" begin
+            import IceFloeTracker.LopezAcosta2019: IceDetectionLopezAcosta2019
             dataset = Watkins2026Dataset(; ref="v0.2")
             case = first(
                 filter(c -> (c.case_number == 12 && c.satellite == "terra"), dataset)

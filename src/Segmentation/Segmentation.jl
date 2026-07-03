@@ -40,7 +40,6 @@ export addlatlon!,
     view_seg,
     view_seg_random
 
-include("abstract-algorithms.jl")
 include("find-ice-labels.jl")
 include("k-means-segmentation.jl")
 include("regionprops.jl")

@@ -67,7 +67,6 @@ import ..Preprocessing:
 
 import ..Segmentation:
     expand_labels,
-    IceFloeSegmentationAlgorithm,
     find_ice_mask,
     kmeans_binarization,
     IceDetectionFirstNonZeroAlgorithm,
