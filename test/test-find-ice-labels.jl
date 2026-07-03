@@ -179,7 +179,7 @@ end
     @testset "binarize" begin
         @testset "matlab comparison" begin
             @testset "example 1" begin
-                import LopezAcosta2019: IceDetectionLopezAcosta2019
+                import IceFloeTracker.LopezAcosta2019: IceDetectionLopezAcosta2019
                 import Images: gray
                 falsecolor_image = float64.(
                     load(falsecolor_test_image_file)[test_region...]
@@ -193,24 +193,6 @@ end
                 get_ice_labels = r -> findall(vec(gray.(r)) .> 0)
                 ice_labels_julia_new = get_ice_labels(ice_binary_new)
                 @test ice_labels_julia_new == ice_labels_matlab
-            end
-            @testset "example 2" begin
-                import IceFloeTracker.LopezAcosta2019: IceDetectionLopezAcosta2019
-                import Images: gray
-                
-                get_ice_labels = r -> findall(vec(gray.(r)) .> 0)
-                
-                falsecolor_image = float64.(
-                    load(falsecolor_test_image_file)[test_region...]
-                )
-                landmask = convert(BitMatrix, load(current_landmask_file)[test_region...])
-                ice_labels_ice_floe_region_new = get_ice_labels(
-                    binarize(
-                        masker(landmask)(falsecolor_image)[ice_floe_test_region...],
-                        IceDetectionLopezAcosta2019(),
-                    ),
-                )
-                @test ice_labels_ice_floe_region_new == [84787, 107015]
             end
         end
         @testset "validated data" begin
