@@ -67,12 +67,14 @@ import ..Preprocessing:
 
 import ..Segmentation:
     expand_labels,
-    find_ice_mask,
     kmeans_binarization,
     IceDetectionFirstNonZeroAlgorithm,
     IceDetectionBrightnessPeaksMODIS721,
     IceDetectionThresholdMODIS721,
     segment_mean_map
+
+import ..Pipeline:
+    IceFloeSegmentationAlgorithm
 
 import ..Tracking: FloeTracker, FilterFunction, MinimumWeightMatchingFunction
 import Dates: Day

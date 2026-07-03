@@ -1,6 +1,6 @@
 import ImageBinarization: 
     AbstractImageBinarizationAlgorithm, 
-    binarize,
+    binarize, 
     AdaptiveThreshold
 
 import Images:
@@ -17,6 +17,7 @@ import Images:
     blue,
     alpha,
     alphacolor
+
 import Peaks: 
     findmaxima, 
     peakproms!, 
@@ -26,8 +27,6 @@ import DataFrames:
     DataFrame, 
     sort, 
     Not
-
-import ..ImageUtils: masker
 
 """
     get_ice_peaks(
@@ -83,7 +82,6 @@ function get_ice_peaks(
     mx, argmx = findmax(pks_df.proms)
     mx < minimum_prominence && return Inf
     return edges[pks_df[argmx, :indices]]
-
 end
 
 """
@@ -235,45 +233,6 @@ function (f::IceDetectionFirstNonZeroAlgorithm)(out, img, args...; kwargs...)
     # In case we don't find anything, we're going to return zeros
     @. out = zero(eltype(out))
     return nothing
-end
-
-"""
-    find_ice_labels(falsecolor_image, landmask; band_7_threshold, band_2_threshold, band_1_threshold, band_7_relaxed_threshold, band_1_relaxed_threshold, possible_ice_threshold)
-
-Returns pixel indices of likely ice from false color reflectance image, using the thresholds from the Ice Floe Tracker article: Remote Sensing of the Environment 234 (2019) 111406.
-
-# Arguments
-- `falsecolor_image`: corrected reflectance false color image - bands [7,2,1]
-- `landmask`: bitmatrix landmask for region of interest
-- `band_7_threshold`: threshold value used to identify ice in band 7, N0f8(RGB intensity/255)
-- `band_2_threshold`: threshold value used to identify ice in band 2, N0f8(RGB intensity/255)
-- `band_1_threshold`: threshold value used to identify ice in band 2, N0f8(RGB intensity/255)
-- `band_7_relaxed_threshold`: threshold value used to identify ice in band 7 if not found on first pass, N0f8(RGB intensity/255)
-- `band_1_relaxed_threshold`: threshold value used to identify ice in band 1 if not found on first pass, N0f8(RGB intensity/255)
-
-"""
-function find_ice_labels(
-    falsecolor_image::Matrix{RGB{Float64}}, landmask::BitMatrix; kwargs...
-)
-    ice_labels = find_ice_mask(falsecolor_image, landmask) |> get_ice_labels
-    return ice_labels
-end
-
-function find_ice_mask(
-    falsecolor_image::Matrix{RGB{Float64}}, landmask::BitMatrix; kwargs...
-)
-    masked_image = masker(landmask)(falsecolor_image)
-    algorithm = IceDetectionLopezAcosta2019(; kwargs...)
-    ice_mask = binarize(masked_image, algorithm)
-    return ice_mask
-end
-
-function get_ice_labels(ice::AbstractArray{<:TransparentGray})
-    return findall(vec(gray.(ice) .* alpha.(ice)) .> 0)
-end
-
-function get_ice_labels(ice::AbstractArray{<:AbstractGray})
-    return findall(vec(gray.(ice)) .> 0)
 end
 
 """

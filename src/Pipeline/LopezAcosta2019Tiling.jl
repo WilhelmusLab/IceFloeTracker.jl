@@ -35,18 +35,9 @@ import Images:
     segment_mean,
     Equalization
 
-import ..ImageUtils: 
-    get_brighten_mask, 
-    to_uint8, 
-    imcomplement, 
-    imbrighten, 
-    get_tiles
+import ..ImageUtils: get_brighten_mask, to_uint8, imcomplement, imbrighten, get_tiles
 
-import ..Filtering: 
-    unsharp_mask, 
-    conditional_histeq, 
-    rgb2gray, 
-    imgradientmag
+import ..Filtering: unsharp_mask, conditional_histeq, rgb2gray, imgradientmag
 
 import ..Preprocessing:
     apply_landmask,
@@ -77,11 +68,10 @@ import ..Segmentation:
     IceDetectionThresholdMODIS721,
     segment_mean_map
 
-import ..Tracking: 
-    FloeTracker, 
-    FilterFunction, 
-    MinimumWeightMatchingFunction
+import ..Pipeline:
+    IceFloeSegmentationAlgorithm
 
+import ..Tracking: FloeTracker, FilterFunction, MinimumWeightMatchingFunction
 import Dates: Day
 import ..Pipeline: IceFloeSegmentationAlgorithm
 

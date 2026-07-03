@@ -11,9 +11,6 @@ export addlatlon!,
     converttounits,
     ConvexAreaEstimationAlgorithm,
     expand_labels,
-    find_ice_labels,
-    find_ice_mask,
-    get_ice_labels,
     get_ice_peaks,
     kmeans_binarization,
     kmeans_segmentation,
@@ -40,7 +37,7 @@ export addlatlon!,
     view_seg,
     view_seg_random
 
-include("find-ice-labels.jl")
+include("ice-detection-algorithms.jl")
 include("k-means-segmentation.jl")
 include("regionprops.jl")
 include("segmented-image-utilities.jl")
