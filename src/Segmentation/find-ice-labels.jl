@@ -1,4 +1,8 @@
-import ImageBinarization: AbstractImageBinarizationAlgorithm, binarize, AdaptiveThreshold
+import ImageBinarization: 
+    AbstractImageBinarizationAlgorithm, 
+    binarize,
+    AdaptiveThreshold
+
 import Images:
     build_histogram,
     Colorant,
@@ -13,8 +17,16 @@ import Images:
     blue,
     alpha,
     alphacolor
-import Peaks: findmaxima, peakproms!, peakwidths!
-import DataFrames: DataFrame, sort, Not
+import Peaks: 
+    findmaxima, 
+    peakproms!, 
+    peakwidths!
+
+import DataFrames: 
+    DataFrame, 
+    sort, 
+    Not
+
 import ..ImageUtils: masker
 
 """
@@ -226,47 +238,6 @@ function (f::IceDetectionFirstNonZeroAlgorithm)(out, img, args...; kwargs...)
 end
 
 """
-    IceDetectionLopezAcosta2019(;
-        band_7_threshold::Float64=Float64(5 / 255),
-        band_2_threshold::Float64=Float64(230 / 255),
-        band_1_threshold::Float64=Float64(240 / 255),
-        band_7_threshold_relaxed::Float64=Float64(10 / 255),
-        band_1_threshold_relaxed::Float64=Float64(190 / 255),
-        possible_ice_threshold::Float64=Float64(75 / 255),
-    )
-
-Returns the first non-zero result of two threshold-based and one brightness-peak based ice detections.
-
-Default thresholds are defined in the published Ice Floe Tracker article: Remote Sensing of the Environment 234 (2019) 111406.
-
-"""
-function IceDetectionLopezAcosta2019(;
-    band_7_max::Float64=Float64(5 / 255),
-    band_2_min::Float64=Float64(230 / 255),
-    band_1_min::Float64=Float64(240 / 255),
-    band_7_max_relaxed::Float64=Float64(10 / 255),
-    band_1_min_relaxed::Float64=Float64(190 / 255),
-    possible_ice_threshold::Float64=Float64(75 / 255),
-)
-    return IceDetectionFirstNonZeroAlgorithm(
-        [
-            IceDetectionThresholdMODIS721(;
-                band_7_max=band_7_max, band_2_min=band_2_min, band_1_min=band_1_min
-            ),
-            IceDetectionThresholdMODIS721(;
-                band_7_max=band_7_max_relaxed,
-                band_2_min=band_2_min,
-                band_1_min=band_1_min_relaxed,
-            ),
-            IceDetectionBrightnessPeaksMODIS721(;
-                band_7_max=band_7_max, possible_ice_threshold=possible_ice_threshold
-            ),
-        ],
-        1,
-    )
-end
-
-"""
     find_ice_labels(falsecolor_image, landmask; band_7_threshold, band_2_threshold, band_1_threshold, band_7_relaxed_threshold, band_1_relaxed_threshold, possible_ice_threshold)
 
 Returns pixel indices of likely ice from false color reflectance image, using the thresholds from the Ice Floe Tracker article: Remote Sensing of the Environment 234 (2019) 111406.
@@ -305,9 +276,6 @@ function get_ice_labels(ice::AbstractArray{<:AbstractGray})
     return findall(vec(gray.(ice)) .> 0)
 end
 
-# TODO: Find the right home for this function
-# TODO: Set up wrapper for applying binarization to a tiled iterator. Let this
-# method be one functor algorithm option, and the version that uses the Peaks as a second.
 """
     tiled_adaptive_binarization(img, tiles; minimum_window_size=). 
 
