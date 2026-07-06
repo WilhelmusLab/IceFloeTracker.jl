@@ -73,6 +73,7 @@ import ..Pipeline:
 
 import ..Tracking: FloeTracker, FilterFunction, MinimumWeightMatchingFunction
 import Dates: Day
+import ..Pipeline: IceFloeSegmentationAlgorithm
 
 # Sample input parameters expected by the main function
 cloud_mask_thresholds = (

@@ -256,3 +256,62 @@ Return an array like `s` where each pixel has the mean intensity or color of its
 function segment_mean_map(s::SegmentedImage)
     map(i -> (segment_mean(s, i)), labels_map(s))
 end
+
+"""
+    remove_small_segments!(labels, min_size)
+
+Set labels in a labeled matrix to 0 if the size is less than `min_size`.
+
+"""
+function remove_small_segments!(labels, min_size)
+    areas = component_lengths(labels)
+    indices = component_indices(labels)
+
+    for L in keys(areas)
+        (L != 0) && begin
+            (areas[L] < min_size) && begin
+                labels[indices[L]] .= 0
+            end
+        end
+    end
+end
+
+"""
+    remove_large_segments!(labels, min_size)
+
+Set labels in a labeled matrix to 0 if the size is greater than `max_size`.
+    
+"""
+function remove_large_segments!(labels, max_size)
+    areas = component_lengths(labels)
+    indices = component_indices(labels)
+
+    for L in keys(areas)
+        (L != 0) && begin
+            (areas[L] > max_size) && begin
+                labels[indices[L]] .= 0
+            end
+        end
+    end
+end
+
+"""
+    remove_low_contrast_segments!(labels, ref_img, min_contrast, max_fill_size)
+
+Computes the contrast (min-max range) of each segment based on ref_img and sets
+those with contrast less than `min_contrast` to zero. Only removes segments which
+are smaller than `max_fill_size`.
+
+"""
+function remove_low_contrast_segments!(labels, ref_img, min_contrast, max_fill_size)
+    areas = component_lengths(labels)
+    indices = component_indices(labels)
+    for L in unique(labels)
+        (L != 0) && (areas[L] < max_fill_size) && begin
+            contrast = maximum(ref_img[indices[L]]) - minimum(ref_img[indices[L]])
+            (contrast < min_contrast) && begin
+                labels[indices[L]] .= 0
+            end
+        end
+    end
+end

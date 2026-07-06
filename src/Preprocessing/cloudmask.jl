@@ -1,4 +1,5 @@
-import ..Morphology: fill_holes
+import ..Morphology: fill_holes, strel_disk
+import ..Segmentation: remove_small_segments!, remove_low_contrast_segments!
 import Images:
     AbstractRGB,
     TransparentRGB,
@@ -8,6 +9,7 @@ import Images:
     green,
     channelview,
     colorview,
+    label_components,
     StackedView,
     strel_diamond,
     strel_box,
@@ -15,6 +17,7 @@ import Images:
     opening,
     mreconstruct,
     imfill
+
 
 abstract type AbstractCloudMaskAlgorithm end
 
@@ -183,7 +186,68 @@ function convert_to_255_matrix(img)::Matrix{Int}
     return round.(Int, img_clamped * 255)
 end
 
-# Potential upgrade: add method to create a sequence of cloud masks
+
+@kwdef struct Watkins2026CloudMask <: AbstractCloudMaskAlgorithm
+    band_7_threshold::Float64 = 0.2
+    band_2_threshold::Float64 = 0.67
+    opening_strel = strel_diamond((3, 3))
+    dilation_strel = strel_disk(2)
+    min_hole_size = 300
+    max_fill_size = 1e4
+    min_contrast = 0.2
+end
+
+"""Watkins2026CloudMask(band_7_threshold, band_2_threshold,
+                        opening_strel, dilation_strel,
+                         min_hole_size, max_fill_size, min_contrast
+                        )
+
+Alternative approach to the Lopez-Acosta joint band 7 / band 2 cloud masking approach.
+In this algorithm, the initial threshold is a simple box around the region in band 2-band 7
+space where most cloudy pixels are found. After the initial mask is defined, it is refined to
+(1) remove speckle, (2) expand the borders to cover cloud edges, (3) fill holes smaller than
+`min_hole_size`, (4) fill holes smaller than `max_fill_size` if the contrast within the hole
+is smaller than `min_contrast`.
+
+Example:
+
+```julia-repl
+julia> using IceFloeTracker
+julia> using IceFloeTracker: Watkins2026Dataset
+julia> dataset = Watkins2026Dataset(; ref="v0.2")
+julia> case = first(filter(c -> (c.case_number == 6 && c.satellite == "terra"), dataset))
+julia> cm_algo = Watkins2026CloudMask()
+julia> cloud_mask = create_cloudmask(modis_falsecolor(case), cm_algo)
+julia> Gray.(cloud_mask)
+```
+"""
+function (f::Watkins2026CloudMask)(img::AbstractArray{<:Union{AbstractRGB,TransparentRGB}})
+
+    b2 = green.(img)
+    b7 = red.(img)
+    init_mask = (b2 .> f.band_2_threshold) .&& (b7 .> f.band_7_threshold)
+    
+    # end early if no pixels flagged
+    !maximum(init_mask) && return init_mask
+
+    # remove speckle
+    init_mask .= opening(init_mask, f.opening_strel)
+
+    # expand mask
+    init_mask .= dilate(init_mask, f.dilation_strel)
+
+    # label blank components for object-based methods (background == clouds)
+    labels = label_components(.!init_mask) 
+    remove_small_segments!(labels, f.min_hole_size)
+    maximum(labels) .== 0 && return labels .== 0
+
+    # remove low-contrast segments
+    remove_low_contrast_segments!(labels, b2, f.min_contrast, f.max_fill_size)
+
+    return labels .== 0
+end
+
+
 """
     create_cloudmask(img, f::AbstractCloudMaskAlgorithm)
 
@@ -206,22 +270,11 @@ In this case, the default values are applied. It can also called using a set of 
 julia> f = LopezAcostaCloudMask(prelim_threshold=110/255, band_7_threshold=200/255, band_2_threshold=190/255, ratio_lower=0.0, ratio_upper=0.75).
 ```
 
-A stricter cloud mask was defined in [2], covering more cloudy pixels while minimally impacting the masking of cloud-covered ice pixels.
+The Watkins2025CloudMask covers more cloudy pixels while minimally impacting the masking of cloud-covered ice pixels.
 
 ```julia-repl
-julia> f = LopezAcostaCloudMask(prelim_threshold=53/255, band_7_threshold=130/255, band_2_threshold=169/255, ratio_lower=0.0, ratio_upper=0.53).
+julia> f = Watkins2025CloudMask(prelim_threshold=53/255, band_7_threshold=130/255, band_2_threshold=169/255, ratio_lower=0.0, ratio_upper=0.53).
 ```
-
-These parameters together define a piecewise linear partition of pixels based on their Band 7 and Band 2 callibrated reflectance. Pixels with intensity above `prelim_threshold` are considered as potential cloudy pixels. Then, pixels with Band 7 reflectance less than `band_7_threshold`, Band 2 reflectance greater than `band_2_threshold`, and Band 7 to Band 2 ratios between `ratio_lower` and `ratio_upper` are removed from the cloud mask (i.e., set to cloud-free).
-
-# Arguments
-- `false_color_image`: corrected reflectance false color image - bands [7,2,1]
-- `prelim_threshold`: threshold value used to identify clouds in band 7, N0f8(RGB intensity/255)
-- `band_7_threshold`: threshold value used to identify cloud-ice in band 7, N0f8(RGB intensity/255)
-- `band_2_threshold`: threshold value used to identify cloud-ice in band 2, N0f8(RGB intensity/255)
-- `ratio_lower`: threshold value used to set lower ratio of cloud-ice in bands 7 and 2
-- `ratio_upper`: threshold value used to set upper ratio of cloud-ice in bands 7 and 2
-- `ratio_offset`: offset value used to adjust the upper ratio of cloud-ice in bands 7 and 2
 
 1. Lopez-Acosta, R., Schodlok, M. P., & Wilhelmus, M. M. (2019). Ice Floe Tracker: An algorithm to automatically retrieve Lagrangian trajectories via feature matching from moderate-resolution visual imagery. Remote Sensing of Environment, 234(111406), 1–15. (https://doi.org/10.1016/j.rse.2019.111406)[https://doi.org/10.1016/j.rse.2019.111406]
 2. Watkins, D.M., Kim, M., Paniagua, C., Divoll, T., Holland, J.G., Hatcher, S., Hutchings, J.K., and Wilhelmus, M.M. (in prep). Calibration and validation of the Ice Floe Tracker algorithm. 
@@ -233,6 +286,7 @@ function create_cloudmask(
     return f(false_color_image)
 end
 
+# dmw: I think the apply_cloudmask functions can all be removed
 """
     apply_cloudmask(false_color_image, cloudmask)
 

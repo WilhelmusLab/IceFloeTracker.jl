@@ -53,10 +53,10 @@ end
         ratio_upper=0.52,
     )
 
-    cmask_orig = LopezAcostaCloudMask(cloud_mask_settings...)
-    cmask_morpho = Watkins2025CloudMask()
-
-    cmask_orig_img = create_cloudmask(modis_falsecolor(case), cmask_orig)
-    cmask_morpho_img = create_cloudmask(modis_falsecolor(case), cmask_morpho)
+    cmask_orig_img = create_cloudmask(modis_falsecolor(case), LopezAcostaCloudMask(cloud_mask_settings...))
+    cmask_morpho_img = create_cloudmask(modis_falsecolor(case),  Watkins2025CloudMask())
     @test sum(cmask_orig_img) >= sum(cmask_morpho_img)
+
+    cmask_object_img = create_cloudmask(modis_falsecolor(case), Watkins2026CloudMask())
+    @test sum(cmask_orig_img) <= sum(cmask_object_img)
 end

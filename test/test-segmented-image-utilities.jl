@@ -292,3 +292,59 @@ end
     @test 0.2 > minimum(Float64.(Gray.(cview1))) > 0.1
     @test 0.6 > minimum(Float64.(Gray.(cview2))) > 0.5
 end
+
+@testitem "remove segments" begin
+    
+    using IceFloeTracker
+
+    A = [   
+            0 0 0 0 0 0 0 0 0
+            0 1 1 1 0 0 0 0 0
+            0 1 1 1 0 0 0 0 0
+            0 1 1 1 0 0 0 0 0
+            0 0 0 0 0 0 0 0 0
+            0 0 0 0 0 2 2 0 0
+            0 0 0 0 0 2 2 0 0
+            0 0 0 0 0 0 0 0 0
+            0 0 0 0 0 0 0 0 0
+        ]
+
+    # Component 2 has 4 pixels, so it should be removed
+    remove_small_segments!(A, 5)
+    @test unique(A) == [0, 1]
+
+    # Now, component 1 is the only one, and it has more than 5 pixels
+    remove_large_segments!(A, 5)
+    @test unique(A) == [0]
+    
+    # Next to test contrast, we use the original shapes
+    A = [   
+            0 0 0 0 0 0 0 0 0
+            0 1 1 1 0 0 0 0 0
+            0 1 1 1 0 0 0 0 0
+            0 1 1 1 0 0 0 0 0
+            0 0 0 0 0 0 0 0 0
+            0 0 0 0 0 2 2 0 0
+            0 0 0 0 0 2 2 0 0
+            0 0 0 0 0 0 0 0 0
+            0 0 0 0 0 0 0 0 0
+        ]
+    
+    # And add an "img" for which we'll compute contrast. Contrast here
+    B = [   
+            0 0 0 0 0 0 0 0 0
+            0 1 3 1 0 0 0 0 0
+            0 1 1 3 0 0 0 0 0
+            0 1 2 1 0 0 0 0 0
+            0 0 0 0 0 0 0 0 0
+            0 0 0 0 0 2 2 0 0
+            0 0 0 0 0 2 2 0 0
+            0 0 0 0 0 0 0 0 0
+            0 0 0 0 0 0 0 0 0
+        ]    ./ 3     
+
+    remove_low_contrast_segments!(A, B, 0.1, 6)
+    @test unique(A) == [0, 1]
+
+end
+
