@@ -6,10 +6,7 @@ import Images:
     segment_pixel_count,
     feature_transform,
     distance_transform,
-    component_lengths,
-    component_indices,
     N0f8
-    
 
 using DataFrames
 using Random

@@ -173,7 +173,7 @@
 end
 
 @testitem "Binarization" begin
-    using Images: binarize, n0f8, float64, n4f12, n0f8, float64, n4f12, load, Gray
+    using Images: binarize, n0f8, float64, n4f12, load, Gray
     import DelimitedFiles: readdlm, writedlm
 
     include("config.jl")
