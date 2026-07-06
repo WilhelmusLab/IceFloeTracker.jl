@@ -5,7 +5,8 @@ import Images:
     segment_mean,
     segment_pixel_count,
     feature_transform,
-    distance_transform
+    distance_transform,
+    N0f8
 
 using DataFrames
 using Random

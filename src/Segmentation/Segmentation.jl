@@ -11,11 +11,6 @@ export addlatlon!,
     converttounits,
     ConvexAreaEstimationAlgorithm,
     expand_labels,
-    find_ice_labels,
-    find_ice_mask,
-    get_ice_labels_mask,
-    get_ice_labels,
-    get_ice_masks,
     get_ice_peaks,
     kmeans_binarization,
     kmeans_segmentation,
@@ -25,8 +20,6 @@ export addlatlon!,
     IceDetectionBrightnessPeaksMODIS134,
     IceDetectionBrightnessPeaksMODIS721,
     IceDetectionFirstNonZeroAlgorithm,
-    IceDetectionLopezAcosta2019,
-    IceFloeSegmentationAlgorithm,
     PerimeterEstimationAlgorithm,
     PolygonConvexArea,
     PixelConvexArea,
@@ -41,9 +34,7 @@ export addlatlon!,
     view_seg_random,
     segment_mean_map
 
-include("abstract-algorithms.jl")
-include("find-ice-labels.jl")
-include("ice-masks.jl")
+include("ice-detection-algorithms.jl")
 include("k-means-segmentation.jl")
 include("regionprops.jl")
 include("segmented-image-utilities.jl")

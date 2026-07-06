@@ -606,13 +606,15 @@ function regionprops(
     end
 
     :bbox ∈ properties && begin
+        push!(data, :min_row => Int[], :max_row => Int[], :min_col => Int[], :max_col => Int[])
         bboxes_init = component_boxes(labels)
-        bboxes = stack(_get_bounds.(bboxes_init[s] for s in img_labels))
-
-        push!(data, :min_row => bboxes[1, :])
-        push!(data, :max_row => bboxes[2, :])
-        push!(data, :min_col => bboxes[3, :])
-        push!(data, :max_col => bboxes[4, :])
+        bboxes = _get_bounds.(bboxes_init[s] for s in img_labels)
+        for (min_row, max_row, min_col, max_col) in bboxes
+            push!(data[:min_row], min_row)
+            push!(data[:max_row], max_row)
+            push!(data[:min_col], min_col)
+            push!(data[:max_col], max_col)
+        end
     end
 
     :perimeter ∈ properties && begin
@@ -683,17 +685,22 @@ a dictionary
 and "orientation" where each entry is a vector ordered by label_list.
 """
 function _component_moment_measures(labels, label_list)
-    data = Dict()
+    data = Dict(
+        :row_centroid=>[],
+        :col_centroid=>[],
+        :major_axis_length=>[],
+        :minor_axis_length=>[],
+        :orientation=>[],
+    )
     centroids = component_centroids(labels)
     areas = component_lengths(labels)
     indices = component_indices(CartesianIndex, labels)
 
     row_centroid = first.(centroids)
     col_centroid = last.(centroids)
-    push!(data, :row_centroid => map(s -> row_centroid[s], label_list))
-    push!(data, :col_centroid => map(s -> col_centroid[s], label_list))
+    data[:row_centroid] = map(s -> row_centroid[s], label_list)
+    data[:col_centroid] = map(s -> col_centroid[s], label_list)
 
-    moment_measures = []
     for s in label_list
         X = getindex.(indices[s], 1)
         Y = getindex.(indices[s], 2)
@@ -710,12 +717,11 @@ function _component_moment_measures(labels, label_list)
 
         ra = 4 * (λ0 / areas[s])^0.5
         rb = 4 * (λ1 / areas[s])^0.5
-        append!(moment_measures, [[ra, rb, θ]])
+
+        push!(data[:major_axis_length], ra)
+        push!(data[:minor_axis_length], rb)
+        push!(data[:orientation], θ)
     end
-    moment_measures = stack(moment_measures)
-    push!(data, :major_axis_length => moment_measures[1, :])
-    push!(data, :minor_axis_length => moment_measures[2, :])
-    push!(data, :orientation => moment_measures[3, :])
 
     return data
 end
