@@ -4,7 +4,6 @@ import ArchGDAL:
     importEPSG,
     toEPSG,
     getproj,
-    toPROJ4,
     getgeotransform,
     importWKT,
     toWKT
