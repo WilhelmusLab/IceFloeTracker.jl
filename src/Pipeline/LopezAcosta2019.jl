@@ -79,6 +79,7 @@ import ..Pipeline:
 import ..Tracking: FloeTracker, FilterFunction, MinimumWeightMatchingFunction
 import Dates: Day
 import ..ImageUtils: imbrighten
+import ..Pipeline: IceFloeSegmentationAlgorithm
 
 """ 
     LopezAcosta2019.Segment(

@@ -20,11 +20,11 @@ include("Morphology/Morphology.jl")
 include("Filtering/Filtering.jl")
 @reexport using .Filtering
 
-include("Preprocessing/Preprocessing.jl")
-@reexport using .Preprocessing
-
 include("Segmentation/Segmentation.jl")
 @reexport using .Segmentation
+
+include("Preprocessing/Preprocessing.jl")
+@reexport using .Preprocessing
 
 include("Tracking/Tracking.jl")
 @reexport using .Tracking
