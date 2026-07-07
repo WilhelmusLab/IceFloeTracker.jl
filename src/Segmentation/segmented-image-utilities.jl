@@ -268,10 +268,8 @@ function remove_small_segments!(labels, min_size)
     indices = component_indices(labels)
 
     for L in keys(areas)
-        (L != 0) && begin
-            (areas[L] < min_size) && begin
-                labels[indices[L]] .= 0
-            end
+        if L != 0 && areas[L] < min_size
+            labels[indices[L]] .= 0
         end
     end
 end
