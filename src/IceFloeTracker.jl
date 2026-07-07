@@ -34,6 +34,9 @@ include("Archive/Archive.jl")
 @reexport using .Archive
 
 # Pipelines
+include("Pipeline/Pipeline.jl")
+@reexport using .Pipeline
+
 include("Pipeline/LopezAcosta2019.jl")
 export LopezAcosta2019
 

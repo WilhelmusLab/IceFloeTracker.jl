@@ -115,11 +115,12 @@ Example configurations are included:
   ```bash
   snakemake --configfile workflow/configs/ift-from-this-repo/config.yaml
   ```
+- [example longer tracking cases spanning 2–3 months](./configs/long-tracking/config.yaml)
 
 > [!TIP]
 > Multiple config files can be used at once, e.g.:
 > ```bash
-> snakemake --configfile workflow/configs/ift-from-this-repo/config.yaml --configfile workflow/configs/validation-cases/config.yaml
+> snakemake --configfile workflow/configs/ift-from-this-repo/config.yaml workflow/configs/validation-cases/config.yaml
 > ```
 
 ### Profiles: OSCAR
