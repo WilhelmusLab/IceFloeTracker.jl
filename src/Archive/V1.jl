@@ -303,7 +303,7 @@ end
 """
     nc_create_labeled_dataset(grp, name, labeled, description, projection_dataset_name)
 
-Define an integer-typed segmentation label variable with dimensions `(y, x)` in
+Define an integer-typed segmentation label variable with dimensions `(x, y)` in
 the NCDatasets group `grp`. The integer type is the smallest that can represent
 the maximum label value. The parent group must supply the `x` and `y` dimensions.
 """
@@ -348,7 +348,7 @@ function nc_create_color_dataset(
 end
 
 """
-    nc_create_floe_properties(grp, props, crs_name, labeled_image_path)
+    nc_create_floe_properties(grp, props, labeled_image_path)
 
 Define one netCDF variable per column in the `props` DataFrame, all sharing a
 `floe_label` dimension. Integer columns are stored as `Int64`; floating-point columns

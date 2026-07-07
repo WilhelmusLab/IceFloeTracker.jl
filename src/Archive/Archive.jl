@@ -20,7 +20,7 @@ end
     convert_missing_to_nan!(df)
     convert_missing_to_nan(df)
 
-Convert missing values in Float64 columns of the DataFrame `df` to `NaN` to allow saving as HDF5/NetCDF.
+Convert missing values in Float64 columns of the DataFrame `df` to `NaN` to allow saving as NetCDF.
 """
 function convert_missing_to_nan!(df::DataFrame)
     for (col_name, col_data) in pairs(eachcol(df))
