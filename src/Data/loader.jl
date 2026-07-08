@@ -10,7 +10,7 @@ import Downloads: RequestError, download
     cache_dir::AbstractString
 end
 
-function (p::GitHubLoader)(file::AbstractString)::AbstractString
+function (p::GitHubLoader)(file::AbstractString)::Union{AbstractString,Nothing}
     source = joinpath(p.url, "raw", p.ref, file)
     target = joinpath(p.cache_dir, p.ref, file)
     data = _get_file(source, target)
