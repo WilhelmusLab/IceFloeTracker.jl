@@ -1,4 +1,5 @@
 import ArchGDAL:
+    ISpatialRef,
     readraster,
     toPROJ4,
     importEPSG,
@@ -29,35 +30,37 @@ function latlon(imgpath::AbstractString)
     # rewrite of the latlon.py library with Julia
     # readraster automatically detects GeoTIFF
     im = readraster(imgpath)
-
-    # get a reference projection (WGS84)
-    ref = toPROJ4(importEPSG(4326))
-
-    # get the raster projection information and format it
-    p = getproj(im)
-    crs = toPROJ4(importWKT(p))
-
+    ref_ispatialref = importEPSG(4326)
+    p_ispatialref = importWKT(getproj(im))
     nrows, ncols, _ = size(im)
+    geotransform = getgeotransform(im)
+    data = latlon(p_ispatialref, ref_ispatialref, geotransform, nrows, ncols)
+    return data
+end
 
-    # Get the X and Y vectors
-    gt = getgeotransform(im)
-    X = [px2xy(gt, i - 1, 0)[1] for i in 1:nrows]
-    Y = [px2xy(gt, 0, j - 1)[2] for j in 1:ncols]
-
-    # Similar to PyProj, going from source (polar stereo) to target (lat/lon)
+function latlon(
+    p_ispatialref::ISpatialRef,
+    ref_ispatialref::ISpatialRef,
+    geotransform::Union{NTuple{6,<:Real},Vector{<:Real}},
+    nrows::Int,
+    ncols::Int,
+)
+    ref = toPROJ4(ref_ispatialref)
+    crs = toPROJ4(p_ispatialref)
+    X = [px2xy(geotransform, i - 1, 0)[1] for i in 1:nrows]
+    Y = [px2xy(geotransform, 0, j - 1)[2] for j in 1:ncols]
     trans = Transformation(crs, ref)
     lonlat = [trans(x, y) for y in Y, x in X]
     lon = first.(lonlat)
     lat = last.(lonlat)
     data = (;
-        crs=toEPSG(importWKT(p)),
-        crs_wkt=toWKT(importWKT(p)),
+        crs=toEPSG(p_ispatialref),
+        crs_wkt=toWKT(p_ispatialref),
         longitude=lon,
         latitude=lat,
         X=X,
         Y=Y,
-        geotransform=gt,
+        geotransform=geotransform,
     )
-
     return data
 end
