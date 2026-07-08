@@ -36,9 +36,10 @@ jobs:
         uses: actions/cache@v4
         with:
           path: /tmp/Watkins2026
-          key: watkins2026-${{ runner.os }}-${{ hashFiles('src/Data/watkins-2026.jl') }}
+          # Dataset is platform-independent, so share one cache across all OS/arch.
+          key: watkins2026-${{ hashFiles('src/Data/watkins-2026.jl') }}
           restore-keys: |
-            watkins2026-${{ runner.os }}-
+            watkins2026-
       - uses: julia-actions/julia-buildpkg@v1
       - uses: julia-actions/julia-runtest@v1
       - uses: julia-actions/julia-processcoverage@v1
