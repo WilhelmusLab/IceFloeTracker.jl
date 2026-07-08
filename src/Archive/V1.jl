@@ -1,3 +1,5 @@
+using ArchGDAL: importWKT, importEPSG
+
 """
     IceFloeTracker.Archive.V1(;
         passtime::ZonedDateTime,
@@ -446,11 +448,14 @@ function _load_v1(input_path::AbstractString)
         # Reconstruct CRS data from the geolocation variable
         geoloc = ds["geolocation"]
         crs_wkt = geoloc.attrib["crs_wkt"]
-        crs_code = Int64(geoloc.attrib["EPSG"])
         geotransform = parse.(Float64, split(geoloc.attrib["GeoTransform"]))
-        X = Array(ds["x"].var)
-        Y = Array(ds["y"].var)
-        crs = (crs=crs_code, crs_wkt=crs_wkt, X=X, Y=Y, geotransform=geotransform)
+        crs = latlon(
+            importWKT(crs_wkt),
+            importEPSG(4326),
+            geotransform,
+            size(ds["y"].var)[1],
+            size(ds["x"].var)[1],
+        )
 
         # passtime — raw Int64 stored as "seconds since 1970-01-01"
         ptsunix = Int64(ds["time"].var[1])
