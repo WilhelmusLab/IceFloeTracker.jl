@@ -154,6 +154,8 @@ end
         @test reloaded.passtime == data.passtime
         @test reloaded.crs[:crs] == data.crs[:crs]
         @test reloaded.crs[:crs_wkt] == data.crs[:crs_wkt]
+        @test reloaded.crs[:longitude] == data.crs[:longitude]
+        @test reloaded.crs[:latitude] == data.crs[:latitude]
         @test reloaded.crs[:X] == data.crs[:X]
         @test reloaded.crs[:Y] == data.crs[:Y]
         @test reloaded.crs[:geotransform] == data.crs[:geotransform]
