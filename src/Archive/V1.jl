@@ -137,7 +137,7 @@ function save(output_path::AbstractString, s::V1;)
         vcrs.attrib["crs_wkt"] = latlondata[:crs_wkt]
         vcrs.attrib["spatial_ref"] = latlondata[:crs_wkt]
         vcrs.attrib["long_name"] = "CRS Definition"
-        vcrs.attrib["GeoTransform"] = join(Int64.(latlondata[:geotransform]), " ")
+        vcrs.attrib["GeoTransform"] = join(latlondata[:geotransform], " ")
         vcrs.attrib["EPSG"] = Int32(latlondata[:crs])
         vcrs[] = Int32(0)
 
