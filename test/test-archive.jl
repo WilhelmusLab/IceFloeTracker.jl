@@ -152,8 +152,11 @@ end
         Archive.save(output_path, data)
         reloaded = Archive.load(output_path)
         @test reloaded.passtime == data.passtime
-        @test reloaded.crs[:crs_wkt] == data.crs[:crs_wkt]
         @test reloaded.crs[:crs] == data.crs[:crs]
+        @test reloaded.crs[:crs_wkt] == data.crs[:crs_wkt]
+        @test reloaded.crs[:X] == data.crs[:X]
+        @test reloaded.crs[:Y] == data.crs[:Y]
+        @test reloaded.crs[:geotransform] == data.crs[:geotransform]
         @test reloaded.ift_version == data.ift_version
         @test reloaded.reference == data.reference
         @test reloaded.contact == data.contact
