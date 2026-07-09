@@ -38,7 +38,7 @@ jobs:
         with:
           path: /tmp/Watkins2026
           # Dataset is platform-independent, so share one cache across all OS/arch.
-          key: watkins2026-${{ hashFiles('src/Data/watkins-2026.jl', 'test/*.jl') }}
+          key: watkins2026-${{ hashFiles('src/Data/watkins-2026.jl', 'docs/src/**/*.ipynb', 'notebooks/**/*.ipynb') }}
           restore-keys: |
             watkins2026-
 
