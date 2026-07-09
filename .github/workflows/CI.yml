@@ -26,12 +26,20 @@ jobs:
 
     steps:
       - uses: actions/checkout@v7
-      
+
       - uses: julia-actions/setup-julia@v3
         with:
           version: ${{ matrix.version }}
           arch: ${{ matrix.arch }}
       - uses: julia-actions/cache@v3
+      - name: Cache Watkins2026 validation dataset
+        uses: actions/cache@v4
+        with:
+          path: /tmp/Watkins2026
+          # Dataset is platform-independent, so share one cache across all OS/arch.
+          key: watkins2026-${{ hashFiles('src/Data/watkins-2026.jl', 'test/*.jl') }}
+          restore-keys: |
+            watkins2026-
       - uses: julia-actions/julia-buildpkg@v1
       - uses: julia-actions/julia-runtest@v1
       - uses: julia-actions/julia-processcoverage@v1
