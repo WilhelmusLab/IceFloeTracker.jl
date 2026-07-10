@@ -302,7 +302,7 @@ function save(output_path::AbstractString, s::V1;)
         )
 
         # floe properties: one variable per property column
-        nc_create_floe_properties(ds, s.props, "floe_label")
+        nc_create_floe_properties(ds, s.props, "floe_label", COLUMN_ATTRIBUTES)
     end
 
     return nothing
@@ -387,17 +387,20 @@ function nc_create_color_dataset(
 end
 
 """
-    nc_create_floe_properties(grp, props)
+    nc_create_floe_properties(grp, props, id_dimension, column_attributes)
 
 Define one netCDF variable per column in the `props` DataFrame, all sharing a
 `floe_label` dimension. Integer columns are stored as `Int64`; floating-point columns
-as `Float64` with a `NaN` fill value; other columns as `String`. The `label`
-variable links each floe back to pixel values in the labeled image via the group
-attributes `label_variable` and `labeled_image`. CF `units`, `long_name`, and
-`standard_name` attributes are attached to each recognized column.
+as `Float64` with a `NaN` fill value; other columns as `String`. The `label_variable`
+links each floe back to pixel values in the labeled image. CF `units`, `long_name`, and
+`standard_name` attributes are attached to each column in the `column_attributes`   dictionary.
+`id_dimension` specifies the name of the dimension corresponding to the floe labels in the netCDF file.
 """
 function nc_create_floe_properties(
-    grp::NCDataset, props::DataFrame, id_dimension::AbstractString
+    grp::NCDataset,
+    props::DataFrame,
+    id_dimension::AbstractString,
+    column_attributes::Dict{AbstractString,Dict{AbstractString,Any}},
 )
     props_ = convert_missing_to_nan(props)
     nfloes = nrow(props_)
@@ -411,8 +414,8 @@ function nc_create_floe_properties(
 
         v = _defVar(grp, nc_name, T, (id_dimension,))
 
-        if haskey(COLUMN_ATTRIBUTES, col_name)
-            for (k, val) in pairs(COLUMN_ATTRIBUTES[col_name])
+        if haskey(column_attributes, col_name)
+            for (k, val) in pairs(column_attributes[col_name])
                 v.attrib[string(k)] = val
             end
         end
