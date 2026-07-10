@@ -345,7 +345,7 @@ function nc_create_mask_dataset(
     flag_meanings::AbstractString="background flag",
 )
     mask_uint8 = permutedims(UInt8.(Bool.(mask)), (2, 1))  # (nx, ny)
-    v = defVar(grp, name, UInt8, ("x", "y"))
+    v = defVar(grp, name, UInt8, ("x", "y"); fillvalue=UInt8(0))
     v.attrib["description"] = description
     v.attrib["grid_mapping"] = projection_dataset_name
     v.attrib["flag_values"] = UInt8[0, 1]
