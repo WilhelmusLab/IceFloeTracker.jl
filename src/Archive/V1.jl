@@ -409,13 +409,7 @@ function nc_create_floe_properties(
         col_data = props_[!, col_name]
         T = eltype(col_data)
 
-        v = if T <: Integer
-            defVar(grp, nc_name, Int64, ("floe_label",))
-        elseif T <: AbstractFloat
-            defVar(grp, nc_name, Float64, ("floe_label",); fillvalue=NaN)
-        else
-            defVar(grp, nc_name, String, ("floe_label",))
-        end
+        v = _defVar(grp, nc_name, T, ("floe_label",))
 
         if haskey(col_attrs, col_name)
             for (k, val) in pairs(col_attrs[col_name])
@@ -428,6 +422,16 @@ function nc_create_floe_properties(
         end
     end
     return nothing
+end
+
+function _defVar(grp, name, ::Type{T}, dims) where {T<:Integer}
+    defVar(grp, name, Int64, dims)
+end
+function _defVar(grp, name, ::Type{T}, dims) where {T<:AbstractFloat}
+    defVar(grp, name, Float64, dims; fillvalue=NaN)
+end
+function _defVar(grp, name, ::Type, dims)
+    defVar(grp, name, String, dims)
 end
 
 """
