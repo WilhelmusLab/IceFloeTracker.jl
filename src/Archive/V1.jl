@@ -174,9 +174,17 @@ function save(output_path::AbstractString, s::V1;)
         ds.attrib["ift_configuration"] = s.ift_configuration
 
         # Dimensions defined at root are inherited by all groups
+        defDim(ds, "time", Inf)
         defDim(ds, "x", nx)
         defDim(ds, "y", ny)
-        defDim(ds, "time", 1)
+
+        # time variable
+        vt = defVar(ds, "time", Int64, ("time",))
+        vt.attrib["units"] = "seconds since 1970-01-01 00:00:00"
+        vt.attrib["calendar"] = "gregorian"
+        vt.attrib["long_name"] = "time of satellite overpass"
+        @show ptsunix
+        vt[:] = [ptsunix]
 
         # CRS / geolocation grid_mapping variable (scalar)
         vcrs = defVar(ds, projection_dataset_name, Int32, ())
@@ -201,13 +209,6 @@ function save(output_path::AbstractString, s::V1;)
         vy.attrib["long_name"] = "y coordinate of projection"
         vy.attrib["units"] = "m"
         vy[:] = Y
-
-        # time variable
-        vt = defVar(ds, "time", Int64, ("time",))
-        vt.attrib["units"] = "seconds since 1970-01-01 00:00:00"
-        vt.attrib["calendar"] = "gregorian"
-        vt.attrib["long_name"] = "time of satellite overpass"
-        vt[:] = [ptsunix]
 
         # colour imagery
         nchannels_tc = size(channelview(s.modis_truecolor), 1)
