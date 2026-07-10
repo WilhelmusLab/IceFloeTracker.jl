@@ -175,3 +175,40 @@ end
         @test reloaded.ift_configuration == data.ift_configuration
     end
 end
+
+@testitem "Archive.V1 round-trips with an empty props table" setup = [ArchiveV1] begin
+    # No floes detected: an empty props table and an all-background labeled image.
+    empty_data = IceFloeTracker.Archive.V1(;
+        passtime=data.passtime,
+        crs=data.crs,
+        modis_truecolor=data.modis_truecolor,
+        modis_falsecolor=data.modis_falsecolor,
+        modis_cloud=data.modis_cloud,
+        labeled=zeros(Int, size(data.labeled)),
+        props=DataFrame(),
+        landmask=data.landmask,
+        cloud_mask=data.cloud_mask,
+        ice_mask=data.ice_mask,
+        coastal_buffer_mask=data.coastal_buffer_mask,
+        ift_version=data.ift_version,
+        ift_archive_version=data.ift_archive_version,
+        reference=data.reference,
+        contact=data.contact,
+        creation_date=data.creation_date,
+        ift_configuration=data.ift_configuration,
+    )
+    mktemp() do output_path, _
+        @test_nowarn Archive.save(output_path, empty_data)
+        # The floe_label coordinate variable must still exist, but be empty, so
+        # labeled_image pixel values always have something to resolve against.
+        NCDataset(output_path, "r") do ds
+            @test haskey(ds, "floe_label")
+            @test ds.dim["floe_label"] == 0
+            @test length(ds["floe_label"]) == 0
+        end
+        reloaded = Archive.load(output_path)
+        @test nrow(reloaded.props) == 0
+        @test reloaded.labeled == empty_data.labeled
+        @test all(iszero, reloaded.labeled)
+    end
+end
