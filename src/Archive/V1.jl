@@ -264,6 +264,7 @@ function save(output_path::AbstractString, s::V1;)
             "Connected components of the segmented floe image using a 3x3 " *
             "structuring element. The property matrix consists of the properties " *
             "of each connected component.",
+            "floe_label",
             projection_dataset_name,
         )
         nc_create_mask_dataset(
@@ -340,14 +341,16 @@ end
 
 Define an integer-typed segmentation label variable with dimensions `(x, y)` in
 the NCDatasets group `grp`. The integer type is the smallest that can represent
-the maximum label value. The parent group must supply the `x` and `y` dimensions.
+the maximum label value. The parent group must supply the `x` and `y` dimensions. 
+The `coordinate` attribute is set to the value of the `coordinate` argument`.
 """
 function nc_create_labeled_dataset(
     grp::NCDataset,
     name::AbstractString,
     labeled::AbstractMatrix,
-    description::AbstractString="",
-    projection_dataset_name::AbstractString="geolocation",
+    description::AbstractString,
+    label_variable::AbstractString,
+    projection_dataset_name::AbstractString,
 )
     mx = Int64(maximum(labeled))
     T = choose_dtype(mx)
@@ -355,6 +358,7 @@ function nc_create_labeled_dataset(
     v = defVar(grp, name, T, ("x", "y"))
     v.attrib["description"] = description
     v.attrib["grid_mapping"] = projection_dataset_name
+    v.attrib["label_variable"] = label_variable
     v[:, :] = labeled_T
     return v
 end
