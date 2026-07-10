@@ -302,7 +302,7 @@ function save(output_path::AbstractString, s::V1;)
         )
 
         # floe properties: one variable per property column
-        nc_create_floe_properties(ds, s.props)
+        nc_create_floe_properties(ds, s.props, "floe_label")
     end
 
     return nothing
@@ -396,21 +396,20 @@ variable links each floe back to pixel values in the labeled image via the group
 attributes `label_variable` and `labeled_image`. CF `units`, `long_name`, and
 `standard_name` attributes are attached to each recognized column.
 """
-function nc_create_floe_properties(grp::NCDataset, props::DataFrame)
+function nc_create_floe_properties(
+    grp::NCDataset, props::DataFrame, id_dimension::AbstractString
+)
     props_ = convert_missing_to_nan(props)
     nfloes = nrow(props_)
 
-    defDim(grp, "floe_label", nfloes)
-
-    grp.attrib["label_variable"] = "floe_label"
-    grp.attrib["labeled_image"] = "labeled_image"
+    grp.attrib["label_variable"] = id_dimension
 
     for col_name in names(props_)
         nc_name = "floe_" * col_name
         col_data = props_[!, col_name]
         T = eltype(col_data)
 
-        v = _defVar(grp, nc_name, T, ("floe_label",))
+        v = _defVar(grp, nc_name, T, (id_dimension,))
 
         if haskey(COLUMN_ATTRIBUTES, col_name)
             for (k, val) in pairs(COLUMN_ATTRIBUTES[col_name])
