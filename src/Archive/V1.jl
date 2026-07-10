@@ -161,6 +161,7 @@ function save(output_path::AbstractString, s::V1;)
     Y = Float64.(latlondata[:Y])
     nx = length(X)
     ny = length(Y)
+    nfloes = nrow(s.props)
 
     NCDataset(output_path, "c") do ds
         # Global attributes
@@ -177,6 +178,7 @@ function save(output_path::AbstractString, s::V1;)
         defDim(ds, "time", Inf)
         defDim(ds, "x", nx)
         defDim(ds, "y", ny)
+        defDim(ds, "floe_label", nfloes)
 
         # time variable
         vt = defVar(ds, "time", Int64, ("time",))
