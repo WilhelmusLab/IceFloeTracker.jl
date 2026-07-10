@@ -1,0 +1,10 @@
+region,start,end,scale,pipeline
+greenland_sea-large,2019-03-23,2019-03-23,250,LopezAcosta2019Tiling
+barents_kara_seas-large,2019-03-23,2019-03-23,250,LopezAcosta2019Tiling
+laptev_sea-large,2019-03-23,2019-03-23,250,LopezAcosta2019Tiling
+sea_of_okhostk-large,2019-03-23,2019-03-23,250,LopezAcosta2019Tiling
+east_siberian_sea-large,2019-03-23,2019-03-23,250,LopezAcosta2019Tiling
+bering_chukchi_seas-large,2019-03-23,2019-03-23,250,LopezAcosta2019Tiling
+beaufort_sea-large,2019-03-23,2019-03-23,250,LopezAcosta2019Tiling
+hudson_bay-large,2019-03-23,2019-03-23,250,LopezAcosta2019Tiling
+baffin_bay-large,2019-03-23,2019-03-23,250,LopezAcosta2019Tiling
