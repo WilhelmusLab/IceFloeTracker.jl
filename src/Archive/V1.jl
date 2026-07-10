@@ -403,7 +403,7 @@ function nc_create_floe_properties(
     grp::NCDataset,
     props::DataFrame,
     id_dimension::AbstractString,
-    column_attributes::Dict{AbstractString,Dict{AbstractString,Any}},
+    column_attributes::Dict{<:AbstractString,NamedTuple},
 )
     props_ = convert_missing_to_nan(props)
     nfloes = nrow(props_)
@@ -426,6 +426,13 @@ function nc_create_floe_properties(
         if nfloes > 0
             v[:] = col_data
         end
+    end
+
+    # Ensure the label coordinate variable always exists so labeled_image pixel
+    # values have something to resolve against, even when props carries no rows
+    # or lacks a `label` column. Background pixels (value 0) simply match no row.
+    if !haskey(grp, id_dimension)
+        defVar(grp, id_dimension, Int64, (id_dimension,))
     end
     return nothing
 end
