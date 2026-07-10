@@ -185,7 +185,9 @@ function save(output_path::AbstractString, s::V1;)
         vt.attrib["units"] = "seconds since 1970-01-01 00:00:00"
         vt.attrib["calendar"] = "gregorian"
         vt.attrib["long_name"] = "time of satellite overpass"
-        vt[:] = [ptsunix]
+        # `time` is an unlimited dimension (size 0 on creation); index explicitly
+        # to grow it, since `vt[:] = ...` would write into the empty slice.
+        vt[1] = ptsunix
 
         # CRS / geolocation grid_mapping variable (scalar)
         vcrs = defVar(ds, projection_dataset_name, Int32, ())
