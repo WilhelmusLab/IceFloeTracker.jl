@@ -52,6 +52,7 @@ end
     props[!, :y] = zeros(nrow(props))
     data = IceFloeTracker.Archive.V1(;
         passtime=ZonedDateTime(pass_time(case), tz"UTC"),
+        satellite="aqua",
         crs=latlon(modis_truecolor_path(case)),
         modis_truecolor=modis_truecolor(case),
         modis_falsecolor=modis_falsecolor(case),
@@ -76,6 +77,7 @@ end
         NCDataset(output_path, "r") do ds
             @test ds.attrib["ift_archive_version"] == "1.0.0"
             @test ds.attrib["ift_version"] == "0.0.0"
+            @test ds.attrib["satellite"] == "aqua"
             @test ds.attrib["reference"] == "https://doi.org/00.0000"
             @test ds.attrib["contact"] == "contact@example.com"
             @test ds.attrib["creation_date"] == "2024-06-15T12:06:03+00:00"
@@ -152,6 +154,7 @@ end
         Archive.save(output_path, data)
         reloaded = Archive.load(output_path)
         @test reloaded.passtime == data.passtime
+        @test reloaded.satellite == data.satellite
         @test reloaded.crs[:crs] == data.crs[:crs]
         @test reloaded.crs[:crs_wkt] == data.crs[:crs_wkt]
         @test reloaded.crs[:longitude] == data.crs[:longitude]
@@ -180,6 +183,7 @@ end
     # No floes detected: an empty props table and an all-background labeled image.
     empty_data = IceFloeTracker.Archive.V1(;
         passtime=data.passtime,
+        satellite=data.satellite,
         crs=data.crs,
         modis_truecolor=data.modis_truecolor,
         modis_falsecolor=data.modis_falsecolor,

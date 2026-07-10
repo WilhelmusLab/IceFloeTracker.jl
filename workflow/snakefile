@@ -347,6 +347,14 @@ rule load_case_coastal_buffer_mask:
         "cp {input} {output}"
 
 
+rule write_satellite_name:
+    output:
+        "scene/{region}.{scale}m.{year}-{month}-{day}.{satellite}/satellite.txt"
+    run:
+        with open(output[0], "w") as f:
+            f.write(wildcards.satellite + "\n")
+
+
 # ============================================================================
 # SEGMENTATION RULES
 # ============================================================================
@@ -524,6 +532,7 @@ rule observation_netcdf:
         cloud_mask = "{dir}/{pipeline}/cloud_mask.tiff",
         landmask = "{dir}/landmask.tiff",
         passtime = "{dir}/overpass.txt",
+        satellite = "{dir}/satellite.txt",
         coastal_buffer_mask = "{dir}/coastal_buffer_mask.tiff",
         ice_mask = "{dir}/{pipeline}/ice_mask.tiff",
         props_crs = "{dir}/{pipeline}/props_crs.csv",
@@ -534,6 +543,7 @@ rule observation_netcdf:
         {config[IFT]} -e 'using IceFloeTracker, TimeZones, FileIO, Images, DataFrames;
         data = IceFloeTracker.Archive.V1(
             passtime = read("{input.passtime}", String) |> chomp |> ZonedDateTime,
+            satellite = read("{input.satellite}", String) |> chomp,
             crs = latlon("{input.crs_ref_image}"),
             modis_truecolor = load("{input.truecolor}"),
             modis_falsecolor = load("{input.falsecolor}"),
