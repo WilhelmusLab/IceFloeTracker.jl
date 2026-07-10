@@ -342,7 +342,10 @@ end
 Define an integer-typed segmentation label variable with dimensions `(x, y)` in
 the NCDatasets group `grp`. The integer type is the smallest that can represent
 the maximum label value. The parent group must supply the `x` and `y` dimensions. 
-The `coordinate` attribute is set to the value of the `coordinate` argument`.
+The `label_variable` attribute is set to the value of the `label_variable` argument.
+
+Background pixels (value `0`) are recorded via a `_FillValue` of `0`, marking them
+as "no floe" and unambiguously separating them from labelled regions.
 """
 function nc_create_labeled_dataset(
     grp::NCDataset,
@@ -355,7 +358,7 @@ function nc_create_labeled_dataset(
     mx = Int64(maximum(labeled))
     T = choose_dtype(mx)
     labeled_T = permutedims(T.(labeled), (2, 1))  # (nx, ny)
-    v = defVar(grp, name, T, ("x", "y"))
+    v = defVar(grp, name, T, ("x", "y"); fillvalue=T(0))
     v.attrib["description"] = description
     v.attrib["grid_mapping"] = projection_dataset_name
     v.attrib["label_variable"] = label_variable
