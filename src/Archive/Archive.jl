@@ -81,7 +81,7 @@ function load(input_path::AbstractString)
     end
 end
 
-include("./V1.jl")
+include("./ArchiveV1.jl")
 
 using .ArchiveV1: V1
 
