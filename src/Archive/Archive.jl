@@ -1,4 +1,19 @@
+"""
+    Archive
 
+Module for saving and loading IceFloeTracker.jl segmentation results as netCDF-4
+files. The public API is:
+
+- [`save`](@ref) — write a format object (e.g. [`V1`](@ref)) to disk.
+- [`load`](@ref) — read a file and return the appropriate format object; the
+  format version is detected automatically from the `ift_archive_version` global
+  attribute.
+
+Each file-format version is implemented in its own submodule (`ArchiveV1`,
+`ArchiveV2`, …) which extends `save` and `load` for its own type. The public
+format types (e.g. `V1`) are re-exported from this module so callers only need
+`IceFloeTracker.Archive`.
+"""
 module Archive
 
 using NCDatasets, Images, DataFrames

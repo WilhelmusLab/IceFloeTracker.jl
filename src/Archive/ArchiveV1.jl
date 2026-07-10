@@ -1,3 +1,13 @@
+"""
+    ArchiveV1
+
+Submodule implementing the `ift_archive_version = "1.0.0"` netCDF-4 file
+format for IceFloeTracker.jl segmentation results.
+
+The primary public interface is the [`V1`](@ref) struct and the
+[`save`](@ref) / [`load`](@ref) methods dispatching on it. The `nc_create_*`
+helpers are format-internal and may change between archive versions.
+"""
 module ArchiveV1
 
 using NCDatasets, Images, Dates, TimeZones, DataFrames
