@@ -466,11 +466,9 @@ function _load_v1(input_path::AbstractString)
             raw = collect(permutedims(Array(ds[varname].var), (3, 2, 1)))  # (nb, ny, nx)
             nb = size(raw, 1)
             n0f8 = reinterpret(N0f8, raw)
-            return if nb == 3
-                collect(colorview(RGB{N0f8}, n0f8))
-            else
-                collect(colorview(RGBA{N0f8}, n0f8))
-            end
+            T = nb == 3 ? RGB{N0f8} : RGBA{N0f8}
+            image = collect(colorview(T, n0f8))
+            return image
         end
         modis_truecolor = read_color("modis_truecolor")
         modis_falsecolor = read_color("modis_falsecolor")
