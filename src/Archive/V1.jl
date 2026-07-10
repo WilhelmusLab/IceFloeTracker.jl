@@ -125,8 +125,8 @@ Structure:
 
 ```
 📦 netCDF-4 file
-├─ 🏷️ ift_archive_version, ift_version, contact, reference   (global attributes)
-├─ 🏷️ Description, label_variable, labeled_image     (floe-properties attributes)
+├─ 🏷️ ift_archive_version, ift_version, reference, contact, creation_date, ift_configuration   (global attributes)
+├─ 🏷️ label_variable     (floe-properties group attribute)
 ├─ 🔢 geolocation   (scalar Int32, CRS grid-mapping variable)
 │  └─ 🏷️ name, crs_wkt, spatial_ref, long_name, GeoTransform
 ├─ 🔢 x(x)          (projection x / easting coordinates, metres)
@@ -139,7 +139,7 @@ Structure:
 ├─ 🔢 modis_truecolor(x, y, band_modis_truecolor)
 │  └─ (same attributes as modis_falsecolor)
 ├─ 🔢 labeled_image(x, y)
-│  └─ 🏷️ description, grid_mapping
+│  └─ 🏷️ description, grid_mapping, label_variable, _FillValue
 ├─ 🔢 cloud_mask(x, y)
 ├─ 🔢 coastal_buffer_mask(x, y)
 ├─ 🔢 ice_mask(x, y)
@@ -339,7 +339,7 @@ function nc_create_mask_dataset(
 end
 
 """
-    nc_create_labeled_dataset(grp, name, labeled, description, projection_dataset_name)
+    nc_create_labeled_dataset(grp, name, labeled, description, label_variable, projection_dataset_name)
 
 Define an integer-typed segmentation label variable with dimensions `(x, y)` in
 the NCDatasets group `grp`. The integer type is the smallest that can represent
@@ -394,12 +394,13 @@ end
 """
     nc_create_floe_properties(grp, props, id_dimension, column_attributes)
 
-Define one netCDF variable per column in the `props` DataFrame, all sharing a
-`floe_label` dimension. Integer columns are stored as `Int64`; floating-point columns
+Define one netCDF variable per column in the `props` DataFrame, all sharing the
+`id_dimension` dimension. Integer columns are stored as `Int64`; floating-point columns
 as `Float64` with a `NaN` fill value; other columns as `String`. The `label_variable`
 links each floe back to pixel values in the labeled image. CF `units`, `long_name`, and
-`standard_name` attributes are attached to each column in the `column_attributes`   dictionary.
+`standard_name` attributes are attached to each column in the `column_attributes` dictionary.
 `id_dimension` specifies the name of the dimension corresponding to the floe labels in the netCDF file.
+If no property column maps to `id_dimension`, an empty coordinate variable of that name is created.
 """
 function nc_create_floe_properties(
     grp::NCDataset,
