@@ -116,6 +116,7 @@ Example configurations are included:
   snakemake --configfile workflow/configs/ift-from-this-repo/config.yaml
   ```
 - [example longer tracking cases spanning 2–3 months](./configs/long-tracking/config.yaml)
+- [example large regions covering the named seas and bays from the calibration and validation paper](./configs/large-regions/config.yaml)
 
 > [!TIP]
 > Multiple config files can be used at once, e.g.:
