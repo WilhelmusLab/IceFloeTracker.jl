@@ -185,7 +185,6 @@ function save(output_path::AbstractString, s::V1;)
         vt.attrib["units"] = "seconds since 1970-01-01 00:00:00"
         vt.attrib["calendar"] = "gregorian"
         vt.attrib["long_name"] = "time of satellite overpass"
-        @show ptsunix
         vt[:] = [ptsunix]
 
         # CRS / geolocation grid_mapping variable (scalar)
