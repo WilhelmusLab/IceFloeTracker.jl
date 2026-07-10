@@ -1,5 +1,17 @@
 using ArchGDAL: importWKT, importEPSG
 
+TRUECOLOR_BANDLABELS = [
+    "R=band_1 (red, 0.620–0.670 µm)",
+    "G=band_4 (green, 0.545–0.565 µm)",
+    "B=band_3 (blue, 0.459–0.479 µm)",
+]
+
+FALSECOLOR_BANDLABELS = [
+    "R=band_7 (mid-IR, 2.105–2.155 µm)",
+    "G=band_2 (NIR, 0.841–0.876 µm)",
+    "B=band_1 (red, 0.620–0.670 µm)",
+]
+
 """
     IceFloeTracker.Archive.V1(;
         passtime::ZonedDateTime,
@@ -175,22 +187,8 @@ function save(output_path::AbstractString, s::V1;)
         # band coordinate variables — string labels describing each channel
         _band_labels(names, n) =
             n == length(names) ? names : [names; fill("alpha", n - length(names))]
-        tc_labels = _band_labels(
-            [
-                "R=band_1 (red, 0.620–0.670 µm)",
-                "G=band_4 (green, 0.545–0.565 µm)",
-                "B=band_3 (blue, 0.459–0.479 µm)",
-            ],
-            nchannels_tc,
-        )
-        fc_labels = _band_labels(
-            [
-                "R=band_7 (mid-IR, 2.105–2.155 µm)",
-                "G=band_2 (NIR, 0.841–0.876 µm)",
-                "B=band_1 (red, 0.620–0.670 µm)",
-            ],
-            nchannels_fc,
-        )
+        tc_labels = _band_labels(TRUECOLOR_BANDLABELS, nchannels_tc)
+        fc_labels = _band_labels(FALSECOLOR_BANDLABELS, nchannels_fc)
         vbtc = defVar(ds, "band_modis_truecolor", String, ("band_modis_truecolor",))
         vbtc.attrib["long_name"] = "MODIS truecolor band labels"
         vbtc[:] = tc_labels
