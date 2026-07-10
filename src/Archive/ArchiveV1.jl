@@ -1,4 +1,10 @@
+module ArchiveV1
+
+using NCDatasets, Images, Dates, TimeZones, DataFrames
 using ArchGDAL: importWKT, importEPSG
+import ...Archive: save, load, choose_dtype, convert_missing_to_nan
+import ...Geospatial: latlon
+import ...ImageUtils: binarize_mask
 
 const TRUECOLOR_BANDLABELS = [
     "R=band_1 (red, 0.620–0.670 µm)",
@@ -451,11 +457,11 @@ function _defVar(grp, name, ::Type, dims)
 end
 
 """
-    _load_v1(input_path)
+    load(input_path, V1)
 
 Load a V1 netCDF-4 file written by [`save`](@ref) and return a [`V1`](@ref) object.
 """
-function _load_v1(input_path::AbstractString)
+function load(input_path::AbstractString, ::Type{V1})
     NCDataset(input_path, "r") do ds
         # Global attributes
         ift_version = VersionNumber(ds.attrib["ift_version"])
@@ -554,3 +560,5 @@ function _get_crs_name(crs_code)
     end
     return crs_name
 end
+
+end # module ArchiveV1

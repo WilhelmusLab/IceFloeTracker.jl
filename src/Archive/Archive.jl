@@ -1,10 +1,23 @@
 
 module Archive
 
-using NCDatasets, Images, Dates, TimeZones, DataFrames
-import ..Geospatial: latlon
-import ..Segmentation: regionprops_table, converttounits!
-import ..ImageUtils: binarize_mask
+using NCDatasets, Images, DataFrames
+
+"""
+    save(output_path::AbstractString, obj)
+
+Write an archive object to `output_path` as a netCDF-4 file. Extended by each
+archive-format submodule (e.g. `ArchiveV1`) for its own object type.
+"""
+function save end
+
+"""
+    load(input_path::AbstractString, type)
+
+Load an archive object from `input_path` as a netCDF-4 file. Extended by each
+archive-format submodule (e.g. `ArchiveV1`) for its own object type.
+"""
+function load end
 
 function choose_dtype(mx::T) where {T<:Integer}
     types = [UInt8, Int8, UInt16, Int16, UInt32, Int32, UInt64, Int64]
@@ -47,12 +60,14 @@ function load(input_path::AbstractString)
         VersionNumber(file.attrib["ift_archive_version"])
     end
     if version == VersionNumber("1.0.0")
-        return _load_v1(input_path)
+        return load(input_path, V1)
     else
         error("Unsupported file version: $version")
     end
 end
 
 include("./V1.jl")
+
+using .ArchiveV1: V1
 
 end
