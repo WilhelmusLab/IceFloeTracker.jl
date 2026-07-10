@@ -374,9 +374,9 @@ function nc_create_color_dataset(
     grp::NCDataset,
     name::AbstractString,
     img::AbstractMatrix{<:Union{RGB,RGBA}},
-    description::AbstractString="",
-    projection_dataset_name::AbstractString="geolocation",
-    band_dim_name::AbstractString="band",
+    description::AbstractString,
+    projection_dataset_name::AbstractString,
+    band_dim_name::AbstractString,
 )
     img_raw = permutedims(UInt8.(rawview(channelview(img))), (3, 2, 1))  # (nx, ny, nchannels)
     v = defVar(grp, name, UInt8, ("x", "y", band_dim_name))
