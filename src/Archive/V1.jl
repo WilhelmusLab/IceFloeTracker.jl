@@ -12,6 +12,39 @@ FALSECOLOR_BANDLABELS = [
     "B=band_1 (red, 0.620–0.670 µm)",
 ]
 
+COLUMN_ATTRIBUTES = Dict(
+    "label" => (
+        long_name="floe label",
+        comment="Pixel values in labeled_image equal these labels",
+    ),
+    "area" => (units="km^2", long_name="floe area"),
+    "convex_area" => (units="km^2", long_name="convex hull area"),
+    "minor_axis_length" => (units="km", long_name="minor axis length"),
+    "major_axis_length" => (units="km", long_name="major axis length"),
+    "perimeter" => (units="km", long_name="perimeter"),
+    "orientation" => (units="rad", long_name="orientation angle"),
+    "latitude" => (
+        units="degrees_north",
+        standard_name="latitude",
+        long_name="latitude of floe centroid",
+    ),
+    "longitude" => (
+        units="degrees_east",
+        standard_name="longitude",
+        long_name="longitude of floe centroid",
+    ),
+    "x" => (
+        units="m",
+        standard_name="projection_x_coordinate",
+        long_name="x coordinate of floe centroid",
+    ),
+    "y" => (
+        units="m",
+        standard_name="projection_y_coordinate",
+        long_name="y coordinate of floe centroid",
+    ),
+)
+
 """
     IceFloeTracker.Archive.V1(;
         passtime::ZonedDateTime,
@@ -266,7 +299,7 @@ function save(output_path::AbstractString, s::V1;)
         )
 
         # floe properties: one variable per property column
-        nc_create_floe_properties(ds, s.props, "labeled_image")
+        nc_create_floe_properties(ds, s.props)
     end
 
     return nothing
@@ -348,7 +381,7 @@ function nc_create_color_dataset(
 end
 
 """
-    nc_create_floe_properties(grp, props, labeled_image_path)
+    nc_create_floe_properties(grp, props)
 
 Define one netCDF variable per column in the `props` DataFrame, all sharing a
 `floe_label` dimension. Integer columns are stored as `Int64`; floating-point columns
@@ -357,50 +390,14 @@ variable links each floe back to pixel values in the labeled image via the group
 attributes `label_variable` and `labeled_image`. CF `units`, `long_name`, and
 `standard_name` attributes are attached to each recognized column.
 """
-function nc_create_floe_properties(
-    grp::NCDataset, props::DataFrame, labeled_image_path::AbstractString="labeled_image"
-)
+function nc_create_floe_properties(grp::NCDataset, props::DataFrame)
     props_ = convert_missing_to_nan(props)
     nfloes = nrow(props_)
 
     defDim(grp, "floe_label", nfloes)
 
     grp.attrib["label_variable"] = "floe_label"
-    grp.attrib["labeled_image"] = labeled_image_path
-
-    # CF units and metadata keyed by the original DataFrame column name.
-    col_attrs = Dict(
-        "label" => (
-            long_name="floe label",
-            comment="Pixel values in $labeled_image_path equal these labels",
-        ),
-        "area" => (units="km^2", long_name="floe area"),
-        "convex_area" => (units="km^2", long_name="convex hull area"),
-        "minor_axis_length" => (units="km", long_name="minor axis length"),
-        "major_axis_length" => (units="km", long_name="major axis length"),
-        "perimeter" => (units="km", long_name="perimeter"),
-        "orientation" => (units="rad", long_name="orientation angle"),
-        "latitude" => (
-            units="degrees_north",
-            standard_name="latitude",
-            long_name="latitude of floe centroid",
-        ),
-        "longitude" => (
-            units="degrees_east",
-            standard_name="longitude",
-            long_name="longitude of floe centroid",
-        ),
-        "x" => (
-            units="m",
-            standard_name="projection_x_coordinate",
-            long_name="x coordinate of floe centroid",
-        ),
-        "y" => (
-            units="m",
-            standard_name="projection_y_coordinate",
-            long_name="y coordinate of floe centroid",
-        ),
-    )
+    grp.attrib["labeled_image"] = "labeled_image"
 
     for col_name in names(props_)
         nc_name = "floe_" * col_name
@@ -409,8 +406,8 @@ function nc_create_floe_properties(
 
         v = _defVar(grp, nc_name, T, ("floe_label",))
 
-        if haskey(col_attrs, col_name)
-            for (k, val) in pairs(col_attrs[col_name])
+        if haskey(COLUMN_ATTRIBUTES, col_name)
+            for (k, val) in pairs(COLUMN_ATTRIBUTES[col_name])
                 v.attrib[string(k)] = val
             end
         end
