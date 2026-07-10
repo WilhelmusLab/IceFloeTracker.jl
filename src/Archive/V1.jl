@@ -1,18 +1,18 @@
 using ArchGDAL: importWKT, importEPSG
 
-TRUECOLOR_BANDLABELS = [
+const TRUECOLOR_BANDLABELS = [
     "R=band_1 (red, 0.620–0.670 µm)",
     "G=band_4 (green, 0.545–0.565 µm)",
     "B=band_3 (blue, 0.459–0.479 µm)",
 ]
 
-FALSECOLOR_BANDLABELS = [
+const FALSECOLOR_BANDLABELS = [
     "R=band_7 (mid-IR, 2.105–2.155 µm)",
     "G=band_2 (NIR, 0.841–0.876 µm)",
     "B=band_1 (red, 0.620–0.670 µm)",
 ]
 
-COLUMN_ATTRIBUTES = Dict(
+const COLUMN_ATTRIBUTES = Dict(
     "label" => (
         long_name="floe label",
         comment="Pixel values in labeled_image equal these labels",
