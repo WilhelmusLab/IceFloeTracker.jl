@@ -64,6 +64,7 @@ const COLUMN_ATTRIBUTES = Dict(
 """
     IceFloeTracker.Archive.V1(;
         passtime::ZonedDateTime,
+        satellite::AbstractString,
         crs::NamedTuple,
         modis_truecolor::AbstractMatrix{<:Union{RGB,RGBA}},
         modis_falsecolor::AbstractMatrix{<:Union{RGB,RGBA}},
@@ -89,6 +90,7 @@ Includes:
 
 - References
   - `passtime`: the timepoint of the observation
+  - `satellite`: the name of the satellite (e.g. `"aqua"` or `"terra"`)
   - `crs`: the CRS and geospatial data for the image, as returned by [`latlon`](@ref)
   - `modis_truecolor`: MODIS truecolor image (bands 1, 4, 3)
   - `modis_falsecolor`: MODIS falsecolor image (bands 7, 2, 1)
@@ -111,6 +113,7 @@ Includes:
 """
 @kwdef struct V1
     passtime::ZonedDateTime
+    satellite::AbstractString
     crs::NamedTuple
     modis_truecolor::AbstractMatrix{<:Union{RGB,RGBA}}
     modis_falsecolor::AbstractMatrix{<:Union{RGB,RGBA}}
@@ -141,7 +144,7 @@ Structure:
 
 ```
 📦 netCDF-4 file
-├─ 🏷️ ift_archive_version, ift_version, reference, contact, creation_date, ift_configuration   (global attributes)
+├─ 🏷️ ift_archive_version, ift_version, satellite, reference, contact, creation_date, ift_configuration   (global attributes)
 ├─ 🏷️ label_variable     (floe-properties group attribute)
 ├─ 🔢 geolocation   (scalar Int32, CRS grid-mapping variable)
 │  └─ 🏷️ name, crs_wkt, spatial_ref, long_name, GeoTransform
@@ -183,6 +186,7 @@ function save(output_path::AbstractString, s::V1;)
         # Global attributes
         ds.attrib["ift_archive_version"] = string(s.ift_archive_version)
         ds.attrib["ift_version"] = string(s.ift_version)
+        ds.attrib["satellite"] = s.satellite
         ds.attrib["reference"] = s.reference
         ds.attrib["contact"] = s.contact
         ds.attrib["creation_date"] = Dates.format(
@@ -476,6 +480,7 @@ function load(input_path::AbstractString, ::Type{V1})
         # Global attributes
         ift_version = VersionNumber(ds.attrib["ift_version"])
         ift_archive_version = VersionNumber(ds.attrib["ift_archive_version"])
+        satellite = ds.attrib["satellite"]
         reference = ds.attrib["reference"]
         contact = ds.attrib["contact"]
         creation_date = ZonedDateTime(ds.attrib["creation_date"])
@@ -536,6 +541,7 @@ function load(input_path::AbstractString, ::Type{V1})
 
         return V1(;
             passtime,
+            satellite,
             crs,
             modis_truecolor,
             modis_falsecolor,
