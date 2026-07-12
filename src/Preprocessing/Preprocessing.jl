@@ -9,6 +9,7 @@ export make_landmask_se,
     LopezAcostaCloudMask,
     AbstractCloudMaskAlgorithm,
     Watkins2025CloudMask,
+    Watkins2026CloudMask,
     create_cloudmask,
     apply_cloudmask,
     apply_cloudmask!
