@@ -34,8 +34,11 @@ import Images:
     SegmentedImage,
     segment_mean,
     Equalization
+
 import ..ImageUtils: get_brighten_mask, to_uint8, imcomplement, imbrighten, get_tiles
+
 import ..Filtering: unsharp_mask, conditional_histeq, rgb2gray, imgradientmag
+
 import ..Preprocessing:
     apply_landmask,
     apply_landmask!,
@@ -43,6 +46,7 @@ import ..Preprocessing:
     create_cloudmask,
     create_landmask,
     LopezAcostaCloudMask
+
 import ..Morphology:
     hbreak!,
     hbreak,
@@ -55,14 +59,18 @@ import ..Morphology:
     imextendedmin,
     impose_minima,
     imregionalmin
+
 import ..Segmentation:
-    IceFloeSegmentationAlgorithm,
     tiled_adaptive_binarization,
     kmeans_binarization,
     IceDetectionFirstNonZeroAlgorithm,
     IceDetectionBrightnessPeaksMODIS721,
     IceDetectionThresholdMODIS721,
     segment_mean_map
+
+import ..Pipeline:
+    IceFloeSegmentationAlgorithm
+
 import ..Tracking: FloeTracker, FilterFunction, MinimumWeightMatchingFunction
 import Dates: Day
 

@@ -42,3 +42,42 @@
     # Test 3: Check distances between a pair of adjacent points is about the same (small standard deviation)
     std(difs2) < 1.0
 end
+
+@testitem "resample_boundary: minimum boundary" begin
+    A = [
+        0 0 0
+        0 1 0
+        0 0 0
+    ]
+    boundary = bwtraceboundary(A; P0=(2, 2))
+    resampled_boundary = resample_boundary(boundary)
+    @test typeof(resampled_boundary) <: Matrix{Float64}
+    @test size(resampled_boundary)[1] == 2
+end
+
+@testitem "resample_boundary: minimum boundary" begin
+    A = [
+        0 0 0
+        0 1 0
+        0 1 0
+        0 0 0
+    ]
+    boundary = bwtraceboundary(A; P0=(2, 2))
+    resampled_boundary = resample_boundary(boundary)
+    @test typeof(resampled_boundary) <: Matrix{Float64}
+    @test size(resampled_boundary)[1] == 2
+end
+
+@testitem "resample_boundary: happy path" begin
+    A = [
+        0 0 0 0
+        0 1 1 0
+        0 1 0 0
+        0 0 0 0
+    ]
+    boundary = bwtraceboundary(A; P0=(2, 2))
+    resampled_boundary = resample_boundary(boundary)
+    @show resampled_boundary
+    @test typeof(resampled_boundary) <: Matrix{Float64}
+    @test size(resampled_boundary)[1] == length(boundary) ÷ 2
+end

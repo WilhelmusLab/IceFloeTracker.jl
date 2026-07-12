@@ -8,6 +8,8 @@ Get a uniform set of resampled boundary points from `bd_points` using cubic spli
 The resampled set of points is obtained using parametric interpolation of the points in `bd_points`. It is assumed
 that the separation between a pair of adjacent points is 1.
 
+The minimum number of points in the resampled set is 2.
+
 ## Arguments
 - `bd_points`: Sequetial set of boundary points for the object of interest
 - `reduc_factor`: Factor by which to reduce the number of points in `bd_points` (2 by default)
@@ -72,7 +74,7 @@ function resample_boundary(
     s_in = range(0, 1, length(bd_points))
 
     # arclengths to resample
-    s_out = range(0, 1, length(bd_points) ÷ reduc_factor)
+    s_out = range(0, 1, max(length(bd_points) ÷ reduc_factor, 2))
 
     # collect data in bd_points for interpolant
     A = getindex.(bd_points, [1 2])
