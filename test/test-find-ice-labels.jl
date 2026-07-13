@@ -1,6 +1,6 @@
 
 @testitem "IceDetectionAlgorithm" begin
-    using Images: ARGB, binarize, N0f8, RGB, Gray, load
+    using Images: ARGB, binarize, N0f8, RGB, Gray, load, red, blue
 
     @testset "IceDetectionThresholdMODIS721" begin
         f = IceDetectionThresholdMODIS721(0.02, 0.92, 0.92)
@@ -62,17 +62,17 @@
         @test allequal(alt_method .== intersect_method)
     end
 
-    @testset "IceDetectionBrightnessPeaksMODIS134" begin
-        f = IceDetectionBrightnessPeaksMODIS134()
+    @testset "IceDetectionBrightnessMidpoint" begin
+        f = IceDetectionBrightnessMidpoint()
         dataset = Watkins2026Dataset(; ref="v0.2")
         case = first(filter(c -> (c.case_number == 111 && c.satellite == "terra"), dataset))
         floes = validated_binary_floes(case) .> 0
         clouds = Watkins2025CloudMask()(modis_falsecolor(case))
         land = modis_landmask(case) .> 0
 
-        tc_masked = apply_cloudmask(RGB.(modis_truecolor(case)), clouds)
-        tc_masked .= apply_landmask(tc_masked, land)
-        prelim_ice = f(tc_masked)
+        tc_masked = masker(land, apply_cloudmask(RGB.(modis_truecolor(case)), clouds))
+        # tc_masked .= apply_landmask(tc_masked, land)
+        prelim_ice = f(Gray.(red.(tc_masked))) .> 0
         recall =
             sum(prelim_ice .&& floes .&& .! clouds .&& .! land) / sum(floes .&& .! clouds .&& .! land)
         @test recall >= 0.979
@@ -80,7 +80,7 @@
         @test 0.38 < water < 0.40
 
         tiles = get_tiles(land, 200)
-        prelim_ice = f(tc_masked, tiles)
+        prelim_ice = f(Gray.(red.(tc_masked)), tiles) .> 0
         recall =
             sum(prelim_ice .&& floes .&& .! clouds .&& .! land) / sum(floes .&& .! clouds .&& .! land)
         @test recall >= 0.979
@@ -173,7 +173,7 @@
 end
 
 @testitem "Binarization" begin
-    using Images: binarize, n0f8, float64, n4f12, load, Gray
+    using Images: binarize, n0f8, float64, n4f12, load, Gray, red, blue
     import DelimitedFiles: readdlm, writedlm
 
     include("config.jl")
@@ -230,6 +230,26 @@ end
             @test binarize(n0f8.(fc_masked), algorithm) == baseline_mask
             @test binarize(float64.(fc_masked), algorithm) == baseline_mask
             @test binarize(n4f12.(fc_masked), algorithm) == baseline_mask broken = true
+        end
+        
+        algorithm = IceDetectionBrightnessMidpoint(;
+                minimum_reflectance=0.3
+            )
+        
+            # Band 1 is the blue channel in the falsecolor image
+        g = Gray.(blue.(falsecolor)) 
+        g_masked = Gray.(blue.(fc_masked))
+        baseline = binarize(g, algorithm)
+        baseline_mask = binarize(g_masked, algorithm)
+        
+        @testset "IceDetectionBrightnessMidpoint type invariant" begin
+            @test sum(algorithm(g)) > 0
+            @test binarize(n0f8.(g), algorithm) == baseline
+            @test binarize(float64.(g), algorithm) == baseline
+            @test binarize(n4f12.(g), algorithm) == baseline
+            @test binarize(n0f8.(g_masked), algorithm) == baseline_mask
+            @test binarize(float64.(g_masked), algorithm) == baseline_mask
+            @test binarize(n4f12.(g_masked), algorithm) == baseline_mask
         end
     end
 end

@@ -31,13 +31,11 @@ import ..Preprocessing:
     Watkins2025CloudMask
 import ..ImageUtils: get_tiles, imbrighten
 import ..Segmentation: 
-    IceFloeSegmentationAlgorithm, 
     expand_labels,
-    find_ice_mask, 
     kmeans_binarization,
     tiled_adaptive_binarization,
     IceDetectionBrightnessPeaksMODIS721,
-    IceDetectionBrightnessPeaksMODIS134,
+    IceDetectionBrightnessMidpoint,
     stitch_clusters,
     view_seg,
     view_seg_random
@@ -52,6 +50,8 @@ import ..Tracking:
     RelativeErrorThresholdFilter,
     ShapeDifferenceThresholdFilter,
     PsiSCorrelationThresholdFilter
+
+import ..Pipeline: IceFloeSegmentationAlgorithm
 
 abstract type IceFloePreprocessingAlgorithm end
 
@@ -123,7 +123,7 @@ The image preprocessing is supplied as an function in the functor setup.
 - `tile_size_pixels=1200`: Nominal tile size in pixels
 - `min_tile_ice_pixel_count=300`: Smallest number of required sea ice pixels in tile
 - `min_floe_size=100`: Smallest floe size to retain
-- `preliminary_ice_mask = IceDetectionBrightnessPeaksMODIS134(band_7_max=0.1, possible_ice_threshold=0.3)`: Function to use to identify likely ice pixels for filtering.
+- `preliminary_ice_mask = IceDetectionBrightnessMidpoint(minimum_reflectance=0.3)`: Function to use to identify likely ice pixels for filtering.
 - `kmeans_params = (k=4, maxiter=50, random_seed=45)`: Parameters for `kmeans_binarization`
 - `cluster_selection_algorithm = IceDetectionBrightnessPeaksMODIS721(
     band_7_max=0.1,
@@ -142,7 +142,7 @@ The image preprocessing is supplied as an function in the functor setup.
     min_floe_size=100
     max_floe_size=50_000
     kmeans_params = (k=4, maxiter=50, random_seed=45)
-    preliminary_ice_mask = IceDetectionBrightnessPeaksMODIS134(band_1_min=0.3)
+    preliminary_ice_mask = IceDetectionBrightnessMidpoint(minimum_reflectance=0.3)
     cluster_selection_algorithm = IceDetectionBrightnessPeaksMODIS721(
         band_7_max=0.1,
         possible_ice_threshold=0.3,
@@ -151,7 +151,6 @@ The image preprocessing is supplied as an function in the functor setup.
     floe_splitting_settings = (max_fill_area=1, min_area_opening=20, opening_strel=strel_disk(2))
     # TBD: Add updated floe splitting settings, add params for k-means cleanup
 end 
-
 
 function (p::Segment)(
     truecolor::T₁,
@@ -195,7 +194,7 @@ function (p::Segment)(
                 t -> sum(.!joint_mask[t...]) > p.min_tile_ice_pixel_count, tiles);
 
     # Then check for sufficient possible sea ice pixels
-    prelim_ice_mask = p.preliminary_ice_mask(tc_masked, filtered_tiles)
+    prelim_ice_mask = p.preliminary_ice_mask(Gray.(red.(tc_masked)), filtered_tiles)
     filtered_tiles = filter(
         t -> sum(prelim_ice_mask[t...]) > p.min_tile_ice_pixel_count, filtered_tiles);
 
@@ -206,7 +205,7 @@ function (p::Segment)(
     # We use the cloud mask in finding the bright floes - the bright floe cluster can't be cloud -
     # and allow the k-means cluster to overlap with the cloud mask by using the preproc gray with
     # only the landmask applied to it
-    # Alternative approach: simply use the adaptive threshold binarization. 
+    # Update to do the k-means twice: preproc and not preproc
     kmeans_result = kmeans_binarization(
             apply_landmask(preproc_gray, cloud_mask),
             fc_masked,
@@ -218,12 +217,6 @@ function (p::Segment)(
             )
      # update to have settings accessible from top
     kmeans_result .= clean_binary_floes(kmeans_result, prelim_ice_mask, cloud_mask)
-    # kmeans_result = tiled_adaptive_binarization(apply_landmask(preproc_gray, cloud_mask),
-    #     filtered_tiles;
-    #     minimum_window_size=400,
-    #     minimum_brightness=0.3,
-    #     threshold_percentage=0
-    #     ) .> 0 
     kmeans_result .= clean_binary_floes(kmeans_result, prelim_ice_mask, cloud_mask)
 
     @info "Splitting floes"
