@@ -152,7 +152,6 @@ The image preprocessing is supplied as an function in the functor setup.
     # TBD: Add updated floe splitting settings, add params for k-means cleanup
 end 
 
-
 function (p::Segment)(
     truecolor::T₁,
     falsecolor::T₂,
@@ -195,7 +194,7 @@ function (p::Segment)(
                 t -> sum(.!joint_mask[t...]) > p.min_tile_ice_pixel_count, tiles);
 
     # Then check for sufficient possible sea ice pixels
-    prelim_ice_mask = p.preliminary_ice_mask(tc_masked, filtered_tiles)
+    prelim_ice_mask = p.preliminary_ice_mask(Gray.(red.(tc_masked)), filtered_tiles)
     filtered_tiles = filter(
         t -> sum(prelim_ice_mask[t...]) > p.min_tile_ice_pixel_count, filtered_tiles);
 
@@ -206,7 +205,7 @@ function (p::Segment)(
     # We use the cloud mask in finding the bright floes - the bright floe cluster can't be cloud -
     # and allow the k-means cluster to overlap with the cloud mask by using the preproc gray with
     # only the landmask applied to it
-    # Alternative approach: simply use the adaptive threshold binarization. 
+    # Update to do the k-means twice: preproc and not preproc
     kmeans_result = kmeans_binarization(
             apply_landmask(preproc_gray, cloud_mask),
             fc_masked,
@@ -218,12 +217,6 @@ function (p::Segment)(
             )
      # update to have settings accessible from top
     kmeans_result .= clean_binary_floes(kmeans_result, prelim_ice_mask, cloud_mask)
-    # kmeans_result = tiled_adaptive_binarization(apply_landmask(preproc_gray, cloud_mask),
-    #     filtered_tiles;
-    #     minimum_window_size=400,
-    #     minimum_brightness=0.3,
-    #     threshold_percentage=0
-    #     ) .> 0 
     kmeans_result .= clean_binary_floes(kmeans_result, prelim_ice_mask, cloud_mask)
 
     @info "Splitting floes"

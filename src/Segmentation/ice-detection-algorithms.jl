@@ -286,7 +286,7 @@ binarize(g, a)
     nbins=128
 end
 
-function (f::IceDetectionBrightnessMidpoint)(out, gray_image, args...; kwargs...)
+function (f::IceDetectionBrightnessMidpoint)(out, gray_image)
     alpha_binary = alpha.(alphacolor.(gray_image)) .> 0.5
     edges, bincounts = build_histogram(gray_image .* alpha_binary, f.nbins; minval=0, maxval=1)
     ice_peak = get_ice_peaks(
