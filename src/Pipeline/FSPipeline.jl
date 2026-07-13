@@ -31,13 +31,11 @@ import ..Preprocessing:
     Watkins2025CloudMask
 import ..ImageUtils: get_tiles, imbrighten
 import ..Segmentation: 
-    IceFloeSegmentationAlgorithm, 
     expand_labels,
-    find_ice_mask, 
     kmeans_binarization,
     tiled_adaptive_binarization,
     IceDetectionBrightnessPeaksMODIS721,
-    IceDetectionBrightnessPeaksMODIS134,
+    IceDetectionBrightnessMidpoint,
     stitch_clusters,
     view_seg,
     view_seg_random
@@ -52,6 +50,8 @@ import ..Tracking:
     RelativeErrorThresholdFilter,
     ShapeDifferenceThresholdFilter,
     PsiSCorrelationThresholdFilter
+
+import ..Pipeline: IceFloeSegmentationAlgorithm
 
 abstract type IceFloePreprocessingAlgorithm end
 
@@ -123,7 +123,7 @@ The image preprocessing is supplied as an function in the functor setup.
 - `tile_size_pixels=1200`: Nominal tile size in pixels
 - `min_tile_ice_pixel_count=300`: Smallest number of required sea ice pixels in tile
 - `min_floe_size=100`: Smallest floe size to retain
-- `preliminary_ice_mask = IceDetectionBrightnessPeaksMODIS134(band_7_max=0.1, possible_ice_threshold=0.3)`: Function to use to identify likely ice pixels for filtering.
+- `preliminary_ice_mask = IceDetectionBrightnessMidpoint(minimum_reflectance=0.3)`: Function to use to identify likely ice pixels for filtering.
 - `kmeans_params = (k=4, maxiter=50, random_seed=45)`: Parameters for `kmeans_binarization`
 - `cluster_selection_algorithm = IceDetectionBrightnessPeaksMODIS721(
     band_7_max=0.1,
@@ -142,7 +142,7 @@ The image preprocessing is supplied as an function in the functor setup.
     min_floe_size=100
     max_floe_size=50_000
     kmeans_params = (k=4, maxiter=50, random_seed=45)
-    preliminary_ice_mask = IceDetectionBrightnessPeaksMODIS134(band_1_min=0.3)
+    preliminary_ice_mask = IceDetectionBrightnessMidpoint(minimum_reflectance=0.3)
     cluster_selection_algorithm = IceDetectionBrightnessPeaksMODIS721(
         band_7_max=0.1,
         possible_ice_threshold=0.3,
