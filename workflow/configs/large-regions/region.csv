@@ -1,0 +1,10 @@
+﻿region,center_crs,center_lat,center_lon,target_crs,target_width,target_height
+greenland_sea-large,EPSG:4326,74.7,-17.6,EPSG:3413,954_000,1_509_000
+barents_kara_seas-large,EPSG:4326,75.6,53.2,EPSG:3413,1_698_000,1_899_000
+laptev_sea-large,EPSG:4326,75.9,124.7,EPSG:3413,853_000,1_223_000
+sea_of_okhostk-large,EPSG:4326,58.0,148.0,EPSG:3413,1_500_000,1_500_000
+east_siberian_sea-large,EPSG:4326,75.2,165.2,EPSG:3413,1_319_000,1_286_000
+bering_chukchi_seas-large,EPSG:4326,65.6,-169.1,EPSG:3413,1_500_000,1_500_000
+beaufort_sea-large,EPSG:4326,74.9,-142.8,EPSG:3413,1_500_000,1_056_000
+hudson_bay-large,EPSG:4326,58.1,-84.0,EPSG:3413,1_141_000,1_766_000
+baffin_bay-large,EPSG:4326,74.8,-64.1,EPSG:3413,889_000,1_500_000
