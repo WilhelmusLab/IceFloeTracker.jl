@@ -27,8 +27,7 @@ import ..Preprocessing:
     apply_landmask!,
     apply_cloudmask,
     apply_cloudmask!,
-    LopezAcostaCloudMask,
-    Watkins2025CloudMask
+    Watkins2026CloudMask
 import ..ImageUtils: get_tiles, imbrighten
 import ..Segmentation: 
     expand_labels,
@@ -36,6 +35,8 @@ import ..Segmentation:
     tiled_adaptive_binarization,
     IceDetectionBrightnessPeaksMODIS721,
     IceDetectionBrightnessMidpoint,
+    remove_small_segments!,
+    remove_large_segments!,
     stitch_clusters,
     view_seg,
     view_seg_random
@@ -135,24 +136,44 @@ The image preprocessing is supplied as an function in the functor setup.
 """
 @kwdef struct Segment <: IceFloeSegmentationAlgorithm 
     coastal_buffer_structuring_element::AbstractMatrix{Bool} = strel_box((51,51))
-    cloud_mask_algorithm = Watkins2025CloudMask()
-    preprocessing_algorithm = Preprocess()
+    cloud_mask_algorithm = Watkins2026CloudMask()
+    preprocessing_algorithm = Preprocess(
+        diffusion_algorithm = PeronaMalikDiffusion(λ=0.1, K=0.1, niters=5, g="exponential"),
+        adapthisteq_params = (nbins=256, rblocks=8, cblocks=4, clip=1),
+        unsharp_mask_params = (radius=50, amount=0.2, threshold=0.01),
+    )
     tile_size_pixels = 1200
     min_tile_ice_pixel_count=300
     min_floe_size=100
     max_floe_size=50_000
-    kmeans_params = (k=4, maxiter=50, random_seed=45)
-    preliminary_ice_mask = IceDetectionBrightnessMidpoint(minimum_reflectance=0.3)
-    cluster_selection_algorithm = IceDetectionBrightnessPeaksMODIS721(
-        band_7_max=0.1,
-        possible_ice_threshold=0.3,
-        join_method="union",
-        minimum_prominence=0.01)
-    floe_splitting_settings = (max_fill_area=1, min_area_opening=20, opening_strel=strel_disk(2))
-    # TBD: Add updated floe splitting settings, add params for k-means cleanup
+    preliminary_ice_mask = IceDetectionBrightnessMidpoint(
+        minimum_reflectance=0.3
+        )
+    kmeans_params = (
+        k=4, 
+        maxiter=50, 
+        random_seed=45, 
+        cluster_selection_algorithm = IceDetectionBrightnessPeaksMODIS721(
+            band_7_max=0.1,
+            possible_ice_threshold=0.3,
+            join_method="union",
+            minimum_prominence=0.01,
+            )
+        )
+    cleanup_binary_settings = (
+        erosion_strel=strel_box((3,3)), 
+        init_max_fill=100, 
+        conditional_max_fill=500
+    )
+    floe_splitting_settings = (
+        min_floe_size=64,
+        max_hole_fill=2000,
+        max_distance=5,
+        max_expand=3,
+    )
 end 
 
-function (p::Segment)(
+function (s::Segment)(
     truecolor::T₁,
     falsecolor::T₂,
     landmask::T₃,
@@ -173,7 +194,7 @@ function (p::Segment)(
     apply_landmask!(falsecolor_image, landmask)
 
     n, m = size(truecolor_image)
-    tile_size_pixels = p.tile_size_pixels
+    tile_size_pixels = s.tile_size_pixels
     tile_size_pixels > maximum([n, m]) && begin
         @warn "Tile size too large, defaulting to image size"
             tile_size_pixels = minimum([n, m])
@@ -182,7 +203,7 @@ function (p::Segment)(
     (nr, nc) = round.(Int, size(truecolor_image) ./ tile_size_pixels)
     tiles = get_tiles(truecolor_image; rblocks=nr, cblocks=nc)
     @info "Building masks"
-    cloud_mask = create_cloudmask(falsecolor_image, p.cloud_mask_algorithm)
+    cloud_mask = create_cloudmask(falsecolor_image, s.cloud_mask_algorithm)
     
     # 2. Intermediate images - apply coastal buffer and cloud mask
     joint_mask = coastal_buffer_mask .|| cloud_mask
@@ -191,15 +212,15 @@ function (p::Segment)(
 
     # First check for sufficient non-land and non-cloud pixels
     filtered_tiles = filter(
-                t -> sum(.!joint_mask[t...]) > p.min_tile_ice_pixel_count, tiles);
+                t -> sum(.!joint_mask[t...]) > s.min_tile_ice_pixel_count, tiles);
 
     # Then check for sufficient possible sea ice pixels
-    prelim_ice_mask = p.preliminary_ice_mask(Gray.(red.(tc_masked)), filtered_tiles)
+    prelim_ice_mask = s.preliminary_ice_mask(Gray.(red.(tc_masked)), filtered_tiles)
     filtered_tiles = filter(
-        t -> sum(prelim_ice_mask[t...]) > p.min_tile_ice_pixel_count, filtered_tiles);
+        t -> sum(prelim_ice_mask[t...]) > s.min_tile_ice_pixel_count, filtered_tiles);
 
     @info "Preprocessing truecolor image"
-    preproc_gray = float64.(p.preprocessing_algorithm(
+    preproc_gray = float64.(s.preprocessing_algorithm(
         truecolor_image, landmask, filtered_tiles));
 
     # We use the cloud mask in finding the bright floes - the bright floe cluster can't be cloud -
@@ -210,18 +231,23 @@ function (p::Segment)(
             apply_landmask(preproc_gray, cloud_mask),
             fc_masked,
             filtered_tiles;
-            k=p.kmeans_params.k,
-            maxiter=p.kmeans_params.maxiter,
-            random_seed=p.kmeans_params.random_seed,
-            cluster_selection_algorithm=p.cluster_selection_algorithm
+            s.kmeans_params...
             )
      # update to have settings accessible from top
-    kmeans_result .= clean_binary_floes(kmeans_result, prelim_ice_mask, cloud_mask)
-    kmeans_result .= clean_binary_floes(kmeans_result, prelim_ice_mask, cloud_mask)
+    kmeans_result .= clean_binary_floes(
+        kmeans_result, 
+        prelim_ice_mask, 
+        cloud_mask; 
+        s.cleanup_binary_settings...
+        )
 
     @info "Splitting floes"
     # Could tile this, but doesn't seem to be a major bottleneck
-    split_floes = dist_morph_split(kmeans_result; max_distance=7) # update to have morph split settings
+    split_floes = dist_morph_split(
+        kmeans_result; 
+        s.floe_splitting_settings...
+    ) # update to have morph split settings
+    
     # TBD: Filter floes based on the edge properties, colors
 
     @info "Filtering floes"
@@ -234,8 +260,10 @@ function (p::Segment)(
         split_floes[indices[L]] .= 0        
     end
 
-    remove_small_segments!(split_floes, p.min_floe_size)
-    remove_large_segments!(split_floes, p.max_floe_size)
+    # Remove floes outside the specified bounds
+    remove_small_segments!(split_floes, s.min_floe_size)
+    remove_large_segments!(split_floes, s.max_floe_size)
+
     # Re-label to fill where regions were deleted
     split_floes .= label_components(split_floes)
 
@@ -254,7 +282,7 @@ function (p::Segment)(
             cloud_mask=Gray.(cloud_mask),
             ice_mask=Gray.(prelim_ice_mask),
             preprocessed=preproc_gray,
-            bright_ice_mask=p.cluster_selection_algorithm(falsecolor_image),            
+            bright_ice_mask=s.cluster_selection_algorithm(falsecolor_image),  # Remove this in final version, this is for dev      
             binarized=kmeans_result,
             final_floes = colorview_random,
             labels_map = split_floes,
@@ -265,33 +293,52 @@ function (p::Segment)(
     return segments_tc
 end
 
+"""
+    clean_binary_floes(binary_img, icemask, cloudmask;
+        erosion_strel=strel_box((3,3)),
+        init_max_fill=100,
+        conditional_max_fill=500
+    )
+
+Fill holes in a binary mask. First, fill holes in the eroded floe shapes
+up to size `init_max_fill`. Then, fill holes up to `conditional_max_fill`
+if those holes are either ice or cloud. Finally, reset any filled holes that 
+intersect with the boundary.
+
+"""
 function clean_binary_floes(binary_img, icemask, cloudmask;
-        erosion_strel=strel_box((7,7)),
-        filling_strel=strel_diamond((3,3)),
-        max_fill=100
+        erosion_strel=strel_box((3,3)),
+        init_max_fill=100,
+        conditional_max_fill=500
     )
     out = deepcopy(binary_img)
     # 1. Shrink objects using the provided structuring element
     eroded_img = erode(out, erosion_strel)
 
     # 2. After shrinking, fill holes
-    filled = fill_holes(eroded_img, filling_strel) # Test how permissive this is. Should we use imfill instead?
+    filled = .!imfill(.!eroded_img, (0, init_max_fill)) # Test how permissive this is. Should we use imfill instead?
 
     # 3. Identify filled holes which are part of the ice mask or the cloud mask
     filled .= filled .&& (icemask .|| cloudmask)
-    filled .= .!imfill(.!filled, (0, max_fill))
+    filled .= .!imfill(.!filled, (0, conditional_max_fill))
 
     # 4. Use morphological closing to further limit openings
-    closing!(filled)
+    filled .= closing(filled, erosion_strel)
 
-    # 5. Finally, set any of these filled pixels to 1 in the output image.
+    # 5. Set any of these filled pixels to 1 in the output image.
     out[filled .> 0] .= 1
+    opening!(out)
+    
+    # 6. If the filled region intersects with a boundary, remove it
+    filled .= out .!= binary_img
+    out[filled .&& .! clearborder(filled)] .= 0
+    
     return out
 end
 
 
 ### TODO: Set up this function as a "FloeSplittingAlgorithm" 
-# Find markers by selecting locations greater than dist threshold from background
+
 """
     dist_morph_split(
         binary_floes::BitMatrix;
@@ -362,51 +409,15 @@ function dist_morph_split(
         end
     end
     final_labels .= label_components(final_labels)
+    println(typeof(final_labels))
+    println(typeof(min_floe_size))
     remove_small_segments!(final_labels, min_floe_size)
     return final_labels
 end
 
-# TODO: Add function to segmented image utilities and add test
-"""
-    remove_small_segments!(labels, min_size)
-
-Checks the area of each labeled object in `labels` and sets it to 0 if it is less than `min_size`.
-
-"""
-function remove_small_segments!(labels, min_size)
-    areas = component_lengths(labels)
-    indices = component_indices(labels)
-
-    for L in keys(areas)
-        (L != 0) && begin
-            (areas[L] < min_size) && begin
-                labels[indices[L]] .= 0
-            end
-        end
-    end
-end
-
-"""
-    remove_small_segments!(labels, min_size)
-
-Checks the area of each labeled object in `labels` and sets it to 0 if it is less than `min_size`.
-
-"""
-function remove_large_segments!(labels, max_size)
-    areas = component_lengths(labels)
-    indices = component_indices(labels)
-
-    for L in keys(areas)
-        (L != 0) && begin
-            (areas[L] > max_size) && begin
-                labels[indices[L]] .= 0
-            end
-        end
-    end
-end
-
-#### TODO: Add object-wise hole filling method
-#### TODO: Add Track() method for configured tracker (including alternative similarity measures)
+# TODO: Filter function for object-wise cleanup
+# TODO: Add object-wise hole filling method
+# TODO: Update settings for tracking based on test cases
 
 """
     Track()
