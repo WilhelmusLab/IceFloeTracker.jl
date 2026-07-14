@@ -1,7 +1,7 @@
 using IceFloeTracker
 using Images
 
-case_number = "001-" # Note: Hyphen prevents this from matching years, e.g. 201001
+case_number = "009-" # Note: Hyphen prevents this from matching years, e.g. 201001
 
 dataloc = "/Users/dwatkin2/Documents/research/manuscripts/greenland_floe_scale_dataset/ift_fram_strait_test_cases/data/modis/"
 falsecolor_files = filter(f -> f != ".DS_Store", readdir(joinpath(dataloc, "falsecolor")))
@@ -9,8 +9,8 @@ falsecolor_files = filter(f -> occursin(case_number, f), falsecolor_files)
 truecolor_files = replace.(falsecolor_files, ("falsecolor" => "truecolor"))
 landmask_file = joinpath(dataloc, "landmask.tiff")
 landmask_img = Gray.(load(landmask_file)) .> 0;
-tile_size=700
-clip=5
+tile_size=800
+clip=1
 
 segment = FSPipeline.Segment(;
     preprocessing_algorithm=FSPipeline.Preprocess(adapthisteq_params = (nbins=256, rblocks=8, cblocks=4, clip=clip)),

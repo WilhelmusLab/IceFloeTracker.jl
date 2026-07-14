@@ -166,7 +166,6 @@ The image preprocessing is supplied as an function in the functor setup.
         conditional_max_fill=500
     )
     floe_splitting_settings = (
-        min_floe_size=64,
         max_hole_fill=2000,
         max_distance=5,
         max_expand=3,
@@ -202,6 +201,7 @@ function (s::Segment)(
     
     (nr, nc) = round.(Int, size(truecolor_image) ./ tile_size_pixels)
     tiles = get_tiles(truecolor_image; rblocks=nr, cblocks=nc)
+
     @info "Building masks"
     cloud_mask = create_cloudmask(falsecolor_image, s.cloud_mask_algorithm)
     
@@ -233,7 +233,7 @@ function (s::Segment)(
             filtered_tiles;
             s.kmeans_params...
             )
-     # update to have settings accessible from top
+
     kmeans_result .= clean_binary_floes(
         kmeans_result, 
         prelim_ice_mask, 
@@ -264,7 +264,15 @@ function (s::Segment)(
     remove_small_segments!(split_floes, s.min_floe_size)
     remove_large_segments!(split_floes, s.max_floe_size)
 
-    # Re-label to fill where regions were deleted
+    # Object-wise analysis
+    # - Circularity measure
+    # - Border analysis
+
+
+
+
+
+    # Re-label so there are no missing numbers in the component list
     split_floes .= label_components(split_floes)
 
     # Return the original truecolor image, segmented
@@ -366,16 +374,13 @@ After traversing the pyramid, relabel matrix, and remove any objects smaller tha
 """
 function dist_morph_split(
         binary_floes::BitMatrix;
-        min_floe_size::Int64=64, # TBD: add maximum floe size
         max_hole_fill::Int64=2000,
         max_distance::Int64=5,
         max_expand::Int64=3,
         opening_strel=strel_disk(3)
     )
 
-    ### Remove objects below the minimum floe size, then create distance pyramid
-    bw = .!imfill(binary_floes, (0, min_floe_size))
-    dist = distance_transform(feature_transform(bw))
+    dist = distance_transform(feature_transform(.!binary_floes))
     levels = Dict(0 => label_components(opening(dist .> 0, opening_strel))) # Initialize with one run of opening
     ### Build pyramid - each size is the opened and filled thresholded image
     for dist_threshold in 0:max_distance
@@ -408,12 +413,25 @@ function dist_morph_split(
             end
         end
     end
-    final_labels .= label_components(final_labels)
-    println(typeof(final_labels))
-    println(typeof(min_floe_size))
-    remove_small_segments!(final_labels, min_floe_size)
-    return final_labels
+    return label_components(final_labels)
 end
+
+# Helper function for creating a filtered version of the image indexmap
+"""assign_labels(img, labels_list)
+
+Given an image indexmap `img` and a `labels_list`., create a new labeled
+image using only the values in the list.
+
+"""
+function assign_labels(img, labels_list)
+    out = zeros(Int64, size(img))
+    indices = component_indices(img)
+    for L in labels_list
+        out[indices[L]] .= L
+    end
+    return out
+end  
+
 
 # TODO: Filter function for object-wise cleanup
 # TODO: Add object-wise hole filling method
