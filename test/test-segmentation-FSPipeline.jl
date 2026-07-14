@@ -44,9 +44,9 @@ end
     @test mean_F_score ≥ 0.8 broken = true
 
     # Current performance should look at least as good as this:
-    @test mean_recall ≥ 0.6
-    @test mean_precision ≥ 0.3
-    @test round(mean_F_score; digits=1) ≥ 0.38
+    @test mean_recall ≥ 0.5
+    @test mean_precision ≥ 0.49
+    @test round(mean_F_score; digits=1) ≥ 0.48
 
     # return current performance
     @show mean_recall

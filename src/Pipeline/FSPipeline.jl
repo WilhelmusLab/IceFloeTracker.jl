@@ -30,6 +30,7 @@ import ..Preprocessing:
     Watkins2026CloudMask
 import ..ImageUtils: get_tiles, imbrighten
 import ..Segmentation: 
+    component_perimeters,
     expand_labels,
     kmeans_binarization,
     tiled_adaptive_binarization,
@@ -123,7 +124,6 @@ The image preprocessing is supplied as an function in the functor setup.
 - `preprocessing_algorithm = Preprocess()`: Function to sharpen and equalize the truecolor image
 - `tile_size_pixels=1200`: Nominal tile size in pixels
 - `min_tile_ice_pixel_count=300`: Smallest number of required sea ice pixels in tile
-- `min_floe_size=100`: Smallest floe size to retain
 - `preliminary_ice_mask = IceDetectionBrightnessMidpoint(minimum_reflectance=0.3)`: Function to use to identify likely ice pixels for filtering.
 - `kmeans_params = (k=4, maxiter=50, random_seed=45)`: Parameters for `kmeans_binarization`
 - `cluster_selection_algorithm = IceDetectionBrightnessPeaksMODIS721(
@@ -133,6 +133,7 @@ The image preprocessing is supplied as an function in the functor setup.
     minimum_prominence=0.01)`: Function to use to select a k-means cluster in the `kmeans_binarization` workflow
 - `clean_binary_floes_params`: Parameters for the preliminary binary image cleanup
 - `floe_splitting_params`: Parameters for the `dist_morph_split` floe splitting algorithm
+- `floe_filtering_params`: Parameters for post-segmentation cleanup
 """
 @kwdef struct Segment <: IceFloeSegmentationAlgorithm 
     coastal_buffer_structuring_element::AbstractMatrix{Bool} = strel_box((51,51))
@@ -144,8 +145,6 @@ The image preprocessing is supplied as an function in the functor setup.
     )
     tile_size_pixels = 1200
     min_tile_ice_pixel_count=300
-    min_floe_size=100
-    max_floe_size=50_000
     preliminary_ice_mask = IceDetectionBrightnessMidpoint(
         minimum_reflectance=0.3
         )
@@ -164,15 +163,22 @@ The image preprocessing is supplied as an function in the functor setup.
         window_size=400,
         percentage=0
     )
-    cleanup_binary_settings = (
+    cleanup_binary_params = (
         erosion_strel=strel_box((3,3)), 
         init_max_fill=100, 
         conditional_max_fill=500
     )
-    floe_splitting_settings = (
+    floe_splitting_params = (
         max_hole_fill=2000,
         max_distance=5,
         max_expand=3,
+    )
+    floe_filtering_params = (
+        min_floe_size=100,
+        max_floe_size=50_000,
+        min_band_2_reflectance=0.4,
+        max_band_7_reflectance=0.7,
+        min_circularity=0.4
     )
 end 
 
@@ -243,14 +249,18 @@ function (s::Segment)(
         s.adaptive_params... 
         )
     ) .> 0
+    
+    # AdaptiveThreshold often has noise in large blank areas
+    apply_landmask!(adaptive_result, landmask)
+
 
     @info "Splitting floes"
-    function clean_split_label(r)
-        return dist_morph_split(
-            clean_binary_floes(r, prelim_ice_mask, cloud_mask; s.cleanup_binary_settings...);
-             s.floe_splitting_settings...
-             )
-    end
+
+    clean_split_label = r -> dist_morph_split(
+                clean_binary_floes(r, prelim_ice_mask, cloud_mask; s.cleanup_binary_params...
+            );
+            s.floe_splitting_params...
+        )
     
     kmeans_split_floes = clean_split_label(kmeans_result)
     adaptive_split_floes = clean_split_label(adaptive_result)
@@ -262,7 +272,20 @@ function (s::Segment)(
     # Includes removal of objects intersecting the coastal buffer and
     # objects outside the range (min_floe_size, max_floe_size)
     # TBD: object-based analysis
-    filter_floes!(kmeans_split_floes, coastal_buffer_mask, s.min_floe_size, s.max_floe_size)
+
+    filter_floes_! = r -> filter_floes!(
+        r,
+        coastal_buffer_mask, 
+        falsecolor_image,
+        s.floe_filtering_params.min_floe_size, 
+        s.floe_filtering_params.max_floe_size,
+        s.floe_filtering_params.min_band_2_reflectance,
+        s.floe_filtering_params.max_band_7_reflectance,
+        s.floe_filtering_params.min_circularity,
+    )
+
+    filter_floes_!(kmeans_split_floes)
+    filter_floes_!(adaptive_split_floes)
    
 
     # Object-wise analysis
@@ -273,7 +296,7 @@ function (s::Segment)(
     final_floes = kmeans_split_floes
 
     # Re-label so there are no missing numbers in the component list
-    split_floes = label_components(final_floes)
+    final_floes .= label_components(final_floes)
 
     # Return the original truecolor image, segmented
     segments_tc = SegmentedImage(truecolor_image, final_floes)
@@ -290,7 +313,8 @@ function (s::Segment)(
             cloud_mask=Gray.(cloud_mask),
             ice_mask=Gray.(prelim_ice_mask),
             preprocessed=preproc_gray,
-            binarized=kmeans_result,
+            kmeans_binarized=kmeans_split_floes .> 0,
+            adaptive_binarized=adaptive_split_floes .> 0,
             final_floes = colorview_random,
             labels_map = final_floes,
             segment_mean_falsecolor=colorview_falsecolor,
@@ -429,7 +453,16 @@ function assign_labels(img_indexmap, labels_list)
 end  
 
 
-function filter_floes!(img_indexmap, coastal_buffer_mask, min_floe_size, max_floe_size)
+function filter_floes!(
+    img_indexmap, 
+    coastal_buffer_mask, 
+    falsecolor_image,
+    min_floe_size, 
+    max_floe_size,
+    min_band_2_reflectance,
+    max_band_7_reflectance,
+    min_circularity,
+    )
     overlap = unique(img_indexmap[coastal_buffer_mask])
     indices = component_indices(img_indexmap)    
     for L in overlap
@@ -439,11 +472,157 @@ function filter_floes!(img_indexmap, coastal_buffer_mask, min_floe_size, max_flo
     # Remove floes outside the specified bounds
     remove_small_segments!(img_indexmap, min_floe_size)
     remove_large_segments!(img_indexmap, max_floe_size)
+
+    areas = component_lengths(img_indexmap)
+    perims = component_perimeters(img_indexmap)
+    b2_means = segment_mean(SegmentedImage(green.(falsecolor_image), img_indexmap))
+    b7_means = segment_mean(SegmentedImage(red.(falsecolor_image), img_indexmap))
+
+    for L in unique(img_indexmap)
+        if L > 0 
+            if b2_means[L] < min_band_2_reflectance || b7_means[L] > max_band_7_reflectance
+                img_indexmap[indices[L]] .= 0
+            elseif 4 * π * areas[L] / perims[L]^2 < min_circularity
+                img_indexmap[indices[L]] .= 0
+            end
+        end
+    end
 end
 
 # TODO: Filter function for object-wise cleanup
 # TODO: Add object-wise hole filling method
 # TODO: Update settings for tracking based on test cases
+
+# TODO: Add this to the segmentation utilities
+"""
+    get_relevant_set(ground_truth_df, segments_df, ground_truth_labels, segment_labels)   
+
+
+Find the relevant set for comparing ground truth labels with a segmentation product.
+- ground_truth_df = result of regionprops table
+- segments_df = result of regionprops table
+- ground_truth_labels = labels map for the ground truth
+- segment_labels = labels map for the segmentation results
+
+The relevant set for a segmentation comparison is defined by 
+1. centroid g in s
+2. centroid s in g
+3. area overlap greater than 50% of g
+4. area overlap greater than 50% of s
+
+This method focuses on floes which overlap, not false positives.
+
+"""
+function get_relevant_set(ground_truth_df, segments_df, ground_truth_labels, segment_labels)   
+    relevant_set = Dict{Int64, Vector{Int64}}()  
+    for floe in eachrow(ground_truth_df)
+        # select labels that are inside the bounding box for the floe
+        matched_labels = unique(segment_labels[floe.min_row:floe.max_row, floe.min_col:floe.max_col])
+
+        # if any, then check centroid positions
+        maximum(matched_labels) != 0 && begin
+            # get the rows in the segments_df from the matched labels
+            candidate_subset = subset(segments_df, :label => ByRow(l -> l in matched_labels))
+
+            relevant_set_labels = []
+            
+            # check if centroid g in s
+            rc = round(Int64, floe.row_centroid)
+            cc = round(Int64, floe.col_centroid)
+            push!(relevant_set_labels, segment_labels[rc, cc])
+
+            # check if centroid s in g
+            for s_floe in eachrow(candidate_subset)
+                rc = round(Int64, s_floe.row_centroid)
+                cc = round(Int64, s_floe.col_centroid)
+                (ground_truth_labels[rc, cc] == floe.label) && begin
+                    push!(relevant_set_labels, s_floe.label)
+                end
+
+                # joint bbox
+                rmin = minimum((floe.min_row, s_floe.min_row))
+                rmax = maximum((floe.max_row, s_floe.max_row))
+                cmin = minimum((floe.min_col, s_floe.min_col))
+                cmax = maximum((floe.max_col, s_floe.max_col))
+                
+                # check if area overlap between g and s is larger than 50% of g
+                gtmask = ground_truth_labels[rmin:rmax, cmin:cmax] .== floe.label
+                slmask = segment_labels[rmin:rmax, cmin:cmax] .== s_floe.label
+                intersect_area = sum(gtmask .&& slmask)
+                maximum([intersect_area / s_floe.area, intersect_area / floe.area]) > 0.5 && begin
+                    push!(relevant_set_labels, s_floe.label)
+                end
+            end
+            relevant_set_labels = filter(r -> r != 0, unique(relevant_set_labels))
+            if length(relevant_set_labels) > 0
+                push!(relevant_set, floe.label => relevant_set_labels)
+            end
+        end
+    end
+    return relevant_set
+end
+
+"""
+Objectwise comparison: Get the index for the relevant set,
+compute the centroid distance, relative error in area, and 
+add info on the matched segment.
+"""
+function objectwise_compare_segmentation(segmentation1, segmentation2)
+
+    # Get the region properties 
+    # Extend this as we add more measures
+    # - Shape difference
+    # - Intersection area
+    # - Boundary distance
+    
+    df_s1 = regionprops_table(segmentation1; properties=[:label, :centroid, :area, :bbox, :perimeter])
+    df_s2 = regionprops_table(segmentation2; properties=[:label, :centroid, :area, :bbox, :perimeter])
+
+    relevant_set = get_relevant_set(df_s1, df_s2, labels_map(segmentation1), labels_map(segmentation2))
+    results = DataFrame[]
+    for floe in eachrow(df_s1)
+        g = floe.label
+        g in keys(relevant_set) && begin
+            df_rs = subset(df_s2, :label => ByRow(s -> s in relevant_set[g]))        
+            df_rs[:, :s1_label] .= g
+            df_rs[:, :s1_area] .= floe.area
+            df_rs[:, :s1_perimeter] .= floe.perimeter
+            df_rs[:, :s1_row_centroid] .= floe.row_centroid
+            df_rs[:, :s1_col_centroid] .= floe.col_centroid
+            df_rs[:, :dist_s1_s2] = euclidean_distance(floe, df_rs)
+            df_rs[:, :scaled_relative_error_area] = abs.(df_rs.area .- floe.area) ./ (df_rs.area .+ floe.area)
+            push!(results, df_rs)
+        end
+    end
+    results_df = vcat(results..., cols=:union)
+    rename!(results_df, :area => :s2_area, :perimeter => :s2_perimeter,  :label => :s2_label, :col_centroid => :s2_col_centroid, 
+                        :row_centroid => :s2_row_centroid, :max_col => :s2_max_col,
+                        :max_row => :s2_max_row, :min_col=>:s2_min_col, :min_row=>:s2_min_row)
+
+    @. results_df[:, :s1_circularity] = 4 * pi * results_df[:, :s1_area] / results_df[:, :s1_perimeter]^ 2
+    @. results_df[:, :s2_circularity] = 4 * pi * results_df[:, :s2_area] / results_df[:, :s2_perimeter]^ 2
+    
+    return_cols = [
+         "s1_label",
+         "s1_area",
+         "s1_perimeter",
+         "s1_row_centroid",
+         "s1_col_centroid",
+         "s1_circularity",
+         "s2_label",
+         "s2_area",
+         "s2_perimeter", 
+         "s2_col_centroid",
+         "s2_row_centroid",
+         "s2_circularity",
+         "dist_s1_s2",
+         "scaled_relative_error_area"
+    ]
+
+    return results_df[:, return_cols]
+end
+
+
 
 """
     Track()
