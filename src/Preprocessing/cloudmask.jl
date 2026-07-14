@@ -231,7 +231,7 @@ function (f::Watkins2026CloudMask)(img::AbstractArray{<:Union{AbstractRGB,Transp
     !maximum(init_mask) && return init_mask
 
     # remove speckle
-    markers = opening(init_mask, opening_strel)
+    markers = opening(init_mask, f.opening_strel)
     init_mask .= mreconstruct(dilate, markers, init_mask, strel_diamond((3, 3)))
   
     # expand mask
