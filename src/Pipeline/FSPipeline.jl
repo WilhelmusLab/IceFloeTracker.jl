@@ -160,6 +160,10 @@ The image preprocessing is supplied as an function in the functor setup.
             minimum_prominence=0.01,
             )
         )
+    adaptive_params = (
+        window_size=400,
+        percentage=0
+    )
     cleanup_binary_settings = (
         erosion_strel=strel_box((3,3)), 
         init_max_fill=100, 
@@ -223,6 +227,7 @@ function (s::Segment)(
     preproc_gray = float64.(s.preprocessing_algorithm(
         truecolor_image, landmask, filtered_tiles));
 
+    @info "Binarization"
     # We use the cloud mask in finding the bright floes - the bright floe cluster can't be cloud -
     # and allow the k-means cluster to overlap with the cloud mask by using the preproc gray with
     # only the landmask applied to it
@@ -233,51 +238,46 @@ function (s::Segment)(
             filtered_tiles;
             s.kmeans_params...
             )
-
-    kmeans_result .= clean_binary_floes(
-        kmeans_result, 
-        prelim_ice_mask, 
-        cloud_mask; 
-        s.cleanup_binary_settings...
+    adaptive_result = binarize(preproc_gray,
+        AdaptiveThreshold(;
+        s.adaptive_params... 
         )
+    ) .> 0
 
     @info "Splitting floes"
-    # Could tile this, but doesn't seem to be a major bottleneck
-    split_floes = dist_morph_split(
-        kmeans_result; 
-        s.floe_splitting_settings...
-    ) # update to have morph split settings
+    function clean_split_label(r)
+        return dist_morph_split(
+            clean_binary_floes(r, prelim_ice_mask, cloud_mask; s.cleanup_binary_settings...);
+             s.floe_splitting_settings...
+             )
+    end
+    
+    kmeans_split_floes = clean_split_label(kmeans_result)
+    adaptive_split_floes = clean_split_label(adaptive_result)
     
     # TBD: Filter floes based on the edge properties, colors
 
     @info "Filtering floes"
     
-    # Remove floes which intersect the coastal buffer
-    # This one could be a separate function like remove_small_segments!
-    overlap = unique(split_floes[coastal_buffer_mask])
-    indices = component_indices(split_floes)    
-    for L in overlap
-        split_floes[indices[L]] .= 0        
-    end
-
-    # Remove floes outside the specified bounds
-    remove_small_segments!(split_floes, s.min_floe_size)
-    remove_large_segments!(split_floes, s.max_floe_size)
+    # Includes removal of objects intersecting the coastal buffer and
+    # objects outside the range (min_floe_size, max_floe_size)
+    # TBD: object-based analysis
+    filter_floes!(kmeans_split_floes, coastal_buffer_mask, s.min_floe_size, s.max_floe_size)
+   
 
     # Object-wise analysis
     # - Circularity measure
     # - Border analysis
 
-
-
-
+    # Join results
+    final_floes = kmeans_split_floes
 
     # Re-label so there are no missing numbers in the component list
-    split_floes .= label_components(split_floes)
+    split_floes = label_components(final_floes)
 
     # Return the original truecolor image, segmented
-    segments_tc = SegmentedImage(truecolor_image, split_floes)
-    segments_fc = SegmentedImage(falsecolor_image, split_floes)
+    segments_tc = SegmentedImage(truecolor_image, final_floes)
+    segments_fc = SegmentedImage(falsecolor_image, final_floes)
 
     if !isnothing(intermediate_results_callback)
         colorview_truecolor = view_seg(segments_tc)
@@ -292,7 +292,7 @@ function (s::Segment)(
             preprocessed=preproc_gray,
             binarized=kmeans_result,
             final_floes = colorview_random,
-            labels_map = split_floes,
+            labels_map = final_floes,
             segment_mean_falsecolor=colorview_falsecolor,
             segment_mean_truecolor=colorview_truecolor,
             ) 
@@ -342,9 +342,6 @@ function clean_binary_floes(binary_img, icemask, cloudmask;
     
     return out
 end
-
-
-### TODO: Set up this function as a "FloeSplittingAlgorithm" 
 
 """
     dist_morph_split(
@@ -416,21 +413,33 @@ function dist_morph_split(
 end
 
 # Helper function for creating a filtered version of the image indexmap
-"""assign_labels(img, labels_list)
+"""assign_labels(img_indexmap, labels_list)
 
-Given an image indexmap `img` and a `labels_list`., create a new labeled
+Given an image indexmap `img` and a `labels_list`, create a new labeled
 image using only the values in the list.
 
 """
-function assign_labels(img, labels_list)
-    out = zeros(Int64, size(img))
-    indices = component_indices(img)
+function assign_labels(img_indexmap, labels_list)
+    out = zeros(Int64, size(img_indexmap))
+    indices = component_indices(img_indexmap)
     for L in labels_list
         out[indices[L]] .= L
     end
     return out
 end  
 
+
+function filter_floes!(img_indexmap, coastal_buffer_mask, min_floe_size, max_floe_size)
+    overlap = unique(img_indexmap[coastal_buffer_mask])
+    indices = component_indices(img_indexmap)    
+    for L in overlap
+        img_indexmap[indices[L]] .= 0        
+    end
+
+    # Remove floes outside the specified bounds
+    remove_small_segments!(img_indexmap, min_floe_size)
+    remove_large_segments!(img_indexmap, max_floe_size)
+end
 
 # TODO: Filter function for object-wise cleanup
 # TODO: Add object-wise hole filling method
