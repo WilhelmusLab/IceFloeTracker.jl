@@ -75,7 +75,7 @@ abstract type IceFloePreprocessingAlgorithm end
 """
 @kwdef struct Preprocess <: IceFloePreprocessingAlgorithm
     diffusion_algorithm = PeronaMalikDiffusion(λ=0.1, K=0.1, niters=5, g="exponential")
-    adapthisteq_params = (nbins=256, rblocks=8, cblocks=4, clip=5)
+    adapthisteq_params = (nbins=256, rblocks=8, cblocks=4, clip=1)
     unsharp_mask_params = (radius=50, amount=0.2, threshold=0.01)
 end
 
