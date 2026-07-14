@@ -254,7 +254,6 @@ function (p::Segment)(
             cloud_mask=Gray.(cloud_mask),
             ice_mask=Gray.(prelim_ice_mask),
             preprocessed=preproc_gray,
-            bright_ice_mask=p.cluster_selection_algorithm(falsecolor_image),            
             binarized=kmeans_result,
             final_floes = colorview_random,
             labels_map = split_floes,
