@@ -258,23 +258,25 @@ function segment_mean_map(s::SegmentedImage)
 end
 
 """
+Helper function for removing components from label array
+"""
+function _remove_segments!(labels, op, threshold)
+    areas = component_lengths(labels)
+    indices = component_indices(labels)
+    for L in keys(areas)
+        if L != 0 && op(areas[L], threshold)
+            labels[indices[L]] .= 0
+        end
+    end
+end
+
+"""
     remove_small_segments!(labels, min_size)
 
 Set labels in a labeled matrix to 0 if the size is less than `min_size`.
 
 """
-function remove_small_segments!(labels, min_size)
-    areas = component_lengths(labels)
-    indices = component_indices(labels)
-
-    for L in keys(areas)
-        (L != 0) && begin
-            (areas[L] < min_size) && begin
-                labels[indices[L]] .= 0
-            end
-        end
-    end
-end
+remove_small_segments!(labels, min_size) = _remove_segments!(labels, <, min_size)
 
 """
     remove_large_segments!(labels, min_size)
@@ -282,18 +284,7 @@ end
 Set labels in a labeled matrix to 0 if the size is greater than `max_size`.
     
 """
-function remove_large_segments!(labels, max_size)
-    areas = component_lengths(labels)
-    indices = component_indices(labels)
-
-    for L in keys(areas)
-        (L != 0) && begin
-            (areas[L] > max_size) && begin
-                labels[indices[L]] .= 0
-            end
-        end
-    end
-end
+remove_large_segments!(labels, max_size) = _remove_segments!(labels, >, max_size)
 
 """
     remove_low_contrast_segments!(labels, ref_img, min_contrast, max_fill_size)
