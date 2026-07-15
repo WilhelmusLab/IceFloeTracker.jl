@@ -281,7 +281,10 @@ function (s::Segment)(
    
     @info "Joining segmentation results"
     final_floes =  merge_floes(kmeans_split_floes, adaptive_split_floes, preproc_gray)
-    filter_floes!(final_floes,  coastal_buffer_mask, cloud_mask, falsecolor_image; s.floe_filtering_params...)
+
+    remove_small_segments!(final_floes, s.floe_filtering_params.min_floe_size)
+    remove_large_segments!(final_floes, s.floe_filtering_params.max_floe_size)
+
     # Re-label so there are no missing numbers in the component list
     final_floes .= label_components(final_floes)
 
