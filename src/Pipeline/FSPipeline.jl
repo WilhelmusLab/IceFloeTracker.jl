@@ -47,6 +47,7 @@ import ..Segmentation:
 import ..Tracking:
     ChainedFilterFunction,
     DistanceThresholdFilter,
+    euclidean_distance,
     FloeTracker,
     LogLogQuadraticTimeDistanceFunction,
     MinimumWeightMatchingFunction,
@@ -274,22 +275,13 @@ function (s::Segment)(
 
     @info "Filtering floes"
     
-    # Includes removal of objects intersecting the coastal buffer and
-    # objects outside the range (min_floe_size, max_floe_size)
-    filter_floes_! = r -> filter_floes!(
-        r,
-        coastal_buffer_mask, 
-        cloud_mask,
-        falsecolor_image;
-        s.floe_filtering_params...
-    )
 
-    filter_floes_!(kmeans_split_floes)
-    filter_floes_!(adaptive_split_floes)
+    filter_floes!(kmeans_split_floes, coastal_buffer_mask, cloud_mask, falsecolor_image; s.floe_filtering_params...)
+    filter_floes!(adaptive_split_floes, coastal_buffer_mask, cloud_mask, falsecolor_image; s.floe_filtering_params...)
    
     @info "Joining segmentation results"
-    final_floes =  merge_floes(kmeans_split_floes, adaptive_split_floes, preproc_gray);
-
+    final_floes =  merge_floes(kmeans_split_floes, adaptive_split_floes, preproc_gray)
+    filter_floes!(final_floes,  coastal_buffer_mask, cloud_mask, falsecolor_image; s.floe_filtering_params...)
     # Re-label so there are no missing numbers in the component list
     final_floes .= label_components(final_floes)
 
@@ -481,7 +473,7 @@ function filter_floes!(
     cloud_fractions = segment_mean(SegmentedImage(cloud_mask, img_indexmap))
 
     for L in unique(img_indexmap)
-        if L > 0 
+        if L > 0 # TODO: Simplify this. Should be possible to make it simpler.
             if cloud_fractions[L] > cloud_frac_threshold
                 if areas[L] < min_cloudy_floe_size
                     img_indexmap[indices[L]] .= 0
