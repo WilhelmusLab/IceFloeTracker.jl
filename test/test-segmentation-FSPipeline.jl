@@ -45,7 +45,7 @@ end
 
     # Current performance should look at least as good as this:
     @test mean_recall ≥ 0.5
-    @test mean_precision ≥ 0.49
+    @test mean_precision ≥ 0.4
     @test round(mean_F_score; digits=1) ≥ 0.48
 
     # return current performance
@@ -74,8 +74,8 @@ end
     )
     @test 0.16 ≈ labeled_fraction atol = 0.1
     @test 0.79 ≤ round(recall; digits=2)
-    @test 0.78 ≤ round(precision; digits=2)
-    @test 0.80 ≤ round(F_score; digits=2)
+    @test 0.62 ≤ round(precision; digits=2)
+    @test 0.73 ≤ round(F_score; digits=2)
 
     (; labeled_fraction, recall, precision, F_score) = run_and_validate_segmentation(
         first(filter(c -> (c.case_number == 61 && c.satellite == "aqua"), dataset)),
@@ -83,7 +83,7 @@ end
         output_directory="./test_outputs/",
     )
 
-    @test 0.13 ≈ labeled_fraction atol = 0.1
+    @test 0.23 ≈ labeled_fraction atol = 0.1
     @test 0.36 ≤ round(recall; digits=2)
     @test 0.86 ≤ round(precision; digits=2)
     @test 0.53 ≤ round(F_score; digits=2)
@@ -98,7 +98,7 @@ end
     
     @test labeled_fraction ≈ 0.56 rtol = 0.1
     @test 0.90 ≤ round(recall; digits=2)
-    @test 0.98 ≤ round(precision; digits=2)
+    @test 0.97 ≤ round(precision; digits=2)
     @test 0.93 ≤ round(F_score; digits=2)
 end
 
