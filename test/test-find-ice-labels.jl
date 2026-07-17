@@ -80,7 +80,7 @@
         @test 0.38 < water < 0.40
 
         tiles = get_tiles(land, 200)
-        prelim_ice = f(Gray.(red.(tc_masked)), tiles) .> 0
+        prelim_ice = @. f(Gray(red(tc_masked)), tiles) > 0
         recall =
             sum(prelim_ice .&& ground_truth_ice) / sum(ground_truth_ice)
         @test recall >= 0.979
