@@ -80,14 +80,13 @@
         @test 0.38 < water < 0.40
 
         tiles = get_tiles(land, 200)
-        prelim_ice = @. f(Gray(red(tc_masked)), tiles) > 0
+        prelim_ice = f(Gray.(red.(tc_masked)), tiles) .> 0
         recall =
             sum(prelim_ice .&& ground_truth_ice) / sum(ground_truth_ice)
         @test recall >= 0.979
 
         # With the tiled version the water fraction goes down. This is mainly a regression test.
         water = .! prelim_ice .&& .! clouds .&& .! land
-
         water_fraction = sum(water) ./ prod(size(water))
         @test 0.26 < water_fraction < 0.28
     end
