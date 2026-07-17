@@ -93,7 +93,7 @@ function (p::Preprocess)(
     proc_img = Gray.(truecolor_image)
     
     # Diffusion and sharpening
-    nonlinear_diffusion(proc_img, tiles, p.diffusion_algorithm)
+    proc_img .= nonlinear_diffusion(proc_img, tiles, p.diffusion_algorithm)
    
     adjust_histogram!(proc_img,
         ContrastLimitedAdaptiveHistogramEqualization(
@@ -568,7 +568,30 @@ within `expand_radius` pixels. A DataFrame with rows corresponding to comparison
 the indexmaps is returned. Note that each labeled object may map to multiple objects.
 
 """
-function objectwise_compare_segmentation(indexmap1, indexmap2, img; expand_radius=15)
+function objectwise_compare_segmentation(indexmap1, indexmap2, img;
+     expand_radius=15,
+     return_cols = [
+         "s1_label",
+         "s1_area",
+         "s1_perimeter",
+         "s1_row_centroid",
+         "s1_col_centroid",
+         "s1_circularity",
+         "s1_mean",
+         "s1_bdry_mean",
+         "s1_bdry_contrast",
+         "s2_label",
+         "s2_area",
+         "s2_perimeter", 
+         "s2_col_centroid",
+         "s2_row_centroid",
+         "s2_circularity",
+         "s2_mean",
+         "s2_bdry_mean",
+         "s2_bdry_contrast",
+         "dist_s1_s2",
+         "scaled_relative_error_area"
+    ])
     
     df_s1 = regionprops_table(indexmap1; properties=[:label, :centroid, :area, :bbox, :perimeter])
     df_s2 = regionprops_table(indexmap2; properties=[:label, :centroid, :area, :bbox, :perimeter])
@@ -614,29 +637,6 @@ function objectwise_compare_segmentation(indexmap1, indexmap2, img; expand_radiu
 
     results_df[:, :s1_bdry_contrast] = results_df[:, :s1_mean] .- results_df[:, :s1_bdry_mean]
     results_df[:, :s2_bdry_contrast] = results_df[:, :s2_mean] .- results_df[:, :s2_bdry_mean]
-
-    return_cols = [
-         "s1_label",
-         "s1_area",
-         "s1_perimeter",
-         "s1_row_centroid",
-         "s1_col_centroid",
-         "s1_circularity",
-         "s1_mean",
-         "s1_bdry_mean",
-         "s1_bdry_contrast",
-         "s2_label",
-         "s2_area",
-         "s2_perimeter", 
-         "s2_col_centroid",
-         "s2_row_centroid",
-         "s2_circularity",
-         "s2_mean",
-         "s2_bdry_mean",
-         "s2_bdry_contrast",
-         "dist_s1_s2",
-         "scaled_relative_error_area"
-    ]
 
     return results_df[:, return_cols]
 end
