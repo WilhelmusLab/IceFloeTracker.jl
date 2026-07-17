@@ -71,7 +71,6 @@
         land = modis_landmask(case) .> 0
 
         tc_masked = masker(land, apply_cloudmask(RGB.(modis_truecolor(case)), clouds))
-        # tc_masked .= apply_landmask(tc_masked, land)
         prelim_ice = f(Gray.(red.(tc_masked))) .> 0
         recall =
             sum(prelim_ice .&& floes .&& .! clouds .&& .! land) / sum(floes .&& .! clouds .&& .! land)
