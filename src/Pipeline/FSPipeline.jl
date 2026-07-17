@@ -118,6 +118,50 @@ function (p::Preprocess)(
     return proc_img
 end
 
+# Default segmentation parameters
+coastal_buffer_structuring_element = strel_box((51, 51))
+cloud_mask_algorithm = Watkins2026CloudMask()
+preprocessing_algorithm = Preprocess()
+tile_size_pixels = 1200
+min_tile_ice_pixel_count=300
+preliminary_ice_mask = IceDetectionBrightnessMidpoint(; minimum_reflectance=0.3)
+kmeans_params = (
+    k=4,
+    maxiter=50,
+    random_seed=45,
+    cluster_selection_algorithm=IceDetectionBrightnessPeaksMODIS721(;
+        band_7_max=0.1,
+        possible_ice_threshold=0.3,
+        join_method="union",
+        minimum_prominence=0.01,
+    ),
+)
+adaptive_params = (window_size=400, percentage=0)
+cleanup_binary_params = (
+    erosion_strel=strel_box((3, 3)), init_max_fill=100, conditional_max_fill=500
+)
+floe_splitting_params = (
+    max_hole_fill=2000, 
+    max_distance=5, 
+    max_expand=3,
+)
+floe_filtering_params = (
+    min_floe_size=100,
+    min_cloudy_floe_size=1000,
+    max_floe_size=50_000,
+    min_band_2_reflectance=0.4,
+    min_cloudy_band_2_reflectance=0.7,
+    cloud_frac_threshold=0.5,
+    min_circularity=0.3,
+    min_cloudy_circularity=0.5,
+)
+floe_merging_params = (
+    distance_threshold_pixels=10,
+    area_error_threshold=0.25,
+    min_floe_size=100,
+)
+
+
 """
     FSPipeline.Segment()
 
@@ -155,41 +199,11 @@ The image preprocessing is supplied as an function in the functor setup.
     preliminary_ice_mask = IceDetectionBrightnessMidpoint(
         minimum_reflectance=0.3
         )
-    kmeans_params = (
-        k=4, 
-        maxiter=50, 
-        random_seed=45, 
-        cluster_selection_algorithm = IceDetectionBrightnessPeaksMODIS721(
-            band_7_max=0.1,
-            possible_ice_threshold=0.3,
-            join_method="union",
-            minimum_prominence=0.01,
-            )
-        )
-    adaptive_params = (
-        window_size=400,
-        percentage=0
-    )
-    cleanup_binary_params = (
-        erosion_strel=strel_box((3,3)), 
-        init_max_fill=100, 
-        conditional_max_fill=500
-    )
-    floe_splitting_params = (
-        max_hole_fill=2000,
-        max_distance=5,
-        max_expand=3,
-    )
-    floe_filtering_params = (        
-        min_floe_size=100,
-        min_cloudy_floe_size=1000,
-        max_floe_size=50_000,
-        min_band_2_reflectance=0.4,
-        min_cloudy_band_2_reflectance=0.7,
-        cloud_frac_threshold=0.5,
-        min_circularity=0.3,
-        min_cloudy_circularity=0.5
-    )
+    kmeans_params = kmeans_params
+    adaptive_params = adaptive_params
+    cleanup_binary_params = cleanup_binary_params
+    floe_splitting_params = floe_splitting_params
+    floe_filtering_params = floe_filtering_params
 end 
 
 function (s::Segment)(
