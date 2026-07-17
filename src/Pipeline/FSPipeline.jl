@@ -272,6 +272,9 @@ function (s::Segment)(
     # AdaptiveThreshold often has noise in large blank areas
     apply_landmask!(adaptive_result, landmask)
 
+    # We also don't want to include artificially brightened regions, so 
+    # we mask things that have already been classified as water.
+    apply_landmask!(adaptive_result, .!(prelim_ice_mask .|| cloud_mask))
 
     @info "Splitting floes"
 
