@@ -624,7 +624,9 @@ function objectwise_compare_segmentation(indexmap1, indexmap2, img;
             push!(results, df_rs)
         end
     end
-    
+    if length(results) == 0
+        return DataFrame(Dict(x=>[] for x in return_cols))
+    end
     results_df = vcat(results..., cols=:union)
     rename!(results_df, :area => :s2_area, :perimeter => :s2_perimeter,  :label => :s2_label, :col_centroid => :s2_col_centroid, 
                         :row_centroid => :s2_row_centroid, :max_col => :s2_max_col,
