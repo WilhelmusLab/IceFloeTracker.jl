@@ -222,9 +222,10 @@ function (s::Segment)(
 
     n, m = size(truecolor_image)
     tile_size_pixels = s.tile_size_pixels
-    tile_size_pixels > maximum([n, m]) && begin
-        @warn "Tile size too large, defaulting to image size"
-            tile_size_pixels = minimum([n, m])
+    nmin, nmax = extrema([n, m])
+    tile_size_pixels > nmax && begin
+        @warn "Tile size too large; clamping to min(height, width)."
+        tile_size_pixels = nmin
     end
     
     (nr, nc) = round.(Int, size(truecolor_image) ./ tile_size_pixels)
