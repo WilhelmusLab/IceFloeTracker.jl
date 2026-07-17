@@ -264,17 +264,17 @@ function tiled_adaptive_binarization(
 end
 
 """
-    IceDetectionBrightnessMidpoint(minimum_reflectance=0.3, window_size=3, minimum_prominence=0.01, nbins=64)
+    IceDetectionBrightnessMidpoint(minimum_reflectance=0.3, window_size=3, minimum_prominence=0.01, nbins=128)
     IceDetectionBrightnessMidpoint(grayscale_image)
     IceDetectionBrightnessMidpoint(grayscale_image, tiles)
 
-Binarize image using the midpoint of the `minimum_brightness` and the detected mode in the reflectance histogram. Intended for use with MODIS
+Binarize image using the midpoint of the `minimum_reflectance` and the detected mode in the reflectance histogram. Intended for use with MODIS
 Band 1 or Band 2 (e.g., visible red or near-infrared bands). In the case that there are no peaks above the `band_1_min`, uses `band_1_min` as a
 simple threshold. The `window_size` and `minimum_prominence` are passed on to the function [`get_ice_peaks`](@ref). For sea ice binarization,
 input image should already have cloud and land masks applied. Optionally, a list of tiles can be provided and the algorithm will be run on each tile.
 
 ```julia
-a = IceDetectionBrightnessPeaks(0.3, 3, 0.01, 128)
+a = IceDetectionBrightnessMidpoint(0.3, 3, 0.01, 128)
 g = Gray.(red.(modis_truecolor_image))
 binarize(g, a)
 ```
