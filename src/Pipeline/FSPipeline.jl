@@ -290,11 +290,8 @@ function (s::Segment)(
 
     # Return the original truecolor image, segmented
     segments_tc = SegmentedImage(truecolor_image, final_floes)
-    segments_fc = SegmentedImage(falsecolor_image, final_floes)
-
+    
     if !isnothing(intermediate_results_callback)
-        colorview_truecolor = view_seg(segments_tc)
-        colorview_falsecolor = view_seg(segments_fc)
         colorview_random =  view_seg_random(segments_tc)
         intermediate_results_callback(;
             truecolor,
