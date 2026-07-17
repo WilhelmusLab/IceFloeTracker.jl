@@ -74,8 +74,8 @@ end
     )
     @test 0.16 ≈ labeled_fraction atol = 0.1
     @test 0.79 ≤ round(recall; digits=2)
-    @test 0.62 ≤ round(precision; digits=2)
-    @test 0.73 ≤ round(F_score; digits=2)
+    @test 0.6 ≤ round(precision; digits=2)
+    @test 0.7 ≤ round(F_score; digits=2)
 
     (; labeled_fraction, recall, precision, F_score) = run_and_validate_segmentation(
         first(filter(c -> (c.case_number == 61 && c.satellite == "aqua"), dataset)),
@@ -98,7 +98,7 @@ end
     
     @test labeled_fraction ≈ 0.56 rtol = 0.1
     @test 0.90 ≤ round(recall; digits=2)
-    @test 0.97 ≤ round(precision; digits=2)
+    @test 0.94 ≤ round(precision; digits=2)
     @test 0.93 ≤ round(F_score; digits=2)
 end
 

@@ -288,7 +288,6 @@ end
 
 function (f::IceDetectionBrightnessMidpoint)(out, gray_image::AbstractArray{<:Union{AbstractGray, TransparentGray}})
     alpha_binary = alpha.(alphacolor.(gray_image)) .> 0.5
-    alpha_binary = 1
     edges, bincounts = build_histogram(gray_image .* alpha_binary, f.nbins; minval=0, maxval=1)
     ice_peak = get_ice_peaks(
         edges,
