@@ -264,7 +264,7 @@ function tiled_adaptive_binarization(
 end
 
 """
-    IceDetectionBrightnessMidpoint(minimum_reflectance=0.3, window_size=3, minimum_prominence=0.01, nbins=64)
+    IceDetectionBrightnessMidpoint(minimum_reflectance=0.3, window_size=3, minimum_prominence=0.01, nbins=128)
     IceDetectionBrightnessMidpoint(grayscale_image)
     IceDetectionBrightnessMidpoint(grayscale_image, tiles)
 
