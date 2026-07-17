@@ -60,7 +60,11 @@ import ..Pipeline: IceFloeSegmentationAlgorithm
 
 abstract type IceFloePreprocessingAlgorithm end
 
-# TODO: In calibration, find a minimum usable rblock/cblock size in pixels.
+# Preprocess Params
+diffusion_algorithm = PeronaMalikDiffusion(; λ=0.1, K=0.1, niters=7, g="exponential")
+adapthisteq_params = (nbins=256, rblocks=4, cblocks=4, clip=1)
+unsharp_mask_params = (radius=50, amount=0.3, threshold=0.01)
+
 """
    Preprocess(
         diffusion_algorithm = PeronaMalikDiffusion(λ=0.1, K=0.1, niters=5, g="exponential")
@@ -79,9 +83,9 @@ abstract type IceFloePreprocessingAlgorithm end
 
 """
 @kwdef struct Preprocess <: IceFloePreprocessingAlgorithm
-    diffusion_algorithm = PeronaMalikDiffusion(λ=0.1, K=0.1, niters=7, g="exponential")
-    adapthisteq_params = (nbins=256, rblocks=4, cblocks=4, clip=1)
-    unsharp_mask_params = (radius=50, amount=0.3, threshold=0.01)
+    diffusion_algorithm = diffusion_algorithm
+    adapthisteq_params = adapthisteq_params
+    unsharp_mask_params = unsharp_mask_params
 end
 
 function (p::Preprocess)(
