@@ -187,14 +187,12 @@ The image preprocessing is supplied as an function in the functor setup.
 - `floe_filtering_params`: Parameters for post-segmentation cleanup
 """
 @kwdef struct Segment <: IceFloeSegmentationAlgorithm 
-    coastal_buffer_structuring_element::AbstractMatrix{Bool} = strel_box((51,51))
-    cloud_mask_algorithm = Watkins2026CloudMask()
-    preprocessing_algorithm = Preprocess()
+    coastal_buffer_structuring_element::AbstractMatrix{Bool} = coastal_buffer_structuring_element
+    cloud_mask_algorithm = cloud_mask_algorithm
+    preprocessing_algorithm = preprocessing_algorithm
     tile_size_pixels = tile_size_pixels
     min_tile_ice_pixel_count = min_tile_ice_pixel_count
-    preliminary_ice_mask = IceDetectionBrightnessMidpoint(
-        minimum_reflectance=0.3
-        )
+    preliminary_ice_mask = preliminary_ice_mask
     kmeans_params = kmeans_params
     adaptive_params = adaptive_params
     cleanup_binary_params = cleanup_binary_params
