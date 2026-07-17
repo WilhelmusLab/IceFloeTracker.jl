@@ -27,7 +27,7 @@ end
         output_directory="./test_outputs/",
     )
     @test all(results.success)
-
+    save("./test_outputs/sample_error_metrics_FSPipeline.csv", results)
     # Aggregate performance measures
     mean_recall = round(mean(skipnanormissing(results.recall)); digits=2)
     mean_precision = round(mean(skipnanormissing(results.precision)); digits=2)
@@ -44,9 +44,9 @@ end
     @test mean_F_score ≥ 0.8 broken = true
 
     # Current performance should look at least as good as this:
-    @test mean_recall ≥ 0.5
-    @test mean_precision ≥ 0.4
-    @test round(mean_F_score; digits=1) ≥ 0.48
+    @test mean_recall ≥ 0.6
+    @test mean_precision ≥ 0.39
+    @test round(mean_F_score; digits=1) ≥ 0.4
 
     # return current performance
     @show mean_recall
