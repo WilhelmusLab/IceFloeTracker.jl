@@ -111,20 +111,14 @@ end
         case, algorithm; output_directory="./test_outputs/"
     )
 
-    @test results_invariant_for(RGB; baseline, algorithm, case)
-    @test results_invariant_for(RGBA; baseline, algorithm, case)
-    @test results_invariant_for(n0f8; baseline, algorithm, case)
-    @test results_invariant_for(n6f10; baseline, algorithm, case)
-    @test results_invariant_for(n4f12; baseline, algorithm, case)
-    @test results_invariant_for(n2f14; baseline, algorithm, case)
-    @test results_invariant_for(n0f16; baseline, algorithm, case)
-    @test results_invariant_for(float32; baseline, algorithm, case)
-    @test results_invariant_for(float64; baseline, algorithm, case)
-    @test results_invariant_for(RGB, n0f8; baseline, algorithm, case)
-    @test results_invariant_for(RGB, n6f10; baseline, algorithm, case)
-    @test results_invariant_for(RGB, n4f12; baseline, algorithm, case)
-    @test results_invariant_for(RGB, n2f14; baseline, algorithm, case)
-    @test results_invariant_for(RGB, n0f16; baseline, algorithm, case)
-    @test results_invariant_for(RGB, float32; baseline, algorithm, case)
-    @test results_invariant_for(RGB, float64; baseline, algorithm, case)
+    paired_types = [n0f8, n6f10, n4f12, n2f14, n0f16, float32, float64]
+    unary_types = [RGB, RGBA, paired_types...]
+    
+    for T in unary_types
+        @test results_invariant_for(T; baseline, algorithm, case)
+    end
+    
+    for T in paired_types
+        @test results_invariant_for(RGB, T; baseline, algorithm, case)
+    end
 end
