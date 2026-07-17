@@ -86,8 +86,10 @@
         @test recall >= 0.979
 
         # With the tiled version the water fraction goes down. This is mainly a regression test.
-        water = sum(.! prelim_ice .&& .! clouds .&& .! land) ./ prod(size(land))
-        @test 0.26 < water < 0.28
+        water = .! prelim_ice .&& .! clouds .&& .! land
+
+        water_fraction = sum(water) ./ prod(size(water))
+        @test 0.26 < water_fraction < 0.28
     end
 
     @testset "get_ice_peaks" begin
