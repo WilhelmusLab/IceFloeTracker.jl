@@ -69,11 +69,12 @@
         floes = validated_binary_floes(case) .> 0
         clouds = Watkins2025CloudMask()(modis_falsecolor(case))
         land = modis_landmask(case) .> 0
+        ground_truth_ice = floes .&& .! clouds .&& .! land
 
         tc_masked = masker(land, apply_cloudmask(RGB.(modis_truecolor(case)), clouds))
         prelim_ice = f(Gray.(red.(tc_masked))) .> 0
         recall =
-            sum(prelim_ice .&& floes .&& .! clouds .&& .! land) / sum(floes .&& .! clouds .&& .! land)
+            sum(prelim_ice .&& ground_truth_ice) / sum(ground_truth_ice)
         @test recall >= 0.979
         water = sum(.! prelim_ice .&& .! clouds .&& .! land) ./ prod(size(land))
         @test 0.38 < water < 0.40
@@ -81,7 +82,7 @@
         tiles = get_tiles(land, 200)
         prelim_ice = f(Gray.(red.(tc_masked)), tiles) .> 0
         recall =
-            sum(prelim_ice .&& floes .&& .! clouds .&& .! land) / sum(floes .&& .! clouds .&& .! land)
+            sum(prelim_ice .&& ground_truth_ice) / sum(ground_truth_ice)
         @test recall >= 0.979
 
         # With the tiled version the water fraction goes down. This is mainly a regression test.
