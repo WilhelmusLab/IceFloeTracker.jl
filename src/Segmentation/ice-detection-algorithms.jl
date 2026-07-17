@@ -274,7 +274,7 @@ simple threshold. The `window_size` and `minimum_prominence` are passed on to th
 input image should already have cloud and land masks applied. Optionally, a list of tiles can be provided and the algorithm will be run on each tile.
 
 ```julia
-a = IceDetectionBrightnessPeaks(0.3, 3, 0.01, 128)
+a = IceDetectionBrightnessMidpoint(0.3, 3, 0.01, 128)
 g = Gray.(red.(modis_truecolor_image))
 binarize(g, a)
 ```
