@@ -189,13 +189,9 @@ The image preprocessing is supplied as an function in the functor setup.
 @kwdef struct Segment <: IceFloeSegmentationAlgorithm 
     coastal_buffer_structuring_element::AbstractMatrix{Bool} = strel_box((51,51))
     cloud_mask_algorithm = Watkins2026CloudMask()
-    preprocessing_algorithm = Preprocess(
-        diffusion_algorithm = PeronaMalikDiffusion(λ=0.1, K=0.1, niters=5, g="exponential"),
-        adapthisteq_params = (nbins=256, rblocks=8, cblocks=4, clip=1),
-        unsharp_mask_params = (radius=50, amount=0.2, threshold=0.01),
-    )
-    tile_size_pixels = 1200
-    min_tile_ice_pixel_count=300
+    preprocessing_algorithm = Preprocess()
+    tile_size_pixels = tile_size_pixels
+    min_tile_ice_pixel_count = min_tile_ice_pixel_count
     preliminary_ice_mask = IceDetectionBrightnessMidpoint(
         minimum_reflectance=0.3
         )
