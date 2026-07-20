@@ -867,6 +867,66 @@ function merge_floes(indexmap1, indexmap2, img; dmax=10, emax=0.25, min_floe_siz
     return F
 end
 
+#### Tracker parameters ####
+# Initially same as in src/Tracking/filter_functions.jl,
+# parameters and filters will be updated based on calibration
+# tests.
+
+const max_travel_distance_filter = DistanceThresholdFilter(;
+    threshold_function=LogLogQuadraticTimeDistanceFunction()
+)
+
+const area_relative_error_filter = RelativeErrorThresholdFilter(;
+    variable=:area,
+    threshold_function=PiecewiseLinearThresholdFunction(;
+        minimum_area=100, maximum_area=700, minimum_value=0.43, maximum_value=0.17
+    ),
+)
+
+const convex_area_relative_error_filter = RelativeErrorThresholdFilter(;
+    variable=:convex_area,
+    threshold_function=PiecewiseLinearThresholdFunction(;
+        minimum_area=100, maximum_area=700, minimum_value=0.44, maximum_value=0.25
+    ),
+)
+
+const major_axis_relative_error_filter = RelativeErrorThresholdFilter(;
+    variable=:major_axis_length,
+    threshold_function=PiecewiseLinearThresholdFunction(;
+        minimum_area=100, maximum_area=700, minimum_value=0.27, maximum_value=0.13
+    ),
+)
+
+const minor_axis_relative_error_filter = RelativeErrorThresholdFilter(;
+    variable=:minor_axis_length,
+    threshold_function=PiecewiseLinearThresholdFunction(;
+        minimum_area=100, maximum_area=700, minimum_value=0.28, maximum_value=0.1
+    ),
+)
+
+const shape_difference_filter = ShapeDifferenceThresholdFilter(;
+    threshold_function=PiecewiseLinearThresholdFunction(;
+        minimum_area=100, maximum_area=700, minimum_value=0.47, maximum_value=0.31
+    ),
+)
+
+const psi_s_correlation_filter = PsiSCorrelationThresholdFilter(;
+    threshold_function=PiecewiseLinearThresholdFunction(;
+        minimum_area=100, maximum_area=700, minimum_value=0.86, maximum_value=0.96
+    ),
+)
+
+const FSFilter = [
+    max_travel_distance_filter,
+    area_relative_error_filter,
+    convex_area_relative_error_filter,
+    major_axis_relative_error_filter,
+    minor_axis_relative_error_filter,
+    shape_difference_filter,
+    psi_s_correlation_filter,
+]
+
+
 """
     Track()
 
@@ -875,65 +935,7 @@ and the MinimumWeightMatchingFunction.
 
 """
 function Track(
-    filter_function=ChainedFilterFunction(;
-        filters=[
-            DistanceThresholdFilter(
-                threshold_function=LogLogQuadraticTimeDistanceFunction()
-            ),
-            RelativeErrorThresholdFilter(;
-                variable=:area,
-                threshold_function=PiecewiseLinearThresholdFunction(;
-                    minimum_area=100,
-                    maximum_area=700,
-                    minimum_value=0.43,
-                    maximum_value=0.17,
-                ),
-            ),
-            RelativeErrorThresholdFilter(;
-                variable=:convex_area,
-                threshold_function=PiecewiseLinearThresholdFunction(;
-                    minimum_area=100,
-                    maximum_area=700,
-                    minimum_value=0.44,
-                    maximum_value=0.25,
-                ),
-            ),
-            RelativeErrorThresholdFilter(;
-                variable=:major_axis_length,
-                threshold_function=PiecewiseLinearThresholdFunction(;
-                    minimum_area=100,
-                    maximum_area=700,
-                    minimum_value=0.27,
-                    maximum_value=0.13,
-                ),
-            ),
-            RelativeErrorThresholdFilter(;
-                variable=:minor_axis_length,
-                threshold_function=PiecewiseLinearThresholdFunction(;
-                    minimum_area=100,
-                    maximum_area=700,
-                    minimum_value=0.28,
-                    maximum_value=0.1,
-                ),
-            ),
-            ShapeDifferenceThresholdFilter(;
-                threshold_function=PiecewiseLinearThresholdFunction(;
-                    minimum_area=100,
-                    maximum_area=700,
-                    minimum_value=0.47,
-                    maximum_value=0.31,
-                ),
-            ),
-            PsiSCorrelationThresholdFilter(;
-                threshold_function=PiecewiseLinearThresholdFunction(;
-                    minimum_area=100,
-                    maximum_area=700,
-                    minimum_value=0.86,
-                    maximum_value=0.96,
-                ),
-            ),
-        ],
-    ),
+    filter_function=FSFilter,
     matching_function=MinimumWeightMatchingFunction(
         columns=[
             :scaled_distance,
