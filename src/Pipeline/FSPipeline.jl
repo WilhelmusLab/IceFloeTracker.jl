@@ -935,7 +935,7 @@ and the MinimumWeightMatchingFunction.
 
 """
 function Track(
-    filter_function=FSFilter,
+    filter_function=ChainedFilterFunction(; filters=FSFilter),
     matching_function=MinimumWeightMatchingFunction(
         columns=[
             :scaled_distance,
