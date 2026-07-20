@@ -38,6 +38,7 @@ import ..Segmentation:
     regionprops_table,
     remove_small_segments!,
     remove_large_segments!,
+    segment_mean_map,
     stitch_clusters,
     view_seg,
     view_seg_random
@@ -309,6 +310,8 @@ function (s::Segment)(
 
     if !isnothing(intermediate_results_callback)
         colorview_random = view_seg_random(segments_tc)
+        segment_mean_truecolor=n0f8.(segment_mean_map(segmented_truecolor))
+        segment_mean_falsecolor=n0f8.(segment_mean_map(segmented_falsecolor))
         intermediate_results_callback(;
             truecolor,
             falsecolor,
@@ -322,6 +325,8 @@ function (s::Segment)(
             adaptive_floes=adaptive_split_floes .> 0,
             final_floes=colorview_random,
             labels_map=final_floes,
+            segment_mean_falsecolor=segment_mean_falsecolor,
+            segment_mean_truecolor=segment_mean_truecolor,
         )
     end
     return segments_tc
