@@ -37,16 +37,16 @@ jobs:
       - uses: julia-actions/julia-buildpkg@v1
       - name: Get tracking results for an example region
         env:
-          SPACEUSER: ${{ vars.SPACEUSER }}
-          SPACEPSWD: ${{ secrets.SPACEPSWD }}
+          SPACEUSER: ${{ vars.SPACEUSER1 }}
+          SPACEPSWD: ${{ secrets.SPACEPSWD1 }}
         run: "$SNAKEMAKE track/beaufort_sea.250m.20190322.20190323.LopezAcosta2019Tiling.tracked.csv"
       - name: Get results for one observation as a NetCDF file
         env:
-          SPACEUSER: ${{ vars.SPACEUSER }}
-          SPACEPSWD: ${{ secrets.SPACEPSWD }}
+          SPACEUSER: ${{ vars.SPACEUSER1 }}
+          SPACEPSWD: ${{ secrets.SPACEPSWD1 }}
         run: "$SNAKEMAKE scene/beaufort_sea.250m.2019-03-22.aqua/LopezAcosta2019Tiling/segmentation.nc"
       - name: Get tracking results for realistic cases from the test set
         env:
-          SPACEUSER: ${{ vars.SPACEUSER }}
-          SPACEPSWD: ${{ secrets.SPACEPSWD }}
+          SPACEUSER: ${{ vars.SPACEUSER1 }}
+          SPACEPSWD: ${{ secrets.SPACEPSWD1 }}
         run: "$SNAKEMAKE region_case_results_by_filetype"
