@@ -1,10 +1,6 @@
 name: Workflow
 on:
-  push:
-    branches:
-      - main
-    tags: '*'
-  pull_request:
+  workflow_dispatch:
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: ${{ startsWith(github.ref, 'refs/pull/') }}
@@ -32,21 +28,30 @@ jobs:
       - uses: actions/setup-python@v6
         with:
           python-version: '3.x'
+      - name: Cache region workflow data
+        uses: actions/cache@v4
+        with:
+          path: |
+            workflow/results/region
+            region
+          key: workflow-overpasses-${{ hashFiles('workflow/snakefile', 'workflow/configs/default/config.yaml', 'workflow/configs/default/region.csv', 'workflow/configs/default/case.csv', 'workflow/configs/ift-from-this-repo/config.yaml', 'workflow/profiles/default/config.yaml') }}
+          restore-keys: |
+            workflow-overpasses-
       - name: Install workflow dependencies
         run: ".devcontainer/setup-workflow-dependencies.sh"
       - uses: julia-actions/julia-buildpkg@v1
       - name: Get tracking results for an example region
         env:
-          SPACEUSER: ${{ vars.SPACEUSER }}
-          SPACEPSWD: ${{ secrets.SPACEPSWD }}
+          SPACEUSER: ${{ vars.SPACEUSER1 }}
+          SPACEPSWD: ${{ secrets.SPACEPSWD1 }}
         run: "$SNAKEMAKE track/beaufort_sea.250m.20190322.20190323.LopezAcosta2019Tiling.tracked.csv"
       - name: Get results for one observation as a NetCDF file
         env:
-          SPACEUSER: ${{ vars.SPACEUSER }}
-          SPACEPSWD: ${{ secrets.SPACEPSWD }}
+          SPACEUSER: ${{ vars.SPACEUSER1 }}
+          SPACEPSWD: ${{ secrets.SPACEPSWD1 }}
         run: "$SNAKEMAKE scene/beaufort_sea.250m.2019-03-22.aqua/LopezAcosta2019Tiling/segmentation.nc"
       - name: Get tracking results for realistic cases from the test set
         env:
-          SPACEUSER: ${{ vars.SPACEUSER }}
-          SPACEPSWD: ${{ secrets.SPACEPSWD }}
+          SPACEUSER: ${{ vars.SPACEUSER1 }}
+          SPACEPSWD: ${{ secrets.SPACEPSWD1 }}
         run: "$SNAKEMAKE region_case_results_by_filetype"
