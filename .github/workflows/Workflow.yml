@@ -5,6 +5,7 @@ on:
       - main
     tags: '*'
   pull_request:
+  workflow_dispatch:
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: ${{ startsWith(github.ref, 'refs/pull/') }}
@@ -14,6 +15,7 @@ env:
 
 jobs:
   test:
+    if: ${{ github.event_name == 'workflow_dispatch' }}
     name: Julia ${{ matrix.version }} - ${{ matrix.os }} - ${{ matrix.arch }} - ${{ github.event_name }}
     runs-on: ${{ matrix.os }}
     strategy:
