@@ -12,41 +12,41 @@ jobs:
     steps:
       - name: Cleanup
         run: |
-        echo "Fetching cache IDs and keys (all pages)"
-        page=1
-        foundAny=0
+          echo "Fetching cache IDs and keys (all pages)"
+          page=1
+          foundAny=0
 
-        ## Setting this to not fail the workflow while deleting cache keys.
+          ## Setting this to not fail the workflow while deleting cache keys.
           set +e
           echo "Deleting caches..."
 
-        while true
-        do
-          cacheEntriesForPage=$(gh api --method GET "/repos/$GH_REPO/actions/caches" -f ref="$BRANCH" -f per_page=100 -f page="$page" --jq '.actions_caches[]? | [.id, .key] | @tsv')
-
-          if [[ -z "$cacheEntriesForPage" ]]; then
-            break
-          fi
-
-          foundAny=1
-          while IFS=$'\t' read -r cacheId cacheKey
+          while true
           do
-            case "$cacheKey" in
-              tle-*|workflow-overpasses-*)
-                echo "Keeping cache $cacheKey"
-                ;;
-              *)
-                gh cache delete "$cacheId" --confirm
-                ;;
-            esac
-          done <<< "$cacheEntriesForPage"
+            cacheEntriesForPage=$(gh api --method GET "/repos/$GH_REPO/actions/caches" -f ref="$BRANCH" -f per_page=100 -f page="$page" --jq '.actions_caches[]? | [.id, .key] | @tsv')
 
-          page=$((page + 1))
-        done
+            if [[ -z "$cacheEntriesForPage" ]]; then
+              break
+            fi
 
-        if [[ "$foundAny" -eq 0 ]]; then
-          echo "No caches found for $BRANCH"
-        fi
+            foundAny=1
+            while IFS=$'\t' read -r cacheId cacheKey
+            do
+              case "$cacheKey" in
+                tle-*|workflow-overpasses-*)
+                  echo "Keeping cache $cacheKey"
+                  ;;
+                *)
+                  gh cache delete "$cacheId" --confirm
+                  ;;
+              esac
+            done <<< "$cacheEntriesForPage"
+
+            page=$((page + 1))
+          done
+
+          if [[ "$foundAny" -eq 0 ]]; then
+            echo "No caches found for $BRANCH"
+          fi
 
           echo "Done"
         env:
