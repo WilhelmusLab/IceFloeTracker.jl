@@ -25,7 +25,7 @@ jobs:
                       echo "Keeping cache $cacheKey"
                       ;;
                   *)
-                      gh cache delete "$cacheId"
+                      gh cache delete "$cacheId" --confirm
                       ;;
               esac
           done <<< "$cacheEntriesForPR"
