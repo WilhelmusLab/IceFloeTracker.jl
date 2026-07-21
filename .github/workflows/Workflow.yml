@@ -32,6 +32,13 @@ jobs:
       - uses: actions/setup-python@v6
         with:
           python-version: '3.x'
+      - name: Cache overpass data
+        uses: actions/cache@v4
+        with:
+          path: workflow/results/region
+          key: workflow-overpasses-${{ hashFiles('workflow/snakefile', 'workflow/configs/default/region.csv', 'workflow/configs/default/case.csv', 'workflow/configs/ift-from-this-repo/config.yaml') }}
+          restore-keys: |
+            workflow-overpasses-
       - name: Install workflow dependencies
         run: ".devcontainer/setup-workflow-dependencies.sh"
       - uses: julia-actions/julia-buildpkg@v1
