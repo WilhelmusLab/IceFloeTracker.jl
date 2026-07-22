@@ -429,19 +429,19 @@ function dist_morph_split(
         # Expand indices at level d
         expanded = expand_labels(levels[dist_threshold], max_expand)
         for L in keys(indices)
-            (L > 0) && begin
-                matched_labels = unique(levels[dist_threshold][indices[L]])
+            (L <= 0) && continue
 
-                # If intersection of the label at level
-                if (0 ∈ matched_labels) && (length(matched_labels) <= 2)
-                    final_labels[indices[L]] .= L
-                else
-                    # Otherwise, expand the current level, and set the next level down to the expanded indices.
-                    # May need to check the number of matched labels in the expanded image.
-                    levels[dist_threshold - 1][indices[L]] .= expanded[indices[L]]
-                    final_labels[indices[L]] .= expanded[indices[L]]
-                end
+            matched_labels = unique(levels[dist_threshold][indices[L]])
+
+            # If intersection of the label at level
+            if (0 ∈ matched_labels) && (length(matched_labels) <= 2)
+                final_labels[indices[L]] .= L
+                continue
             end
+            # Otherwise, expand the current level, and set the next level down to the expanded indices.
+            # May need to check the number of matched labels in the expanded image.
+            levels[dist_threshold - 1][indices[L]] .= expanded[indices[L]]
+            final_labels[indices[L]] .= expanded[indices[L]]
         end
     end
     return label_components(final_labels)
