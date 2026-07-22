@@ -541,7 +541,7 @@ function get_relevant_set(df1, df2, labels1, labels2)
         )
 
         # if any, then check centroid positions
-        maximum(matched_labels) != 0 && continue
+        maximum(matched_labels) == 0 && continue
         # get the rows in the segments_df from the matched labels
         candidate_subset = subset(df2, :label => ByRow(l -> l in matched_labels))
 
