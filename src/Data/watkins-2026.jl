@@ -176,7 +176,7 @@ julia> modis_truecolor(first(dataset))
 
 """
 function Watkins2026Dataset(;
-    url="https://github.com/danielmwatkins/ice-floe-validation-dataset/",
+    url="https://storage.googleapis.com/ice-floe-validation-dataset/ice-floe-validation-dataset",
     ref="v0.2",
     cache_dir="/tmp/Watkins2026",
     metadata_path="data/validation_dataset/validation_dataset.csv",
