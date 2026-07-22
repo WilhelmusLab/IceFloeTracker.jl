@@ -46,7 +46,7 @@ The dataset is initialized with a specific `git` tag, branch or commit ID from w
 julia> dataset = Watkins2026Dataset(; ref="v0.2")
 ```
 
-`Watkins2026Dataset` fields: 
+`Watkins2026Dataset` fields:
 - `ref` (optional): `git` tag, commit-id or branch from which to load the data
 - `cache_dir` (optional): local path where the data will be stored, which defaults to `/tmp/Watkins2026/`.
 - `url` (optional): URL of the GitHub repository with the dataset
@@ -65,7 +65,7 @@ julia> dataset = filter(c -> (
 
 Equivalently:
 ```jldoctest Watkins2026Dataset
-julia> dataset = subset(dataset, 
+julia> dataset = subset(dataset,
                         :visible_floes => c -> c .== "yes",
                         :cloud_category_manual => c -> c .== "none",
                         :artifacts => c -> c .== "no",
@@ -125,7 +125,7 @@ The `dataset` can be iterated over to get each `Case`:
 Example:
 ```jldoctest Watkins2026Dataset
 julia> for case in dataset
-           println(name(case) * 
+           println(name(case) *
                    ": sea ice fraction: " * string(info(case).sea_ice_fraction) *
                    ", true color image size: " * string(size(modis_truecolor(case))))
        end
@@ -139,8 +139,8 @@ julia> for case in dataset
 166-laptev_sea-100km-20160904-aqua-250m: sea ice fraction: 1.0, true color image size: (400, 400)
 ```
 
-!!! info "`dataset` and `dataset.data`" 
-    Iterating over the `dataset` is the same as iterating over `dataset.data`, 
+!!! info "`dataset` and `dataset.data`"
+    Iterating over the `dataset` is the same as iterating over `dataset.data`,
     so you could also write `for case in dataset.data...`.)
 
 To get the first case in the dataset, you can use `first(...)`:
@@ -166,12 +166,12 @@ julia> modis_truecolor(first(dataset))
 ```
 
 !!! tip "Cacheing"
-    Data are downloaded to the `<cache_dir>/<ref>`, e.g. `/tmp/Watkins2026/v0.1/`. 
+    Data are downloaded to the `<cache_dir>/<ref>`, e.g. `/tmp/Watkins2026/v0.1/`.
     If a file of the correct name already exists in that path, if loaded again the cached data will be returned.
 
-    There are no checks to ensure that the cached data are up-to-date, 
+    There are no checks to ensure that the cached data are up-to-date,
     so if the data change in the source for that `ref`, the loader won't load the new data.
-    In this case, you can clear the cache by deleting the cache directory, 
+    In this case, you can clear the cache by deleting the cache directory,
     e.g. `rm -r /tmp/Watkins2026/v0.1/`.
 
 """
