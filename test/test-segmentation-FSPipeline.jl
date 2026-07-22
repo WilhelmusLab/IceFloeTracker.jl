@@ -61,7 +61,7 @@ end
         LopezAcosta2019.Segment();
         output_directory="./test_outputs/",
     )
-   
+
     @test 0.36 ≈ labeled_fraction atol = 0.1
     @test 0.68 ≤ round(recall; digits=2)
     @test 0.59 ≤ round(precision; digits=2)
@@ -72,6 +72,7 @@ end
         FSPipeline.Segment();
         output_directory="./test_outputs/",
     )
+    
     @test 0.16 ≈ labeled_fraction atol = 0.1
     @test 0.79 ≤ round(recall; digits=2)
     @test 0.6 ≤ round(precision; digits=2)
