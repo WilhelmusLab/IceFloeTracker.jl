@@ -583,50 +583,30 @@ function get_relevant_set(df1, df2, labels1, labels2)
     return relevant_set
 end
 
+const default_properties = [:label, :area, :perimeter, :centroid]
+
 """
-    objectwise_compare_segmentation(indexmap1, indexmap2, img; expand_radius=15)
+    objectwise_compare_segmentation(indexmap1, indexmap2, img; expand_radius=15, return_properties)
 
 Uses the concept of a relevant set to select connected components in the two
 indexmaps and produce comparisons. The image `img` is used to compute local boundary
 contrast, by comparing the difference in the mean intensity of the image and the boundary
 within `expand_radius` pixels. A DataFrame with rows corresponding to comparisons between
 the indexmaps is returned. Note that each labeled object may map to multiple objects.
+Returns the list of properties in "return properties" along with comparative measures `dist_s1_s2``,
+`scaled_relative_error_area`, and object measures `reflectance_mean`, `reflectance_bdry_mean`, 
+and `reflectance_bdry_contrast` computed relative to the input `img`.
 
 """
 function objectwise_compare_segmentation(
-    indexmap1,
-    indexmap2,
-    img;
-    expand_radius=15,
-    return_cols=[
-        "s1_label",
-        "s1_area",
-        "s1_perimeter",
-        "s1_row_centroid",
-        "s1_col_centroid",
-        "s1_circularity",
-        "s1_mean",
-        "s1_bdry_mean",
-        "s1_bdry_contrast",
-        "s2_label",
-        "s2_area",
-        "s2_perimeter",
-        "s2_col_centroid",
-        "s2_row_centroid",
-        "s2_circularity",
-        "s2_mean",
-        "s2_bdry_mean",
-        "s2_bdry_contrast",
-        "dist_s1_s2",
-        "scaled_relative_error_area",
-    ],
+    indexmap1, indexmap2, img; expand_radius=15, properties=default_properties
 )
-    df_s1 = regionprops_table(
-        indexmap1; properties=[:label, :centroid, :area, :bbox, :perimeter]
-    )
-    df_s2 = regionprops_table(
-        indexmap2; properties=[:label, :centroid, :area, :bbox, :perimeter]
-    )
+    properties = union(properties, [:label, :centroid, :area, :bbox, :perimeter])
+    df_s1 = regionprops_table(indexmap1; properties=properties)
+    df_s2 = regionprops_table(indexmap2; properties=properties)
+
+    # This accounts for the centroid and bbox turning into col_ and row_ terms
+    properties = Symbol.(names(df_s1))
 
     relevant_set = get_relevant_set(df_s1, df_s2, indexmap1, indexmap2)
     results = DataFrame[]
@@ -634,33 +614,20 @@ function objectwise_compare_segmentation(
         g = floe.label
         g in keys(relevant_set) && begin
             df_rs = subset(df_s2, :label => ByRow(s -> s in relevant_set[g]))
-            df_rs[:, :s1_label] .= g
-            df_rs[:, :s1_area] .= floe.area
-            df_rs[:, :s1_perimeter] .= floe.perimeter
-            df_rs[:, :s1_row_centroid] .= floe.row_centroid
-            df_rs[:, :s1_col_centroid] .= floe.col_centroid
-            df_rs[:, :dist_s1_s2] = euclidean_distance(floe, df_rs; r=1) # use pixel units, not meters
+            df_rs[:, :dist_s1_s2] = euclidean_distance(floe, df_rs; r=1) # r=1 means use pixel units, not meters
             df_rs[:, :scaled_relative_error_area] =
                 abs.(df_rs.area .- floe.area) ./ (df_rs.area .+ floe.area)
+            for colname in properties
+                df_rs[!, Symbol("s1_", colname)] .= floe[colname]
+            end
             push!(results, df_rs)
         end
     end
     if length(results) == 0
-        return DataFrame(Dict(x=>[] for x in return_cols))
+        return DataFrame(Dict(x=>[] for x in union(properties, [:s1_label, :s2_label, :dist_s1_s2, :scaled_relative_error_area])))
     end
     results_df = vcat(results...; cols=:union)
-    rename!(
-        results_df,
-        :area => :s2_area,
-        :perimeter => :s2_perimeter,
-        :label => :s2_label,
-        :col_centroid => :s2_col_centroid,
-        :row_centroid => :s2_row_centroid,
-        :max_col => :s2_max_col,
-        :max_row => :s2_max_row,
-        :min_col=>:s2_min_col,
-        :min_row=>:s2_min_row,
-    )
+    rename!(results_df, Dict(r => Symbol("s2_", r) for r in properties))
 
     # circularity
     @. results_df[:, :s1_circularity] =
@@ -672,21 +639,25 @@ function objectwise_compare_segmentation(
     bdry1 = expand_labels(indexmap1, expand_radius) .- indexmap1
     mean1 = segment_mean(SegmentedImage(img, indexmap1))
     bdry_mean1 = segment_mean(SegmentedImage(img, bdry1))
-    results_df[:, :s1_mean] = [mean1[L] for L in results_df[:, :s1_label]]
-    results_df[:, :s1_bdry_mean] = [bdry_mean1[L] for L in results_df[:, :s1_label]]
+    results_df[:, :s1_reflectance_mean] = [mean1[L] for L in results_df[:, :s1_label]]
+    results_df[:, :s1_reflectance_bdry_mean] = [
+        bdry_mean1[L] for L in results_df[:, :s1_label]
+    ]
 
     bdry2 = expand_labels(indexmap2, expand_radius) .- indexmap2
     mean2 = segment_mean(SegmentedImage(img, indexmap2))
     bdry_mean2 = segment_mean(SegmentedImage(img, bdry2))
-    results_df[:, :s2_mean] = [mean2[L] for L in results_df[:, :s2_label]]
-    results_df[:, :s2_bdry_mean] = [bdry_mean2[L] for L in results_df[:, :s2_label]]
+    results_df[:, :s2_reflectance_mean] = [mean2[L] for L in results_df[:, :s2_label]]
+    results_df[:, :s2_reflectance_bdry_mean] = [
+        bdry_mean2[L] for L in results_df[:, :s2_label]
+    ]
 
-    results_df[:, :s1_bdry_contrast] =
-        results_df[:, :s1_mean] .- results_df[:, :s1_bdry_mean]
-    results_df[:, :s2_bdry_contrast] =
-        results_df[:, :s2_mean] .- results_df[:, :s2_bdry_mean]
+    results_df[:, :s1_reflectance_bdry_contrast] =
+        results_df[:, :s1_reflectance_mean] .- results_df[:, :s1_reflectance_bdry_mean]
+    results_df[:, :s2_reflectance_bdry_contrast] =
+        results_df[:, :s2_reflectance_mean] .- results_df[:, :s2_reflectance_bdry_mean]
 
-    return results_df[:, return_cols]
+    return results_df
 end
 
 """
@@ -775,41 +746,41 @@ function merge_floes(indexmap1, indexmap2, img; dmax=10, emax=0.25, min_floe_siz
         # Selects the subset of df_comp mapping s1 to a single s2, ranked by contrast.
         s1_s2_highest_contrast = subset(
             groupby(df_comp, :s1_label),
-            :s2_bdry_contrast => r -> 1:length(r) .== argmin(r),
+            :s2_reflectance_bdry_contrast => r -> 1:length(r) .== argmin(r),
         )
         transform!(
             s1_s2_highest_contrast,
-            [:s1_bdry_contrast, :s2_bdry_contrast] =>
+            [:s1_reflectance_bdry_contrast, :s2_reflectance_bdry_contrast] =>
                 ByRow((s1, s2) -> s1 .> s2) => :s1_better,
         )
 
         s2_s1_highest_contrast = subset(
             groupby(df_comp, :s2_label),
-            :s1_bdry_contrast => r -> 1:length(r) .== argmin(r),
+            :s1_reflectance_bdry_contrast => r -> 1:length(r) .== argmin(r),
         )
         transform!(
             s2_s1_highest_contrast,
-            [:s1_bdry_contrast, :s2_bdry_contrast] =>
+            [:s1_reflectance_bdry_contrast, :s2_reflectance_bdry_contrast] =>
                 ByRow((s1, s2) -> s1 .> s2) => :s1_better,
         )
 
         s1_s2_highest_contrast = subset(
             groupby(df_comp, :s1_label),
-            :s2_bdry_contrast => r -> 1:length(r) .== argmin(r),
+            :s2_reflectance_bdry_contrast => r -> 1:length(r) .== argmin(r),
         )
         transform!(
             s1_s2_highest_contrast,
-            [:s1_bdry_contrast, :s2_bdry_contrast] =>
+            [:s1_reflectance_bdry_contrast, :s2_reflectance_bdry_contrast] =>
                 ByRow((s1, s2) -> s1 .> s2) => :s1_better,
         )
 
         s2_s1_highest_contrast = subset(
             groupby(df_comp, :s2_label),
-            :s1_bdry_contrast => r -> 1:length(r) .== argmin(r),
+            :s1_reflectance_bdry_contrast => r -> 1:length(r) .== argmin(r),
         )
         transform!(
             s2_s1_highest_contrast,
-            [:s1_bdry_contrast, :s2_bdry_contrast] =>
+            [:s1_reflectance_bdry_contrast, :s2_reflectance_bdry_contrast] =>
                 ByRow((s1, s2) -> s1 .> s2) => :s1_better,
         )
 
@@ -913,7 +884,7 @@ const psi_s_correlation_filter = PsiSCorrelationThresholdFilter(;
     ),
 )
 
-const FSFilter = [
+const FSFilterFunctions = [
     max_travel_distance_filter,
     area_relative_error_filter,
     convex_area_relative_error_filter,
@@ -923,7 +894,15 @@ const FSFilter = [
     psi_s_correlation_filter,
 ]
 
-
+const FSMatchingColumns = [
+            :scaled_distance,
+            :relative_error_area,
+            :relative_error_convex_area,
+            :relative_error_major_axis_length,
+            :relative_error_minor_axis_length,
+            :psi_s_correlation_score,
+            :scaled_shape_difference,
+        ]
 """
     Track()
 
@@ -932,17 +911,9 @@ and the MinimumWeightMatchingFunction.
 
 """
 function Track(
-    filter_function=ChainedFilterFunction(; filters=FSFilter),
+    filter_function=ChainedFilterFunction(; filters=FSFilterFunctions),
     matching_function=MinimumWeightMatchingFunction(
-        columns=[
-            :scaled_distance,
-            :relative_error_area,
-            :relative_error_convex_area,
-            :relative_error_major_axis_length,
-            :relative_error_minor_axis_length,
-            :psi_s_correlation_score,
-            :scaled_shape_difference,
-        ],
+        columns=FSMatchingColumns,
         weights=ones(7),
     ),
     minimum_area=300, # Minimum floe area for tracking
