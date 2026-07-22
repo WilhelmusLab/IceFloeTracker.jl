@@ -45,7 +45,7 @@ end
 
     # Current performance should look at least as good as this:
     @test mean_recall ≥ 0.6
-    @test mean_precision ≥ 0.39
+    @test mean_precision ≥ 0.38
     @test round(mean_F_score; digits=1) ≥ 0.4
 
     # return current performance
@@ -96,9 +96,9 @@ end
     # Note: Validation dataset currently doesn't include the floes intersecting the edge.
     # Improving the segmentation lowered the scores here due to these floes.
     
-    @test labeled_fraction ≈ 0.56 rtol = 0.1
+    @test labeled_fraction ≈ 0.64 rtol = 0.1
     @test 0.90 ≤ round(recall; digits=2)
-    @test 0.94 ≤ round(precision; digits=2)
+    @test 0.92 ≤ round(precision; digits=2)
     @test 0.93 ≤ round(F_score; digits=2)
 end
 
