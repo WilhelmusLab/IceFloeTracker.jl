@@ -570,7 +570,7 @@ function get_relevant_set(df1, df2, labels1, labels2)
                 gtmask = labels1[rmin:rmax, cmin:cmax] .== floe.label
                 slmask = labels2[rmin:rmax, cmin:cmax] .== s_floe.label
                 intersect_area = sum(gtmask .&& slmask)
-                maximum([intersect_area / s_floe.area, intersect_area / floe.area]) > 0.5 && begin
+                if maximum([intersect_area / s_floe.area, intersect_area / floe.area]) > 0.5
                     push!(relevant_set_labels, s_floe.label)
                 end
             end
