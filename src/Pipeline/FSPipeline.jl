@@ -700,11 +700,8 @@ Produce a single segmentation from a pair via object-wise assessment.
 function merge_floes(indexmap1, indexmap2, img; dmax=10, emax=0.25, min_floe_size=100)
 
     # If no floes to merge, skip merge
-    if maximum(indexmap1) == 0
-        return indexmap2
-    elseif maximum(indexmap2) == 0
-        return indexmap1
-    end
+    maximum(indexmap1) == 0 && return indexmap2
+    maximum(indexmap2) == 0 && return indexmap1
 
     A = deepcopy(indexmap1)
     B = deepcopy(indexmap2)
