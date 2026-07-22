@@ -496,22 +496,22 @@ function filter_floes!(
     cloud_fractions = segment_mean(SegmentedImage(cloud_mask, img_indexmap))
 
     for L in unique(img_indexmap)
-        if L > 0 # TODO: Simplify this. Should be possible to make it simpler.
-            if cloud_fractions[L] > cloud_frac_threshold
-                if areas[L] < min_cloudy_floe_size
-                    img_indexmap[indices[L]] .= 0
-                elseif b2_means[L] < min_cloudy_band_2_reflectance
-                    img_indexmap[indices[L]] .= 0
-                elseif circ[L] < min_cloudy_circularity
-                    img_indexmap[indices[L]] .= 0
-                end
-            else
-                if b2_means[L] < min_band_2_reflectance
-                    img_indexmap[indices[L]] .= 0
-                elseif circ[L] < min_circularity
-                    img_indexmap[indices[L]] .= 0
-                end
+        L <= 0 && continue
+        if cloud_fractions[L] > cloud_frac_threshold
+            if areas[L] < min_cloudy_floe_size
+                img_indexmap[indices[L]] .= 0
+            elseif b2_means[L] < min_cloudy_band_2_reflectance
+                img_indexmap[indices[L]] .= 0
+            elseif circ[L] < min_cloudy_circularity
+                img_indexmap[indices[L]] .= 0
             end
+            continue
+        end
+
+        if b2_means[L] < min_band_2_reflectance
+            img_indexmap[indices[L]] .= 0
+        elseif circ[L] < min_circularity
+            img_indexmap[indices[L]] .= 0
         end
     end
 end
