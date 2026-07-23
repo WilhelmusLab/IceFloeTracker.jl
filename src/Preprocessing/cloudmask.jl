@@ -188,8 +188,8 @@ end
 
 
 @kwdef struct Watkins2026CloudMask <: AbstractCloudMaskAlgorithm
-    band_7_threshold::Float64 = 0.2
-    band_2_threshold::Float64 = 0.67
+    band_7_threshold::Float64 = 0.15
+    band_2_threshold::Float64 = 0.34
     opening_strel = strel_diamond((3, 3))
     dilation_strel = strel_disk(2)
     min_hole_size = 300
@@ -231,8 +231,9 @@ function (f::Watkins2026CloudMask)(img::AbstractArray{<:Union{AbstractRGB,Transp
     !maximum(init_mask) && return init_mask
 
     # remove speckle
-    init_mask .= opening(init_mask, f.opening_strel)
-
+    markers = opening(init_mask, f.opening_strel)
+    init_mask .= mreconstruct(dilate, markers, init_mask, strel_diamond((3, 3)))
+  
     # expand mask
     init_mask .= dilate(init_mask, f.dilation_strel)
 

@@ -222,56 +222,72 @@ function (f::ChainedFilterFunction)(floe, candidates)
     end
 end
 
+const max_travel_distance_filter = DistanceThresholdFilter(;
+    threshold_function=LogLogQuadraticTimeDistanceFunction()
+)
+
+const area_relative_error_filter = RelativeErrorThresholdFilter(;
+    variable=:area,
+    threshold_function=PiecewiseLinearThresholdFunction(;
+        minimum_area=100, maximum_area=700, minimum_value=0.43, maximum_value=0.17
+    ),
+)
+
+const convex_area_relative_error_filter = RelativeErrorThresholdFilter(;
+    variable=:convex_area,
+    threshold_function=PiecewiseLinearThresholdFunction(;
+        minimum_area=100, maximum_area=700, minimum_value=0.44, maximum_value=0.25
+    ),
+)
+
+const major_axis_relative_error_filter = RelativeErrorThresholdFilter(;
+    variable=:major_axis_length,
+    threshold_function=PiecewiseLinearThresholdFunction(;
+        minimum_area=100, maximum_area=700, minimum_value=0.27, maximum_value=0.13
+    ),
+)
+
+const minor_axis_relative_error_filter = RelativeErrorThresholdFilter(;
+    variable=:minor_axis_length,
+    threshold_function=PiecewiseLinearThresholdFunction(;
+        minimum_area=100, maximum_area=700, minimum_value=0.28, maximum_value=0.1
+    ),
+)
+
+const shape_difference_filter = ShapeDifferenceThresholdFilter(;
+    threshold_function=PiecewiseLinearThresholdFunction(;
+        minimum_area=100, maximum_area=700, minimum_value=0.47, maximum_value=0.31
+    ),
+)
+
+const psi_s_correlation_filter = PsiSCorrelationThresholdFilter(;
+    threshold_function=PiecewiseLinearThresholdFunction(;
+        minimum_area=100, maximum_area=700, minimum_value=0.86, maximum_value=0.96
+    ),
+)
+
+const default_filter = [
+    max_travel_distance_filter,
+    area_relative_error_filter,
+    convex_area_relative_error_filter,
+    major_axis_relative_error_filter,
+    minor_axis_relative_error_filter,
+    shape_difference_filter,
+    psi_s_correlation_filter,
+]
+
 """FilterFunction()
 
 The default filter function for the FloeTracker. The function is an instance of [`ChainedFilterFunction`](@ref),
 applying 7 individual [`AbstractFloeFilterFunctions`](@ref) in sequence:
-    1. `DistanceThresholdFilter`  
-    2. `RelativeErrorThresholdFilters` for area, convex area, major axis length, and minor axis length  
-    3. `ShapeDifferenceThresholdFilter`  
-    4. `PsiSCorrelationThresholdFilter`  
+    1. `DistanceThresholdFilter`
+    2. `RelativeErrorThresholdFilters` for area, convex area, major axis length, and minor axis length
+    3. `ShapeDifferenceThresholdFilter`
+    4. `PsiSCorrelationThresholdFilter`
 Filters in step 2 use the [`PiecewiseLinearThresholdFunction`](@ref) for thresholds, while Filter 1 uses a [`LinearTimeDistanceFunction`](@ref).
 """ # TODO: Add reference to cal-val paper when ready.
 function FilterFunction()
-    return ChainedFilterFunction(;
-        filters=[
-            DistanceThresholdFilter(),
-            RelativeErrorThresholdFilter(;
-                variable=:area,
-                threshold_function=PiecewiseLinearThresholdFunction(;
-                    minimum_value=0.43, maximum_value=0.17
-                ),
-            ),
-            RelativeErrorThresholdFilter(;
-                variable=:convex_area,
-                threshold_function=PiecewiseLinearThresholdFunction(;
-                    minimum_value=0.44, maximum_value=0.25
-                ),
-            ),
-            RelativeErrorThresholdFilter(;
-                variable=:major_axis_length,
-                threshold_function=PiecewiseLinearThresholdFunction(;
-                    minimum_value=0.27, maximum_value=0.13
-                ),
-            ),
-            RelativeErrorThresholdFilter(;
-                variable=:minor_axis_length,
-                threshold_function=PiecewiseLinearThresholdFunction(;
-                    minimum_value=0.28, maximum_value=0.1
-                ),
-            ),
-            ShapeDifferenceThresholdFilter(;
-                threshold_function=PiecewiseLinearThresholdFunction(;
-                    minimum_value=0.47, maximum_value=0.31
-                ),
-            ),
-            PsiSCorrelationThresholdFilter(;
-                threshold_function=PiecewiseLinearThresholdFunction(;
-                    minimum_value=0.86, maximum_value=0.96
-                ),
-            ),
-        ],
-    )
+    ChainedFilterFunction(; filters=default_filter)
 end
 
 """
