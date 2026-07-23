@@ -17,4 +17,5 @@ end
     dataset = Watkins2026Dataset(; ref="v0.2")
     @test pipeline_runs(LopezAcosta2019, filter(c -> c.case_number == 4, dataset))
     @test pipeline_runs(LopezAcosta2019Tiling, filter(c -> c.case_number == 4, dataset))
+    @test pipeline_runs(FSPipeline, filter(c -> c.case_number == 4, dataset))
 end

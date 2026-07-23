@@ -43,4 +43,7 @@ export LopezAcosta2019
 include("Pipeline/LopezAcosta2019Tiling.jl")
 export LopezAcosta2019Tiling
 
+include("Pipeline/FSPipeline.jl")
+export FSPipeline
+
 end

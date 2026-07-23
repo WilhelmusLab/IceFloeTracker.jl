@@ -78,7 +78,11 @@ containing the largest fraction of bright ice pixels. If no bright ice pixels ar
 function kmeans_binarization(
     gray_image,
     falsecolor_image;
-    cluster_selection_algorithm=IceDetectionBrightnessPeaksMODIS721(0.2, 0.3),
+    cluster_selection_algorithm=IceDetectionBrightnessPeaksMODIS721(
+        band_7_max=0.1,
+        possible_ice_threshold=0.3,
+        join_method="union",
+        minimum_prominence=0.01),
     k::Int64=4,
     maxiter::Int64=50,
     random_seed::Int64=45,
