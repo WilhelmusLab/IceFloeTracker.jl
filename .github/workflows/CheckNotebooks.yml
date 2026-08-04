@@ -45,7 +45,7 @@ jobs:
       - uses: google-github-actions/setup-gcloud@v2
 
       - name: Cache Watkins2026 validation dataset
-        uses: actions/cache@v4
+        uses: actions/cache@v6
         with:
           path: /tmp/Watkins2026
           # Dataset is platform-independent, so share one cache across all OS/arch.
