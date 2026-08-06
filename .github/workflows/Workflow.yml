@@ -34,6 +34,7 @@ jobs:
           path: |
             workflow/results/region
             region
+            ~/.cache/soit
           key: workflow-overpasses-${{ hashFiles('workflow/snakefile', 'workflow/configs/default/config.yaml', 'workflow/configs/default/region.csv', 'workflow/configs/default/case.csv', 'workflow/configs/ift-from-this-repo/config.yaml', 'workflow/profiles/default/config.yaml') }}
           restore-keys: |
             workflow-overpasses-
