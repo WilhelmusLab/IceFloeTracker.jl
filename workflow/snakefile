@@ -24,7 +24,7 @@ def last_day_of_month(year, month):
 
 
 def get_bbox(center_crs, centroid, target_crs, target_width_height):
-    """Given a centroid coordinate, its CRS, and a target width and height in meters, 
+    """Given a centroid coordinate, its CRS, and a target width and height in meters,
     returns a bounding box in the target CRS."""
     transformer = pyproj.Transformer.from_crs(
         center_crs, target_crs, always_xy=True)
@@ -70,10 +70,10 @@ rule region_case_results_by_filetype:
         ["filetype/{filetype}/{region}.{scale}m.{date_}.{satellite}.{ext}".format(
             region=case.region, scale=case.scale, date_=date_, satellite=satellite, filetype=filetype, ext=ext)
             for filetype, ext in [
-                ("truecolor", "tiff"), 
-                ("falsecolor", "tiff"), 
-                ("cloud", "tiff"), 
-                ("landmask", "tiff"), 
+                ("truecolor", "tiff"),
+                ("falsecolor", "tiff"),
+                ("cloud", "tiff"),
+                ("landmask", "tiff"),
                 ("coastal_buffer_mask", "tiff")
             ]
             for case in cases.itertuples()
@@ -82,12 +82,12 @@ rule region_case_results_by_filetype:
         ] + ["filetype/{pipeline}/{filetype}/{region}.{scale}m.{date_}.{satellite}.{ext}".format(
             region=case.region, scale=case.scale, date_=date_, satellite=satellite, filetype=filetype, pipeline=case.pipeline, ext=ext)
             for filetype, ext in [
-                ("segment_mean_falsecolor", "tiff"), 
-                ("segment_mean_truecolor", "tiff"), 
-                ("labels_map", "tiff"), 
-                ("cloud_mask", "tiff"), 
-                ("ice_mask", "tiff"), 
-                ("config", "txt"), 
+                ("segment_mean_falsecolor", "tiff"),
+                ("segment_mean_truecolor", "tiff"),
+                ("labels_map", "tiff"),
+                ("cloud_mask", "tiff"),
+                ("ice_mask", "tiff"),
+                ("config", "txt"),
                 ("segmentation", "nc"),
                 ("props_raw", "csv"),
                 ("props_crs", "csv")
@@ -98,7 +98,7 @@ rule region_case_results_by_filetype:
         ] + expand("track/{case.region}.{case.scale}m.{case.start}.{case.end}.{case.pipeline}.tracked.csv",
             case=cases.itertuples(),
         )
-        
+
 
 rule region_case_results:
     input:
@@ -108,7 +108,7 @@ rule region_case_results:
 
 
 rule organize_input_file_by_filetype:
-    output: 
+    output:
         "filetype/{filetype}/{scene}.{ext}"
     input:
         "scene/{scene}/{filetype}.{ext}"
@@ -121,7 +121,7 @@ rule organize_input_file_by_filetype:
 
 
 rule organize_segmentation_results_by_pipeline:
-    output: 
+    output:
         "filetype/{pipeline}/{filetype}/{scene}.{ext}"
     input:
         "scene/{scene}/{pipeline}/{filetype}.{ext}"
@@ -158,7 +158,8 @@ rule init_fsdproc:
 
 rule init_ift:
     input:
-        project_toml
+        project_toml,
+        init_pass_time = "init/init_pass_time"
     output:
         "init/init_ift",
         ".julia/Project.toml",
@@ -310,7 +311,7 @@ rule load_landmask:
         init_ift = "init/init_ift"
     shell:
         """
-        {config[IFT]} -e 'using IceFloeTracker, Images; 
+        {config[IFT]} -e 'using IceFloeTracker, Images;
             load("{input.landmask}") |> binarize_mask .|> N0f8 |> save("{output}")
         '
         """
@@ -323,7 +324,7 @@ rule load_coastal_buffer_mask:
         init_ift = "init/init_ift"
     shell:
         """
-        {config[IFT]} -e 'using IceFloeTracker, Images; 
+        {config[IFT]} -e 'using IceFloeTracker, Images;
             load("{input.landmask}") |> binarize_mask |> create_coastal_buffer_mask .|> N0f8 |> save("{output}")
         '
         """
@@ -403,7 +404,7 @@ rule segment:
             ),
         )'
         """
-        
+
 
 rule segment_buckley:
     output:
@@ -433,7 +434,7 @@ ruleorder: segment_buckley > segment
 
 
 rule region_props_crs:
-    input: 
+    input:
         crs_ref_image = "{dir}/truecolor.tiff",
         labels_map = "{dir}/{pipeline}/labels_map.tiff"
     output:
@@ -492,21 +493,21 @@ rule tracking:
         order = sortperm(overpasses);
         overpasses = overpasses[order];
         segmented_imgs = segmented_imgs[order];
-        
+
         tracker = {wildcards.pipeline}.Track();
         open("{output.config}", "w") do io
             Base.println(io, "IceFloeTracker.jl $(pkgversion(IceFloeTracker)) \n")
             Base.dump(io, tracker)
         end;
-        
+
         tracked = tracker(segmented_imgs, overpasses);
         save("{output.tracked}", select(tracked, Not(:mask, :psi)));
-        
+
         rotation = get_rotation_measurements(
-            tracked; 
-            id_column=:ID, 
-            image_column=:mask, 
-            time_column=:passtime, 
+            tracked;
+            id_column=:ID,
+            image_column=:mask,
+            time_column=:passtime,
             lookback_days=1
         );
         save("{output.rotation}", select(rotation, Not(:mask1, :psi1, :mask2, :psi2)));
@@ -527,7 +528,7 @@ rule observation_netcdf:
         crs_ref_image = "{dir}/truecolor.tiff",
         truecolor = "{dir}/truecolor.tiff",
         falsecolor = "{dir}/falsecolor.tiff",
-        cloud = "{dir}/cloud.tiff",        
+        cloud = "{dir}/cloud.tiff",
         labels_map = "{dir}/{pipeline}/labels_map.tiff",
         cloud_mask = "{dir}/{pipeline}/cloud_mask.tiff",
         landmask = "{dir}/landmask.tiff",
