@@ -142,14 +142,7 @@ cleanup_binary_params = (
 )
 floe_splitting_params = (max_hole_fill=2000, max_distance=5, max_expand=3)
 floe_filtering_params = (
-    min_floe_size=100,
-    min_cloudy_floe_size=1000,
-    max_floe_size=50_000,
-    min_band_2_reflectance=0.4,
-    min_cloudy_band_2_reflectance=0.7,
-    cloud_frac_threshold=0.5,
-    min_circularity=0.3,
-    min_cloudy_circularity=0.5,
+    min_floe_size=100, max_floe_size=90_000,expand_radius=15
 )
 floe_merging_params = (
     distance_threshold_pixels=10, area_error_threshold=0.25, min_floe_size=100
@@ -448,13 +441,32 @@ function dist_morph_split(
 end
 
 # Helper function for creating a filtered version of the image indexmap
-"""assign_labels(img_indexmap, labels_list)
+# TODO: Unify approach with remove_small_segments
+"""
+    keep_labels!(img_indexmap, labels_list)
 
-Given an image indexmap `img` and a `labels_list`, create a new labeled
-image using only the values in the list.
+Given an image indexmap `img_indexmap` and a list of labels `labels_list`, 
+remove any segments not in the list. In place version of `keep_labels`.
 
 """
-function assign_labels(img_indexmap, labels_list)
+function keep_labels!(img_indexmap, labels_list)    
+    indices = component_indices(img_indexmap)
+    labels = filter(r -> r > 0, unique(img_indexmap))
+    for L in labels
+        if L ∉ labels_list
+            img_indexmap[indices[L]] .= 0
+        end
+    end
+end
+
+"""
+    keep_labels(img_indexmap, labels_list)
+
+Given an image indexmap `img_indexmap` and a list of labels `labels_list`, 
+remove any segments not in the list.
+
+"""
+function keep_labels(img_indexmap, labels_list)
     out = zeros(Int64, size(img_indexmap))
     indices = component_indices(img_indexmap)
     for L in intersect(labels_list, keys(indices))
@@ -463,57 +475,113 @@ function assign_labels(img_indexmap, labels_list)
     return out
 end
 
+"""
+    filter_floes!(
+    img_indexmap,
+    coastal_buffer_mask,
+    cloud_mask,
+    falsecolor_image;
+    min_floe_size=100,
+    max_floe_size=90_000,
+    expand_radius=15,
+    filter_function=LogisticFilterFunction # needs to operate on a dataframe
+)
+
+Filter the image indexmap using object-wise properties. Removes objects which overlap the coastal buffer mask,
+exceed the size limits, and have too-low circularity. Then, we apply the filter function to the dataframe
+which by default uses a pre-fitted logistic regression function.
+
+
+
+"""
 function filter_floes!(
     img_indexmap,
     coastal_buffer_mask,
     cloud_mask,
     falsecolor_image;
-    min_floe_size=300,
-    min_cloudy_floe_size=1000,
-    max_floe_size=50_000,
-    min_band_2_reflectance=0.4,
-    min_cloudy_band_2_reflectance=0.7,
-    cloud_frac_threshold=0.5,
-    min_circularity=0.3,
-    min_cloudy_circularity=0.5,
+    min_floe_size=100,
+    max_floe_size=90_000,
+    expand_radius=15,
+    filter_function=LogisticFilterFunction # needs to operate on a dataframe
 )
+    # 1. Remove objects which overlap the coastal mask
     overlap = unique(img_indexmap[coastal_buffer_mask])
     indices = component_indices(img_indexmap)
     for L in overlap
         img_indexmap[indices[L]] .= 0
     end
 
-    # Remove floes outside the specified bounds
+    # 2. Remove objects outside the specified size bounds
     remove_small_segments!(img_indexmap, min_floe_size)
     remove_large_segments!(img_indexmap, max_floe_size)
 
-    areas = component_lengths(img_indexmap)
-    perims = component_perimeters(img_indexmap)
-    labels = filter(r -> r > 0, unique(img_indexmap))
-    circ = Dict(L => 4 * π * areas[L] / perims[L]^2 for L in labels)
+    # Return blank image if no floes remain
+    maximum(img_indexmap) == 0 && return img_indexmap
 
-    b2_means = segment_mean(SegmentedImage(green.(falsecolor_image), img_indexmap))
-    cloud_fractions = segment_mean(SegmentedImage(cloud_mask, img_indexmap))
+    # 3. Remove objects with low probability scores using filter_function
+    # TODO: Generalize to allow other function types, inputs
 
-    for L in unique(img_indexmap)
-        L <= 0 && continue
-        if cloud_fractions[L] > cloud_frac_threshold
-            if areas[L] < min_cloudy_floe_size
-                img_indexmap[indices[L]] .= 0
-            elseif b2_means[L] < min_cloudy_band_2_reflectance
-                img_indexmap[indices[L]] .= 0
-            elseif circ[L] < min_cloudy_circularity
-                img_indexmap[indices[L]] .= 0
-            end
-            continue
-        end
+    results_df = regionprops_table(img_indexmap;
+        properties=[:label, :area, :convex_area, :perimeter, :bbox, :centroid,
+                    :major_axis_length, :minor_axis_length, :orientation]
+    )
 
-        if b2_means[L] < min_band_2_reflectance
-            img_indexmap[indices[L]] .= 0
-        elseif circ[L] < min_circularity
-            img_indexmap[indices[L]] .= 0
+    results_df[:, :length_scale] = results_df[:, :area] .^ 0.5
+    
+    # TODO: add component_circularity to the regionprops options
+    results_df[:, :circularity] = 4 * π * results_df[:, :area] ./ results_df[:, :perimeter] .^ 2
+
+    labels = results_df[:, :label]
+    cloud_fractions = Dict(L => mean(cloud_mask[indices[L]]) for L in labels)
+    results_df[:, :cloud_fraction] = [cloud_fractions[L] for L in labels]
+    results_df[:, :cloudy] = results_df[:, :cloud_fraction] .> 0.5
+    b2 = green.(falsecolor_image)
+    b2_means = Dict(L => mean(b2[indices[L]]) for L in labels)
+    
+    bdry_indexmap = expand_labels(img_indexmap, expand_radius) .- img_indexmap
+    bdry_indices = component_indices(bdry_indexmap)
+    bdry_labels = intersect(labels, unique(bdry_indexmap))
+    b2_bdry_means = Dict(L => mean(b2[bdry_indices[L]]) for L in bdry_labels)
+    for L ∈ labels
+        if L ∉ bdry_labels
+            push!(b2_bdry_means, L => 0)
         end
     end
+    results_df[:, :b2_reflectance_mean] = [b2_means[L] for L in labels]
+    results_df[:, :b2_reflectance_bdry_mean] = [b2_bdry_means[L] for L in labels]
+    results_df[:, :b2_bdry_contrast] = results_df[:, :b2_reflectance_mean] .- results_df[:, :b2_reflectance_bdry_mean]
+    results_df[:, :prob] .= filter_function(results_df)
+    
+    labels = subset(results_df, :prob => r -> r .> 0.5)[:, :label]
+    keep_labels!(img_indexmap, labels)
+
+    # enforce minimum circularity
+    labels = subset(results_df, :circularity => r -> r .> min_circularity)[:, :label]
+    keep_labels!(img_indexmap, labels)
+end
+
+"""
+    LogisticRegressionFilter(df; coefs)
+
+Compute the probability for each DataFrameRow using the logistic function
+with coefficients defined in `coefs`. Names should include "intercept" and
+names of columns in `df`.
+
+"""
+function LogisticFilterFunction(df;
+    coefs=Dict(
+        "intercept"           => -7.97726,
+        "circularity"         => 3.28796,
+        "cloudy"              => -2.21906,
+        "length_scale"        => 0.0280868,
+        "b2_bdry_contrast"    => 5.75358,
+        "b2_reflectance_mean" => 6.75488,
+        )
+    )
+    colnames = [x for x in keys(coefs)]
+    b = [x for x in values(coefs)]
+    df[:, :intercept] .= 1;
+    return 1 ./ (1 .+ exp.(-Matrix(df[:, colnames]) * b))
 end
 
 """
@@ -711,8 +779,8 @@ function merge_floes(indexmap1, indexmap2, img; dmax=10, emax=0.25, min_floe_siz
         # Merge the two, prioritizing the second if there is overlap.
         s1_labels = matches[matches.s1_better, :s1_label]
         s2_labels = matches[.!matches.s1_better, :s2_label];
-        A_sel = assign_labels(A, s1_labels);
-        B_sel = assign_labels(B, s2_labels);
+        A_sel = keep_labels(A, s1_labels);
+        B_sel = keep_labels(B, s2_labels);
         idx = A_sel .> 0
         F[idx] .= A[idx]
         idx = B_sel .> 0
@@ -808,8 +876,8 @@ function merge_floes(indexmap1, indexmap2, img; dmax=10, emax=0.25, min_floe_siz
             :, :s2_label
         ]
 
-        A_sel = assign_labels(A, s1_labels);
-        B_sel = assign_labels(B, s2_labels);
+        A_sel = keep_labels(A, s1_labels);
+        B_sel = keep_labels(B, s2_labels);
         idx = A_sel .> 0
         F[idx] .= A[idx]
         idx = B_sel .> 0
@@ -825,8 +893,8 @@ function merge_floes(indexmap1, indexmap2, img; dmax=10, emax=0.25, min_floe_siz
         end
     end
 
-    A_sel = assign_labels(A, s1_no_overlap)
-    B_sel = assign_labels(B, s2_no_overlap)
+    A_sel = keep_labels(A, s1_no_overlap)
+    B_sel = keep_labels(B, s2_no_overlap)
     F[A_sel .> 0] .= A_sel[A_sel .> 0]
     F[B_sel .> 0] .= B_sel[B_sel .> 0]
 
