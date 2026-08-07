@@ -491,8 +491,6 @@ Filter the image indexmap using object-wise properties. Removes objects which ov
 exceed the size limits, and have too-low circularity. Then, we apply the filter function to the dataframe
 which by default uses a pre-fitted logistic regression function.
 
-
-
 """
 function filter_floes!(
     img_indexmap,
