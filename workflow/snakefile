@@ -159,7 +159,6 @@ rule init_fsdproc:
 rule init_ift:
     input:
         project_toml,
-        init_pass_time = "init/init_pass_time"
     output:
         "init/init_ift",
         ".julia/Project.toml",
