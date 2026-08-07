@@ -375,3 +375,9 @@ function get_relevant_set(df1, df2, labels1, labels2)
     return relevant_set
 end
 
+function get_relevant_set(labels1, labels2)
+    df1 = regionprops_table(labels1)
+    df2 = regionprops_table(labels2)
+    return get_relevant_set(df1, df2, labels1, labels2)
+end
+

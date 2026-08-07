@@ -349,7 +349,7 @@ end
 end
 
 @testitem "get relevant set" begin
-import IceFloeTracker.Segmentation: get_relevant_set, regionprops_table
+import IceFloeTracker.Segmentation: get_relevant_set
 
 G = [
  0 0 0 0 0 3 3
@@ -371,14 +371,11 @@ S = [
  3 3 0 0 2 0 0
 ]
 
-dfg = regionprops_table(G)
-dfs = regionprops_table(S)
-R = get_relevant_set(dfg, dfs, G, S)
+R = get_relevant_set(G, S)
 
 # Tests that
 # 1) the relevant sets can have matched segments without being the same shape
 # 2) ground truth segments with no match don't get added to the set
 # 3) predicted segments with no match don't get added to the set
-@test R[2] == 2 && R[1] == 1 && [3] ∉ values(R) && 3 ∉ keys(R)
-
+@test R[2] == [2] && R[1] == [1] && [3] ∉ values(R) && 3 ∉ keys(R)
 end
