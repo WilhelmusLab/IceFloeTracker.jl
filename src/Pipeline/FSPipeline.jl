@@ -142,7 +142,10 @@ cleanup_binary_params = (
 )
 floe_splitting_params = (max_hole_fill=2000, max_distance=5, max_expand=3)
 floe_filtering_params = (
-    min_floe_size=100, max_floe_size=90_000,expand_radius=15
+    min_floe_size=100,
+    max_floe_size=90_000,
+    expand_radius=15,
+    min_circularity=0.4,
 )
 floe_merging_params = (
     distance_threshold_pixels=10, area_error_threshold=0.25, min_floe_size=100
@@ -500,6 +503,7 @@ function filter_floes!(
     min_floe_size=100,
     max_floe_size=90_000,
     expand_radius=15,
+    min_circularity=0.4,
     filter_function=LogisticFilterFunction # needs to operate on a dataframe
 )
     # 1. Remove objects which overlap the coastal mask
