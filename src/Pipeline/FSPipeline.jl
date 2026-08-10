@@ -236,69 +236,53 @@ function (s::Segment)(
     filtered_tiles = filter(
         t -> sum(prelim_ice_mask[t...]) > s.min_tile_ice_pixel_count, filtered_tiles
     );
+    water_mask = .!(prelim_ice_mask .|| cloud_mask .|| land_mask)
 
     @info "Preprocessing truecolor image"
     preproc_gray = float64.(
         s.preprocessing_algorithm(truecolor_image, landmask, filtered_tiles)
     );
 
-    @info "Binarization"
-    # We use the cloud mask in finding the bright floes - the bright floe cluster can't be cloud -
-    # and allow the k-means cluster to overlap with the cloud mask by using the preproc gray with
-    # only the landmask applied to it. Not applying the cloudmask to the kmeans result, though, means
-    # we need to be careful about the clouds.
+    @info "Segmentation"
+
+    adaptive_result = apply_landmask(
+        binarize(preproc_gray, AdaptiveThreshold(; s.adaptive_params...)) .> 0,
+        water_mask .|| land_mask
+    )
+
     kmeans_result = kmeans_binarization(
         preproc_gray, fc_masked, filtered_tiles; s.kmeans_params...
     )
-    adaptive_result = binarize(preproc_gray, AdaptiveThreshold(; s.adaptive_params...)) .> 0
 
-    # AdaptiveThreshold often has noise in large blank areas
-    apply_landmask!(adaptive_result, landmask)
-
-    # We also don't want to include artificially brightened regions, so
-    # we mask things that have already been classified as water.
-    apply_landmask!(adaptive_result, .!(prelim_ice_mask .|| cloud_mask))
-
-    @info "Splitting floes"
-
-    clean_split_label =
-        r -> dist_morph_split(
-            clean_binary_floes(r, prelim_ice_mask, cloud_mask; s.cleanup_binary_params...);
-            s.floe_splitting_params...,
-        )
-
-    kmeans_split_floes = clean_split_label(kmeans_result)
-    adaptive_split_floes = clean_split_label(adaptive_result)
-
-    # TBD: Filter floes based on the edge properties, colors
-
-    @info "Filtering floes"
-
-    filter_floes!(
-        kmeans_split_floes,
-        coastal_buffer_mask,
-        cloud_mask,
-        falsecolor_image;
-        s.floe_filtering_params...,
+    clean_and_split(r) = dist_morph_split(
+            clean_binary_floes(
+                r, prelim_ice_mask, cloud_mask; s.cleanup_binary_params...
+            );
+        s.floe_splitting_params...,
     )
-    filter_floes!(
-        adaptive_split_floes,
-        coastal_buffer_mask,
-        cloud_mask,
-        falsecolor_image;
+
+    labeled_images = clean_and_split.(kmeans_result, adaptive_result)
+
+    @info "Filter and merge"
+    # Update the filtering method so that the regionprops table is only called once. Now, it returns 
+    # a dataframe so that the merge floes can take two tuples as inputs.
+    filtered_floes = filter_floes.(labeled_images;
+        coastal_buffer_mask=coastal_buffer_mask,
+        cloud_mask=cloud_mask,
+        falsecolor_image=falsecolor_image,
         s.floe_filtering_params...,
     )
 
-    @info "Joining segmentation results"
-    final_floes = merge_floes(kmeans_split_floes, adaptive_split_floes, preproc_gray)
+    # TODO: Update merge floes to just use the properties in the filter floes table
+    final_floes = merge_floes(filtered_floes, labeled_images)
 
+    # Remove any stray segments left over from the merge function
     remove_small_segments!(final_floes, s.floe_filtering_params.min_floe_size)
-    remove_large_segments!(final_floes, s.floe_filtering_params.max_floe_size)
-
+    
     # Re-label so there are no missing numbers in the component list
     final_floes .= label_components(final_floes)
 
-    # Return the original truecolor image, segmented
+    # Generate images with object-average colors
     segments_tc = SegmentedImage(truecolor_image, final_floes)
     segments_fc = SegmentedImage(falsecolor_image, final_floes)
 
@@ -315,8 +299,8 @@ function (s::Segment)(
             preprocessed=preproc_gray,
             kmeans_binarized=kmeans_result .> 0,
             adaptive_binarized=adaptive_result .> 0,
-            kmeans_floes=kmeans_split_floes .> 0,
-            adaptive_floes=adaptive_split_floes .> 0,
+            kmeans_floes=labeled_images[1] .> 0,
+            adaptive_floes=labeled_images[2] .> 0,
             final_floes=colorview_random,
             labels_map=final_floes,
             segment_mean_falsecolor=segment_mean_falsecolor,
@@ -476,7 +460,7 @@ function keep_labels(img_indexmap, labels_list)
 end
 
 """
-    filter_floes!(
+    filter_floes(
     img_indexmap,
     coastal_buffer_mask,
     cloud_mask,
@@ -489,10 +473,10 @@ end
 
 Filter the image indexmap using object-wise properties. Removes objects which overlap the coastal buffer mask,
 exceed the size limits, and have too-low circularity. Then, we apply the filter function to the dataframe
-which by default uses a pre-fitted logistic regression function.
+which by default uses a pre-fitted logistic regression function. Returns a dataframe with floe properties.
 
 """
-function filter_floes!(
+function filter_floes(
     img_indexmap,
     coastal_buffer_mask,
     cloud_mask,
@@ -500,7 +484,10 @@ function filter_floes!(
     min_floe_size=100,
     max_floe_size=90_000,
     expand_radius=15,
-    filter_function=LogisticFilterFunction # needs to operate on a dataframe
+    b2_threshold=0.4,
+    min_circularity=0.4,
+    filter_function=LogisticRegressionFilter, # needs to operate on a dataframe
+    min_probability=0.5,
 )
     # 1. Remove objects which overlap the coastal mask
     overlap = unique(img_indexmap[coastal_buffer_mask])
@@ -509,25 +496,24 @@ function filter_floes!(
         img_indexmap[indices[L]] .= 0
     end
 
-    # 2. Remove objects outside the specified size bounds
+    # 2. Remove objects outside the specified size bounds prior to extracting features.
+    # This is important since the small features can cause problems in some feature
+    # descriptors.
     remove_small_segments!(img_indexmap, min_floe_size)
     remove_large_segments!(img_indexmap, max_floe_size)
 
-    # Return blank image if no floes remain
-    maximum(img_indexmap) == 0 && return img_indexmap
-
-    # 3. Remove objects with low probability scores using filter_function
-    # TODO: Generalize to allow other function types, inputs
-
+    # 3. Get object-wise properties
     results_df = regionprops_table(img_indexmap;
         properties=[:label, :area, :convex_area, :perimeter, :bbox, :centroid,
                     :major_axis_length, :minor_axis_length, :orientation]
     )
+    # Return blank image if no floes remain
+    nrow(results_df) == 0 && return results_df
 
     results_df[:, :length_scale] = results_df[:, :area] .^ 0.5
-    
-    # TODO: add component_circularity to the regionprops options
     results_df[:, :circularity] = 4 * π * results_df[:, :area] ./ results_df[:, :perimeter] .^ 2
+    subset!(results_df, :circularity => r -> r .> min_circularity)
+    nrow(results_df) == 0 && return results_df
 
     labels = results_df[:, :label]
     cloud_fractions = Dict(L => mean(cloud_mask[indices[L]]) for L in labels)
@@ -548,14 +534,12 @@ function filter_floes!(
     results_df[:, :b2_reflectance_mean] = [b2_means[L] for L in labels]
     results_df[:, :b2_reflectance_bdry_mean] = [b2_bdry_means[L] for L in labels]
     results_df[:, :b2_bdry_contrast] = results_df[:, :b2_reflectance_mean] .- results_df[:, :b2_reflectance_bdry_mean]
-    results_df[:, :prob] .= filter_function(results_df)
-    
-    labels = subset(results_df, :prob => r -> r .> 0.5)[:, :label]
-    keep_labels!(img_indexmap, labels)
+    subset!(results_df, :b2_reflectance_mean => r -> r .> b2_threshold)
+    nrow(results_df) == 0 && return results_df
 
-    # enforce minimum circularity
-    labels = subset(results_df, :circularity => r -> r .> min_circularity)[:, :label]
-    keep_labels!(img_indexmap, labels)
+    results_df[:, :probability] .= filter_function(results_df)
+    subset!(results_df, :probability => r -> r .> min_probability)
+    return results_df
 end
 
 """
@@ -566,14 +550,13 @@ with coefficients defined in `coefs`. Names should include "intercept" and
 names of columns in `df`.
 
 """
-function LogisticFilterFunction(df;
+function LogisticRegressionFilter(df;
     coefs=Dict(
-        "intercept"           => -7.97726,
-        "circularity"         => 3.28796,
-        "cloudy"              => -2.21906,
-        "length_scale"        => 0.0280868,
-        "b2_bdry_contrast"    => 5.75358,
-        "b2_reflectance_mean" => 6.75488,
+        "intercept"           => -14.969,
+        "circularity"         => 13.1031,
+        "length_scale"        => 0.0659,
+        "b2_bdry_contrast"    => 3.389,
+        "b2_reflectance_mean" => 4.102,
         )
     )
     colnames = [x for x in keys(coefs)]

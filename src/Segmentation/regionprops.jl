@@ -552,7 +552,8 @@ function regionprops(
     eltype(properties) <: AbstractString && (properties = Symbol.(properties))
 
     maximum(labels) == 0 && begin
-        @warn "Labeled image is empty!"
+        # @warn "Labeled image is empty!"
+        # dmw: Disabled warning since creating a 0-row dataframe is actually useful and desired
         properties_ = Symbol[]
         for p in properties
             if p == :bbox
