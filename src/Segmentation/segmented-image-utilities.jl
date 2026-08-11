@@ -376,8 +376,7 @@ function get_relevant_set(df1, df2, labels1, labels2)
 end
 
 function get_relevant_set(labels1, labels2)
-    df1 = regionprops_table(labels1)
-    df2 = regionprops_table(labels2)
+    df1 = regionprops_table(labels1; properties=[:label, :area, :bbox, :centroid])
+    df2 = regionprops_table(labels2; properties=[:label, :area, :bbox, :centroid])
     return get_relevant_set(df1, df2, labels1, labels2)
 end
-
