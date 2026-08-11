@@ -31,6 +31,7 @@ import ..ImageUtils: get_tiles, imbrighten
 import ..Segmentation:
     component_perimeters,
     expand_labels,
+    get_relevant_set,
     kmeans_binarization,
     tiled_adaptive_binarization,
     IceDetectionBrightnessPeaksMODIS721,
@@ -514,73 +515,6 @@ function filter_floes!(
             img_indexmap[indices[L]] .= 0
         end
     end
-end
-
-"""
-    get_relevant_set(df1, df2, labels1, labels2)
-
-Find the relevant set for comparing two segmentation results.
-- df1, df2 = results of regionprops table
-- labels1, labels2 = image indexmaps
-
-The relevant set for a segmentation comparison set s in S in reference
-to object g in G is defined by
-
-1. centroid g in s
-2. centroid s in g
-3. area overlap greater than 50% of g
-4. area overlap greater than 50% of s
-
-"""
-function get_relevant_set(df1, df2, labels1, labels2)
-    relevant_set = Dict{Int64,Vector{Int64}}()
-    for floe in eachrow(df1)
-        # select labels that are inside the bounding box for the floe
-        matched_labels = unique(
-            labels2[floe.min_row:floe.max_row, floe.min_col:floe.max_col]
-        )
-
-        # if any, then check centroid positions
-        maximum(matched_labels) == 0 && continue
-        # get the rows in the segments_df from the matched labels
-        candidate_subset = subset(df2, :label => ByRow(l -> l in matched_labels))
-
-        relevant_set_labels = []
-
-        # check if centroid g in s
-        rc = round(Int64, floe.row_centroid)
-        cc = round(Int64, floe.col_centroid)
-        push!(relevant_set_labels, labels2[rc, cc])
-
-        # check if centroid s in g
-        for s_floe in eachrow(candidate_subset)
-            rc = round(Int64, s_floe.row_centroid)
-            cc = round(Int64, s_floe.col_centroid)
-            (labels1[rc, cc] == floe.label) && begin
-                push!(relevant_set_labels, s_floe.label)
-            end
-
-            # joint bbox
-            rmin = minimum((floe.min_row, s_floe.min_row))
-            rmax = maximum((floe.max_row, s_floe.max_row))
-            cmin = minimum((floe.min_col, s_floe.min_col))
-            cmax = maximum((floe.max_col, s_floe.max_col))
-
-            # check if area overlap between g and s is larger than 50% of g
-            gtmask = labels1[rmin:rmax, cmin:cmax] .== floe.label
-            slmask = labels2[rmin:rmax, cmin:cmax] .== s_floe.label
-            intersect_area = sum(gtmask .&& slmask)
-            if maximum([intersect_area / s_floe.area, intersect_area / floe.area]) > 0.5
-                push!(relevant_set_labels, s_floe.label)
-            end
-        end
-        relevant_set_labels = filter(r -> r != 0, unique(relevant_set_labels))
-        if length(relevant_set_labels) > 0
-            push!(relevant_set, floe.label => relevant_set_labels)
-        end
-    
-    end
-    return relevant_set
 end
 
 const default_properties = [:label, :area, :perimeter, :centroid]
