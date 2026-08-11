@@ -146,8 +146,10 @@ floe_splitting_params = (max_hole_fill=2000, max_distance=5, max_expand=3)
 floe_filtering_params = (
     min_floe_size=100,
     max_floe_size=90_000,
-    expand_radius=15,
-    min_circularity=0.4,
+    boundary_radius=15,
+    min_circularity=0.3,
+    min_reflectance=0.4,
+    min_contrast=0.01,
     min_probability=0.5,
 )
 floe_merging_params = (
@@ -286,6 +288,7 @@ function (s::Segment)(
     remove_small_segments!(final_floes, s.floe_filtering_params.min_floe_size)
     
     # Re-label so there are no missing numbers in the component list
+
     final_floes .= label_components(final_floes)
 
     # Generate images with object-average colors
@@ -490,9 +493,10 @@ function filter_floes(
     falsecolor_image;
     min_floe_size=100,
     max_floe_size=90_000,
-    expand_radius=15,
-    b1_threshold=0.4,
+    boundary_radius=15,
+    min_reflectance=0.4,
     min_circularity=0.3,
+    min_contrast=0.01,
     filter_function=LogisticRegressionFilter,
     min_probability=0.5,
 )
@@ -532,12 +536,12 @@ function filter_floes(
     results_df[:, :b7_reflectance_mean] = red.(b)
     results_df[:, :b2_reflectance_mean] = green.(b)
     
-    subset!(results_df, :b1_reflectance_mean => r -> r .> b1_threshold)
+    subset!(results_df, :b1_reflectance_mean => r -> r .> min_reflectance)
     nrow(results_df) == 0 && return results_df
     
     # mean boundary reflectance
     b1 = blue.(falsecolor_image)
-    bdry_indexmap = expand_labels(img_indexmap, expand_radius) .- img_indexmap
+    bdry_indexmap = expand_labels(img_indexmap, boundary_radius) .- img_indexmap
     bdry_indices = component_indices(bdry_indexmap)
     bdry_labels = intersect(labels, unique(bdry_indexmap))
     b1_bdry_means = Dict(L => mean(b1[bdry_indices[L]]) for L in bdry_labels)
@@ -548,6 +552,9 @@ function filter_floes(
     end
     results_df[:, :b1_reflectance_bdry_mean] = [b1_bdry_means[L] for L in labels]
     results_df[:, :b1_bdry_contrast] = results_df[:, :b1_reflectance_mean] .- results_df[:, :b1_reflectance_bdry_mean]
+    subset!(results_df, :b1_bdry_contrast => r -> r .> min_contrast)
+    nrow(results_df) == 0 && return results_df
+
     results_df[:, :probability] .= filter_function(results_df)
     subset!(results_df, :probability => r -> r .> min_probability)
 
@@ -564,8 +571,8 @@ names of columns in `df`.
 
 """
 function LogisticRegressionFilter(df;
-    coefs=Dict(
-        "intercept"           => -10.336,
+    coefs = Dict(
+        "intercept"           => -19.3361,
         "length_scale"        => 0.0589,
         "circularity"         => 13.399,
         "b1_reflectance_mean" => 9.294,
@@ -582,31 +589,20 @@ end
 const default_properties = [:label, :area, :perimeter, :centroid]
 
 """
-    objectwise_compare_segmentation(indexmap1, indexmap2, img; expand_radius=15, return_properties)
+    objectwise_compare_segmentation(df1, df2, labels1, labels2)
 
-Uses the concept of a relevant set to select connected components in the two
-indexmaps and produce comparisons. The image `img` is used to compute local boundary
-contrast, by comparing the difference in the mean intensity of the image and the boundary
-within `expand_radius` pixels. A DataFrame with rows corresponding to comparisons between
-the indexmaps is returned. Note that each labeled object may map to multiple objects.
-Returns the list of properties in "return properties" along with comparative measures `dist_s1_s2``,
-`scaled_relative_error_area`, and object measures `reflectance_mean`, `reflectance_bdry_mean`, 
-and `reflectance_bdry_contrast` computed relative to the input `img`.
+Compare segmentation results using region property tables and label maps. Expects df1 and df2 to originate
+from the `filter_floes` function, so they should include the reflectance, boundary contrast, circularity,
+and floe probability. This function identifies conflicts between the two labels and adds comparisons `dist_s1_s2`,
+`scaled_relative_error_area_s1_s2`.
 
 """
 function objectwise_compare_segmentation(
-    indexmap1, indexmap2, img; expand_radius=15, properties=default_properties
-)
-    properties = union(properties, [:label, :centroid, :area, :bbox, :perimeter])
-    df_s1 = regionprops_table(indexmap1; properties=properties)
-    df_s2 = regionprops_table(indexmap2; properties=properties)
-
-    # This accounts for the centroid and bbox turning into col_ and row_ terms
-    properties = Symbol.(names(df_s1))
-
-    relevant_set = get_relevant_set(df_s1, df_s2, indexmap1, indexmap2)
+    df1, df2, labels1, labels2
+)    
+    relevant_set = get_relevant_set(df1, df2, labels1, labels2)
     results = DataFrame[]
-    for floe in eachrow(df_s1)
+    for floe in eachrow(df1)
         g = floe.label
         g in keys(relevant_set) && begin
             df_rs = subset(df_s2, :label => ByRow(s -> s in relevant_set[g]))
@@ -625,57 +621,62 @@ function objectwise_compare_segmentation(
     results_df = vcat(results...; cols=:union)
     rename!(results_df, Dict(r => Symbol("s2_", r) for r in properties))
 
-    # circularity
-    @. results_df[:, :s1_circularity] =
-        4 * pi * results_df[:, :s1_area] / results_df[:, :s1_perimeter] ^ 2
-    @. results_df[:, :s2_circularity] =
-        4 * pi * results_df[:, :s2_area] / results_df[:, :s2_perimeter] ^ 2
-
-    # mean reflectance
-    bdry1 = expand_labels(indexmap1, expand_radius) .- indexmap1
-    mean1 = segment_mean(SegmentedImage(img, indexmap1))
-    bdry_mean1 = segment_mean(SegmentedImage(img, bdry1))
-    results_df[:, :s1_reflectance_mean] = [mean1[L] for L in results_df[:, :s1_label]]
-    results_df[:, :s1_reflectance_bdry_mean] = [
-        bdry_mean1[L] for L in results_df[:, :s1_label]
-    ]
-
-    bdry2 = expand_labels(indexmap2, expand_radius) .- indexmap2
-    mean2 = segment_mean(SegmentedImage(img, indexmap2))
-    bdry_mean2 = segment_mean(SegmentedImage(img, bdry2))
-    results_df[:, :s2_reflectance_mean] = [mean2[L] for L in results_df[:, :s2_label]]
-    results_df[:, :s2_reflectance_bdry_mean] = [
-        bdry_mean2[L] for L in results_df[:, :s2_label]
-    ]
-
-    results_df[:, :s1_reflectance_bdry_contrast] =
-        results_df[:, :s1_reflectance_mean] .- results_df[:, :s1_reflectance_bdry_mean]
-    results_df[:, :s2_reflectance_bdry_contrast] =
-        results_df[:, :s2_reflectance_mean] .- results_df[:, :s2_reflectance_bdry_mean]
-
     return results_df
 end
 
 """
-    merge_floes(seg1, seg2, img; kwargs...)
+    merge_floes(df1, df2, labels1, labels2)
 
 Produce a single segmentation from a pair via object-wise assessment.
 1. Where the two segmentations agree within tolerance of dmax, emax, select the most circular floe.
 2. Where the segmentations disagree, select floes with the highest boundary contrast within their
 
 """
-function merge_floes(indexmap1, indexmap2, img; dmax=10, emax=0.25, min_floe_size=100)
+function merge_floes(df1, df2, labels1, labels2; 
+    max_distance_pixels=10,
+    max_error_area=0.25,
+    min_floe_size=100
+    )
 
     # If no floes to merge, skip merge
-    maximum(indexmap1) == 0 && return indexmap2
-    maximum(indexmap2) == 0 && return indexmap1
+    nrow(df1) == 0 && return labels2
+    nrow(df2) == 0 && return labels1
 
-    A = deepcopy(indexmap1)
-    B = deepcopy(indexmap2)
+    #### Set up starting images
+    A = labels1
+    B = labels2
     A_indices = component_indices(A)
     B_indices = component_indices(B)
+    A_labels = df1.label
+    B_labels = df2.label
 
     F = zeros(Int64, size(A))
+
+    #### Case 1: No overlap
+    A_no_overlap = []
+    B_no_overlap = []
+    for L in A_labels
+        if maximum(B[A_indices[L]]) == 0
+            F[A_indices[L]] .= L
+            push!(A_no_overlap, L)
+        end
+    end
+    for L in B_labels
+        if maximum(A[B_indices[L]]) == 0
+            F[B_indices[L]] .= L
+            push!(B_no_overlap, L)
+        end
+    end
+
+    subset!(df1, :label => r -> r ∉ A_no_overlap)
+    subset!(df2, :label => r -> r ∉ B_no_overlap)
+    nrow(df1) == 0 || nrow(df2) == 0 && return F
+
+    #### Case 2: High-Quality Pairs
+    # In this case, there exists at least one item in the relevant set where the error metrics are both within the tolerance.
+    # Out of these objects, choose the one with the highest probability. 
+    # TODO: I left off here, this function won't work yet
+
 
     df_comp = objectwise_compare_segmentation(indexmap1, indexmap2, img);
     s1_no_overlap = filter(r -> r != 0, setdiff(unique(A), df_comp.s1_label))
