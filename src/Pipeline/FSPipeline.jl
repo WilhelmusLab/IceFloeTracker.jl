@@ -27,6 +27,7 @@ import ..Preprocessing:
     apply_cloudmask,
     apply_cloudmask!,
     Watkins2026CloudMask
+
 import ..ImageUtils: get_tiles, imbrighten
 import ..Segmentation:
     component_perimeters,
@@ -122,7 +123,7 @@ end
 coastal_buffer_structuring_element = strel_box((51, 51))
 cloud_mask_algorithm = Watkins2026CloudMask()
 preprocessing_algorithm = Preprocess()
-tile_size_pixels = 1200
+tile_size_pixels = 400
 min_tile_ice_pixel_count=300
 preliminary_ice_mask = IceDetectionBrightnessMidpoint(; minimum_reflectance=0.3)
 kmeans_params = (
@@ -146,6 +147,7 @@ floe_filtering_params = (
     max_floe_size=90_000,
     expand_radius=15,
     min_circularity=0.4,
+    min_probability=0.5,
 )
 floe_merging_params = (
     distance_threshold_pixels=10, area_error_threshold=0.25, min_floe_size=100
@@ -462,6 +464,7 @@ function keep_labels(img_indexmap, labels_list)
     return out
 end
 
+# TODO: dmw -- This function can be made much shorter by adding segment mean color, circularity, potentially boundary contrast to the region props function 
 """
     filter_floes(
     img_indexmap,
@@ -487,9 +490,9 @@ function filter_floes(
     min_floe_size=100,
     max_floe_size=90_000,
     expand_radius=15,
-    b2_threshold=0.4,
+    b1_threshold=0.4,
     min_circularity=0.4,
-    filter_function=LogisticRegressionFilter, # needs to operate on a dataframe
+    filter_function=LogisticRegressionFilter,
     min_probability=0.5,
 )
     # 1. Remove objects which overlap the coastal mask
@@ -507,7 +510,7 @@ function filter_floes(
 
     # 3. Get object-wise properties
     results_df = regionprops_table(img_indexmap;
-        properties=[:label, :area, :convex_area, :perimeter, :bbox, :centroid,
+        properties=[:label, :area, :perimeter, :bbox, :centroid,
                     :major_axis_length, :minor_axis_length, :orientation]
     )
     # Return blank image if no floes remain
@@ -519,32 +522,38 @@ function filter_floes(
     nrow(results_df) == 0 && return results_df
 
     labels = results_df[:, :label]
-    cloud_fractions = Dict(L => mean(cloud_mask[indices[L]]) for L in labels)
-    results_df[:, :cloud_fraction] = [cloud_fractions[L] for L in labels]
-    results_df[:, :cloudy] = results_df[:, :cloud_fraction] .> 0.5
-    b2 = green.(falsecolor_image)
-    b2_means = Dict(L => mean(b2[indices[L]]) for L in labels)
+    results_df[:, :cloud_fraction] = [mean(cloud_mask[indices[L]]) for L in labels]
     
+    # mean reflectance
+    segment_mean_reflectance = segment_mean(SegmentedImage(falsecolor_image, img_indexmap))
+    b = [segment_mean_reflectance[L] for L in labels]
+    results_df[:, :b1_reflectance_mean] = blue.(b)
+    results_df[:, :b7_reflectance_mean] = red.(b)
+    results_df[:, :b2_reflectance_mean] = green.(b)
+    
+    subset!(results_df, :b1_reflectance_mean => r -> r .> b1_threshold)
+    nrow(results_df) == 0 && return results_df
+    
+    # mean boundary reflectance
+    b1 = blue.(falsecolor_image)
     bdry_indexmap = expand_labels(img_indexmap, expand_radius) .- img_indexmap
     bdry_indices = component_indices(bdry_indexmap)
     bdry_labels = intersect(labels, unique(bdry_indexmap))
-    b2_bdry_means = Dict(L => mean(b2[bdry_indices[L]]) for L in bdry_labels)
+    b1_bdry_means = Dict(L => mean(b1[bdry_indices[L]]) for L in bdry_labels)
     for L ∈ labels
         if L ∉ bdry_labels
-            push!(b2_bdry_means, L => 0)
+            push!(b1_bdry_means, L => 0)
         end
     end
-    results_df[:, :b2_reflectance_mean] = [b2_means[L] for L in labels]
-    results_df[:, :b2_reflectance_bdry_mean] = [b2_bdry_means[L] for L in labels]
-    results_df[:, :b2_bdry_contrast] = results_df[:, :b2_reflectance_mean] .- results_df[:, :b2_reflectance_bdry_mean]
-    subset!(results_df, :b2_reflectance_mean => r -> r .> b2_threshold)
-    nrow(results_df) == 0 && return results_df
-
+    results_df[:, :b1_reflectance_bdry_mean] = [b1_bdry_means[L] for L in labels]
+    results_df[:, :b1_bdry_contrast] = results_df[:, :b1_reflectance_mean] .- results_df[:, :b1_reflectance_bdry_mean]
     results_df[:, :probability] .= filter_function(results_df)
     subset!(results_df, :probability => r -> r .> min_probability)
+
     return results_df
 end
 
+# TODO: dmw -- this could be a struct / functor pair, so the filter takes a FloeProbabilityFunction rather than needing to be LogisticRegression
 """
     LogisticRegressionFilter(df; coefs)
 
@@ -555,11 +564,12 @@ names of columns in `df`.
 """
 function LogisticRegressionFilter(df;
     coefs=Dict(
-        "intercept"           => -14.969,
-        "circularity"         => 13.1031,
-        "length_scale"        => 0.0659,
-        "b2_bdry_contrast"    => 3.389,
-        "b2_reflectance_mean" => 4.102,
+        "intercept"           => -10.336,
+        "length_scale"        => 0.0589,
+        "circularity"         => 13.399,
+        "b1_reflectance_mean" => 9.294,
+        "b1_bdry_contrast"    => 3.062,
+        "b7_reflectance_mean" => -1.179,
         )
     )
     colnames = [x for x in keys(coefs)]
