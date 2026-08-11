@@ -491,7 +491,7 @@ function filter_floes(
     max_floe_size=90_000,
     expand_radius=15,
     b1_threshold=0.4,
-    min_circularity=0.4,
+    min_circularity=0.3,
     filter_function=LogisticRegressionFilter,
     min_probability=0.5,
 )
