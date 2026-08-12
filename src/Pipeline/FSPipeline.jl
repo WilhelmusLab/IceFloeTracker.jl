@@ -211,9 +211,9 @@ function (s::Segment)(
     # the full range of image formats
     truecolor_image = float64.(RGB.(truecolor))
     falsecolor_image = float64.(RGB.(falsecolor))
-    landmask = landmask .> 0 # make sure it's a bitmatrix, in case it's passed as Gray
-    apply_landmask!(truecolor_image, landmask)
-    apply_landmask!(falsecolor_image, landmask)
+    land_mask = landmask .> 0 # make sure it's a bitmatrix, in case it's passed as Gray
+    apply_landmask!(truecolor_image, land_mask)
+    apply_landmask!(falsecolor_image, land_mask)
 
     n, m = size(truecolor_image)
     tile_size_pixels = s.tile_size_pixels
@@ -248,7 +248,7 @@ function (s::Segment)(
 
     @info "Preprocessing truecolor image"
     preproc_gray = float64.(
-        s.preprocessing_algorithm(truecolor_image, landmask, filtered_tiles)
+        s.preprocessing_algorithm(truecolor_image, land_mask, filtered_tiles)
     );
 
     @info "Segmentation"
@@ -269,21 +269,16 @@ function (s::Segment)(
         s.floe_splitting_params...,
     )
 
-    labeled_images = clean_and_split.(kmeans_result, adaptive_result)
+    labeled_images = clean_and_split.([kmeans_result, adaptive_result])
     
     @info "Filter and merge"
     # Update the filtering method so that the regionprops table is only called once. Now, it returns 
     # a dataframe so that the merge floes can take two tuples as inputs.
-    filtered_floes = filter_floes.(labeled_images;
-        coastal_buffer_mask=coastal_buffer_mask,
-        cloud_mask=cloud_mask,
-        falsecolor_image=falsecolor_image,
-        s.floe_filtering_params...,
-    )
-    keep_labels!(labeled_images, filtered_floes .|> r -> r.labels)   
+    filtered_floes = filter_floes.(labeled_images, [coastal_buffer_mask], [cloud_mask], [falsecolor_image]; s.floe_filtering_params...)
+    keep_labels!.(labeled_images, filtered_floes .|> r -> r.label)   
 
     # TODO: Update merge floes to just use the properties in the filter floes table
-    final_floes = merge_floes(filtered_floes, labeled_images)
+    final_floes = merge_floes(filtered_floes..., labeled_images...)
 
     # Remove any stray segments left over from the merge function
     remove_small_segments!(final_floes, s.floe_filtering_params.min_floe_size)
@@ -602,13 +597,13 @@ and the ratio of absolute area difference to summed area `scaled_relative_error_
 function objectwise_compare_segmentation(
     df1, df2, labels1, labels2
 )    
-    properties = union(names(df1), names(df2))
+    properties = union(propertynames(df1), propertynames(df2))
     relevant_set = get_relevant_set(df1, df2, labels1, labels2)
     results = DataFrame[]
     for floe in eachrow(df1)
         g = floe.label
         g in keys(relevant_set) && begin
-            df_rs = subset(df_s2, :label => ByRow(s -> s in relevant_set[g]))
+            df_rs = subset(df2, :label => ByRow(s -> s in relevant_set[g]))
             df_rs[:, :dist_s1_s2] = euclidean_distance(floe, df_rs; r=1) # r=1 means use pixel units, not meters
             df_rs[:, :scaled_relative_error_area] =
                 abs.(df_rs.area .- floe.area) ./ (df_rs.area .+ floe.area)
@@ -672,14 +667,14 @@ function merge_floes(df1, df2, labels1, labels2;
         end
     end
 
-    subset!(df1, :label => r -> r ∉ A_no_overlap)
-    subset!(df2, :label => r -> r ∉ B_no_overlap)
+    subset!(df1, :label => ByRow(r -> r ∉ A_no_overlap))
+    subset!(df2, :label => ByRow(r -> r ∉ B_no_overlap))
     nrow(df1) == 0 || nrow(df2) == 0 && return F
 
     #### Case 2: High-Quality Pairs
     # In this case, there exists at least one item in the relevant set where the error metrics are both within the tolerance.
     # Out of these objects, choose the one with the highest probability. 
-    df_comp = objectwise_compare_segmentation(indexmap1, indexmap2, img);
+    df_comp = objectwise_compare_segmentation(df1, df2, labels1, labels2);
     matches = subset(
         df_comp,
         [:dist_s1_s2, :scaled_relative_error_area] => (d, e) -> (d .< max_distance_pixels) .&& (e .< max_error_area),
@@ -719,135 +714,40 @@ function merge_floes(df1, df2, labels1, labels2;
         B_labels = union(B_labels, unique(B[idx]))
 
         # Update the dataframes to remove the resolved labels
-        subset!(df1, :label => r -> r ∉ A_labels)
-        subset!(df2, :label => r -> r ∉ B_labels)
+        subset!(df1, :label => ByRow(r -> r ∉ A_labels))
+        subset!(df2, :label => ByRow(r -> r ∉ B_labels))
     end
 
-    # if nrow(df1) == 0
-    #     if nrow(df2) == 0 
-    #         remove_small_segments!(F, min_floe_size)
-    #         return label_components(F)
-    #     else
-    #         for L in df2.label
-    #             F[B_indices[L]]
-    # end
+    #### Case 3: Poor matches, including over and undersegmentation
+    # 1. Loop through remaining objects in A. If probability is higher
+    #    for the object in A than all intersections in B, keep object.
+    # 2. Loop through remaining objects in B. If no intersection with
+    #    the objects kept in step 1, keep object.
+    # 3. Update F and return.
 
-    #### Case 3: Partial overlaps and poor-quality fits
+    # Select objects in A with higher probability than any intersection with B
     A_labels = []
-    B_labels = []
-    nrow(df1) > 0 && begin
-        keep_labels!(A, df1.labels)
-        for floe in eachrow(df1)
-            B_list = unique(B[A_indices[L]])
+    B_probability = Dict(r => p for (r, p) in zip(df2.label, df2.probability))
+    for s1 in eachrow(df1)        
+        B_labels = filter(r -> r ∈ df2.label, unique(labels2[A_indices[s1.label]]))
+        if all(s1.probability .> [B_probability[r] for r in B_labels])
+            push!(A_labels, s1.label)
         end
     end
-
-
-    # Cleanup - in case there are pixels left over.
-    remove_small_segments!(A, min_floe_size)
-    remove_small_segments!(B, min_floe_size)
-    remove_small_segments!(F, min_floe_size)
-
-    # TODO: Remove rows from df_comp for the cleared objects
-    A_labels = filter(r -> r != 0, unique(A))
-    B_labels = filter(r -> r != 0, unique(B))
-    subset!(
-        df_comp, [:s1_label, :s2_label] => ByRow((s1, s2) -> s1 ∈ A_labels || s2 ∈ B_labels)
-    )
-
-    # For the remaining floes, pick the floe wtih the best contrast to the background.
-    nrow(df_comp) > 0 && begin
-
-        # Selects the subset of df_comp mapping s1 to a single s2, ranked by contrast.
-        s1_s2_highest_contrast = subset(
-            groupby(df_comp, :s1_label),
-            :s2_reflectance_bdry_contrast => r -> 1:length(r) .== argmin(r),
-        )
-        transform!(
-            s1_s2_highest_contrast,
-            [:s1_reflectance_bdry_contrast, :s2_reflectance_bdry_contrast] =>
-                ByRow((s1, s2) -> s1 .> s2) => :s1_better,
-        )
-
-        s2_s1_highest_contrast = subset(
-            groupby(df_comp, :s2_label),
-            :s1_reflectance_bdry_contrast => r -> 1:length(r) .== argmin(r),
-        )
-        transform!(
-            s2_s1_highest_contrast,
-            [:s1_reflectance_bdry_contrast, :s2_reflectance_bdry_contrast] =>
-                ByRow((s1, s2) -> s1 .> s2) => :s1_better,
-        )
-
-        s1_s2_highest_contrast = subset(
-            groupby(df_comp, :s1_label),
-            :s2_reflectance_bdry_contrast => r -> 1:length(r) .== argmin(r),
-        )
-        transform!(
-            s1_s2_highest_contrast,
-            [:s1_reflectance_bdry_contrast, :s2_reflectance_bdry_contrast] =>
-                ByRow((s1, s2) -> s1 .> s2) => :s1_better,
-        )
-
-        s2_s1_highest_contrast = subset(
-            groupby(df_comp, :s2_label),
-            :s1_reflectance_bdry_contrast => r -> 1:length(r) .== argmin(r),
-        )
-        transform!(
-            s2_s1_highest_contrast,
-            [:s1_reflectance_bdry_contrast, :s2_reflectance_bdry_contrast] =>
-                ByRow((s1, s2) -> s1 .> s2) => :s1_better,
-        )
-
-        s1_labels = outerjoin(
-            s1_s2_highest_contrast[
-                s1_s2_highest_contrast.s1_better, [:s1_label, :s2_label]
-            ],
-            s2_s1_highest_contrast[
-                s2_s1_highest_contrast.s1_better, [:s1_label, :s2_label]
-            ];
-            on=[:s1_label, :s2_label],
-        )[
-            :, :s1_label
-        ]
-
-        s2_labels = outerjoin(
-            s1_s2_highest_contrast[
-                .!s1_s2_highest_contrast.s1_better, [:s1_label, :s2_label]
-            ],
-            s2_s1_highest_contrast[
-                .!s2_s1_highest_contrast.s1_better, [:s1_label, :s2_label]
-            ];
-            on=[:s1_label, :s2_label],
-        )[
-            :, :s2_label
-        ]
-
-        A_sel = keep_labels(A, s1_labels);
-        B_sel = keep_labels(B, s2_labels);
-        idx = A_sel .> 0
-        F[idx] .= A[idx]
-        idx = B_sel .> 0
-        F[idx] .= B[idx]
-
-        # Clear intersections
-        idx = F .> 0
-        for L in filter(r -> r != 0, unique(A[idx]))
-            A[A_indices[L]] .= 0
-        end
-        for L in filter(r -> r != 0, unique(B[idx]))
-            B[B_indices[L]] .= 0
-        end
+    for L in A_labels
+        F[A_indices[L]] .= L
     end
-
-    A_sel = keep_labels(A, s1_no_overlap)
-    B_sel = keep_labels(B, s2_no_overlap)
-    F[A_sel .> 0] .= A_sel[A_sel .> 0]
-    F[B_sel .> 0] .= B_sel[B_sel .> 0]
-
+    
+    # Select objects in B with no intersection with F
+    B_labels = unique(B[F .> 0])
+    subset!(df2, :label => ByRow(r -> r ∉ B_labels))
+    for L in df2.label
+        F[B_indices[L]] .= L + offset_b
+    end
+    
+    # Remove possible isolated pixels from merge
     remove_small_segments!(F, min_floe_size)
-
-    return F
+    return label_components(F)
 end
 
 #### Tracker parameters ####
