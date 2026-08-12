@@ -270,7 +270,7 @@ function (s::Segment)(
     )
 
     labeled_images = clean_and_split.(kmeans_result, adaptive_result)
-
+    
     @info "Filter and merge"
     # Update the filtering method so that the regionprops table is only called once. Now, it returns 
     # a dataframe so that the merge floes can take two tuples as inputs.
@@ -280,6 +280,7 @@ function (s::Segment)(
         falsecolor_image=falsecolor_image,
         s.floe_filtering_params...,
     )
+    keep_labels!(labeled_images, filtered_floes .|> r -> r.labels)   
 
     # TODO: Update merge floes to just use the properties in the filter floes table
     final_floes = merge_floes(filtered_floes, labeled_images)
@@ -526,12 +527,11 @@ function filter_floes(
     subset!(results_df, :circularity => r -> r .> min_circularity)
     nrow(results_df) == 0 && return results_df
 
-    labels = results_df[:, :label]
-    results_df[:, :cloud_fraction] = [mean(cloud_mask[indices[L]]) for L in labels]
+    results_df[:, :cloud_fraction] =  (r -> mean(cloud_mask[indices[r]])).(results_df[:, :label])
     
     # mean reflectance
     segment_mean_reflectance = segment_mean(SegmentedImage(falsecolor_image, img_indexmap))
-    b = [segment_mean_reflectance[L] for L in labels]
+    b = [segment_mean_reflectance[L] for L in  results_df[:, :label]]
     results_df[:, :b1_reflectance_mean] = blue.(b)
     results_df[:, :b7_reflectance_mean] = red.(b)
     results_df[:, :b2_reflectance_mean] = green.(b)
@@ -543,14 +543,14 @@ function filter_floes(
     b1 = blue.(falsecolor_image)
     bdry_indexmap = expand_labels(img_indexmap, boundary_radius) .- img_indexmap
     bdry_indices = component_indices(bdry_indexmap)
-    bdry_labels = intersect(labels, unique(bdry_indexmap))
+    bdry_labels = intersect(results_df[:, :label], unique(bdry_indexmap))
     b1_bdry_means = Dict(L => mean(b1[bdry_indices[L]]) for L in bdry_labels)
-    for L ∈ labels
+    for L ∈ results_df[:, :label]
         if L ∉ bdry_labels
             push!(b1_bdry_means, L => 0)
         end
     end
-    results_df[:, :b1_reflectance_bdry_mean] = [b1_bdry_means[L] for L in labels]
+    results_df[:, :b1_reflectance_bdry_mean] = [b1_bdry_means[L] for L in results_df[:, :label]]
     results_df[:, :b1_bdry_contrast] = results_df[:, :b1_reflectance_mean] .- results_df[:, :b1_reflectance_bdry_mean]
     subset!(results_df, :b1_bdry_contrast => r -> r .> min_contrast)
     nrow(results_df) == 0 && return results_df
@@ -591,15 +591,18 @@ const default_properties = [:label, :area, :perimeter, :centroid]
 """
     objectwise_compare_segmentation(df1, df2, labels1, labels2)
 
-Compare segmentation results using region property tables and label maps. Expects df1 and df2 to originate
-from the `filter_floes` function, so they should include the reflectance, boundary contrast, circularity,
-and floe probability. This function identifies conflicts between the two labels and adds comparisons `dist_s1_s2`,
-`scaled_relative_error_area_s1_s2`.
+Compare segmentation results using region properties. Identifies the relevant set of
+objects in labels2 for each object in labels1. Expects df1 and df2 to originate
+from the `filter_floes` function, so they should include columns for area, centroid,
+and bounding box already. Returns a dataframe with a row for each comparison between 
+labels1 and labels2 and adds comparison metrics for the distance between centroids `dist_s1_s2`
+and the ratio of absolute area difference to summed area `scaled_relative_error_area_s1_s2`.
 
 """
 function objectwise_compare_segmentation(
     df1, df2, labels1, labels2
 )    
+    properties = union(names(df1), names(df2))
     relevant_set = get_relevant_set(df1, df2, labels1, labels2)
     results = DataFrame[]
     for floe in eachrow(df1)
@@ -645,6 +648,7 @@ function merge_floes(df1, df2, labels1, labels2;
     #### Set up starting images
     A = labels1
     B = labels2
+    offset_b = maximum(A) # Offset the labels in B by the largest value in A
     A_indices = component_indices(A)
     B_indices = component_indices(B)
     A_labels = df1.label
@@ -663,7 +667,7 @@ function merge_floes(df1, df2, labels1, labels2;
     end
     for L in B_labels
         if maximum(A[B_indices[L]]) == 0
-            F[B_indices[L]] .= L
+            F[B_indices[L]] .= L + offset_b
             push!(B_no_overlap, L)
         end
     end
@@ -675,20 +679,13 @@ function merge_floes(df1, df2, labels1, labels2;
     #### Case 2: High-Quality Pairs
     # In this case, there exists at least one item in the relevant set where the error metrics are both within the tolerance.
     # Out of these objects, choose the one with the highest probability. 
-    # TODO: I left off here, this function won't work yet
-
-
     df_comp = objectwise_compare_segmentation(indexmap1, indexmap2, img);
-    s1_no_overlap = filter(r -> r != 0, setdiff(unique(A), df_comp.s1_label))
-    s2_no_overlap = filter(r -> r != 0, setdiff(unique(B), df_comp.s2_label))
-
-    #### Category 1: Good matches in both categories ####
     matches = subset(
         df_comp,
-        [:dist_s1_s2, :scaled_relative_error_area] => (d, e) -> (d .< dmax) .&& (e .< emax),
+        [:dist_s1_s2, :scaled_relative_error_area] => (d, e) -> (d .< max_distance_pixels) .&& (e .< max_error_area),
     )
     nrow(matches) > 0 && begin
-        # Resolve duplicates by choosing the one with the lowest area difference.
+        # Select the item in the relative set with lowest area difference.
         subset!(
             groupby(matches, :s1_label),
             :scaled_relative_error_area => r -> 1:length(r) .== argmin(r),
@@ -698,32 +695,53 @@ function merge_floes(df1, df2, labels1, labels2;
             :scaled_relative_error_area => r -> 1:length(r) .== argmin(r),
         )
 
-        # Select the most circular of the two options
+        # Select the option with highest probability
         transform!(
             matches,
-            [:s1_circularity, :s2_circularity] =>
+            [:s1_probability, :s2_probability] =>
                 ByRow((s1, s2) -> s1 .> s2) => :s1_better,
         )
 
         # Merge the two, prioritizing the second if there is overlap.
-        s1_labels = matches[matches.s1_better, :s1_label]
-        s2_labels = matches[.!matches.s1_better, :s2_label];
-        A_sel = keep_labels(A, s1_labels);
-        B_sel = keep_labels(B, s2_labels);
-        idx = A_sel .> 0
-        F[idx] .= A[idx]
-        idx = B_sel .> 0
-        F[idx] .= B[idx]
+        A_labels = matches[matches.s1_better, :s1_label]
+        B_labels = matches[.!matches.s1_better, :s2_label];
 
-        # Clear intersections
-        idx = F .> 0
-        for L in filter(r -> r != 0, unique(A[idx]))
-            A[A_indices[L]] .= 0
+        for L in A_labels
+            F[A_indices[L]] .= L
+        end        
+        for L in B_labels
+            F[B_indices[L]] .= L + offset_b
         end
-        for L in filter(r -> r != 0, unique(B[idx]))
-            B[B_indices[L]] .= 0
+
+        # Add intersections to list
+        idx = F .> 0
+        A_labels = union(A_labels, unique(A[idx]))
+        B_labels = union(B_labels, unique(B[idx]))
+
+        # Update the dataframes to remove the resolved labels
+        subset!(df1, :label => r -> r ∉ A_labels)
+        subset!(df2, :label => r -> r ∉ B_labels)
+    end
+
+    # if nrow(df1) == 0
+    #     if nrow(df2) == 0 
+    #         remove_small_segments!(F, min_floe_size)
+    #         return label_components(F)
+    #     else
+    #         for L in df2.label
+    #             F[B_indices[L]]
+    # end
+
+    #### Case 3: Partial overlaps and poor-quality fits
+    A_labels = []
+    B_labels = []
+    nrow(df1) > 0 && begin
+        keep_labels!(A, df1.labels)
+        for floe in eachrow(df1)
+            B_list = unique(B[A_indices[L]])
         end
     end
+
 
     # Cleanup - in case there are pixels left over.
     remove_small_segments!(A, min_floe_size)
