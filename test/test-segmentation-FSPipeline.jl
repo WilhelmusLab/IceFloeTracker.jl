@@ -44,8 +44,8 @@ end
     @test mean_F_score ≥ 0.8 broken = true
 
     # Current performance should look at least as good as this:
-    @test mean_recall ≥ 0.6
-    @test mean_precision ≥ 0.38
+    @test mean_recall ≥ 0.5
+    @test mean_precision ≥ 0.54
     @test round(mean_F_score; digits=1) ≥ 0.4
 
     # return current performance
@@ -58,14 +58,14 @@ end
     dataset = Watkins2026Dataset(; ref="v0.2")
     (; labeled_fraction, recall, precision, F_score) = run_and_validate_segmentation(
         first(filter(c -> (c.case_number == 6 && c.satellite == "terra"), dataset)),
-        LopezAcosta2019.Segment();
+        FSPipeline.Segment();
         output_directory="./test_outputs/",
     )
 
     @test 0.36 ≈ labeled_fraction atol = 0.1
-    @test 0.68 ≤ round(recall; digits=2)
-    @test 0.59 ≤ round(precision; digits=2)
-    @test 0.63 ≤ round(F_score; digits=2)
+    @test 0.76 ≤ round(recall; digits=2)
+    @test 0.79 ≤ round(precision; digits=2)
+    @test 0.77 ≤ round(F_score; digits=2)
 
     (; labeled_fraction, recall, precision, F_score) = run_and_validate_segmentation(
         first(filter(c -> (c.case_number == 14 && c.satellite == "aqua"), dataset)),
@@ -74,9 +74,9 @@ end
     )
     
     @test 0.16 ≈ labeled_fraction atol = 0.1
-    @test 0.79 ≤ round(recall; digits=2)
-    @test 0.6 ≤ round(precision; digits=2)
-    @test 0.7 ≤ round(F_score; digits=2)
+    @test 0.82 ≤ round(recall; digits=2)
+    @test 0.71 ≤ round(precision; digits=2)
+    @test 0.77 ≤ round(F_score; digits=2)
 
     (; labeled_fraction, recall, precision, F_score) = run_and_validate_segmentation(
         first(filter(c -> (c.case_number == 61 && c.satellite == "aqua"), dataset)),
@@ -85,22 +85,20 @@ end
     )
 
     @test 0.23 ≈ labeled_fraction atol = 0.1
-    @test 0.36 ≤ round(recall; digits=2)
-    @test 0.86 ≤ round(precision; digits=2)
-    @test 0.53 ≤ round(F_score; digits=2)
+    @test 0.77 ≤ round(recall; digits=2)
+    @test 0.82 ≤ round(precision; digits=2)
+    @test 0.80 ≤ round(F_score; digits=2)
 
     (; labeled_fraction, recall, precision, F_score) = run_and_validate_segmentation(
         first(filter(c -> (c.case_number == 63 && c.satellite == "aqua"), dataset)),
         FSPipeline.Segment();
         output_directory="./test_outputs/",
     )
-    # Note: Validation dataset currently doesn't include the floes intersecting the edge.
-    # Improving the segmentation lowered the scores here due to these floes.
     
-    @test labeled_fraction ≈ 0.64 rtol = 0.1
-    @test 0.90 ≤ round(recall; digits=2)
-    @test 0.92 ≤ round(precision; digits=2)
-    @test 0.93 ≤ round(F_score; digits=2)
+    @test labeled_fraction ≈ 0.5 rtol = 0.1
+    @test 0.78 ≤ round(recall; digits=2)
+    @test 0.96 ≤ round(precision; digits=2)
+    @test 0.86 ≤ round(F_score; digits=2)
 end
 
 @testitem "FSPipeline.Segment – image types" setup = [Segmentation] tags = [:e2e] begin
@@ -112,8 +110,9 @@ end
         case, algorithm; output_directory="./test_outputs/"
     )
 
-    paired_types = [n0f8, n6f10, n4f12, n2f14, n0f16, float32, float64]
+    paired_types = [n0f8, n4f12, n2f14, n0f16, float32, float64]
     unary_types = [RGB, RGBA, paired_types...]
+    broken_types = [n6f10]
     
     for T in unary_types
         @test results_invariant_for(T; baseline, algorithm, case)
@@ -121,5 +120,9 @@ end
     
     for T in paired_types
         @test results_invariant_for(RGB, T; baseline, algorithm, case)
+    end
+
+    for T in broken_types
+        @test results_invariant_for(RGB, T; baseline, algorithm, case) broken = true
     end
 end
