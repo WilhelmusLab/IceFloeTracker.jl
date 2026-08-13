@@ -45,7 +45,7 @@ end
 
     # Current performance should look at least as good as this:
     @test mean_recall ≥ 0.5
-    @test mean_precision ≥ 0.54
+    @test mean_precision ≥ 0.43
     @test round(mean_F_score; digits=1) ≥ 0.4
 
     # return current performance
@@ -62,10 +62,14 @@ end
         output_directory="./test_outputs/",
     )
 
+    @show round(recall; digits=2)
+    @show round(precision; digits=2)
+    @show round(F_score; digits=2)
+
     @test 0.36 ≈ labeled_fraction atol = 0.1
-    @test 0.76 ≤ round(recall; digits=2)
-    @test 0.79 ≤ round(precision; digits=2)
-    @test 0.77 ≤ round(F_score; digits=2)
+    @test 0.82 ≤ round(recall; digits=2)
+    @test 0.77 ≤ round(precision; digits=2)
+    @test 0.79 ≤ round(F_score; digits=2)
 
     (; labeled_fraction, recall, precision, F_score) = run_and_validate_segmentation(
         first(filter(c -> (c.case_number == 14 && c.satellite == "aqua"), dataset)),
@@ -73,10 +77,14 @@ end
         output_directory="./test_outputs/",
     )
     
+    @show round(recall; digits=2)
+    @show round(precision; digits=2)
+    @show round(F_score; digits=2)
+
     @test 0.16 ≈ labeled_fraction atol = 0.1
-    @test 0.82 ≤ round(recall; digits=2)
-    @test 0.71 ≤ round(precision; digits=2)
-    @test 0.77 ≤ round(F_score; digits=2)
+    @test 0.84 ≤ round(recall; digits=2)
+    @test 0.69 ≤ round(precision; digits=2)
+    @test 0.76 ≤ round(F_score; digits=2)
 
     (; labeled_fraction, recall, precision, F_score) = run_and_validate_segmentation(
         first(filter(c -> (c.case_number == 61 && c.satellite == "aqua"), dataset)),
@@ -84,10 +92,14 @@ end
         output_directory="./test_outputs/",
     )
 
-    @test 0.23 ≈ labeled_fraction atol = 0.1
-    @test 0.77 ≤ round(recall; digits=2)
-    @test 0.82 ≤ round(precision; digits=2)
-    @test 0.80 ≤ round(F_score; digits=2)
+    @show round(recall; digits=2)
+    @show round(precision; digits=2)
+    @show round(F_score; digits=2)
+
+    @test 0.36 ≈ labeled_fraction atol = 0.1
+    @test 0.83 ≤ round(recall; digits=2)
+    @test 0.79 ≤ round(precision; digits=2)
+    @test 0.81 ≤ round(F_score; digits=2)
 
     (; labeled_fraction, recall, precision, F_score) = run_and_validate_segmentation(
         first(filter(c -> (c.case_number == 63 && c.satellite == "aqua"), dataset)),
@@ -95,10 +107,14 @@ end
         output_directory="./test_outputs/",
     )
     
+    @show round(recall; digits=2)
+    @show round(precision; digits=2)
+    @show round(F_score; digits=2)
+
     @test labeled_fraction ≈ 0.5 rtol = 0.1
-    @test 0.78 ≤ round(recall; digits=2)
-    @test 0.96 ≤ round(precision; digits=2)
-    @test 0.86 ≤ round(F_score; digits=2)
+    @test 0.83 ≤ round(recall; digits=2)
+    @test 0.95 ≤ round(precision; digits=2)
+    @test 0.89 ≤ round(F_score; digits=2)
 end
 
 @testitem "FSPipeline.Segment – image types" setup = [Segmentation] tags = [:e2e] begin

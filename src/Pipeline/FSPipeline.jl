@@ -37,6 +37,7 @@ import ..Segmentation:
     tiled_adaptive_binarization,
     IceDetectionBrightnessPeaksMODIS721,
     IceDetectionBrightnessMidpoint,
+    PolygonConvexArea,
     regionprops_table,
     remove_small_segments!,
     remove_large_segments!,
@@ -448,33 +449,17 @@ function keep_labels!(img_indexmap, labels_list)
     end
 end
 
-"""
-    keep_labels(img_indexmap, labels_list)
-
-Given an image indexmap `img_indexmap` and a list of labels `labels_list`, 
-remove any segments not in the list.
-
-"""
-function keep_labels(img_indexmap, labels_list)
-    out = zeros(Int64, size(img_indexmap))
-    indices = component_indices(img_indexmap)
-    for L in intersect(labels_list, keys(indices))
-        out[indices[L]] .= L
-    end
-    return out
-end
-
 # TODO: dmw -- This function can be made much shorter by adding segment mean color, circularity, potentially boundary contrast to the region props function 
 """
     filter_floes(
-    img_indexmap,
-    coastal_buffer_mask,
-    cloud_mask,
-    falsecolor_image;
-    min_floe_size=100,
-    max_floe_size=90_000,
-    expand_radius=15,
-    filter_function=LogisticFilterFunction # needs to operate on a dataframe
+        img_indexmap,
+        coastal_buffer_mask,
+        cloud_mask,
+        falsecolor_image;
+        min_floe_size=100,
+        max_floe_size=90_000,
+        expand_radius=15,
+        filter_function=LogisticFilterFunction # needs to operate on a dataframe
 )
 
 Filter the image indexmap using object-wise properties. Removes objects which overlap the coastal buffer mask,
@@ -492,6 +477,7 @@ function filter_floes(
     boundary_radius=15,
     min_reflectance=0.4,
     min_circularity=0.3,
+    min_solidity=0.7,
     min_contrast=0.01,
     filter_function=LogisticRegressionFilter,
     min_probability=0.5,
@@ -511,8 +497,9 @@ function filter_floes(
 
     # 3. Get object-wise properties
     results_df = regionprops_table(img_indexmap;
-        properties=[:label, :area, :perimeter, :bbox, :centroid,
-                    :major_axis_length, :minor_axis_length, :orientation]
+        properties=[:label, :area, :perimeter, :bbox, :centroid, :convex_area,
+                    :major_axis_length, :minor_axis_length, :orientation],
+        convex_area_algorithm=PolygonConvexArea()
     )
     # Return blank image if no floes remain
     nrow(results_df) == 0 && return results_df
@@ -520,6 +507,8 @@ function filter_floes(
     results_df[:, :length_scale] = results_df[:, :area] .^ 0.5
     results_df[:, :circularity] = 4 * π * results_df[:, :area] ./ results_df[:, :perimeter] .^ 2
     subset!(results_df, :circularity => r -> r .> min_circularity)
+    results_df[:, :solidity] = results_df[:, :area] ./ results_df[:, :convex_area]
+    subset!(results_df, :solidity => r -> r .> min_solidity)
     nrow(results_df) == 0 && return results_df
 
     results_df[:, :cloud_fraction] =  (r -> mean(cloud_mask[indices[r]])).(results_df[:, :label])
@@ -567,12 +556,12 @@ names of columns in `df`.
 """
 function LogisticRegressionFilter(df;
     coefs = Dict(
-        "intercept"           => -19.3361,
-        "length_scale"        => 0.0589,
-        "circularity"         => 13.399,
-        "b1_reflectance_mean" => 9.294,
-        "b1_bdry_contrast"    => 3.062,
-        "b7_reflectance_mean" => -1.179,
+        "intercept"           => -97.1879,
+        "length_scale"        => 0.1267,
+        "solidity"            => 91.164,
+        "b1_reflectance_mean" => 7.354,
+        "b1_bdry_contrast"    => 2.239,
+        "b7_reflectance_mean" => -1.517,
         )
     )
     colnames = [x for x in keys(coefs)]
