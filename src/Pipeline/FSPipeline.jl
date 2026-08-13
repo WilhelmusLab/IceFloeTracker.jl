@@ -149,6 +149,7 @@ floe_filtering_params = (
     max_floe_size=90_000,
     boundary_radius=15,
     min_circularity=0.3,
+    min_solidity=0.7,
     min_reflectance=0.4,
     min_contrast=0.01,
     min_probability=0.5,
