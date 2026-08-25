@@ -10,11 +10,11 @@ IceFloeTracker.jl can be used with workflow management tools for batch processin
 
 Install the workflow and its dependencies by calling:
 ```
-# Install the snakemake runner in an isolated environment
-pipx install snakemake  
+# Install uv
+curl -LsSf https://astral.sh/uv/install.sh | sh
 
-# Add pyproj and pandas to the snakemake environment
-pipx inject snakemake pyproj pandas  
+# Install the snakemake runner with required extras
+uv tool install --with pyproj --with pandas snakemake
 ```
 
 ## Run the workflow
