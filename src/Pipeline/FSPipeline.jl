@@ -664,10 +664,9 @@ function merge_floes(df1, df2, labels1, labels2;
     # In this case, there exists at least one item in the relevant set where the error metrics are both within the tolerance.
     # Out of these objects, choose the one with the highest probability. 
     df_comp = objectwise_compare_segmentation(df1, df2, labels1, labels2);
-    matches = subset(
-        df_comp,
-        [:dist_s1_s2, :scaled_relative_error_area] => (d, e) -> (d .< max_distance_pixels) .&& (e .< max_error_area),
-    )
+    within_tolerance(d, e) = (d .< max_distance_pixels) .&& (e .< max_error_area)
+    matches = subset(df_comp, [:dist_s1_s2, :scaled_relative_error_area] => within_tolerance)
+    
     nrow(matches) > 0 && begin
         # Select the item in the relative set with lowest area difference.
         subset!(
