@@ -69,9 +69,9 @@ unsharp_mask_params = (radius=50, amount=0.3, threshold=0.01)
 
 """
    Preprocess(
-        diffusion_algorithm = PeronaMalikDiffusion(λ=0.1, K=0.1, niters=5, g="exponential")
-        adapthisteq_params = (nbins=256, rblocks=8, cblocks=8, clip=0.99) # rblocks/cblocks not used yet -- add with CLAHE.jl
-        unsharp_mask_params = (radius=50, amount=0.2, threshold=0.01)
+        diffusion_algorithm = PeronaMalikDiffusion(λ=0.1, K=0.1, niters=7, g="exponential")
+        adapthisteq_params = (nbins=256, rblocks=4, cblocks=4, clip=1)
+        unsharp_mask_params = (radius=50, amount=0.3, threshold=0.01)
     )
     Preprocess()(img, cloudmask, landmask)
 
@@ -162,25 +162,24 @@ floe_merging_params = (
     FSPipeline.Segment()
 
 Segmentation routine for identifying moderate to large floes in the Fram Strait.
-The image preprocessing is supplied as an function in the functor setup.
-
+The image preprocessing function needs to accept the true color image, land mask, and a list of tiles to process.
 
 # Parameters
 - `coastal_buffer_structuring_element::AbstractMatrix{Bool} = strel_box((51,51))`: Structuring element for the `create_landmask` function
 - `cloud_mask_algorithm = Watkins2025CloudMask()`: Cloud mask algorithm
 - `preprocessing_algorithm = Preprocess()`: Function to sharpen and equalize the truecolor image
-- `tile_size_pixels=1200`: Nominal tile size in pixels
+- `tile_size_pixels=400`: Nominal tile size in pixels
 - `min_tile_ice_pixel_count=300`: Smallest number of required sea ice pixels in tile
 - `preliminary_ice_mask = IceDetectionBrightnessMidpoint(minimum_reflectance=0.3)`: Function to use to identify likely ice pixels for filtering.
-- `kmeans_params = (k=4, maxiter=50, random_seed=45)`: Parameters for `kmeans_binarization`
-- `cluster_selection_algorithm = IceDetectionBrightnessPeaksMODIS721(
-    band_7_max=0.1,
-    possible_ice_threshold=0.3,
-    join_method="union",
-    minimum_prominence=0.01)`: Function to use to select a k-means cluster in the `kmeans_binarization` workflow
+- `kmeans_params = (k=4, maxiter=50, random_seed=45, cluster_selection_algorithm = IceDetectionBrightnessPeaksMODIS721(
+        band_7_max=0.1,
+        possible_ice_threshold=0.3,
+        join_method="union",
+        minimum_prominence=0.01)`: Settings for the `kmeans_binarization` workflow
 - `clean_binary_floes_params`: Parameters for the preliminary binary image cleanup
 - `floe_splitting_params`: Parameters for the `dist_morph_split` floe splitting algorithm
 - `floe_filtering_params`: Parameters for post-segmentation cleanup
+- `floe_merging_params`: Parameters for merging the two segmentation results.
 """
 @kwdef struct Segment <: IceFloeSegmentationAlgorithm
     coastal_buffer_structuring_element::AbstractMatrix{Bool} =
@@ -195,6 +194,7 @@ The image preprocessing is supplied as an function in the functor setup.
     cleanup_binary_params = cleanup_binary_params
     floe_splitting_params = floe_splitting_params
     floe_filtering_params = floe_filtering_params
+    floe_merging_params = floe_merging_params
 end
 
 function (s::Segment)(
@@ -614,7 +614,7 @@ function objectwise_compare_segmentation(
 end
 
 """
-    merge_floes(df1, df2, labels1, labels2)
+    merge_floes(df1, df2, labels1, labels2; max_distance_pixels=10, max_error_area=0.25, min_floe_size=100)
 
 Produce a single segmentation from a pair via object-wise assessment.
 1. Where the two segmentations agree within tolerance of dmax, emax, select the most circular floe.
