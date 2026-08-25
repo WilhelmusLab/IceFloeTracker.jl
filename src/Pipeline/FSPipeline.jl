@@ -155,7 +155,9 @@ floe_filtering_params = (
     min_probability=0.5,
 )
 floe_merging_params = (
-    distance_threshold_pixels=10, area_error_threshold=0.25, min_floe_size=100
+    max_distance_pixels=10,
+    max_error_area=0.25,
+    min_floe_size=100
 )
 
 """
