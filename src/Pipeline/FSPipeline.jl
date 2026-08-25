@@ -280,7 +280,7 @@ function (s::Segment)(
     keep_labels!.(labeled_images, filtered_floes .|> r -> r.label)   
 
     # TODO: Update merge floes to just use the properties in the filter floes table
-    final_floes = merge_floes(filtered_floes..., labeled_images...)
+    final_floes = merge_floes(filtered_floes..., labeled_images...; s.floe_merging_params...)
 
     # Remove any stray segments left over from the merge function
     remove_small_segments!(final_floes, s.floe_filtering_params.min_floe_size)
@@ -483,21 +483,22 @@ function filter_floes(
     filter_function=LogisticRegressionFilter,
     min_probability=0.5,
 )
+    out = copy(img_indexmap)
     # 1. Remove objects which overlap the coastal mask
-    overlap = unique(img_indexmap[coastal_buffer_mask])
-    indices = component_indices(img_indexmap)
+    overlap = unique(out[coastal_buffer_mask])
+    indices = component_indices(out)
     for L in overlap
-        img_indexmap[indices[L]] .= 0
+        out[indices[L]] .= 0
     end
 
     # 2. Remove objects outside the specified size bounds prior to extracting features.
     # This is important since the small features can cause problems in some feature
     # descriptors.
-    remove_small_segments!(img_indexmap, min_floe_size)
-    remove_large_segments!(img_indexmap, max_floe_size)
+    remove_small_segments!(out, min_floe_size)
+    remove_large_segments!(out, max_floe_size)
 
     # 3. Get object-wise properties
-    results_df = regionprops_table(img_indexmap;
+    results_df = regionprops_table(out;
         properties=[:label, :area, :perimeter, :bbox, :centroid, :convex_area,
                     :major_axis_length, :minor_axis_length, :orientation],
         convex_area_algorithm=PolygonConvexArea()
@@ -515,7 +516,7 @@ function filter_floes(
     results_df[:, :cloud_fraction] =  (r -> mean(cloud_mask[indices[r]])).(results_df[:, :label])
     
     # mean reflectance
-    segment_mean_reflectance = segment_mean(SegmentedImage(falsecolor_image, img_indexmap))
+    segment_mean_reflectance = segment_mean(SegmentedImage(falsecolor_image, out))
     b = [segment_mean_reflectance[L] for L in  results_df[:, :label]]
     results_df[:, :b1_reflectance_mean] = blue.(b)
     results_df[:, :b7_reflectance_mean] = red.(b)
@@ -526,7 +527,7 @@ function filter_floes(
     
     # mean boundary reflectance
     b1 = blue.(falsecolor_image)
-    bdry_indexmap = expand_labels(img_indexmap, boundary_radius) .- img_indexmap
+    bdry_indexmap = expand_labels(out, boundary_radius) .- out
     bdry_indices = component_indices(bdry_indexmap)
     bdry_labels = intersect(results_df[:, :label], unique(bdry_indexmap))
     b1_bdry_means = Dict(L => mean(b1[bdry_indices[L]]) for L in bdry_labels)

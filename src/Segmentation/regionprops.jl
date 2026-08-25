@@ -551,9 +551,8 @@ function regionprops(
     isa(label_img, SegmentedImage) ? (labels = labels_map(label_img)) : labels = label_img
     eltype(properties) <: AbstractString && (properties = Symbol.(properties))
 
+    # Note: Creates an empty DataFrame in the case of an empty labels image.
     maximum(labels) == 0 && begin
-        # @warn "Labeled image is empty!"
-        # dmw: Disabled warning since creating a 0-row dataframe is actually useful and desired
         properties_ = Symbol[]
         for p in properties
             if p == :bbox
