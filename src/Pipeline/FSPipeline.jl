@@ -658,7 +658,7 @@ function merge_floes(df1, df2, labels1, labels2;
 
     subset!(df1, :label => ByRow(r -> r ∉ A_no_overlap))
     subset!(df2, :label => ByRow(r -> r ∉ B_no_overlap))
-    nrow(df1) == 0 || nrow(df2) == 0 && return F
+    (nrow(df1) == 0 || nrow(df2) == 0) && return F
 
     #### Case 2: High-Quality Pairs
     # In this case, there exists at least one item in the relevant set where the error metrics are both within the tolerance.
