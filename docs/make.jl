@@ -17,7 +17,7 @@ end
 function convert_to_markdown(file)
     template_path = joinpath(dirname(@__FILE__), "documenter.tpl")
     run(
-        `pipx run --spec nbconvert jupyter-nbconvert $file --to markdown --template $template_path`,
+        `uvx --from nbconvert jupyter-nbconvert $file --to markdown --template $template_path`,
     )
     new_file = replace(file, "ipynb" => "md")
     return new_file
