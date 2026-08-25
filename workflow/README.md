@@ -3,7 +3,7 @@
 IceFloeTracker.jl can be used with workflow management tools for batch processing.
 
 - The example in this directory uses [Snakemake](https://snakemake.readthedocs.io/en/stable/index.html).
-- The main file specifying the workflow is the [snakefile](./snakefile). 
+- The main file specifying the workflow is the [snakefile](./snakefile).
 - The [config.yaml](./config.yaml) file sets environment variables.
 
 ## Install dependencies
@@ -24,26 +24,26 @@ To run the workflow, call:
 snakemake -c 1
 ```
 
-This will use one processor core (`-c 1`) 
+This will use one processor core (`-c 1`)
 to run the workflow to calculate all the tracking results for the cases in [case.csv](./case.csv)
-which uses the region definitions from [region.csv](./region.csv). 
-The results will be written to the `./results` directory which is not checked into the repository. 
+which uses the region definitions from [region.csv](./region.csv).
+The results will be written to the `./results` directory which is not checked into the repository.
 
-(This command is equivalent to `snakemake -c 1 region_case_results_by_filetype` 
+(This command is equivalent to `snakemake -c 1 region_case_results_by_filetype`
 which is the default target of the snakemake workflow.)
 
-You can also specify the output files which are desired, 
-and Snakemake should download or create any (missing) prerequisites 
+You can also specify the output files which are desired,
+and Snakemake should download or create any (missing) prerequisites
 and process them in the correct order.
 
 For example, the command:
 ```bash
-snakemake track/beaufort_sea-100km.250m.2019-03-22.2019-03-23.LopezAcosta2019Tiling.tracked.csv 
+snakemake track/beaufort_sea-100km.250m.2019-03-22.2019-03-23.LopezAcosta2019Tiling.tracked.csv
 ```
 - Will use the number of cores from the [default profile](./profiles/default/config.yaml)
 - to run tracking (`track/...tracked.csv`)
-- on a 100km x 100km region in the Beaufort Sea, 
-- using 250m scale images, 
+- on a 100km x 100km region in the Beaufort Sea,
+- using 250m scale images,
 - from 22nd to 23rd March 2019,
 - with the `Lopez2019Tiling.Segment` algorithm.
 
@@ -82,13 +82,13 @@ snakemake -c 4 scene/hudson_bay-1500km.250m.2023-03-{22..25}.terra/falsecolor.ti
 - at the 250m scale
 - for the 22nd through 25th March 2023.
 
-To keep going if a single function in the pipeline fails, 
+To keep going if a single function in the pipeline fails,
 use the `--keep-going` flag to continue to continue to run any independent tasks.
 However, any tasks which depend on failed jobs will still fail.
 
 ### Configuration
 
-By default, the [default configuration file](./configs/default/config.yaml) will be used. 
+By default, the [default configuration file](./configs/default/config.yaml) will be used.
 
 It specifies:
 - the [default case list](./configs/default/case.csv)
@@ -101,12 +101,12 @@ it will be combined with the default configuration
 and can override variables from the default configuration.
 
 Example configurations are included:
-- [with regions and timepoints in a single CSV file](./configs/case-region-file/config.yaml), 
+- [with regions and timepoints in a single CSV file](./configs/case-region-file/config.yaml),
   call
   ```bash
   snakemake --configfile workflow/configs/case-region-file/config.yaml
   ```
-- [a large validation dataset](https://github.com/danielmwatkins/ice-floe-validation-dataset/blob/main/data/validation_dataset/validation_dataset.csv) 
+- [a large validation dataset](https://github.com/danielmwatkins/ice-floe-validation-dataset/blob/main/data/validation_dataset/validation_dataset.csv)
   call
   ```bash
   snakemake --configfile workflow/configs/validation-cases/config.yaml
@@ -132,15 +132,15 @@ load a Julia module, e.g.:
 module load julia
 ```
 
-and then use the OSCAR profile: 
+and then use the OSCAR profile:
 ```bash
 snakemake --profile workflow/profiles/oscar
 ```
 
-[The OSCAR profile's config.yaml file](profiles/oscar/config.yaml) 
+[The OSCAR profile's config.yaml file](profiles/oscar/config.yaml)
 sets default resources including memory, CPU cores, walltime
-for each rule. 
-The defaults may not be appropriate for a particular image size or time period. 
+for each rule.
+The defaults may not be appropriate for a particular image size or time period.
 
 ### Files produced in the workflow
 
@@ -164,10 +164,10 @@ Files produced in the workflow include:
 
 ## Satellite Overpass Identification Tool Concurrency Limit
 
-The Satellite Overpass Identification Tool depends on the rate limits of space-track.org. 
+The Satellite Overpass Identification Tool depends on the rate limits of space-track.org.
 As of March 6, 2026, the rate limits on API calls are 30 per minute _and_ 300 per hour.[^1]
 
-A conservative global resource limit for `soit_api_calls` 
+A conservative global resource limit for `soit_api_calls`
 is set in [profiles/default/config.yaml](./profiles/default/config.yaml).
 The two rules `get_region_overpass_times` and `get_region_month_overpass_times` each make two API calls,
 so a resource limit of `soit_api_calls=4` means that only two instances of those rules can run concurrently.
@@ -185,20 +185,20 @@ Regions like `hudson_bay-1500km` can be specified by adding them to the [region.
 Each region is identified by a name, and specified by:
 - its center in a particular Coordinate Reference System (CRS), usually [EPSG:4326](https://epsg.io/4326) (latitude and longitude in decimal degrees),
 - the target (output) CRS, usually [EPSG:3413](https://epsg.io/3413) (NSIDC Sea Ice Polar Stereographic North)
-- and its extent in the target CRS, which for EPSG:3413 is in metres. 
+- and its extent in the target CRS, which for EPSG:3413 is in metres.
 
 ## Batch processing
 
-For batch processing, [case.csv](./case.csv) specifies which regions and which cases will be run in the batch. 
-Each row specifies: 
-- the region name (from [region.csv](./region.csv)), 
+For batch processing, [case.csv](./case.csv) specifies which regions and which cases will be run in the batch.
+Each row specifies:
+- the region name (from [region.csv](./region.csv)),
 - the start and end dates (in ISO 8601 YYYY-MM-DD format)
 - the image scale in metres
 - the `pipeline` value, corresponding to the Julia pipeline/module used by the workflow.
 
 The supported batch processing rules are:
 - `region_case_results`: organize the segmentation results from `case.csv` in directories named `{region}.{scale}.{date}.{satellite}`,
-- `region_case_results_by_filetype`: reorganize the segmentation results from `case.csv` in directories by `{filetype}`. 
+- `region_case_results_by_filetype`: reorganize the segmentation results from `case.csv` in directories by `{filetype}`.
 
 The files are organized as follows:
 
@@ -212,14 +212,14 @@ The files are organized as follows:
 
 To invoke the batch processing rule, call `snakemake <other arguments> <batch_processing_rule_name>`
 
-In all cases, the tracking results are stored in the top-level of the `results` directory, 
+In all cases, the tracking results are stored in the top-level of the `results` directory,
 named like `{region}.{scale}.{start date}.{end date}.{pipeline}.tracked.csv`.
 
 ### `region_case_results`
 
-Organizes the segmentation results from `case.csv` in directories named 
+Organizes the segmentation results from `case.csv` in directories named
 - `scene/{region}.{scale}.{date}.{satellite}` for input files, and
-- `scene/{region}.{scale}.{date}.{satellite}/{pipeline}` for output files. 
+- `scene/{region}.{scale}.{date}.{satellite}/{pipeline}` for output files.
 
 Example invocation using 4 processing cores:
 ```shell
@@ -228,16 +228,16 @@ snakemake -c 4 region_case_results
 
 ### `region_case_results_by_filetype`
 
-Reorganize the segmentation results from `case.csv` in directories by 
+Reorganize the segmentation results from `case.csv` in directories by
 - `{filetype}` for input files, and
-- `{pipeline}/{filetype}` for output files. 
+- `{pipeline}/{filetype}` for output files.
 
 Example invocation using 4 processing cores:
 ```shell
 snakemake -c 4 region_case_results_by_filetype
 ```
 
-The reorganized files are hard-linked (i.e., not copies), so they don't take up any additional space. 
+The reorganized files are hard-linked (i.e., not copies), so they don't take up any additional space.
 
 ## Anatomy of a Snakemake Rule
 
@@ -291,7 +291,7 @@ It is comprised of the following parts:
         ...
         shell:
             """
-            {config[IFT]} -e 'using IceFloeTracker, Images; 
+            {config[IFT]} -e 'using IceFloeTracker, Images;
             LopezAcosta2019.Segment(
                 diffusion_algorithm = PeronaMalikDiffusion()
             )(
@@ -311,34 +311,34 @@ It is comprised of the following parts:
     - `-e` flag to call julia in "eval" mode, which will evaluate the following string as a (series of) Julia command(s).
     - `'using IceFloeTracker...'` the Julia command to run.
 
-Each of the high-level algorithms defined by IceFloeTracker, like `LopezAcosta2019.Segment(;kwargs...)(images...)`, 
-has a structure which supports its evaluation on the command line. 
+Each of the high-level algorithms defined by IceFloeTracker, like `LopezAcosta2019.Segment(;kwargs...)(images...)`,
+has a structure which supports its evaluation on the command line.
 
-Each function is a "functor", which accepts keyword arguments to define how it behaves, 
-like `.Segment(diffusion_algorithm = PeronaMalikDiffusion())(...` 
+Each function is a "functor", which accepts keyword arguments to define how it behaves,
+like `.Segment(diffusion_algorithm = PeronaMalikDiffusion())(...`
 which sets the diffusion algorithm used in the preprocessing step.
 
 The instantiated functor can be called,
 and will accept a series of arguments to run the actual calculation.
-The arguments are often images which have to be loaded. 
+The arguments are often images which have to be loaded.
 - Images which need no conversion can be loaded simply like `load("{input.truecolor}")`,
-- Images which need conversion, for instance converting to a binary mask, 
+- Images which need conversion, for instance converting to a binary mask,
   can be piped to a converting function, e.g. `load("{input.landmask}") |> binarize_mask`
 
-For saving outputs, the high-level algorithms accept a callback function in the   
-`intermediate_results_callback` keyword argument. 
-The `call_kwargs(; kwargs...)` function passes each matching result, 
+For saving outputs, the high-level algorithms accept a callback function in the
+`intermediate_results_callback` keyword argument.
+The `call_kwargs(; kwargs...)` function passes each matching result,
 like `labels_map` (the overall output of a segmentation algorithm),
 or `cloud_mask` (an intermediate result),
-into the function specified. 
+into the function specified.
 In this example, two functions are evaluated:
-- `cloud_mask |> save("{output.cloud_mask}")`, 
-  which saves the cloud mask 
-  to the file specified in the output list, 
+- `cloud_mask |> save("{output.cloud_mask}")`,
+  which saves the cloud mask
+  to the file specified in the output list,
   `"{dir}/lopez/cloud_mask.tiff"`
-- and `labels_map .|> UInt16 |> save("{output.labels_map}")`, 
-  which converts the array of labels 
-  from the default 64-bit integer to an unsigned 16-bit integer, 
+- and `labels_map .|> UInt16 |> save("{output.labels_map}")`,
+  which converts the array of labels
+  from the default 64-bit integer to an unsigned 16-bit integer,
   and then saves the result to the file specified in the output list,
   `"{dir}/lopez.labels_map.tiff"`
 
