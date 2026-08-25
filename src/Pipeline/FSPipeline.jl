@@ -69,9 +69,9 @@ unsharp_mask_params = (radius=50, amount=0.3, threshold=0.01)
 
 """
    Preprocess(
-        diffusion_algorithm = PeronaMalikDiffusion(λ=0.1, K=0.1, niters=5, g="exponential")
-        adapthisteq_params = (nbins=256, rblocks=8, cblocks=8, clip=0.99) # rblocks/cblocks not used yet -- add with CLAHE.jl
-        unsharp_mask_params = (radius=50, amount=0.2, threshold=0.01)
+        diffusion_algorithm = PeronaMalikDiffusion(λ=0.1, K=0.1, niters=7, g="exponential")
+        adapthisteq_params = (nbins=256, rblocks=4, cblocks=4, clip=1)
+        unsharp_mask_params = (radius=50, amount=0.3, threshold=0.01)
     )
     Preprocess()(img, cloudmask, landmask)
 
@@ -149,37 +149,39 @@ floe_filtering_params = (
     max_floe_size=90_000,
     boundary_radius=15,
     min_circularity=0.3,
+    min_solidity=0.7,
     min_reflectance=0.4,
     min_contrast=0.01,
     min_probability=0.5,
 )
 floe_merging_params = (
-    distance_threshold_pixels=10, area_error_threshold=0.25, min_floe_size=100
+    max_distance_pixels=10,
+    max_error_area=0.25,
+    min_floe_size=100
 )
 
 """
     FSPipeline.Segment()
 
 Segmentation routine for identifying moderate to large floes in the Fram Strait.
-The image preprocessing is supplied as an function in the functor setup.
-
+The image preprocessing function needs to accept the true color image, land mask, and a list of tiles to process.
 
 # Parameters
 - `coastal_buffer_structuring_element::AbstractMatrix{Bool} = strel_box((51,51))`: Structuring element for the `create_landmask` function
 - `cloud_mask_algorithm = Watkins2025CloudMask()`: Cloud mask algorithm
 - `preprocessing_algorithm = Preprocess()`: Function to sharpen and equalize the truecolor image
-- `tile_size_pixels=1200`: Nominal tile size in pixels
+- `tile_size_pixels=400`: Nominal tile size in pixels
 - `min_tile_ice_pixel_count=300`: Smallest number of required sea ice pixels in tile
 - `preliminary_ice_mask = IceDetectionBrightnessMidpoint(minimum_reflectance=0.3)`: Function to use to identify likely ice pixels for filtering.
-- `kmeans_params = (k=4, maxiter=50, random_seed=45)`: Parameters for `kmeans_binarization`
-- `cluster_selection_algorithm = IceDetectionBrightnessPeaksMODIS721(
-    band_7_max=0.1,
-    possible_ice_threshold=0.3,
-    join_method="union",
-    minimum_prominence=0.01)`: Function to use to select a k-means cluster in the `kmeans_binarization` workflow
+- `kmeans_params = (k=4, maxiter=50, random_seed=45, cluster_selection_algorithm = IceDetectionBrightnessPeaksMODIS721(
+        band_7_max=0.1,
+        possible_ice_threshold=0.3,
+        join_method="union",
+        minimum_prominence=0.01)`: Settings for the `kmeans_binarization` workflow
 - `clean_binary_floes_params`: Parameters for the preliminary binary image cleanup
 - `floe_splitting_params`: Parameters for the `dist_morph_split` floe splitting algorithm
 - `floe_filtering_params`: Parameters for post-segmentation cleanup
+- `floe_merging_params`: Parameters for merging the two segmentation results.
 """
 @kwdef struct Segment <: IceFloeSegmentationAlgorithm
     coastal_buffer_structuring_element::AbstractMatrix{Bool} =
@@ -194,6 +196,7 @@ The image preprocessing is supplied as an function in the functor setup.
     cleanup_binary_params = cleanup_binary_params
     floe_splitting_params = floe_splitting_params
     floe_filtering_params = floe_filtering_params
+    floe_merging_params = floe_merging_params
 end
 
 function (s::Segment)(
@@ -279,7 +282,7 @@ function (s::Segment)(
     keep_labels!.(labeled_images, filtered_floes .|> r -> r.label)   
 
     # TODO: Update merge floes to just use the properties in the filter floes table
-    final_floes = merge_floes(filtered_floes..., labeled_images...)
+    final_floes = merge_floes(filtered_floes..., labeled_images...; s.floe_merging_params...)
 
     # Remove any stray segments left over from the merge function
     remove_small_segments!(final_floes, s.floe_filtering_params.min_floe_size)
@@ -482,21 +485,22 @@ function filter_floes(
     filter_function=LogisticRegressionFilter,
     min_probability=0.5,
 )
+    out = copy(img_indexmap)
     # 1. Remove objects which overlap the coastal mask
-    overlap = unique(img_indexmap[coastal_buffer_mask])
-    indices = component_indices(img_indexmap)
+    overlap = unique(out[coastal_buffer_mask])
+    indices = component_indices(out)
     for L in overlap
-        img_indexmap[indices[L]] .= 0
+        out[indices[L]] .= 0
     end
 
     # 2. Remove objects outside the specified size bounds prior to extracting features.
     # This is important since the small features can cause problems in some feature
     # descriptors.
-    remove_small_segments!(img_indexmap, min_floe_size)
-    remove_large_segments!(img_indexmap, max_floe_size)
+    remove_small_segments!(out, min_floe_size)
+    remove_large_segments!(out, max_floe_size)
 
     # 3. Get object-wise properties
-    results_df = regionprops_table(img_indexmap;
+    results_df = regionprops_table(out;
         properties=[:label, :area, :perimeter, :bbox, :centroid, :convex_area,
                     :major_axis_length, :minor_axis_length, :orientation],
         convex_area_algorithm=PolygonConvexArea()
@@ -514,7 +518,7 @@ function filter_floes(
     results_df[:, :cloud_fraction] =  (r -> mean(cloud_mask[indices[r]])).(results_df[:, :label])
     
     # mean reflectance
-    segment_mean_reflectance = segment_mean(SegmentedImage(falsecolor_image, img_indexmap))
+    segment_mean_reflectance = segment_mean(SegmentedImage(falsecolor_image, out))
     b = [segment_mean_reflectance[L] for L in  results_df[:, :label]]
     results_df[:, :b1_reflectance_mean] = blue.(b)
     results_df[:, :b7_reflectance_mean] = red.(b)
@@ -525,7 +529,7 @@ function filter_floes(
     
     # mean boundary reflectance
     b1 = blue.(falsecolor_image)
-    bdry_indexmap = expand_labels(img_indexmap, boundary_radius) .- img_indexmap
+    bdry_indexmap = expand_labels(out, boundary_radius) .- out
     bdry_indices = component_indices(bdry_indexmap)
     bdry_labels = intersect(results_df[:, :label], unique(bdry_indexmap))
     b1_bdry_means = Dict(L => mean(b1[bdry_indices[L]]) for L in bdry_labels)
@@ -612,7 +616,7 @@ function objectwise_compare_segmentation(
 end
 
 """
-    merge_floes(df1, df2, labels1, labels2)
+    merge_floes(df1, df2, labels1, labels2; max_distance_pixels=10, max_error_area=0.25, min_floe_size=100)
 
 Produce a single segmentation from a pair via object-wise assessment.
 1. Where the two segmentations agree within tolerance of dmax, emax, select the most circular floe.
@@ -658,7 +662,7 @@ function merge_floes(df1, df2, labels1, labels2;
 
     subset!(df1, :label => ByRow(r -> r ∉ A_no_overlap))
     subset!(df2, :label => ByRow(r -> r ∉ B_no_overlap))
-    nrow(df1) == 0 || nrow(df2) == 0 && return F
+    (nrow(df1) == 0 || nrow(df2) == 0) && return F
 
     #### Case 2: High-Quality Pairs
     # In this case, there exists at least one item in the relevant set where the error metrics are both within the tolerance.
