@@ -10,11 +10,19 @@ function convert_notebooks(directory; converter)
     end
 end
 
+function ensure_uvx_available()
+    Sys.which("uvx") === nothing || return nothing
+    error(
+        "uvx was not found on PATH. Install uv first (https://docs.astral.sh/uv/getting-started/installation/) and ensure ~/.local/bin is on PATH for the current shell session.",
+    )
+end
+
 # -----------------------------------------------------------------------------
 # These functions based on https://github.com/marius311/CMBLensing.jl/blob/v0.10.1/docs/make.jl
 # Under the MIT Expat license, © 2019–2023 Marius Millea
 
 function convert_to_markdown(file)
+    ensure_uvx_available()
     template_path = joinpath(dirname(@__FILE__), "documenter.tpl")
     run(
         `uvx --from nbconvert jupyter-nbconvert $file --to markdown --template $template_path`,
