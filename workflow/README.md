@@ -13,6 +13,9 @@ Install the workflow and its dependencies by calling:
 # Install uv
 curl -LsSf https://astral.sh/uv/install.sh | sh
 
+# Ensure uv/uvx are available in this shell session
+export PATH="$HOME/.local/bin:$PATH"
+
 # Install the snakemake runner with required extras
 uv tool install --with pyproj --with pandas snakemake
 ```
