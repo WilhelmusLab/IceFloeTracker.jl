@@ -44,7 +44,7 @@ for ((i = 1; i <= REPEATS; i++)); do
 	(
 		cd "$SCRIPT_DIR"
 		/usr/bin/time -v -o "$TIME_LOG" \
-			snakemake -R tracking --configfile "$CONFIGFILE" "$TARGET"
+			snakemake -R tracking "$TARGET" --configfile "$CONFIGFILE"
 	)
 	EXIT_CODE=$?
 	set -e
