@@ -619,8 +619,7 @@ end
     merge_floes(df1, df2, labels1, labels2; max_distance_pixels=10, max_error_area=0.25, min_floe_size=100)
 
 Produce a single segmentation from a pair via object-wise assessment.
-1. Where the two segmentations agree within tolerance of dmax, emax, select the most circular floe.
-2. Where the segmentations disagree, select floes with the highest boundary contrast within their
+
 
 """
 function merge_floes(df1, df2, labels1, labels2; 
@@ -645,20 +644,11 @@ function merge_floes(df1, df2, labels1, labels2;
     F = zeros(Int64, size(A))
 
     #### Case 1: No overlap
-    A_no_overlap = []
-    B_no_overlap = []
-    for L in A_labels
-        if maximum(B[A_indices[L]]) == 0
-            F[A_indices[L]] .= L
-            push!(A_no_overlap, L)
-        end
-    end
-    for L in B_labels
-        if maximum(A[B_indices[L]]) == 0
-            F[B_indices[L]] .= L + offset_b
-            push!(B_no_overlap, L)
-        end
-    end
+    A_no_overlap = _nonoverlapping_labels(B, A_indices, A_labels)
+    _assign_labels!(F, A_indices, A_no_overlap)
+
+    B_no_overlap = _nonoverlapping_labels(A, B_indices, B_labels)
+    _assign_labels!(F, B_indices, B_no_overlap; offset=offset_b)
 
     subset!(df1, :label => ByRow(r -> r ∉ A_no_overlap))
     subset!(df2, :label => ByRow(r -> r ∉ B_no_overlap))
@@ -670,7 +660,7 @@ function merge_floes(df1, df2, labels1, labels2;
     df_comp = objectwise_compare_segmentation(df1, df2, labels1, labels2);
     within_tolerance(d, e) = (d .< max_distance_pixels) .&& (e .< max_error_area)
     matches = subset(df_comp, [:dist_s1_s2, :scaled_relative_error_area] => within_tolerance)
-    
+
     nrow(matches) > 0 && begin
         # Select the item in the relative set with lowest area difference.
         subset!(
@@ -690,15 +680,9 @@ function merge_floes(df1, df2, labels1, labels2;
         )
 
         # Merge the two, prioritizing the second if there is overlap.
-        A_labels = matches[matches.s1_better, :s1_label]
-        B_labels = matches[.!matches.s1_better, :s2_label];
 
-        for L in A_labels
-            F[A_indices[L]] .= L
-        end        
-        for L in B_labels
-            F[B_indices[L]] .= L + offset_b
-        end
+        _assign_labels!(F, A_indices, matches[matches.s1_better, :s1_label])
+        _assign_labels!(F, B_indices, matches[.!matches.s1_better, :s2_label]; offset=offset_b)
 
         # Add intersections to list
         idx = F .> 0
@@ -726,21 +710,34 @@ function merge_floes(df1, df2, labels1, labels2;
             push!(A_labels, s1.label)
         end
     end
-    for L in A_labels
-        F[A_indices[L]] .= L
-    end
-    
+     _assign_labels!(F, A_indices, A_labels)
+   
     # Select objects in B with no intersection with F
     B_labels = unique(B[F .> 0])
     subset!(df2, :label => ByRow(r -> r ∉ B_labels))
-    for L in df2.label
-        F[B_indices[L]] .= L + offset_b
-    end
+    _assign_labels!(F, B_indices,  df2.label; offset=offset_b)
     
     # Remove possible isolated pixels from merge
     remove_small_segments!(F, min_floe_size)
     return label_components(F)
 end
+
+"""
+Helper functions for the merge_floes routine
+"""
+function _nonoverlapping_labels(other, indices, labels)
+    return [
+        label for label in labels
+        if maximum(other[indices[label]]) == 0
+    ]
+end
+
+function _assign_labels!(output, indices, labels; offset=0)
+    foreach(labels) do label
+        output[indices[label]] .= label + offset
+    end
+end
+
 
 #### Tracker parameters ####
 # Initially same as in src/Tracking/filter_functions.jl,
