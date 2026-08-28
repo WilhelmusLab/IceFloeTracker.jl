@@ -145,9 +145,10 @@ cleanup_binary_params = (
 )
 floe_splitting_params = (
     max_hole_fill=2000,
-    max_depth=15,
-    max_depth_ratio=0.3,
-    max_expand=3,
+    max_depth=20,
+    max_depth_ratio=0.5,
+    max_expand=1,
+    opening_strel=strel_box((3,3))
 )
 floe_filtering_params = (
     min_floe_size=100,
@@ -428,7 +429,7 @@ function dist_morph_split(
         _remove_labels!(labeled_markers, indices, remove_list)
         levels[dist_threshold] = labeled_markers
     end
-
+    max_depth = maximum([d for d in keys(levels)])
     final_labels = copy(levels[max_depth])
 
     ### Descend pyramid

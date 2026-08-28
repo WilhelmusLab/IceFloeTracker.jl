@@ -137,4 +137,36 @@ labeled_images = clean_and_split.([kmeans_result, adaptive_result]);
 mosaicview(view_seg_random(SegmentedImage(tc_img, labeled_images[1])),
     view_seg_random(SegmentedImage(tc_img, labeled_images[2])), ncol=1)
 
-# tiled watershed
+# Check the updated dist morph split on the large images.
+# Calibrating the choice of depth, opening strel, max_expand, and max depth ratio is important -- the results vary a lot!
+test_img = load("test/test_outputs/segmentation-IceFloeTracker.FSPipeline.Segment-006-baffin_bay-100km-20220530-terra-250m-2026-08-28-092524/kmeans_binarized.png")
+cloud_mask = load("test/test_outputs/segmentation-IceFloeTracker.FSPipeline.Segment-006-baffin_bay-100km-20220530-terra-250m-2026-08-28-092524/cloud_mask.png")
+ice_mask = load("test/test_outputs/segmentation-IceFloeTracker.FSPipeline.Segment-006-baffin_bay-100km-20220530-terra-250m-2026-08-28-092524/ice_mask.png")
+cleaned_img = FSPipeline.clean_binary_floes(test_img .> 0, cloud_mask .> 0, ice_mask .> 0);
+mosaicview(Gray.(cleaned_img),
+ view_seg_random(
+    SegmentedImage(
+        test_img,
+        FSPipeline.dist_morph_split(
+            cleaned_img; max_depth=20, max_depth_ratio=0.5, max_expand=1, opening_strel=strel_disk(1)
+            )
+        )
+    ),
+view_seg_random(
+    SegmentedImage(
+        test_img,
+        FSPipeline.dist_morph_split(
+            cleaned_img; max_depth=15, max_depth_ratio=0.5, max_expand=1, opening_strel=strel_box((3,3))
+            )
+        )
+    ),
+view_seg_random(
+    SegmentedImage(
+        test_img,
+        FSPipeline.dist_morph_split(
+            cleaned_img; max_depth=20, max_depth_ratio=0.3, max_expand=2, opening_strel=strel_disk(3)
+            )
+        )
+    ),
+    nrow=1
+)
