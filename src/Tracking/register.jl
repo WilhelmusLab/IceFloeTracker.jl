@@ -38,25 +38,43 @@ function compute_centroid(im::AbstractArray{Bool}; rounded=false)
     return x0, y0
 end
 
+# floor-rounded centroid, i.e. the pixel containing the centroid
+floor_centroid(im) = Int64.(floor.(compute_centroid(im; rounded=false)))
+
+# symmetric difference of two equal-size binary masks, without temporaries
+count_symdiff(im1, im2) = count(((a, b),) -> a ⊻ b, zip(im1, im2))
+
 """
     align_centroids(im1::AbstractArray{Bool}, im2::AbstractArray{Bool})
+    align_centroids(im1, centroid1, im2, centroid2)
 
 Align images by padding so that the centroids of each image are on the edge of or within the same pixel.
+The 4-argument form takes precomputed [`floor_centroid`](@ref)s, so callers can reuse a
+centroid across many alignments against the same image.
 """
 function align_centroids(im1::AbstractArray{Bool}, im2::AbstractArray{Bool})
-    # Get the location of the pixel containing the centroids of im1 and im2 
+    return align_centroids(im1, floor_centroid(im1), im2, floor_centroid(im2))
+end
+
+function align_centroids(
+    im1::AbstractArray{Bool},
+    centroid1::Tuple{Int64,Int64},
+    im2::AbstractArray{Bool},
+    centroid2::Tuple{Int64,Int64},
+)
+    # Location of the pixel containing the centroids of im1 and im2
     # in their current coordinate systems
-    r1, c1 = Int64.(floor.(compute_centroid(im1; rounded=false)))
-    r2, c2 = Int64.(floor.(compute_centroid(im2; rounded=false)))
+    r1, c1 = centroid1
+    r2, c2 = centroid2
 
     # Calculate the same centroid, but measured from the bottom right of each image
     s1, d1 = size(im1) .- (r1, c1) .+ 1
     s2, d2 = size(im2) .- (r2, c2) .+ 1
 
     # Calculate the new "common centroid" position in image coordinates
-    rn, cn = (maximum([r1, r2]), maximum([c1, c2]))
+    rn, cn = (max(r1, r2), max(c1, c2))
     # Calculate the new "reverse common centroid" position in image coordinates from the bottom right
-    sn, dn = (maximum([s1, s2]), maximum([d1, d2]))
+    sn, dn = (max(s1, s2), max(d1, d2))
 
     # For each image, we shift the pixel containing its centroid to the new centroid
     # by adding rn-ri rows padding at the top, and cn-ci columns at the left.
@@ -66,8 +84,8 @@ function align_centroids(im1::AbstractArray{Bool}, im2::AbstractArray{Bool})
     im1_padded = collect(padarray(im1, Fill(0, (rn - r1, cn - c1), (sn - s1, dn - d1))))
     im2_padded = collect(padarray(im2, Fill(0, (rn - r2, cn - c2), (sn - s2, dn - d2))))
 
-    @assert floor.(compute_centroid(im1_padded; rounded=false)) ==
-        floor.(compute_centroid(im2_padded; rounded=false))
+    # Integer padding shifts both floor-centroids exactly to (rn, cn), so they stay aligned
+    @assert size(im1_padded) == size(im2_padded)
 
     return im1_padded, im2_padded
 end
@@ -78,7 +96,7 @@ end
                      floe2_mask::BitMatrix, floe2_orientation::Float64)
 
     Computes the shape difference between two ice floes using the estimated floe
-    orientation to first align both floes on the same axis. 
+    orientation to first align both floes on the same axis.
 
 """
 function shape_difference(
@@ -90,10 +108,7 @@ function shape_difference(
     im1 = imrotate_bin_nocrop(floe1_mask, floe1_orientation)
     im2 = imrotate_bin_nocrop(floe2_mask, floe2_orientation)
     im1, im2 = align_centroids(im1, im2)
-    a_not_b = im1 .> 0 .&& isequal.(im2, 0)
-    b_not_a = im2 .> 0 .&& isequal.(im1, 0)
-    shape_difference = sum(a_not_b .|| b_not_a)
-    return shape_difference
+    return count_symdiff(im1, im2)
 end
 
 function shape_difference(floe1::DataFrameRow, floe2::DataFrameRow)
@@ -107,7 +122,7 @@ Computes the shape difference between im_reference and im_target for each angle 
 The reference image is held constant, while the target image is rotated. The test_angles are interpreted
 as the angle of rotation from target to reference, so to find the best match, we rotate the reverse
 direction. A perfect match at angle `A` would imply im_target is the same shape as if im_reference was
-rotated by `A`. 
+rotated by `A`.
 Use `imrotate_function=imrotate_bin_<clockwise|counterclockwise>_<radians|degrees>` to get angles <clockwise|counterclockwise> in <radians|degrees>.
 """
 function shape_difference_rotation(
@@ -119,20 +134,26 @@ function shape_difference_rotation(
         undef, length(test_angles)
     )
 
+    # the reference image never changes, so compute its centroid once
+    centroid_reference = floor_centroid(im_reference)
+
     for (idx, angle) in enumerate(test_angles)
 
         # rotate image back by angle
         im_target_rotated = imrotate_function(im_target, -angle)
 
-        im1, im2 = align_centroids(im_reference, im_target_rotated)
+        im1, im2 = align_centroids(
+            im_reference,
+            centroid_reference,
+            im_target_rotated,
+            floor_centroid(im_target_rotated),
+        )
 
         # Check here that im1 and im2 sizes are the same
         # This should be guaranteed by "align_centroids"
         @assert size(im1) == size(im2)
 
-        a_not_b = im1 .> 0 .&& isequal.(im2, 0)
-        b_not_a = im2 .> 0 .&& isequal.(im1, 0)
-        shape_difference = sum(a_not_b .|| b_not_a)
+        shape_difference = count_symdiff(im1, im2)
         shape_differences[idx] = (; angle, shape_difference)
     end
     return shape_differences
@@ -185,9 +206,9 @@ Returns a pair with the mismatch score `mm` and the associated registration angl
 
 ## Arguments
 - `fixed`,`moving`: images to align via a rigid transformation
-- `test_angles`: candidate angles to check for rotations by, in degrees. 
+- `test_angles`: candidate angles to check for rotations by, in degrees.
   In the case of a tie in the shape difference, the earlier angle from this array will be returned.
-""" # TODO: Determine whether this function is still being used or if we can deprecate it
+"""
 function mismatch(fixed::AbstractArray, moving::AbstractArray, test_angles::AbstractArray)
     shape_differences = shape_difference_rotation(
         fixed, moving, test_angles; imrotate_function=imrotate_bin_clockwise_degrees
@@ -225,7 +246,7 @@ function mismatch(
     fixed::AbstractArray, moving::AbstractArray, mxrot::Real=180, step::Real=5
 )
     test_angles = sort(
-        reverse(range(; start=(-mxrot), stop=mxrot, step=step)[1:(end - 1)]); by=abs
+        reverse(range(; start=(-mxrot), stop=mxrot, step=step)[1:(end-1)]); by=abs
     )
     return mismatch(fixed, moving, test_angles)
 end
