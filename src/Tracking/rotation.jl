@@ -8,9 +8,13 @@ _add_suffix(s::String, df::DataFrame) = rename((x) -> String(x) * s, df)
 Calculate the angle and rotation rate between observations in DataFrame `df`.
 
 - `id_column` is the column with the ID of the image over several observations, e.g. the floe ID.
-- `image_column` is the column with the image to compare, 
+- `image_column` is the column with the image to compare,
 - `time_column` is the column with the timepoint of each observation,
 - `registration_function` is used to compare the two images and should return an angle.
+- `orientation_column`, if given, names a column with a moment-derived orientation (radians);
+  the registration search is then restricted to angles within `orientation_window` of the
+  orientation difference (and its 180° alias), which is much faster than the full angle grid.
+  When set, `registration_function` must accept a `test_angles` keyword argument.
 
 Each row is compared to each other row in `df` which are:
   - for the same object ID,
@@ -29,6 +33,8 @@ function get_rotation_measurements(
     time_column::Symbol,
     registration_function::Function=register,
     lookback_days::Integer=1,
+    orientation_column::Union{Symbol,Nothing}=nothing,
+    orientation_window::Real=deg2rad(30.0),
 )
     if nrow(df) == 0
         @debug "No observations in the input DataFrame, returning an empty dataframe with the correct column names"
@@ -46,7 +52,8 @@ function get_rotation_measurements(
         return df
     end
 
-    results = []
+    # collect the comparison pairs first so the registrations can run in parallel
+    pairs = Tuple{DataFrameRow,DataFrameRow}[]
     for measurement in eachrow(df)
         filtered_df = subset(
             df,
@@ -57,10 +64,23 @@ function get_rotation_measurements(
                 (t) -> Date((measurement[time_column]) - Day(lookback_days)) <= Date(t)
             ), # only look at floes from the previous day or later
         )
-        new_results = get_rotation_measurements(
-            measurement, filtered_df; image_column, time_column, registration_function
+        for other_measurement in eachrow(filtered_df)
+            push!(pairs, (other_measurement, measurement))
+        end
+    end
+
+    results = Vector{Any}(undef, length(pairs))
+    Threads.@threads for i in eachindex(pairs)
+        row1, row2 = pairs[i]
+        results[i] = get_rotation_measurements(
+            row1,
+            row2;
+            image_column,
+            time_column,
+            registration_function,
+            orientation_column,
+            orientation_window,
         )
-        append!(results, new_results)
     end
 
     # Flatten the results into a single dataframe
