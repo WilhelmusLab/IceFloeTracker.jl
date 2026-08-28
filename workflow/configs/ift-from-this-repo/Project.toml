@@ -7,7 +7,7 @@ TimeZones = "f269a46b-ccf7-5d73-abea-4c690281aa53"
 FileIO = "5789e2e9-d7fb-5bc7-8068-2c6fae9b9549"
 
 [sources]
-IceFloeTracker = {path = "../../../"} # relative to workflow/results/.julia
+IceFloeTracker = { path = "../../../../" } # relative to workflow/workflow/results/.julia (snakemake run from within workflow/)
 
 [compat]
 julia = "1.12"
