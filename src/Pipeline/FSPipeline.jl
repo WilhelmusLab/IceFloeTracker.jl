@@ -143,7 +143,12 @@ adaptive_params = (window_size=400, percentage=0)
 cleanup_binary_params = (
     erosion_strel=strel_box((3, 3)), init_max_fill=100, conditional_max_fill=500
 )
-floe_splitting_params = (max_hole_fill=2000, max_distance=5, max_expand=3)
+floe_splitting_params = (
+    max_hole_fill=2000,
+    max_depth=15,
+    max_depth_ratio=0.3,
+    max_expand=3,
+)
 floe_filtering_params = (
     min_floe_size=100,
     max_floe_size=90_000,
@@ -393,32 +398,48 @@ After traversing the pyramid, relabel matrix, and remove any objects smaller tha
 function dist_morph_split(
     binary_floes::BitMatrix;
     max_hole_fill::Int64=2000,
-    max_distance::Int64=5,
+    max_depth::Int64=5,
+    max_depth_ratio::Real=0.3,
     max_expand::Int64=3,
     opening_strel=strel_disk(3),
 )
     dist = distance_transform(feature_transform(.!binary_floes))
-    levels = Dict(0 => label_components(opening(dist .> 0, opening_strel))) # Initialize with one run of opening
-    ### Build pyramid - each size is the opened and filled thresholded image
-    for dist_threshold in 0:max_distance
+    # Initialize with one run of opening
+    levels = Dict(0 => label_components(opening(dist .> 0, opening_strel)))
+
+    ### Build pyramid - each size is the opened and filled thresholded image for a given distance
+    for dist_threshold in 1:max_depth
         markers = opening(dist .> dist_threshold, opening_strel)
         markers .= .!imfill(.!markers, (0, max_hole_fill))
-        levels[dist_threshold] = label_components(markers)
+        labeled_markers = label_components(markers)
+        maximum(labeled_markers) == 0 && break
+
+        labels = filter(r -> r != 0, unique(labeled_markers))
+        indices = component_indices(labeled_markers)
+        
+        # check 1: Remove components with no intersection with the layer below
+        remove_list = _nonoverlapping_labels(levels[dist_threshold - 1], indices, labels)
+        _remove_labels!(labeled_markers, indices, remove_list)
+        filter!(r -> r ∉ remove_list, labels)
+
+        # check 2: Remove components which fail the max_depth_ratio to component maximum depth test
+        maximum_depths = Dict(L => maximum(dist[indices[L]]) for L in labels)
+        remove_list = [L for L ∈ labels if max_depth_ratio * maximum_depths[L] < dist_threshold]
+        _remove_labels!(labeled_markers, indices, remove_list)
+        levels[dist_threshold] = labeled_markers
     end
-    final_labels = deepcopy(levels[max_distance])
+
+    final_labels = copy(levels[max_depth])
 
     ### Descend pyramid
-    for dist_threshold in max_distance:-1:1
+    for dist_threshold in max_depth:-1:1
         # Get indices from level d-1
         indices = component_indices(levels[dist_threshold - 1])
-
+        labels = filter(r -> r != 0, unique(levels[dist_threshold - 1]))
         # Expand indices at level d
         expanded = expand_labels(levels[dist_threshold], max_expand)
-        for L in keys(indices)
-            (L <= 0) && continue
-
+        for L in labels
             matched_labels = unique(levels[dist_threshold][indices[L]])
-
             # If intersection of the label at level
             if (0 ∈ matched_labels) && (length(matched_labels) <= 2)
                 final_labels[indices[L]] .= L
@@ -439,10 +460,10 @@ end
     keep_labels!(img_indexmap, labels_list)
 
 Given an image indexmap `img_indexmap` and a list of labels `labels_list`, 
-remove any segments not in the list. In place version of `keep_labels`.
+remove any segments not in the list.
 
 """
-function keep_labels!(img_indexmap, labels_list)    
+function keep_labels!(img_indexmap, labels_list)
     indices = component_indices(img_indexmap)
     labels = filter(r -> r > 0, unique(img_indexmap))
     for L in labels
@@ -620,7 +641,6 @@ end
 
 Produce a single segmentation from a pair via object-wise assessment.
 
-
 """
 function merge_floes(df1, df2, labels1, labels2; 
     max_distance_pixels=10,
@@ -735,6 +755,14 @@ end
 function _assign_labels!(output, indices, labels; offset=0)
     foreach(labels) do label
         output[indices[label]] .= label + offset
+    end
+end
+
+function _remove_labels!(output, indices, remove_labels)
+    for L in remove_labels
+        if L != 0
+            output[indices[L]] .= 0
+        end
     end
 end
 
