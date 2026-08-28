@@ -26,7 +26,7 @@ function compute_centroid(im::AbstractArray{Bool}; rounded=false)
     yi = 0
     R = count(im)
     for idx in CartesianIndices(im)
-        if im[idx] > 0
+        if im[idx]
             ii, jj = Tuple(idx)
             xi += ii
             yi += jj
