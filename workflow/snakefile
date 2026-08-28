@@ -172,6 +172,7 @@ rule init_ift:
         Pkg.resolve();
         Pkg.instantiate();
         using IceFloeTracker;
+        Pkg.update(;name="IceFloeTracker", rev="main")
         println(pkgversion(IceFloeTracker))
         ' > {output[0]}
         """
