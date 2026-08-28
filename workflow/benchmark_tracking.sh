@@ -37,6 +37,7 @@ COMMIT="$(git -C "$SCRIPT_DIR" rev-parse --short HEAD 2>/dev/null || echo unknow
 for ((i = 1; i <= REPEATS; i++)); do
 	TIMESTAMP="$(date -u +%Y%m%dT%H%M%SZ)"
 	TIME_LOG="${LOG_DIR}/${TIMESTAMP}-${LABEL}-run${i}.time.log"
+	RUN_LOG="${LOG_DIR}/${TIMESTAMP}-${LABEL}-run${i}.output.log"
 
 	echo "== Run ${i}/${REPEATS} (label=${LABEL}, threads=${JULIA_NUM_THREADS}) =="
 
@@ -45,8 +46,8 @@ for ((i = 1; i <= REPEATS; i++)); do
 		cd "$SCRIPT_DIR"
 		/usr/bin/time -v -o "$TIME_LOG" \
 			snakemake -R tracking "$TARGET" --configfile "$CONFIGFILE"
-	)
-	EXIT_CODE=$?
+	) 2>&1 | tee "$RUN_LOG"
+	EXIT_CODE=${PIPESTATUS[0]}
 	set -e
 
 	# Parse the fields we need from GNU time's verbose output.
@@ -65,7 +66,7 @@ for ((i = 1; i <= REPEATS; i++)); do
 
 	echo "${TIMESTAMP},${LABEL},${BRANCH},${COMMIT},${JULIA_NUM_THREADS},${WALL_S},${USER_S},${SYS_S},${MAX_RSS_MB},${EXIT_CODE}" >>"$SUMMARY_CSV"
 
-	echo "-> wall=${WALL_S}s user=${USER_S}s sys=${SYS_S}s max_rss=${MAX_RSS_MB}MB exit=${EXIT_CODE} (log: $TIME_LOG)"
+	echo "-> wall=${WALL_S}s user=${USER_S}s sys=${SYS_S}s max_rss=${MAX_RSS_MB}MB exit=${EXIT_CODE} (time log: $TIME_LOG, output log: $RUN_LOG)"
 done
 
 echo "Summary appended to $SUMMARY_CSV"
