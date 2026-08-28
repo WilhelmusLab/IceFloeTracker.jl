@@ -143,7 +143,13 @@ adaptive_params = (window_size=400, percentage=0)
 cleanup_binary_params = (
     erosion_strel=strel_box((3, 3)), init_max_fill=100, conditional_max_fill=500
 )
-floe_splitting_params = (max_hole_fill=2000, max_distance=5, max_expand=3)
+floe_splitting_params = (
+    max_hole_fill=2000,
+    max_depth=20,
+    max_depth_ratio=0.5,
+    max_expand=1,
+    opening_strel=strel_box((3,3))
+)
 floe_filtering_params = (
     min_floe_size=100,
     max_floe_size=90_000,
@@ -393,32 +399,48 @@ After traversing the pyramid, relabel matrix, and remove any objects smaller tha
 function dist_morph_split(
     binary_floes::BitMatrix;
     max_hole_fill::Int64=2000,
-    max_distance::Int64=5,
+    max_depth::Int64=5,
+    max_depth_ratio::Real=0.3,
     max_expand::Int64=3,
     opening_strel=strel_disk(3),
 )
     dist = distance_transform(feature_transform(.!binary_floes))
-    levels = Dict(0 => label_components(opening(dist .> 0, opening_strel))) # Initialize with one run of opening
-    ### Build pyramid - each size is the opened and filled thresholded image
-    for dist_threshold in 0:max_distance
+    # Initialize with one run of opening
+    levels = Dict(0 => label_components(opening(dist .> 0, opening_strel)))
+
+    ### Build pyramid - each size is the opened and filled thresholded image for a given distance
+    for dist_threshold in 1:max_depth
         markers = opening(dist .> dist_threshold, opening_strel)
         markers .= .!imfill(.!markers, (0, max_hole_fill))
-        levels[dist_threshold] = label_components(markers)
+        labeled_markers = label_components(markers)
+        maximum(labeled_markers) == 0 && break
+
+        labels = filter(r -> r != 0, unique(labeled_markers))
+        indices = component_indices(labeled_markers)
+        
+        # check 1: Remove components with no intersection with the layer below
+        remove_list = _nonoverlapping_labels(levels[dist_threshold - 1], indices, labels)
+        _remove_labels!(labeled_markers, indices, remove_list)
+        filter!(r -> r ∉ remove_list, labels)
+
+        # check 2: Remove components which fail the max_depth_ratio to component maximum depth test
+        maximum_depths = Dict(L => maximum(dist[indices[L]]) for L in labels)
+        remove_list = [L for L ∈ labels if max_depth_ratio * maximum_depths[L] < dist_threshold]
+        _remove_labels!(labeled_markers, indices, remove_list)
+        levels[dist_threshold] = labeled_markers
     end
-    final_labels = deepcopy(levels[max_distance])
+    max_depth = maximum([d for d in keys(levels)])
+    final_labels = copy(levels[max_depth])
 
     ### Descend pyramid
-    for dist_threshold in max_distance:-1:1
+    for dist_threshold in max_depth:-1:1
         # Get indices from level d-1
         indices = component_indices(levels[dist_threshold - 1])
-
+        labels = filter(r -> r != 0, unique(levels[dist_threshold - 1]))
         # Expand indices at level d
         expanded = expand_labels(levels[dist_threshold], max_expand)
-        for L in keys(indices)
-            (L <= 0) && continue
-
+        for L in labels
             matched_labels = unique(levels[dist_threshold][indices[L]])
-
             # If intersection of the label at level
             if (0 ∈ matched_labels) && (length(matched_labels) <= 2)
                 final_labels[indices[L]] .= L
@@ -439,10 +461,10 @@ end
     keep_labels!(img_indexmap, labels_list)
 
 Given an image indexmap `img_indexmap` and a list of labels `labels_list`, 
-remove any segments not in the list. In place version of `keep_labels`.
+remove any segments not in the list.
 
 """
-function keep_labels!(img_indexmap, labels_list)    
+function keep_labels!(img_indexmap, labels_list)
     indices = component_indices(img_indexmap)
     labels = filter(r -> r > 0, unique(img_indexmap))
     for L in labels
@@ -619,8 +641,6 @@ end
     merge_floes(df1, df2, labels1, labels2; max_distance_pixels=10, max_error_area=0.25, min_floe_size=100)
 
 Produce a single segmentation from a pair via object-wise assessment.
-1. Where the two segmentations agree within tolerance of dmax, emax, select the most circular floe.
-2. Where the segmentations disagree, select floes with the highest boundary contrast within their
 
 """
 function merge_floes(df1, df2, labels1, labels2; 
@@ -645,20 +665,11 @@ function merge_floes(df1, df2, labels1, labels2;
     F = zeros(Int64, size(A))
 
     #### Case 1: No overlap
-    A_no_overlap = []
-    B_no_overlap = []
-    for L in A_labels
-        if maximum(B[A_indices[L]]) == 0
-            F[A_indices[L]] .= L
-            push!(A_no_overlap, L)
-        end
-    end
-    for L in B_labels
-        if maximum(A[B_indices[L]]) == 0
-            F[B_indices[L]] .= L + offset_b
-            push!(B_no_overlap, L)
-        end
-    end
+    A_no_overlap = _nonoverlapping_labels(B, A_indices, A_labels)
+    _assign_labels!(F, A_indices, A_no_overlap)
+
+    B_no_overlap = _nonoverlapping_labels(A, B_indices, B_labels)
+    _assign_labels!(F, B_indices, B_no_overlap; offset=offset_b)
 
     subset!(df1, :label => ByRow(r -> r ∉ A_no_overlap))
     subset!(df2, :label => ByRow(r -> r ∉ B_no_overlap))
@@ -668,10 +679,9 @@ function merge_floes(df1, df2, labels1, labels2;
     # In this case, there exists at least one item in the relevant set where the error metrics are both within the tolerance.
     # Out of these objects, choose the one with the highest probability. 
     df_comp = objectwise_compare_segmentation(df1, df2, labels1, labels2);
-    matches = subset(
-        df_comp,
-        [:dist_s1_s2, :scaled_relative_error_area] => (d, e) -> (d .< max_distance_pixels) .&& (e .< max_error_area),
-    )
+    within_tolerance(d, e) = (d .< max_distance_pixels) .&& (e .< max_error_area)
+    matches = subset(df_comp, [:dist_s1_s2, :scaled_relative_error_area] => within_tolerance)
+
     nrow(matches) > 0 && begin
         # Select the item in the relative set with lowest area difference.
         subset!(
@@ -691,15 +701,9 @@ function merge_floes(df1, df2, labels1, labels2;
         )
 
         # Merge the two, prioritizing the second if there is overlap.
-        A_labels = matches[matches.s1_better, :s1_label]
-        B_labels = matches[.!matches.s1_better, :s2_label];
 
-        for L in A_labels
-            F[A_indices[L]] .= L
-        end        
-        for L in B_labels
-            F[B_indices[L]] .= L + offset_b
-        end
+        _assign_labels!(F, A_indices, matches[matches.s1_better, :s1_label])
+        _assign_labels!(F, B_indices, matches[.!matches.s1_better, :s2_label]; offset=offset_b)
 
         # Add intersections to list
         idx = F .> 0
@@ -727,21 +731,42 @@ function merge_floes(df1, df2, labels1, labels2;
             push!(A_labels, s1.label)
         end
     end
-    for L in A_labels
-        F[A_indices[L]] .= L
-    end
-    
+     _assign_labels!(F, A_indices, A_labels)
+   
     # Select objects in B with no intersection with F
     B_labels = unique(B[F .> 0])
     subset!(df2, :label => ByRow(r -> r ∉ B_labels))
-    for L in df2.label
-        F[B_indices[L]] .= L + offset_b
-    end
+    _assign_labels!(F, B_indices,  df2.label; offset=offset_b)
     
     # Remove possible isolated pixels from merge
     remove_small_segments!(F, min_floe_size)
     return label_components(F)
 end
+
+"""
+Helper functions for the merge_floes routine
+"""
+function _nonoverlapping_labels(other, indices, labels)
+    return [
+        label for label in labels
+        if maximum(other[indices[label]]) == 0
+    ]
+end
+
+function _assign_labels!(output, indices, labels; offset=0)
+    foreach(labels) do label
+        output[indices[label]] .= label + offset
+    end
+end
+
+function _remove_labels!(output, indices, remove_labels)
+    for L in remove_labels
+        if L != 0
+            output[indices[L]] .= 0
+        end
+    end
+end
+
 
 #### Tracker parameters ####
 # Initially same as in src/Tracking/filter_functions.jl,
