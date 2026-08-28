@@ -2,20 +2,23 @@
 # Benchmark the `tracking` Snakemake rule (wall/CPU time, max RSS) for
 # before/after comparison of tracker parallelization work.
 #
-# Usage: ./benchmark_tracking.sh <target> <label> [configfile]
-#   target     snakemake target, e.g.
-#              track/beaufort_sea-large.250m.2019-03-23.2019-03-23.LopezAcosta2019Tiling.tracked.csv
-#   label      free-form tag for this run, e.g. "before" or "after"
-#   configfile optional --configfile path (default: configs/large-regions/config.yaml)
+# Usage: ./benchmark_tracking.sh <target> <label> [configfiles]
+#   target      snakemake target, e.g.
+#               track/beaufort_sea-large.250m.2019-03-23.2019-03-23.LopezAcosta2019Tiling.tracked.csv
+#   label       free-form tag for this run, e.g. "before" or "after"
+#   configfiles optional space-separated --configfile paths (default: large-regions
+#               combined with ift-from-this-repo, so IceFloeTracker is loaded from
+#               this local checkout instead of the registry-pinned release)
 #
 # Env vars:
 #   JULIA_NUM_THREADS  threads Julia will use (default: 10)
 #   REPEATS            number of trials to run (default: 1)
 set -euo pipefail
 
-TARGET="${1:?usage: $0 <target> <label> [configfile]}"
-LABEL="${2:?usage: $0 <target> <label> [configfile]}"
-CONFIGFILE="${3:-configs/large-regions/config.yaml}"
+TARGET="${1:?usage: $0 <target> <label> [configfiles]}"
+LABEL="${2:?usage: $0 <target> <label> [configfiles]}"
+CONFIGFILES="${3:-configs/large-regions/config.yaml configs/ift-from-this-repo/config.yaml}"
+read -r -a CONFIGFILE_ARGS <<<"$CONFIGFILES"
 
 export JULIA_NUM_THREADS="${JULIA_NUM_THREADS:-10}"
 REPEATS="${REPEATS:-1}"
@@ -45,7 +48,7 @@ for ((i = 1; i <= REPEATS; i++)); do
 	(
 		cd "$SCRIPT_DIR"
 		/usr/bin/time -v -o "$TIME_LOG" \
-			snakemake -R tracking "$TARGET" --configfile "$CONFIGFILE"
+			snakemake -R tracking "$TARGET" --configfile "${CONFIGFILE_ARGS[@]}"
 	) 2>&1 | tee "$RUN_LOG"
 	EXIT_CODE=${PIPESTATUS[0]}
 	set -e
