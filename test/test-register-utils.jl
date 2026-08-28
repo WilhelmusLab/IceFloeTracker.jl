@@ -620,3 +620,35 @@
         ]
     end
 end
+
+@testitem "prior test angles" begin
+    using IceFloeTracker.Tracking: prior_test_angles, normalize_angle
+
+    prior = deg2rad(15.0)
+    window = deg2rad(30.0)
+    step = deg2rad(5.0)
+    angles = prior_test_angles(prior; window, step)
+
+    @testset "covers the prior and its 180° alias" begin
+        @test length(angles) == 26  # 13 per alias, no overlap
+        @test prior ∈ angles
+        @test any(a -> isapprox(a, normalize_angle(prior + π); atol=1e-12), angles)
+    end
+
+    @testset "all angles normalized to (-π, π]" begin
+        @test all(a -> -π < a <= π, angles)
+        wrapped = prior_test_angles(π - deg2rad(5.0); window, step)
+        @test all(a -> -π < a <= π, wrapped)
+    end
+
+    @testset "every angle lies within the window of an alias" begin
+        distance(a, b) = abs(rem2pi(a - b, RoundNearest))
+        @test all(
+            a -> min(distance(a, prior), distance(a, prior + π)) <= window + 1e-12, angles
+        )
+    end
+
+    @testset "tie order matches register_default_angles_rad: |angle| ascending, positive first" begin
+        @test issorted(angles; by=x -> (abs(x), -x))
+    end
+end
