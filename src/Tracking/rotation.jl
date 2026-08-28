@@ -105,9 +105,10 @@ end
 Calculate the angle and rotation rate between a measurement in a DataFrameRow `measurement`,
 and all the other rows in DataFrame `df`.
 
-- `image_column` is the column with the image to compare, 
+- `image_column` is the column with the image to compare,
 - `time_column` is the column with the timepoint of each observation,
 - `registration_function` is used to compare the two images and should return an angle.
+- `orientation_column`/`orientation_window`: see `get_rotation_measurements(df; ...)`.
 Returns a vector of `NamedTuple`s with one entry for each comparison,
 with the angle `theta_rad`, time difference `dt_sec` and rotation rate `omega_rad_per_sec`,
 and the two input rows for each comparison `row1` and `row2`.
@@ -118,10 +119,18 @@ function get_rotation_measurements(
     image_column::Symbol,
     time_column::Symbol,
     registration_function::Function=register,
+    orientation_column::Union{Symbol,Nothing}=nothing,
+    orientation_window::Real=deg2rad(30.0),
 )
     results = [
         get_rotation_measurements(
-            other_measurement, measurement; image_column, time_column, registration_function
+            other_measurement,
+            measurement;
+            image_column,
+            time_column,
+            registration_function,
+            orientation_column,
+            orientation_window,
         ) for other_measurement in eachrow(df)
     ]
     return results
@@ -131,6 +140,7 @@ end
 Calculate the angle and rotation rate between two observations in DataFrameRows `row1` and `row2`.
 `image_column` and `time_column` specify which columns to use from the DataFrameRows.
 `registration_function` is used to compare the two images and should return an angle.
+`orientation_column`/`orientation_window`: see `get_rotation_measurements(df; ...)`.
 Returns a NamedTuple with the angle `theta_rad`, time difference `dt_sec` and rotation rate `omega_rad_per_sec`,
 and the two input rows.
 """
@@ -140,13 +150,24 @@ function get_rotation_measurements(
     image_column::Symbol,
     time_column::Symbol,
     registration_function::Function=register,
+    orientation_column::Union{Symbol,Nothing}=nothing,
+    orientation_window::Real=deg2rad(30.0),
 )
+    if isnothing(orientation_column)
+        pairwise_registration_function = registration_function
+    else
+        # register's clockwise angle ≈ orientation(reference) - orientation(target), modulo π
+        prior = row1[orientation_column] - row2[orientation_column]
+        test_angles = prior_test_angles(prior; window=orientation_window)
+        pairwise_registration_function =
+            (image1, image2) -> registration_function(image1, image2; test_angles)
+    end
     result = get_rotation_measurements(
         row1[image_column],
         row2[image_column],
         row1[time_column],
         row2[time_column];
-        registration_function,
+        registration_function=pairwise_registration_function,
     )
 
     combined_result = merge(result, (; row1, row2))
