@@ -165,9 +165,33 @@ ensuring that no angles are repeated (since -π rad == π rad),
 and ordered so that smaller absolute angles which are positive will be returned in the event of a tie in the shape difference.
 """
 register_default_angles_rad = sort(
-    reverse(range(; start=(-π), stop=π, step=π / 36)[1:(end - 1)]); by=abs
+    reverse(range(; start=(-π), stop=π, step=π / 36)[1:(end-1)]); by=abs
 )
+# normalize to (-π, π], the convention of register_default_angles_rad
+function normalize_angle(θ)
+    θn = rem2pi(θ, RoundNearest)
+    return θn == -π ? oftype(θn, π) : θn
+end
 
+"""
+    prior_test_angles(prior_rad; window=deg2rad(30.0), step=π / 36)
+
+Build registration test angles concentrated around a prior rotation estimate `prior_rad`
+(in radians, in the convention of `imrotate_bin_clockwise_radians`) and its 180° alias
+`prior_rad + π`, since priors derived from image-moment orientations are only defined modulo π.
+Angles are normalized to (-π, π] and ordered so that, in the event of a tie in the shape
+difference, smaller absolute angles which are positive are preferred, matching
+`register_default_angles_rad`.
+"""
+function prior_test_angles(prior_rad::Real; window::Real=deg2rad(30.0), step::Real=π / 36)
+    offsets = (-window):step:window
+    angles = [
+        normalize_angle(alias + offset) for alias in (prior_rad, prior_rad + π) for
+        offset in offsets
+    ]
+    unique!(angles)
+    return sort!(angles; by=x -> (abs(x), -x))
+end
 """
     register(
         im_reference,
@@ -179,7 +203,7 @@ register_default_angles_rad = sort(
 Finds the image rotation angle in `test_angles` which minimizes the shape difference between `im_reference` and `im_target`.
 The default test angles are shown in `register_default_angles_rad`.
 Use `imrotate_function=imrotate_bin_<clockwise|counterclockwise>_<radians|degrees>` to get angles <clockwise|counterclockwise> in <radians|degrees>.
-""" # TODO: consider a more descriptive name; this only aligns single boolean shapes.
+"""
 function register(
     im_reference,
     im_target;
