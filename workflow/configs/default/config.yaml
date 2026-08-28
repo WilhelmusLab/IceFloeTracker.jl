@@ -3,9 +3,9 @@
 #--------------------------------------------------
 
 IFT: julia --project=.julia
-FSDPROC: "pipx run --spec git+https://github.com/WilhelmusLab/ebseg@v1.0.1 fsdproc"
-PASS_TIME: "pipx run --spec git+https://github.com/WilhelmusLab/satellite-overpass-identification-tool@v3.3.0 satellite-overpass-identification-tool"
-LOADER: "pipx run --spec git+https://github.com/brown-ccv/earthdata-downloader@v1.1.0 earthdata-downloader load"
+FSDPROC: "uvx --from git+https://github.com/WilhelmusLab/ebseg@v1.0.1 fsdproc"
+PASS_TIME: "uvx --from git+https://github.com/WilhelmusLab/satellite-overpass-identification-tool@v3.3.0 satellite-overpass-identification-tool"
+LOADER: "uvx --from git+https://github.com/brown-ccv/earthdata-downloader@v1.1.0 earthdata-downloader load"
 
 #--------------------------------------------------
 # Config files

@@ -4,6 +4,4 @@ set -xeuo pipefail
 sudo apt-get update
 sudo apt-get install -y libgl1 libgdal-dev libglib2.0-0
 
-# Set up Snakemake and tools needed in the snakemake workflow
-pipx install snakemake
-pipx inject snakemake pyproj pandas
+uv tool install --upgrade --with pyproj --with pandas snakemake
