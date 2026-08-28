@@ -33,7 +33,7 @@ function compute_centroid(im::AbstractArray{Bool}; rounded=false)
         end
     end
 
-    x0, y0 = sum(xi) / R, sum(yi) / R
+    x0, y0 = xi / R, yi / R
     rounded && return round(Int32, x0), round(Int32, y0)
     return x0, y0
 end
