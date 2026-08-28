@@ -24,7 +24,7 @@ nearest integer.
 function compute_centroid(im::AbstractArray{Bool}; rounded=false)
     xi = 0
     yi = 0
-    R = sum(im .> 0)
+    R = count(im)
     for idx in CartesianIndices(im)
         if im[idx] > 0
             ii, jj = Tuple(idx)
