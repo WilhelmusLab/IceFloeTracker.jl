@@ -203,7 +203,10 @@ function floe_tracker(
 
             candidate_pair_tables = DataFrame[]
             for floe in eachrow(trajectory_heads)
-                candidates_subset = deepcopy(candidates)
+                # copy (not deepcopy): the filters add/remove columns and rows on the
+                # copy but never mutate row elements like masks or psi vectors, so
+                # sharing element references is safe and skips copying every mask
+                candidates_subset = copy(candidates)
                 filter_function(floe, candidates_subset)
                 nrow(candidates_subset) > 0 && begin
                     candidates_subset[!, :head_uuid] .= floe.uuid
