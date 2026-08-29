@@ -211,7 +211,7 @@ function floe_tracker(
                 nrow(candidates_subset) > 0 && begin
                     candidates_subset[!, :head_uuid] .= floe.uuid
                     candidates_subset[!, :trajectory_uuid] .= floe.trajectory_uuid
-                    append!(candidate_pairs, eachrow(candidates_subset))
+                    push!(candidate_pair_tables, candidates_subset)
                 end
             end
 
