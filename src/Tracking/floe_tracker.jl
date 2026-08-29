@@ -214,6 +214,10 @@ function floe_tracker(
                     push!(candidate_pair_tables, candidates_subset)
                 end
             end
+            # empty init keeps the no-candidates case a plain empty DataFrame
+            candidate_pairs = reduce(
+                vcat, candidate_pair_tables; init=DataFrame(), cols=:union
+            )
 
             # matching function will find best pairs (head_uuid, uuid)
             # and ensure that all pairs are unique
