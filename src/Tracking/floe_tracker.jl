@@ -6,7 +6,7 @@ import ..Segmentation: regionprops_table
 abstract type AbstractTracker end
 
 """
-    FloeTracker(    
+    FloeTracker(
         filter_function::AbstractFloeFilterFunction
         matching_function::AbstractFloeMatchingFunction
         minimum_area::Real = 100
@@ -17,19 +17,19 @@ abstract type AbstractTracker end
         segmented_images::Vector{<:Union{SegmentedImage,Matrix{Int64}}},
         image_times::Vector{DateTime}
     )
-    
+
 Track ice floes over multiple observations.
 
-The FloeTracker functor initializes the floe tracking function by setting the `filter_function` 
+The FloeTracker functor initializes the floe tracking function by setting the `filter_function`
 (see  [`FilterFunction`](@ref)) and the `matching_function` (e.g., ['MinimumWeightMatchingFunction'](@ref)),
-and basic filter parameters for the area range and maximum time step. 
+and basic filter parameters for the area range and maximum time step.
 
-Trajectories are built as follows:  
+Trajectories are built as follows:
 - Assume the floes detected in observation 1 are trajectories of length 1.
 - For each subsequent observation at time `t`:
 - Determine the latest observation for each trajectory -- these are the "current trajectory heads".
 - Select the subset of trajectory heads observed within the window `maximum_time_step, t`
-- Apply the filter function in order to determine possible floe pairings 
+- Apply the filter function in order to determine possible floe pairings
 - Apply the matching function to produce unique pairs of floes
 - Update the trajectories to include the newly paired floes
 - Add all unmatched floes as heads for new trajectories.
@@ -50,7 +50,7 @@ julia> tracker = FloeTracker(filter_function=FilterFunction(), matching_function
 ```
 
 Once the tracker is defined, it can be run on a list of either SegmentedImages (or labeled image indexmaps) and
-a list of corresponding observation times. As a simple toy example, we can use labeled blocks. We can't expect 
+a list of corresponding observation times. As a simple toy example, we can use labeled blocks. We can't expect
 shapes to have consistent labels across images before tracking, so we'll intentionally mislabel them. We also need
 to provide observation times. The default thresholds are time-step dependent, so we choose a short time step. We also
 need to set the minimum size to accommodate the toy example.
@@ -69,8 +69,8 @@ julia> tracked_floes = tracker([A, B], times)
 
 julia> tracked_floes[:, ["ID", "label", "passtime"]]
 8×3 DataFrame
-Row │ ID     label  passtime            
-    │ Int64  Int64  DateTime            
+Row │ ID     label  passtime
+    │ Int64  Int64  DateTime
 ─────┼───────────────────────────────────
 1 │     1      2  2025-05-01T11:00:00
 2 │     1      3  2025-05-01T13:00:00
@@ -149,8 +149,8 @@ Lower-level function for tracking from an already-existing property table. See t
 A DataFrame with the above columns, plus extra columns:
 - columns added by the filter function, such as similarity measures
 - `head_uuid`, the floe which was best matched by this floe.
-- Trajectories are identified by: 
-  - a unique identifier `ID` and the 
+- Trajectories are identified by:
+  - a unique identifier `ID` and the
   - UUID of the trajectory, `trajectory_uuid`.
 
 Note: the props dataframes are modified in place.
@@ -179,7 +179,7 @@ function floe_tracker(
     trajectories = props[init_idx]
     _start_new_trajectory!(trajectories)
 
-    for candidates in props[(init_idx + 1):end]
+    for candidates in props[(init_idx+1):end]
         # Note: assumes each property table comes from a single observation time!
         nrow(candidates) > 0 && begin
             trajectory_heads = _get_trajectory_heads(
