@@ -356,6 +356,47 @@ for larger shapes.
     minimum_area = 4
 end
 
+"""
+    _count_pixels_in_hull(mask, chull)
+
+Count the pixels of `mask` that lie inside the convex hull `chull`.
+
+Foreground pixels are counted directly; background pixels are counted when they fall
+inside the hull polygon, tested by requiring a non-negative cross product against every
+hull edge (hull vertices must be ordered consistently, as returned by `convexhull`).
+`mask` and `chull` must be in the same coordinate system.
+
+Serves as a function barrier: `_convexhull_or_nothing` returns a `Union` type, so
+keeping this loop in a typed callee avoids dynamic dispatch per pixel.
+"""
+function _count_pixels_in_hull(mask::AbstractMatrix{Bool}, chull::Vector{<:CartesianIndex})
+    N = length(chull)
+    count_inside = 0
+    for p in CartesianIndices(mask)
+        if mask[p]
+            count_inside += 1
+            continue
+        end
+        xi, yi = Tuple(p)
+        inside = true
+        for j in 1:N
+            # (x0,y0) -> (x1,y1): consecutive hull vertices spanning one polygon
+            # edge, wrapping around at N; coordinates are (row, col)
+            x0, y0 = Tuple(chull[j])
+            x1, y1 = Tuple(chull[(j%N)+1])
+            # cross product of the edge vector with the pixel offset;
+            # negative means the pixel is on the outside of this hull edge
+            edge_cross_product = (yi - y0) * (x1 - x0) - (xi - x0) * (y1 - y0)
+            if edge_cross_product < 0
+                inside = false
+                break
+            end
+        end
+        inside && (count_inside += 1)
+    end
+    return count_inside
+end
+
 function (f::PixelConvexArea)(A)
     mx = maximum(A)
     convex_areas = zeros(Float64, 0:mx)
@@ -379,21 +420,7 @@ function (f::PixelConvexArea)(A)
             continue
         end
 
-        N = length(chull)
-        x = getindex.(bboxes[i], 1)
-        y = getindex.(bboxes[i], 2)
-
-        for idx in eachindex(x)
-            xi, yi = x[idx], y[idx]
-            A[xi, yi] .== i && (convex_areas[i] += 1, continue)
-            checkvals = zeros(N)
-            for j in 1:N
-                x0, y0 = Tuple(chull[j])
-                x1, y1 = Tuple(chull[(j % N) + 1])
-                checkvals[j] = (yi - y0) * (x1 - x0) - (xi - x0) * (y1 - y0)
-            end
-            all(checkvals .>= 0) && (convex_areas[i] += 1)
-        end
+        convex_areas[i] = _count_pixels_in_hull(mask, chull)
     end
     return convex_areas
 end
