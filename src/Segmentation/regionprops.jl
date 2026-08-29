@@ -311,6 +311,7 @@ end
 function (f::PolygonConvexArea)(A)
     mx = maximum(A)
     areas = component_lengths(A)
+    bboxes = component_boxes(A)
 
     convex_areas = zeros(Float64, 0:mx)
     for i in unique(A)
@@ -320,7 +321,10 @@ function (f::PolygonConvexArea)(A)
             continue
         end
 
-        chull = _convexhull_or_nothing(A .== i)
+        # crop to the label's bbox instead of scanning the full image per label;
+        # hull coords come out bbox-local, which is fine: the shoelace sum only
+        # depends on vertex differences, so translation leaves the area unchanged
+        chull = _convexhull_or_nothing(A[bboxes[i]] .== i)
         if isnothing(chull)
             convex_areas[i] = NaN
             continue
