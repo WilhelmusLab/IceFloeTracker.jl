@@ -168,9 +168,13 @@ julia> masks[1]
  1  1
 ```
 """
-function component_floes(indexmap; minimum_area=1)
-    labels = unique(indexmap)
-    boxes = component_boxes(indexmap)
+function component_floes(
+    indexmap;
+    minimum_area=1,
+    labels=unique(indexmap),
+    boxes=component_boxes(indexmap),
+    areas=component_lengths(indexmap),
+)
     mn = minimum(indexmap)
     if !(mn == 0 || mn == 1)
         throw(
@@ -179,7 +183,6 @@ function component_floes(indexmap; minimum_area=1)
             ),
         )
     end
-    areas = component_lengths(indexmap)
     floe_masks = Dict(
         i => indexmap[boxes[i]] .== i for i in labels if areas[i] > minimum_area
     )
@@ -193,9 +196,10 @@ Algorithm options = "benkrid_crookes" (only option currently, will add crofton i
 Defaults to using connectivity 4.
 """
 function component_perimeters(
-    indexmap; algorithm::PerimeterEstimationAlgorithm=BenkridCrookes()
+    indexmap;
+    algorithm::PerimeterEstimationAlgorithm=BenkridCrookes(),
+    masks=component_floes(indexmap),
 )
-    masks = component_floes(indexmap)
     perims = Dict(
         label => (label == 0 ? 0 : algorithm(masks[label])) for
         label in keys(masks) if prod(size(masks[label])) > 1
@@ -267,7 +271,11 @@ while the pixel method uses a point-in-pixel calculation to determine if pixels 
 convex hull. In general the polygon area will be smaller than the pixel area.
 """
 function component_convex_areas(
-    A; algorithm::ConvexAreaEstimationAlgorithm=PixelConvexArea()
+    A;
+    algorithm::ConvexAreaEstimationAlgorithm=PixelConvexArea(),
+    areas=component_lengths(A),
+    bboxes=component_boxes(A),
+    labels=unique(A),
 )
     mn = minimum(A)
 
@@ -277,7 +285,7 @@ function component_convex_areas(
         ),
     )
 
-    return algorithm(A)
+    return algorithm(A, areas, bboxes, labels)
 end
 
 """
@@ -309,12 +317,14 @@ for larger shapes.
 end
 
 function (f::PolygonConvexArea)(A)
+    return f(A, component_lengths(A), component_boxes(A), unique(A))
+end
+
+function (f::PolygonConvexArea)(A, areas, bboxes, labels)
     mx = maximum(A)
-    areas = component_lengths(A)
-    bboxes = component_boxes(A)
 
     convex_areas = zeros(Float64, 0:mx)
-    for i in unique(A)
+    for i in labels
         # treat convex area background and too-small objects as undefined
         if (i == 0) || (areas[i] < f.minimum_area)
             convex_areas[i] = NaN
@@ -398,11 +408,12 @@ function _count_pixels_in_hull(mask::AbstractMatrix{Bool}, chull::Vector{<:Carte
 end
 
 function (f::PixelConvexArea)(A)
+    return f(A, component_lengths(A), component_boxes(A), unique(A))
+end
+
+function (f::PixelConvexArea)(A, areas, bboxes, labels)
     mx = maximum(A)
     convex_areas = zeros(Float64, 0:mx)
-    areas = component_lengths(A)
-    bboxes = component_boxes(A)
-    labels = unique(A)
     for i in labels
         # treat convex area background and too-small objects as undefined
         if i == 0 || areas[i] < f.minimum_area
@@ -606,10 +617,17 @@ function regionprops(
     # Begin by extracting the set of labels that meet the minimum area criterion
     # We also get a sorted list of image labels, so all the dictionary entries can
     # be placed in the same order.
+    # These per-image passes (lengths, unique, boxes) are shared by all property
+    # paths below instead of being recomputed by each helper.
     areas = component_lengths(labels)
-    img_labels = unique(labels)
-    img_labels = img_labels[img_labels .!= 0]
-    sort!(img_labels)
+    all_labels = unique(labels)
+    needs_bboxes =
+        :bbox ∈ properties ||
+        :perimeter ∈ properties ||
+        :convex_area ∈ properties ||
+        :mask ∈ properties
+    bboxes_all = needs_bboxes ? component_boxes(labels) : nothing
+    img_labels = sort(all_labels[all_labels .!= 0])
     img_labels = img_labels[[areas[s] > minimum_area for s in img_labels]]
 
     :label ∈ properties && push!(data, :label => img_labels)
@@ -627,7 +645,7 @@ function regionprops(
         :orientation ∈ properties,
     ])
     compute_moments && begin
-        data_moments = _component_moment_measures(labels, img_labels)
+        data_moments = _component_moment_measures(labels, img_labels; areas)
         :centroid ∈ properties && begin
             push!(data, :row_centroid => data_moments[:row_centroid])
             push!(data, :col_centroid => data_moments[:col_centroid])
@@ -642,8 +660,7 @@ function regionprops(
 
     :bbox ∈ properties && begin
         push!(data, :min_row => Int[], :max_row => Int[], :min_col => Int[], :max_col => Int[])
-        bboxes_init = component_boxes(labels)
-        bboxes = _get_bounds.(bboxes_init[s] for s in img_labels)
+        bboxes = _get_bounds.(bboxes_all[s] for s in img_labels)
         for (min_row, max_row, min_col, max_col) in bboxes
             push!(data[:min_row], min_row)
             push!(data[:max_row], max_row)
@@ -653,18 +670,33 @@ function regionprops(
     end
 
     :perimeter ∈ properties && begin
-        floe_perims = component_perimeters(labels; algorithm=perimeter_algorithm)
+        perimeter_masks = component_floes(labels; labels=all_labels, boxes=bboxes_all, areas)
+        floe_perims = component_perimeters(
+            labels; algorithm=perimeter_algorithm, masks=perimeter_masks
+        )
         push!(data, :perimeter => map(s -> floe_perims[s], img_labels))
     end
 
     :convex_area ∈ properties && begin
-        convex_areas = component_convex_areas(labels; algorithm=convex_area_algorithm)
+        convex_areas = component_convex_areas(
+            labels;
+            algorithm=convex_area_algorithm,
+            areas,
+            bboxes=bboxes_all,
+            labels=all_labels,
+        )
         push!(data, :convex_area => map(s -> convex_areas[s], img_labels))
     end
 
     # psi-s needs masks, so this can get called first
     :mask ∈ properties && begin
-        floe_masks = component_floes(labels; minimum_area=minimum_area)
+        floe_masks = component_floes(
+            labels;
+            minimum_area=minimum_area,
+            labels=all_labels,
+            boxes=bboxes_all,
+            areas,
+        )
         push!(data, :mask => map(s -> floe_masks[s], img_labels))
     end
 
@@ -719,7 +751,7 @@ a dictionary
 - Dictionary with entries "row_centroid", "col_centroid", "major_axis_length", "minor_axis_length",
 and "orientation" where each entry is a vector ordered by label_list.
 """
-function _component_moment_measures(labels, label_list)
+function _component_moment_measures(labels, label_list; areas=component_lengths(labels))
     data = Dict(
         :row_centroid=>[],
         :col_centroid=>[],
@@ -728,7 +760,6 @@ function _component_moment_measures(labels, label_list)
         :orientation=>[],
     )
     centroids = component_centroids(labels)
-    areas = component_lengths(labels)
     indices = component_indices(CartesianIndex, labels)
 
     row_centroid = first.(centroids)
