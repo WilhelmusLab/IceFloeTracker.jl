@@ -99,11 +99,26 @@ function (t::FloeTracker)(
     segmented_images::Vector{<:Union{SegmentedImage,Matrix{Int64}}},
     image_times::Vector{DateTime},
 )
-    props = regionprops_table.(segmented_images)
+    # request :mask here so the cropped floe masks reuse regionprops' shared
+    # component-metadata pass instead of a separate add_floemasks! recomputation
+    props = regionprops_table.(
+        segmented_images;
+        properties=[
+            :label,
+            :centroid,
+            :area,
+            :major_axis_length,
+            :minor_axis_length,
+            :convex_area,
+            :bbox,
+            :perimeter,
+            :orientation,
+            :mask,
+        ],
+    )
     add_uuids!.(props)
     !issorted(image_times) && @warn "Passtimes are not in ascending order."
     add_passtimes!.(props, image_times) # TODO: Change function name to image_times
-    add_floemasks!.(props, segmented_images)
     add_ψs!.(props)
 
     tracking_results = floe_tracker(
