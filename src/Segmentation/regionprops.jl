@@ -252,7 +252,7 @@ function (f::BenkridCrookes)(shape_array)
     results = conv(e, conv_arr; algorithm=:direct)
 
     # Count instances of boundary types and multiply to get the perimeter
-    val_counts = Dict()
+    val_counts = Dict{eltype(results),Int}()
     for val in vec(results)
         val_counts[val] = get(val_counts, val, 0) + 1
     end
