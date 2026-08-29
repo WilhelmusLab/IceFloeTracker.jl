@@ -65,7 +65,7 @@ end
 """
     convertcentroid!(propdf, latlondata)
 
-Convert the centroid coordinates from row and column to latitude and longitude. 
+Convert the centroid coordinates from row and column to latitude and longitude.
 Additionally, add columns `x` and `y` with the pixel coordinates of the centroid.
 """
 function convertcentroid!(propdf, latlondata)
@@ -206,10 +206,10 @@ end
 # TODO: Test and implement correction factor (multiply B-K perimeter by 0.95 if larger than some factor.)
 # TODO: Implement the crofton perimeter algorithm
 """BenkridCrookes(connectivity=4)
-   
+
 Functor producing a BenkridCrookes PerimeterEstimationAlgorithm. The connectivity
 used for the erosion is the only parameter. The algorithm uses strel_diamond((3,3)) for 4-connectivity and
-strel_box((3,3)) for 8-connectivity. The resulting function operates on a binary array, which 
+strel_box((3,3)) for 8-connectivity. The resulting function operates on a binary array, which
 is assumed to contain a single object.
 
 # Examples
@@ -230,7 +230,7 @@ end
 function (f::BenkridCrookes)(shape_array)
     f.connectivity == 4 ? (strel = strel_diamond((3, 3))) : (strel = strel_box((3, 3)))
     # Get border using the strel
-    # Shape needs to have a border of zeros for erode to work here    
+    # Shape needs to have a border of zeros for erode to work here
     n, m = size(shape_array)
     mpad = padarray(shape_array, Fill(0, (1, 1)))
     epad = mpad .- erode(mpad, strel)
@@ -262,7 +262,7 @@ end
 """component_convex_area(A; algorithm=PixelConvexArea()")
 
 Compute the convex area of labeled regions. Two methods available: "PixelConvexArea" and "PolygonConvexArea".
-The polygon method uses Green's theorem to find the area of a polygon through its line integral, 
+The polygon method uses Green's theorem to find the area of a polygon through its line integral,
 while the pixel method uses a point-in-pixel calculation to determine if pixels are inside the
 convex hull. In general the polygon area will be smaller than the pixel area.
 """
@@ -290,7 +290,7 @@ function _convexhull_or_nothing(img::AbstractMatrix{Bool})
         return convexhull(img)
     catch e
         if e isa ErrorException &&
-            sprint(showerror, e) == "Not enough points to compute convex hull."
+           sprint(showerror, e) == "Not enough points to compute convex hull."
             return nothing
         end
         rethrow()
@@ -331,7 +331,7 @@ function (f::PolygonConvexArea)(A)
         ca = 0
         for j in 1:N
             x0, y0 = Tuple(chull[j])
-            x1, y1 = Tuple(chull[(j % N) + 1])
+            x1, y1 = Tuple(chull[(j%N)+1])
             ca += x0 * y1 - y0 * x1
         end
         ca *= 0.5
@@ -395,7 +395,7 @@ end
 
 Compute measures of labeled regions in label_img and return as a DataFrame. Optionally, include an
 extra image or array associated with the labels.
-        
+
 # Arguments
 - `label_img`: Image with the labeled objects of interest. May be an integer array or a SegmentedImage.
 - `intensity_img`: (Optional) Used for generating `extra_properties`, such as a color image to use for calculating mean color in segments.
@@ -440,8 +440,8 @@ julia> properties = ["area", "perimeter"]
 
  julia> regionprops_table(label_img, bw_img, properties = properties)
  4×2 DataFrame
-  Row │ area   perimeter 
-      │ Int32  Float64   
+  Row │ area   perimeter
+      │ Int32  Float64
  ─────┼──────────────────
     1 │    13   11.6213
     2 │     1    0.0
@@ -569,7 +569,7 @@ function regionprops(
     data = Dict{Symbol,Any}()
 
     # Begin by extracting the set of labels that meet the minimum area criterion
-    # We also get a sorted list of image labels, so all the dictionary entries can 
+    # We also get a sorted list of image labels, so all the dictionary entries can
     # be placed in the same order.
     areas = component_lengths(labels)
     img_labels = unique(labels)
@@ -681,7 +681,7 @@ a dictionary
 - label_list: List of labels to compute measures for
 
 # Outputs
-- Dictionary with entries "row_centroid", "col_centroid", "major_axis_length", "minor_axis_length", 
+- Dictionary with entries "row_centroid", "col_centroid", "major_axis_length", "minor_axis_length",
 and "orientation" where each entry is a vector ordered by label_list.
 """
 function _component_moment_measures(labels, label_list)
