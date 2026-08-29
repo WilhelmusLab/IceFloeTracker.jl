@@ -221,7 +221,7 @@ function floe_tracker(
 
             # matching function will find best pairs (head_uuid, uuid)
             # and ensure that all pairs are unique
-            matched_pairs = DataFrame(candidate_pairs) |> matching_function
+            matched_pairs = candidate_pairs |> matching_function
 
             # Get unmatched floes in day 2 (iterations > 2)
             # This should handle the case where there are no trajectory heads available
