@@ -201,7 +201,7 @@ function floe_tracker(
                 trajectories, candidates[1, :passtime], maximum_time_step
             )
 
-            candidate_pairs = []
+            candidate_pair_tables = DataFrame[]
             for floe in eachrow(trajectory_heads)
                 candidates_subset = deepcopy(candidates)
                 filter_function(floe, candidates_subset)
