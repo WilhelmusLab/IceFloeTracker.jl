@@ -261,7 +261,7 @@ end
 @testitem "bboxes for too-small regions" begin
     result = regionprops([0 0 0; 0 1 0; 0 0 0]; properties=[:bbox])
     @test result ==
-        Dict(:min_row => Int[], :max_row => Int[], :min_col => Int[], :max_col => Int[])
+          Dict(:min_row => Int[], :max_row => Int[], :min_col => Int[], :max_col => Int[])
 end
 @testitem "_count_pixels_in_hull: well-known shapes" begin
     import Images: convexhull
@@ -316,19 +316,17 @@ end
     end
 end
 
-@testitem "convex-area guard marks background and sub-minimum labels undefined" begin
-    import IceFloeTracker: PixelConvexArea, PolygonConvexArea
+@testitem "labeled-array validation rejects inputs without background-0 minimum" begin
+    using IceFloeTracker.Segmentation: component_floes, component_convex_areas
 
-    # regression guard for the operator-precedence bug where the background label
-    # fell through to a full convex-hull computation
-    labels = zeros(Int, 9, 9)
-    labels[3:7, 3:7] .= 1   # area 25: computed
-    labels[9, 9] = 2        # area 1 < minimum_area: undefined
+    starts_at_two = [2 2; 2 2]
+    has_negative = [0 1; -1 1]
 
-    @testset "$(nameof(typeof(alg)))" for alg in (PixelConvexArea(), PolygonConvexArea())
-        convex_areas = alg(labels)
-        @test isnan(convex_areas[0])
-        @test isnan(convex_areas[2])
-        @test !isnan(convex_areas[1])
-    end
+    @test_throws ArgumentError component_floes(starts_at_two)
+    @test_throws ArgumentError component_floes(has_negative)
+    @test_throws ArgumentError component_convex_areas(starts_at_two)
+    @test_throws ArgumentError component_convex_areas(has_negative)
+
+    # minimum of 1 (no background pixels) is explicitly allowed
+    @test component_floes([1 1; 1 1]) isa Dict
 end
