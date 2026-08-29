@@ -369,7 +369,11 @@ function (f::PixelConvexArea)(A)
             continue
         end
 
-        chull = _convexhull_or_nothing(A .== i)
+        # crop to the label's bbox instead of scanning the full image per label;
+        # hull and pixel coords are both bbox-local, and the containment test uses
+        # only coordinate differences, so translation does not change the count
+        mask = A[bboxes[i]] .== i
+        chull = _convexhull_or_nothing(mask)
         if isnothing(chull)
             convex_areas[i] = NaN
             continue
