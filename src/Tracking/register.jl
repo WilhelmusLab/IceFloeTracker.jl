@@ -167,10 +167,10 @@ and ordered so that smaller absolute angles which are positive will be returned 
 register_default_angles_rad = sort(
     reverse(range(; start=(-π), stop=π, step=π / 36)[1:(end-1)]); by=abs
 )
-# normalize to (-π, π], the convention of register_default_angles_rad
+# normalize to [-π, π), the convention of register_default_angles_rad
 function normalize_angle(θ)
     θn = rem2pi(θ, RoundNearest)
-    return θn == -π ? oftype(θn, π) : θn
+    return θn == π ? oftype(θn, -π) : θn
 end
 
 """
@@ -179,7 +179,7 @@ end
 Build registration test angles concentrated around a prior rotation estimate `prior_rad`
 (in radians, in the convention of `imrotate_bin_clockwise_radians`) and its 180° alias
 `prior_rad + π`, since priors derived from image-moment orientations are only defined modulo π.
-Angles are normalized to (-π, π] and ordered so that, in the event of a tie in the shape
+Angles are normalized to [-π, π) and ordered so that, in the event of a tie in the shape
 difference, smaller absolute angles which are positive are preferred, matching
 `register_default_angles_rad`.
 """
