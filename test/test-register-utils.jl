@@ -651,4 +651,21 @@ end
     @testset "tie order matches register_default_angles_rad: |angle| ascending, positive first" begin
         @test issorted(angles; by=x -> (abs(x), -x))
     end
+
+    @testset "prior always included even when window is not a multiple of step" begin
+        # This would fail with the old range-based offset construction
+        prior = deg2rad(15.0)
+        window = deg2rad(2.0)  # 2° is not a multiple of default 5° step
+        step = deg2rad(5.0)
+
+        angles = prior_test_angles(prior; window, step)
+
+        # Prior and its π alias must both be in the results
+        @test any(a -> isapprox(a, prior; atol=1e-12), angles)
+        @test any(a -> isapprox(a, normalize_angle(prior + π); atol=1e-12), angles)
+
+        # Verify with an even smaller window that still produces some angles
+        angles_small = prior_test_angles(prior; window=deg2rad(0.5), step=deg2rad(5.0))
+        @test any(a -> isapprox(a, prior; atol=1e-12), angles_small)
+    end
 end
