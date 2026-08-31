@@ -10,6 +10,7 @@ export addlatlon!,
     converttounits!,
     converttounits,
     ConvexAreaEstimationAlgorithm,
+    dist_morph_split,
     expand_labels,
     get_ice_peaks,
     get_relevant_set,
@@ -42,5 +43,6 @@ include("ice-detection-algorithms.jl")
 include("k-means-segmentation.jl")
 include("regionprops.jl")
 include("segmented-image-utilities.jl")
+include("floe-splitting.jl")
 
 end

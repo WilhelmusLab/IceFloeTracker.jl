@@ -30,6 +30,7 @@ import ..Preprocessing:
 import ..ImageUtils: get_tiles, imbrighten
 import ..Segmentation:
     component_perimeters,
+    dist_morph_split,
     expand_labels,
     get_relevant_set,
     kmeans_binarization,
@@ -141,7 +142,14 @@ adaptive_params = (window_size=400, percentage=0)
 cleanup_binary_params = (
     erosion_strel=strel_box((3, 3)), init_max_fill=100, conditional_max_fill=500
 )
-floe_splitting_params = (max_hole_fill=2000, max_distance=5, max_expand=3)
+floe_splitting_params = (
+    min_floe_size=100,
+    max_hole_fill=2000,
+    max_depth=20,
+    max_depth_ratio=0.5,
+    max_expand=1,
+    opening_strel=strel_box((3,3))
+)
 floe_filtering_params = (
     min_floe_size=100,
     min_cloudy_floe_size=1000,
@@ -272,7 +280,7 @@ function (s::Segment)(
     clean_split_label =
         r -> dist_morph_split(
             clean_binary_floes(r, prelim_ice_mask, cloud_mask; s.cleanup_binary_params...);
-            s.floe_splitting_params...,
+            # s.floe_splitting_params...,
         )
 
     kmeans_split_floes = clean_split_label(kmeans_result)
@@ -378,74 +386,6 @@ function clean_binary_floes(
     out[filled .&& .! clearborder(filled)] .= 0
 
     return out
-end
-
-"""
-    dist_morph_split(
-        binary_floes::BitMatrix;
-        min_floe_size::Int64=64,
-        max_hole_fill::Int64=2000,
-        max_distance::Int64=5,
-        max_expand::Int64=3,
-        strel=strel_disk(3)
-    )
-
-Method to split objects in a binary image using image morphology and the distance transform. The algorithm
-operates by calculating the distance transform, which computes the distance from each labeled pixel to the background.
-There are two steps: creating a ``pyramid'', then stepping down from the top of the pyramid and re-labeling or expanding
-shapes as needed.
-
-For each distance d up to `max_distance`, select pixels that are greater than that distance. Perform morphological opening,
-fill holes up to `max_hole_fill`, then label components. Each of these layers is a level in the pyramid.
-
-Then, starting from the highest level of the pyramid, check to see whether objects in the next layer down contain multiple
-objects in the current layer. If an object at layer ``d-1`` contains only object at layer ``d``, then keep the object at layer ``d-1``.
-Otherwise, expand the labels by `max_expand`, then intersect the expanded labels with the containing object at layer ``d-1``.
-
-After traversing the pyramid, relabel matrix, and remove any objects smaller than the `min_floe_size`.
-
-"""
-function dist_morph_split(
-    binary_floes::BitMatrix;
-    max_hole_fill::Int64=2000,
-    max_distance::Int64=5,
-    max_expand::Int64=3,
-    opening_strel=strel_disk(3),
-)
-    dist = distance_transform(feature_transform(.!binary_floes))
-    levels = Dict(0 => label_components(opening(dist .> 0, opening_strel))) # Initialize with one run of opening
-    ### Build pyramid - each size is the opened and filled thresholded image
-    for dist_threshold in 0:max_distance
-        markers = opening(dist .> dist_threshold, opening_strel)
-        markers .= .!imfill(.!markers, (0, max_hole_fill))
-        levels[dist_threshold] = label_components(markers)
-    end
-    final_labels = deepcopy(levels[max_distance])
-
-    ### Descend pyramid
-    for dist_threshold in max_distance:-1:1
-        # Get indices from level d-1
-        indices = component_indices(levels[dist_threshold - 1])
-
-        # Expand indices at level d
-        expanded = expand_labels(levels[dist_threshold], max_expand)
-        for L in keys(indices)
-            (L <= 0) && continue
-
-            matched_labels = unique(levels[dist_threshold][indices[L]])
-
-            # If intersection of the label at level
-            if (0 ∈ matched_labels) && (length(matched_labels) <= 2)
-                final_labels[indices[L]] .= L
-                continue
-            end
-            # Otherwise, expand the current level, and set the next level down to the expanded indices.
-            # May need to check the number of matched labels in the expanded image.
-            levels[dist_threshold - 1][indices[L]] .= expanded[indices[L]]
-            final_labels[indices[L]] .= expanded[indices[L]]
-        end
-    end
-    return label_components(final_labels)
 end
 
 # Helper function for creating a filtered version of the image indexmap
