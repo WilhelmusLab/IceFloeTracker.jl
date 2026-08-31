@@ -635,10 +635,10 @@ end
         @test any(a -> isapprox(a, normalize_angle(prior + π); atol=1e-12), angles)
     end
 
-    @testset "all angles normalized to (-π, π]" begin
-        @test all(a -> -π < a <= π, angles)
+    @testset "all angles normalized to [-π, π)" begin
+        @test all(a -> -π <= a < π, angles)
         wrapped = prior_test_angles(π - deg2rad(5.0); window, step)
-        @test all(a -> -π < a <= π, wrapped)
+        @test all(a -> -π <= a < π, wrapped)
     end
 
     @testset "every angle lies within the window of an alias" begin
