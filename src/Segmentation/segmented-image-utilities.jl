@@ -309,22 +309,28 @@ end
 
 
 """
-    get_relevant_set(df1, df2, labels1, labels2)
+    get_relevant_set(df1, df2, labels1, labels2; threshold=0.5)
 
 Find the relevant set for comparing two segmentation results.
 - df1, df2 = results of regionprops table
 - labels1, labels2 = image indexmaps
 
 The relevant set for a segmentation comparison set s in S in reference
-to object g in G is defined by
+to object g in G is defined by [1]
 
 1. centroid g in s
 2. centroid s in g
 3. area overlap greater than 50% of g
 4. area overlap greater than 50% of s
 
+We include a named argument `threshold` which defaults to 0.5 to allow a
+stricter or more lenient threshold.
+
+[1] Clinton, N., Holt, A., Scarborough, J., Yan, L., & Gong, P. (2010). Accuracy Assessment Measures for Object-based Image Segmentation Goodness. Photogrammetric Engineering & Remote Sensing, 76(3), 289–299. https://doi.org/10.14358/PERS.76.3.289
+
+
 """
-function get_relevant_set(df1, df2, labels1, labels2)
+function get_relevant_set(df1::DataFrame, df2::DataFrame, labels1::Matrix{Int64}, labels2::Matrix{Int64}; threshold=0.5)
     relevant_set = Dict{Int64,Vector{Int64}}()
     for floe in eachrow(df1)
         # select labels that are inside the bounding box for the floe
@@ -362,7 +368,7 @@ function get_relevant_set(df1, df2, labels1, labels2)
             gtmask = labels1[rmin:rmax, cmin:cmax] .== floe.label
             slmask = labels2[rmin:rmax, cmin:cmax] .== s_floe.label
             intersect_area = sum(gtmask .&& slmask)
-            if maximum([intersect_area / s_floe.area, intersect_area / floe.area]) > 0.5
+            if maximum([intersect_area / s_floe.area, intersect_area / floe.area]) > threshold
                 push!(relevant_set_labels, s_floe.label)
             end
         end

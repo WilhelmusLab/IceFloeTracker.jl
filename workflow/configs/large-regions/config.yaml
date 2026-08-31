@@ -3,4 +3,4 @@
 #--------------------------------------------------
 REGION_CSV: configs/large-regions/region.csv # relative to snakefile
 CASE_CSV: configs/large-regions/case.csv # relative to snakefile
-SATELLITES: ["aqua"]
+SATELLITES: ["aqua", "terra"]

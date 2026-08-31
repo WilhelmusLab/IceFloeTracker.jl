@@ -27,6 +27,7 @@ import ..Preprocessing:
     apply_cloudmask,
     apply_cloudmask!,
     Watkins2026CloudMask
+
 import ..ImageUtils: get_tiles, imbrighten
 import ..Segmentation:
     component_perimeters,
@@ -36,6 +37,7 @@ import ..Segmentation:
     tiled_adaptive_binarization,
     IceDetectionBrightnessPeaksMODIS721,
     IceDetectionBrightnessMidpoint,
+    PolygonConvexArea,
     regionprops_table,
     remove_small_segments!,
     remove_large_segments!,
@@ -67,9 +69,9 @@ unsharp_mask_params = (radius=50, amount=0.3, threshold=0.01)
 
 """
    Preprocess(
-        diffusion_algorithm = PeronaMalikDiffusion(λ=0.1, K=0.1, niters=5, g="exponential")
-        adapthisteq_params = (nbins=256, rblocks=8, cblocks=8, clip=0.99) # rblocks/cblocks not used yet -- add with CLAHE.jl
-        unsharp_mask_params = (radius=50, amount=0.2, threshold=0.01)
+        diffusion_algorithm = PeronaMalikDiffusion(λ=0.1, K=0.1, niters=7, g="exponential")
+        adapthisteq_params = (nbins=256, rblocks=4, cblocks=4, clip=1)
+        unsharp_mask_params = (radius=50, amount=0.3, threshold=0.01)
     )
     Preprocess()(img, cloudmask, landmask)
 
@@ -123,7 +125,7 @@ end
 coastal_buffer_structuring_element = strel_box((51, 51))
 cloud_mask_algorithm = Watkins2026CloudMask()
 preprocessing_algorithm = Preprocess()
-tile_size_pixels = 1200
+tile_size_pixels = 400
 min_tile_ice_pixel_count=300
 preliminary_ice_mask = IceDetectionBrightnessMidpoint(; minimum_reflectance=0.3)
 kmeans_params = (
@@ -141,44 +143,51 @@ adaptive_params = (window_size=400, percentage=0)
 cleanup_binary_params = (
     erosion_strel=strel_box((3, 3)), init_max_fill=100, conditional_max_fill=500
 )
-floe_splitting_params = (max_hole_fill=2000, max_distance=5, max_expand=3)
+floe_splitting_params = (
+    max_hole_fill=2000,
+    max_depth=20,
+    max_depth_ratio=0.5,
+    max_expand=1,
+    opening_strel=strel_box((3,3))
+)
 floe_filtering_params = (
     min_floe_size=100,
-    min_cloudy_floe_size=1000,
-    max_floe_size=50_000,
-    min_band_2_reflectance=0.4,
-    min_cloudy_band_2_reflectance=0.7,
-    cloud_frac_threshold=0.5,
+    max_floe_size=90_000,
+    boundary_radius=15,
     min_circularity=0.3,
-    min_cloudy_circularity=0.5,
+    min_solidity=0.7,
+    min_reflectance=0.4,
+    min_contrast=0.01,
+    min_probability=0.5,
 )
 floe_merging_params = (
-    distance_threshold_pixels=10, area_error_threshold=0.25, min_floe_size=100
+    max_distance_pixels=10,
+    max_error_area=0.25,
+    min_floe_size=100
 )
 
 """
     FSPipeline.Segment()
 
 Segmentation routine for identifying moderate to large floes in the Fram Strait.
-The image preprocessing is supplied as an function in the functor setup.
-
+The image preprocessing function needs to accept the true color image, land mask, and a list of tiles to process.
 
 # Parameters
 - `coastal_buffer_structuring_element::AbstractMatrix{Bool} = strel_box((51,51))`: Structuring element for the `create_landmask` function
 - `cloud_mask_algorithm = Watkins2025CloudMask()`: Cloud mask algorithm
 - `preprocessing_algorithm = Preprocess()`: Function to sharpen and equalize the truecolor image
-- `tile_size_pixels=1200`: Nominal tile size in pixels
+- `tile_size_pixels=400`: Nominal tile size in pixels
 - `min_tile_ice_pixel_count=300`: Smallest number of required sea ice pixels in tile
 - `preliminary_ice_mask = IceDetectionBrightnessMidpoint(minimum_reflectance=0.3)`: Function to use to identify likely ice pixels for filtering.
-- `kmeans_params = (k=4, maxiter=50, random_seed=45)`: Parameters for `kmeans_binarization`
-- `cluster_selection_algorithm = IceDetectionBrightnessPeaksMODIS721(
-    band_7_max=0.1,
-    possible_ice_threshold=0.3,
-    join_method="union",
-    minimum_prominence=0.01)`: Function to use to select a k-means cluster in the `kmeans_binarization` workflow
+- `kmeans_params = (k=4, maxiter=50, random_seed=45, cluster_selection_algorithm = IceDetectionBrightnessPeaksMODIS721(
+        band_7_max=0.1,
+        possible_ice_threshold=0.3,
+        join_method="union",
+        minimum_prominence=0.01)`: Settings for the `kmeans_binarization` workflow
 - `clean_binary_floes_params`: Parameters for the preliminary binary image cleanup
 - `floe_splitting_params`: Parameters for the `dist_morph_split` floe splitting algorithm
 - `floe_filtering_params`: Parameters for post-segmentation cleanup
+- `floe_merging_params`: Parameters for merging the two segmentation results.
 """
 @kwdef struct Segment <: IceFloeSegmentationAlgorithm
     coastal_buffer_structuring_element::AbstractMatrix{Bool} =
@@ -193,6 +202,7 @@ The image preprocessing is supplied as an function in the functor setup.
     cleanup_binary_params = cleanup_binary_params
     floe_splitting_params = floe_splitting_params
     floe_filtering_params = floe_filtering_params
+    floe_merging_params = floe_merging_params
 end
 
 function (s::Segment)(
@@ -211,9 +221,9 @@ function (s::Segment)(
     # the full range of image formats
     truecolor_image = float64.(RGB.(truecolor))
     falsecolor_image = float64.(RGB.(falsecolor))
-    landmask = landmask .> 0 # make sure it's a bitmatrix, in case it's passed as Gray
-    apply_landmask!(truecolor_image, landmask)
-    apply_landmask!(falsecolor_image, landmask)
+    land_mask = landmask .> 0 # make sure it's a bitmatrix, in case it's passed as Gray
+    apply_landmask!(truecolor_image, land_mask)
+    apply_landmask!(falsecolor_image, land_mask)
 
     n, m = size(truecolor_image)
     tile_size_pixels = s.tile_size_pixels
@@ -244,69 +254,50 @@ function (s::Segment)(
     filtered_tiles = filter(
         t -> sum(prelim_ice_mask[t...]) > s.min_tile_ice_pixel_count, filtered_tiles
     );
+    water_mask = .!(prelim_ice_mask .|| cloud_mask .|| land_mask)
 
     @info "Preprocessing truecolor image"
     preproc_gray = float64.(
-        s.preprocessing_algorithm(truecolor_image, landmask, filtered_tiles)
+        s.preprocessing_algorithm(truecolor_image, land_mask, filtered_tiles)
     );
 
-    @info "Binarization"
-    # We use the cloud mask in finding the bright floes - the bright floe cluster can't be cloud -
-    # and allow the k-means cluster to overlap with the cloud mask by using the preproc gray with
-    # only the landmask applied to it. Not applying the cloudmask to the kmeans result, though, means
-    # we need to be careful about the clouds.
+    @info "Segmentation"
+
+    adaptive_result = apply_landmask(
+        binarize(preproc_gray, AdaptiveThreshold(; s.adaptive_params...)) .> 0,
+        water_mask .|| land_mask
+    )
+
     kmeans_result = kmeans_binarization(
         preproc_gray, fc_masked, filtered_tiles; s.kmeans_params...
     )
-    adaptive_result = binarize(preproc_gray, AdaptiveThreshold(; s.adaptive_params...)) .> 0
 
-    # AdaptiveThreshold often has noise in large blank areas
-    apply_landmask!(adaptive_result, landmask)
-
-    # We also don't want to include artificially brightened regions, so
-    # we mask things that have already been classified as water.
-    apply_landmask!(adaptive_result, .!(prelim_ice_mask .|| cloud_mask))
-
-    @info "Splitting floes"
-
-    clean_split_label =
-        r -> dist_morph_split(
-            clean_binary_floes(r, prelim_ice_mask, cloud_mask; s.cleanup_binary_params...);
-            s.floe_splitting_params...,
-        )
-
-    kmeans_split_floes = clean_split_label(kmeans_result)
-    adaptive_split_floes = clean_split_label(adaptive_result)
-
-    # TBD: Filter floes based on the edge properties, colors
-
-    @info "Filtering floes"
-
-    filter_floes!(
-        kmeans_split_floes,
-        coastal_buffer_mask,
-        cloud_mask,
-        falsecolor_image;
-        s.floe_filtering_params...,
-    )
-    filter_floes!(
-        adaptive_split_floes,
-        coastal_buffer_mask,
-        cloud_mask,
-        falsecolor_image;
-        s.floe_filtering_params...,
+    clean_and_split(r) = dist_morph_split(
+            clean_binary_floes(
+                r, prelim_ice_mask, cloud_mask; s.cleanup_binary_params...
+            );
+        s.floe_splitting_params...,
     )
 
-    @info "Joining segmentation results"
-    final_floes = merge_floes(kmeans_split_floes, adaptive_split_floes, preproc_gray)
+    labeled_images = clean_and_split.([kmeans_result, adaptive_result])
+    
+    @info "Filter and merge"
+    # Update the filtering method so that the regionprops table is only called once. Now, it returns 
+    # a dataframe so that the merge floes can take two tuples as inputs.
+    filtered_floes = filter_floes.(labeled_images, [coastal_buffer_mask], [cloud_mask], [falsecolor_image]; s.floe_filtering_params...)
+    keep_labels!.(labeled_images, filtered_floes .|> r -> r.label)   
 
+    # TODO: Update merge floes to just use the properties in the filter floes table
+    final_floes = merge_floes(filtered_floes..., labeled_images...; s.floe_merging_params...)
+
+    # Remove any stray segments left over from the merge function
     remove_small_segments!(final_floes, s.floe_filtering_params.min_floe_size)
-    remove_large_segments!(final_floes, s.floe_filtering_params.max_floe_size)
-
+    
     # Re-label so there are no missing numbers in the component list
+
     final_floes .= label_components(final_floes)
 
-    # Return the original truecolor image, segmented
+    # Generate images with object-average colors
     segments_tc = SegmentedImage(truecolor_image, final_floes)
     segments_fc = SegmentedImage(falsecolor_image, final_floes)
 
@@ -323,8 +314,8 @@ function (s::Segment)(
             preprocessed=preproc_gray,
             kmeans_binarized=kmeans_result .> 0,
             adaptive_binarized=adaptive_result .> 0,
-            kmeans_floes=kmeans_split_floes .> 0,
-            adaptive_floes=adaptive_split_floes .> 0,
+            kmeans_floes=labeled_images[1] .> 0,
+            adaptive_floes=labeled_images[2] .> 0,
             final_floes=colorview_random,
             labels_map=final_floes,
             segment_mean_falsecolor=segment_mean_falsecolor,
@@ -408,32 +399,48 @@ After traversing the pyramid, relabel matrix, and remove any objects smaller tha
 function dist_morph_split(
     binary_floes::BitMatrix;
     max_hole_fill::Int64=2000,
-    max_distance::Int64=5,
+    max_depth::Int64=5,
+    max_depth_ratio::Real=0.3,
     max_expand::Int64=3,
     opening_strel=strel_disk(3),
 )
     dist = distance_transform(feature_transform(.!binary_floes))
-    levels = Dict(0 => label_components(opening(dist .> 0, opening_strel))) # Initialize with one run of opening
-    ### Build pyramid - each size is the opened and filled thresholded image
-    for dist_threshold in 0:max_distance
+    # Initialize with one run of opening
+    levels = Dict(0 => label_components(opening(dist .> 0, opening_strel)))
+
+    ### Build pyramid - each size is the opened and filled thresholded image for a given distance
+    for dist_threshold in 1:max_depth
         markers = opening(dist .> dist_threshold, opening_strel)
         markers .= .!imfill(.!markers, (0, max_hole_fill))
-        levels[dist_threshold] = label_components(markers)
+        labeled_markers = label_components(markers)
+        maximum(labeled_markers) == 0 && break
+
+        labels = filter(r -> r != 0, unique(labeled_markers))
+        indices = component_indices(labeled_markers)
+        
+        # check 1: Remove components with no intersection with the layer below
+        remove_list = _nonoverlapping_labels(levels[dist_threshold - 1], indices, labels)
+        _remove_labels!(labeled_markers, indices, remove_list)
+        filter!(r -> r ∉ remove_list, labels)
+
+        # check 2: Remove components which fail the max_depth_ratio to component maximum depth test
+        maximum_depths = Dict(L => maximum(dist[indices[L]]) for L in labels)
+        remove_list = [L for L ∈ labels if max_depth_ratio * maximum_depths[L] < dist_threshold]
+        _remove_labels!(labeled_markers, indices, remove_list)
+        levels[dist_threshold] = labeled_markers
     end
-    final_labels = deepcopy(levels[max_distance])
+    max_depth = maximum([d for d in keys(levels)])
+    final_labels = copy(levels[max_depth])
 
     ### Descend pyramid
-    for dist_threshold in max_distance:-1:1
+    for dist_threshold in max_depth:-1:1
         # Get indices from level d-1
         indices = component_indices(levels[dist_threshold - 1])
-
+        labels = filter(r -> r != 0, unique(levels[dist_threshold - 1]))
         # Expand indices at level d
         expanded = expand_labels(levels[dist_threshold], max_expand)
-        for L in keys(indices)
-            (L <= 0) && continue
-
+        for L in labels
             matched_labels = unique(levels[dist_threshold][indices[L]])
-
             # If intersection of the label at level
             if (0 ∈ matched_labels) && (length(matched_labels) <= 2)
                 final_labels[indices[L]] .= L
@@ -449,105 +456,169 @@ function dist_morph_split(
 end
 
 # Helper function for creating a filtered version of the image indexmap
-"""assign_labels(img_indexmap, labels_list)
+# TODO: Unify approach with remove_small_segments
+"""
+    keep_labels!(img_indexmap, labels_list)
 
-Given an image indexmap `img` and a `labels_list`, create a new labeled
-image using only the values in the list.
+Given an image indexmap `img_indexmap` and a list of labels `labels_list`, 
+remove any segments not in the list.
 
 """
-function assign_labels(img_indexmap, labels_list)
-    out = zeros(Int64, size(img_indexmap))
+function keep_labels!(img_indexmap, labels_list)
     indices = component_indices(img_indexmap)
-    for L in intersect(labels_list, keys(indices))
-        out[indices[L]] .= L
+    labels = filter(r -> r > 0, unique(img_indexmap))
+    for L in labels
+        if L ∉ labels_list
+            img_indexmap[indices[L]] .= 0
+        end
     end
-    return out
 end
 
-function filter_floes!(
+# TODO: dmw -- This function can be made much shorter by adding segment mean color, circularity, potentially boundary contrast to the region props function 
+"""
+    filter_floes(
+        img_indexmap,
+        coastal_buffer_mask,
+        cloud_mask,
+        falsecolor_image;
+        min_floe_size=100,
+        max_floe_size=90_000,
+        expand_radius=15,
+        filter_function=LogisticFilterFunction # needs to operate on a dataframe
+)
+
+Filter the image indexmap using object-wise properties. Removes objects which overlap the coastal buffer mask,
+exceed the size limits, and have too-low circularity. Then, we apply the filter function to the dataframe
+which by default uses a pre-fitted logistic regression function. Returns a dataframe with floe properties.
+
+"""
+function filter_floes(
     img_indexmap,
     coastal_buffer_mask,
     cloud_mask,
     falsecolor_image;
-    min_floe_size=300,
-    min_cloudy_floe_size=1000,
-    max_floe_size=50_000,
-    min_band_2_reflectance=0.4,
-    min_cloudy_band_2_reflectance=0.7,
-    cloud_frac_threshold=0.5,
+    min_floe_size=100,
+    max_floe_size=90_000,
+    boundary_radius=15,
+    min_reflectance=0.4,
     min_circularity=0.3,
-    min_cloudy_circularity=0.5,
+    min_solidity=0.7,
+    min_contrast=0.01,
+    filter_function=LogisticRegressionFilter,
+    min_probability=0.5,
 )
-    overlap = unique(img_indexmap[coastal_buffer_mask])
-    indices = component_indices(img_indexmap)
+    out = copy(img_indexmap)
+    # 1. Remove objects which overlap the coastal mask
+    overlap = unique(out[coastal_buffer_mask])
+    indices = component_indices(out)
     for L in overlap
-        img_indexmap[indices[L]] .= 0
+        out[indices[L]] .= 0
     end
 
-    # Remove floes outside the specified bounds
-    remove_small_segments!(img_indexmap, min_floe_size)
-    remove_large_segments!(img_indexmap, max_floe_size)
+    # 2. Remove objects outside the specified size bounds prior to extracting features.
+    # This is important since the small features can cause problems in some feature
+    # descriptors.
+    remove_small_segments!(out, min_floe_size)
+    remove_large_segments!(out, max_floe_size)
 
-    areas = component_lengths(img_indexmap)
-    perims = component_perimeters(img_indexmap)
-    labels = filter(r -> r > 0, unique(img_indexmap))
-    circ = Dict(L => 4 * π * areas[L] / perims[L]^2 for L in labels)
+    # 3. Get object-wise properties
+    results_df = regionprops_table(out;
+        properties=[:label, :area, :perimeter, :bbox, :centroid, :convex_area,
+                    :major_axis_length, :minor_axis_length, :orientation],
+        convex_area_algorithm=PolygonConvexArea()
+    )
+    # Return blank image if no floes remain
+    nrow(results_df) == 0 && return results_df
 
-    b2_means = segment_mean(SegmentedImage(green.(falsecolor_image), img_indexmap))
-    cloud_fractions = segment_mean(SegmentedImage(cloud_mask, img_indexmap))
+    results_df[:, :length_scale] = results_df[:, :area] .^ 0.5
+    results_df[:, :circularity] = 4 * π * results_df[:, :area] ./ results_df[:, :perimeter] .^ 2
+    subset!(results_df, :circularity => r -> r .> min_circularity)
+    results_df[:, :solidity] = results_df[:, :area] ./ results_df[:, :convex_area]
+    subset!(results_df, :solidity => r -> r .> min_solidity)
+    nrow(results_df) == 0 && return results_df
 
-    for L in unique(img_indexmap)
-        L <= 0 && continue
-        if cloud_fractions[L] > cloud_frac_threshold
-            if areas[L] < min_cloudy_floe_size
-                img_indexmap[indices[L]] .= 0
-            elseif b2_means[L] < min_cloudy_band_2_reflectance
-                img_indexmap[indices[L]] .= 0
-            elseif circ[L] < min_cloudy_circularity
-                img_indexmap[indices[L]] .= 0
-            end
-            continue
-        end
-
-        if b2_means[L] < min_band_2_reflectance
-            img_indexmap[indices[L]] .= 0
-        elseif circ[L] < min_circularity
-            img_indexmap[indices[L]] .= 0
+    results_df[:, :cloud_fraction] =  (r -> mean(cloud_mask[indices[r]])).(results_df[:, :label])
+    
+    # mean reflectance
+    segment_mean_reflectance = segment_mean(SegmentedImage(falsecolor_image, out))
+    b = [segment_mean_reflectance[L] for L in  results_df[:, :label]]
+    results_df[:, :b1_reflectance_mean] = blue.(b)
+    results_df[:, :b7_reflectance_mean] = red.(b)
+    results_df[:, :b2_reflectance_mean] = green.(b)
+    
+    subset!(results_df, :b1_reflectance_mean => r -> r .> min_reflectance)
+    nrow(results_df) == 0 && return results_df
+    
+    # mean boundary reflectance
+    b1 = blue.(falsecolor_image)
+    bdry_indexmap = expand_labels(out, boundary_radius) .- out
+    bdry_indices = component_indices(bdry_indexmap)
+    bdry_labels = intersect(results_df[:, :label], unique(bdry_indexmap))
+    b1_bdry_means = Dict(L => mean(b1[bdry_indices[L]]) for L in bdry_labels)
+    for L ∈ results_df[:, :label]
+        if L ∉ bdry_labels
+            push!(b1_bdry_means, L => 0)
         end
     end
+    results_df[:, :b1_reflectance_bdry_mean] = [b1_bdry_means[L] for L in results_df[:, :label]]
+    results_df[:, :b1_bdry_contrast] = results_df[:, :b1_reflectance_mean] .- results_df[:, :b1_reflectance_bdry_mean]
+    subset!(results_df, :b1_bdry_contrast => r -> r .> min_contrast)
+    nrow(results_df) == 0 && return results_df
+
+    results_df[:, :probability] .= filter_function(results_df)
+    subset!(results_df, :probability => r -> r .> min_probability)
+
+    return results_df
+end
+
+# TODO: dmw -- this could be a struct / functor pair, so the filter takes a FloeProbabilityFunction rather than needing to be LogisticRegression
+"""
+    LogisticRegressionFilter(df; coefs)
+
+Compute the probability for each DataFrameRow using the logistic function
+with coefficients defined in `coefs`. Names should include "intercept" and
+names of columns in `df`.
+
+"""
+function LogisticRegressionFilter(df;
+    coefs = Dict(
+        "intercept"           => -97.1879,
+        "length_scale"        => 0.1267,
+        "solidity"            => 91.164,
+        "b1_reflectance_mean" => 7.354,
+        "b1_bdry_contrast"    => 2.239,
+        "b7_reflectance_mean" => -1.517,
+        )
+    )
+    colnames = [x for x in keys(coefs)]
+    b = [x for x in values(coefs)]
+    df[:, :intercept] .= 1;
+    return 1 ./ (1 .+ exp.(-Matrix(df[:, colnames]) * b))
 end
 
 const default_properties = [:label, :area, :perimeter, :centroid]
 
 """
-    objectwise_compare_segmentation(indexmap1, indexmap2, img; expand_radius=15, return_properties)
+    objectwise_compare_segmentation(df1, df2, labels1, labels2)
 
-Uses the concept of a relevant set to select connected components in the two
-indexmaps and produce comparisons. The image `img` is used to compute local boundary
-contrast, by comparing the difference in the mean intensity of the image and the boundary
-within `expand_radius` pixels. A DataFrame with rows corresponding to comparisons between
-the indexmaps is returned. Note that each labeled object may map to multiple objects.
-Returns the list of properties in "return properties" along with comparative measures `dist_s1_s2``,
-`scaled_relative_error_area`, and object measures `reflectance_mean`, `reflectance_bdry_mean`, 
-and `reflectance_bdry_contrast` computed relative to the input `img`.
+Compare segmentation results using region properties. Identifies the relevant set of
+objects in labels2 for each object in labels1. Expects df1 and df2 to originate
+from the `filter_floes` function, so they should include columns for area, centroid,
+and bounding box already. Returns a dataframe with a row for each comparison between 
+labels1 and labels2 and adds comparison metrics for the distance between centroids `dist_s1_s2`
+and the ratio of absolute area difference to summed area `scaled_relative_error_area_s1_s2`.
 
 """
 function objectwise_compare_segmentation(
-    indexmap1, indexmap2, img; expand_radius=15, properties=default_properties
-)
-    properties = union(properties, [:label, :centroid, :area, :bbox, :perimeter])
-    df_s1 = regionprops_table(indexmap1; properties=properties)
-    df_s2 = regionprops_table(indexmap2; properties=properties)
-
-    # This accounts for the centroid and bbox turning into col_ and row_ terms
-    properties = Symbol.(names(df_s1))
-
-    relevant_set = get_relevant_set(df_s1, df_s2, indexmap1, indexmap2)
+    df1, df2, labels1, labels2
+)    
+    properties = union(propertynames(df1), propertynames(df2))
+    relevant_set = get_relevant_set(df1, df2, labels1, labels2)
     results = DataFrame[]
-    for floe in eachrow(df_s1)
+    for floe in eachrow(df1)
         g = floe.label
         g in keys(relevant_set) && begin
-            df_rs = subset(df_s2, :label => ByRow(s -> s in relevant_set[g]))
+            df_rs = subset(df2, :label => ByRow(s -> s in relevant_set[g]))
             df_rs[:, :dist_s1_s2] = euclidean_distance(floe, df_rs; r=1) # r=1 means use pixel units, not meters
             df_rs[:, :scaled_relative_error_area] =
                 abs.(df_rs.area .- floe.area) ./ (df_rs.area .+ floe.area)
@@ -563,69 +634,56 @@ function objectwise_compare_segmentation(
     results_df = vcat(results...; cols=:union)
     rename!(results_df, Dict(r => Symbol("s2_", r) for r in properties))
 
-    # circularity
-    @. results_df[:, :s1_circularity] =
-        4 * pi * results_df[:, :s1_area] / results_df[:, :s1_perimeter] ^ 2
-    @. results_df[:, :s2_circularity] =
-        4 * pi * results_df[:, :s2_area] / results_df[:, :s2_perimeter] ^ 2
-
-    # mean reflectance
-    bdry1 = expand_labels(indexmap1, expand_radius) .- indexmap1
-    mean1 = segment_mean(SegmentedImage(img, indexmap1))
-    bdry_mean1 = segment_mean(SegmentedImage(img, bdry1))
-    results_df[:, :s1_reflectance_mean] = [mean1[L] for L in results_df[:, :s1_label]]
-    results_df[:, :s1_reflectance_bdry_mean] = [
-        bdry_mean1[L] for L in results_df[:, :s1_label]
-    ]
-
-    bdry2 = expand_labels(indexmap2, expand_radius) .- indexmap2
-    mean2 = segment_mean(SegmentedImage(img, indexmap2))
-    bdry_mean2 = segment_mean(SegmentedImage(img, bdry2))
-    results_df[:, :s2_reflectance_mean] = [mean2[L] for L in results_df[:, :s2_label]]
-    results_df[:, :s2_reflectance_bdry_mean] = [
-        bdry_mean2[L] for L in results_df[:, :s2_label]
-    ]
-
-    results_df[:, :s1_reflectance_bdry_contrast] =
-        results_df[:, :s1_reflectance_mean] .- results_df[:, :s1_reflectance_bdry_mean]
-    results_df[:, :s2_reflectance_bdry_contrast] =
-        results_df[:, :s2_reflectance_mean] .- results_df[:, :s2_reflectance_bdry_mean]
-
     return results_df
 end
 
 """
-    merge_floes(seg1, seg2, img; kwargs...)
+    merge_floes(df1, df2, labels1, labels2; max_distance_pixels=10, max_error_area=0.25, min_floe_size=100)
 
 Produce a single segmentation from a pair via object-wise assessment.
-1. Where the two segmentations agree within tolerance of dmax, emax, select the most circular floe.
-2. Where the segmentations disagree, select floes with the highest boundary contrast within their
 
 """
-function merge_floes(indexmap1, indexmap2, img; dmax=10, emax=0.25, min_floe_size=100)
+function merge_floes(df1, df2, labels1, labels2; 
+    max_distance_pixels=10,
+    max_error_area=0.25,
+    min_floe_size=100
+    )
 
     # If no floes to merge, skip merge
-    maximum(indexmap1) == 0 && return indexmap2
-    maximum(indexmap2) == 0 && return indexmap1
+    nrow(df1) == 0 && return labels2
+    nrow(df2) == 0 && return labels1
 
-    A = deepcopy(indexmap1)
-    B = deepcopy(indexmap2)
+    #### Set up starting images
+    A = labels1
+    B = labels2
+    offset_b = maximum(A) # Offset the labels in B by the largest value in A
     A_indices = component_indices(A)
     B_indices = component_indices(B)
+    A_labels = df1.label
+    B_labels = df2.label
 
     F = zeros(Int64, size(A))
 
-    df_comp = objectwise_compare_segmentation(indexmap1, indexmap2, img);
-    s1_no_overlap = filter(r -> r != 0, setdiff(unique(A), df_comp.s1_label))
-    s2_no_overlap = filter(r -> r != 0, setdiff(unique(B), df_comp.s2_label))
+    #### Case 1: No overlap
+    A_no_overlap = _nonoverlapping_labels(B, A_indices, A_labels)
+    _assign_labels!(F, A_indices, A_no_overlap)
 
-    #### Category 1: Good matches in both categories ####
-    matches = subset(
-        df_comp,
-        [:dist_s1_s2, :scaled_relative_error_area] => (d, e) -> (d .< dmax) .&& (e .< emax),
-    )
+    B_no_overlap = _nonoverlapping_labels(A, B_indices, B_labels)
+    _assign_labels!(F, B_indices, B_no_overlap; offset=offset_b)
+
+    subset!(df1, :label => ByRow(r -> r ∉ A_no_overlap))
+    subset!(df2, :label => ByRow(r -> r ∉ B_no_overlap))
+    (nrow(df1) == 0 || nrow(df2) == 0) && return F
+
+    #### Case 2: High-Quality Pairs
+    # In this case, there exists at least one item in the relevant set where the error metrics are both within the tolerance.
+    # Out of these objects, choose the one with the highest probability. 
+    df_comp = objectwise_compare_segmentation(df1, df2, labels1, labels2);
+    within_tolerance(d, e) = (d .< max_distance_pixels) .&& (e .< max_error_area)
+    matches = subset(df_comp, [:dist_s1_s2, :scaled_relative_error_area] => within_tolerance)
+
     nrow(matches) > 0 && begin
-        # Resolve duplicates by choosing the one with the lowest area difference.
+        # Select the item in the relative set with lowest area difference.
         subset!(
             groupby(matches, :s1_label),
             :scaled_relative_error_area => r -> 1:length(r) .== argmin(r),
@@ -635,139 +693,80 @@ function merge_floes(indexmap1, indexmap2, img; dmax=10, emax=0.25, min_floe_siz
             :scaled_relative_error_area => r -> 1:length(r) .== argmin(r),
         )
 
-        # Select the most circular of the two options
+        # Select the option with highest probability
         transform!(
             matches,
-            [:s1_circularity, :s2_circularity] =>
+            [:s1_probability, :s2_probability] =>
                 ByRow((s1, s2) -> s1 .> s2) => :s1_better,
         )
 
         # Merge the two, prioritizing the second if there is overlap.
-        s1_labels = matches[matches.s1_better, :s1_label]
-        s2_labels = matches[.!matches.s1_better, :s2_label];
-        A_sel = assign_labels(A, s1_labels);
-        B_sel = assign_labels(B, s2_labels);
-        idx = A_sel .> 0
-        F[idx] .= A[idx]
-        idx = B_sel .> 0
-        F[idx] .= B[idx]
 
-        # Clear intersections
+        _assign_labels!(F, A_indices, matches[matches.s1_better, :s1_label])
+        _assign_labels!(F, B_indices, matches[.!matches.s1_better, :s2_label]; offset=offset_b)
+
+        # Add intersections to list
         idx = F .> 0
-        for L in filter(r -> r != 0, unique(A[idx]))
-            A[A_indices[L]] .= 0
-        end
-        for L in filter(r -> r != 0, unique(B[idx]))
-            B[B_indices[L]] .= 0
-        end
+        A_labels = union(A_labels, unique(A[idx]))
+        B_labels = union(B_labels, unique(B[idx]))
+
+        # Update the dataframes to remove the resolved labels
+        subset!(df1, :label => ByRow(r -> r ∉ A_labels))
+        subset!(df2, :label => ByRow(r -> r ∉ B_labels))
     end
 
-    # Cleanup - in case there are pixels left over.
-    remove_small_segments!(A, min_floe_size)
-    remove_small_segments!(B, min_floe_size)
-    remove_small_segments!(F, min_floe_size)
+    #### Case 3: Poor matches, including over and undersegmentation
+    # 1. Loop through remaining objects in A. If probability is higher
+    #    for the object in A than all intersections in B, keep object.
+    # 2. Loop through remaining objects in B. If no intersection with
+    #    the objects kept in step 1, keep object.
+    # 3. Update F and return.
 
-    # TODO: Remove rows from df_comp for the cleared objects
-    A_labels = filter(r -> r != 0, unique(A))
-    B_labels = filter(r -> r != 0, unique(B))
-    subset!(
-        df_comp, [:s1_label, :s2_label] => ByRow((s1, s2) -> s1 ∈ A_labels || s2 ∈ B_labels)
-    )
-
-    # For the remaining floes, pick the floe wtih the best contrast to the background.
-    nrow(df_comp) > 0 && begin
-
-        # Selects the subset of df_comp mapping s1 to a single s2, ranked by contrast.
-        s1_s2_highest_contrast = subset(
-            groupby(df_comp, :s1_label),
-            :s2_reflectance_bdry_contrast => r -> 1:length(r) .== argmin(r),
-        )
-        transform!(
-            s1_s2_highest_contrast,
-            [:s1_reflectance_bdry_contrast, :s2_reflectance_bdry_contrast] =>
-                ByRow((s1, s2) -> s1 .> s2) => :s1_better,
-        )
-
-        s2_s1_highest_contrast = subset(
-            groupby(df_comp, :s2_label),
-            :s1_reflectance_bdry_contrast => r -> 1:length(r) .== argmin(r),
-        )
-        transform!(
-            s2_s1_highest_contrast,
-            [:s1_reflectance_bdry_contrast, :s2_reflectance_bdry_contrast] =>
-                ByRow((s1, s2) -> s1 .> s2) => :s1_better,
-        )
-
-        s1_s2_highest_contrast = subset(
-            groupby(df_comp, :s1_label),
-            :s2_reflectance_bdry_contrast => r -> 1:length(r) .== argmin(r),
-        )
-        transform!(
-            s1_s2_highest_contrast,
-            [:s1_reflectance_bdry_contrast, :s2_reflectance_bdry_contrast] =>
-                ByRow((s1, s2) -> s1 .> s2) => :s1_better,
-        )
-
-        s2_s1_highest_contrast = subset(
-            groupby(df_comp, :s2_label),
-            :s1_reflectance_bdry_contrast => r -> 1:length(r) .== argmin(r),
-        )
-        transform!(
-            s2_s1_highest_contrast,
-            [:s1_reflectance_bdry_contrast, :s2_reflectance_bdry_contrast] =>
-                ByRow((s1, s2) -> s1 .> s2) => :s1_better,
-        )
-
-        s1_labels = outerjoin(
-            s1_s2_highest_contrast[
-                s1_s2_highest_contrast.s1_better, [:s1_label, :s2_label]
-            ],
-            s2_s1_highest_contrast[
-                s2_s1_highest_contrast.s1_better, [:s1_label, :s2_label]
-            ];
-            on=[:s1_label, :s2_label],
-        )[
-            :, :s1_label
-        ]
-
-        s2_labels = outerjoin(
-            s1_s2_highest_contrast[
-                .!s1_s2_highest_contrast.s1_better, [:s1_label, :s2_label]
-            ],
-            s2_s1_highest_contrast[
-                .!s2_s1_highest_contrast.s1_better, [:s1_label, :s2_label]
-            ];
-            on=[:s1_label, :s2_label],
-        )[
-            :, :s2_label
-        ]
-
-        A_sel = assign_labels(A, s1_labels);
-        B_sel = assign_labels(B, s2_labels);
-        idx = A_sel .> 0
-        F[idx] .= A[idx]
-        idx = B_sel .> 0
-        F[idx] .= B[idx]
-
-        # Clear intersections
-        idx = F .> 0
-        for L in filter(r -> r != 0, unique(A[idx]))
-            A[A_indices[L]] .= 0
-        end
-        for L in filter(r -> r != 0, unique(B[idx]))
-            B[B_indices[L]] .= 0
+    # Select objects in A with higher probability than any intersection with B
+    A_labels = []
+    B_probability = Dict(r => p for (r, p) in zip(df2.label, df2.probability))
+    for s1 in eachrow(df1)        
+        B_labels = filter(r -> r ∈ df2.label, unique(labels2[A_indices[s1.label]]))
+        if all(s1.probability .> [B_probability[r] for r in B_labels])
+            push!(A_labels, s1.label)
         end
     end
-
-    A_sel = assign_labels(A, s1_no_overlap)
-    B_sel = assign_labels(B, s2_no_overlap)
-    F[A_sel .> 0] .= A_sel[A_sel .> 0]
-    F[B_sel .> 0] .= B_sel[B_sel .> 0]
-
+     _assign_labels!(F, A_indices, A_labels)
+   
+    # Select objects in B with no intersection with F
+    B_labels = unique(B[F .> 0])
+    subset!(df2, :label => ByRow(r -> r ∉ B_labels))
+    _assign_labels!(F, B_indices,  df2.label; offset=offset_b)
+    
+    # Remove possible isolated pixels from merge
     remove_small_segments!(F, min_floe_size)
-
-    return F
+    return label_components(F)
 end
+
+"""
+Helper functions for the merge_floes routine
+"""
+function _nonoverlapping_labels(other, indices, labels)
+    return [
+        label for label in labels
+        if maximum(other[indices[label]]) == 0
+    ]
+end
+
+function _assign_labels!(output, indices, labels; offset=0)
+    foreach(labels) do label
+        output[indices[label]] .= label + offset
+    end
+end
+
+function _remove_labels!(output, indices, remove_labels)
+    for L in remove_labels
+        if L != 0
+            output[indices[L]] .= 0
+        end
+    end
+end
+
 
 #### Tracker parameters ####
 # Initially same as in src/Tracking/filter_functions.jl,

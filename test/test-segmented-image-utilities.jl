@@ -349,7 +349,7 @@ end
 end
 
 @testitem "get relevant set" begin
-import IceFloeTracker.Segmentation: get_relevant_set
+import IceFloeTracker.Segmentation: get_relevant_set, regionprops_table
 
 G = [
  0 0 0 0 0 3 3
@@ -378,4 +378,10 @@ R = get_relevant_set(G, S)
 # 2) ground truth segments with no match don't get added to the set
 # 3) predicted segments with no match don't get added to the set
 @test R[2] == [2] && R[1] == [1] && [3] ∉ values(R) && 3 ∉ keys(R)
+
+
+df1 = regionprops_table(G; properties=[:label, :area, :bbox, :centroid])
+df2 = regionprops_table(S; properties=[:label, :area, :bbox, :centroid])
+R2 = get_relevant_set(df1, df2, G, S)
+@test R == R2
 end
