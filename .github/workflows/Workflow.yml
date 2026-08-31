@@ -25,9 +25,9 @@ jobs:
         with:
           version: ${{ matrix.version }}
           arch: ${{ matrix.arch }}
-      - uses: actions/setup-python@v7
+      - uses: astral-sh/setup-uv@v6
         with:
-          python-version: '3.x'
+          python-version: '3.12'
       - name: Cache region workflow data
         uses: actions/cache@v6
         with:

@@ -261,5 +261,57 @@ end
 @testitem "bboxes for too-small regions" begin
     result = regionprops([0 0 0; 0 1 0; 0 0 0]; properties=[:bbox])
     @test result ==
-        Dict(:min_row => Int[], :max_row => Int[], :min_col => Int[], :max_col => Int[])
+          Dict(:min_row => Int[], :max_row => Int[], :min_col => Int[], :max_col => Int[])
+end
+@testitem "_count_pixels_in_hull: well-known shapes" begin
+    import Images: convexhull
+    import IceFloeTracker: PixelConvexArea
+    import IceFloeTracker.Segmentation: _count_pixels_in_hull
+
+    count_for(mask) = _count_pixels_in_hull(mask, convexhull(mask))
+
+    @testset "filled rectangle: every pixel is inside its own hull" begin
+        mask = trues(4, 6)
+        @test count_for(mask) == 24
+    end
+
+    @testset "hollow rectangle: interior background lies inside the hull" begin
+        mask = falses(5, 7)
+        mask[1, :] .= true
+        mask[end, :] .= true
+        mask[:, 1] .= true
+        mask[:, end] .= true
+        # hull spans the full frame, so the hole is counted too
+        @test count_for(mask) == 35
+    end
+
+    @testset "plus shape: hull is the diamond spanned by the arm tips" begin
+        mask = falses(5, 5)
+        mask[3, :] .= true
+        mask[:, 3] .= true
+        # pixels with |row - 3| + |col - 3| <= 2: 1 + 3 + 5 + 3 + 1
+        @test count_for(mask) == 13
+    end
+
+    @testset "filled diamond: slanted edges exclude the corner background" begin
+        mask = [abs(i - 3) + abs(j - 3) <= 2 for i in 1:5, j in 1:5]
+        # bbox corners like (1,1) fail the diagonal edge tests, so only the
+        # 13 diamond pixels are counted
+        @test count_for(mask) == sum(mask) == 13
+    end
+
+    @testset "consistency with PixelConvexArea on a labeled image" begin
+        labels = zeros(Int, 9, 9)
+        labels[3:7, 3:7] .= 1  # 5x5 square
+        @test PixelConvexArea()(labels)[1] == 25
+    end
+
+    @testset "KNOWN ISSUE: convexhull errors on right-triangle masks" begin
+        # upstream ImageMorphology.convexhull throws "Not enough points to compute
+        # convex hull" for staircase right triangles of any size, so their convex
+        # area is reported as NaN via _convexhull_or_nothing
+        mask = [i >= j for i in 1:6, j in 1:6]
+        @test count_for(mask) == sum(mask) == 21 broken = true
+        @test isnan(PixelConvexArea()(Int.(mask))[1])
+    end
 end
