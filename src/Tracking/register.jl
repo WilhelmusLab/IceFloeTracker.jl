@@ -179,12 +179,15 @@ end
 Build registration test angles concentrated around a prior rotation estimate `prior_rad`
 (in radians, in the convention of `imrotate_bin_clockwise_radians`) and its 180° alias
 `prior_rad + π`, since priors derived from image-moment orientations are only defined modulo π.
-Angles are normalized to [-π, π) and ordered so that, in the event of a tie in the shape
-difference, smaller absolute angles which are positive are preferred, matching
-`register_default_angles_rad`.
+Offsets are built symmetrically from zero to ensure the prior angle itself is always included,
+even when the window is not an exact multiple of the step. Angles are normalized to [-π, π)
+and ordered so that, in the event of a tie in the shape difference, smaller absolute angles
+which are positive are preferred, matching `register_default_angles_rad`.
 """
 function prior_test_angles(prior_rad::Real; window::Real=deg2rad(30.0), step::Real=π / 36)
-    offsets = (-window):step:window
+    max_steps = ceil(Int, window / step)
+    offsets = collect(-max_steps:max_steps) .* step
+    offsets = filter(o -> abs(o) <= window, offsets)
     angles = [
         normalize_angle(alias + offset) for alias in (prior_rad, prior_rad + π) for
         offset in offsets
