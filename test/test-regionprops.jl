@@ -322,13 +322,13 @@ end
     # regression guard for the operator-precedence bug where the background label
     # fell through to a full convex-hull computation
     labels = zeros(Int, 9, 9)
-    labels[3:7, 3:7] .= 1   # area 25: computed
-    labels[9, 9] = 2        # area 1 < minimum_area: undefined
+    labels[3:7, 3:7] .= 1   # valid component, area 25: computed
+    labels[9, 9] = 2        # too-small component, area 1 < minimum_area: undefined
 
     @testset "$(nameof(typeof(alg)))" for alg in (PixelConvexArea(), PolygonConvexArea())
         convex_areas = alg(labels)
-        @test isnan(convex_areas[0])
-        @test isnan(convex_areas[2])
-        @test !isnan(convex_areas[1])
+        @test isnan(convex_areas[0]) # background: never a component
+        @test isnan(convex_areas[2]) # sub-minimum component: undefined
+        @test !isnan(convex_areas[1]) # valid component: computed
     end
 end
