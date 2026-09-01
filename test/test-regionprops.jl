@@ -332,3 +332,37 @@ end
         @test !isnan(convex_areas[1]) # valid component: computed
     end
 end
+
+@testitem "labeled-array validation rejects inputs without background-0 minimum" begin
+    using IceFloeTracker.Segmentation: component_floes, component_convex_areas
+
+    starts_at_two = [2 2; 2 2]
+    has_negative = [0 1; -1 1]
+
+    @test_throws ArgumentError component_floes(starts_at_two)
+    @test_throws ArgumentError component_floes(has_negative)
+    @test_throws ArgumentError component_convex_areas(starts_at_two)
+    @test_throws ArgumentError component_convex_areas(has_negative)
+
+    # minimum of 1 (no background pixels) is explicitly allowed
+    @test component_floes([1 1; 1 1]) isa Dict
+end
+
+@testitem "PolygonConvexArea: single-argument functor on known shapes" begin
+    using IceFloeTracker.Segmentation: PolygonConvexArea, PixelConvexArea
+
+    @testset "square: shoelace over corner pixel centers" begin
+        labels = zeros(Int, 9, 9)
+        labels[3:7, 3:7] .= 1  # 5x5 square: hull corners span a 4x4 polygon
+        @test PolygonConvexArea()(labels)[1] == 16.0
+        # docstring invariant: polygon area is smaller than the pixel count
+        @test PolygonConvexArea()(labels)[1] < PixelConvexArea()(labels)[1]
+    end
+
+    @testset "plus: diamond hull with both diagonals of length 4" begin
+        plus = zeros(Int, 7, 7)
+        plus[4, 2:6] .= 1
+        plus[2:6, 4] .= 1
+        @test PolygonConvexArea()(plus)[1] == 8.0  # d1 * d2 / 2
+    end
+end
