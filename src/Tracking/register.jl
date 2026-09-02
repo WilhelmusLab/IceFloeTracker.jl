@@ -174,7 +174,7 @@ function normalize_angle(θ)
 end
 
 """
-    prior_test_angles(prior_rad; window=deg2rad(30.0), step=π / 36)
+    prior_test_angles(prior_rad; window=deg2rad(10.0), step=π / 180)
 
 Build registration test angles concentrated around a prior rotation estimate `prior_rad`
 (in radians, in the convention of `imrotate_bin_clockwise_radians`) and its 180° alias
@@ -184,7 +184,7 @@ even when the window is not an exact multiple of the step. Angles are normalized
 and ordered so that, in the event of a tie in the shape difference, smaller absolute angles
 which are positive are preferred, matching `register_default_angles_rad`.
 """
-function prior_test_angles(prior_rad::Real; window::Real=deg2rad(30.0), step::Real=π / 36)
+function prior_test_angles(prior_rad::Real; window::Real=deg2rad(10.0), step::Real=π / 180)
     max_steps = ceil(Int, window / step)
     offsets = collect(-max_steps:max_steps) .* step
     offsets = filter(o -> abs(o) <= window, offsets)
