@@ -688,6 +688,9 @@ function regionprops(
         push!(data, :convex_area => map(s -> convex_areas[s], img_labels))
     end
 
+    # Emit deprecation warning if :mask is requested
+    :mask ∈ properties && @warn "`:mask` is deprecated; use add_boundary!() to compute boundary curves for better performance and storage efficiency"
+
     # psi-s needs masks, so this can get called first
     :mask ∈ properties && begin
         floe_masks = component_floes(
