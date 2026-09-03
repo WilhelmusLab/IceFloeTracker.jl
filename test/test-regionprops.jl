@@ -261,7 +261,7 @@ end
 @testitem "bboxes for too-small regions" begin
     result = regionprops([0 0 0; 0 1 0; 0 0 0]; properties=[:bbox])
     @test result ==
-          Dict(:min_row => Int[], :max_row => Int[], :min_col => Int[], :max_col => Int[])
+        Dict(:min_row => Int[], :max_row => Int[], :min_col => Int[], :max_col => Int[])
 end
 @testitem "_count_pixels_in_hull: well-known shapes" begin
     import Images: convexhull
@@ -313,5 +313,56 @@ end
         mask = [i >= j for i in 1:6, j in 1:6]
         @test count_for(mask) == sum(mask) == 21 broken = true
         @test isnan(PixelConvexArea()(Int.(mask))[1])
+    end
+end
+
+@testitem "convex-area guard marks background and sub-minimum labels undefined" begin
+    import IceFloeTracker: PixelConvexArea, PolygonConvexArea
+
+    # regression guard for the operator-precedence bug where the background label
+    # fell through to a full convex-hull computation
+    labels = zeros(Int, 9, 9)
+    labels[3:7, 3:7] .= 1   # valid component, area 25: computed
+    labels[9, 9] = 2        # too-small component, area 1 < minimum_area: undefined
+
+    @testset "$(nameof(typeof(alg)))" for alg in (PixelConvexArea(), PolygonConvexArea())
+        convex_areas = alg(labels)
+        @test isnan(convex_areas[0]) # background: never a component
+        @test isnan(convex_areas[2]) # sub-minimum component: undefined
+        @test !isnan(convex_areas[1]) # valid component: computed
+    end
+end
+
+@testitem "labeled-array validation rejects inputs without background-0 minimum" begin
+    using IceFloeTracker.Segmentation: component_floes, component_convex_areas
+
+    starts_at_two = [2 2; 2 2]
+    has_negative = [0 1; -1 1]
+
+    @test_throws ArgumentError component_floes(starts_at_two)
+    @test_throws ArgumentError component_floes(has_negative)
+    @test_throws ArgumentError component_convex_areas(starts_at_two)
+    @test_throws ArgumentError component_convex_areas(has_negative)
+
+    # minimum of 1 (no background pixels) is explicitly allowed
+    @test component_floes([1 1; 1 1]) isa Dict
+end
+
+@testitem "PolygonConvexArea: single-argument functor on known shapes" begin
+    using IceFloeTracker.Segmentation: PolygonConvexArea, PixelConvexArea
+
+    @testset "square: shoelace over corner pixel centers" begin
+        labels = zeros(Int, 9, 9)
+        labels[3:7, 3:7] .= 1  # 5x5 square: hull corners span a 4x4 polygon
+        @test PolygonConvexArea()(labels)[1] == 16.0
+        # docstring invariant: polygon area is smaller than the pixel count
+        @test PolygonConvexArea()(labels)[1] < PixelConvexArea()(labels)[1]
+    end
+
+    @testset "plus: diamond hull with both diagonals of length 4" begin
+        plus = zeros(Int, 7, 7)
+        plus[4, 2:6] .= 1
+        plus[2:6, 4] .= 1
+        @test PolygonConvexArea()(plus)[1] == 8.0  # d1 * d2 / 2
     end
 end
