@@ -124,7 +124,7 @@ end
 coastal_buffer_structuring_element = strel_box((51, 51))
 cloud_mask_algorithm = Watkins2026CloudMask()
 preprocessing_algorithm = Preprocess()
-tile_size_pixels = 1200
+tile_size_pixels = 400
 min_tile_ice_pixel_count=300
 preliminary_ice_mask = IceDetectionBrightnessMidpoint(; minimum_reflectance=0.3)
 kmeans_params = (
@@ -276,7 +276,6 @@ function (s::Segment)(
     apply_landmask!(adaptive_result, .!(prelim_ice_mask .|| cloud_mask))
 
     @info "Splitting floes"
-
     clean_split_label =
         r -> dist_morph_split(
             clean_binary_floes(r, prelim_ice_mask, cloud_mask; s.cleanup_binary_params...);
@@ -289,7 +288,6 @@ function (s::Segment)(
     # TBD: Filter floes based on the edge properties, colors
 
     @info "Filtering floes"
-
     filter_floes!(
         kmeans_split_floes,
         coastal_buffer_mask,
