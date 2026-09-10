@@ -280,7 +280,7 @@ binarize(g, a)
 ```
 """
 @kwdef struct IceDetectionBrightnessMidpoint <: IceDetectionAlgorithm
-    minimum_reflectance=0.3
+    τ₁ = 0.1
     window_size=3
     minimum_prominence=0.01
     nbins=128
@@ -292,12 +292,12 @@ function (f::IceDetectionBrightnessMidpoint)(out, gray_image::AbstractArray{<:Un
     ice_peak = get_ice_peaks(
         edges,
         bincounts;
-        possible_ice_threshold=f.minimum_reflectance,
+        possible_ice_threshold=f.τ₁,
         minimum_prominence=f.minimum_prominence,
         window_size=f.window_size,
     )
-    isinf(ice_peak) && (ice_peak = f.minimum_reflectance)
-    thresh = 0.5 * (f.minimum_reflectance + ice_peak)
+    isinf(ice_peak) && (ice_peak = f.τ₁)
+    thresh = 0.5 * (f.τ₁ + ice_peak)
     @. out = gray_image .> thresh
     return out
 end

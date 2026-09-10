@@ -59,6 +59,7 @@ import ..Tracking:
 import ..Pipeline: IceFloeSegmentationAlgorithm
 
 abstract type IceFloePreprocessingAlgorithm end
+abstract type IceFloeClassificationAlgorithm end
 
 # Preprocess Params
 diffusion_algorithm = PeronaMalikDiffusion(; λ=0.1, K=0.1, niters=7, g="exponential")
@@ -71,12 +72,14 @@ unsharp_mask_params = (radius=50, amount=0.3, threshold=0.01)
         adapthisteq_params = (nbins=256, rblocks=8, cblocks=8, clip=0.99) # rblocks/cblocks not used yet -- add with CLAHE.jl
         unsharp_mask_params = (radius=50, amount=0.2, threshold=0.01)
     )
-    Preprocess()(img, cloudmask, landmask)
+    Preprocess()(img, landmask, tiles)
+    Preprocess()(img)
 
     Converts input image to grayscale, then preprocesses by appling nonlinear diffusion,
     adaptive histogram equalization, and unsharp masking. Diffusion and unsharp masking are applied
-    to each tile, while the adaptive histogram equalization is divided according to the parameter
-    specifications.
+    to each tile if a list of tiles is supplied, while the adaptive histogram equalization is divided according to the parameter
+    specifications. If a landmask is supplied, it is applied at the beginning and at the end of the algorithm, as sharpening can
+    bleed into the masked area.
 
     Note: results are strongly sensitive to the choice of rblocks, cblocks, and clipping. Large clipping parameters with
     small blocks results in noisy images and poor performance. With larger blocks, a higher clipping parameter can help.
@@ -89,7 +92,7 @@ unsharp_mask_params = (radius=50, amount=0.3, threshold=0.01)
 end
 
 function (p::Preprocess)(
-    truecolor_image::AbstractArray{<:Union{AbstractRGB,TransparentRGB}}, landmask, tiles
+    truecolor_image::AbstractArray{<:Union{AbstractRGB,TransparentRGB}}, tiles
 )
     # Cast to grayscale first to save compute time
     proc_img = Gray.(truecolor_image)
@@ -118,6 +121,69 @@ function (p::Preprocess)(
     apply_landmask!(proc_img, landmask)
     return proc_img
 end
+
+function (p::Preprocess)(
+    truecolor_image::AbstractArray{<:Union{AbstractRGB,TransparentRGB}}, landmask, tiles
+)
+    
+    # Cast to grayscale first to save compute time
+    proc_img = Gray.(truecolor_image)
+    apply_landmask!(proc_img, landmask)
+
+    # Diffusion and sharpening
+    proc_img .= nonlinear_diffusion(proc_img, tiles, p.diffusion_algorithm)
+
+    adjust_histogram!(
+        proc_img,
+        ContrastLimitedAdaptiveHistogramEqualization(;
+            nbins=p.adapthisteq_params.nbins,
+            rblocks=p.adapthisteq_params.rblocks,
+            cblocks=p.adapthisteq_params.cblocks,
+            clip=p.adapthisteq_params.clip,
+        ),
+    )
+
+    proc_img .= unsharp_mask(
+        proc_img,
+        p.unsharp_mask_params.radius,
+        p.unsharp_mask_params.amount,
+        p.unsharp_mask_params.threshold,
+    )
+
+    # Re-apply mask so sharpening doesn't bleed into land
+    apply_landmask!(proc_img, landmask)
+    return proc_img
+end
+
+function (p::Preprocess)(
+    truecolor_image::AbstractArray{<:Union{AbstractRGB,TransparentRGB}}
+)
+    # Cast to grayscale first to save compute time
+    proc_img = Gray.(truecolor_image)
+
+    # Diffusion and sharpening
+    proc_img .= nonlinear_diffusion(proc_img, p.diffusion_algorithm)
+
+    adjust_histogram!(
+        proc_img,
+        ContrastLimitedAdaptiveHistogramEqualization(;
+            nbins=p.adapthisteq_params.nbins,
+            rblocks=p.adapthisteq_params.rblocks,
+            cblocks=p.adapthisteq_params.cblocks,
+            clip=p.adapthisteq_params.clip,
+        ),
+    )
+
+    proc_img .= unsharp_mask(
+        proc_img,
+        p.unsharp_mask_params.radius,
+        p.unsharp_mask_params.amount,
+        p.unsharp_mask_params.threshold,
+    )
+
+    return proc_img
+end
+
 
 # Default segmentation parameters
 coastal_buffer_structuring_element = strel_box((51, 51))
