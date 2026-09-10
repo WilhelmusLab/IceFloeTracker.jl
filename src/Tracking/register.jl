@@ -475,3 +475,71 @@ function boundary_euclidean_distance(b1::Matrix{Float64}, b2::Matrix{Float64})
 
     return total_dist
 end
+
+# ============================================================================
+# Boundary-Curve Registration
+# ============================================================================
+
+"""
+    shape_difference_rotation_boundary(boundary_reference, boundary_target, test_angles;
+                                      metric=boundary_normalized_distance)
+
+Boundary-curve analogue of [`shape_difference_rotation`](@ref). Computes the shape
+difference between `boundary_reference` and `boundary_target` for each angle in
+`test_angles`, holding the reference fixed and rotating the target.
+
+Angle convention matches the mask-based version: `test_angles` are interpreted as the
+rotation *from target to reference*, so the target is rotated by `-angle` to look for a
+match. A perfect match at angle `A` means `boundary_target` has the same shape as
+`boundary_reference` rotated by `A`.
+
+`metric(reference, rotated_target)` may be any function returning a real shape
+difference; see `boundary_normalized_distance`, `boundary_mse_aligned` and
+`boundary_euclidean_distance`.
+"""
+function shape_difference_rotation_boundary(
+    boundary_reference::Matrix{Float64},
+    boundary_target::Matrix{Float64},
+    test_angles;
+    metric=boundary_normalized_distance,
+)
+    shape_differences = Array{
+        NamedTuple{(:angle, :shape_difference),Tuple{Float64,Float64}}
+    }(
+        undef, length(test_angles)
+    )
+
+    for (idx, angle) in enumerate(test_angles)
+        # rotate the target back by angle, mirroring shape_difference_rotation
+        target_rotated = rotate_boundary(boundary_target, -angle)
+        shape_difference = metric(boundary_reference, target_rotated)
+        shape_differences[idx] = (; angle, shape_difference)
+    end
+    return shape_differences
+end
+
+"""
+    register_boundary(boundary_reference, boundary_target;
+                      test_angles=register_default_angles_rad,
+                      metric=boundary_normalized_distance)
+
+Boundary-curve analogue of [`register`](@ref). Finds the angle in `test_angles` that
+minimizes the shape difference between `boundary_reference` and `boundary_target`.
+
+Shares `register`'s calling convention, so it can be passed straight to
+`get_rotation_measurements(...; registration_function=register_boundary)` provided the
+image column holds boundary matrices rather than masks. Ties resolve to whichever
+candidate appears first in `test_angles`, matching `register`.
+"""
+function register_boundary(
+    boundary_reference::Matrix{Float64},
+    boundary_target::Matrix{Float64};
+    test_angles=register_default_angles_rad,
+    metric=boundary_normalized_distance,
+)
+    shape_differences = shape_difference_rotation_boundary(
+        boundary_reference, boundary_target, test_angles; metric
+    )
+    best_match = argmin((x) -> x.shape_difference, shape_differences)
+    return best_match.angle
+end
