@@ -188,16 +188,13 @@ cloud_mask_algorithm = Watkins2026CloudMask()
 preliminary_ice_mask = IceDetectionBrightnessMidpoint(;  τ₁ = 0.1)
 
 @kwdef struct Classify <: IceFloeClassificationAlgorithm
-   
-    τ₂ = 0.2
-    τ₇ = 0.2
     cloud_mask_algorithm=Watkins2026CloudMask()
     ice_mask_algorithm=IceDetectionBrightnessMidpoint(; minimum_reflectance=0.3)
 end
 
 function (c::Classify)(false_color_image, land_mask;
         label_map=Dict("land"=>0, "water"=>1, "ice"=>2, "cloud"=>3)
-    )
+    ) 
     fc_masked = apply_landmask(false_color_image, land_mask)
     clouds = c.cloud_mask_algorithm(fc_masked) .> 0
     band_1_masked = Gray.(blue.(apply_landmask(fc_masked, clouds)))
