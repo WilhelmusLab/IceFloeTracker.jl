@@ -118,6 +118,7 @@ end
 @testitem "add_boundary! with add_floemasks workflow" begin
     using IceFloeTracker.Tracking: add_boundary!, add_floemasks!
     using IceFloeTracker.Segmentation: regionprops_table
+    using DataFrames: nrow
 
     # Create labeled image
     img = zeros(Int, 10, 10)
