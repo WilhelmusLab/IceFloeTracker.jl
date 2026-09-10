@@ -184,14 +184,40 @@ function (p::Preprocess)(
     return proc_img
 end
 
+cloud_mask_algorithm = Watkins2026CloudMask()
+preliminary_ice_mask = IceDetectionBrightnessMidpoint(;  τ₁ = 0.1)
+
+@kwdef struct Classify <: IceFloeClassificationAlgorithm
+   
+    τ₂ = 0.2
+    τ₇ = 0.2
+    cloud_mask_algorithm=Watkins2026CloudMask()
+    ice_mask_algorithm=IceDetectionBrightnessMidpoint(; minimum_reflectance=0.3)
+end
+
+function (c::Classify)(false_color_image, land_mask;
+        label_map=Dict("land"=>0, "water"=>1, "ice"=>2, "cloud"=>3)
+    )
+    fc_masked = apply_landmask(false_color_image, land_mask)
+    clouds = c.cloud_mask_algorithm(fc_masked) .> 0
+    band_1_masked = Gray.(blue.(apply_landmask(fc_masked, clouds)))
+    ice = c.ice_mask_algorithm(band_1_masked) .> 0
+    
+    classified_image = ones(Int64, size(false_color_image)) .* label_map["water"]
+    classified_image[coastal_buffer] .= label_map["land"]
+    classified_image[ice] .= label_map["ice"]
+    classified_image[clouds] .= label_map["cloud"]
+    
+    return SegmentedImage(false_color_image, classified_image)
+end
+
+
 
 # Default segmentation parameters
 coastal_buffer_structuring_element = strel_box((51, 51))
-cloud_mask_algorithm = Watkins2026CloudMask()
 preprocessing_algorithm = Preprocess()
 tile_size_pixels = 1200
 min_tile_ice_pixel_count=300
-preliminary_ice_mask = IceDetectionBrightnessMidpoint(; minimum_reflectance=0.3)
 kmeans_params = (
     k=4,
     maxiter=50,
