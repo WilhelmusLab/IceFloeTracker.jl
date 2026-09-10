@@ -138,30 +138,35 @@ end
     @test isapprox(dist, 0.0; atol=1e-10)
 end
 
-@testitem "boundary_normalized_distance scale invariance" begin
-    using IceFloeTracker.Tracking: boundary_normalized_distance
+@testitem "boundary_normalized_distance is dimensionless, not scale-invariant" begin
+    using IceFloeTracker.Tracking: boundary_normalized_distance, boundary_mse_aligned
 
-    # Two boundaries that are the same shape but different scale
-    b1 = [
+    unit = [
         0.0 0.0
         1.0 0.0
         1.0 1.0
         0.0 1.0
     ]
+    doubled = 2 .* unit
 
-    b2_scaled = [
-        0.0 0.0
-        2.0 0.0
-        2.0 2.0
-        0.0 2.0
-    ]
+    # Dividing by mean perimeter squared makes the score dimensionless so that a
+    # single threshold can span floe sizes -- it does NOT make it scale-invariant.
+    # The same shape at two scales is a real difference, which for floe tracking is
+    # signal (a floe that doubled in size is probably not the same floe), not noise.
+    dist = boundary_normalized_distance(unit, doubled)
+    @test dist > 0
+    @test isapprox(dist, 0.0247; atol=1e-4)
 
-    # After normalization by perimeter^2, scaled versions should have same distance
-    # (or at least predictable relationship)
-    dist = boundary_normalized_distance(b1, b2_scaled)
+    # and it is genuinely a normalization: the raw MSE is far larger
+    @test boundary_mse_aligned(unit, doubled) > dist
 
-    # For identical shapes at different scales, normalized distance should be 0
-    @test isapprox(dist, 0.0; atol=1e-10)
+    # scaling BOTH inputs by the same factor leaves the score unchanged, which is
+    # the invariance this metric actually provides
+    @test isapprox(
+        boundary_normalized_distance(unit, doubled),
+        boundary_normalized_distance(10 .* unit, 10 .* doubled);
+        atol=1e-12,
+    )
 end
 
 @testitem "boundary_euclidean_distance identity" begin
