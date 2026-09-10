@@ -543,3 +543,119 @@ function register_boundary(
     best_match = argmin((x) -> x.shape_difference, shape_differences)
     return best_match.angle
 end
+
+"""
+    boundary_shape_difference(boundary1, orientation1, boundary2, orientation2;
+                              metric=boundary_normalized_distance)
+    boundary_shape_difference(floe1::DataFrameRow, floe2::DataFrameRow; kwargs...)
+
+Boundary-curve analogue of [`shape_difference`](@ref): aligns both curves on the same axis
+using their estimated orientations, then compares them once with `metric`.
+
+Like the mask-based version this performs a single comparison at the orientation-implied
+pose rather than searching over angles — see [`register_boundary`](@ref) for the search.
+That distinction matters for callers such as the candidate filters, which evaluate this
+per candidate pair.
+
+No centroid alignment step is needed: the metrics centre both curves internally, and
+`x' - mean(x')` equals `R(x - mean(x))` regardless of the rotation centre, so translation
+alignment is structural rather than something this function has to arrange.
+"""
+function boundary_shape_difference(
+    boundary1::Matrix{Float64},
+    orientation1::Real,
+    boundary2::Matrix{Float64},
+    orientation2::Real;
+    metric=boundary_normalized_distance,
+)
+    return metric(
+        rotate_boundary(boundary1, orientation1), rotate_boundary(boundary2, orientation2)
+    )
+end
+
+function boundary_shape_difference(
+    boundary1::AbstractMatrix{<:Real},
+    orientation1::Real,
+    boundary2::AbstractMatrix{<:Real},
+    orientation2::Real;
+    kwargs...,
+)
+    return boundary_shape_difference(
+        convert(Matrix{Float64}, boundary1),
+        orientation1,
+        convert(Matrix{Float64}, boundary2),
+        orientation2;
+        kwargs...,
+    )
+end
+
+function boundary_shape_difference(floe1::DataFrameRow, floe2::DataFrameRow; kwargs...)
+    return boundary_shape_difference(
+        floe1.boundary, floe1.orientation, floe2.boundary, floe2.orientation; kwargs...
+    )
+end
+
+"""
+    BoundaryRegistration(; metric=boundary_normalized_distance, boundary_column=:boundary)
+
+A configured, callable wrapper around [`register_boundary`](@ref) that fixes the shape
+metric up front.
+
+`get_rotation_measurements` invokes its `registration_function` as
+`registration_function(image1, image2)`, with no way to thread a metric through, so a
+metric that is not the default has to be baked into the callable instead. Because this
+subtypes `Function` and its matrix method takes a `test_angles` keyword, an instance is a
+drop-in `registration_function` whenever the image column holds boundary curves:
+
+```julia
+reg = BoundaryRegistration(; metric=boundary_mse_aligned)
+get_rotation_measurements(df; id_column=:id, image_column=:boundary,
+                          time_column=:time, registration_function=reg)
+```
+
+Subtyping `Function` is required, not cosmetic: `get_rotation_measurements` annotates
+`registration_function::Function`, and keyword arguments are converted, so a plain callable
+struct would be rejected at the call site.
+
+## Arguments
+- `metric`: `metric(reference, rotated_target) -> Real`. See
+  [`boundary_normalized_distance`](@ref) (default), [`boundary_mse_aligned`](@ref) and
+  [`boundary_euclidean_distance`](@ref).
+- `boundary_column`: column the `DataFrameRow` method reads.
+"""
+@kwdef struct BoundaryRegistration <: Function
+    metric = boundary_normalized_distance
+    boundary_column = :boundary
+end
+
+function (reg::BoundaryRegistration)(
+    boundary_reference::Matrix{Float64},
+    boundary_target::Matrix{Float64};
+    test_angles=register_default_angles_rad,
+)
+    return register_boundary(
+        boundary_reference, boundary_target; test_angles, metric=reg.metric
+    )
+end
+
+# `:boundary` is an untyped column, so an Int matrix or a view can reach the functor. Widen
+# rather than let it MethodError inside get_rotation_measurements' Threads.@threads, where
+# it would surface as a TaskFailedException wrapping the real cause.
+function (reg::BoundaryRegistration)(
+    boundary_reference::AbstractMatrix{<:Real},
+    boundary_target::AbstractMatrix{<:Real};
+    kwargs...,
+)
+    return reg(
+        convert(Matrix{Float64}, boundary_reference),
+        convert(Matrix{Float64}, boundary_target);
+        kwargs...,
+    )
+end
+
+# Note: get_rotation_measurements never reaches this method -- it extracts
+# row[image_column] first. This exists for direct use and for parity with
+# `shape_difference(floe1::DataFrameRow, floe2::DataFrameRow)`.
+function (reg::BoundaryRegistration)(floe1::DataFrameRow, floe2::DataFrameRow; kwargs...)
+    return reg(floe1[reg.boundary_column], floe2[reg.boundary_column]; kwargs...)
+end
