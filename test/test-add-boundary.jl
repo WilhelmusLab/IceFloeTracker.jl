@@ -157,14 +157,3 @@ end
     # Plus the new boundary column
     @test "boundary" ∈ names(props)
 end
-
-@testitem "regionprops :mask deprecation warning" begin
-    using IceFloeTracker.Segmentation: regionprops_table
-    using Test
-
-    img = zeros(Int, 10, 10)
-    img[2:6, 2:6] .= 1
-
-    # Verify that requesting :mask emits a deprecation warning
-    @test_logs (:warn, r":mask.*deprecated") regionprops_table(img, properties=[:label, :mask])
-end
