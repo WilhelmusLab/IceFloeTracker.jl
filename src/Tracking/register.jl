@@ -159,7 +159,7 @@ ensuring that no angles are repeated (since -π rad == π rad),
 and ordered so that smaller absolute angles which are positive will be returned in the event of a tie in the shape difference.
 """
 register_default_angles_rad = sort(
-    reverse(range(; start=(-π), stop=π, step=π / 36)[1:(end-1)]); by=abs
+    reverse(range(; start=(-π), stop=π, step=π / 36)[1:(end - 1)]); by=abs
 )
 """
 Coarse registration angles for [`register_coarse_to_fine`](@ref): -π/6 to π/6 rad (±30º) in steps
@@ -291,7 +291,7 @@ function mismatch(
     fixed::AbstractArray, moving::AbstractArray, mxrot::Real=180, step::Real=5
 )
     test_angles = sort(
-        reverse(range(; start=(-mxrot), stop=mxrot, step=step)[1:(end-1)]); by=abs
+        reverse(range(; start=(-mxrot), stop=mxrot, step=step)[1:(end - 1)]); by=abs
     )
     return mismatch(fixed, moving, test_angles)
 end
@@ -333,7 +333,11 @@ Angle is in radians, positive = counterclockwise.
 - `angle`: Rotation angle in radians
 - `center`: Center of rotation; if nothing, uses centroid of boundary
 """
-function rotate_boundary(boundary::Matrix{Float64}, angle::Real; center::Union{Nothing,Tuple{Float64,Float64}}=nothing)
+function rotate_boundary(
+    boundary::Matrix{Float64},
+    angle::Real;
+    center::Union{Nothing,Tuple{Float64,Float64}}=nothing,
+)
     center = isnothing(center) ? vec(mean(_normalize_contour(boundary); dims=1)) : collect(center)
     rot_matrix = _get_rotation_matrix(angle)
     boundary_centered = boundary .- center'
@@ -350,7 +354,9 @@ Translate boundary curve to center at target_center.
 - `boundary`: Matrix(n, 2) with [x y] coordinates
 - `target_center`: Target centroid position (default: origin)
 """
-function center_boundary(boundary::Matrix{Float64}; target_center::Tuple{Float64,Float64}=(0.0, 0.0))
+function center_boundary(
+    boundary::Matrix{Float64}; target_center::Tuple{Float64,Float64}=(0.0, 0.0)
+)
     centroid = vec(mean(_normalize_contour(boundary); dims=1))
     offset = collect(target_center) .- centroid
     return boundary .+ offset'
