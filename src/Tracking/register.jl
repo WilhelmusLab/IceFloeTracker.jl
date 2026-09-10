@@ -433,7 +433,14 @@ end
 """
     boundary_normalized_distance(b1::Matrix{Float64}, b2::Matrix{Float64})
 
-Compute MSE distance normalized by perimeter squared for scale invariance.
+Compute the MSE distance between two boundaries, divided by their mean perimeter squared.
+
+The division makes the score **dimensionless**, so one threshold can span a range of floe
+sizes. It does *not* make the metric scale-invariant: two copies of the same shape at
+different scales score a nonzero difference (a 1x and a 2x square give `0.0247`). That is
+deliberate for floe tracking, where the same floe is matched across consecutive frames and
+a large change in size is genuine evidence of a mismatch rather than noise to normalize
+away. Use [`boundary_mse_aligned`](@ref) if you want the unnormalized value.
 """
 function boundary_normalized_distance(b1::Matrix{Float64}, b2::Matrix{Float64})
     mse = boundary_mse_aligned(b1, b2)
