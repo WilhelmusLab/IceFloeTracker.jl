@@ -222,6 +222,86 @@ function (f::ChainedFilterFunction)(floe, candidates)
     end
 end
 
+"""
+    BoundaryShapeDifferenceThresholdFilter(; kwargs...)
+
+Boundary-curve counterpart to [`ShapeDifferenceThresholdFilter`](@ref). Compares each
+candidate's boundary against the floe's using [`boundary_shape_difference`](@ref), which
+aligns both by their orientations and applies `metric` once -- it does not search over
+angles, matching the mask-based filter's cost model.
+
+Requires a boundary column (see `add_boundary!`) and `:orientation` on both the floe and
+the candidates. Writes `:boundary_shape_difference`,
+`:scaled_boundary_shape_difference` and `threshold_column`.
+
+!!! warning "Thresholds are placeholders"
+    The default 0.47 -> 0.31 values are inherited from the mask-based filter, where they
+    were tuned for `count_symdiff / area` -- a ratio of pixel areas.
+    `boundary_normalized_distance` is `MSE / perimeter^2`, a different dimensionless
+    quantity on a much smaller scale, so these values admit nearly every candidate. They
+    need re-tuning on real tracker data before this filter is used in anger, which is why
+    it is not part of `default_filter`.
+
+## Arguments
+- `metric`: `metric(reference, rotated_target) -> Real`, default
+  `boundary_normalized_distance`.
+- `boundary_column`: boundary column to read, default `:boundary`.
+- `area_variable`: column passed to `threshold_function` as the scale, default `:area`.
+
+To let the score contribute to matching, opt into it alongside the filter:
+
+```julia
+cols = [MinimumWeightMatchingFunction().columns..., :scaled_boundary_shape_difference]
+MinimumWeightMatchingFunction(; columns=cols, weights=ones(length(cols)))
+```
+
+`:scaled_boundary_shape_difference` is deliberately absent from that function's default
+`columns`: a missing column there is not an error but a `@debug` log and an **empty**
+result, so adding it while this filter stays opt-in would make the default tracker
+silently match nothing.
+"""
+@kwdef struct BoundaryShapeDifferenceThresholdFilter <: AbstractFloeFilterFunction
+    area_variable = :area
+    boundary_column = :boundary
+    metric = boundary_normalized_distance
+    threshold_column = :boundary_shape_difference_test
+    threshold_function = PiecewiseLinearThresholdFunction(100, 700, 0.47, 0.31)
+end
+
+function (f::BoundaryShapeDifferenceThresholdFilter)(
+    floe::DataFrameRow, candidates::DataFrame, _::Val{:raw}
+)
+    reference = floe[f.boundary_column]
+    function bsd(boundary, orientation)
+        return boundary_shape_difference(
+            reference, floe.orientation, boundary, orientation; metric=f.metric
+        )
+    end
+
+    transform!(
+        candidates,
+        [f.boundary_column, :orientation] => ByRow(bsd) => :boundary_shape_difference,
+    )
+
+    # No division by :area here, deliberately. The mask filter scales because
+    # count_symdiff returns a raw pixel count; boundary_normalized_distance is already
+    # dimensionless, so scaling again would double-normalize. The column name is kept for
+    # symmetry with the mask filter and with MinimumWeightMatchingFunction.
+    candidates[!, :scaled_boundary_shape_difference] =
+        candidates[!, :boundary_shape_difference]
+
+    return transform!(
+        candidates,
+        [f.area_variable, :scaled_boundary_shape_difference] =>
+            ByRow(f.threshold_function) => f.threshold_column,
+    )
+end
+
+# Deliberately no `const boundary_shape_difference_filter` preset: filter_functions.jl is
+# included before register.jl (Tracking.jl:49 vs :53), so constructing one at module scope
+# would hit the `metric = boundary_normalized_distance` default before that function
+# exists. @kwdef evaluates defaults at construction time, so the struct itself is fine.
+
 const max_travel_distance_filter = DistanceThresholdFilter(;
     threshold_function=LogLogQuadraticTimeDistanceFunction()
 )
