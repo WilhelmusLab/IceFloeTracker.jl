@@ -92,16 +92,27 @@ To add floe masks see [`add_floemasks!`](@ref).
 - `reduc_factor`: Reduction factor for boundary resampling (default: 2 = 50% reduction)
 """
 function add_boundary!(props_df::DataFrame; reduc_factor::Int64=2)
-    props_df.boundary = map(props_df.mask) do mask
-        contours = bwtraceboundary(mask)
-        outline = argmax(_contour_perimeter.(contours))
-        if length(contours) > 1
-            @warn "mask has $(length(contours)) contours;" *
-                " keeping the one with the largest perimeter as the floe boundary."
-        end
-        resample_boundary(contours[outline], reduc_factor)
-    end
+    props_df.boundary = map(mask -> _traced_boundary(mask; reduc_factor), props_df.mask)
     return nothing
+end
+
+"""
+    _traced_boundary(mask; reduc_factor::Int64=2)
+
+Trace a floe boundary and resample it by arc length. If the mask has more than one
+contour, the one with the largest perimeter is kept and a warning is issued.
+
+Shared by [`add_boundary!`](@ref) and `buildψs(::AbstractArray)` so the two cannot drift
+apart.
+"""
+function _traced_boundary(mask; reduc_factor::Int64=2)
+    contours = bwtraceboundary(mask)
+    outline = argmax(_contour_perimeter.(contours))
+    if length(contours) > 1
+        @warn "mask has $(length(contours)) contours;" *
+            " keeping the one with the largest perimeter as the floe boundary."
+    end
+    return resample_boundary(contours[outline], reduc_factor)
 end
 
 """
