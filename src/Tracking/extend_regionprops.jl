@@ -31,11 +31,14 @@ end
 
 Add the ψ-s curves to each row of `props_df`.
 
-Note: each member of `props` must have a `mask` column with a binary image representing the floe. 
-To add floe masks see [`addfloemasks!`](@ref).
+Note: each member of `props` must have a `boundary` column with the traced, resampled
+floe boundary. To add boundaries see [`add_boundary!`](@ref), which must run first.
 """
 function add_ψs!(props_df::DataFrame)
-    props_df.psi = map(buildψs, props_df.mask)
+    hasproperty(props_df, :boundary) || throw(
+        ArgumentError("`add_ψs!` requires a `:boundary` column; call `add_boundary!` first"),
+    )
+    props_df.psi = map(boundary -> buildψs(boundary)[1], props_df.boundary)
     return nothing
 end
 
