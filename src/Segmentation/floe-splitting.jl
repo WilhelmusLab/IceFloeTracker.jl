@@ -42,21 +42,25 @@ function dist_morph_split(
     binary_floes::BitMatrix;
     min_floe_size::Int64=64,
     max_hole_fill::Int64=2000,
-    max_depth::Int64=5,
-    max_depth_ratio::Real=0.3,
+    max_depth::Int64=25,
+    max_depth_ratio::Real=0.7,
     max_expand::Int64=3,
     opening_strel=strel_disk(3),
 )::Matrix{Int64}
     dist = distance_transform(feature_transform(.!binary_floes))
-    # Initialize with one run of opening
-    levels = Dict(0 => label_components(opening(dist .> 0, opening_strel)))
-
+    # Initialize level 0, exit early if opening removes all potential floes
+    markers = opening(dist .> 0, opening_strel)
+    markers .= .!imfill(.!markers, (0, max_hole_fill))
+    labeled_markers = label_components(markers)
+    maximum(labeled_markers) == 0 && return markers 
+    levels = Dict(0 => labeled_markers)
+   
     ### Build pyramid - each size is the opened and filled thresholded image for a given distance
     for dist_threshold in 1:max_depth
         markers = opening(dist .> dist_threshold, opening_strel)
         markers .= .!imfill(.!markers, (0, max_hole_fill))
         labeled_markers = label_components(markers)
-        maximum(labeled_markers) == 0 && break
+        # maximum(labeled_markers) == 0 && break
 
         labels = filter(r -> r != 0, unique(labeled_markers))
         indices = component_indices(labeled_markers)
