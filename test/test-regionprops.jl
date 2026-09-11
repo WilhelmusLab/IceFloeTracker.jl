@@ -17,6 +17,8 @@
         "bbox",
         "perimeter",
         "orientation",
+        "circularity",
+        "solidity",
     ]
     extra_props = nothing
 
@@ -40,6 +42,8 @@
             "minor_axis_length",
             "orientation",
             "perimeter",
+            "circularity",
+            "solidity",
         ] ⊆ names(table),
     )
     # check all requested properties are present
@@ -65,6 +69,13 @@
     regionprops(
         label_img; properties=["convex_area"], convex_area_algorithm=PixelConvexArea()
     )
+
+    # Test that we can get complex measures without listing everything
+    # Currently doesn't work if we just supply "circularity", need to fix that
+    regionprops(
+        label_img; properties=["area", "perimeter", "convex_area", "circularity", "solidity"], convex_area_algorithm=PixelConvexArea()
+    )
+
 
     # Regression test: cross-shaped region with 4 pixels should not error
     # (see https://github.com/WilhelmusLab/IceFloeTracker.jl/issues/919)
