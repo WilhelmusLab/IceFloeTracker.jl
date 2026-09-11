@@ -38,6 +38,7 @@ import ..Segmentation:
     tiled_adaptive_binarization,
     IceDetectionBrightnessPeaksMODIS721,
     IceDetectionBrightnessMidpoint,
+    PolygonConvexArea,
     regionprops_table,
     remove_small_segments!,
     remove_large_segments!,
@@ -149,7 +150,7 @@ floe_splitting_params = (
     max_depth=25,
     max_depth_ratio=0.7,
     max_expand=3,
-    opening_strel=strel_disk(1)
+    opening_strel=strel_disk(2)
     )
 floe_filtering_params = (
     min_floe_size=100,
@@ -305,7 +306,8 @@ function (s::Segment)(
     )
 
     @info "Joining segmentation results"
-    final_floes = merge_floes(kmeans_split_floes, adaptive_split_floes, preproc_gray)
+    # TODO: will need to pass parameters here
+    final_floes = merge_floes(kmeans_split_floes, adaptive_split_floes)
 
     remove_small_segments!(final_floes, s.floe_filtering_params.min_floe_size)
     remove_large_segments!(final_floes, s.floe_filtering_params.max_floe_size)
@@ -459,34 +461,27 @@ end
 const default_properties = [:label, :area, :perimeter, :centroid]
 
 """
-    objectwise_compare_segmentation(indexmap1, indexmap2, img; expand_radius=15, return_properties)
+    objectwise_compare_segmentation(df1, df2, labels1, labels2)
 
-Uses the concept of a relevant set to select connected components in the two
-indexmaps and produce comparisons. The image `img` is used to compute local boundary
-contrast, by comparing the difference in the mean intensity of the image and the boundary
-within `expand_radius` pixels. A DataFrame with rows corresponding to comparisons between
-the indexmaps is returned. Note that each labeled object may map to multiple objects.
-Returns the list of properties in "return properties" along with comparative measures `dist_s1_s2``,
-`scaled_relative_error_area`, and object measures `reflectance_mean`, `reflectance_bdry_mean`, 
-and `reflectance_bdry_contrast` computed relative to the input `img`.
+Compare segmentation results using region properties. Identifies the relevant set of
+objects in labels2 for each object in labels1. Expects df1 and df2 to originate
+from the `filter_floes` function, so they should include columns for area, centroid,
+and bounding box already. Returns a dataframe with a row for each comparison between 
+labels1 and labels2 and adds comparison metrics for the distance between centroids `dist_s1_s2`
+and the ratio of absolute area difference to summed area `scaled_relative_error_area_s1_s2`.
 
 """
 function objectwise_compare_segmentation(
-    indexmap1, indexmap2, img; expand_radius=15, properties=default_properties
-)
-    properties = union(properties, [:label, :centroid, :area, :bbox, :perimeter])
-    df_s1 = regionprops_table(indexmap1; properties=properties)
-    df_s2 = regionprops_table(indexmap2; properties=properties)
-
-    # This accounts for the centroid and bbox turning into col_ and row_ terms
-    properties = Symbol.(names(df_s1))
-
-    relevant_set = get_relevant_set(df_s1, df_s2, indexmap1, indexmap2)
+    df1, df2, labels1, labels2
+)    
+    properties = union(propertynames(df1), propertynames(df2))
+    relevant_set = get_relevant_set(df1, df2, labels1, labels2)
     results = DataFrame[]
-    for floe in eachrow(df_s1)
+    for floe in eachrow(df1)
         g = floe.label
         g in keys(relevant_set) && begin
-            df_rs = subset(df_s2, :label => ByRow(s -> s in relevant_set[g]))
+            df_rs = subset(df2, :label => ByRow(s -> s in relevant_set[g]))
+            # TODO: Accept a list of comparison functions, like the filter functions for the Tracker
             df_rs[:, :dist_s1_s2] = euclidean_distance(floe, df_rs; r=1) # r=1 means use pixel units, not meters
             df_rs[:, :scaled_relative_error_area] =
                 abs.(df_rs.area .- floe.area) ./ (df_rs.area .+ floe.area)
@@ -502,65 +497,72 @@ function objectwise_compare_segmentation(
     results_df = vcat(results...; cols=:union)
     rename!(results_df, Dict(r => Symbol("s2_", r) for r in properties))
 
-    # circularity
-    @. results_df[:, :s1_circularity] =
-        4 * pi * results_df[:, :s1_area] / results_df[:, :s1_perimeter] ^ 2
-    @. results_df[:, :s2_circularity] =
-        4 * pi * results_df[:, :s2_area] / results_df[:, :s2_perimeter] ^ 2
-
-    # mean reflectance
-    bdry1 = expand_labels(indexmap1, expand_radius) .- indexmap1
-    mean1 = segment_mean(SegmentedImage(img, indexmap1))
-    bdry_mean1 = segment_mean(SegmentedImage(img, bdry1))
-    results_df[:, :s1_reflectance_mean] = [L ∈ keys(mean1) ? mean1[L] : 0 for L in results_df[:, :s1_label]]
-    results_df[:, :s1_reflectance_bdry_mean] = [L ∈ keys(bdry_mean1) ? bdry_mean1[L] : 0 for L in results_df[:, :s1_label]]
-
-    bdry2 = expand_labels(indexmap2, expand_radius) .- indexmap2
-    mean2 = segment_mean(SegmentedImage(img, indexmap2))
-    bdry_mean2 = segment_mean(SegmentedImage(img, bdry2))
-    results_df[:, :s2_reflectance_mean] = [L ∈ keys(mean2) ? mean2[L] : 0 for L in results_df[:, :s2_label]]
-    results_df[:, :s2_reflectance_bdry_mean] = [L ∈ keys(bdry_mean2) ? bdry_mean2[L] : 0 for L in results_df[:, :s2_label]]
-
-    results_df[:, :s1_reflectance_bdry_contrast] =
-        results_df[:, :s1_reflectance_mean] .- results_df[:, :s1_reflectance_bdry_mean]
-    results_df[:, :s2_reflectance_bdry_contrast] =
-        results_df[:, :s2_reflectance_mean] .- results_df[:, :s2_reflectance_bdry_mean]
-
     return results_df
 end
 
 """
-    merge_floes(seg1, seg2, img; kwargs...)
+    merge_floes(
+        labels1,
+        labels2; 
+        max_distance_pixels=10,
+        max_error_area=0.25,
+        min_floe_size=100,
+        properties = [:label, :area, :perimeter, :bbox, :centroid, :convex_area,
+                 :major_axis_length, :minor_axis_length, :orientation, :circularity, :solidity],
+        convex_area_algorithm=PolygonConvexArea()
+    )
 
-Produce a single segmentation from a pair via object-wise assessment.
-1. Where the two segmentations agree within tolerance of dmax, emax, select the most circular floe.
-2. Where the segmentations disagree, select floes with the highest boundary contrast within their
+Produce a single set of floes from a pair of labeled images.
+1. Where the two segmentations agree within tolerance, select the most circular floe.
+2. Where the segmentations disagree, select floes with the highest circularity
 
 """
-function merge_floes(indexmap1, indexmap2, img; dmax=10, emax=0.25, min_floe_size=100)
-
+function merge_floes(labels1, labels2; 
+    max_distance_pixels=10,
+    max_error_area=0.25,
+    min_floe_size=100,
+    properties = [:label, :area, :perimeter, :bbox, :centroid, :convex_area,
+                 :major_axis_length, :minor_axis_length, :orientation, :circularity, :solidity],
+    convex_area_algorithm=PolygonConvexArea(),
+    metric=:solidity
+    )
+    df1 = regionprops_table(labels1; properties=properties, convex_area_algorithm=convex_area_algorithm)
+    df2 = regionprops_table(labels2; properties=properties, convex_area_algorithm=convex_area_algorithm)
     # If no floes to merge, skip merge
-    maximum(indexmap1) == 0 && return indexmap2
-    maximum(indexmap2) == 0 && return indexmap1
+    nrow(df1) == 0 && return labels2
+    nrow(df2) == 0 && return labels1
 
-    A = deepcopy(indexmap1)
-    B = deepcopy(indexmap2)
+    #### Set up starting images
+    A = labels1
+    B = labels2
+    offset_b = maximum(A) # Offset the labels in B by the largest value in A
     A_indices = component_indices(A)
     B_indices = component_indices(B)
+    A_labels = df1.label
+    B_labels = df2.label
 
     F = zeros(Int64, size(A))
 
-    df_comp = objectwise_compare_segmentation(indexmap1, indexmap2, img);
-    s1_no_overlap = filter(r -> r != 0, setdiff(unique(A), df_comp.s1_label))
-    s2_no_overlap = filter(r -> r != 0, setdiff(unique(B), df_comp.s2_label))
+    #### Case 1: No overlap
+    A_no_overlap = _nonoverlapping_labels(B, A_indices, A_labels)
+    _assign_labels!(F, A_indices, A_no_overlap)
 
-    #### Category 1: Good matches in both categories ####
-    matches = subset(
-        df_comp,
-        [:dist_s1_s2, :scaled_relative_error_area] => (d, e) -> (d .< dmax) .&& (e .< emax),
-    )
+    B_no_overlap = _nonoverlapping_labels(A, B_indices, B_labels)
+    _assign_labels!(F, B_indices, B_no_overlap; offset=offset_b)
+
+    subset!(df1, :label => ByRow(r -> r ∉ A_no_overlap))
+    subset!(df2, :label => ByRow(r -> r ∉ B_no_overlap))
+    (nrow(df1) == 0 || nrow(df2) == 0) && return F
+
+    #### Case 2: High-Quality Pairs
+    # In this case, there exists at least one item in the relevant set where the error metrics are both within the tolerance.
+    # Out of these objects, choose the one with the highest probability. 
+    df_comp = objectwise_compare_segmentation(df1, df2, labels1, labels2);
+    within_tolerance(d, e) = (d .< max_distance_pixels) .&& (e .< max_error_area)
+    matches = subset(df_comp, [:dist_s1_s2, :scaled_relative_error_area] => within_tolerance)
+
     nrow(matches) > 0 && begin
-        # Resolve duplicates by choosing the one with the lowest area difference.
+        # Select the item in the relative set with lowest area difference.
         subset!(
             groupby(matches, :s1_label),
             :scaled_relative_error_area => r -> 1:length(r) .== argmin(r),
@@ -570,138 +572,78 @@ function merge_floes(indexmap1, indexmap2, img; dmax=10, emax=0.25, min_floe_siz
             :scaled_relative_error_area => r -> 1:length(r) .== argmin(r),
         )
 
-        # Select the most circular of the two options
+        # Select the option with highest quality metric
         transform!(
             matches,
-            [:s1_circularity, :s2_circularity] =>
+            [Symbol("s1_", metric), Symbol("s2_", metric)] =>
                 ByRow((s1, s2) -> s1 .> s2) => :s1_better,
         )
 
         # Merge the two, prioritizing the second if there is overlap.
-        s1_labels = matches[matches.s1_better, :s1_label]
-        s2_labels = matches[.!matches.s1_better, :s2_label];
-        A_sel = assign_labels(A, s1_labels);
-        B_sel = assign_labels(B, s2_labels);
-        idx = A_sel .> 0
-        F[idx] .= A[idx]
-        idx = B_sel .> 0
-        F[idx] .= B[idx]
 
-        # Clear intersections
+        _assign_labels!(F, A_indices, matches[matches.s1_better, :s1_label])
+        _assign_labels!(F, B_indices, matches[.!matches.s1_better, :s2_label]; offset=offset_b)
+
+        # Add intersections to list
         idx = F .> 0
-        for L in filter(r -> r != 0, unique(A[idx]))
-            A[A_indices[L]] .= 0
-        end
-        for L in filter(r -> r != 0, unique(B[idx]))
-            B[B_indices[L]] .= 0
-        end
+        A_labels = union(A_labels, unique(A[idx]))
+        B_labels = union(B_labels, unique(B[idx]))
+
+        # Update the dataframes to remove the resolved labels
+        subset!(df1, :label => ByRow(r -> r ∉ A_labels))
+        subset!(df2, :label => ByRow(r -> r ∉ B_labels))
     end
 
-    # Cleanup - in case there are pixels left over.
-    remove_small_segments!(A, min_floe_size)
-    remove_small_segments!(B, min_floe_size)
-    remove_small_segments!(F, min_floe_size)
+    #### Case 3: Poor matches, including over and undersegmentation
+    # 1. Loop through remaining objects in A. If probability is higher
+    #    for the object in A than all intersections in B, keep object.
+    # 2. Loop through remaining objects in B. If no intersection with
+    #    the objects kept in step 1, keep object.
+    # 3. Update F and return.
 
-    # TODO: Remove rows from df_comp for the cleared objects
-    A_labels = filter(r -> r != 0, unique(A))
-    B_labels = filter(r -> r != 0, unique(B))
-    subset!(
-        df_comp, [:s1_label, :s2_label] => ByRow((s1, s2) -> s1 ∈ A_labels || s2 ∈ B_labels)
-    )
-
-    # For the remaining floes, pick the floe wtih the best contrast to the background.
-    nrow(df_comp) > 0 && begin
-
-        # Selects the subset of df_comp mapping s1 to a single s2, ranked by contrast.
-        s1_s2_highest_contrast = subset(
-            groupby(df_comp, :s1_label),
-            :s2_reflectance_bdry_contrast => r -> 1:length(r) .== argmin(r),
-        )
-        transform!(
-            s1_s2_highest_contrast,
-            [:s1_reflectance_bdry_contrast, :s2_reflectance_bdry_contrast] =>
-                ByRow((s1, s2) -> s1 .> s2) => :s1_better,
-        )
-
-        s2_s1_highest_contrast = subset(
-            groupby(df_comp, :s2_label),
-            :s1_reflectance_bdry_contrast => r -> 1:length(r) .== argmin(r),
-        )
-        transform!(
-            s2_s1_highest_contrast,
-            [:s1_reflectance_bdry_contrast, :s2_reflectance_bdry_contrast] =>
-                ByRow((s1, s2) -> s1 .> s2) => :s1_better,
-        )
-
-        s1_s2_highest_contrast = subset(
-            groupby(df_comp, :s1_label),
-            :s2_reflectance_bdry_contrast => r -> 1:length(r) .== argmin(r),
-        )
-        transform!(
-            s1_s2_highest_contrast,
-            [:s1_reflectance_bdry_contrast, :s2_reflectance_bdry_contrast] =>
-                ByRow((s1, s2) -> s1 .> s2) => :s1_better,
-        )
-
-        s2_s1_highest_contrast = subset(
-            groupby(df_comp, :s2_label),
-            :s1_reflectance_bdry_contrast => r -> 1:length(r) .== argmin(r),
-        )
-        transform!(
-            s2_s1_highest_contrast,
-            [:s1_reflectance_bdry_contrast, :s2_reflectance_bdry_contrast] =>
-                ByRow((s1, s2) -> s1 .> s2) => :s1_better,
-        )
-
-        s1_labels = outerjoin(
-            s1_s2_highest_contrast[
-                s1_s2_highest_contrast.s1_better, [:s1_label, :s2_label]
-            ],
-            s2_s1_highest_contrast[
-                s2_s1_highest_contrast.s1_better, [:s1_label, :s2_label]
-            ];
-            on=[:s1_label, :s2_label],
-        )[
-            :, :s1_label
-        ]
-
-        s2_labels = outerjoin(
-            s1_s2_highest_contrast[
-                .!s1_s2_highest_contrast.s1_better, [:s1_label, :s2_label]
-            ],
-            s2_s1_highest_contrast[
-                .!s2_s1_highest_contrast.s1_better, [:s1_label, :s2_label]
-            ];
-            on=[:s1_label, :s2_label],
-        )[
-            :, :s2_label
-        ]
-
-        A_sel = assign_labels(A, s1_labels);
-        B_sel = assign_labels(B, s2_labels);
-        idx = A_sel .> 0
-        F[idx] .= A[idx]
-        idx = B_sel .> 0
-        F[idx] .= B[idx]
-
-        # Clear intersections
-        idx = F .> 0
-        for L in filter(r -> r != 0, unique(A[idx]))
-            A[A_indices[L]] .= 0
-        end
-        for L in filter(r -> r != 0, unique(B[idx]))
-            B[B_indices[L]] .= 0
+    # Select objects in A with higher quality than any intersection with B
+    A_labels = []
+    B_quality = Dict(r => p for (r, p) in zip(df2.label, df2[:, metric]))
+    for s1 in eachrow(df1)        
+        B_labels = filter(r -> r ∈ df2.label, unique(labels2[A_indices[s1.label]]))
+        if all(s1[metric] .> [B_quality[r] for r in B_labels])
+            push!(A_labels, s1.label)
         end
     end
-
-    A_sel = assign_labels(A, s1_no_overlap)
-    B_sel = assign_labels(B, s2_no_overlap)
-    F[A_sel .> 0] .= A_sel[A_sel .> 0]
-    F[B_sel .> 0] .= B_sel[B_sel .> 0]
-
+     _assign_labels!(F, A_indices, A_labels)
+   
+    # Select objects in B with no intersection with F
+    B_labels = unique(B[F .> 0])
+    subset!(df2, :label => ByRow(r -> r ∉ B_labels))
+    _assign_labels!(F, B_indices,  df2.label; offset=offset_b)
+    
+    # Remove possible isolated pixels from merge
     remove_small_segments!(F, min_floe_size)
+    return label_components(F)
+end
 
-    return F
+"""
+Helper functions for the merge_floes routine
+"""
+function _nonoverlapping_labels(other, indices, labels)
+    return [
+        label for label in labels
+        if maximum(other[indices[label]]) == 0
+    ]
+end
+
+function _assign_labels!(output, indices, labels; offset=0)
+    foreach(labels) do label
+        output[indices[label]] .= label + offset
+    end
+end
+
+function _remove_labels!(output, indices, remove_labels)
+    for L in remove_labels
+        if L != 0
+            output[indices[L]] .= 0
+        end
+    end
 end
 
 #### Tracker parameters ####
