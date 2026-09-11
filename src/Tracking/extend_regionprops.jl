@@ -92,12 +92,22 @@ To add floe masks see [`add_floemasks!`](@ref).
 - `reduc_factor`: Reduction factor for boundary resampling (default: 2 = 50% reduction)
 """
 function add_boundary!(props_df::DataFrame; reduc_factor::Int64=2)
-    props_df.boundary = map(props_df.mask) do mask
-        bd_traced = bwtraceboundary(mask)
-        # Handle case of multiple boundaries (shouldn't happen for individual floes but be defensive)
-        bd_traced_single = isa(bd_traced, Vector{Vector{CartesianIndex}}) ?
-            bd_traced[1] : bd_traced
-        resample_boundary(bd_traced_single, reduc_factor)
-    end
+    props_df.boundary = map(mask -> _traced_boundary(mask; reduc_factor), props_df.mask)
     return nothing
+end
+
+"""
+    _traced_boundary(mask; reduc_factor::Int64=2)
+
+Trace a floe boundary and resample it by arc length.
+
+Shared by [`add_boundary!`](@ref) and `buildψs(::AbstractArray)` so the two cannot drift
+apart.
+"""
+function _traced_boundary(mask; reduc_factor::Int64=2)
+    bd_traced = bwtraceboundary(mask)
+    # Handle case of multiple boundaries (shouldn't happen for individual floes but be defensive)
+    bd_traced_single = isa(bd_traced, Vector{Vector{CartesianIndex}}) ?
+        bd_traced[1] : bd_traced
+    return resample_boundary(bd_traced_single, reduc_factor)
 end
