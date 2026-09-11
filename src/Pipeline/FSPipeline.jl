@@ -159,8 +159,10 @@ floe_filtering_params = (
     min_solidity=0.7,
     min_reflectance=0.4,
     min_contrast=0.01,
+    filter_function=LogisticRegressionFilter,
     min_probability=0.5,
 )
+
 floe_merging_params = (
     max_distance_pixels=10,
     max_error_area=0.25,
@@ -281,33 +283,16 @@ function (s::Segment)(
     apply_landmask!(adaptive_result, .!(prelim_ice_mask .|| cloud_mask))
 
     @info "Splitting floes"
-    clean_split_label =
+    clean_and_split =
         r -> dist_morph_split(
             clean_binary_floes(r, prelim_ice_mask, cloud_mask; s.cleanup_binary_params...);
             s.floe_splitting_params...,
         )
 
-    kmeans_split_floes = clean_split_label(kmeans_result)
-    adaptive_split_floes = clean_split_label(adaptive_result)
-
     # TBD: Filter floes based on the edge properties, colors
 
     @info "Filtering floes"
-    filter_floes!(
-        kmeans_split_floes,
-        coastal_buffer_mask,
-        cloud_mask,
-        falsecolor_image;
-        s.floe_filtering_params...,
-    )
-    filter_floes!(
-        adaptive_split_floes,
-        coastal_buffer_mask,
-        cloud_mask,
-        falsecolor_image;
-        s.floe_filtering_params...,
-    )
-
+    
     labeled_images = clean_and_split.([kmeans_result, adaptive_result])
     
     @info "Filter and merge"
@@ -451,6 +436,13 @@ function filter_floes(
     min_contrast=0.01,
     filter_function=LogisticRegressionFilter,
     min_probability=0.5,
+    regionprops_args=(
+        convex_area_algorithm=PolygonConvexArea(),
+        properties=[:label, :area, :perimeter, :bbox, :centroid, :convex_area,
+                :major_axis_length, :minor_axis_length, :orientation,
+                :circularity, :solidity],
+        )
+
 )
     out = copy(img_indexmap)
     # 1. Remove objects which overlap the coastal mask
@@ -468,23 +460,19 @@ function filter_floes(
 
     # 3. Get object-wise properties
     results_df = regionprops_table(out;
-        properties=[:label, :area, :perimeter, :bbox, :centroid, :convex_area,
-                    :major_axis_length, :minor_axis_length, :orientation],
-        convex_area_algorithm=PolygonConvexArea()
+        regionprops_args...
     )
     # Return blank image if no floes remain
     nrow(results_df) == 0 && return results_df
 
     results_df[:, :length_scale] = results_df[:, :area] .^ 0.5
-    results_df[:, :circularity] = 4 * π * results_df[:, :area] ./ results_df[:, :perimeter] .^ 2
     subset!(results_df, :circularity => r -> r .> min_circularity)
-    results_df[:, :solidity] = results_df[:, :area] ./ results_df[:, :convex_area]
     subset!(results_df, :solidity => r -> r .> min_solidity)
     nrow(results_df) == 0 && return results_df
 
     results_df[:, :cloud_fraction] =  (r -> mean(cloud_mask[indices[r]])).(results_df[:, :label])
     
-    # mean reflectance
+    # mean reflectance # TODO: Add channel-wise mean to regionprops table
     segment_mean_reflectance = segment_mean(SegmentedImage(falsecolor_image, out))
     b = [segment_mean_reflectance[L] for L in  results_df[:, :label]]
     results_df[:, :b1_reflectance_mean] = blue.(b)
@@ -578,31 +566,6 @@ function objectwise_compare_segmentation(
     end
     results_df = vcat(results...; cols=:union)
     rename!(results_df, Dict(r => Symbol("s2_", r) for r in properties))
-
-    # circularity
-    @. results_df[:, :s1_circularity] =
-        4 * pi * results_df[:, :s1_area] / results_df[:, :s1_perimeter] ^ 2
-    @. results_df[:, :s2_circularity] =
-        4 * pi * results_df[:, :s2_area] / results_df[:, :s2_perimeter] ^ 2
-
-    # mean reflectance
-    bdry1 = expand_labels(indexmap1, expand_radius) .- indexmap1
-    mean1 = segment_mean(SegmentedImage(img, indexmap1))
-    bdry_mean1 = segment_mean(SegmentedImage(img, bdry1))
-    results_df[:, :s1_reflectance_mean] = [L ∈ keys(mean1) ? mean1[L] : 0 for L in results_df[:, :s1_label]]
-    results_df[:, :s1_reflectance_bdry_mean] = [L ∈ keys(bdry_mean1) ? bdry_mean1[L] : 0 for L in results_df[:, :s1_label]]
-
-    bdry2 = expand_labels(indexmap2, expand_radius) .- indexmap2
-    mean2 = segment_mean(SegmentedImage(img, indexmap2))
-    bdry_mean2 = segment_mean(SegmentedImage(img, bdry2))
-    results_df[:, :s2_reflectance_mean] = [L ∈ keys(mean2) ? mean2[L] : 0 for L in results_df[:, :s2_label]]
-    results_df[:, :s2_reflectance_bdry_mean] = [L ∈ keys(bdry_mean2) ? bdry_mean2[L] : 0 for L in results_df[:, :s2_label]]
-
-    results_df[:, :s1_reflectance_bdry_contrast] =
-        results_df[:, :s1_reflectance_mean] .- results_df[:, :s1_reflectance_bdry_mean]
-    results_df[:, :s2_reflectance_bdry_contrast] =
-        results_df[:, :s2_reflectance_mean] .- results_df[:, :s2_reflectance_bdry_mean]
-
     return results_df
 end
 
