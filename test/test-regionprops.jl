@@ -17,6 +17,8 @@
         "bbox",
         "perimeter",
         "orientation",
+        "circularity",
+        "solidity"
     ]
     extra_props = nothing
 
@@ -40,6 +42,8 @@
             "minor_axis_length",
             "orientation",
             "perimeter",
+            "circularity",
+            "solidity"
         ] ⊆ names(table),
     )
     # check all requested properties are present
@@ -65,6 +69,8 @@
     regionprops(
         label_img; properties=["convex_area"], convex_area_algorithm=PixelConvexArea()
     )
+    regionprops(label_img; properties=["area", "convex_area", "solidity"])
+    # regionprops(label_img; properties=["area", "perimeter", "circularity"])
 
     # Regression test: cross-shaped region with 4 pixels should not error
     # (see https://github.com/WilhelmusLab/IceFloeTracker.jl/issues/919)

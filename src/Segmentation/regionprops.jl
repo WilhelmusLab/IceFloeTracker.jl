@@ -669,15 +669,18 @@ function regionprops(
         end
     end
 
-    :perimeter ∈ properties && begin
+    ((:perimeter ∈ properties) || (:circularity ∈ properties)) && begin
         perimeter_masks = component_floes(labels; labels=all_labels, boxes=bboxes_all, areas)
         floe_perims = component_perimeters(
             labels; algorithm=perimeter_algorithm, masks=perimeter_masks
         )
         push!(data, :perimeter => map(s -> floe_perims[s], img_labels))
+        if :circularity ∈ properties
+            push!(data, :circularity => map(s -> areas[s] / floe_perims[s], img_labels))
+        end
     end
 
-    :convex_area ∈ properties && begin
+    ((:convex_area ∈ properties) || (:solidity ∈ properties)) && begin
         convex_areas = component_convex_areas(
             labels;
             algorithm=convex_area_algorithm,
@@ -686,6 +689,9 @@ function regionprops(
             labels=all_labels,
         )
         push!(data, :convex_area => map(s -> convex_areas[s], img_labels))
+        if :solidity ∈ properties
+            push!(data, :solidity => map(s -> areas[s] / convex_areas[s], img_labels))
+        end    
     end
 
     # psi-s needs masks, so this can get called first
@@ -711,6 +717,7 @@ function regionprops(
             append!(updated_properties, [p])
         end
     end
+   
     return Dict(prop => data[prop] for prop in updated_properties)
 end
 
