@@ -190,7 +190,7 @@ end
 @kwdef struct Watkins2026CloudMask <: AbstractCloudMaskAlgorithm
     band_7_threshold::Float64 = 0.15
     band_2_threshold::Float64 = 0.34
-    opening_strel = strel_diamond((3, 3))
+    opening_strel = strel_disk(3)
     dilation_strel = strel_disk(2)
     min_hole_size = 300
     max_fill_size = 1e4
