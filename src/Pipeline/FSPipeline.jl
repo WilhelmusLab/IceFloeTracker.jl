@@ -185,36 +185,49 @@ function (p::Preprocess)(
 end
 
 cloud_mask_algorithm = Watkins2026CloudMask()
-preliminary_ice_mask = IceDetectionBrightnessMidpoint(;  τ₁ = 0.1)
+ice_mask_algorithm = IceDetectionBrightnessMidpoint(;  τ₁ = 0.1)
 
+"""Classify(cloud_mask_algorithm, ice_mask_algorithm, classification_key)
+   Classify(false_color_image, land_mask)
+
+Produces a labeled image with up to 4 categories: land, water, ice, and cloud, with
+numerical values supplied by the `classification_key`. The function is initialized
+by assigning a cloud mask algorithm, ice mask algorithm, and a dictionary with the
+numerical values to use for each case. The cloud mask algorithm should accept the 
+MODIS false color image, while the ice mask algorithm uses Band 1 of the falsecolor image.
+Returns an Int64 matrix with the same dimensions as the false color image.
+
+"""
 @kwdef struct Classify <: IceFloeClassificationAlgorithm
-    cloud_mask_algorithm=Watkins2026CloudMask()
-    ice_mask_algorithm=IceDetectionBrightnessMidpoint(; minimum_reflectance=0.3)
+    cloud_mask_algorithm=cloud_mask_algorithm
+    ice_mask_algorithm=ice_mask_algorithm
+    classification_key=Dict("land"=>0, "water"=>1, "ice"=>2, "cloud"=>3)
 end
 
 function (c::Classify)(false_color_image, land_mask;
-        label_map=Dict("land"=>0, "water"=>1, "ice"=>2, "cloud"=>3)
-    ) 
+    )::Matrix{Int64}
     fc_masked = apply_landmask(false_color_image, land_mask)
     clouds = c.cloud_mask_algorithm(fc_masked) .> 0
     band_1_masked = Gray.(blue.(apply_landmask(fc_masked, clouds)))
     ice = c.ice_mask_algorithm(band_1_masked) .> 0
     
-    classified_image = ones(Int64, size(false_color_image)) .* label_map["water"]
-    classified_image[coastal_buffer] .= label_map["land"]
-    classified_image[ice] .= label_map["ice"]
-    classified_image[clouds] .= label_map["cloud"]
+    classified_image = ones(Int64, size(false_color_image)) .* c.classification_key["water"]
+    classified_image[land_mask] .= c.classification_key["land"]
+    classified_image[ice] .= c.classification_key["ice"]
+    classified_image[clouds] .= c.classification_key["cloud"]
     
-    return SegmentedImage(false_color_image, classified_image)
+    return classified_image
 end
 
 
 
 # Default segmentation parameters
 coastal_buffer_structuring_element = strel_box((51, 51))
-preprocessing_algorithm = Preprocess()
 tile_size_pixels = 1200
 min_tile_ice_pixel_count=300
+preprocessing_algorithm = Preprocess()
+classification_algorithm = Classify()
+classification_key = Dict("land"=>0, "water"=>1, "ice"=>2, "cloud"=>3)
 kmeans_params = (
     k=4,
     maxiter=50,
@@ -272,8 +285,9 @@ The image preprocessing is supplied as an function in the functor setup.
 @kwdef struct Segment <: IceFloeSegmentationAlgorithm
     coastal_buffer_structuring_element::AbstractMatrix{Bool} =
         coastal_buffer_structuring_element
-    cloud_mask_algorithm = cloud_mask_algorithm
     preprocessing_algorithm = preprocessing_algorithm
+    classification_algorithm = classification_algorithm
+    classification_key = Dict("land"=>0, "water"=>1, "ice"=>2, "cloud"=>3)
     tile_size_pixels = tile_size_pixels
     min_tile_ice_pixel_count = min_tile_ice_pixel_count
     preliminary_ice_mask = preliminary_ice_mask
@@ -315,12 +329,13 @@ function (s::Segment)(
     (nr, nc) = round.(Int, size(truecolor_image) ./ tile_size_pixels)
     tiles = get_tiles(truecolor_image; rblocks=nr, cblocks=nc)
 
-    @info "Building masks"
-    cloud_mask = create_cloudmask(falsecolor_image, s.cloud_mask_algorithm)
+    @info "Classifying falsecolor image"
+    classified_image = s.classification_algorithm(falsecolor_image, landmask)
+    cloud_mask = classified_image .== s.classification_key["cloud"]
 
     # 2. Intermediate images - apply coastal buffer and cloud mask
     joint_mask = coastal_buffer_mask .|| cloud_mask
-    tc_masked = apply_landmask(truecolor_image, joint_mask)
+    tc_masked = apply_landmask(truecolor_image, joint_mask) # not used -- should it be?
     fc_masked = apply_landmask(falsecolor_image, joint_mask)
 
     # First check for sufficient non-land and non-cloud pixels
@@ -329,9 +344,9 @@ function (s::Segment)(
     );
 
     # Then check for sufficient possible sea ice pixels
-    prelim_ice_mask = s.preliminary_ice_mask(Gray.(red.(tc_masked)), filtered_tiles)
+    ice_mask = classified_image .== s.classification_key["ice"]
     filtered_tiles = filter(
-        t -> sum(prelim_ice_mask[t...]) > s.min_tile_ice_pixel_count, filtered_tiles
+        t -> sum(ice_mask[t...]) > s.min_tile_ice_pixel_count, filtered_tiles
     );
 
     @info "Preprocessing truecolor image"
@@ -354,13 +369,12 @@ function (s::Segment)(
 
     # We also don't want to include artificially brightened regions, so
     # we mask things that have already been classified as water.
-    apply_landmask!(adaptive_result, .!(prelim_ice_mask .|| cloud_mask))
+    apply_landmask!(adaptive_result, classified_image .== s.classification_key["water"])
 
     @info "Splitting floes"
-
     clean_split_label =
         r -> dist_morph_split(
-            clean_binary_floes(r, prelim_ice_mask, cloud_mask; s.cleanup_binary_params...);
+            clean_binary_floes(r, ice_mask, cloud_mask; s.cleanup_binary_params...);
             s.floe_splitting_params...,
         )
 
@@ -368,9 +382,9 @@ function (s::Segment)(
     adaptive_split_floes = clean_split_label(adaptive_result)
 
     # TBD: Filter floes based on the edge properties, colors
-
     @info "Filtering floes"
 
+    # TBD: check if this should happen before or after the merge floes function.
     filter_floes!(
         kmeans_split_floes,
         coastal_buffer_mask,
@@ -388,7 +402,6 @@ function (s::Segment)(
 
     @info "Joining segmentation results"
     final_floes = merge_floes(kmeans_split_floes, adaptive_split_floes, preproc_gray)
-
     remove_small_segments!(final_floes, s.floe_filtering_params.min_floe_size)
     remove_large_segments!(final_floes, s.floe_filtering_params.max_floe_size)
 
@@ -407,8 +420,7 @@ function (s::Segment)(
             truecolor,
             falsecolor,
             coastal_buffer_mask=Gray.(coastal_buffer_mask),
-            cloud_mask=Gray.(cloud_mask),
-            ice_mask=Gray.(prelim_ice_mask),
+            classified_image=_colorize_classification(classified_image),
             preprocessed=preproc_gray,
             kmeans_binarized=kmeans_result .> 0,
             adaptive_binarized=adaptive_result .> 0,
@@ -421,6 +433,17 @@ function (s::Segment)(
         )
     end
     return segments_tc
+end
+# land"=>0, "water"=>1, "ice"=>2, "cloud"=>3)
+function _colorize_classification(labeled_image;
+    color_map=Dict(
+        0=>RGB(0),
+        1=>RGB(0.018, 0.49, 0.64),
+        2=>RGB(1),
+        3=>RGB(0.84, 0.73, 0.94)
+        )
+    )
+    return map(i -> color_map[i], labeled_image)
 end
 
 """
@@ -944,7 +967,11 @@ function Track(
     maximum_time_step=Day(2), # Maximum length of time to skip
 )
     return FloeTracker(;
-        filter_function, matching_function, minimum_area, maximum_area, maximum_time_step
+        filter_function,
+        matching_function,
+        minimum_area,
+        maximum_area,
+        maximum_time_step
     )
 end
 
