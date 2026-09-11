@@ -40,7 +40,7 @@ After traversing the pyramid, relabel matrix, and remove any objects smaller tha
 """
 function dist_morph_split(
     binary_floes::BitMatrix;
-    min_floe_size:Int64=64,
+    min_floe_size::Int64=64,
     max_hole_fill::Int64=2000,
     max_depth::Int64=5,
     max_depth_ratio::Real=0.3,
