@@ -9,6 +9,7 @@ import Images:
     opening,
     component_indices,
     imfill
+
 import ..Morphology:
     strel_disk
 
@@ -18,7 +19,7 @@ import ..Morphology:
         min_floe_size::Int64=64,
         max_hole_fill::Int64=2000,
         max_depth::Int64=5,
-        max_expand::Int64=3,
+        max_expand::Int64=2,
         strel=strel_disk(3)
     )
 
@@ -39,12 +40,13 @@ After traversing the pyramid, relabel matrix, and remove any objects smaller tha
 """
 function dist_morph_split(
     binary_floes::BitMatrix;
+    min_floe_size:Int64=64,
     max_hole_fill::Int64=2000,
     max_depth::Int64=5,
     max_depth_ratio::Real=0.3,
     max_expand::Int64=3,
     opening_strel=strel_disk(3),
-)
+)::Matrix{Int64}
     dist = distance_transform(feature_transform(.!binary_floes))
     # Initialize with one run of opening
     levels = Dict(0 => label_components(opening(dist .> 0, opening_strel)))
@@ -93,6 +95,7 @@ function dist_morph_split(
             final_labels[indices[L]] .= expanded[indices[L]]
         end
     end
+    remove_small_segments!(final_labels, min_floe_size)
     return label_components(final_labels)
 end
 
