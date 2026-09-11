@@ -269,3 +269,30 @@ end
     pixel[3, 3] = true
     @test _contour_perimeter(only(bwtraceboundary(pixel))) == 0
 end
+
+@testitem "add_ψs! errors helpfully when :boundary is missing" begin
+    using IceFloeTracker.Tracking: add_ψs!, add_boundary!
+    using DataFrames: DataFrame
+
+    img = zeros(Int, 10, 10)
+    img[2:6, 2:6] .= 1
+    mask = img .> 0
+
+    props = DataFrame(; mask=[mask])
+    @test_throws ArgumentError add_ψs!(props)
+
+    # the message must name the remedy, not merely report the absent column
+    msg = try
+        add_ψs!(props)
+        ""
+    catch e
+        sprint(showerror, e)
+    end
+    @test occursin("add_boundary!", msg)
+
+    # and it succeeds once the boundary is there
+    add_boundary!(props)
+    add_ψs!(props)
+    @test "psi" ∈ names(props)
+    @test props.psi[1] isa Vector{Float64}
+end
