@@ -382,7 +382,7 @@ end
 
 @testitem "split-floes" begin
     import IceFloeTracker: Watkins2026Dataset, dist_morph_split
-    import Images: erode, dilate, strel_box
+    import Images: erode, dilate, strel_box, label_components
 
     dataset = Watkins2026Dataset(; ref="v0.2")
     case = first(filter(c -> (c.case_number == 6 && c.satellite == "terra"), dataset))

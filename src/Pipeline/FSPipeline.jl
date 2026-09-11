@@ -27,6 +27,7 @@ import ..Preprocessing:
     apply_cloudmask,
     apply_cloudmask!,
     Watkins2026CloudMask
+
 import ..ImageUtils: get_tiles, imbrighten
 import ..Segmentation:
     component_perimeters,
@@ -121,7 +122,7 @@ function (p::Preprocess)(
 end
 
 # Default segmentation parameters
-coastal_buffer_structuring_element = strel_box((51, 51))
+coastal_buffer_structuring_element = strel_disk(25)
 cloud_mask_algorithm = Watkins2026CloudMask()
 preprocessing_algorithm = Preprocess()
 tile_size_pixels = 400
@@ -143,13 +144,13 @@ cleanup_binary_params = (
     erosion_strel=strel_box((3, 3)), init_max_fill=100, conditional_max_fill=500
 )
 floe_splitting_params = (
-    min_floe_size=100,
+    min_floe_size=64,
     max_hole_fill=2000,
-    max_depth=20,
-    max_depth_ratio=0.5,
-    max_expand=1,
-    opening_strel=strel_box((3,3))
-)
+    max_depth=25,
+    max_depth_ratio=0.7,
+    max_expand=2,
+    opening_strel=strel_disk(5)
+    )
 floe_filtering_params = (
     min_floe_size=100,
     min_cloudy_floe_size=1000,
@@ -279,7 +280,7 @@ function (s::Segment)(
     clean_split_label =
         r -> dist_morph_split(
             clean_binary_floes(r, prelim_ice_mask, cloud_mask; s.cleanup_binary_params...);
-            # s.floe_splitting_params...,
+            s.floe_splitting_params...,
         )
 
     kmeans_split_floes = clean_split_label(kmeans_result)
