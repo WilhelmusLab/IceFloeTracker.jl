@@ -872,3 +872,39 @@ end
         ],
     )
 end
+
+@testitem "Nonempty candidates with no viable pairs" begin
+    using DataFrames
+    using Dates
+    import IceFloeTracker: FloeTracker, FilterFunction, MinimumWeightMatchingFunction
+
+    tracker = FloeTracker(;
+        filter_function=FilterFunction(),
+        matching_function=MinimumWeightMatchingFunction(),
+        minimum_area=1,
+    )
+
+    @testset "all candidate pairs rejected by the filters" begin
+        # tiny floe and a distant, much larger floe an hour later: the distance
+        # and relative-error filters leave no candidate pairs, exercising the
+        # empty-pairs -> matching -> all-unmatched flow
+        A = zeros(Int, 40, 40)
+        A[2:6, 2:6] .= 1
+        B = zeros(Int, 40, 40)
+        B[25:38, 20:38] .= 1
+        times = [DateTime("2025-05-01T11:00"), DateTime("2025-05-01T12:00")]
+        tracked = tracker([A, B], times)
+        # no matches means only length-1 trajectories, which are all dropped
+        @test nrow(tracked) == 0
+    end
+
+    @testset "no trajectory head within maximum_time_step" begin
+        # identical images, but observed further apart than maximum_time_step,
+        # so there are no eligible trajectory heads at the second observation
+        A = zeros(Int, 20, 20)
+        A[2:6, 2:6] .= 1
+        times = [DateTime("2025-05-01T11:00"), DateTime("2025-05-10T11:00")]
+        tracked = tracker([A, A], times)
+        @test nrow(tracked) == 0
+    end
+end
