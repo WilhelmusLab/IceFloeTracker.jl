@@ -24,7 +24,7 @@ import ..Morphology:
     )
 
 Method to split objects in a binary image using image morphology and the distance transform. The algorithm
-operates by calculating the distance transform, which computes the distance from each labeled pixel to the background.
+operates by calculating the distance transform, which computes the (minimum) distance from each labeled pixel to the background.
 There are two steps: creating a ``pyramid'', then stepping down from the top of the pyramid and re-labeling or expanding
 shapes as needed.
 
