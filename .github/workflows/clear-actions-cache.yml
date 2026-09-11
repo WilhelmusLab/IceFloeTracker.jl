@@ -31,14 +31,7 @@ jobs:
             foundAny=1
             while IFS=$'\t' read -r cacheId cacheKey
             do
-              case "$cacheKey" in
-                tle-*|workflow-overpasses-*)
-                  echo "Keeping cache $cacheKey"
-                  ;;
-                *)
-                  gh cache delete "$cacheId" --confirm
-                  ;;
-              esac
+              gh cache delete "$cacheId" --confirm
             done <<< "$cacheEntriesForPage"
 
             page=$((page + 1))

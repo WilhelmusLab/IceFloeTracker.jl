@@ -385,3 +385,20 @@ df2 = regionprops_table(S; properties=[:label, :area, :bbox, :centroid])
 R2 = get_relevant_set(df1, df2, G, S)
 @test R == R2
 end
+
+@testitem "split-floes" begin
+    import IceFloeTracker: Watkins2026Dataset, dist_morph_split
+    import Images: erode, dilate, strel_box, label_components
+
+    dataset = Watkins2026Dataset(; ref="v0.2")
+    case = first(filter(c -> (c.case_number == 6 && c.satellite == "terra"), dataset))
+
+    binary_floes = validated_binary_floes(case) .> 0
+    se = strel_box((3,3))
+    dilated_floes = erode(dilate(binary_floes, se), se) # This joins floes in the validated image
+
+    split_floes = IceFloeTracker.dist_morph_split(dilated_floes)
+    labeled_floes = label_components(binary_floes)
+    # Check that we recover at least most of the floes
+    @test length(unique(split_floes)) / length(unique(labeled_floes)) > 0.8
+end

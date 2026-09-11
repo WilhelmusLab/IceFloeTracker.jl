@@ -31,6 +31,7 @@ import ..Preprocessing:
 import ..ImageUtils: get_tiles, imbrighten
 import ..Segmentation:
     component_perimeters,
+    dist_morph_split,
     expand_labels,
     get_relevant_set,
     kmeans_binarization,
@@ -122,7 +123,7 @@ function (p::Preprocess)(
 end
 
 # Default segmentation parameters
-coastal_buffer_structuring_element = strel_box((51, 51))
+coastal_buffer_structuring_element = strel_disk(25)
 cloud_mask_algorithm = Watkins2026CloudMask()
 preprocessing_algorithm = Preprocess()
 tile_size_pixels = 400
@@ -272,11 +273,39 @@ function (s::Segment)(
         preproc_gray, fc_masked, filtered_tiles; s.kmeans_params...
     )
 
-    clean_and_split(r) = dist_morph_split(
-            clean_binary_floes(
-                r, prelim_ice_mask, cloud_mask; s.cleanup_binary_params...
-            );
-        s.floe_splitting_params...,
+    # AdaptiveThreshold often has noise in large blank areas
+    apply_landmask!(adaptive_result, landmask)
+
+    # We also don't want to include artificially brightened regions, so
+    # we mask things that have already been classified as water.
+    apply_landmask!(adaptive_result, .!(prelim_ice_mask .|| cloud_mask))
+
+    @info "Splitting floes"
+    clean_split_label =
+        r -> dist_morph_split(
+            clean_binary_floes(r, prelim_ice_mask, cloud_mask; s.cleanup_binary_params...);
+            s.floe_splitting_params...,
+        )
+
+    kmeans_split_floes = clean_split_label(kmeans_result)
+    adaptive_split_floes = clean_split_label(adaptive_result)
+
+    # TBD: Filter floes based on the edge properties, colors
+
+    @info "Filtering floes"
+    filter_floes!(
+        kmeans_split_floes,
+        coastal_buffer_mask,
+        cloud_mask,
+        falsecolor_image;
+        s.floe_filtering_params...,
+    )
+    filter_floes!(
+        adaptive_split_floes,
+        coastal_buffer_mask,
+        cloud_mask,
+        falsecolor_image;
+        s.floe_filtering_params...,
     )
 
     labeled_images = clean_and_split.([kmeans_result, adaptive_result])
@@ -369,90 +398,6 @@ function clean_binary_floes(
     out[filled .&& .! clearborder(filled)] .= 0
 
     return out
-end
-
-"""
-    dist_morph_split(
-        binary_floes::BitMatrix;
-        min_floe_size::Int64=64,
-        max_hole_fill::Int64=2000,
-        max_distance::Int64=5,
-        max_expand::Int64=3,
-        strel=strel_disk(3)
-    )
-
-Method to split objects in a binary image using image morphology and the distance transform. The algorithm
-operates by calculating the distance transform, which computes the distance from each labeled pixel to the background.
-There are two steps: creating a ``pyramid'', then stepping down from the top of the pyramid and re-labeling or expanding
-shapes as needed.
-
-For each distance d up to `max_distance`, select pixels that are greater than that distance. Perform morphological opening,
-fill holes up to `max_hole_fill`, then label components. Each of these layers is a level in the pyramid.
-
-Then, starting from the highest level of the pyramid, check to see whether objects in the next layer down contain multiple
-objects in the current layer. If an object at layer ``d-1`` contains only object at layer ``d``, then keep the object at layer ``d-1``.
-Otherwise, expand the labels by `max_expand`, then intersect the expanded labels with the containing object at layer ``d-1``.
-
-After traversing the pyramid, relabel matrix, and remove any objects smaller than the `min_floe_size`.
-
-"""
-function dist_morph_split(
-    binary_floes::BitMatrix;
-    max_hole_fill::Int64=2000,
-    max_depth::Int64=5,
-    max_depth_ratio::Real=0.3,
-    max_expand::Int64=3,
-    opening_strel=strel_disk(3),
-)
-    dist = distance_transform(feature_transform(.!binary_floes))
-    # Initialize with one run of opening
-    levels = Dict(0 => label_components(opening(dist .> 0, opening_strel)))
-
-    ### Build pyramid - each size is the opened and filled thresholded image for a given distance
-    for dist_threshold in 1:max_depth
-        markers = opening(dist .> dist_threshold, opening_strel)
-        markers .= .!imfill(.!markers, (0, max_hole_fill))
-        labeled_markers = label_components(markers)
-        maximum(labeled_markers) == 0 && break
-
-        labels = filter(r -> r != 0, unique(labeled_markers))
-        indices = component_indices(labeled_markers)
-        
-        # check 1: Remove components with no intersection with the layer below
-        remove_list = _nonoverlapping_labels(levels[dist_threshold - 1], indices, labels)
-        _remove_labels!(labeled_markers, indices, remove_list)
-        filter!(r -> r ∉ remove_list, labels)
-
-        # check 2: Remove components which fail the max_depth_ratio to component maximum depth test
-        maximum_depths = Dict(L => maximum(dist[indices[L]]) for L in labels)
-        remove_list = [L for L ∈ labels if max_depth_ratio * maximum_depths[L] < dist_threshold]
-        _remove_labels!(labeled_markers, indices, remove_list)
-        levels[dist_threshold] = labeled_markers
-    end
-    max_depth = maximum([d for d in keys(levels)])
-    final_labels = copy(levels[max_depth])
-
-    ### Descend pyramid
-    for dist_threshold in max_depth:-1:1
-        # Get indices from level d-1
-        indices = component_indices(levels[dist_threshold - 1])
-        labels = filter(r -> r != 0, unique(levels[dist_threshold - 1]))
-        # Expand indices at level d
-        expanded = expand_labels(levels[dist_threshold], max_expand)
-        for L in labels
-            matched_labels = unique(levels[dist_threshold][indices[L]])
-            # If intersection of the label at level
-            if (0 ∈ matched_labels) && (length(matched_labels) <= 2)
-                final_labels[indices[L]] .= L
-                continue
-            end
-            # Otherwise, expand the current level, and set the next level down to the expanded indices.
-            # May need to check the number of matched labels in the expanded image.
-            levels[dist_threshold - 1][indices[L]] .= expanded[indices[L]]
-            final_labels[indices[L]] .= expanded[indices[L]]
-        end
-    end
-    return label_components(final_labels)
 end
 
 # Helper function for creating a filtered version of the image indexmap
@@ -633,6 +578,30 @@ function objectwise_compare_segmentation(
     end
     results_df = vcat(results...; cols=:union)
     rename!(results_df, Dict(r => Symbol("s2_", r) for r in properties))
+
+    # circularity
+    @. results_df[:, :s1_circularity] =
+        4 * pi * results_df[:, :s1_area] / results_df[:, :s1_perimeter] ^ 2
+    @. results_df[:, :s2_circularity] =
+        4 * pi * results_df[:, :s2_area] / results_df[:, :s2_perimeter] ^ 2
+
+    # mean reflectance
+    bdry1 = expand_labels(indexmap1, expand_radius) .- indexmap1
+    mean1 = segment_mean(SegmentedImage(img, indexmap1))
+    bdry_mean1 = segment_mean(SegmentedImage(img, bdry1))
+    results_df[:, :s1_reflectance_mean] = [L ∈ keys(mean1) ? mean1[L] : 0 for L in results_df[:, :s1_label]]
+    results_df[:, :s1_reflectance_bdry_mean] = [L ∈ keys(bdry_mean1) ? bdry_mean1[L] : 0 for L in results_df[:, :s1_label]]
+
+    bdry2 = expand_labels(indexmap2, expand_radius) .- indexmap2
+    mean2 = segment_mean(SegmentedImage(img, indexmap2))
+    bdry_mean2 = segment_mean(SegmentedImage(img, bdry2))
+    results_df[:, :s2_reflectance_mean] = [L ∈ keys(mean2) ? mean2[L] : 0 for L in results_df[:, :s2_label]]
+    results_df[:, :s2_reflectance_bdry_mean] = [L ∈ keys(bdry_mean2) ? bdry_mean2[L] : 0 for L in results_df[:, :s2_label]]
+
+    results_df[:, :s1_reflectance_bdry_contrast] =
+        results_df[:, :s1_reflectance_mean] .- results_df[:, :s1_reflectance_bdry_mean]
+    results_df[:, :s2_reflectance_bdry_contrast] =
+        results_df[:, :s2_reflectance_mean] .- results_df[:, :s2_reflectance_bdry_mean]
 
     return results_df
 end
