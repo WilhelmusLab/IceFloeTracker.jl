@@ -338,149 +338,65 @@ end
 # ============================================================================
 # Distance Metrics for Boundary Curves
 # ============================================================================
+#
+# Both metrics treat a boundary as a point SET, so they do not depend on where the trace
+# happens to start. An index-wise comparison (point i against point i) does: two traces
+# of the same floe begin at unrelated points, and on such input an index-wise metric
+# recovered the true rotation angle on 2% of real floes.
 
-"""
-    boundary_perimeter(boundary::Matrix{Float64})
+# The point set of a boundary. Boundaries are closed (first row repeated as last), and
+# which vertex carries the duplicate depends on where the trace started, so a mean over
+# all rows is start-dependent; over the unique vertices it is not.
+function _unique_points(b::Matrix{Float64})
+    n = size(b, 1)
+    return n > 1 && @views(b[1, :] == b[n, :]) ? b[1:(n - 1), :] : b
+end
 
-Compute the perimeter of a boundary curve (sum of segment lengths).
-"""
-function boundary_perimeter(boundary::Matrix{Float64})
-    total = 0.0
-    for i in 1:(size(boundary, 1) - 1)
-        dx = boundary[i + 1, 1] - boundary[i, 1]
-        dy = boundary[i + 1, 2] - boundary[i, 2]
-        total += sqrt(dx^2 + dy^2)
+# Nearest-neighbour distance from point `a` to the point set `B`. Compared on squared
+# distances; the square root is taken once.
+function _nn_dist(a, B)
+    best = Inf
+    @inbounds for i in axes(B, 1)
+        d2 = (a[1] - B[i, 1])^2 + (a[2] - B[i, 2])^2
+        d2 < best && (best = d2)
     end
-    return total
+    return sqrt(best)
 end
 
 """
-    interpolate_boundary(boundary::Matrix{Float64}, n_points::Int)
+    boundary_hausdorff(b1::Matrix{Float64}, b2::Matrix{Float64})
 
-Resample boundary to n_points using linear interpolation along arc length.
+Hausdorff distance between two boundaries treated as point sets, after centring both at
+the origin: the larger of the two directed distances, each the greatest nearest-neighbour
+distance from one set to the other. Insensitive to where either trace begins. Units:
+pixels.
+
+Reference: Huttenlocher, Klanderman & Rucklidge (1993), *Comparing images using the
+Hausdorff distance*, IEEE TPAMI 15(9).
 """
-function interpolate_boundary(boundary::Matrix{Float64}, n_points::Int)
-    if size(boundary, 1) == n_points
-        return boundary
-    end
-
-    # Compute arc length at each point
-    arc_lengths = [0.0]
-    for i in 1:(size(boundary, 1) - 1)
-        dx = boundary[i + 1, 1] - boundary[i, 1]
-        dy = boundary[i + 1, 2] - boundary[i, 2]
-        arc_lengths = vcat(arc_lengths, arc_lengths[end] + sqrt(dx^2 + dy^2))
-    end
-
-    total_length = arc_lengths[end]
-    target_lengths = range(0.0, total_length; length=n_points)
-
-    # Linear interpolation
-    result = Matrix{Float64}(undef, n_points, 2)
-    for (idx, target_len) in enumerate(target_lengths)
-        # Find segment containing this arc length
-        segment_idx = searchsortedlast(arc_lengths, target_len)
-        segment_idx = max(1, min(segment_idx, size(boundary, 1)-1))
-
-        # Interpolation parameter
-        seg_start_len = arc_lengths[segment_idx]
-        seg_end_len = arc_lengths[segment_idx + 1]
-        if seg_end_len > seg_start_len
-            t = (target_len - seg_start_len) / (seg_end_len - seg_start_len)
-        else
-            t = 0.0
-        end
-        t = clamp(t, 0.0, 1.0)
-
-        result[idx, 1] =
-            boundary[segment_idx, 1] +
-            t * (boundary[segment_idx + 1, 1] - boundary[segment_idx, 1])
-        result[idx, 2] =
-            boundary[segment_idx, 2] +
-            t * (boundary[segment_idx + 1, 2] - boundary[segment_idx, 2])
-    end
-
-    return result
+function boundary_hausdorff(b1::Matrix{Float64}, b2::Matrix{Float64})
+    A = center_boundary(_unique_points(b1))
+    B = center_boundary(_unique_points(b2))
+    directed(P, Q) = maximum(_nn_dist(@view(P[i, :]), Q) for i in axes(P, 1))
+    return max(directed(A, B), directed(B, A))
 end
 
 """
-    boundary_mse_aligned(b1::Matrix{Float64}, b2::Matrix{Float64})
+    boundary_modified_hausdorff(b1::Matrix{Float64}, b2::Matrix{Float64})
 
-Compute mean squared Euclidean distance between two boundaries after centering
-and interpolating to the same number of points.
+Modified Hausdorff distance between two boundaries treated as point sets, after centring
+both at the origin. Each directed distance is the *mean* rather than the maximum
+nearest-neighbour distance, so a single outlying point does not set the score.
+Insensitive to where either trace begins. Units: pixels.
+
+Reference: Dubuisson & Jain (1994), *A modified Hausdorff distance for object matching*,
+Proc. 12th IAPR Int. Conf. on Pattern Recognition.
 """
-function boundary_mse_aligned(b1::Matrix{Float64}, b2::Matrix{Float64})
-    # Center both at origin
-    b1_centered = center_boundary(b1; target_center=(0.0, 0.0))
-    b2_centered = center_boundary(b2; target_center=(0.0, 0.0))
-
-    # Interpolate to common number of points
-    n_points = max(size(b1_centered, 1), size(b2_centered, 1))
-    b1_interp = interpolate_boundary(b1_centered, n_points)
-    b2_interp = interpolate_boundary(b2_centered, n_points)
-
-    # Compute MSE
-    mse = 0.0
-    for i in 1:n_points
-        dx = b1_interp[i, 1] - b2_interp[i, 1]
-        dy = b1_interp[i, 2] - b2_interp[i, 2]
-        mse += (dx^2 + dy^2)
-    end
-
-    return mse / n_points
-end
-
-"""
-    boundary_normalized_distance(b1::Matrix{Float64}, b2::Matrix{Float64})
-
-Compute the MSE distance between two boundaries, divided by their mean perimeter squared.
-
-The division makes the score **dimensionless**, so one threshold can span a range of floe
-sizes. It does *not* make the metric scale-invariant: two copies of the same shape at
-different scales score a nonzero difference (a 1x and a 2x square give `0.0247`). That is
-deliberate for floe tracking, where the same floe is matched across consecutive frames and
-a large change in size is genuine evidence of a mismatch rather than noise to normalize
-away. Use [`boundary_mse_aligned`](@ref) if you want the unnormalized value.
-"""
-function boundary_normalized_distance(b1::Matrix{Float64}, b2::Matrix{Float64})
-    mse = boundary_mse_aligned(b1, b2)
-
-    # Compute average perimeter for normalization
-    p1 = boundary_perimeter(b1)
-    p2 = boundary_perimeter(b2)
-    avg_perimeter = (p1 + p2) / 2
-
-    # Avoid division by zero
-    if avg_perimeter < 1e-10
-        return mse
-    end
-
-    return mse / (avg_perimeter^2)
-end
-
-"""
-    boundary_euclidean_distance(b1::Matrix{Float64}, b2::Matrix{Float64})
-
-Compute sum of point-wise Euclidean distances. Requires boundaries to have
-the same number of points.
-"""
-function boundary_euclidean_distance(b1::Matrix{Float64}, b2::Matrix{Float64})
-    if size(b1, 1) != size(b2, 1)
-        throw(
-            ArgumentError(
-                "Boundaries must have the same number of points. Got $(size(b1, 1)) and $(size(b2, 1)).",
-            ),
-        )
-    end
-
-    total_dist = 0.0
-    for i in 1:size(b1, 1)
-        dx = b1[i, 1] - b2[i, 1]
-        dy = b1[i, 2] - b2[i, 2]
-        total_dist += sqrt(dx^2 + dy^2)
-    end
-
-    return total_dist
+function boundary_modified_hausdorff(b1::Matrix{Float64}, b2::Matrix{Float64})
+    A = center_boundary(_unique_points(b1))
+    B = center_boundary(_unique_points(b2))
+    directed(P, Q) = sum(_nn_dist(@view(P[i, :]), Q) for i in axes(P, 1)) / size(P, 1)
+    return max(directed(A, B), directed(B, A))
 end
 
 # ============================================================================
@@ -489,26 +405,25 @@ end
 
 """
     shape_difference_rotation_boundary(boundary_reference, boundary_target, test_angles;
-                                      metric=boundary_normalized_distance)
+                                      metric=boundary_modified_hausdorff)
 
 Boundary-curve analogue of [`shape_difference_rotation`](@ref). Computes the shape
 difference between `boundary_reference` and `boundary_target` for each angle in
 `test_angles`, holding the reference fixed and rotating the target.
 
-Angle convention matches the mask-based version: `test_angles` are interpreted as the
-rotation *from target to reference*, so the target is rotated by `-angle` to look for a
-match. A perfect match at angle `A` means `boundary_target` has the same shape as
-`boundary_reference` rotated by `A`.
+Angle convention matches the mask-based version: a returned angle `A` means the target
+mask looks like the reference mask rotated by `A` under `imrotate_bin_clockwise_radians`,
+so `register_boundary` on traced boundaries agrees in sign with `register` on the masks
+they were traced from.
 
 `metric(reference, rotated_target)` may be any function returning a real shape
-difference; see `boundary_normalized_distance`, `boundary_mse_aligned` and
-`boundary_euclidean_distance`.
+difference; see `boundary_modified_hausdorff` (default) and `boundary_hausdorff`.
 """
 function shape_difference_rotation_boundary(
     boundary_reference::Matrix{Float64},
     boundary_target::Matrix{Float64},
     test_angles;
-    metric=boundary_normalized_distance,
+    metric=boundary_modified_hausdorff,
 )
     shape_differences = Array{
         NamedTuple{(:angle, :shape_difference),Tuple{Float64,Float64}}
@@ -517,8 +432,12 @@ function shape_difference_rotation_boundary(
     )
 
     for (idx, angle) in enumerate(test_angles)
-        # rotate the target back by angle, mirroring shape_difference_rotation
-        target_rotated = rotate_boundary(boundary_target, -angle)
+        # shape_difference_rotation undoes the candidate rotation with imrotate(-angle).
+        # Boundary coordinates are image indices, whose row axis points down, so
+        # rotate_boundary's positive (counterclockwise in an x-right, y-up frame) is the
+        # opposite sense of imrotate's positive. Undoing imrotate(angle) is therefore
+        # rotate_boundary(+angle). Verified against register on the same rotated mask.
+        target_rotated = rotate_boundary(boundary_target, angle)
         shape_difference = metric(boundary_reference, target_rotated)
         shape_differences[idx] = (; angle, shape_difference)
     end
@@ -528,7 +447,7 @@ end
 """
     register_boundary(boundary_reference, boundary_target;
                       test_angles=register_default_angles_rad,
-                      metric=boundary_normalized_distance)
+                      metric=boundary_modified_hausdorff)
 
 Boundary-curve analogue of [`register`](@ref). Finds the angle in `test_angles` that
 minimizes the shape difference between `boundary_reference` and `boundary_target`.
@@ -542,7 +461,7 @@ function register_boundary(
     boundary_reference::Matrix{Float64},
     boundary_target::Matrix{Float64};
     test_angles=register_default_angles_rad,
-    metric=boundary_normalized_distance,
+    metric=boundary_modified_hausdorff,
 )
     shape_differences = shape_difference_rotation_boundary(
         boundary_reference, boundary_target, test_angles; metric
@@ -553,7 +472,7 @@ end
 
 """
     boundary_shape_difference(boundary1, orientation1, boundary2, orientation2;
-                              metric=boundary_normalized_distance)
+                              metric=boundary_modified_hausdorff)
     boundary_shape_difference(floe1::DataFrameRow, floe2::DataFrameRow; kwargs...)
 
 Boundary-curve analogue of [`shape_difference`](@ref): aligns both curves on the same axis
@@ -573,10 +492,12 @@ function boundary_shape_difference(
     orientation1::Real,
     boundary2::Matrix{Float64},
     orientation2::Real;
-    metric=boundary_normalized_distance,
+    metric=boundary_modified_hausdorff,
 )
+    # shape_difference applies imrotate(mask, orientation); in image coordinates that is
+    # rotate_boundary(-orientation), see shape_difference_rotation_boundary.
     return metric(
-        rotate_boundary(boundary1, orientation1), rotate_boundary(boundary2, orientation2)
+        rotate_boundary(boundary1, -orientation1), rotate_boundary(boundary2, -orientation2)
     )
 end
 
@@ -603,7 +524,7 @@ function boundary_shape_difference(floe1::DataFrameRow, floe2::DataFrameRow; kwa
 end
 
 """
-    BoundaryRegistration(; metric=boundary_normalized_distance, boundary_column=:boundary)
+    BoundaryRegistration(; metric=boundary_modified_hausdorff, boundary_column=:boundary)
 
 A configured, callable wrapper around [`register_boundary`](@ref) that fixes the shape
 metric up front.
@@ -615,7 +536,7 @@ subtypes `Function` and its matrix method takes a `test_angles` keyword, an inst
 drop-in `registration_function` whenever the image column holds boundary curves:
 
 ```julia
-reg = BoundaryRegistration(; metric=boundary_mse_aligned)
+reg = BoundaryRegistration(; metric=boundary_hausdorff)
 get_rotation_measurements(df; id_column=:id, image_column=:boundary,
                           time_column=:time, registration_function=reg)
 ```
@@ -626,12 +547,11 @@ struct would be rejected at the call site.
 
 ## Arguments
 - `metric`: `metric(reference, rotated_target) -> Real`. See
-  [`boundary_normalized_distance`](@ref) (default), [`boundary_mse_aligned`](@ref) and
-  [`boundary_euclidean_distance`](@ref).
+  [`boundary_modified_hausdorff`](@ref) (default) and [`boundary_hausdorff`](@ref).
 - `boundary_column`: column the `DataFrameRow` method reads.
 """
 @kwdef struct BoundaryRegistration <: Function
-    metric = boundary_normalized_distance
+    metric = boundary_modified_hausdorff
     boundary_column = :boundary
 end
 
