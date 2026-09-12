@@ -9,8 +9,8 @@
         ChainedFilterFunction,
         PiecewiseLinearThresholdFunction,
         boundary_shape_difference,
-        boundary_normalized_distance,
-        boundary_mse_aligned,
+        boundary_modified_hausdorff,
+        boundary_hausdorff,
         rotate_boundary
 
     # closed, asymmetric L-shape
@@ -42,7 +42,7 @@ end
 
 @testitem "BoundaryShapeDifferenceThresholdFilter defaults" setup = [BoundaryFilterSetup] begin
     f = BoundaryShapeDifferenceThresholdFilter()
-    @test f.metric === boundary_normalized_distance
+    @test f.metric === boundary_modified_hausdorff
     @test f.boundary_column === :boundary
     @test f.area_variable === :area
     @test f.threshold_column === :boundary_shape_difference_test
@@ -66,9 +66,9 @@ end
 end
 
 @testitem "BoundaryShapeDifferenceThresholdFilter does not double-normalize" setup = [BoundaryFilterSetup] begin
-    # boundary_normalized_distance is already dimensionless (MSE / perimeter^2),
-    # so unlike the mask filter there must be no division by :area. If there
-    # were, these two columns would differ by a factor of 100.
+    # The score is a distance in pixels. Unlike the mask filter there is no division by
+    # :area -- count_symdiff is a raw pixel count and needs one, a Hausdorff distance
+    # does not. If a division crept in, these two columns would differ by a factor of 100.
     f = BoundaryShapeDifferenceThresholdFilter()
     candidates = candidate_df()
     f(floe_row(), candidates, Val(:raw))
@@ -78,8 +78,8 @@ end
 end
 
 @testitem "BoundaryShapeDifferenceThresholdFilter subsets via the 2-arg functor" setup = [BoundaryFilterSetup] begin
-    # A deliberately tight threshold, because the inherited 0.47->0.31 values are
-    # placeholders on the wrong scale for this metric and admit nearly everything.
+    # A tight explicit threshold, so the test does not depend on the inherited default
+    # bounds, which are uncalibrated for a pixel-valued score.
     f = BoundaryShapeDifferenceThresholdFilter(;
         threshold_function=PiecewiseLinearThresholdFunction(100, 700, 1e-4, 1e-4)
     )
@@ -94,13 +94,13 @@ end
 @testitem "BoundaryShapeDifferenceThresholdFilter honours an injected metric" setup = [BoundaryFilterSetup] begin
     a = candidate_df()
     b = candidate_df()
-    BoundaryShapeDifferenceThresholdFilter(; metric=boundary_normalized_distance)(
+    BoundaryShapeDifferenceThresholdFilter(; metric=boundary_modified_hausdorff)(
         floe_row(), a, Val(:raw)
     )
-    BoundaryShapeDifferenceThresholdFilter(; metric=boundary_mse_aligned)(
+    BoundaryShapeDifferenceThresholdFilter(; metric=boundary_hausdorff)(
         floe_row(), b, Val(:raw)
     )
-    # different metrics live on different scales, so the dissimilar shape scores differently
+    # max and mean nearest-neighbour distance differ for a genuinely different shape
     @test a.boundary_shape_difference[3] != b.boundary_shape_difference[3]
 end
 
