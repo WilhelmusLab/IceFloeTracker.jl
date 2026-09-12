@@ -31,6 +31,7 @@ import ..Preprocessing:
 import ..ImageUtils: get_tiles, imbrighten
 import ..Segmentation:
     component_perimeters,
+    dist_morph_split,
     expand_labels,
     get_relevant_set,
     kmeans_binarization,
@@ -122,7 +123,7 @@ function (p::Preprocess)(
 end
 
 # Default segmentation parameters
-coastal_buffer_structuring_element = strel_box((51, 51))
+coastal_buffer_structuring_element = strel_disk(25)
 cloud_mask_algorithm = Watkins2026CloudMask()
 preprocessing_algorithm = Preprocess()
 tile_size_pixels = 400
@@ -158,8 +159,10 @@ floe_filtering_params = (
     min_solidity=0.7,
     min_reflectance=0.4,
     min_contrast=0.01,
+    filter_function=LogisticRegressionFilter,
     min_probability=0.5,
 )
+
 floe_merging_params = (
     max_distance_pixels=10,
     max_error_area=0.25,
@@ -272,13 +275,24 @@ function (s::Segment)(
         preproc_gray, fc_masked, filtered_tiles; s.kmeans_params...
     )
 
-    clean_and_split(r) = dist_morph_split(
-            clean_binary_floes(
-                r, prelim_ice_mask, cloud_mask; s.cleanup_binary_params...
-            );
-        s.floe_splitting_params...,
-    )
+    # AdaptiveThreshold often has noise in large blank areas
+    apply_landmask!(adaptive_result, landmask)
 
+    # We also don't want to include artificially brightened regions, so
+    # we mask things that have already been classified as water.
+    apply_landmask!(adaptive_result, .!(prelim_ice_mask .|| cloud_mask))
+
+    @info "Splitting floes"
+    clean_and_split =
+        r -> dist_morph_split(
+            clean_binary_floes(r, prelim_ice_mask, cloud_mask; s.cleanup_binary_params...);
+            s.floe_splitting_params...,
+        )
+
+    # TBD: Filter floes based on the edge properties, colors
+
+    @info "Filtering floes"
+    
     labeled_images = clean_and_split.([kmeans_result, adaptive_result])
     
     @info "Filter and merge"
@@ -371,90 +385,6 @@ function clean_binary_floes(
     return out
 end
 
-"""
-    dist_morph_split(
-        binary_floes::BitMatrix;
-        min_floe_size::Int64=64,
-        max_hole_fill::Int64=2000,
-        max_distance::Int64=5,
-        max_expand::Int64=3,
-        strel=strel_disk(3)
-    )
-
-Method to split objects in a binary image using image morphology and the distance transform. The algorithm
-operates by calculating the distance transform, which computes the distance from each labeled pixel to the background.
-There are two steps: creating a ``pyramid'', then stepping down from the top of the pyramid and re-labeling or expanding
-shapes as needed.
-
-For each distance d up to `max_distance`, select pixels that are greater than that distance. Perform morphological opening,
-fill holes up to `max_hole_fill`, then label components. Each of these layers is a level in the pyramid.
-
-Then, starting from the highest level of the pyramid, check to see whether objects in the next layer down contain multiple
-objects in the current layer. If an object at layer ``d-1`` contains only object at layer ``d``, then keep the object at layer ``d-1``.
-Otherwise, expand the labels by `max_expand`, then intersect the expanded labels with the containing object at layer ``d-1``.
-
-After traversing the pyramid, relabel matrix, and remove any objects smaller than the `min_floe_size`.
-
-"""
-function dist_morph_split(
-    binary_floes::BitMatrix;
-    max_hole_fill::Int64=2000,
-    max_depth::Int64=5,
-    max_depth_ratio::Real=0.3,
-    max_expand::Int64=3,
-    opening_strel=strel_disk(3),
-)
-    dist = distance_transform(feature_transform(.!binary_floes))
-    # Initialize with one run of opening
-    levels = Dict(0 => label_components(opening(dist .> 0, opening_strel)))
-
-    ### Build pyramid - each size is the opened and filled thresholded image for a given distance
-    for dist_threshold in 1:max_depth
-        markers = opening(dist .> dist_threshold, opening_strel)
-        markers .= .!imfill(.!markers, (0, max_hole_fill))
-        labeled_markers = label_components(markers)
-        maximum(labeled_markers) == 0 && break
-
-        labels = filter(r -> r != 0, unique(labeled_markers))
-        indices = component_indices(labeled_markers)
-        
-        # check 1: Remove components with no intersection with the layer below
-        remove_list = _nonoverlapping_labels(levels[dist_threshold - 1], indices, labels)
-        _remove_labels!(labeled_markers, indices, remove_list)
-        filter!(r -> r ∉ remove_list, labels)
-
-        # check 2: Remove components which fail the max_depth_ratio to component maximum depth test
-        maximum_depths = Dict(L => maximum(dist[indices[L]]) for L in labels)
-        remove_list = [L for L ∈ labels if max_depth_ratio * maximum_depths[L] < dist_threshold]
-        _remove_labels!(labeled_markers, indices, remove_list)
-        levels[dist_threshold] = labeled_markers
-    end
-    max_depth = maximum([d for d in keys(levels)])
-    final_labels = copy(levels[max_depth])
-
-    ### Descend pyramid
-    for dist_threshold in max_depth:-1:1
-        # Get indices from level d-1
-        indices = component_indices(levels[dist_threshold - 1])
-        labels = filter(r -> r != 0, unique(levels[dist_threshold - 1]))
-        # Expand indices at level d
-        expanded = expand_labels(levels[dist_threshold], max_expand)
-        for L in labels
-            matched_labels = unique(levels[dist_threshold][indices[L]])
-            # If intersection of the label at level
-            if (0 ∈ matched_labels) && (length(matched_labels) <= 2)
-                final_labels[indices[L]] .= L
-                continue
-            end
-            # Otherwise, expand the current level, and set the next level down to the expanded indices.
-            # May need to check the number of matched labels in the expanded image.
-            levels[dist_threshold - 1][indices[L]] .= expanded[indices[L]]
-            final_labels[indices[L]] .= expanded[indices[L]]
-        end
-    end
-    return label_components(final_labels)
-end
-
 # Helper function for creating a filtered version of the image indexmap
 # TODO: Unify approach with remove_small_segments
 """
@@ -506,6 +436,13 @@ function filter_floes(
     min_contrast=0.01,
     filter_function=LogisticRegressionFilter,
     min_probability=0.5,
+    regionprops_args=(
+        convex_area_algorithm=PolygonConvexArea(),
+        properties=[:label, :area, :perimeter, :bbox, :centroid, :convex_area,
+                :major_axis_length, :minor_axis_length, :orientation,
+                :circularity, :solidity],
+        )
+
 )
     out = copy(img_indexmap)
     # 1. Remove objects which overlap the coastal mask
@@ -523,23 +460,19 @@ function filter_floes(
 
     # 3. Get object-wise properties
     results_df = regionprops_table(out;
-        properties=[:label, :area, :perimeter, :bbox, :centroid, :convex_area,
-                    :major_axis_length, :minor_axis_length, :orientation],
-        convex_area_algorithm=PolygonConvexArea()
+        regionprops_args...
     )
     # Return blank image if no floes remain
     nrow(results_df) == 0 && return results_df
 
     results_df[:, :length_scale] = results_df[:, :area] .^ 0.5
-    results_df[:, :circularity] = 4 * π * results_df[:, :area] ./ results_df[:, :perimeter] .^ 2
     subset!(results_df, :circularity => r -> r .> min_circularity)
-    results_df[:, :solidity] = results_df[:, :area] ./ results_df[:, :convex_area]
     subset!(results_df, :solidity => r -> r .> min_solidity)
     nrow(results_df) == 0 && return results_df
 
     results_df[:, :cloud_fraction] =  (r -> mean(cloud_mask[indices[r]])).(results_df[:, :label])
     
-    # mean reflectance
+    # mean reflectance # TODO: Add channel-wise mean to regionprops table
     segment_mean_reflectance = segment_mean(SegmentedImage(falsecolor_image, out))
     b = [segment_mean_reflectance[L] for L in  results_df[:, :label]]
     results_df[:, :b1_reflectance_mean] = blue.(b)
@@ -633,7 +566,6 @@ function objectwise_compare_segmentation(
     end
     results_df = vcat(results...; cols=:union)
     rename!(results_df, Dict(r => Symbol("s2_", r) for r in properties))
-
     return results_df
 end
 

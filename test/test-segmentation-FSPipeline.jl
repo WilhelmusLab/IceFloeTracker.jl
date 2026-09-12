@@ -9,6 +9,11 @@
     )
     expected_segment_count = validated_floe_properties(case) |> DataFrame |> nrow
     @test length(segments.segment_labels) ≈ expected_segment_count rtol = 0.7
+    # check that the larger-than-image tile size case works
+    segments = FSPipeline.Segment(tile_size_pixels=500)(
+        RGB.(modis_truecolor(case)), RGB.(modis_falsecolor(case)), modis_landmask(case)
+    )
+    @test length(segments.segment_labels) ≈ expected_segment_count rtol = 0.7
 end
 
 @testitem "FSPipeline.Segment – sample of cases" setup = [Segmentation] tags = [:e2e] begin
