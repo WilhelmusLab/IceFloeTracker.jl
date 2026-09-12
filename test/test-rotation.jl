@@ -888,3 +888,57 @@ end
         @test subset(results, :obsid2 => ByRow(==(12)))[1, :mask2] == masks[180]
     end
 end
+
+@testitem "get_rotation_measurements with orientation prior" setup = [RotationSetup] begin
+    time1 = DateTime("2020-01-12T12:00:00")
+
+    function rows(orientation2)
+        df = DataFrame([
+            (time=time1, mask=masks[0], orientation=0.0),
+            (time=time1 + Hour(1), mask=masks[15], orientation=orientation2),
+        ])
+        return df[1, :], df[2, :]
+    end
+
+    row1, row2 = rows(-deg2rad(15.0))  # prior = orientation1 - orientation2 = +15°
+    full = get_rotation_measurements(row1, row2; image_column=:mask, time_column=:time)
+
+    @testset "prior-restricted search matches the full grid" begin
+        result = get_rotation_measurements(
+            row1,
+            row2;
+            image_column=:mask,
+            time_column=:time,
+            orientation_column=:orientation,
+        )
+        @test result.theta_rad ≈ full.theta_rad atol = 1e-8
+    end
+
+    @testset "180° orientation ambiguity is handled" begin
+        row1, row2 = rows(-deg2rad(15.0) + π)  # equivalent orientation, prior off by π
+        result = get_rotation_measurements(
+            row1,
+            row2;
+            image_column=:mask,
+            time_column=:time,
+            orientation_column=:orientation,
+        )
+        @test result.theta_rad ≈ full.theta_rad atol = 1e-8
+    end
+
+    @testset "dataframe-level plumbing" begin
+        df = DataFrame([
+            (id=1, time=time1, mask=masks[0], orientation=0.0),
+            (id=1, time=time1 + Hour(1), mask=masks[30], orientation=(-deg2rad(30.0))),
+        ])
+        result = get_rotation_measurements(
+            df;
+            id_column=:id,
+            image_column=:mask,
+            time_column=:time,
+            orientation_column=:orientation,
+        )
+        @test nrow(result) == 1
+        @test deg2rad(30.0 - 5.1) <= result[1, :theta_rad] <= deg2rad(30.0 + 5.1)
+    end
+end
