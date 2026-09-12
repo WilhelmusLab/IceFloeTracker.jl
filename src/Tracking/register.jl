@@ -334,3 +334,144 @@ function center_boundary(
     offset = collect(target_center) .- centroid
     return boundary .+ offset'
 end
+
+# ============================================================================
+# Distance Metrics for Boundary Curves
+# ============================================================================
+
+"""
+    boundary_perimeter(boundary::Matrix{Float64})
+
+Compute the perimeter of a boundary curve (sum of segment lengths).
+"""
+function boundary_perimeter(boundary::Matrix{Float64})
+    total = 0.0
+    for i in 1:(size(boundary, 1) - 1)
+        dx = boundary[i + 1, 1] - boundary[i, 1]
+        dy = boundary[i + 1, 2] - boundary[i, 2]
+        total += sqrt(dx^2 + dy^2)
+    end
+    return total
+end
+
+"""
+    interpolate_boundary(boundary::Matrix{Float64}, n_points::Int)
+
+Resample boundary to n_points using linear interpolation along arc length.
+"""
+function interpolate_boundary(boundary::Matrix{Float64}, n_points::Int)
+    if size(boundary, 1) == n_points
+        return boundary
+    end
+
+    # Compute arc length at each point
+    arc_lengths = [0.0]
+    for i in 1:(size(boundary, 1) - 1)
+        dx = boundary[i + 1, 1] - boundary[i, 1]
+        dy = boundary[i + 1, 2] - boundary[i, 2]
+        arc_lengths = vcat(arc_lengths, arc_lengths[end] + sqrt(dx^2 + dy^2))
+    end
+
+    total_length = arc_lengths[end]
+    target_lengths = range(0.0, total_length; length=n_points)
+
+    # Linear interpolation
+    result = Matrix{Float64}(undef, n_points, 2)
+    for (idx, target_len) in enumerate(target_lengths)
+        # Find segment containing this arc length
+        segment_idx = searchsortedlast(arc_lengths, target_len)
+        segment_idx = max(1, min(segment_idx, size(boundary, 1)-1))
+
+        # Interpolation parameter
+        seg_start_len = arc_lengths[segment_idx]
+        seg_end_len = arc_lengths[segment_idx + 1]
+        if seg_end_len > seg_start_len
+            t = (target_len - seg_start_len) / (seg_end_len - seg_start_len)
+        else
+            t = 0.0
+        end
+        t = clamp(t, 0.0, 1.0)
+
+        result[idx, 1] =
+            boundary[segment_idx, 1] +
+            t * (boundary[segment_idx + 1, 1] - boundary[segment_idx, 1])
+        result[idx, 2] =
+            boundary[segment_idx, 2] +
+            t * (boundary[segment_idx + 1, 2] - boundary[segment_idx, 2])
+    end
+
+    return result
+end
+
+"""
+    boundary_mse_aligned(b1::Matrix{Float64}, b2::Matrix{Float64})
+
+Compute mean squared Euclidean distance between two boundaries after centering
+and interpolating to the same number of points.
+"""
+function boundary_mse_aligned(b1::Matrix{Float64}, b2::Matrix{Float64})
+    # Center both at origin
+    b1_centered = center_boundary(b1; target_center=(0.0, 0.0))
+    b2_centered = center_boundary(b2; target_center=(0.0, 0.0))
+
+    # Interpolate to common number of points
+    n_points = max(size(b1_centered, 1), size(b2_centered, 1))
+    b1_interp = interpolate_boundary(b1_centered, n_points)
+    b2_interp = interpolate_boundary(b2_centered, n_points)
+
+    # Compute MSE
+    mse = 0.0
+    for i in 1:n_points
+        dx = b1_interp[i, 1] - b2_interp[i, 1]
+        dy = b1_interp[i, 2] - b2_interp[i, 2]
+        mse += (dx^2 + dy^2)
+    end
+
+    return mse / n_points
+end
+
+"""
+    boundary_normalized_distance(b1::Matrix{Float64}, b2::Matrix{Float64})
+
+Compute MSE distance normalized by perimeter squared for scale invariance.
+"""
+function boundary_normalized_distance(b1::Matrix{Float64}, b2::Matrix{Float64})
+    mse = boundary_mse_aligned(b1, b2)
+
+    # Compute average perimeter for normalization
+    p1 = boundary_perimeter(b1)
+    p2 = boundary_perimeter(b2)
+    avg_perimeter = (p1 + p2) / 2
+
+    # Avoid division by zero
+    if avg_perimeter < 1e-10
+        return mse
+    end
+
+    return mse / (avg_perimeter^2)
+end
+
+"""
+    boundary_euclidean_distance(b1::Matrix{Float64}, b2::Matrix{Float64})
+
+Compute sum of point-wise Euclidean distances. Requires boundaries to have
+the same number of points.
+"""
+function boundary_euclidean_distance(b1::Matrix{Float64}, b2::Matrix{Float64})
+    if size(b1, 1) != size(b2, 1)
+        throw(
+            ArgumentError(
+                "Boundaries must have the same number of points. Got $(size(b1, 1)) and $(size(b2, 1)).",
+            ),
+        )
+    end
+
+    total_dist = 0.0
+    for i in 1:size(b1, 1)
+        dx = b1[i, 1] - b2[i, 1]
+        dy = b1[i, 2] - b2[i, 2]
+        total_dist += sqrt(dx^2 + dy^2)
+    end
+
+    return total_dist
+end
