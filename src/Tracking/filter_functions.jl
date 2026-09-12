@@ -234,17 +234,9 @@ Requires a boundary column (see `add_boundary!`) and `:orientation` on both the 
 the candidates. Writes `:boundary_shape_difference`,
 `:scaled_boundary_shape_difference` and `threshold_column`.
 
-!!! warning "Thresholds are placeholders"
-    The default 0.47 -> 0.31 values are inherited from the mask-based filter, where they
-    were tuned for `count_symdiff / area` -- a ratio of pixel areas.
-    `boundary_normalized_distance` is `MSE / perimeter^2`, a different dimensionless
-    quantity on a much smaller scale, so these values admit nearly every candidate. They
-    need re-tuning on real tracker data before this filter is used in anger, which is why
-    it is not part of `default_filter`.
-
 ## Arguments
 - `metric`: `metric(reference, rotated_target) -> Real`, default
-  `boundary_normalized_distance`.
+  `boundary_modified_hausdorff`.
 - `boundary_column`: boundary column to read, default `:boundary`.
 - `area_variable`: column passed to `threshold_function` as the scale, default `:area`.
 
@@ -263,8 +255,14 @@ silently match nothing.
 @kwdef struct BoundaryShapeDifferenceThresholdFilter <: AbstractFloeFilterFunction
     area_variable = :area
     boundary_column = :boundary
-    metric = boundary_normalized_distance
+    metric = boundary_modified_hausdorff
     threshold_column = :boundary_shape_difference_test
+    # Bounds carried over from ShapeDifferenceThresholdFilter, where they were calibrated
+    # against count_symdiff / area, a dimensionless ratio of pixel areas. The score here is
+    # a modified Hausdorff distance in PIXELS, so these bounds are wrong in units, not only
+    # in scale, and are not calibrated for this filter. PiecewiseLinearThresholdFunction
+    # takes area as an input, so area-dependent bounds in pixels are the intended remedy
+    # once estimated on tracked data. Until then the filter is excluded from default_filter.
     threshold_function = PiecewiseLinearThresholdFunction(100, 700, 0.47, 0.31)
 end
 
@@ -283,10 +281,10 @@ function (f::BoundaryShapeDifferenceThresholdFilter)(
         [f.boundary_column, :orientation] => ByRow(bsd) => :boundary_shape_difference,
     )
 
-    # No division by :area here, deliberately. The mask filter scales because
-    # count_symdiff returns a raw pixel count; boundary_normalized_distance is already
-    # dimensionless, so scaling again would double-normalize. The column name is kept for
-    # symmetry with the mask filter and with MinimumWeightMatchingFunction.
+    # No division by :area here. The mask filter scales because count_symdiff returns a
+    # raw pixel count; a Hausdorff-type score is already a length, and how "similar" should
+    # depend on floe size belongs in threshold_function, which takes area as an input. The
+    # column name is kept for symmetry with the mask filter and MinimumWeightMatchingFunction.
     candidates[!, :scaled_boundary_shape_difference] =
         candidates[!, :boundary_shape_difference]
 
@@ -299,7 +297,7 @@ end
 
 # Deliberately no `const boundary_shape_difference_filter` preset: filter_functions.jl is
 # included before register.jl (Tracking.jl:49 vs :53), so constructing one at module scope
-# would hit the `metric = boundary_normalized_distance` default before that function
+# would hit the `metric = boundary_modified_hausdorff` default before that function
 # exists. @kwdef evaluates defaults at construction time, so the struct itself is fine.
 
 const max_travel_distance_filter = DistanceThresholdFilter(;
