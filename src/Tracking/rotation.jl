@@ -45,7 +45,7 @@ coarse and fine angle grids. To choose a shape metric other than the default, wr
 to be fixed at construction:
 
 ```julia
-registration_function=BoundaryRegistration(; metric=boundary_mse_aligned)
+registration_function=BoundaryRegistration(; metric=boundary_hausdorff)
 ```
 """
 function get_rotation_measurements(
