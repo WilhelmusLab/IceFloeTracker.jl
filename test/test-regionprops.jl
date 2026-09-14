@@ -1,13 +1,17 @@
-@testitem "regionprops" begin
+@testsnippet RegionpropsFixture begin
     using Random
-    import DataFrames: DataFrame, nrow
     import Images: label_components
-    import IceFloeTracker: PixelConvexArea, PolygonConvexArea
 
     Random.seed!(123)
     bw_img = Bool.(rand([0, 1], 5, 10))
     bw_img[end, 7] = 1
     label_img = label_components(bw_img, trues(3, 3))
+end
+
+@testitem "regionprops" setup = [RegionpropsFixture] begin
+    import DataFrames: DataFrame, nrow
+    import IceFloeTracker: PixelConvexArea, PolygonConvexArea
+
     properties = [
         "label",
         "centroid",
@@ -71,11 +75,9 @@
     )
 
     # Test that we can get complex measures without listing everything
-    # Currently doesn't work if we just supply "circularity", need to fix that
     regionprops(
         label_img; properties=["area", "perimeter", "convex_area", "circularity", "solidity"], convex_area_algorithm=PixelConvexArea()
     )
-
 
     # Regression test: cross-shaped region with 4 pixels should not error
     # (see https://github.com/WilhelmusLab/IceFloeTracker.jl/issues/919)
@@ -98,6 +100,22 @@
     @test nrow(cross_result) == 1
 
     @test isnan(cross_result.convex_area[1])
+end
+
+@testitem "regionprops: circularity and solidity work without their respective base properties" setup = [
+    RegionpropsFixture,
+] begin
+    area = regionprops(label_img; properties=[:area])[:area]
+    perimeter = regionprops(label_img; properties=[:perimeter])[:perimeter]
+    convex_area = regionprops(label_img; properties=[:convex_area])[:convex_area]
+
+    circularity_only = regionprops(label_img; properties=[:circularity])
+    @test collect(keys(circularity_only)) == [:circularity] # :perimeter isn't leaked into the output
+    @test circularity_only[:circularity] == area ./ perimeter
+
+    solidity_only = regionprops(label_img; properties=[:solidity])
+    @test collect(keys(solidity_only)) == [:solidity] # :convex_area isn't leaked into the output
+    @test solidity_only[:solidity] == area ./ convex_area
 end
 
 @testitem "regionprops table output should include all implied columns even if there are no rows" begin
