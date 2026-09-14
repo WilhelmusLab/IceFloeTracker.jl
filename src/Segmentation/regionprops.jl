@@ -19,6 +19,15 @@ import DSP: conv
 abstract type PerimeterEstimationAlgorithm <: Function end
 abstract type ConvexAreaEstimationAlgorithm <: Function end
 
+# Single source of truth for which base property a derived property is computed from,
+# so `regionprops` only has to expand this once instead of repeating membership checks
+const DERIVED_PROPERTY_DEPENDENCIES = Dict{Symbol,Vector{Symbol}}(
+    :circularity => [:perimeter], :solidity => [:convex_area]
+)
+
+# Properties whose computation needs the per-label bounding boxes (`bboxes_all`)
+const PROPERTIES_REQUIRING_BBOXES = Set{Symbol}([:bbox, :perimeter, :convex_area, :mask])
+
 # TODO: Determine if this function is needed, since rename! is a standard function for DataFrames.jl.
 """
     renamecols!(props::DataFrame, oldnames::Vector{T}, newnames::Vector{T}) where T<:Union{Symbol,String}
@@ -298,7 +307,7 @@ function _convexhull_or_nothing(img::AbstractMatrix{Bool})
         return convexhull(img)
     catch e
         if e isa ErrorException &&
-           sprint(showerror, e) == "Not enough points to compute convex hull."
+            sprint(showerror, e) == "Not enough points to compute convex hull."
             return nothing
         end
         rethrow()
@@ -597,6 +606,15 @@ function regionprops(
     isa(label_img, SegmentedImage) ? (labels = labels_map(label_img)) : labels = label_img
     eltype(properties) <: AbstractString && (properties = Symbol.(properties))
 
+    # Properties plus whatever base properties they're derived from (e.g. :circularity
+    # pulls in :perimeter), so every downstream check has one place to consult instead
+    # of re-deriving "does this need X" per property.
+    required_properties = Set(properties)
+    for p in properties
+        haskey(DERIVED_PROPERTY_DEPENDENCIES, p) &&
+            union!(required_properties, DERIVED_PROPERTY_DEPENDENCIES[p])
+    end
+
     maximum(labels) == 0 && begin
         @warn "Labeled image is empty!"
         properties_ = Symbol[]
@@ -621,11 +639,7 @@ function regionprops(
     # paths below instead of being recomputed by each helper.
     areas = component_lengths(labels)
     all_labels = unique(labels)
-    needs_bboxes =
-        :bbox ∈ properties ||
-        :perimeter ∈ properties ||
-        :convex_area ∈ properties ||
-        :mask ∈ properties
+    needs_bboxes = !isdisjoint(required_properties, PROPERTIES_REQUIRING_BBOXES)
     bboxes_all = needs_bboxes ? component_boxes(labels) : nothing
     img_labels = sort(all_labels[all_labels .!= 0])
     img_labels = img_labels[[areas[s] > minimum_area for s in img_labels]]
@@ -669,7 +683,7 @@ function regionprops(
         end
     end
 
-    ((:perimeter ∈ properties) || (:circularity ∈ properties)) && begin
+    :perimeter ∈ required_properties && begin
         perimeter_masks = component_floes(labels; labels=all_labels, boxes=bboxes_all, areas)
         floe_perims = component_perimeters(
             labels; algorithm=perimeter_algorithm, masks=perimeter_masks
@@ -680,7 +694,7 @@ function regionprops(
         end
     end
 
-    ((:convex_area ∈ properties) || (:solidity ∈ properties)) && begin
+    :convex_area ∈ required_properties && begin
         convex_areas = component_convex_areas(
             labels;
             algorithm=convex_area_algorithm,
@@ -691,7 +705,7 @@ function regionprops(
         push!(data, :convex_area => map(s -> convex_areas[s], img_labels))
         if :solidity ∈ properties
             push!(data, :solidity => map(s -> areas[s] / convex_areas[s], img_labels))
-        end    
+        end
     end
 
     # psi-s needs masks, so this can get called first
