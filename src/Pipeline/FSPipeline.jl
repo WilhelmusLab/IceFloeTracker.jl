@@ -187,11 +187,11 @@ end
 cloud_mask_algorithm = Watkins2026CloudMask()
 ice_mask_algorithm = IceDetectionBrightnessMidpoint(;  τ₁ = 0.1)
 
-"""Classify(cloud_mask_algorithm, ice_mask_algorithm, classification_key)
+"""Classify(cloud_mask_algorithm, ice_mask_algorithm, key)
    Classify(false_color_image, land_mask)
 
 Produces a labeled image with up to 4 categories: land, water, ice, and cloud, with
-numerical values supplied by the `classification_key`. The function is initialized
+numerical values supplied by the dictionary `key`. The function is initialized
 by assigning a cloud mask algorithm, ice mask algorithm, and a dictionary with the
 numerical values to use for each case. The cloud mask algorithm should accept the 
 MODIS false color image, while the ice mask algorithm uses Band 1 of the falsecolor image.
@@ -201,7 +201,7 @@ Returns an Int64 matrix with the same dimensions as the false color image.
 @kwdef struct Classify <: IceFloeClassificationAlgorithm
     cloud_mask_algorithm=cloud_mask_algorithm
     ice_mask_algorithm=ice_mask_algorithm
-    classification_key=Dict("land"=>0, "water"=>1, "ice"=>2, "cloud"=>3)
+    key=Dict("land"=>0, "water"=>1, "ice"=>2, "cloud"=>3)
 end
 
 function (c::Classify)(false_color_image, land_mask;
@@ -211,10 +211,10 @@ function (c::Classify)(false_color_image, land_mask;
     band_1_masked = Gray.(blue.(apply_landmask(fc_masked, clouds)))
     ice = c.ice_mask_algorithm(band_1_masked) .> 0
     
-    classified_image = ones(Int64, size(false_color_image)) .* c.classification_key["water"]
-    classified_image[land_mask] .= c.classification_key["land"]
-    classified_image[ice] .= c.classification_key["ice"]
-    classified_image[clouds] .= c.classification_key["cloud"]
+    classified_image = ones(Int64, size(false_color_image)) .* c.key["water"]
+    classified_image[land_mask] .= c.key["land"]
+    classified_image[ice] .= c.key["ice"]
+    classified_image[clouds] .= c.key["cloud"]
     
     return classified_image
 end
@@ -227,7 +227,6 @@ tile_size_pixels = 1200
 min_tile_ice_pixel_count=300
 preprocessing_algorithm = Preprocess()
 classification_algorithm = Classify()
-classification_key = Dict("land"=>0, "water"=>1, "ice"=>2, "cloud"=>3)
 kmeans_params = (
     k=4,
     maxiter=50,
@@ -287,10 +286,8 @@ The image preprocessing is supplied as an function in the functor setup.
         coastal_buffer_structuring_element
     preprocessing_algorithm = preprocessing_algorithm
     classification_algorithm = classification_algorithm
-    classification_key = Dict("land"=>0, "water"=>1, "ice"=>2, "cloud"=>3)
     tile_size_pixels = tile_size_pixels
     min_tile_ice_pixel_count = min_tile_ice_pixel_count
-    preliminary_ice_mask = preliminary_ice_mask
     kmeans_params = kmeans_params
     adaptive_params = adaptive_params
     cleanup_binary_params = cleanup_binary_params
@@ -331,7 +328,7 @@ function (s::Segment)(
 
     @info "Classifying falsecolor image"
     classified_image = s.classification_algorithm(falsecolor_image, landmask)
-    cloud_mask = classified_image .== s.classification_key["cloud"]
+    cloud_mask = classified_image .== s.classification_algorithm.key["cloud"]
 
     # 2. Intermediate images - apply coastal buffer and cloud mask
     joint_mask = coastal_buffer_mask .|| cloud_mask
@@ -344,7 +341,7 @@ function (s::Segment)(
     );
 
     # Then check for sufficient possible sea ice pixels
-    ice_mask = classified_image .== s.classification_key["ice"]
+    ice_mask = classified_image .== s.classification_algorithm.key["ice"]
     filtered_tiles = filter(
         t -> sum(ice_mask[t...]) > s.min_tile_ice_pixel_count, filtered_tiles
     );
@@ -369,7 +366,7 @@ function (s::Segment)(
 
     # We also don't want to include artificially brightened regions, so
     # we mask things that have already been classified as water.
-    apply_landmask!(adaptive_result, classified_image .== s.classification_key["water"])
+    apply_landmask!(adaptive_result, classified_image .== s.classification_algorithm.key["water"])
 
     @info "Splitting floes"
     clean_split_label =
