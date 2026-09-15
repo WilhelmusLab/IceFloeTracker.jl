@@ -119,6 +119,10 @@ function (t::FloeTracker)(
     add_uuids!.(props)
     !issorted(image_times) && @warn "Passtimes are not in ascending order."
     add_passtimes!.(props, image_times) # TODO: Change function name to image_times
+    # boundary curves for the boundary-based filters/registration; needs :mask,
+    # which is already requested above. Must precede add_ψs!, which now derives the
+    # ψ-s curve from :boundary rather than tracing the mask a second time.
+    add_boundary!.(props)
     add_ψs!.(props)
 
     tracking_results = floe_tracker(
