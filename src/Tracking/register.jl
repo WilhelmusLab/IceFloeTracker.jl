@@ -1,5 +1,6 @@
 import Images: imrotate, padarray, Fill
 import Interpolations: BSpline, Constant
+import StatsBase: mean
 
 greaterthan05(x) = x .> 0.5 # used for the image resize step and for binarizing images
 function imrotate_bin(x, r)
@@ -165,7 +166,7 @@ ensuring that no angles are repeated (since -π rad == π rad),
 and ordered so that smaller absolute angles which are positive will be returned in the event of a tie in the shape difference.
 """
 register_default_angles_rad = sort(
-    reverse(range(; start=(-π), stop=π, step=π / 36)[1:(end-1)]); by=abs
+    reverse(range(; start=(-π), stop=π, step=π / 36)[1:(end - 1)]); by=abs
 )
 # normalize to [-π, π), the convention of register_default_angles_rad
 function normalize_angle(θ)
@@ -186,7 +187,7 @@ which are positive are preferred, matching `register_default_angles_rad`.
 """
 function prior_test_angles(prior_rad::Real; window::Real=deg2rad(10.0), step::Real=π / 180)
     max_steps = ceil(Int, window / step)
-    offsets = collect(-max_steps:max_steps) .* step
+    offsets = collect((-max_steps):max_steps) .* step
     offsets = filter(o -> abs(o) <= window, offsets)
     angles = [
         normalize_angle(alias + offset) for alias in (prior_rad, prior_rad + π) for
@@ -273,7 +274,63 @@ function mismatch(
     fixed::AbstractArray, moving::AbstractArray, mxrot::Real=180, step::Real=5
 )
     test_angles = sort(
-        reverse(range(; start=(-mxrot), stop=mxrot, step=step)[1:(end-1)]); by=abs
+        reverse(range(; start=(-mxrot), stop=mxrot, step=step)[1:(end - 1)]); by=abs
     )
     return mismatch(fixed, moving, test_angles)
+end
+
+# ============================================================================
+# Geometric Transformations for Boundary Curves
+# ============================================================================
+
+"""
+    _get_rotation_matrix(angle::Real)
+
+Create a 2D rotation matrix for the given angle in radians.
+Positive angle = counterclockwise rotation.
+"""
+function _get_rotation_matrix(angle::Real)
+    cos_a = cos(angle)
+    sin_a = sin(angle)
+    return [cos_a -sin_a; sin_a cos_a]
+end
+
+"""
+    rotate_boundary(boundary::Matrix{Float64}, angle::Real; center::Union{Nothing,Tuple{Float64,Float64}}=nothing)
+
+Apply 2D rotation to boundary curve around center point using matrix multiplication.
+Angle is in radians, positive = counterclockwise.
+
+# Arguments
+- `boundary`: Matrix(n, 2) with [x y] coordinates
+- `angle`: Rotation angle in radians
+- `center`: Center of rotation; if nothing, uses centroid of boundary
+"""
+function rotate_boundary(
+    boundary::Matrix{Float64},
+    angle::Real;
+    center::Union{Nothing,Tuple{Float64,Float64}}=nothing,
+)
+    center = isnothing(center) ? vec(mean(boundary; dims=1)) : collect(center)
+    rot_matrix = _get_rotation_matrix(angle)
+    boundary_centered = boundary .- center'
+    rotated_centered = boundary_centered * transpose(rot_matrix)
+    return rotated_centered .+ center'
+end
+
+"""
+    center_boundary(boundary::Matrix{Float64}; target_center::Tuple{Float64,Float64}=(0.0, 0.0))
+
+Translate boundary curve to center at target_center.
+
+# Arguments
+- `boundary`: Matrix(n, 2) with [x y] coordinates
+- `target_center`: Target centroid position (default: origin)
+"""
+function center_boundary(
+    boundary::Matrix{Float64}; target_center::Tuple{Float64,Float64}=(0.0, 0.0)
+)
+    centroid = vec(mean(boundary; dims=1))
+    offset = collect(target_center) .- centroid
+    return boundary .+ offset'
 end
