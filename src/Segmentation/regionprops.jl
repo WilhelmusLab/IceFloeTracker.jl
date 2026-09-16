@@ -690,7 +690,7 @@ function regionprops(
         )
         push!(data, :perimeter => map(s -> floe_perims[s], img_labels))
         if :circularity ∈ properties
-            push!(data, :circularity => map(s -> areas[s] / floe_perims[s], img_labels))
+            push!(data, :circularity => map(s -> areas[s] / floe_perims[s]^2, img_labels))
         end
     end
 
