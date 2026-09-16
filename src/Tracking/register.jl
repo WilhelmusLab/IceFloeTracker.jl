@@ -488,10 +488,10 @@ Boundary-curve analogue of [`shape_difference_rotation`](@ref). Computes the sha
 difference between `boundary_reference` and `boundary_target` for each angle in
 `test_angles`, holding the reference fixed and rotating the target.
 
-Angle convention matches the mask-based version: `test_angles` are interpreted as the
-rotation *from target to reference*, so the target is rotated by `-angle` to look for a
-match. A perfect match at angle `A` means `boundary_target` has the same shape as
-`boundary_reference` rotated by `A`.
+Angle convention matches the mask-based version: a returned angle `A` means the target
+mask looks like the reference mask rotated by `A` under `imrotate_bin_clockwise_radians`,
+so `register_boundary` on traced boundaries agrees in sign with `register` on the masks
+they were traced from.
 
 `metric(reference, rotated_target)` may be any function returning a real shape
 difference; see `boundary_normalized_distance`, `boundary_mse_aligned` and
@@ -503,19 +503,24 @@ function shape_difference_rotation_boundary(
     test_angles;
     metric=boundary_normalized_distance,
 )
-    shape_differences = Array{
-        NamedTuple{(:angle, :shape_difference),Tuple{Float64,Float64}}
-    }(
-        undef, length(test_angles)
-    )
+    return [
+        (;
+            angle=Float64(angle),
+            shape_difference=Float64(
+                _boundary_shape_difference_at(boundary_reference, boundary_target, angle, metric)
+            ),
+        ) for angle in test_angles
+    ]
+end
 
-    for (idx, angle) in enumerate(test_angles)
-        # rotate the target back by angle, mirroring shape_difference_rotation
-        target_rotated = rotate_boundary(boundary_target, -angle)
-        shape_difference = metric(boundary_reference, target_rotated)
-        shape_differences[idx] = (; angle, shape_difference)
-    end
-    return shape_differences
+# Shape difference between the reference and the target after undoing a candidate
+# rotation by `angle`. shape_difference_rotation undoes it with imrotate(-angle).
+# Boundary coordinates are image indices, whose row axis points down, so
+# rotate_boundary's positive (counterclockwise in an x-right, y-up frame) is the opposite
+# sense of imrotate's positive; undoing imrotate(angle) is therefore
+# rotate_boundary(+angle). Verified against register on the same rotated mask.
+function _boundary_shape_difference_at(boundary_reference, boundary_target, angle, metric)
+    return metric(boundary_reference, rotate_boundary(boundary_target, angle))
 end
 
 """
