@@ -24,6 +24,12 @@
         0.0 3.0
         0.0 0.0
     ]
+
+    # The boundary that tracing imrotate_bin(mask, θ) would give, up to pixelisation.
+    # Boundary coordinates are image indices (row axis down), so imrotate's positive
+    # sense is rotate_boundary's negative. Targets are built with this so the angle
+    # register_boundary must return is the same one register returns for the masks.
+    rotate_as_mask(b, θ) = rotate_boundary(b, -θ)
 end
 
 @testitem "shape_difference_rotation_boundary return shape" setup = [BoundaryRegSetup] begin
@@ -67,27 +73,26 @@ end
 
 @testitem "register_boundary recovers a known rotation" setup = [BoundaryRegSetup] begin
     θ = deg2rad(30.0)                    # on the default 5 degree grid
-    target = rotate_boundary(L, θ)
+    target = rotate_as_mask(L, θ)
 
     recovered = register_boundary(L, target)
     @test isapprox(recovered, θ; atol=1e-9)
 end
 
 @testitem "register_boundary sign convention matches the mask path" setup = [BoundaryRegSetup] begin
-    # The mask-based shape_difference_rotation rotates the TARGET by -angle, so a
-    # returned angle A means "target looks like reference rotated by A". Pin that
-    # same direction here: if target is the reference rotated by +A, we get +A back
-    # (not -A), which is what makes register_boundary a drop-in for register in
-    # get_rotation_measurements.
+    # A returned angle A means "target looks like reference rotated by A" in the sense
+    # of imrotate_bin_clockwise_radians, the convention register uses. Pinning this is
+    # what makes register_boundary a drop-in for register in get_rotation_measurements;
+    # test-boundary-symmetric-distance.jl checks it against register itself.
     for deg in (10.0, 25.0, -15.0, -40.0)
         θ = deg2rad(deg)
-        target = rotate_boundary(L, θ)
+        target = rotate_as_mask(L, θ)
         @test isapprox(register_boundary(L, target), θ; atol=1e-9)
     end
 end
 
 @testitem "register_boundary returns an angle from test_angles" setup = [BoundaryRegSetup] begin
-    target = rotate_boundary(L, deg2rad(17.3))   # deliberately off-grid
+    target = rotate_as_mask(L, deg2rad(17.3))   # deliberately off-grid
     angles = register_default_angles_rad
 
     recovered = register_boundary(L, target; test_angles=angles)
@@ -96,7 +101,7 @@ end
 
 @testitem "register_boundary works with a prior-restricted grid" setup = [BoundaryRegSetup] begin
     θ = deg2rad(12.0)
-    target = rotate_boundary(L, θ)
+    target = rotate_as_mask(L, θ)
 
     angles = prior_test_angles(θ; window=deg2rad(10.0))
     recovered = register_boundary(L, target; test_angles=angles)
@@ -106,7 +111,7 @@ end
 @testitem "register_boundary is callable as a registration_function" setup = [BoundaryRegSetup] begin
     # get_rotation_measurements invokes registration_function(image1, image2; test_angles)
     θ = deg2rad(20.0)
-    target = rotate_boundary(L, θ)
+    target = rotate_as_mask(L, θ)
 
     f = (a, b; test_angles) -> register_boundary(a, b; test_angles)
     @test isapprox(f(L, target; test_angles=register_default_angles_rad), θ; atol=1e-9)
