@@ -166,7 +166,7 @@ ensuring that no angles are repeated (since -π rad == π rad),
 and ordered so that smaller absolute angles which are positive will be returned in the event of a tie in the shape difference.
 """
 register_default_angles_rad = sort(
-    reverse(range(; start=(-π), stop=π, step=π / 36)[1:(end - 1)]); by=abs
+    reverse(range(; start=(-π), stop=π, step=π / 36)[1:(end-1)]); by=abs
 )
 # normalize to [-π, π), the convention of register_default_angles_rad
 function normalize_angle(θ)
@@ -274,7 +274,7 @@ function mismatch(
     fixed::AbstractArray, moving::AbstractArray, mxrot::Real=180, step::Real=5
 )
     test_angles = sort(
-        reverse(range(; start=(-mxrot), stop=mxrot, step=step)[1:(end - 1)]); by=abs
+        reverse(range(; start=(-mxrot), stop=mxrot, step=step)[1:(end-1)]); by=abs
     )
     return mismatch(fixed, moving, test_angles)
 end
@@ -346,9 +346,9 @@ Compute the perimeter of a boundary curve (sum of segment lengths).
 """
 function boundary_perimeter(boundary::Matrix{Float64})
     total = 0.0
-    for i in 1:(size(boundary, 1) - 1)
-        dx = boundary[i + 1, 1] - boundary[i, 1]
-        dy = boundary[i + 1, 2] - boundary[i, 2]
+    for i in 1:(size(boundary, 1)-1)
+        dx = boundary[i+1, 1] - boundary[i, 1]
+        dy = boundary[i+1, 2] - boundary[i, 2]
         total += sqrt(dx^2 + dy^2)
     end
     return total
@@ -366,9 +366,9 @@ function interpolate_boundary(boundary::Matrix{Float64}, n_points::Int)
 
     # Compute arc length at each point
     arc_lengths = [0.0]
-    for i in 1:(size(boundary, 1) - 1)
-        dx = boundary[i + 1, 1] - boundary[i, 1]
-        dy = boundary[i + 1, 2] - boundary[i, 2]
+    for i in 1:(size(boundary, 1)-1)
+        dx = boundary[i+1, 1] - boundary[i, 1]
+        dy = boundary[i+1, 2] - boundary[i, 2]
         arc_lengths = vcat(arc_lengths, arc_lengths[end] + sqrt(dx^2 + dy^2))
     end
 
@@ -384,7 +384,7 @@ function interpolate_boundary(boundary::Matrix{Float64}, n_points::Int)
 
         # Interpolation parameter
         seg_start_len = arc_lengths[segment_idx]
-        seg_end_len = arc_lengths[segment_idx + 1]
+        seg_end_len = arc_lengths[segment_idx+1]
         if seg_end_len > seg_start_len
             t = (target_len - seg_start_len) / (seg_end_len - seg_start_len)
         else
@@ -394,10 +394,10 @@ function interpolate_boundary(boundary::Matrix{Float64}, n_points::Int)
 
         result[idx, 1] =
             boundary[segment_idx, 1] +
-            t * (boundary[segment_idx + 1, 1] - boundary[segment_idx, 1])
+                t * (boundary[segment_idx+1, 1] - boundary[segment_idx, 1])
         result[idx, 2] =
             boundary[segment_idx, 2] +
-            t * (boundary[segment_idx + 1, 2] - boundary[segment_idx, 2])
+                t * (boundary[segment_idx+1, 2] - boundary[segment_idx, 2])
     end
 
     return result
