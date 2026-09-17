@@ -91,6 +91,72 @@ function align_centroids(
     return im1_padded, im2_padded
 end
 
+# Vertices of a closed boundary, without the repeated closing row, translated so their
+# mean is at the origin. Which vertex is duplicated depends on where the trace started,
+# so the mean must be taken over the unique vertices to be start-independent.
+function _centered_vertices(boundary::Matrix{Float64})
+    n = size(boundary, 1)
+    closed = n > 1 && @views(boundary[1, :] == boundary[n, :])
+    P = closed ? boundary[1:(n-1), :] : boundary
+    return P .- mean(P; dims=1)
+end
+
+# Even-odd scan-line fill of the polygon `P` (rows are vertices, in order) onto the pixel
+# grid whose cell (i, j) has centre (lo[1] + i - 1/2, lo[2] + j - 1/2), for
+# i in 1:(hi[1] - lo[1]), j in 1:(hi[2] - lo[2]). A pixel is filled when its centre lies
+# inside the polygon. The half-open comparison on the edge endpoints counts a vertex on
+# the scan line exactly once.
+function _rasterize(P::AbstractMatrix{Float64}, lo::NTuple{2,Int}, hi::NTuple{2,Int})
+    nx, ny = hi[1] - lo[1], hi[2] - lo[2]
+    img = falses(nx, ny)
+    n = size(P, 1)
+    crossings = Float64[]
+    @inbounds for j in 1:ny
+        yc = lo[2] + j - 0.5
+        empty!(crossings)
+        for k in 1:n
+            k2 = k == n ? 1 : k + 1
+            y1, y2 = P[k, 2], P[k2, 2]
+            if (y1 <= yc) != (y2 <= yc)
+                x1, x2 = P[k, 1], P[k2, 1]
+                push!(crossings, x1 + (yc - y1) / (y2 - y1) * (x2 - x1))
+            end
+        end
+        sort!(crossings)
+        for p in 1:2:(length(crossings)-1)
+            # pixel centres strictly between consecutive crossings
+            i_lo = max(1, floor(Int, crossings[p] - lo[1] + 0.5) + 1)
+            i_hi = min(nx, ceil(Int, crossings[p+1] - lo[1] + 0.5) - 1)
+            for i in i_lo:i_hi
+                img[i, j] = true
+            end
+        end
+    end
+    return img
+end
+
+"""
+    boundary_symmetric_distance(b1::Matrix{Float64}, b2::Matrix{Float64})
+
+The quantity [`shape_difference`](@ref) computes on masks, evaluated on closed boundary
+curves: each curve is centred on the mean of its vertices, the region it encloses is
+rasterised onto a common pixel grid, and the result is the number of pixels in the
+symmetric difference of the two rasters. Units: pixels. Smaller is more similar.
+
+Provided so the boundary path can be compared with the mask path on the same objective.
+The rasterisation costs as much as the mask path, so it is a validation metric rather
+than one for tracker throughput.
+"""
+function boundary_symmetric_distance(b1::Matrix{Float64}, b2::Matrix{Float64})
+    A = _centered_vertices(b1)
+    B = _centered_vertices(b2)
+    # common pixel grid covering both polygons
+    AB = vcat(A, B)
+    lo = Tuple(floor.(Int, vec(minimum(AB; dims=1))))
+    hi = Tuple(ceil.(Int, vec(maximum(AB; dims=1))))
+    return count_symdiff(_rasterize(A, lo, hi), _rasterize(B, lo, hi))
+end
+
 """
     shape_difference(floe1::DataFrameRow, floe2::DataFrameRow)
     shape_difference(floe1_mask::BitMatrix, floe1_orientation::Float64,
@@ -166,7 +232,7 @@ ensuring that no angles are repeated (since -π rad == π rad),
 and ordered so that smaller absolute angles which are positive will be returned in the event of a tie in the shape difference.
 """
 register_default_angles_rad = sort(
-    reverse(range(; start=(-π), stop=π, step=π / 36)[1:(end - 1)]); by=abs
+    reverse(range(; start=(-π), stop=π, step=π / 36)[1:(end-1)]); by=abs
 )
 # normalize to [-π, π), the convention of register_default_angles_rad
 function normalize_angle(θ)
@@ -274,7 +340,7 @@ function mismatch(
     fixed::AbstractArray, moving::AbstractArray, mxrot::Real=180, step::Real=5
 )
     test_angles = sort(
-        reverse(range(; start=(-mxrot), stop=mxrot, step=step)[1:(end - 1)]); by=abs
+        reverse(range(; start=(-mxrot), stop=mxrot, step=step)[1:(end-1)]); by=abs
     )
     return mismatch(fixed, moving, test_angles)
 end
@@ -346,9 +412,9 @@ Compute the perimeter of a boundary curve (sum of segment lengths).
 """
 function boundary_perimeter(boundary::Matrix{Float64})
     total = 0.0
-    for i in 1:(size(boundary, 1) - 1)
-        dx = boundary[i + 1, 1] - boundary[i, 1]
-        dy = boundary[i + 1, 2] - boundary[i, 2]
+    for i in 1:(size(boundary, 1)-1)
+        dx = boundary[i+1, 1] - boundary[i, 1]
+        dy = boundary[i+1, 2] - boundary[i, 2]
         total += sqrt(dx^2 + dy^2)
     end
     return total
@@ -366,9 +432,9 @@ function interpolate_boundary(boundary::Matrix{Float64}, n_points::Int)
 
     # Compute arc length at each point
     arc_lengths = [0.0]
-    for i in 1:(size(boundary, 1) - 1)
-        dx = boundary[i + 1, 1] - boundary[i, 1]
-        dy = boundary[i + 1, 2] - boundary[i, 2]
+    for i in 1:(size(boundary, 1)-1)
+        dx = boundary[i+1, 1] - boundary[i, 1]
+        dy = boundary[i+1, 2] - boundary[i, 2]
         arc_lengths = vcat(arc_lengths, arc_lengths[end] + sqrt(dx^2 + dy^2))
     end
 
@@ -384,7 +450,7 @@ function interpolate_boundary(boundary::Matrix{Float64}, n_points::Int)
 
         # Interpolation parameter
         seg_start_len = arc_lengths[segment_idx]
-        seg_end_len = arc_lengths[segment_idx + 1]
+        seg_end_len = arc_lengths[segment_idx+1]
         if seg_end_len > seg_start_len
             t = (target_len - seg_start_len) / (seg_end_len - seg_start_len)
         else
@@ -394,10 +460,10 @@ function interpolate_boundary(boundary::Matrix{Float64}, n_points::Int)
 
         result[idx, 1] =
             boundary[segment_idx, 1] +
-            t * (boundary[segment_idx + 1, 1] - boundary[segment_idx, 1])
+                t * (boundary[segment_idx+1, 1] - boundary[segment_idx, 1])
         result[idx, 2] =
             boundary[segment_idx, 2] +
-            t * (boundary[segment_idx + 1, 2] - boundary[segment_idx, 2])
+                t * (boundary[segment_idx+1, 2] - boundary[segment_idx, 2])
     end
 
     return result
@@ -474,4 +540,77 @@ function boundary_euclidean_distance(b1::Matrix{Float64}, b2::Matrix{Float64})
     end
 
     return total_dist
+end
+
+# ============================================================================
+# Boundary-Curve Registration
+# ============================================================================
+
+"""
+    shape_difference_rotation_boundary(boundary_reference, boundary_target, test_angles;
+                                      metric=boundary_normalized_distance)
+
+Boundary-curve analogue of [`shape_difference_rotation`](@ref). Computes the shape
+difference between `boundary_reference` and `boundary_target` for each angle in
+`test_angles`, holding the reference fixed and rotating the target.
+
+Angle convention matches the mask-based version: a returned angle `A` means the target
+mask looks like the reference mask rotated by `A` under `imrotate_bin_clockwise_radians`,
+so `register_boundary` on traced boundaries agrees in sign with `register` on the masks
+they were traced from.
+
+`metric(reference, rotated_target)` may be any function returning a real shape
+difference; see `boundary_normalized_distance`, `boundary_mse_aligned` and
+`boundary_euclidean_distance`.
+"""
+function shape_difference_rotation_boundary(
+    boundary_reference::Matrix{Float64},
+    boundary_target::Matrix{Float64},
+    test_angles;
+    metric=boundary_normalized_distance,
+)
+    return [
+        (;
+            angle=Float64(angle),
+            shape_difference=Float64(
+                _boundary_shape_difference_at(boundary_reference, boundary_target, angle, metric)
+            ),
+        ) for angle in test_angles
+    ]
+end
+
+# Shape difference between the reference and the target after undoing a candidate
+# rotation by `angle`. shape_difference_rotation undoes it with imrotate(-angle).
+# Boundary coordinates are image indices, whose row axis points down, so
+# rotate_boundary's positive (counterclockwise in an x-right, y-up frame) is the opposite
+# sense of imrotate's positive; undoing imrotate(angle) is therefore
+# rotate_boundary(+angle). Verified against register on the same rotated mask.
+function _boundary_shape_difference_at(boundary_reference, boundary_target, angle, metric)
+    return metric(boundary_reference, rotate_boundary(boundary_target, angle))
+end
+
+"""
+    register_boundary(boundary_reference, boundary_target;
+                      test_angles=register_default_angles_rad,
+                      metric=boundary_normalized_distance)
+
+Boundary-curve analogue of [`register`](@ref). Finds the angle in `test_angles` that
+minimizes the shape difference between `boundary_reference` and `boundary_target`.
+
+Shares `register`'s calling convention, so it can be passed straight to
+`get_rotation_measurements(...; registration_function=register_boundary)` provided the
+image column holds boundary matrices rather than masks. Ties resolve to whichever
+candidate appears first in `test_angles`, matching `register`.
+"""
+function register_boundary(
+    boundary_reference::Matrix{Float64},
+    boundary_target::Matrix{Float64};
+    test_angles=register_default_angles_rad,
+    metric=boundary_normalized_distance,
+)
+    shape_differences = shape_difference_rotation_boundary(
+        boundary_reference, boundary_target, test_angles; metric
+    )
+    best_match = argmin((x) -> x.shape_difference, shape_differences)
+    return best_match.angle
 end
