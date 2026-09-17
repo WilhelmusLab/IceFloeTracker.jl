@@ -122,6 +122,30 @@ function (p::Preprocess)(
     return proc_img
 end
 
+"""
+    LogisticRegressionFilter(df; coefs)
+
+Compute the probability for each DataFrameRow using the logistic function
+with coefficients defined in `coefs`. Names should include "intercept" and
+names of columns in `df`.
+
+"""
+function LogisticRegressionFilter(df;
+    coefs = Dict(
+        "intercept"           => -97.1879,
+        "length_scale"        => 0.1267,
+        "solidity"            => 91.164,
+        "b1_reflectance_mean" => 7.354,
+        "b1_bdry_contrast"    => 2.239,
+        "b7_reflectance_mean" => -1.517,
+        )
+    )
+    colnames = [x for x in keys(coefs)]
+    b = [x for x in values(coefs)]
+    df[:, :intercept] .= 1;
+    return 1 ./ (1 .+ exp.(-Matrix(df[:, colnames]) * b))
+end
+
 # Default segmentation parameters
 coastal_buffer_structuring_element = strel_disk(25)
 cloud_mask_algorithm = Watkins2026CloudMask()
@@ -505,29 +529,7 @@ function filter_floes(
 end
 
 # TODO: dmw -- this could be a struct / functor pair, so the filter takes a FloeProbabilityFunction rather than needing to be LogisticRegression
-"""
-    LogisticRegressionFilter(df; coefs)
 
-Compute the probability for each DataFrameRow using the logistic function
-with coefficients defined in `coefs`. Names should include "intercept" and
-names of columns in `df`.
-
-"""
-function LogisticRegressionFilter(df;
-    coefs = Dict(
-        "intercept"           => -97.1879,
-        "length_scale"        => 0.1267,
-        "solidity"            => 91.164,
-        "b1_reflectance_mean" => 7.354,
-        "b1_bdry_contrast"    => 2.239,
-        "b7_reflectance_mean" => -1.517,
-        )
-    )
-    colnames = [x for x in keys(coefs)]
-    b = [x for x in values(coefs)]
-    df[:, :intercept] .= 1;
-    return 1 ./ (1 .+ exp.(-Matrix(df[:, colnames]) * b))
-end
 
 const default_properties = [:label, :area, :perimeter, :centroid]
 
