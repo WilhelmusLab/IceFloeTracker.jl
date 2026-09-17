@@ -111,7 +111,7 @@ end
 
     circularity_only = regionprops(label_img; properties=[:circularity])
     @test collect(keys(circularity_only)) == [:circularity] # :perimeter isn't leaked into the output
-    @test circularity_only[:circularity] == area ./ perimeter
+    @test circularity_only[:circularity] == 4 .* π .* area ./ perimeter .^ 2
 
     solidity_only = regionprops(label_img; properties=[:solidity])
     @test collect(keys(solidity_only)) == [:solidity] # :convex_area isn't leaked into the output
