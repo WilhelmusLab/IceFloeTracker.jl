@@ -204,15 +204,16 @@ function (s::Segment)(
     );
 
     @info "Detect Floes"
-    binarized_image = kmeans_binarization_multiclass(preproc_gray, falsecolor_image, masks
+    binarized_image = kmeans_binarization_multiclass(
+        preproc_gray, falsecolor_image, masks, filtered_tiles,
     )
     candidate_splits = [
-        dist_morph_split(binarized_imgs[idx]; pset...) for pset in s.floe_splitting_params
+        dist_morph_split(binarized_image; pset...) for pset in s.floe_splitting_params
         ]
     
     # Size-based filter
-    remove_small_segments!.(splits, s.floe_filtering_params.minimum_floe_size)
-    remove_large_segments!.(splits, s.floe_filtering_params.maximum_floe_size)
+    remove_small_segments!.(candidate_splits, s.floe_filtering_params.minimum_floe_size)
+    remove_large_segments!.(candidate_splits, s.floe_filtering_params.maximum_floe_size)
     
     
     @info "Joining segmentation results"
@@ -331,19 +332,14 @@ function extended_regionprops(
     results_df[:, :water_fraction] =  mask_mean.(results_df[:, :label], [masks["water"]])
     results_df[:, :coastal_buffer_fraction] =  mask_mean.(results_df[:, :label], [masks["coast"]])
     
-    # mean reflectance
+    # Compute mean reflectance, assuming the input image is MODIS False Color
     segment_mean_reflectance = Dict(r => mean(falsecolor_image[indices[r]]) for r in keys(indices))
     b = (r -> segment_mean_reflectance[r]).(results_df[:, :label])
     results_df[:, :b1_reflectance_mean] = blue.(b)
     results_df[:, :b7_reflectance_mean] = red.(b)
     results_df[:, :b2_reflectance_mean] = green.(b)
 
-    # boundary mean reflectance
-    
-    # subset!(results_df, :b1_reflectance_mean => r -> r .> min_reflectance)
-    # nrow(results_df) == 0 && return results_df
-    
-    # mean Band 1 boundary reflectance
+    # Compute mean Band 1 boundary reflectance using the boundary radius for an expansion limit
     b1 = blue.(falsecolor_image)
     eroded_labels = img_indexmap .* erode(img_indexmap .> 0)
     bdry_indexmap = expand_labels(img_indexmap, boundary_radius) .- eroded_labels
