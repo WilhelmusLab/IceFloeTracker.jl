@@ -1,0 +1,20 @@
+{
+  "env": {
+    "commit": "main@43e95108",
+    "estimator": "minimum",
+    "image_morphology": "0.4.6",
+    "julia": "1.12.7",
+    "patch": "/home/cpaniaguam/ImageMorphology.jl/src/connected.jl",
+    "tag": "",
+    "threads": "1"
+  },
+  "results": [
+    {"case": "single", "impl": "julia", "median_mib": 0.12606048583984375, "median_s": 0.050184983, "min_s": 0.049853439, "n_labels": 1910, "n_px": 19266560, "property": "area", "samples": 10, "size": "full", "tag": ""},
+    {"case": "single", "impl": "julia", "median_mib": 18.34375762939453, "median_s": 0.122376803, "min_s": 0.120993558, "n_labels": 1910, "n_px": 19266560, "property": "perimeter", "samples": 10, "size": "full", "tag": ""},
+    {"case": "single", "impl": "julia", "median_mib": 111.80626678466797, "median_s": 0.2301260365, "min_s": 0.201382037, "n_labels": 1910, "n_px": 19266560, "property": "convex_area", "samples": 10, "size": "full", "tag": ""},
+    {"case": "single", "impl": "julia", "median_mib": 111.82037353515625, "median_s": 0.304478382, "min_s": 0.207908112, "n_labels": 1910, "n_px": 19266560, "property": "solidity", "samples": 10, "size": "full", "tag": ""},
+    {"case": "single", "impl": "julia", "median_mib": 872.3129577636719, "median_s": 0.729581658, "min_s": 0.318695375, "n_labels": 1910, "n_px": 19266560, "property": "major_axis_length", "samples": 10, "size": "full", "tag": ""},
+    {"case": "single", "impl": "julia", "median_mib": 872.3133163452148, "median_s": 0.7178740515, "min_s": 0.315502505, "n_labels": 1910, "n_px": 19266560, "property": "minor_axis_length", "samples": 10, "size": "full", "tag": ""},
+    {"case": "combined", "impl": "julia", "median_mib": 1002.2265472412109, "median_s": 0.906063448, "min_s": 0.424962768, "n_labels": 1910, "n_px": 19266560, "property": "all_properties", "samples": 10, "size": "full", "tag": ""}
+  ]
+}

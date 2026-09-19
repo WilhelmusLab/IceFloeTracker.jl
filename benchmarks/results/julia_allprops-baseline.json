@@ -1,0 +1,25 @@
+{
+  "env": {
+    "commit": "main@43e95108",
+    "estimator": "minimum",
+    "image_morphology": "0.4.6",
+    "julia": "1.12.7",
+    "patch": "none",
+    "tag": "allprops-baseline",
+    "threads": "1"
+  },
+  "results": [
+    {"case": "single", "impl": "julia", "median_mib": 0.17942047119140625, "median_s": 0.122788295, "min_s": 0.121591454, "n_labels": 1910, "n_px": 19266560, "property": "area", "samples": 5, "size": "full", "tag": "allprops-baseline"},
+    {"case": "single", "impl": "julia", "median_mib": 3804.1636276245117, "median_s": 2.745724541, "min_s": 2.644426636, "n_labels": 1910, "n_px": 19266560, "property": "perimeter", "samples": 5, "size": "full", "tag": "allprops-baseline"},
+    {"case": "single", "impl": "julia", "median_mib": 3691.618583679199, "median_s": 2.578271178, "min_s": 2.440360062, "n_labels": 1910, "n_px": 19266560, "property": "convex_area", "samples": 5, "size": "full", "tag": "allprops-baseline"},
+    {"case": "single", "impl": "julia", "median_mib": 3691.6326599121094, "median_s": 2.657074506, "min_s": 2.623979413, "n_labels": 1910, "n_px": 19266560, "property": "solidity", "samples": 5, "size": "full", "tag": "allprops-baseline"},
+    {"case": "single", "impl": "julia", "median_mib": 3804.2620239257812, "median_s": 2.830456836, "min_s": 2.504076921, "n_labels": 1910, "n_px": 19266560, "property": "circularity", "samples": 5, "size": "full", "tag": "allprops-baseline"},
+    {"case": "single", "impl": "julia", "median_mib": 872.3793411254883, "median_s": 0.788786778, "min_s": 0.371066546, "n_labels": 1910, "n_px": 19266560, "property": "major_axis_length", "samples": 5, "size": "full", "tag": "allprops-baseline"},
+    {"case": "single", "impl": "julia", "median_mib": 872.3744583129883, "median_s": 0.87638091, "min_s": 0.381585213, "n_labels": 1910, "n_px": 19266560, "property": "minor_axis_length", "samples": 5, "size": "full", "tag": "allprops-baseline"},
+    {"case": "single", "impl": "julia", "median_mib": 872.3889312744141, "median_s": 0.755923396, "min_s": 0.386884782, "n_labels": 1910, "n_px": 19266560, "property": "centroid", "samples": 5, "size": "full", "tag": "allprops-baseline"},
+    {"case": "single", "impl": "julia", "median_mib": 3645.0217056274414, "median_s": 2.731733688, "min_s": 2.639944529, "n_labels": 1910, "n_px": 19266560, "property": "bbox", "samples": 5, "size": "full", "tag": "allprops-baseline"},
+    {"case": "single", "impl": "julia", "median_mib": 872.3900527954102, "median_s": 0.741113003, "min_s": 0.395239099, "n_labels": 1910, "n_px": 19266560, "property": "orientation", "samples": 5, "size": "full", "tag": "allprops-baseline"},
+    {"case": "single", "impl": "julia", "median_mib": 3746.0450134277344, "median_s": 2.704593759, "min_s": 2.406975359, "n_labels": 1910, "n_px": 19266560, "property": "mask", "samples": 5, "size": "full", "tag": "allprops-baseline"},
+    {"case": "combined", "impl": "julia", "median_mib": 5019.248100280762, "median_s": 4.595091315, "min_s": 4.182757566, "n_labels": 1910, "n_px": 19266560, "property": "all_properties", "samples": 5, "size": "full", "tag": "allprops-baseline"}
+  ]
+}

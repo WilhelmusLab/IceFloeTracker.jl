@@ -1,0 +1,34 @@
+# Regenerable or bulky. `export_labels.jl` reproduces the fixtures byte-for-byte
+# (the SHA-256 is stable across runs), and `uv` rebuilds the Python environments
+# from the committed lockfiles.
+fixtures/
+python/.venv/
+notebooks/.venv/
+.pytest_cache/
+__pycache__/
+.ipynb_checkpoints/
+
+# The benchmark environment is pinned so the numbers below can be reproduced
+# against the same dependency versions, so this Manifest is tracked despite the
+# repo-wide rule.
+!Manifest.toml
+
+# Results: the runs the PR quotes are kept so a reviewer can diff against them;
+# the intermediate runs from developing the change are not.
+results/*
+!results/report.md
+!results/julia.json
+!results/julia_pr-nopatch.json
+!results/julia_allprops-baseline.json
+!results/python.json
+!results/values_julia.csv
+!results/values_python.csv
+
+# PR text, not a benchmark artifact.
+pr-description.md
+
+# Belongs to the boundary-registration work, not this comparison. It scans the
+# directory for every `001-fram_strait-*.labeled.png`, and only the one scene
+# this benchmark measures is tracked.
+benchmark_registration.jl
+001-soit_passtimes.csv
