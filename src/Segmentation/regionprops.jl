@@ -686,11 +686,17 @@ function regionprops(
     # These per-image passes (lengths, unique, boxes) are shared by all property
     # paths below instead of being recomputed by each helper.
     areas = component_lengths(labels)
-    all_labels = unique(labels)
+    # `component_lengths` already counted every label, so the labels present are
+    # exactly those with a nonzero count. `unique` over the whole image is a
+    # second full pass building a hash set and produces the same answer.
+    # Background is dropped here rather than downstream: nothing below needs it,
+    # and label 0's bounding box is the whole scene, so cropping it builds a mask
+    # the size of the image that every consumer then discards. Ascending by
+    # construction, so no sort is needed either.
+    all_labels = [i for i in axes(areas, 1) if i > 0]
     needs_bboxes = !isdisjoint(required_properties, PROPERTIES_REQUIRING_BBOXES)
     bboxes_all = needs_bboxes ? component_boxes(labels) : nothing
-    img_labels = sort(all_labels[all_labels .!= 0])
-    img_labels = img_labels[[areas[s] > minimum_area for s in img_labels]]
+    img_labels = [s for s in all_labels if areas[s] > minimum_area]
 
     :label ∈ properties && push!(data, :label => img_labels)
 
