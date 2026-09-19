@@ -395,3 +395,47 @@ end
         @test PolygonConvexArea()(plus)[1] == 8.0  # d1 * d2 / 2
     end
 end
+
+@testitem "regionprops: gapped labelings report only the labels present" begin
+    using IceFloeTracker: regionprops_table, PixelConvexArea
+    import DataFrames: nrow
+    import Images: component_lengths
+
+    # A labeling with a gap in its numbering: labels 1 and 3 are present, 2 is
+    # not. `label_components` never produces this, but dropping a region upstream
+    # does, and `regionprops` takes the labeled array it is handed.
+    labels = zeros(Int, 8, 8)
+    labels[2:4, 2:4] .= 1
+    labels[6:7, 6:7] .= 3
+
+    # `component_lengths` counts every value in 0:maximum, so the absent label
+    # gets a zero rather than no entry at all.
+    areas = component_lengths(labels)
+    @test axes(areas, 1) == 0:3
+    @test areas[2] == 0
+
+    # Every property family, at the default minimum_area and at 0. Single-pixel
+    # regions survive minimum_area=0, an absent one still must not.
+    for minimum_area in (1, 0)
+        for properties in (
+            [:label, :area],
+            [:label, :perimeter],
+            [:label, :convex_area, :solidity],
+            [:label, :bbox],
+            [:label, :mask],
+        )
+            df = regionprops_table(
+                labels;
+                properties=properties,
+                minimum_area=minimum_area,
+                convex_area_algorithm=PixelConvexArea(),
+            )
+            @test df.label == [1, 3]
+            @test nrow(df) == 2
+        end
+    end
+
+    # Areas are the real pixel counts, not shifted by the gap.
+    df = regionprops_table(labels; properties=[:label, :area])
+    @test df.area == [9, 4]
+end
