@@ -738,7 +738,9 @@ function regionprops(
     end
 
     :perimeter ∈ required_properties && begin
-        perimeter_masks = component_floes(labels; labels=all_labels, boxes=bboxes_all, areas)
+        perimeter_masks = component_floes(
+            labels; labels=all_labels, boxes=bboxes_all, areas
+        )
         floe_perims = component_perimeters(
             labels; algorithm=perimeter_algorithm, masks=perimeter_masks
         )
