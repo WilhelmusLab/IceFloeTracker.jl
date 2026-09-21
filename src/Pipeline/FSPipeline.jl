@@ -312,10 +312,12 @@ function (s::Segment)(
         tile_size_pixels = nmin
     end
 
+    # match method in other version and use blocks here
     (nr, nc) = round.(Int, size(truecolor_image) ./ tile_size_pixels)
     tiles = get_tiles(truecolor_image; rblocks=nr, cblocks=nc)
 
     @info "Building masks"
+    # replace with classify function, use care with buffer/non buffer version
     cloud_mask = create_cloudmask(falsecolor_image, s.cloud_mask_algorithm)
 
     # 2. Intermediate images - apply coastal buffer and cloud mask
