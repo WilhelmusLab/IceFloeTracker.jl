@@ -1,7 +1,6 @@
 import DataFrames: rename!, DataFrame, nrow, select!
 import ..Geospatial: latlon
 import Images:
-    component_boxes,
     component_centroids,
     component_lengths,
     component_indices,
@@ -180,7 +179,7 @@ function component_floes(
     indexmap;
     minimum_area=1,
     labels=unique(indexmap),
-    boxes=component_boxes(indexmap),
+    boxes=_component_boxes(indexmap), # TODO: restore to `component_boxes(indexmap)` once the fixed version is released.
     areas=component_lengths(indexmap),
 )
     mn = minimum(indexmap)
@@ -315,7 +314,7 @@ function component_convex_areas(
     A;
     algorithm::ConvexAreaEstimationAlgorithm=PixelConvexArea(),
     areas=component_lengths(A),
-    bboxes=component_boxes(A),
+    bboxes=_component_boxes(A), # TODO: restore to `component_boxes(A)` once the fixed version is released.
     labels=unique(A),
 )
     mn = minimum(A)
@@ -358,7 +357,7 @@ for larger shapes.
 end
 
 function (f::PolygonConvexArea)(A)
-    return f(A, component_lengths(A), component_boxes(A), unique(A))
+    return f(A, component_lengths(A), _component_boxes(A), unique(A)) # TODO: restore to `component_boxes(A)` once the fixed version is released.
 end
 
 function (f::PolygonConvexArea)(A, areas, bboxes, labels)
@@ -449,7 +448,7 @@ function _count_pixels_in_hull(mask::AbstractMatrix{Bool}, chull::Vector{<:Carte
 end
 
 function (f::PixelConvexArea)(A)
-    return f(A, component_lengths(A), component_boxes(A), unique(A))
+    return f(A, component_lengths(A), _component_boxes(A), unique(A)) # TODO: restore to `component_boxes(A)` once the fixed version is released.
 end
 
 function (f::PixelConvexArea)(A, areas, bboxes, labels)
@@ -679,7 +678,7 @@ function regionprops(
     # construction, so no sort is needed either.
     all_labels = [i for i in axes(areas, 1) if i > 0]
     needs_bboxes = !isdisjoint(required_properties, PROPERTIES_REQUIRING_BBOXES)
-    bboxes_all = needs_bboxes ? component_boxes(labels) : nothing
+    bboxes_all = needs_bboxes ? _component_boxes(labels) : nothing # TODO: restore to `component_boxes(labels)` once the fixed version is released.
     img_labels = [s for s in all_labels if areas[s] > minimum_area]
 
     :label ∈ properties && push!(data, :label => img_labels)
