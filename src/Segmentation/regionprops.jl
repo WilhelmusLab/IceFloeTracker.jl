@@ -254,36 +254,19 @@ end
     _boundary_image(shape_array, conn4)
 
 Mark the pixels of a binary `shape_array` that the structuring element erodes
-away: those that are set but have at least one neighbor that is not.
-`conn4` selects the 4-connected diamond over the 8-connected box.
+away: the set difference between the mask and its erosion. `conn4` selects the
+4-connected diamond over the 8-connected box.
 
-Returns an `(n+2, m+2)` `BitMatrix` carrying a one-pixel halo of background, so
-that any neighbor of an in-range pixel can be read without a bounds test. Out
-of frame counts as background, so `shape_array[1, 1]` is always on the boundary
-when it is set.
+Returns an `(n+2, m+2)` array, zero-padded by one pixel on each side, so that
+the neighborhood of every pixel of `shape_array` lies inside the array and can
+be read without a bounds test. Out of frame counts as background, so
+`shape_array[1, 1]` is always on the boundary when it is set.
 """
 function _boundary_image(shape_array, conn4)
-    n, m = size(shape_array)
-    e = falses(n + 2, m + 2)
-    # Reads of `shape_array` stay guarded: giving it a halo too would mean
-    # copying it, which costs more than the tests it saves.
-    @inbounds for j in 1:m, i in 1:n
-        iszero(shape_array[i, j]) && continue
-        up = i > 1 && !iszero(shape_array[i-1, j])
-        down = i < n && !iszero(shape_array[i+1, j])
-        left = j > 1 && !iszero(shape_array[i, j-1])
-        right = j < m && !iszero(shape_array[i, j+1])
-        interior = up & down & left & right
-        if interior && !conn4
-            upleft = i > 1 && j > 1 && !iszero(shape_array[i-1, j-1])
-            upright = i > 1 && j < m && !iszero(shape_array[i-1, j+1])
-            downleft = i < n && j > 1 && !iszero(shape_array[i+1, j-1])
-            downright = i < n && j < m && !iszero(shape_array[i+1, j+1])
-            interior = upleft & upright & downleft & downright
-        end
-        e[i+1, j+1] = !interior
-    end
-    return e
+    conn4 ? (strel = strel_diamond((3, 3))) : (strel = strel_box((3, 3)))
+    # Shape needs to have a border of zeros for erode
+    mpad = padarray(shape_array, Fill(0, (1, 1)))
+    return parent(mpad .> erode(mpad, strel))
 end
 
 """
@@ -292,13 +275,14 @@ end
 Tally the boundary pixels of `e` by neighborhood type, where the type of a
 pixel is `1 + 2 * (edge neighbors on the boundary) + 10 * (diagonal ones)`.
 
-`e` must carry the background halo `_boundary_image` produces. Returns a
-49-element vector, 49 being the largest type a pixel can have, indexed by type.
+`e` must be zero-padded by one pixel on each side, as `_boundary_image`
+returns it. Returns a 49-element vector, 49 being the largest type a pixel can
+have, indexed by type.
 """
 function _boundary_type_counts(e)
     counts = zeros(Int, 49)
-    # The halo makes every neighbor of an interior index readable, so the
-    # classification needs no bounds tests of its own.
+    # The zero padding puts the neighborhood of every pixel of the original mask
+    # inside the array, so the classification needs no bounds tests of its own.
     @inbounds for j in 2:(size(e, 2)-1), i in 2:(size(e, 1)-1)
         e[i, j] || continue
         edges = e[i-1, j] + e[i+1, j] + e[i, j-1] + e[i, j+1]
