@@ -133,10 +133,9 @@ Function to identify pixel types and detect ice floes from MODIS true color and 
 @kwdef struct Segment <: IceFloeSegmentationAlgorithm
     coastal_buffer_structuring_element::AbstractMatrix{Bool} = strel_disk(5)
     tile_settings = (; rblocks=1, cblocks=1)
-    min_ice_pixel_count = 300
+    min_ocean_pixel_count = 300
     preprocessing_algorithm = Preprocess()
     classification_algorithm = Classify()
-    classification_key = Dict("land"=>0, "water"=>1, "ice"=>2, "cloud"=>3) # TODO: way to share this? (maybe just classification_algorithm.key?)
     kmeans_params = kmeans_params # DetectFloes() functor, which has the clean, split, and filter on board?
     cleanup_binary_params = clean_binary_floes
     floe_splitting_algorithm = dist_morph_split
@@ -169,31 +168,55 @@ function (s::Segment)(
 
     @info "Classify"
     classified_image = p.classification_algorithm(falsecolor_image, landmask)
-
-    # Then check for sufficient possible sea ice pixels
-    ice_mask = classified_image .== p.classification_algorithm.key["ice"]
+    masks = Dict(k => classified_image .== p.classification_algorithm.key[k] 
+                    for k in keys(p.classification_algorithm.key)
+    )
+    # Then check for sufficient ocean pixels
     filtered_tiles = filter(
-        t -> sum(ice_mask[t...]) > s.min_ice_pixel_count, filtered_tiles
+        t -> sum(masks["land"][t...]) > s.min_ocean_pixel_count, filtered_tiles
     );
 
     @info "Detect Floes"
+    #### Ice Floe Detection
+    # The floe detection has three parts: binarization, generating candidate floes, then selecting 
+    # likely floes from the candidates.  
     # We use the cloud mask in finding the bright floes - the bright floe cluster can't be cloud -
     # and allow the k-means cluster to overlap with the cloud mask by using the preproc gray with
     # only the landmask applied to it. Not applying the cloudmask to the kmeans result, though, means
     # we need to be careful about the clouds.
-    kmeans_result = kmeans_binarization(
-        preproc_gray, fc_masked, filtered_tiles; s.kmeans_params...
-    )
-    adaptive_result = binarize(preproc_gray, AdaptiveThreshold(; s.adaptive_params...)) .> 0
+    @info "Binarization"
+    function _kmeans_binarization(preproc_gray, falsecolor_image, filtered_tiles, masks)
+        # This can be a method or an input function
+        cloudy_ice_detector = IceDetectionBrightnessPeaksMODIS721(
+            band_7_max=0.70, possible_ice_threshold=0.56, nbins=128, minimum_prominence=0.03)
+        clear_sky_ice_detector = IceDetectionBrightnessPeaksMODIS721(
+            band_7_max=0.18, possible_ice_threshold=0.46, nbins=128, minimum_prominence=0.01);
 
-    # AdaptiveThreshold often has noise in large blank areas
-    apply_landmask!(adaptive_result, landmask)
+        fc_masked = apply_landmask!(falsecolor_image, masks["land"])
+        cloudy_kmeans = kmeans_binarization(preproc_gray, fc_masked, filtered_tiles;
+            k=3, cluster_selection_algorithm=cloudy_ice_detector
+        )
+        clear_kmeans = kmeans_binarization(preproc_gray, fc_masked, filtered_tiles;
+            k=4, cluster_selection_algorithm=clear_sky_ice_detector
+        )
 
-    # We also don't want to include artificially brightened regions, so
-    # we mask things that have already been classified as water.
-    apply_landmask!(adaptive_result, .!(prelim_ice_mask .|| cloud_mask))
+        function merge_kmeans(r1, r2, m)
+            out = copy(r1)
+            out[m] .= r2[m]
+            return out
+        end
+
+        return merge_kmeans.(clear_kmeans, cloudy_kmeans, masks["cloud"])
+    end
+    binarized_image = _kmeans_binarization(preproc_gray, falsecolor_image, filtered_tiles, masks)
 
     @info "Splitting floes"
+
+    split_floes = dist_morph_split.(
+        [binarized_image], 
+    )
+
+
     clean_split_label =
         r -> dist_morph_split(
             clean_binary_floes(r, prelim_ice_mask, cloud_mask; s.cleanup_binary_params...);
@@ -204,22 +227,6 @@ function (s::Segment)(
     adaptive_split_floes = clean_split_label(adaptive_result)
 
     # TBD: Filter floes based on the edge properties, colors
-
-    @info "Filtering floes"
-    filter_floes!(
-        kmeans_split_floes,
-        coastal_buffer_mask,
-        cloud_mask,
-        falsecolor_image;
-        s.floe_filtering_params...,
-    )
-    filter_floes!(
-        adaptive_split_floes,
-        coastal_buffer_mask,
-        cloud_mask,
-        falsecolor_image;
-        s.floe_filtering_params...,
-    )
 
     @info "Joining segmentation results"
     final_floes = merge_floes(kmeans_split_floes, adaptive_split_floes, preproc_gray)
@@ -344,5 +351,87 @@ function Track(
         filter_function, matching_function, minimum_area, maximum_area, maximum_time_step
     )
 end
+
+##### Helper functions #####
+
+function extended_regionprops(
+    img_indexmap,
+    coastal_buffer_mask,
+    classified_image,
+    falsecolor_image; # expects band 7-2-1
+    boundary_radius=15,
+    classification_key=Dict("land"=>0, "water"=>1, "ice"=>2, "cloud"=>3),
+    properties = [
+        :label, :area, :perimeter, :bbox,
+        :centroid, :convex_area, :major_axis_length,
+        :minor_axis_length, :orientation,
+        :circularity, :solidity],
+    probability_function=LogisticRegressionFilter,
+)
+    img_indexmap = copy(img_indexmap)
+    indices = component_indices(img_indexmap)
+
+    results_df = regionprops_table(img_indexmap;
+        properties=properties,
+        convex_area_algorithm=PolygonConvexArea()
+    )
+    # Return blank image if no floes remain
+    nrow(results_df) == 0 && return results_df
+
+    results_df[:, :length_scale] = results_df[:, :area] .^ 0.5
+
+    mask_mean(r, mask) = mean(mask[indices[r]])
+    masks = Dict(k => classified_image .== classification_key[k] for k in keys(classification_key))
+    push!(masks, "coast" => coastal_buffer_mask)
+    
+    results_df[:, :cloud_fraction] =  mask_mean.(results_df[:, :label], [masks["cloud"]])
+    results_df[:, :ice_fraction] =  mask_mean.(results_df[:, :label], [masks["ice"]])
+    results_df[:, :water_fraction] =  mask_mean.(results_df[:, :label], [masks["water"]])
+    results_df[:, :coastal_buffer_fraction] =  mask_mean.(results_df[:, :label], [masks["coast"]])
+    
+    # mean reflectance
+    segment_mean_reflectance = Dict(r => mean(falsecolor_image[indices[r]]) for r in keys(indices))
+    b = (r -> segment_mean_reflectance[r]).(results_df[:, :label])
+    results_df[:, :b1_reflectance_mean] = blue.(b)
+    results_df[:, :b7_reflectance_mean] = red.(b)
+    results_df[:, :b2_reflectance_mean] = green.(b)
+
+    # mean Band 1 boundary reflectance
+    b1 = blue.(falsecolor_image)
+    eroded_labels = img_indexmap .* erode(img_indexmap .> 0)
+    bdry_indexmap = expand_labels(img_indexmap, boundary_radius) .- eroded_labels
+    bdry_indices = component_indices(bdry_indexmap)
+    bdry_labels = intersect(results_df[:, :label], unique(bdry_indexmap))
+    b1_bdry_means = Dict(L => mean(b1[bdry_indices[L]]) for L in bdry_labels)
+    for L ∈ results_df[:, :label]
+        if L ∉ bdry_labels
+            push!(b1_bdry_means, L => 0)
+        end
+    end
+    results_df[:, :b1_reflectance_bdry_mean] = [b1_bdry_means[L] for L in results_df[:, :label]]
+    results_df[:, :b1_bdry_contrast] = results_df[:, :b1_reflectance_mean] .- results_df[:, :b1_reflectance_bdry_mean]
+    
+    results_df[:, :probability] .= probability_function(results_df)
+    return results_df
+end
+
+function LogisticRegressionFilter(df;
+    coefs = Dict(
+        "intercept"           => -97.1879,
+        "length_scale"        => 0.1267,
+        "solidity"            => 91.164,
+        "b1_reflectance_mean" => 7.354,
+        "b1_bdry_contrast"    => 2.239,
+        "b7_reflectance_mean" => -1.517,
+        )
+    )
+    colnames = [x for x in keys(coefs)]
+    b = [x for x in values(coefs)]
+    df[:, :intercept] .= 1;
+    return 1 ./ (1 .+ exp.(-Matrix(df[:, colnames]) * b))
+end
+
+
+
 
 end
