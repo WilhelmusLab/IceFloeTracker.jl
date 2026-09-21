@@ -12,15 +12,24 @@ and Track() functors in LopezAcosta2019 and LopezAcosta2019Tiling.
 
 module TGRS2026
 
+using Images
+using DataFrames
+import Dates: Day
+import Peaks: findmaxima
+import StatsBase: kurtosis, skewness, mean, std
+
 import ..Filtering:
     ContrastLimitedAdaptiveHistogramEqualization
 
 import ..ImageUtils: 
-    get_tiles, 
-    apply_landmask,
-    apply_landmask! # TODO: Test using the "masker" approach
+    get_tiles
+
+import ..Morphology:
+    strel_disk
 
 import ..Preprocessing:
+    apply_landmask,
+    apply_landmask!,
     Watkins2026CloudMask
 
 import ..Segmentation:
@@ -67,6 +76,8 @@ abstract type IceFloeClassificationAlgorithm end
     histogram_params = (nbins=256, rblocks=4, cblocks=4, clip=1)
 end
 
+# Q: does image sharpening, nonlinear filtering change the quality of the result? nonlinear filtering 
+# in particular is expensive.
 function (p::Preprocess)(
     image::AbstractArray{<:Union{AbstractGray, TransparentGray, AbstractRGB,TransparentRGB}}, landmask
 )
@@ -86,6 +97,7 @@ function (p::Preprocess)(
     return proc_img
 end
 
+# Q: Is using both Band 1 and Band 2 necessary? 
 """
    Classify(
         τ₁=0.1,
@@ -294,14 +306,22 @@ function kmeans_binarization_multiclass(preproc_gray, falsecolor_image, masks;
     return clear_sky_ice_kmeans
 end
 
+"""
+    TGRS2026.extended_regionprops()
+
+Calls @ref[`regionprops_table`] with the provided `properties` list. Then, adds information on
+floe-average overlap with the provided `masks` (expects Dict with mask name => binary mask), 
+band-average reflectance from the falsecolor image, and band 1 boundary contrast. Finally, uses
+a provided probability function to add a `probability` column indicating the likelihood the object
+is an ice floe.
+
+"""
 
 function extended_regionprops(
     img_indexmap,
-    coastal_buffer_mask,
-    classified_image,
-    falsecolor_image; # expects band 7-2-1
+    falsecolor_image,
+    masks; # expects band 7-2-1
     boundary_radius=15,
-    classification_key=Dict("land"=>0, "water"=>1, "ice"=>2, "cloud"=>3),
     properties = [
         :label, :area, :perimeter, :bbox,
         :centroid, :convex_area, :major_axis_length,
@@ -408,10 +428,7 @@ function LogisticRegressionFilter!(df;
     df[:, :probability] = 1 ./ (1 .+ exp.(-Matrix(df_[:, colnames]) * b))
 end
 
-
-
 #### Tracker parameters ####
-
 const max_travel_distance_filter = DistanceThresholdFilter(;
     threshold_function=LogLogQuadraticTimeDistanceFunction()
 )
@@ -456,7 +473,7 @@ const psi_s_correlation_filter = PsiSCorrelationThresholdFilter(;
     ),
 )
 
-const FSFilterFunctions = [
+const FilterFunctions = [
     max_travel_distance_filter,
     area_relative_error_filter,
     convex_area_relative_error_filter,
@@ -466,7 +483,7 @@ const FSFilterFunctions = [
     psi_s_correlation_filter,
 ]
 
-const FSMatchingColumns = [
+const MatchingColumns = [
             :scaled_distance,
             :relative_error_area,
             :relative_error_convex_area,
@@ -482,101 +499,19 @@ Track shapes across images using the LogLogQuadratic distance filter, the Chaine
 and the MinimumWeightMatchingFunction.
 
 """
-function Track(
-    filter_function=ChainedFilterFunction(; filters=FSFilterFunctions),
+function Track(;
+    filter_function=ChainedFilterFunction(; filters=FilterFunctions),
     matching_function=MinimumWeightMatchingFunction(
-        columns=FSMatchingColumns,
+        columns=MatchingColumns,
         weights=ones(7),
     ),
     minimum_area=300, # Minimum floe area for tracking
     maximum_area=90e3, # Maximum floe area for tracking
-    maximum_time_step=Day(2), # Maximum length of time to skip
+    maximum_time_step=Day(1), # Maximum length of time to skip
 )
     return FloeTracker(;
         filter_function, matching_function, minimum_area, maximum_area, maximum_time_step
     )
 end
-
-##### Helper functions #####
-
-function extended_regionprops(
-    img_indexmap,
-    coastal_buffer_mask,
-    classified_image,
-    falsecolor_image; # expects band 7-2-1
-    boundary_radius=15,
-    classification_key=Dict("land"=>0, "water"=>1, "ice"=>2, "cloud"=>3),
-    properties = [
-        :label, :area, :perimeter, :bbox,
-        :centroid, :convex_area, :major_axis_length,
-        :minor_axis_length, :orientation,
-        :circularity, :solidity],
-    probability_function=LogisticRegressionFilter,
-)
-    img_indexmap = copy(img_indexmap)
-    indices = component_indices(img_indexmap)
-
-    results_df = regionprops_table(img_indexmap;
-        properties=properties,
-        convex_area_algorithm=PolygonConvexArea()
-    )
-    # Return blank image if no floes remain
-    nrow(results_df) == 0 && return results_df
-
-    results_df[:, :length_scale] = results_df[:, :area] .^ 0.5
-
-    mask_mean(r, mask) = mean(mask[indices[r]])
-    masks = Dict(k => classified_image .== classification_key[k] for k in keys(classification_key))
-    push!(masks, "coast" => coastal_buffer_mask)
-    
-    results_df[:, :cloud_fraction] =  mask_mean.(results_df[:, :label], [masks["cloud"]])
-    results_df[:, :ice_fraction] =  mask_mean.(results_df[:, :label], [masks["ice"]])
-    results_df[:, :water_fraction] =  mask_mean.(results_df[:, :label], [masks["water"]])
-    results_df[:, :coastal_buffer_fraction] =  mask_mean.(results_df[:, :label], [masks["coast"]])
-    
-    # mean reflectance
-    segment_mean_reflectance = Dict(r => mean(falsecolor_image[indices[r]]) for r in keys(indices))
-    b = (r -> segment_mean_reflectance[r]).(results_df[:, :label])
-    results_df[:, :b1_reflectance_mean] = blue.(b)
-    results_df[:, :b7_reflectance_mean] = red.(b)
-    results_df[:, :b2_reflectance_mean] = green.(b)
-
-    # mean Band 1 boundary reflectance
-    b1 = blue.(falsecolor_image)
-    eroded_labels = img_indexmap .* erode(img_indexmap .> 0)
-    bdry_indexmap = expand_labels(img_indexmap, boundary_radius) .- eroded_labels
-    bdry_indices = component_indices(bdry_indexmap)
-    bdry_labels = intersect(results_df[:, :label], unique(bdry_indexmap))
-    b1_bdry_means = Dict(L => mean(b1[bdry_indices[L]]) for L in bdry_labels)
-    for L ∈ results_df[:, :label]
-        if L ∉ bdry_labels
-            push!(b1_bdry_means, L => 0)
-        end
-    end
-    results_df[:, :b1_reflectance_bdry_mean] = [b1_bdry_means[L] for L in results_df[:, :label]]
-    results_df[:, :b1_bdry_contrast] = results_df[:, :b1_reflectance_mean] .- results_df[:, :b1_reflectance_bdry_mean]
-    
-    results_df[:, :probability] .= probability_function(results_df)
-    return results_df
-end
-
-function LogisticRegressionFilter(df;
-    coefs = Dict(
-        "intercept"           => -97.1879,
-        "length_scale"        => 0.1267,
-        "solidity"            => 91.164,
-        "b1_reflectance_mean" => 7.354,
-        "b1_bdry_contrast"    => 2.239,
-        "b7_reflectance_mean" => -1.517,
-        )
-    )
-    colnames = [x for x in keys(coefs)]
-    b = [x for x in values(coefs)]
-    df[:, :intercept] .= 1;
-    return 1 ./ (1 .+ exp.(-Matrix(df[:, colnames]) * b))
-end
-
-
-
 
 end
