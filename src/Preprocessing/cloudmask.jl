@@ -222,10 +222,9 @@ julia> Gray.(cloud_mask)
 ```
 """
 function (f::Watkins2026CloudMask)(img::AbstractArray{<:Union{AbstractRGB,TransparentRGB}})
-
     b2 = green.(img)
     b7 = red.(img)
-    init_mask = (b2 .> f.band_2_threshold) .&& (b7 .> f.band_7_threshold)
+    init_mask = (b2 .> f.τ₂) .&& (b7 .> f.τ₇)
     
     # end early if no pixels flagged
     !maximum(init_mask) && return init_mask
