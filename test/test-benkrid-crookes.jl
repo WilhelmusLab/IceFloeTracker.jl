@@ -53,8 +53,8 @@ end
 @testitem "BenkridCrookes boundary image" begin
     using IceFloeTracker.Segmentation: _boundary_image
 
-    # The result carries a one-pixel halo of background, so callers can read any
-    # neighbor of an in-range pixel without a bounds test.
+    # The result is zero-padded by one pixel, so callers can read
+    # every pixel's neighborhood without a bounds test.
     e = _boundary_image(trues(3, 4), true)
     @test size(e) == (5, 6)
     @test !any(e[1, :]) && !any(e[end, :]) && !any(e[:, 1]) && !any(e[:, end])
