@@ -408,7 +408,43 @@ function LogisticRegressionFilter!(df;
     df[:, :probability] = 1 ./ (1 .+ exp.(-Matrix(df_[:, colnames]) * b))
 end
 
+"""
+    add_mean_reflectance!(props_df, img, indices)
 
+Compute the mean reflectance for `img` for each label in `props_df`. Assumes
+that `props_df` contains labels corresponding to the dictionary `indices` 
+(see @ref[`component_indices`]).
+"""
+function add_mean_reflectance!(props_df, img, indices)
+    segment_mean_reflectance(r) = mean(img[indices[r]])
+    props_df.mean_reflectance = segment_mean_reflectance.(props_df.label)
+end
+
+"""
+    add_mean_boundary_reflectance!(props_df, img, labels; radius=15)
+
+Compute the average of `img` within `radius` of the objects in `labels`. Uses
+the bounding boxes in `regionprops_df` so that they don't have to be re-computed.
+"""
+function add_mean_boundary_reflectance!(props_df, img, labels; radius=15)
+    n, m = size(labels)
+    bdry_ref = zeros(Float64, nrow(regionprops_df))
+    for data in eachrow(regionprops_df)
+        # expand the bounding box by radius
+        # minimum row is the maximum 
+        rmin = maximum((data.min_row - radius, 0))
+        rmax = mimimum((data.max_row + radius, n))
+        cmin = maximum((data.min_col - radius, 0))
+        cmax = minimum((data.max_col + radius, m))
+
+        label_subset = Int64.(labels[rmin:rmax, cmin:cmax] .== data.label)
+        boundary = expand_labels(label_subset, radius)
+        boundary[label_subset .> 0] .= 0
+        image_subset = img[rmin:rmax, cmin:cmax]
+        push!(bdry_ref, mean(vec(image_subset[boundary .> 0])))
+    end
+    props_df.mean_boundary_reflectance = bdry_ref
+end
 
 #### Tracker parameters ####
 
