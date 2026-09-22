@@ -12,15 +12,24 @@ and Track() functors in LopezAcosta2019 and LopezAcosta2019Tiling.
 
 module TGRS2026
 
+using Images
+using DataFrames
+import Dates: Day
+import Peaks: findmaxima
+import StatsBase: kurtosis, skewness, mean, std
+
 import ..Filtering:
     ContrastLimitedAdaptiveHistogramEqualization
 
 import ..ImageUtils: 
-    get_tiles, 
-    apply_landmask,
-    apply_landmask! # TODO: Test using the "masker" approach
+    get_tiles
+
+import ..Morphology:
+    strel_disk
 
 import ..Preprocessing:
+    apply_landmask,
+    apply_landmask!,
     Watkins2026CloudMask
 
 import ..Segmentation:
@@ -67,6 +76,8 @@ abstract type IceFloeClassificationAlgorithm end
     histogram_params = (nbins=256, rblocks=4, cblocks=4, clip=1)
 end
 
+# Q: does image sharpening, nonlinear filtering change the quality of the result? nonlinear filtering 
+# in particular is expensive.
 function (p::Preprocess)(
     image::AbstractArray{<:Union{AbstractGray, TransparentGray, AbstractRGB,TransparentRGB}}, landmask
 )
@@ -86,6 +97,7 @@ function (p::Preprocess)(
     return proc_img
 end
 
+# Q: Is using both Band 1 and Band 2 necessary? 
 """
    Classify(
         τ₁=0.1,
@@ -294,14 +306,21 @@ function kmeans_binarization_multiclass(preproc_gray, falsecolor_image, masks;
     return clear_sky_ice_kmeans
 end
 
+"""
+    TGRS2026.extended_regionprops()
 
+Calls @ref[`regionprops_table`] with the provided `properties` list. Then, adds information on
+floe-average overlap with the provided `masks` (expects Dict with mask name => binary mask), 
+band-average reflectance from the falsecolor image, and band 1 boundary contrast. Finally, uses
+a provided probability function to add a `probability` column indicating the likelihood the object
+is an ice floe.
+
+"""
 function extended_regionprops(
     img_indexmap,
-    coastal_buffer_mask,
-    classified_image,
-    falsecolor_image; # expects band 7-2-1
+    falsecolor_image,
+    masks; # expects band 7-2-1
     boundary_radius=15,
-    classification_key=Dict("land"=>0, "water"=>1, "ice"=>2, "cloud"=>3),
     properties = [
         :label, :area, :perimeter, :bbox,
         :centroid, :convex_area, :major_axis_length,
@@ -447,7 +466,6 @@ function add_mean_boundary_reflectance!(props_df, img, labels; radius=15)
 end
 
 #### Tracker parameters ####
-
 const max_travel_distance_filter = DistanceThresholdFilter(;
     threshold_function=LogLogQuadraticTimeDistanceFunction()
 )
@@ -492,7 +510,7 @@ const psi_s_correlation_filter = PsiSCorrelationThresholdFilter(;
     ),
 )
 
-const FSFilterFunctions = [
+const FilterFunctions = [
     max_travel_distance_filter,
     area_relative_error_filter,
     convex_area_relative_error_filter,
@@ -502,7 +520,7 @@ const FSFilterFunctions = [
     psi_s_correlation_filter,
 ]
 
-const FSMatchingColumns = [
+const MatchingColumns = [
             :scaled_distance,
             :relative_error_area,
             :relative_error_convex_area,
@@ -518,15 +536,15 @@ Track shapes across images using the LogLogQuadratic distance filter, the Chaine
 and the MinimumWeightMatchingFunction.
 
 """
-function Track(
-    filter_function=ChainedFilterFunction(; filters=FSFilterFunctions),
+function Track(;
+    filter_function=ChainedFilterFunction(; filters=FilterFunctions),
     matching_function=MinimumWeightMatchingFunction(
-        columns=FSMatchingColumns,
+        columns=MatchingColumns,
         weights=ones(7),
     ),
     minimum_area=300, # Minimum floe area for tracking
     maximum_area=90e3, # Maximum floe area for tracking
-    maximum_time_step=Day(2), # Maximum length of time to skip
+    maximum_time_step=Day(1), # Maximum length of time to skip
 )
     return FloeTracker(;
         filter_function, matching_function, minimum_area, maximum_area, maximum_time_step
