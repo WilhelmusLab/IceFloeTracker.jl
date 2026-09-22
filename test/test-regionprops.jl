@@ -420,6 +420,7 @@ end
         for properties in (
             [:label, :area],
             [:label, :perimeter],
+            [:label, :circularity],
             [:label, :convex_area, :solidity],
             [:label, :bbox],
             [:label, :mask],
