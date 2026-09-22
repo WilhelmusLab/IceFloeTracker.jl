@@ -36,7 +36,9 @@ import ..Segmentation:
     dist_morph_split,
     get_relevant_set,
     kmeans_segmentation,
+    kmeans_binarization,
     IceDetectionBrightnessMidpoint,
+    IceDetectionBrightnessPeaksMODIS721,
     regionprops_table,
     remove_small_segments!,
     remove_large_segments!,
@@ -126,7 +128,7 @@ function (c::IceFloeClassificationAlgorithm)(false_color_image, land_mask)::Matr
     ice_mask_algorithm=IceDetectionBrightnessMidpoint(; minimum_reflectance=c.τ₁)
     fc_masked = apply_landmask(false_color_image, land_mask)
     clouds = cloud_mask_algorithm(fc_masked)
-    ice = Gray.(blue.(apply_landmask(fc_masked, clouds))) .|> ice_mask_algorithm
+    ice = Gray.(blue.(apply_landmask(fc_masked, clouds))) |> ice_mask_algorithm
     
     classified_image = ones(Int64, size(false_color_image)) .* c.key["water"]
     classified_image[land_mask .> 0] .= c.key["land"]
@@ -174,9 +176,9 @@ The coastal buffer mask is used to identify potential landfast ice segments.
     min_ocean_pixel_count = min_ocean_pixel_count
     preprocessing_algorithm = preprocessing_algorithm
     classification_algorithm = classification_algorithm
-    floe_splitting_algorithm = dist_morph_split
+    floe_splitting_algorithm = dist_morph_split # TODO: add binarization algorithm
     floe_splitting_params = floe_splitting_params
-    floe_filtering_params = filter_floes_params
+    floe_filtering_params = floe_filtering_params
 end
 
 function (s::Segment)(
@@ -199,15 +201,15 @@ function (s::Segment)(
     landmask = reinterpret(Bool, landmask)
 
     # n, m = size(truecolor_image) TODO: warn if the tile size ends up smaller than 400 px
-    tiles = get_tiles(truecolor; p.tile_settings...)
+    tiles = get_tiles(truecolor; s.tile_settings...)
     
     @info "Preprocess"
-    preproc_gray = p.preprocessing_algorithm(truecolor_image, landmask)
+    preproc_gray = s.preprocessing_algorithm(truecolor_image, landmask)
 
     @info "Classify"
-    classifier = p.classification_algorithm
+    classifier = s.classification_algorithm
     classified_image = classifier(falsecolor_image, landmask)
-    masks = Dict(k => classified_image .== classifier.key[k] for k in keys(classifier))
+    masks = Dict(k => classified_image .== classifier.key[k] for k in keys(classifier.key))
     push!(masks, "coastal_buffer_mask" => coastal_buffer_mask)
 
     # Then check for sufficient ocean pixels (speed up for large images)
@@ -229,7 +231,8 @@ function (s::Segment)(
     
     
     @info "Joining segmentation results"
-    final_floes = merge_floes(kmeans_split_floes, adaptive_split_floes, preproc_gray)
+    # final_floes = merge_floes(candidate_splits, falsecolor_image; p.floe_merging_params...)
+    final_floes = candidate_splits[1]
 
     # Repeat size-based filter in case artifacts were created
     remove_small_segments!(final_floes, s.floe_filtering_params.minimum_floe_size)
@@ -244,14 +247,14 @@ function (s::Segment)(
 
     if !isnothing(intermediate_results_callback)
         colorview_random = view_seg_random(segments_tc)
-        segment_mean_truecolor=n0f8.(segment_mean_map(segments_tc))
+        segment_mean_truecolor=n0f8.(segment_mean_map(segments_tc)) # dmw: does this work with view_seg()?
         segment_mean_falsecolor=n0f8.(segment_mean_map(segments_fc))
         intermediate_results_callback(;
             truecolor,
             falsecolor,
-            coastal_buffer_mask=Gray.(coastal_buffer_mask),
-            cloud_mask=Gray.(cloud_mask),
-            ice_mask=Gray.(prelim_ice_mask),
+            coastal_buffer_mask=Gray.(masks["coastal_buffer_mask"]),
+            cloud_mask=Gray.(masks["cloud"]),
+            ice_mask=Gray.(masks["ice"]),
             preprocessed=preproc_gray,
             binarized=kmeans_result .> 0,
             final_floes=colorview_random,
@@ -276,7 +279,7 @@ Wrapper for the kmeans binarization function. Uses one set of k-means settings f
 sky scenes and another set for cloud-covered scenes. The parameters are used to initialize
 the IceDetectionBrightnessPeaksMODIS721 algorithm.
 """
-function kmeans_binarization_multiclass(preproc_gray, falsecolor_image, masks;
+function kmeans_binarization_multiclass(preproc_gray, falsecolor_image, masks, tiles;
     cloudy_ice_params=(k=3, b7=0.7, b2=0.56),
     clear_sky_ice_params=(k=4, b7=0.18, b2=0.46),
     mask_land_key="coastal_buffer_mask",
@@ -290,14 +293,14 @@ function kmeans_binarization_multiclass(preproc_gray, falsecolor_image, masks;
         possible_ice_threshold=cloudy_ice_params.b2,
         nbins=128, minimum_prominence=0.03)
     clear_sky_ice_detector = IceDetectionBrightnessPeaksMODIS721(
-        band_7_max=clearsky_ice_params.b7,
-        possible_ice_threshold=clearsky_ice_params.b2,
+        band_7_max=clear_sky_ice_params.b7,
+        possible_ice_threshold=clear_sky_ice_params.b2,
         nbins=128, minimum_prominence=0.01);
 
-    cloudy_ice_kmeans = kmeans_binarization(preproc_gray, fc_masked;
+    cloudy_ice_kmeans = kmeans_binarization(preproc_gray, fc_masked, tiles;
         k=cloudy_ice_params.k, cluster_selection_algorithm=cloudy_ice_detector
     ) .> 0
-    clear_sky_ice_kmeans = kmeans_binarization(preproc_gray, fc_masked;
+    clear_sky_ice_kmeans = kmeans_binarization(preproc_gray, fc_masked, tiles;
         k=clear_sky_ice_params.k, cluster_selection_algorithm=clear_sky_ice_detector
     ) .> 0
     
@@ -307,7 +310,7 @@ function kmeans_binarization_multiclass(preproc_gray, falsecolor_image, masks;
 end
 
 """
-    TGRS2026.extended_regionprops()
+    extended_regionprops_table()
 
 Calls @ref[`regionprops_table`] with the provided `properties` list. Then, adds information on
 floe-average overlap with the provided `masks` (expects Dict with mask name => binary mask), 
@@ -316,10 +319,10 @@ a provided probability function to add a `probability` column indicating the lik
 is an ice floe.
 
 """
-function extended_regionprops(
+function extended_regionprops_table(
     img_indexmap,
     falsecolor_image,
-    masks; # expects band 7-2-1
+    masks;
     boundary_radius=15,
     properties = [
         :label, :area, :perimeter, :bbox,
@@ -327,54 +330,53 @@ function extended_regionprops(
         :minor_axis_length, :orientation,
         :circularity, :solidity],
     probability_function=LogisticRegressionFilter,
+    convex_area_algorithm=PolygonConvexArea(),
 )
     img_indexmap = copy(img_indexmap)
     indices = component_indices(img_indexmap)
 
-    results_df = regionprops_table(img_indexmap;
+    props_df = regionprops_table(img_indexmap;
         properties=properties,
-        convex_area_algorithm=PolygonConvexArea()
+        convex_area_algorithm=convex_area_algorithm,
     )
-    # Return blank image if no floes remain
-    nrow(results_df) == 0 && return results_df
+    # Return empty dataframe if no floes in image
+    nrow(props_df) == 0 && return props_df
 
-    results_df[:, :length_scale] = results_df[:, :area] .^ 0.5
-    # Correct circularity error
-    results_df[:, :circularity] = 4 * pi * results_df[:, :area] ./ results_df[:, :perimeter] .^ 2
+    transform!(props_df, :area => ByRow(x -> x^0.5) => :length_scale)
     
+    # Don't allow circularity or solidity greater than 1
+    transform!(props_df, :solidity => ByRow(x -> minimum([x, 1])) => :solidity)
+    transform!(props_df, :circularity => ByRow(x -> minimum([x, 1])) => :circularity)
+    
+    # Get the average area coverage for each of the masks
     mask_mean(r, mask) = mean(mask[indices[r]])
-    masks = Dict(k => classified_image .== classification_key[k] for k in keys(classification_key))
-    push!(masks, "coast" => coastal_buffer_mask)
-    
-    results_df[:, :cloud_fraction] =  mask_mean.(results_df[:, :label], [masks["cloud"]])
-    results_df[:, :ice_fraction] =  mask_mean.(results_df[:, :label], [masks["ice"]])
-    results_df[:, :water_fraction] =  mask_mean.(results_df[:, :label], [masks["water"]])
-    results_df[:, :coastal_buffer_fraction] =  mask_mean.(results_df[:, :label], [masks["coast"]])
-    
-    # Compute mean reflectance, assuming the input image is MODIS False Color
-    segment_mean_reflectance = Dict(r => mean(falsecolor_image[indices[r]]) for r in keys(indices))
-    b = (r -> segment_mean_reflectance[r]).(results_df[:, :label])
-    results_df[:, :b1_reflectance_mean] = blue.(b)
-    results_df[:, :b7_reflectance_mean] = red.(b)
-    results_df[:, :b2_reflectance_mean] = green.(b)
-
-    # Compute mean Band 1 boundary reflectance using the boundary radius for an expansion limit
-    b1 = blue.(falsecolor_image)
-    eroded_labels = img_indexmap .* erode(img_indexmap .> 0)
-    bdry_indexmap = expand_labels(img_indexmap, boundary_radius) .- eroded_labels
-    bdry_indices = component_indices(bdry_indexmap)
-    bdry_labels = intersect(results_df[:, :label], unique(bdry_indexmap))
-    b1_bdry_means = Dict(L => mean(b1[bdry_indices[L]]) for L in bdry_labels)
-    for L ∈ results_df[:, :label]
-        if L ∉ bdry_labels
-            push!(b1_bdry_means, L => 0)
-        end
+    for k in keys(masks)
+        props_df[:, Symbol(k, "_fraction")] =  mask_mean.(props_df[:, :label], [masks[k]])
     end
-    results_df[:, :b1_reflectance_bdry_mean] = [b1_bdry_means[L] for L in results_df[:, :label]]
-    results_df[:, :b1_bdry_contrast] = results_df[:, :b1_reflectance_mean] .- results_df[:, :b1_reflectance_bdry_mean]
     
-    results_df[:, :probability] .= probability_function(results_df)
-    return results_df
+    # Get the mean reflectance and mean boundary reflectance, and expand the results into named color channels
+    add_mean_reflectance!(props_df, falsecolor_image, indices)
+    add_mean_boundary_reflectance!(props_df, falsecolor_image, img_indexmap; radius=boundary_radius)
+    
+    # TODO: generalize with a map from channel number to channel name
+    # Could make this a for loop with transform!()
+    props_df[:, :b7_mean_reflectance] = red.(props_df.mean_reflectance)
+    props_df[:, :b2_mean_reflectance] = green.(props_df.mean_reflectance)
+    props_df[:, :b1_mean_reflectance] = blue.(props_df.mean_reflectance)
+
+    props_df[:, :b7_mean_boundary_reflectance] = red.(props_df.mean_boundary_reflectance)
+    props_df[:, :b2_mean_boundary_reflectance] = green.(props_df.mean_boundary_reflectance)
+    props_df[:, :b1_mean_boundary_reflectance] = blue.(props_df.mean_boundary_reflectance)
+
+    props_df[:, :b7_mean_boundary_contrast] = props_df[:, :b7_mean_reflectance] .- props_df[:, :b7_mean_boundary_reflectance]
+    props_df[:, :b2_mean_boundary_contrast] = props_df[:, :b2_mean_reflectance] .- props_df[:, :b2_mean_boundary_reflectance]
+    props_df[:, :b1_mean_boundary_contrast] = props_df[:, :b1_mean_reflectance] .- props_df[:, :b1_mean_boundary_reflectance]
+    
+    # TODO: generalize to include inplace option
+    props_df[:, :probability] .= probability_function(props_df)
+
+    # Drop the RGB columns in the returned dataframe
+    return props_df[:, Not(:mean_reflectance, :mean_boundary_reflectance)]
 end
 
 """LogisticRegressionFilter(df;
@@ -382,9 +384,9 @@ end
         "intercept"           => -97.1879,
         "length_scale"        => 0.1267,
         "solidity"            => 91.164,
-        "b1_reflectance_mean" => 7.354,
-        "b1_bdry_contrast"    => 2.239,
-        "b7_reflectance_mean" => -1.517,
+        "b1_mean_reflectance" => 7.354,
+        "b7_mean_reflectance" => -1.517,
+        "b1_mean_boundary_contrast" => 2.239,
         )
     )
     LogisticRegressionFilter!(df; coefs)
@@ -396,35 +398,35 @@ with probabilities.
 """
 function LogisticRegressionFilter(df;
     coefs = Dict(
-        "intercept"           => -97.1879,
-        "length_scale"        => 0.1267,
-        "solidity"            => 91.164,
-        "b1_reflectance_mean" => 7.354,
-        "b1_bdry_contrast"    => 2.239,
-        "b7_reflectance_mean" => -1.517,
+        "intercept"                 => -97.1879,
+        "length_scale"              => 0.1267,
+        "solidity"                  => 91.164,
+        "b1_mean_reflectance"       => 7.354,
+        "b7_mean_reflectance"       => -1.517,
+        "b1_mean_boundary_contrast" => 2.239,
         )
     )
     colnames = [x for x in keys(coefs)]
     b = [x for x in values(coefs)]
+    df[:, :intercept] .= 1
     df_ = copy(df)[:, colnames]
-    df_[:, :intercept] .= 1;
     return 1 ./ (1 .+ exp.(-Matrix(df_[:, colnames]) * b))
 end
 
 function LogisticRegressionFilter!(df;
     coefs = Dict(
-        "intercept"           => -97.1879,
-        "length_scale"        => 0.1267,
-        "solidity"            => 91.164,
-        "b1_reflectance_mean" => 7.354,
-        "b1_bdry_contrast"    => 2.239,
-        "b7_reflectance_mean" => -1.517,
+        "intercept"                 => -97.1879,
+        "length_scale"              => 0.1267,
+        "solidity"                  => 91.164,
+        "b1_mean_reflectance"       => 7.354,
+        "b7_mean_reflectance"       => -1.517,
+        "b1_mean_boundary_contrast" => 2.239,
         )
     )
     colnames = [x for x in keys(coefs)]
     b = [x for x in values(coefs)]
-    df[:, :intercept] .= 1;
-    df[:, :probability] = 1 ./ (1 .+ exp.(-Matrix(df_[:, colnames]) * b))
+    df[:, :intercept] = 1;
+    df[:, :probability] = 1 ./ (1 .+ exp.(-Matrix(df[:, colnames]) * b))
 end
 
 """
@@ -443,27 +445,45 @@ end
     add_mean_boundary_reflectance!(props_df, img, labels; radius=15)
 
 Compute the average of `img` within `radius` of the objects in `labels`. Uses
-the bounding boxes in `regionprops_df` so that they don't have to be re-computed.
+the bounding boxes in `props_df` so that they don't have to be re-computed.
 """
 function add_mean_boundary_reflectance!(props_df, img, labels; radius=15)
     n, m = size(labels)
-    bdry_ref = zeros(Float64, nrow(regionprops_df))
-    for data in eachrow(regionprops_df)
+    bdry_ref = []
+    for data in eachrow(props_df)
         # expand the bounding box by radius
         # minimum row is the maximum 
-        rmin = maximum((data.min_row - radius, 0))
-        rmax = mimimum((data.max_row + radius, n))
-        cmin = maximum((data.min_col - radius, 0))
+        rmin = maximum((data.min_row - radius, 1))
+        rmax = minimum((data.max_row + radius, n))
+        cmin = maximum((data.min_col - radius, 1))
         cmax = minimum((data.max_col + radius, m))
 
         label_subset = Int64.(labels[rmin:rmax, cmin:cmax] .== data.label)
         boundary = expand_labels(label_subset, radius)
         boundary[label_subset .> 0] .= 0
         image_subset = img[rmin:rmax, cmin:cmax]
-        push!(bdry_ref, mean(vec(image_subset[boundary .> 0])))
+        push!(bdry_ref, mean(image_subset[boundary .> 0]))
     end
     props_df.mean_boundary_reflectance = bdry_ref
 end
+
+"""
+    colorize_classification(labeled_image; color_map)
+
+Convenience function to make an image from a classified image, using
+the dictionary `color_map=Dict(label_integer => color)`.
+"""
+function colorize_classification(labeled_image;
+    color_map=Dict(
+        0=>RGB(0),
+        1=>RGB(0.018, 0.49, 0.64),
+        2=>RGB(1),
+        3=>RGB(0.84, 0.73, 0.94)
+        )
+    )
+    return n0f8.(map(i -> color_map[i], labeled_image))
+end
+
 
 #### Tracker parameters ####
 const max_travel_distance_filter = DistanceThresholdFilter(;
