@@ -34,14 +34,17 @@ import ..Preprocessing:
 
 import ..Segmentation:
     dist_morph_split,
+    expand_labels,
     get_relevant_set,
     kmeans_segmentation,
     kmeans_binarization,
     IceDetectionBrightnessMidpoint,
     IceDetectionBrightnessPeaksMODIS721,
+    PolygonConvexArea,
     regionprops_table,
     remove_small_segments!,
     remove_large_segments!,
+    segment_mean_map,
     stitch_clusters,
     view_seg,
     view_seg_random
@@ -144,15 +147,25 @@ tile_settings = (; rblocks=1, cblocks=1)
 min_ocean_pixel_count = 5000
 preprocessing_algorithm = Preprocess()
 classification_algorithm = Classify()
+# Only varying the structuring element, for testing. Each item in the list is sent to dist-morph-split and the results are compared.
 floe_splitting_params = [
-    (max_hole_fill=500, max_depth=5, max_depth_ratio=0.5, max_expand=3, opening_strel=strel_disk(1)),
-    (max_hole_fill=1500, max_depth=10, max_depth_ratio=0.5, max_expand=3, opening_strel=strel_box((3, 3))),
-    (max_hole_fill=2500, max_depth=25, max_depth_ratio=0.5, max_expand=3, opening_strel=strel_disk(3))
+    (max_hole_fill=500, max_depth=10, max_depth_ratio=0.3, max_expand=3, opening_strel=strel_diamond((3,3))),
+    (max_hole_fill=500, max_depth=10, max_depth_ratio=0.3, max_expand=3, opening_strel=strel_box((3, 3))),
+    (max_hole_fill=500, max_depth=10, max_depth_ratio=0.3, max_expand=3, opening_strel=strel_disk(4))
 ]
 floe_filtering_params = (
     minimum_floe_size=64,
     maximum_floe_size=90e3,
+    minimum_probability=0.5,
 )
+floe_merging_params = (
+    tol_area_fraction = 0.05,
+    comp_properties=[
+        :label, :area, :row_centroid, :col_centroid,
+        :max_col, :max_row, :min_col, :min_row, :probability
+    ]
+)
+
 """
     Segment()
 
@@ -179,6 +192,7 @@ The coastal buffer mask is used to identify potential landfast ice segments.
     floe_splitting_algorithm = dist_morph_split # TODO: add binarization algorithm
     floe_splitting_params = floe_splitting_params
     floe_filtering_params = floe_filtering_params
+    floe_merging_params = floe_merging_params
 end
 
 function (s::Segment)(
@@ -231,11 +245,12 @@ function (s::Segment)(
 
     @info "Joining segmentation results"
     # final_floes = merge_floes(candidate_splits, falsecolor_image; p.floe_merging_params...)
-    final_floes = candidate_splits[1]
+    final_floes = sequential_merge_floes(candidate_splits, falsecolor_image, masks; s.floe_merging_params...)
 
     # Repeat size-based filter in case artifacts were created
     remove_small_segments!(final_floes, s.floe_filtering_params.minimum_floe_size)
     remove_large_segments!(final_floes, s.floe_filtering_params.maximum_floe_size)
+    # TODO: (optional) Remove low-probability shapes
 
     # Re-label so there are no missing numbers in the component list
     final_floes .= label_components(final_floes)
@@ -255,7 +270,7 @@ function (s::Segment)(
             cloud_mask=Gray.(masks["cloud"]),
             ice_mask=Gray.(masks["ice"]),
             preprocessed=preproc_gray,
-            binarized=kmeans_result .> 0,
+            binarized=binarized_image .> 0,
             final_floes=colorview_random,
             labels_map=final_floes,
             segment_mean_falsecolor=segment_mean_falsecolor,
@@ -265,7 +280,6 @@ function (s::Segment)(
     return segments_tc
 end
 
-#### Helper functions for segmentation ####
 """
     kmeans_binarization_multiclass(preproc_gray, falsecolor_image, masks;
     cloudy_ice_params=(k=3, b7=0.7, b2=0.56),
@@ -617,6 +631,94 @@ function _remove_labels!(output, indices, remove_labels)
 end
 
 """
+    sequential_merge_floes(labeled_imgs, falsecolor_image, masks;
+        comp_properties=[
+            :label, :area, :row_centroid, :col_centroid,
+            :max_col, :max_row, :min_col, :min_row, :probability
+        ],
+        tol_area_fraction=0.05,
+    )
+
+Sequentially compare the images in `labeled_imgs` using the `compare_objects` 
+function. Use the area average of floe probabilities to compare - winner take all.
+(e.g., if S1 intersects T1 and T2, then we keep S1 if its probability is higher than
+the area-weighted average probability of T1 and T2). Returns a single labeled image.
+
+"""
+function sequential_merge_floes(labeled_imgs, falsecolor_image, masks;
+    comp_properties=[
+        :label, :area, :row_centroid, :col_centroid,
+        :max_col, :max_row, :min_col, :min_row, :probability
+    ],
+    tol_area_fraction=0.05,
+    minimum_probability=0.5,
+    )
+    n = length(labeled_imgs)
+    (n == 1) && return(labeled_imgs)
+
+    # Initialize with the first image
+    init_img = copy(labeled_imgs[1])
+    init_indices = component_indices(init_img)
+
+    # TODO: Could speed up by getting minimal set of properties
+    df1 = extended_regionprops_table(
+        init_img, falsecolor_image, masks
+    )
+    _remove_labels!(init_img, init_indices, subset(df1, :probability => r -> r .< 0.5).label)
+    
+    for i in 2:n
+        comp_img = copy(labeled_imgs[i])
+        comp_indices = component_indices(comp_img)
+        
+        df2 = extended_regionprops_table(
+            comp_img, falsecolor_image, masks
+        )
+        _remove_labels!(comp_img, comp_indices, subset(df2, :probability => r -> r .< 0.5).label)
+
+        df_comp = compare_objects(
+            df1, df2,
+            init_img, comp_img;
+            indices1=init_indices, 
+            indices2=comp_indices,
+            comp_properties=comp_properties,
+            tol_area_fraction=tol_area_fraction
+        )
+
+        # Method 1: Compare with full set of intersections
+        transform!(
+            groupby(df_comp, :s1_label),
+            [:s2_area, :s2_probability] =>
+            ((a, p) -> sum(p .* a ./ sum(a))) =>
+            :s2_weighted_probability
+        )
+        df_sel = subset(
+            df_comp, [:s1_probability, :s2_weighted_probability] => 
+            (p1, p2) -> p1 .< p2
+        )
+
+        remove_labels = df_sel.s1_label
+        no_matches = setdiff(df_comp.s2_label, df2.label)
+        add_labels = union(df_sel.s2_label, no_matches)
+
+        if (length(remove_labels) > 0) || (length(add_labels) > 0)
+            merge_arrays!(
+                init_img, init_indices, comp_indices,
+                remove_labels, add_labels
+            )
+            
+            # update information for init_img
+            # Could be a clever way to join df1 and df2
+            # instead of recomputing
+            df1 = extended_regionprops_table(
+                init_img, falsecolor_image, masks
+            )
+            init_indices = component_indices(init_img)
+        end
+    end
+    return init_img # TODO: Consider returning the final data table, too
+end
+
+"""
     merge_arrays!(
         output,
         indices1,
@@ -631,7 +733,7 @@ writing `L2` into labels1 for each `L2` in `add_labels`.
 function merge_arrays!(output, indices1, indices2, remove_labels, add_labels)
     _remove_labels!(output, indices1, remove_labels)
     _assign_labels!(output, indices2, add_labels;
-        offset=maximum(labels1))
+        offset=maximum(output))
 end
 
 
