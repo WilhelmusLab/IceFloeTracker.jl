@@ -163,7 +163,8 @@ floe_merging_params = (
     comp_properties=[
         :label, :area, :row_centroid, :col_centroid,
         :max_col, :max_row, :min_col, :min_row, :probability
-    ]
+    ],
+    minimum_probability = 0.1,
 )
 
 """
@@ -664,7 +665,7 @@ function sequential_merge_floes(labeled_imgs, falsecolor_image, masks;
     df1 = extended_regionprops_table(
         init_img, falsecolor_image, masks
     )
-    _remove_labels!(init_img, init_indices, subset(df1, :probability => r -> r .< 0.5).label)
+    _remove_labels!(init_img, init_indices, subset(df1, :probability => r -> r .< minimum_probability).label)
     
     for i in 2:n
         comp_img = copy(labeled_imgs[i])
@@ -673,7 +674,7 @@ function sequential_merge_floes(labeled_imgs, falsecolor_image, masks;
         df2 = extended_regionprops_table(
             comp_img, falsecolor_image, masks
         )
-        _remove_labels!(comp_img, comp_indices, subset(df2, :probability => r -> r .< 0.5).label)
+        _remove_labels!(comp_img, comp_indices, subset(df2, :probability => r -> r .< minimum_probability).label)
 
         df_comp = compare_objects(
             df1, df2,
