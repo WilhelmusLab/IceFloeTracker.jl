@@ -229,7 +229,6 @@ function (s::Segment)(
     remove_small_segments!.(candidate_splits, s.floe_filtering_params.minimum_floe_size)
     remove_large_segments!.(candidate_splits, s.floe_filtering_params.maximum_floe_size)
     
-    
     @info "Joining segmentation results"
     # final_floes = merge_floes(candidate_splits, falsecolor_image; p.floe_merging_params...)
     final_floes = candidate_splits[1]
@@ -466,6 +465,117 @@ function add_mean_boundary_reflectance!(props_df, img, labels; radius=15)
     end
     props_df.mean_boundary_reflectance = bdry_ref
 end
+
+
+"""
+    compare_objects(
+        df1, df2, labels1, labels2;
+        indices1=component_indices(labels1),
+        indices2=component_indices(labels2),
+        comp_properties=[
+            :label, :area, :row_centroid, :col_centroid,
+            :max_col, :max_row, :min_col, :min_row, :probability
+        ],
+        tol_area_fraction=0.05,
+    )
+
+Produce a dataframe comparing objects in a pair of labeled images, including 
+all paired labels between labels1 and labels2 with area overlap greater than
+`tol_area_fraction` relative to either label. Additionally computes the distance between centroids, area overlap, and fractional area overlap.
+
+Inputs:
+    - `df1` = region properties dataframe from labels1
+    - `df2` = region properties dataframe from labels2
+    - `labels1` = labeled image (Matrix{Int64})
+    - `labels2` = labeled image (Matrix{Int64})
+    - `indices1=component_indices(labels1)` = Indices map, option to reuse from earlier in processing 
+    - `indices2=component_indices(labels2)` = Indices map, option to reuse from earlier
+    - `comp_properties=[
+            :label, :area, :row_centroid, :col_centroid,
+            :max_col, :max_row, :min_col, :min_row, :probability
+        ]` = Columns in df1 and df2 to include in comparison
+    - `tol_area_fraction=0.05`= Minimum area fraction to include in comparison
+"""
+function compare_objects(
+    df1::DataFrame,
+    df2::DataFrame, 
+    labels1::Matrix{Int64},
+    labels2::Matrix{Int64}; # Should this be keyword or no?
+    indices1=component_indices(labels1),
+    indices2=component_indices(labels2),
+    comp_properties=[
+        :label, :area, :row_centroid, :col_centroid,
+        :max_col, :max_row, :min_col, :min_row, :probability
+    ],
+    tol_area_fraction=0.05, # TODO: decide whether we should filter probability here
+)::DataFrame
+
+    # Get list of labels in 1 with nonzero intersection
+    no_overlaps1 = _nonoverlapping_labels(labels2, indices1, df1.label)
+    overlaps1 = setdiff(df1.label, no_overlaps1)
+
+    # Make list of intersections from 1 to 2
+    s1_label_list = []
+    s2_label_list = []
+    for r in overlaps1
+        for s in filter(r -> r != 0, unique(labels2[indices1[r]]))
+            append!(s1_label_list, r)
+            append!(s2_label_list, s)
+        end
+    end
+
+    # Generate joint dataframe
+    df_comp1 = rename(df1[:, comp_properties],
+        Dict(p => Symbol("s1_", p) for p in comp_properties))
+    df_comp2 = rename(df2[:, comp_properties],
+        Dict(p => Symbol("s2_", p) for p in comp_properties))
+    df_dict1 = Dict(row.s1_label => row for row in eachrow(df_comp1))
+    df_dict2 = Dict(row.s2_label => row for row in eachrow(df_comp2))
+    df_comp = hcat(
+        DataFrame([df_dict1[l] for l in s1_label_list]), 
+        DataFrame([df_dict2[l] for l in s2_label_list])
+    )
+
+    # Compute overlap metrics
+    transform!(df_comp,
+        [:s1_row_centroid, :s2_row_centroid,
+         :s1_col_centroid, :s2_col_centroid] => 
+        ByRow((r1, r2, c1, c2) -> sqrt((r1 - r2)^2 + (c1 - c2)^2)) =>
+        :s1_s2_dist
+    )
+
+    transform!(df_comp, 
+        [:s1_label, :s2_label, 
+         :s1_min_row, :s1_max_row, :s1_min_col, :s2_max_col] =>
+        ByRow((l1, l2, rmin, rmax, cmin, cmax) ->
+            sum(
+                (labels1[rmin:rmax, cmin:cmax] .== l1) .&&
+                (labels2[rmin:rmax, cmin:cmax] .== l2)
+                )
+            ) =>
+        :s1_s2_area_overlap
+    )
+
+    transform!(df_comp,
+        [:s1_s2_area_overlap, :s1_area] => ByRow((a0, a1) -> a0/a1) =>
+        :s1_area_fraction
+    )
+
+    transform!(df_comp,
+        [:s1_s2_area_overlap, :s2_area] => ByRow((a0, a1) -> a0/a1) =>
+        :s2_area_fraction
+    )
+
+    subset!(df_comp, :s1_area_fraction => r -> r .> tol_area_fraction)
+    subset!(df_comp, :s2_area_fraction => r -> r .> tol_area_fraction)
+    
+    return df_comp
+end
+
+
+
+
+
 
 """
     colorize_classification(labeled_image; color_map)
