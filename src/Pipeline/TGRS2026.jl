@@ -21,7 +21,7 @@ import StatsBase: kurtosis, skewness, mean, std
 import ..Filtering:
     ContrastLimitedAdaptiveHistogramEqualization
 
-import ..ImageUtils: 
+import ..ImageUtils:
     get_tiles
 
 import ..Morphology:
@@ -81,7 +81,7 @@ end
 # Q: does image sharpening, nonlinear filtering change the quality of the result? nonlinear filtering 
 # in particular is expensive.
 function (p::Preprocess)(
-    image::AbstractArray{<:Union{AbstractGray, TransparentGray, AbstractRGB,TransparentRGB}}, landmask
+    image::AbstractArray{<:Union{AbstractGray,TransparentGray,AbstractRGB,TransparentRGB}}, landmask
 )
     # Cast to grayscale first to save compute time
     proc_img = Gray.(image)
@@ -117,10 +117,10 @@ for the returned label map.
 
 """
 @kwdef struct Classify <: IceFloeClassificationAlgorithm
-        τ₁=0.1
-        τ₂=0.2
-        τ₇=0.2
-        key=Dict("land"=>0, "water"=>1, "ice"=>2, "cloud"=>3)
+    τ₁=0.1
+    τ₂=0.2
+    τ₇=0.2
+    key=Dict("land"=>0, "water"=>1, "ice"=>2, "cloud"=>3)
 end
 
 function (c::IceFloeClassificationAlgorithm)(false_color_image, land_mask)::Matrix{Int64}
@@ -129,12 +129,12 @@ function (c::IceFloeClassificationAlgorithm)(false_color_image, land_mask)::Matr
     fc_masked = apply_landmask(false_color_image, land_mask)
     clouds = cloud_mask_algorithm(fc_masked)
     ice = Gray.(blue.(apply_landmask(fc_masked, clouds))) |> ice_mask_algorithm
-    
+
     classified_image = ones(Int64, size(false_color_image)) .* c.key["water"]
     classified_image[land_mask .> 0] .= c.key["land"]
     classified_image[ice .> 0] .= c.key["ice"]
     classified_image[clouds .> 0] .= c.key["cloud"]
-    
+
     return classified_image
 end
 
@@ -145,14 +145,14 @@ min_ocean_pixel_count = 5000
 preprocessing_algorithm = Preprocess()
 classification_algorithm = Classify()
 floe_splitting_params = [
-        (max_hole_fill=500, max_depth=5, max_depth_ratio=0.5, max_expand=3, opening_strel=strel_disk(1)),
-        (max_hole_fill=1500, max_depth=10, max_depth_ratio=0.5, max_expand=3, opening_strel=strel_box((3,3))),
-        (max_hole_fill=2500, max_depth=25, max_depth_ratio=0.5, max_expand=3, opening_strel=strel_disk(3))
-    ]
+    (max_hole_fill=500, max_depth=5, max_depth_ratio=0.5, max_expand=3, opening_strel=strel_disk(1)),
+    (max_hole_fill=1500, max_depth=10, max_depth_ratio=0.5, max_expand=3, opening_strel=strel_box((3, 3))),
+    (max_hole_fill=2500, max_depth=25, max_depth_ratio=0.5, max_expand=3, opening_strel=strel_disk(3))
+]
 floe_filtering_params = (
-    minimum_floe_size = 64,
-    maximum_floe_size = 90e3,
-    )
+    minimum_floe_size=64,
+    maximum_floe_size=90e3,
+)
 """
     Segment()
 
@@ -202,7 +202,7 @@ function (s::Segment)(
 
     # n, m = size(truecolor_image) TODO: warn if the tile size ends up smaller than 400 px
     tiles = get_tiles(truecolor; s.tile_settings...)
-    
+
     @info "Preprocess"
     preproc_gray = s.preprocessing_algorithm(truecolor_image, landmask)
 
@@ -215,7 +215,7 @@ function (s::Segment)(
     # Then check for sufficient ocean pixels (speed up for large images)
     filtered_tiles = filter(
         t -> sum(.!masks["land"][t...]) > s.min_ocean_pixel_count, tiles
-    );
+    )
 
     @info "Detect Floes"
     binarized_image = kmeans_binarization_multiclass(
@@ -223,12 +223,12 @@ function (s::Segment)(
     )
     candidate_splits = [
         dist_morph_split(binarized_image; pset...) for pset in s.floe_splitting_params
-        ]
-    
+    ]
+
     # Size-based filter
     remove_small_segments!.(candidate_splits, s.floe_filtering_params.minimum_floe_size)
     remove_large_segments!.(candidate_splits, s.floe_filtering_params.maximum_floe_size)
-    
+
     @info "Joining segmentation results"
     # final_floes = merge_floes(candidate_splits, falsecolor_image; p.floe_merging_params...)
     final_floes = candidate_splits[1]
@@ -283,10 +283,10 @@ function kmeans_binarization_multiclass(preproc_gray, falsecolor_image, masks, t
     clear_sky_ice_params=(k=4, b7=0.18, b2=0.46),
     mask_land_key="coastal_buffer_mask",
     mask_cloud_key="cloud",
-    )
+)
 
     fc_masked = apply_landmask(falsecolor_image, masks[mask_land_key])
-    
+
     cloudy_ice_detector = IceDetectionBrightnessPeaksMODIS721(
         band_7_max=cloudy_ice_params.b7,
         possible_ice_threshold=cloudy_ice_params.b2,
@@ -294,7 +294,7 @@ function kmeans_binarization_multiclass(preproc_gray, falsecolor_image, masks, t
     clear_sky_ice_detector = IceDetectionBrightnessPeaksMODIS721(
         band_7_max=clear_sky_ice_params.b7,
         possible_ice_threshold=clear_sky_ice_params.b2,
-        nbins=128, minimum_prominence=0.01);
+        nbins=128, minimum_prominence=0.01)
 
     cloudy_ice_kmeans = kmeans_binarization(preproc_gray, fc_masked, tiles;
         k=cloudy_ice_params.k, cluster_selection_algorithm=cloudy_ice_detector
@@ -302,7 +302,7 @@ function kmeans_binarization_multiclass(preproc_gray, falsecolor_image, masks, t
     clear_sky_ice_kmeans = kmeans_binarization(preproc_gray, fc_masked, tiles;
         k=clear_sky_ice_params.k, cluster_selection_algorithm=clear_sky_ice_detector
     ) .> 0
-    
+
     clear_sky_ice_kmeans[masks[mask_cloud_key] .> 0] .= cloudy_ice_kmeans[masks[mask_cloud_key] .> 0]
 
     return clear_sky_ice_kmeans
@@ -323,7 +323,7 @@ function extended_regionprops_table(
     falsecolor_image,
     masks;
     boundary_radius=15,
-    properties = [
+    properties=[
         :label, :area, :perimeter, :bbox,
         :centroid, :convex_area, :major_axis_length,
         :minor_axis_length, :orientation,
@@ -342,21 +342,21 @@ function extended_regionprops_table(
     nrow(props_df) == 0 && return props_df
 
     transform!(props_df, :area => ByRow(x -> x^0.5) => :length_scale)
-    
+
     # Don't allow circularity or solidity greater than 1
     transform!(props_df, :solidity => ByRow(x -> minimum([x, 1])) => :solidity)
     transform!(props_df, :circularity => ByRow(x -> minimum([x, 1])) => :circularity)
-    
+
     # Get the average area coverage for each of the masks
     mask_mean(r, mask) = mean(mask[indices[r]])
     for k in keys(masks)
-        props_df[:, Symbol(k, "_fraction")] =  mask_mean.(props_df[:, :label], [masks[k]])
+        props_df[:, Symbol(k, "_fraction")] = mask_mean.(props_df[:, :label], [masks[k]])
     end
-    
+
     # Get the mean reflectance and mean boundary reflectance, and expand the results into named color channels
     add_mean_reflectance!(props_df, falsecolor_image, indices)
     add_mean_boundary_reflectance!(props_df, falsecolor_image, img_indexmap; radius=boundary_radius)
-    
+
     # TODO: generalize with a map from channel number to channel name
     # Could make this a for loop with transform!()
     props_df[:, :b7_mean_reflectance] = red.(props_df.mean_reflectance)
@@ -370,7 +370,7 @@ function extended_regionprops_table(
     props_df[:, :b7_mean_boundary_contrast] = props_df[:, :b7_mean_reflectance] .- props_df[:, :b7_mean_boundary_reflectance]
     props_df[:, :b2_mean_boundary_contrast] = props_df[:, :b2_mean_reflectance] .- props_df[:, :b2_mean_boundary_reflectance]
     props_df[:, :b1_mean_boundary_contrast] = props_df[:, :b1_mean_reflectance] .- props_df[:, :b1_mean_boundary_reflectance]
-    
+
     # TODO: generalize to include inplace option
     props_df[:, :probability] .= probability_function(props_df)
 
@@ -396,15 +396,15 @@ with probabilities.
 
 """
 function LogisticRegressionFilter(df;
-    coefs = Dict(
-        "intercept"                 => -97.1879,
-        "length_scale"              => 0.1267,
-        "solidity"                  => 91.164,
-        "b1_mean_reflectance"       => 7.354,
-        "b7_mean_reflectance"       => -1.517,
+    coefs=Dict(
+        "intercept" => -97.1879,
+        "length_scale" => 0.1267,
+        "solidity" => 91.164,
+        "b1_mean_reflectance" => 7.354,
+        "b7_mean_reflectance" => -1.517,
         "b1_mean_boundary_contrast" => 2.239,
-        )
     )
+)
     colnames = [x for x in keys(coefs)]
     b = [x for x in values(coefs)]
     df[:, :intercept] .= 1
@@ -413,18 +413,18 @@ function LogisticRegressionFilter(df;
 end
 
 function LogisticRegressionFilter!(df;
-    coefs = Dict(
-        "intercept"                 => -97.1879,
-        "length_scale"              => 0.1267,
-        "solidity"                  => 91.164,
-        "b1_mean_reflectance"       => 7.354,
-        "b7_mean_reflectance"       => -1.517,
+    coefs=Dict(
+        "intercept" => -97.1879,
+        "length_scale" => 0.1267,
+        "solidity" => 91.164,
+        "b1_mean_reflectance" => 7.354,
+        "b7_mean_reflectance" => -1.517,
         "b1_mean_boundary_contrast" => 2.239,
-        )
     )
+)
     colnames = [x for x in keys(coefs)]
     b = [x for x in values(coefs)]
-    df[:, :intercept] = 1;
+    df[:, :intercept] = 1
     df[:, :probability] = 1 ./ (1 .+ exp.(-Matrix(df[:, colnames]) * b))
 end
 
@@ -498,7 +498,7 @@ Inputs:
 """
 function compare_objects(
     df1::DataFrame,
-    df2::DataFrame, 
+    df2::DataFrame,
     labels1::Matrix{Int64},
     labels2::Matrix{Int64}; # Should this be keyword or no?
     indices1=component_indices(labels1),
@@ -532,49 +532,107 @@ function compare_objects(
     df_dict1 = Dict(row.s1_label => row for row in eachrow(df_comp1))
     df_dict2 = Dict(row.s2_label => row for row in eachrow(df_comp2))
     df_comp = hcat(
-        DataFrame([df_dict1[l] for l in s1_label_list]), 
+        DataFrame([df_dict1[l] for l in s1_label_list]),
         DataFrame([df_dict2[l] for l in s2_label_list])
     )
 
     # Compute overlap metrics
     transform!(df_comp,
         [:s1_row_centroid, :s2_row_centroid,
-         :s1_col_centroid, :s2_col_centroid] => 
-        ByRow((r1, r2, c1, c2) -> sqrt((r1 - r2)^2 + (c1 - c2)^2)) =>
-        :s1_s2_dist
+            :s1_col_centroid, :s2_col_centroid] =>
+            ByRow((r1, r2, c1, c2) -> sqrt((r1 - r2)^2 + (c1 - c2)^2)) =>
+                :s1_s2_dist
     )
 
-    transform!(df_comp, 
-        [:s1_label, :s2_label, 
-         :s1_min_row, :s1_max_row, :s1_min_col, :s2_max_col] =>
-        ByRow((l1, l2, rmin, rmax, cmin, cmax) ->
-            sum(
-                (labels1[rmin:rmax, cmin:cmax] .== l1) .&&
-                (labels2[rmin:rmax, cmin:cmax] .== l2)
+    transform!(df_comp,
+        [:s1_label, :s2_label,
+            :s1_min_row, :s1_max_row, :s1_min_col, :s2_max_col] =>
+            ByRow((l1, l2, rmin, rmax, cmin, cmax) ->
+                sum(
+                    (labels1[rmin:rmax, cmin:cmax] .== l1) .&&
+                        (labels2[rmin:rmax, cmin:cmax] .== l2)
                 )
             ) =>
-        :s1_s2_area_overlap
+                :s1_s2_area_overlap
     )
 
     transform!(df_comp,
         [:s1_s2_area_overlap, :s1_area] => ByRow((a0, a1) -> a0/a1) =>
-        :s1_area_fraction
+            :s1_area_fraction
     )
 
     transform!(df_comp,
         [:s1_s2_area_overlap, :s2_area] => ByRow((a0, a1) -> a0/a1) =>
-        :s2_area_fraction
+            :s2_area_fraction
     )
 
     subset!(df_comp, :s1_area_fraction => r -> r .> tol_area_fraction)
     subset!(df_comp, :s2_area_fraction => r -> r .> tol_area_fraction)
-    
+
     return df_comp
 end
 
+"""
+    _nonoverlapping_labels(other, indices, labels)
 
+Return a list of labels in matrix `other` which have no
+overlap with the list of labels `labels` and the corresponding
+indices dictionary `indices`. Both `labels` and `indices` 
+come from a second labeled indexmap to be compared with `other`.
 
+"""
+function _nonoverlapping_labels(other, indices, labels)
+    return [
+        label for label in labels
+                  if maximum(other[indices[label]]) == 0
+    ]
+end
 
+"""
+    _assign_labels!(output, indices, labels; offset=0)
+
+Insert each label from list `labels` into `output` using 
+the indices dictionary `indices`. Optional `offset` integer
+can be added to avoid duplicating an existing label.
+
+"""
+function _assign_labels!(output, indices, labels; offset=0)
+    foreach(labels) do label
+        output[indices[label]] .= label + offset
+    end
+end
+
+"""
+    _remove_labels!(output, indices, remove_labels)
+
+Remove regions of `output` by setting the indices to 0.
+The labels in `remove_labels` correspond to the dictionary
+keys in `indices`.
+
+"""
+function _remove_labels!(output, indices, remove_labels)
+    foreach(remove_labels) do label
+        output[indices[label]] .= 0
+    end
+end
+
+"""
+    merge_arrays!(
+        output,
+        indices1,
+        indices2,
+        remove_labels,
+        add_labels
+    )
+
+Update output by (1) removing the labels for each `L1` the list `remove_labels` by setting everything in `indices1[L1]` to 0 and then (2)
+writing `L2` into labels1 for each `L2` in `add_labels`.
+"""
+function merge_arrays!(output, indices1, indices2, remove_labels, add_labels)
+    _remove_labels!(output, indices1, remove_labels)
+    _assign_labels!(output, indices2, add_labels;
+        offset=maximum(labels1))
+end
 
 
 """
@@ -589,8 +647,8 @@ function colorize_classification(labeled_image;
         1=>RGB(0.018, 0.49, 0.64),
         2=>RGB(1),
         3=>RGB(0.84, 0.73, 0.94)
-        )
     )
+)
     return n0f8.(map(i -> color_map[i], labeled_image))
 end
 
@@ -651,14 +709,14 @@ const FilterFunctions = [
 ]
 
 const MatchingColumns = [
-            :scaled_distance,
-            :relative_error_area,
-            :relative_error_convex_area,
-            :relative_error_major_axis_length,
-            :relative_error_minor_axis_length,
-            :psi_s_correlation_score,
-            :scaled_shape_difference,
-        ]
+    :scaled_distance,
+    :relative_error_area,
+    :relative_error_convex_area,
+    :relative_error_major_axis_length,
+    :relative_error_minor_axis_length,
+    :psi_s_correlation_score,
+    :scaled_shape_difference,
+]
 """
     Track()
 
