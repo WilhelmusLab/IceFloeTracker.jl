@@ -271,6 +271,7 @@ function (s::Segment)(
             cloud_mask=Gray.(masks["cloud"]),
             ice_mask=Gray.(masks["ice"]),
             preprocessed=preproc_gray,
+            classified=colorize_classification(classified_image),
             binarized=binarized_image .> 0,
             final_floes=colorview_random,
             labels_map=final_floes,
