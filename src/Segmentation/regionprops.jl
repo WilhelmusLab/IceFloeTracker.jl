@@ -1,7 +1,6 @@
 import DataFrames: rename!, DataFrame, nrow, select!
 import ..Geospatial: latlon
 import Images:
-    component_boxes,
     component_centroids,
     component_lengths,
     component_indices,
@@ -14,7 +13,6 @@ import Images:
     strel_diamond,
     strel_box
 
-import DSP: conv
 
 abstract type PerimeterEstimationAlgorithm <: Function end
 abstract type ConvexAreaEstimationAlgorithm <: Function end
@@ -181,7 +179,7 @@ function component_floes(
     indexmap;
     minimum_area=1,
     labels=unique(indexmap),
-    boxes=component_boxes(indexmap),
+    boxes=_component_boxes(indexmap), # TODO: restore to `component_boxes(indexmap)` once the fixed version is released.
     areas=component_lengths(indexmap),
 )
     mn = minimum(indexmap)
@@ -240,35 +238,68 @@ julia> BenkridCrookes(connectivity=8)(A)
     connectivity = 4
 end
 
-function (f::BenkridCrookes)(shape_array)
-    f.connectivity == 4 ? (strel = strel_diamond((3, 3))) : (strel = strel_box((3, 3)))
-    # Get border using the strel
-    # Shape needs to have a border of zeros for erode to work here
-    n, m = size(shape_array)
+# Boundary-pixel classification table, indexed by the neighborhood code
+# 1 + 2*(4-neighbors on the boundary) + 10*(diagonal neighbors on the boundary).
+# Module scope, not per call: rebuilding these two arrays inside the functor cost
+# roughly 40% of its runtime on a scene of ~1800 floes.
+const BENKRID_CROOKES_TYPE_VALS = let v = zeros(33)
+    v[[5, 7, 15, 17, 25, 27]] .= 1
+    v[[21, 33]] .= sqrt(2)
+    v[[13, 23]] .= (1 + sqrt(2)) / 2
+    v
+end
+
+"""
+    _boundary_image(shape_array, conn4)
+
+Mark the pixels of a binary `shape_array` that the structuring element erodes
+away: the set difference between the mask and its erosion. `conn4` selects the
+4-connected diamond over the 8-connected box.
+
+Returns an `(n+2, m+2)` array, zero-padded by one pixel on each side, so that
+the neighborhood of every pixel of `shape_array` lies inside the array and can
+be read without a bounds test. Out of frame counts as background, so
+`shape_array[1, 1]` is always on the boundary when it is set.
+"""
+function _boundary_image(shape_array, conn4)
+    conn4 ? (strel = strel_diamond((3, 3))) : (strel = strel_box((3, 3)))
+    # Shape needs to have a border of zeros for erode
     mpad = padarray(shape_array, Fill(0, (1, 1)))
-    epad = mpad .- erode(mpad, strel)
-    e = epad[1:n, 1:m]
+    return parent(mpad .> erode(mpad, strel))
+end
 
-    # Set up lookup table for computing perimeter
-    type_vals = zeros(33)
-    type_vals[[5, 7, 15, 17, 25, 27]] .= 1
-    type_vals[[21, 33]] .= sqrt(2)
-    type_vals[[13, 23]] .= (1 + sqrt(2)) / 2
+"""
+    _boundary_type_counts(e)
 
-    # Convolution array for classifying boundary pixel type
-    conv_arr = [10 2 10; 2 1 2; 10 2 10]
+Tally the boundary pixels of `e` by neighborhood type, where the type of a
+pixel is `1 + 2 * (edge neighbors on the boundary) + 10 * (diagonal ones)`.
 
-    results = conv(e, conv_arr; algorithm=:direct)
-
-    # Count instances of boundary types and multiply to get the perimeter
-    val_counts = Dict{eltype(results),Int}()
-    for val in vec(results)
-        val_counts[val] = get(val_counts, val, 0) + 1
+`e` must be zero-padded by one pixel on each side, as `_boundary_image`
+returns it. Returns a 49-element vector, 49 being the largest type a pixel can
+have, indexed by type.
+"""
+function _boundary_type_counts(e)
+    counts = zeros(Int, 49)
+    # The zero padding puts the neighborhood of every pixel of the original mask
+    # inside the array, so the classification needs no bounds tests of its own.
+    @inbounds for j in 2:(size(e, 2)-1), i in 2:(size(e, 1)-1)
+        e[i, j] || continue
+        edges = e[i-1, j] + e[i+1, j] + e[i, j-1] + e[i, j+1]
+        diagonals = e[i-1, j-1] + e[i-1, j+1] + e[i+1, j-1] + e[i+1, j+1]
+        code = 1 + 2 * edges + 10 * diagonals
+        counts[code] += 1
     end
-    perim = sum(
-        type_vals[val] * count for (val, count) in pairs(val_counts) if val > 0 && val <= 33
-    )
+    return counts
+end
 
+function (f::BenkridCrookes)(shape_array)
+    counts = _boundary_type_counts(_boundary_image(shape_array, f.connectivity == 4))
+    # Types above the table's length carry no length contribution, so the table
+    # bounds the sum.
+    perim = 0.0
+    @inbounds for code in eachindex(BENKRID_CROOKES_TYPE_VALS)
+        perim += BENKRID_CROOKES_TYPE_VALS[code] * counts[code]
+    end
     return perim
 end
 
@@ -283,7 +314,7 @@ function component_convex_areas(
     A;
     algorithm::ConvexAreaEstimationAlgorithm=PixelConvexArea(),
     areas=component_lengths(A),
-    bboxes=component_boxes(A),
+    bboxes=_component_boxes(A), # TODO: restore to `component_boxes(A)` once the fixed version is released.
     labels=unique(A),
 )
     mn = minimum(A)
@@ -326,7 +357,7 @@ for larger shapes.
 end
 
 function (f::PolygonConvexArea)(A)
-    return f(A, component_lengths(A), component_boxes(A), unique(A))
+    return f(A, component_lengths(A), _component_boxes(A), unique(A)) # TODO: restore to `component_boxes(A)` once the fixed version is released.
 end
 
 function (f::PolygonConvexArea)(A, areas, bboxes, labels)
@@ -417,7 +448,7 @@ function _count_pixels_in_hull(mask::AbstractMatrix{Bool}, chull::Vector{<:Carte
 end
 
 function (f::PixelConvexArea)(A)
-    return f(A, component_lengths(A), component_boxes(A), unique(A))
+    return f(A, component_lengths(A), _component_boxes(A), unique(A)) # TODO: restore to `component_boxes(A)` once the fixed version is released.
 end
 
 function (f::PixelConvexArea)(A, areas, bboxes, labels)
@@ -638,11 +669,17 @@ function regionprops(
     # These per-image passes (lengths, unique, boxes) are shared by all property
     # paths below instead of being recomputed by each helper.
     areas = component_lengths(labels)
-    all_labels = unique(labels)
+    # `component_lengths` already counted every label, so the labels present are
+    # exactly those with a nonzero count. `unique` over the whole image is a
+    # second full pass building a hash set and produces the same answer.
+    # Background is dropped here rather than downstream: nothing below needs it,
+    # and label 0's bounding box is the whole scene, so cropping it builds a mask
+    # the size of the image that every consumer then discards. Ascending by
+    # construction, so no sort is needed either.
+    all_labels = [i for i in axes(areas, 1) if i > 0]
     needs_bboxes = !isdisjoint(required_properties, PROPERTIES_REQUIRING_BBOXES)
-    bboxes_all = needs_bboxes ? component_boxes(labels) : nothing
-    img_labels = sort(all_labels[all_labels .!= 0])
-    img_labels = img_labels[[areas[s] > minimum_area for s in img_labels]]
+    bboxes_all = needs_bboxes ? _component_boxes(labels) : nothing # TODO: restore to `component_boxes(labels)` once the fixed version is released.
+    img_labels = [s for s in all_labels if areas[s] > minimum_area]
 
     :label ∈ properties && push!(data, :label => img_labels)
 
@@ -684,13 +721,15 @@ function regionprops(
     end
 
     :perimeter ∈ required_properties && begin
-        perimeter_masks = component_floes(labels; labels=all_labels, boxes=bboxes_all, areas)
+        perimeter_masks = component_floes(
+            labels; labels=all_labels, boxes=bboxes_all, areas
+        )
         floe_perims = component_perimeters(
             labels; algorithm=perimeter_algorithm, masks=perimeter_masks
         )
         push!(data, :perimeter => map(s -> floe_perims[s], img_labels))
         if :circularity ∈ properties
-            push!(data, :circularity => map(s -> areas[s] / floe_perims[s], img_labels))
+            push!(data, :circularity => map(s -> 4 * π * areas[s] / floe_perims[s]^2, img_labels))
         end
     end
 
