@@ -149,9 +149,9 @@ preprocessing_algorithm = Preprocess()
 classification_algorithm = Classify()
 # Only varying the structuring element, for testing. Each item in the list is sent to dist-morph-split and the results are compared.
 floe_splitting_params = [
-    (max_hole_fill=500, max_depth=10, max_depth_ratio=0.3, max_expand=3, opening_strel=strel_diamond((3,3))),
-    (max_hole_fill=500, max_depth=10, max_depth_ratio=0.3, max_expand=3, opening_strel=strel_box((3, 3))),
-    (max_hole_fill=500, max_depth=10, max_depth_ratio=0.3, max_expand=3, opening_strel=strel_disk(4))
+    (max_hole_fill=500, max_depth=15, max_depth_ratio=0.5, max_expand=3, opening_strel=strel_diamond((3,3))),
+    (max_hole_fill=500, max_depth=15, max_depth_ratio=0.5, max_expand=3, opening_strel=strel_box((3, 3))),
+    (max_hole_fill=500, max_depth=15, max_depth_ratio=0.5, max_expand=3, opening_strel=strel_disk(4))
 ]
 floe_filtering_params = (
     minimum_floe_size=64,
@@ -505,7 +505,6 @@ Inputs:
     - `labels1` = labeled image (Matrix{Int64})
     - `labels2` = labeled image (Matrix{Int64})
     - `indices1=component_indices(labels1)` = Indices map, option to reuse from earlier in processing 
-    - `indices2=component_indices(labels2)` = Indices map, option to reuse from earlier
     - `comp_properties=[
             :label, :area, :row_centroid, :col_centroid,
             :max_col, :max_row, :min_col, :min_row, :probability
@@ -518,7 +517,6 @@ function compare_objects(
     labels1::Matrix{Int64},
     labels2::Matrix{Int64}; # Should this be keyword or no?
     indices1=component_indices(labels1),
-    indices2=component_indices(labels2),
     comp_properties=[
         :label, :area, :row_centroid, :col_centroid,
         :max_col, :max_row, :min_col, :min_row, :probability
@@ -681,7 +679,6 @@ function sequential_merge_floes(labeled_imgs, falsecolor_image, masks;
             df1, df2,
             init_img, comp_img;
             indices1=init_indices, 
-            indices2=comp_indices,
             comp_properties=comp_properties,
             tol_area_fraction=tol_area_fraction
         )
@@ -701,6 +698,9 @@ function sequential_merge_floes(labeled_imgs, falsecolor_image, masks;
         remove_labels = df_sel.s1_label
         no_matches = setdiff(df_comp.s2_label, df2.label)
         add_labels = union(df_sel.s2_label, no_matches)
+
+        df_sel = subset(df_comp, :s2_label => ByRow(r -> r ∈ add_labels))
+        remove_labels = union(remove_labels, df_sel.s1_label)
 
         if (length(remove_labels) > 0) || (length(add_labels) > 0)
             merge_arrays!(
