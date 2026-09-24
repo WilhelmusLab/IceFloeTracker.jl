@@ -149,22 +149,20 @@ preprocessing_algorithm = Preprocess()
 classification_algorithm = Classify()
 # Only varying the structuring element, for testing. Each item in the list is sent to dist-morph-split and the results are compared.
 floe_splitting_params = [
-    (max_hole_fill=500, max_depth=15, max_depth_ratio=0.5, max_expand=3, opening_strel=strel_diamond((3,3))),
-    (max_hole_fill=500, max_depth=15, max_depth_ratio=0.5, max_expand=3, opening_strel=strel_box((3, 3))),
-    (max_hole_fill=500, max_depth=15, max_depth_ratio=0.5, max_expand=3, opening_strel=strel_disk(4))
+    (max_hole_fill=500, max_depth=15, max_depth_ratio=0.5, max_expand=3, opening_strel=strel_diamond((3, 3))),
+    (max_hole_fill=1500, max_depth=15, max_depth_ratio=0.5, max_expand=3, opening_strel=strel_box((3, 3))),
+    (max_hole_fill=2500, max_depth=15, max_depth_ratio=0.5, max_expand=3, opening_strel=strel_disk(4))
 ]
-floe_filtering_params = (
+
+floe_merging_params = (
     minimum_floe_size=64,
     maximum_floe_size=90e3,
-    minimum_probability=0.5,
-)
-floe_merging_params = (
-    tol_area_fraction = 0.05,
+    tol_area_fraction=0.05,
     comp_properties=[
         :label, :area, :row_centroid, :col_centroid,
         :max_col, :max_row, :min_col, :min_row, :probability
     ],
-    minimum_probability = 0.1,
+    minimum_probability=0.1,
 )
 
 """
@@ -181,7 +179,7 @@ The coastal buffer mask is used to identify potential landfast ice segments.
 - `floe_splitting_algorithm`: Currently only tested with the dist morph split algorithm. The function will apply the 
     splitting algorithm for each set of parameters supplied in the next argument.
 - `floe_splitting_params`: List of named tuples with parameters for the `floe_splitting_algorithm`.
-- `floe_filtering_algorithm`: Algorithm to remove likely non-floes from the merged segmentation result.
+- `floe_merging_params`: List of parameters for the floe filtering and merging function.
 
 """
 @kwdef struct Segment <: IceFloeSegmentationAlgorithm
@@ -192,7 +190,6 @@ The coastal buffer mask is used to identify potential landfast ice segments.
     classification_algorithm = classification_algorithm
     floe_splitting_algorithm = dist_morph_split # TODO: add binarization algorithm
     floe_splitting_params = floe_splitting_params
-    floe_filtering_params = floe_filtering_params
     floe_merging_params = floe_merging_params
 end
 
@@ -240,18 +237,9 @@ function (s::Segment)(
         dist_morph_split(binarized_image; pset...) for pset in s.floe_splitting_params
     ]
 
-    # Size-based filter
-    remove_small_segments!.(candidate_splits, s.floe_filtering_params.minimum_floe_size)
-    remove_large_segments!.(candidate_splits, s.floe_filtering_params.maximum_floe_size)
-
     @info "Joining segmentation results"
     # final_floes = merge_floes(candidate_splits, falsecolor_image; p.floe_merging_params...)
     final_floes = sequential_merge_floes(candidate_splits, falsecolor_image, masks; s.floe_merging_params...)
-
-    # Repeat size-based filter in case artifacts were created
-    remove_small_segments!(final_floes, s.floe_filtering_params.minimum_floe_size)
-    remove_large_segments!(final_floes, s.floe_filtering_params.maximum_floe_size)
-    # TODO: (optional) Remove low-probability shapes
 
     # Re-label so there are no missing numbers in the component list
     final_floes .= label_components(final_floes)
@@ -262,21 +250,21 @@ function (s::Segment)(
 
     if !isnothing(intermediate_results_callback)
         colorview_random = view_seg_random(segments_tc)
-        segment_mean_truecolor=n0f8.(segment_mean_map(segments_tc)) # dmw: does this work with view_seg()?
-        segment_mean_falsecolor=n0f8.(segment_mean_map(segments_fc))
+        segment_mean_truecolor = n0f8.(view_seg(segments_tc))
+        segment_mean_falsecolor = n0f8.(view_seg(segments_fc))
         intermediate_results_callback(;
             truecolor,
             falsecolor,
-            coastal_buffer_mask=Gray.(masks["coastal_buffer_mask"]),
-            cloud_mask=Gray.(masks["cloud"]),
-            ice_mask=Gray.(masks["ice"]),
-            preprocessed=preproc_gray,
-            classified=colorize_classification(classified_image),
-            binarized=binarized_image .> 0,
-            final_floes=colorview_random,
-            labels_map=final_floes,
-            segment_mean_falsecolor=segment_mean_falsecolor,
-            segment_mean_truecolor=segment_mean_truecolor,
+            coastal_buffer_mask = Gray.(masks["coastal_buffer_mask"]),
+            cloud_mask = Gray.(masks["cloud"]),
+            ice_mask = Gray.(masks["ice"]),
+            preprocessed = preproc_gray,
+            classified = n0f8.(colorize_classification(classified_image)),
+            binarized = binarized_image .> 0,
+            final_floes = colorview_random,
+            labels_map = final_floes,
+            segment_mean_falsecolor = segment_mean_falsecolor,
+            segment_mean_truecolor = segment_mean_truecolor,
         )
     end
     return segments_tc
@@ -527,14 +515,17 @@ function compare_objects(
     # Get list of labels in 1 with nonzero intersection
     no_overlaps1 = _nonoverlapping_labels(labels2, indices1, df1.label)
     overlaps1 = setdiff(df1.label, no_overlaps1)
-
+    
     # Make list of intersections from 1 to 2
     s1_label_list = []
     s2_label_list = []
     for r in overlaps1
+        # Make sure the label lists are just labels in the dataframes
         for s in filter(r -> r != 0, unique(labels2[indices1[r]]))
-            append!(s1_label_list, r)
-            append!(s2_label_list, s)
+            if s in df2.label # Note: Shouldn't need this catch; likely an issue upstream lead to labels2 retaining labels dropped from df2
+                append!(s1_label_list, r)
+                append!(s2_label_list, s)
+            end
         end
     end
 
@@ -650,11 +641,13 @@ function sequential_merge_floes(labeled_imgs, falsecolor_image, masks;
         :label, :area, :row_centroid, :col_centroid,
         :max_col, :max_row, :min_col, :min_row, :probability
     ],
+    minimum_floe_size=100,
+    maximum_floe_size=90e3,
     tol_area_fraction=0.05,
     minimum_probability=0.5,
-    )
+)
     n = length(labeled_imgs)
-    (n == 1) && return(labeled_imgs)
+    (n == 1) && return (labeled_imgs)
 
     # Initialize with the first image
     init_img = copy(labeled_imgs[1])
@@ -664,21 +657,27 @@ function sequential_merge_floes(labeled_imgs, falsecolor_image, masks;
     df1 = extended_regionprops_table(
         init_img, falsecolor_image, masks
     )
-    _remove_labels!(init_img, init_indices, subset(df1, :probability => r -> r .< minimum_probability).label)
-    
+
+    drop_segments(a, r) = (r < minimum_probability) || (a < minimum_floe_size) || (maximum_floe_size < a)
+    remove_labels = subset(df1, [:area, :probability] => ByRow(drop_segments)).label
+    _remove_labels!(init_img, init_indices, remove_labels)
+    subset!(df1, :label => ByRow(l -> l ∉ remove_labels))
+
     for i in 2:n
         comp_img = copy(labeled_imgs[i])
         comp_indices = component_indices(comp_img)
-        
+
         df2 = extended_regionprops_table(
             comp_img, falsecolor_image, masks
         )
-        _remove_labels!(comp_img, comp_indices, subset(df2, :probability => r -> r .< minimum_probability).label)
+        remove_labels = subset(df2, [:area, :probability] => ByRow(drop_segments)).label
+        _remove_labels!(comp_img, comp_indices, remove_labels)
+        subset!(df2, :label => ByRow(l -> l ∉ remove_labels))
 
         df_comp = compare_objects(
             df1, df2,
             init_img, comp_img;
-            indices1=init_indices, 
+            indices1=init_indices,
             comp_properties=comp_properties,
             tol_area_fraction=tol_area_fraction
         )
@@ -687,11 +686,11 @@ function sequential_merge_floes(labeled_imgs, falsecolor_image, masks;
         transform!(
             groupby(df_comp, :s1_label),
             [:s2_area, :s2_probability] =>
-            ((a, p) -> sum(p .* a ./ sum(a))) =>
-            :s2_weighted_probability
+                ((a, p) -> sum(p .* a ./ sum(a))) =>
+                    :s2_weighted_probability
         )
         df_sel = subset(
-            df_comp, [:s1_probability, :s2_weighted_probability] => 
+            df_comp, [:s1_probability, :s2_weighted_probability] =>
             (p1, p2) -> p1 .< p2
         )
 
@@ -699,21 +698,22 @@ function sequential_merge_floes(labeled_imgs, falsecolor_image, masks;
         no_matches = setdiff(df_comp.s2_label, df2.label)
         add_labels = union(df_sel.s2_label, no_matches)
 
-        df_sel = subset(df_comp, :s2_label => ByRow(r -> r ∈ add_labels))
-        remove_labels = union(remove_labels, df_sel.s1_label)
+        # Get the labels from s1 which overlap the selected s2 labels and add to remove list
+        remove_labels = union(remove_labels,
+            subset(df_comp, :s2_label => ByRow(r -> r ∈ add_labels)).s1_label
+        )
 
         if (length(remove_labels) > 0) || (length(add_labels) > 0)
             merge_arrays!(
                 init_img, init_indices, comp_indices,
                 remove_labels, add_labels
             )
-            
-            # update information for init_img
-            # Could be a clever way to join df1 and df2
-            # instead of recomputing
+
+            # TODO: Rather than re-computing information, do a drop / subset / merge step
             df1 = extended_regionprops_table(
                 init_img, falsecolor_image, masks
             )
+
             init_indices = component_indices(init_img)
         end
     end
