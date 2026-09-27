@@ -9,6 +9,12 @@
     )
     expected_segment_count = validated_floe_properties(case) |> DataFrame |> nrow
     @test length(segments.segment_labels) ≈ expected_segment_count rtol = 0.7
+
+    segments = LopezAcosta2019.Segment(tile_settings=(; rblocks=2, cblocks=2))(
+        RGB.(modis_truecolor(case)), RGB.(modis_falsecolor(case)), modis_landmask(case)
+    )
+    expected_segment_count = validated_floe_properties(case) |> DataFrame |> nrow
+    @test length(segments.segment_labels) ≈ expected_segment_count rtol = 0.7
 end
 
 @testitem "LopezAcosta2019.Segment – sample of cases" setup = [Segmentation] tags = [:e2e] begin

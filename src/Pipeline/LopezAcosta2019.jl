@@ -122,6 +122,7 @@ Segmentation algorithm for sea ice floe identification based on Lopez-Acosta 201
 ## Arguments
 - `cloud_mask_algorithm`: An `AbstractCloudMaskAlgorithm`. Defaults to [`LopezAcostaCloudMask`](@ref)
 - `diffusion_algorithm`: An `AbstractDiffusionAlgorithm`. Defaults to [`PeronaMalikDiffusion`](@ref)
+- `tile_settings=(; rblocks=1, cblocks=1)`: Option to divide the image into tiles for portions of the processing.
 - `adapthisteq_params`: Parameters for the adaptive histogram AdaptiveEqualization. 
 - `unsharp_mask_params`: Parameters for [`unsharp_mask`](@ref)
 - `kmeans_params`: Parameters for [`kmeans_binarization`](@ref)
@@ -145,6 +146,7 @@ Note: This algorithm is under active development and the API will change in a fu
     coastal_buffer_structuring_element::AbstractMatrix{Bool} = make_landmask_se()
     cloud_mask_algorithm = LopezAcostaCloudMask()
     tile_settings = (; rblocks=1, cblocks=1)
+    min_ocean_pixels = 1e3
     diffusion_algorithm = PeronaMalikDiffusion(0.1, 0.1, 5, "exponential")
     adapthisteq_params = (
         nbins=256,
@@ -204,6 +206,10 @@ function (p::Segment)(
     apply_landmask!(truecolor_image, landmask)
     fc_masked = apply_landmask(falsecolor_image, coastal_buffer_mask)
     tiles = get_tiles(truecolor_image; p.tile_settings...)
+    tiles = filter(
+        t -> sum(landmask[t...] .== 0) > p.min_ocean_pixels, tiles 
+    )
+
 
     sharpened_truecolor_image = nonlinear_diffusion(truecolor_image, p.diffusion_algorithm)
 
