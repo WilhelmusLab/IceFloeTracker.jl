@@ -2,7 +2,7 @@ module LopezAcosta2019
 
 export Segment, Track, IceDetectionLopezAcosta2019
 
-import Images:
+import Images: # dmw: by the time we are importing 50 separate functions, should we not just import the whole library?
     Images,
     AbstractGray,
     AbstractRGB,
@@ -53,7 +53,12 @@ import Peaks: findmaxima
 import StatsBase: kurtosis, skewness, mean, std
 
 import ..Filtering:
-    nonlinear_diffusion, PeronaMalikDiffusion, unsharp_mask, channelwise_adapthisteq
+    nonlinear_diffusion,
+    PeronaMalikDiffusion,
+    unsharp_mask,
+    channelwise_adapthisteq,
+    ContrastLimitedAdaptiveHistogramEqualization
+
 import ..Morphology: hbreak, hbreak!, branch, bridge, fill_holes, strel_octagon
 import ..Preprocessing:
     make_landmask_se,
@@ -78,7 +83,7 @@ import ..Pipeline:
 
 import ..Tracking: FloeTracker, FilterFunction, MinimumWeightMatchingFunction
 import Dates: Day
-import ..ImageUtils: imbrighten
+import ..ImageUtils: imbrighten, apply_to_channels
 import ..Pipeline: IceFloeSegmentationAlgorithm
 
 """ 
@@ -143,15 +148,15 @@ Note: This algorithm is under active development and the API will change in a fu
         nbins=256,
         rblocks=8, # matlab default is 8 CP
         cblocks=8, # matlab default is 8 CP
-        clip=0.95,  # matlab default is 0.01 CP, which should be the same as clip=0.99
+        clip=3.2, # calibrated against matlab adjusthisteq
     )
-    unsharp_mask_params = (smoothing_param=10, intensity=0.5)
+    unsharp_mask_params = (smoothing_param=10, intensity=2) # calibrated against matlab imsharpen 
     kmeans_params = (k=4, maxiter=50, random_seed=45)
     cluster_selection_algorithm = IceDetectionLopezAcosta2019()
     segB_params = (
         isolation_threshold=0.4,
         brightening_factor=0.3,
-        gamma_factor=2.5,
+        gamma_factor=10,
         adjusted_ice_threshold=0.05,
         fill_range_max=1,
         alpha_level=0.5,
@@ -160,7 +165,7 @@ Note: This algorithm is under active development and the API will change in a fu
     floe_splitting_settings = (
         max_fill_area=1, min_area_opening=20, opening_strel=strel_octagon(3)
     )
-    expand_labels_by=5
+    expand_labels_by=0 # Expanding labels can help improve the results but isn't in the original
 end
 
 function (p::Segment)(
@@ -178,31 +183,31 @@ function (p::Segment)(
     coastal_buffer_mask = reinterpret(Bool, coastal_buffer_mask)
     landmask = reinterpret(Bool, landmask)
 
-    # Move these conversions down through the function as each step gets support for 
-    # the full range of image formats
+    # Convert to float so that we don't get overflow errors
     truecolor_image = float64.(truecolor)
     falsecolor_image = float64.(falsecolor)
 
     @info "Building cloudmask"
     # TODO: Make sure tests aren't over-sensitive to roundoff errors for Float32 vs Float64
-    cloudmask = create_cloudmask(falsecolor_image)
+    cloudmask = create_cloudmask(falsecolor_image, p.cloud_mask_algorithm)
 
     # 2. Intermediate images
     fc_masked = apply_landmask(falsecolor_image, coastal_buffer_mask)
 
     @info "Preprocessing truecolor image"
     # nonlinear diffusion
+    # TODO: Test whether the results are meaningfully different if the image is cast to 
+    # grayscale prior to sharpening.
+
     apply_landmask!(truecolor_image, landmask)
     sharpened_truecolor_image = nonlinear_diffusion(truecolor_image, p.diffusion_algorithm)
 
-    sharpened_truecolor_image .= channelwise_adapthisteq(
-        sharpened_truecolor_image;
-        nbins=p.adapthisteq_params.nbins,
-        rblocks=p.adapthisteq_params.rblocks,
-        cblocks=p.adapthisteq_params.cblocks,
-        clip=p.adapthisteq_params.clip,
+    sharpened_truecolor_image .= apply_to_channels(
+        sharpened_truecolor_image,
+        r -> _adjust_histogram(r; p.adapthisteq_params...)
     )
-
+    
+    # TODO: keyword arguments for unsharp mask so we can splat the inputs
     sharpened_grayscale_image = unsharp_mask(
         Gray.(sharpened_truecolor_image),
         p.unsharp_mask_params.smoothing_param,
@@ -636,14 +641,14 @@ end
     _adjust_histogram(masked_view, nbins, rblocks, cblocks, clip)
 
 Perform adaptive histogram equalization to a masked image. Wrapper for the
-JuliaImages `adjust_histogram` function with `AdaptiveEqualization`, setting the minval
-and maxval to the image maximum and minimum.
+JuliaImages `adjust_histogram` function with `ContrastLimitedAdaptiveHistogramEqualization`,
+setting the minval and maxval to the image maximum and minimum.
 
 """
-function _adjust_histogram(masked_view, nbins, rblocks, cblocks, clip)
+function _adjust_histogram(masked_view; nbins, rblocks, cblocks, clip)
     return adjust_histogram(
         masked_view,
-        AdaptiveEqualization(;
+        ContrastLimitedAdaptiveHistogramEqualization(;
             nbins=nbins,
             rblocks=rblocks,
             cblocks=cblocks,
