@@ -302,11 +302,11 @@ function (p::Segment)(
     (p.expand_labels_by > 0) && (labels .= expand_labels(labels, p.expand_labels_by))
 
     # Return the original truecolor image, segmented
-    segments = SegmentedImage(truecolor, labels)
+    segmented_truecolor = SegmentedImage(truecolor, labels)
 
     if !isnothing(intermediate_results_callback)
         segmented_falsecolor = SegmentedImage(falsecolor, labels)
-        segment_mean_truecolor=n0f8.(view_seg(segments))
+        segment_mean_truecolor=n0f8.(view_seg(segmented_truecolor))
         segment_mean_falsecolor=n0f8.(view_seg(segmented_falsecolor))
         ice_mask=p.cluster_selection_algorithm(fc_masked) .> 0
         intermediate_results_callback(;
@@ -325,14 +325,14 @@ function (p::Segment)(
             final_floes=segF,
             labels=labels,
             labels_map=labels,
-            segments,
+            segments=segmented_truecolor, # not sure if all these outputs need to be here!
             segmented_truecolor,
             segmented_falsecolor,
             segment_mean_truecolor,
             segment_mean_falsecolor,
         )
     end
-    return segments
+    return segmented_truecolor
 end
 
 
