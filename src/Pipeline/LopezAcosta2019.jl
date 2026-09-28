@@ -275,10 +275,9 @@ function (p::Segment)(
 
     # Process watershed in parallel using Folds
     @info "Building watersheds"
-    watersheds_segB = [
-        watershed_ice_floes(prelim_binarized), watershed_ice_floes(ice_intersect)
-    ]
-    watersheds_product = watershed_product(watersheds_segB...)
+    wshed_prelim_boundaries = watershed_ice_floes(prelim_binarized, tiles) .> 0
+    wshed_intersect_boundaries = watershed_ice_floes(ice_intersect, tiles) .> 0
+    watersheds_product = wshed_prelim_boundaries .&& wshed_intersect_boundaries
 
     # segmentation_F
     # TODO: @hollandjg find out why segF is more dilated
@@ -616,22 +615,45 @@ function segmented_ice_cloudmasking(
     segmented_ice_cloudmasked[cloudmask] .= 0
     return segmented_ice_cloudmasked
 end
+
 """
-    watershed_ice_floes(intermediate_segmentation_image;)
-Performs image processing and watershed segmentation with intermediate files from segmentation_b.jl to further isolate ice floes, returning a binary segmentation mask indicating potential sparse boundaries of ice floes.
+    watershed_ice_floes(intermediate_segmentation_image, tiles; hmin_depth=2)
+    watershed_ice_floes(intermediate_segmentation_image; hmin_depth=2)
+
+Detect boundaries between ice floes by using watershed segmentation. Uses the
+hmin transform on the inverse distance transform for marker selection.
+
 # Arguments
--`intermediate_segmentation_image`: binary cloudmasked and landmasked intermediate file from segmentation B, either `SegB.not_ice_bit` or `SegB.ice_intersect`
+-`binary_floe_mask`: BitMatrix with binarized sea ice floes for splitting
+-`tiles` (optional): Tiled iterator.
 """
-function watershed_ice_floes(intermediate_segmentation_image::BitMatrix)::BitMatrix
-    features = feature_transform(.!intermediate_segmentation_image)
+function watershed_ice_floes(
+        binary_floe_mask::BitMatrix, tiles;
+        hmin_depth=2,
+    ) # ::BitMatrix
+    features = feature_transform(.!binary_floe_mask)
     distances = 1 .- distance_transform(features)
-    seg_mask = hmin_transform(distances, 2)
-    seg_mask_bool = seg_mask .> 0
-    markers = label_components(seg_mask_bool)
+    markers = distances .> 0
+    markers = (hmin_transform(distances, hmin_depth) .> 0) |> label_components
+    boundaries = zeros(Int64, size(markers))
+    for t in tiles
+        segment = watershed(distances[t...], markers[t...])
+        boundaries[t...] .= isboundary(labels_map(segment))
+    end
+    return boundaries
+end
+
+function watershed_ice_floes(
+        binary_floe_mask::BitMatrix;
+        hmin_depth=2,
+    ) # ::BitMatrix
+    features = feature_transform(.!binary_floe_mask)
+    distances = 1 .- distance_transform(features)
+    markers = distances .> 0
+    markers = (hmin_transform(distances, hmin_depth) .> 0) |> label_components
     segment = watershed(distances, markers)
-    labels = labels_map(segment)
-    borders = isboundary(labels)
-    return borders
+    boundaries = isboundary(labels_map(segment))
+    return boundaries
 end
 
 """
