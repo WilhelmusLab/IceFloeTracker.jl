@@ -83,14 +83,13 @@ import ..Pipeline:
 
 import ..Tracking: FloeTracker, FilterFunction, MinimumWeightMatchingFunction
 import Dates: Day
-import ..ImageUtils: imbrighten, apply_to_channels, get_tiles
+import ..ImageUtils: imbrighten, apply_to_channels
 import ..Pipeline: IceFloeSegmentationAlgorithm
 
 """ 
     LopezAcosta2019.Segment(
         coastal_buffer_structuring_element::AbstractMatrix{Bool} = make_landmask_se()
         cloud_mask_algorithm = LopezAcostaCloudMask()
-        tile_settings = (; rblocks=1, cblocks=1)
         diffusion_algorithm = PeronaMalikDiffusion(0.1, 0.1, 5, "exponential")
         adapthisteq_params = (
             nbins=256,
@@ -122,7 +121,6 @@ Segmentation algorithm for sea ice floe identification based on Lopez-Acosta 201
 ## Arguments
 - `cloud_mask_algorithm`: An `AbstractCloudMaskAlgorithm`. Defaults to [`LopezAcostaCloudMask`](@ref)
 - `diffusion_algorithm`: An `AbstractDiffusionAlgorithm`. Defaults to [`PeronaMalikDiffusion`](@ref)
-- `tile_settings=(; rblocks=1, cblocks=1)`: Option to divide the image into tiles for portions of the processing.
 - `adapthisteq_params`: Parameters for the adaptive histogram AdaptiveEqualization. 
 - `unsharp_mask_params`: Parameters for [`unsharp_mask`](@ref)
 - `kmeans_params`: Parameters for [`kmeans_binarization`](@ref)
@@ -145,8 +143,6 @@ Note: This algorithm is under active development and the API will change in a fu
 @kwdef struct Segment <: IceFloeSegmentationAlgorithm
     coastal_buffer_structuring_element::AbstractMatrix{Bool} = make_landmask_se()
     cloud_mask_algorithm = LopezAcostaCloudMask()
-    tile_settings = (; rblocks=1, cblocks=1)
-    min_ocean_pixels = 1e3
     diffusion_algorithm = PeronaMalikDiffusion(0.1, 0.1, 5, "exponential")
     adapthisteq_params = (
         nbins=256,
@@ -195,8 +191,8 @@ function (p::Segment)(
     # TODO: Make sure tests aren't over-sensitive to roundoff errors for Float32 vs Float64
     cloudmask = create_cloudmask(falsecolor_image, p.cloud_mask_algorithm)
 
-
-
+    # 2. Intermediate images
+    fc_masked = apply_landmask(falsecolor_image, coastal_buffer_mask)
 
     @info "Preprocessing truecolor image"
     # nonlinear diffusion
@@ -204,11 +200,6 @@ function (p::Segment)(
     # grayscale prior to sharpening.
 
     apply_landmask!(truecolor_image, landmask)
-    fc_masked = apply_landmask(falsecolor_image, coastal_buffer_mask)
-    tiles = get_tiles(truecolor_image; p.tile_settings...)
-    tiles = filter(
-        t -> sum(landmask[t...] .== 0) > p.min_ocean_pixels, tiles 
-    )
 
     sharpened_grayscale_image = Gray.(truecolor_image)
     # TODO: add in-place version of nonlinear_diffusion
@@ -237,8 +228,7 @@ function (p::Segment)(
     segmentation_A =
         kmeans_binarization(
             ice_water_discrim,
-            fc_masked,
-            tiles;
+            fc_masked;
             k=p.kmeans_params.k,
             maxiter=p.kmeans_params.maxiter,
             random_seed=p.kmeans_params.random_seed,
@@ -298,8 +288,7 @@ function (p::Segment)(
     segF_binarized =
         kmeans_binarization(
             morphed_grayscale,
-            fc_masked,
-            tiles;
+            fc_masked;
             k=p.segF_params.k,
             cluster_selection_algorithm=p.cluster_selection_algorithm,
         ) .* .!watersheds_product
