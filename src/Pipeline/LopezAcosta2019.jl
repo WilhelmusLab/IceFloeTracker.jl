@@ -210,20 +210,21 @@ function (p::Segment)(
         t -> sum(landmask[t...] .== 0) > p.min_ocean_pixels, tiles 
     )
 
-
-    sharpened_truecolor_image = nonlinear_diffusion(truecolor_image, p.diffusion_algorithm)
-
-    sharpened_truecolor_image .= apply_to_channels(
-        sharpened_truecolor_image,
-        r -> _adjust_histogram(r; p.adapthisteq_params...)
+    sharpened_grayscale_image = Gray.(truecolor_image)
+    # TODO: add in-place version of nonlinear_diffusion
+    sharpened_grayscale_image .= nonlinear_diffusion(sharpened_grayscale_image, p.diffusion_algorithm)
+    adjust_histogram!(sharpened_grayscale_image, 
+        ContrastLimitedAdaptiveHistogramEqualization(
+            ;p.adapthisteq_params...)
     )
     
     # TODO: keyword arguments for unsharp mask so we can splat the inputs
-    sharpened_grayscale_image = unsharp_mask(
-        Gray.(sharpened_truecolor_image),
+    sharpened_grayscale_image .= unsharp_mask(
+        sharpened_grayscale_image,
         p.unsharp_mask_params.smoothing_param,
         p.unsharp_mask_params.intensity,
     )
+    
     apply_landmask!(sharpened_grayscale_image, coastal_buffer_mask)
 
     # 3. Segmentation
