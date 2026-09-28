@@ -717,6 +717,9 @@ function sequential_merge_floes(labeled_imgs, falsecolor_image, masks;
             init_indices = component_indices(init_img)
         end
     end
+
+    remove_small_segments!(init_img, minimum_floe_size)
+    remove_large_segments!(init_img, maximum_floe_size)
     return init_img # TODO: Consider returning the final data table, too
 end
 
