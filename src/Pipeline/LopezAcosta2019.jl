@@ -299,7 +299,7 @@ function (p::Segment)(
 
     if !isnothing(intermediate_results_callback)
         segmented_falsecolor = SegmentedImage(falsecolor, labels)
-        segment_mean_truecolor=n0f8.(view_seg(segments))
+        segment_mean_truecolor=n0f8.(view_seg(segmented_truecolor))
         segment_mean_falsecolor=n0f8.(view_seg(segmented_falsecolor))
         ice_mask=p.cluster_selection_algorithm(fc_masked) .> 0
         intermediate_results_callback(;
