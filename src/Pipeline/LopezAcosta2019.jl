@@ -74,7 +74,8 @@ import ..Segmentation:
     IceDetectionFirstNonZeroAlgorithm,
     IceDetectionBrightnessPeaksMODIS721,
     IceDetectionThresholdMODIS721,
-    segment_mean_map
+    segment_mean_map,
+    view_seg
 
 import ..Pipeline:
     IceFloeSegmentationAlgorithm
