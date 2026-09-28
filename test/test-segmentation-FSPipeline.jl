@@ -67,10 +67,15 @@ end
         output_directory="./test_outputs/",
     )
 
+    @show round(recall; digits=2)
+    @show round(precision; digits=2)
+    @show round(F_score; digits=2)
+
+
     @test 0.36 ≈ labeled_fraction atol = 0.1
-    @test 0.68 ≤ round(recall; digits=2)
-    @test 0.59 ≤ round(precision; digits=2)
-    @test 0.63 ≤ round(F_score; digits=2)
+    @test 0.88 ≤ round(recall; digits=2)
+    @test 0.72 ≤ round(precision; digits=2)
+    @test 0.79 ≤ round(F_score; digits=2)
 
     (; labeled_fraction, recall, precision, F_score) = run_and_validate_segmentation(
         first(filter(c -> (c.case_number == 14 && c.satellite == "aqua"), dataset)),
