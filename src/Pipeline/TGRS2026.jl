@@ -78,7 +78,7 @@ abstract type IceFloeClassificationAlgorithm end
 """
 @kwdef struct Preprocess <: IceFloePreprocessingAlgorithm
     histogram_algorithm = ContrastLimitedAdaptiveHistogramEqualization
-    histogram_params = (nbins=256, rblocks=4, cblocks=4, clip=1)
+    histogram_params = (nbins=256, rblocks=4, cblocks=4, clip=3.2)
 end
 
 # Q: does image sharpening, nonlinear filtering change the quality of the result? nonlinear filtering 
