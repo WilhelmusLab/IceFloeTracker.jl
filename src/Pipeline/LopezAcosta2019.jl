@@ -205,7 +205,7 @@ function (p::Segment)(
         t -> sum(landmask[t...] .== 0) > p.min_ocean_pixels, tiles 
     )
 
-    sharpened_truecolor_image = nonlinear_diffusion(truecolor_image, p.diffusion_algorithm)
+    sharpened_truecolor_image = nonlinear_diffusion(truecolor_image, tiles, p.diffusion_algorithm)
 
     sharpened_truecolor_image .= apply_to_channels(
         sharpened_truecolor_image,
