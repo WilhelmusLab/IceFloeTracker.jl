@@ -38,7 +38,6 @@ import Images: # dmw: by the time we are importing 50 separate functions, should
     strel_diamond,
     complement,
     bothat,
-    AdaptiveEqualization,
     colorview,
     Gray,
     AbstractRGB,
@@ -56,7 +55,6 @@ import ..Filtering:
     nonlinear_diffusion,
     PeronaMalikDiffusion,
     unsharp_mask,
-    channelwise_adapthisteq,
     ContrastLimitedAdaptiveHistogramEqualization
 
 import ..Morphology: hbreak, hbreak!, branch, bridge, fill_holes, strel_octagon
