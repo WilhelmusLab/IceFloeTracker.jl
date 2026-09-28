@@ -53,15 +53,21 @@
     @persist image_diffused diffused_image_filename
 
     @info "Process Image - Equalization"
+    import Images: adjust_histogram
+    import IceFloeTracker: ContrastLimitedAdaptiveHistogramEqualization
 
     ## Equalization
-    # TODO: Run test of the CLAHE function to see which parameters match the MATLAB output most closely
-    masked_view = (channelview(matlab_diffused))
-    eq = [
-        LopezAcosta2019._adjust_histogram(masked_view[i, :, :], 255, 10, 10, 0.86) for
-        i in 1:3
-    ]
-    image_equalized = colorview(RGB, eq...)
+    image_equalized = apply_to_channels(
+        matlab_diffused,
+        r -> adjust_histogram(r,
+                ContrastLimitedAdaptiveHistogramEqualization(;
+                nbins=256,
+                rblocks=8, 
+                cblocks=8, 
+                clip=3.2,
+            )
+        )
+    )
     @test (@test_approx_eq_sigma_eps image_equalized matlab_equalized [0, 0] 0.051) ===
         nothing
 
