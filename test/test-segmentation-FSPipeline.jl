@@ -63,7 +63,7 @@ end
     dataset = Watkins2026Dataset(; ref="v0.2")
     (; labeled_fraction, recall, precision, F_score) = run_and_validate_segmentation(
         first(filter(c -> (c.case_number == 6 && c.satellite == "terra"), dataset)),
-        LopezAcosta2019.Segment();
+        FSPipeline.Segment();
         output_directory="./test_outputs/",
     )
 
