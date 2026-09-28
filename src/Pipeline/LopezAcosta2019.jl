@@ -193,9 +193,6 @@ function (p::Segment)(
     # TODO: Make sure tests aren't over-sensitive to roundoff errors for Float32 vs Float64
     cloudmask = create_cloudmask(falsecolor_image, p.cloud_mask_algorithm)
 
-
-
-
     @info "Preprocessing truecolor image"
     # nonlinear diffusion
     # TODO: Test whether the results are meaningfully different if the image is cast to 
@@ -207,7 +204,6 @@ function (p::Segment)(
     tiles = filter(
         t -> sum(landmask[t...] .== 0) > p.min_ocean_pixels, tiles 
     )
-
 
     sharpened_truecolor_image = nonlinear_diffusion(truecolor_image, p.diffusion_algorithm)
 
