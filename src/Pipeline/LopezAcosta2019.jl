@@ -142,7 +142,7 @@ Note: This algorithm is under active development and the API will change in a fu
     coastal_buffer_structuring_element::AbstractMatrix{Bool} = make_landmask_se()
     cloud_mask_algorithm = LopezAcostaCloudMask()
     diffusion_algorithm = PeronaMalikDiffusion(0.1, 0.1, 5, "exponential")
-    adapthisteq_params = (
+    adapthisteq_algorithm = ContrastLimitedAdaptiveHistogramEqualization(;
         nbins=256,
         rblocks=8, # matlab default is 8 CP
         cblocks=8, # matlab default is 8 CP
@@ -202,7 +202,7 @@ function (p::Segment)(
 
     sharpened_truecolor_image .= apply_to_channels(
         sharpened_truecolor_image,
-        r -> _adjust_histogram(r; p.adapthisteq_params...)
+        r -> adjust_histogram(r, p.adapthisteq_algorithm)
     )
     
     # TODO: keyword arguments for unsharp mask so we can splat the inputs
@@ -297,10 +297,9 @@ function (p::Segment)(
     segments = SegmentedImage(truecolor, labels)
 
     if !isnothing(intermediate_results_callback)
-        segmented_truecolor = SegmentedImage(truecolor, labels)
         segmented_falsecolor = SegmentedImage(falsecolor, labels)
-        segment_mean_truecolor=n0f8.(segment_mean_map(segmented_truecolor))
-        segment_mean_falsecolor=n0f8.(segment_mean_map(segmented_falsecolor))
+        segment_mean_truecolor=n0f8.(view_seg(segments))
+        segment_mean_falsecolor=n0f8.(view_seg(segmented_falsecolor))
         ice_mask=p.cluster_selection_algorithm(fc_masked) .> 0
         intermediate_results_callback(;
             truecolor,
@@ -323,13 +322,14 @@ function (p::Segment)(
             segmented_falsecolor,
             segment_mean_truecolor,
             segment_mean_falsecolor,
-            # TODO Add figure that overlays the segments
-            # TODO Add "view_seg" code snippet
         )
     end
     return segments
 end
 
+
+# TODO: Check MATLAB code. Should this be a tiled function? The original paper described a similar
+# brightening function which was applied to image thirds.
 """
     discriminate_ice_water(
         sharpened_grayscale_image,
@@ -348,8 +348,9 @@ end
         differ_threshold::Float64=0.6
     )
 
-Generates an image with ice floes apparent after filtering and combining previously processed versions of falsecolor and truecolor images from the same region of interest. Returns an image ready for segmentation to isolate floes.
-
+Generates an image with ice floes apparent after filtering and combining previously processed 
+versions of falsecolor and truecolor images from the same region of interest. Returns an image 
+ready for segmentation to isolate floes.
 
 # Arguments
 - `sharpened_grayscale_image`: Grayscale image after preprocessing
@@ -577,6 +578,7 @@ function segB_binarize(
     return segb_filled
 end
 
+# TODO: This function is not called in the pipeline, just in a test. Fix that so we don't have redundant functions.
 """
     segmented_ice_cloudmasking(gray_image, cloudmask, ice_labels;)
 
@@ -601,6 +603,7 @@ function segmented_ice_cloudmasking(
     segmented_ice_cloudmasked[cloudmask] .= 0
     return segmented_ice_cloudmasked
 end
+
 """
     watershed_ice_floes(intermediate_segmentation_image;)
 Performs image processing and watershed segmentation with intermediate files from segmentation_b.jl to further isolate ice floes, returning a binary segmentation mask indicating potential sparse boundaries of ice floes.
@@ -619,6 +622,7 @@ function watershed_ice_floes(intermediate_segmentation_image::BitMatrix)::BitMat
     return borders
 end
 
+# TODO: Remove this, it's just componentwise matrix multiplication
 """
     watershed_product(watershed_B_ice_intersect, watershed_B_not_ice;)
 Intersects the outputs of watershed segmentation on intermediate files from segmentation B, indicating potential sparse boundaries of ice floes.
@@ -635,27 +639,6 @@ function watershed_product(
     return watershed_intersect
 end
 
-"""
-    _adjust_histogram(masked_view, nbins, rblocks, cblocks, clip)
-
-Perform adaptive histogram equalization to a masked image. Wrapper for the
-JuliaImages `adjust_histogram` function with `ContrastLimitedAdaptiveHistogramEqualization`,
-setting the minval and maxval to the image maximum and minimum.
-
-"""
-function _adjust_histogram(masked_view; nbins, rblocks, cblocks, clip)
-    return adjust_histogram(
-        masked_view,
-        ContrastLimitedAdaptiveHistogramEqualization(;
-            nbins=nbins,
-            rblocks=rblocks,
-            cblocks=cblocks,
-            minval=minimum(masked_view), # Could this be causing the unnatural coloration in dark image regions?
-            maxval=maximum(masked_view),
-            clip=clip,
-        ),
-    )
-end
 
 """IceDetectionLopezAcosta2019
 
