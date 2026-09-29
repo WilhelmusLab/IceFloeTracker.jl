@@ -83,10 +83,24 @@ jobs:
       - name: Run Julia Scripts
         run: |
           EXIT_CODE=0
+          declare -a RESULTS=()
           for script in $(find docs/src notebooks -name "*.jl"); do
             echo "Running Julia script: $script"
             cat -n "$script"
-            julia "$script" || EXIT_CODE=$?
+            if julia "$script"; then
+              RESULTS+=("PASS|$script")
+            else
+              STATUS=$?
+              RESULTS+=("FAIL|$script")
+              EXIT_CODE=$STATUS
+            fi
             echo -e "\n=======\n" # divider between scripts
           done
+
+          echo "Notebook check results:"
+          printf '%-6s %s\n' "STATUS" "NOTEBOOK"
+          for r in "${RESULTS[@]}"; do
+            printf '%-6s %s\n' "${r%%|*}" "${r#*|}"
+          done
+
           exit $EXIT_CODE
