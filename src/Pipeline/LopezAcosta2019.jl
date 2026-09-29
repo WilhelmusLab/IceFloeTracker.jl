@@ -2,51 +2,7 @@ module LopezAcosta2019
 
 export Segment, Track, IceDetectionLopezAcosta2019
 
-import Images: # dmw: by the time we are importing 50 separate functions, should we not just import the whole library?
-    Images,
-    AbstractGray,
-    AbstractRGB,
-    adjust_histogram!,
-    TransparentRGB,
-    TransparentGray,
-    mreconstruct!,
-    mreconstruct,
-    feature_transform,
-    distance_transform,
-    hmin_transform,
-    label_components,
-    watershed,
-    labels_map,
-    isboundary,
-    SegmentedImage,
-    segment_mean,
-    float64,
-    n0f8,
-    channelview,
-    build_histogram,
-    adjust_histogram,
-    imfill,
-    opening,
-    closing,
-    feature_transform,
-    distance_transform,
-    hmin_transform,
-    clamp01nan,
-    area_opening,
-    area_opening!,
-    dilate,
-    strel_diamond,
-    complement,
-    bothat,
-    colorview,
-    Gray,
-    AbstractRGB,
-    RGB,
-    GammaCorrection,
-    centered,
-    red,
-    green,
-    blue
+using Images
 
 import Peaks: findmaxima
 import StatsBase: kurtosis, skewness, mean, std
