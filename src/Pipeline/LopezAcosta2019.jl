@@ -2,51 +2,7 @@ module LopezAcosta2019
 
 export Segment, Track, IceDetectionLopezAcosta2019
 
-import Images: # dmw: by the time we are importing 50 separate functions, should we not just import the whole library?
-    Images,
-    AbstractGray,
-    AbstractRGB,
-    adjust_histogram!,
-    TransparentRGB,
-    TransparentGray,
-    mreconstruct!,
-    mreconstruct,
-    feature_transform,
-    distance_transform,
-    hmin_transform,
-    label_components,
-    watershed,
-    labels_map,
-    isboundary,
-    SegmentedImage,
-    segment_mean,
-    float64,
-    n0f8,
-    channelview,
-    build_histogram,
-    adjust_histogram,
-    imfill,
-    opening,
-    closing,
-    feature_transform,
-    distance_transform,
-    hmin_transform,
-    clamp01nan,
-    area_opening,
-    area_opening!,
-    dilate,
-    strel_diamond,
-    complement,
-    bothat,
-    colorview,
-    Gray,
-    AbstractRGB,
-    RGB,
-    GammaCorrection,
-    centered,
-    red,
-    green,
-    blue
+using Images
 
 import Peaks: findmaxima
 import StatsBase: kurtosis, skewness, mean, std
@@ -57,7 +13,14 @@ import ..Filtering:
     unsharp_mask,
     ContrastLimitedAdaptiveHistogramEqualization
 
-import ..Morphology: hbreak, hbreak!, branch, bridge, fill_holes, strel_octagon
+import ..Morphology:
+    hbreak,
+    hbreak!,
+    branch,
+    bridge,
+    fill_holes,
+    strel_octagon
+
 import ..Preprocessing:
     make_landmask_se,
     create_landmask,
@@ -74,7 +37,8 @@ import ..Segmentation:
     IceDetectionFirstNonZeroAlgorithm,
     IceDetectionBrightnessPeaksMODIS721,
     IceDetectionThresholdMODIS721,
-    segment_mean_map
+    segment_mean_map,
+    view_seg
 
 import ..Pipeline:
     IceFloeSegmentationAlgorithm
@@ -211,7 +175,7 @@ function (p::Segment)(
         sharpened_truecolor_image,
         r -> adjust_histogram(r, p.adapthisteq_algorithm)
     )
-    
+
     # TODO: keyword arguments for unsharp mask so we can splat the inputs
     sharpened_grayscale_image = unsharp_mask(
         Gray.(sharpened_truecolor_image),
@@ -325,7 +289,6 @@ function (p::Segment)(
             final_floes=segF,
             labels=labels,
             labels_map=labels,
-            segments=segmented_truecolor, # not sure if all these outputs need to be here!
             segmented_truecolor,
             segmented_falsecolor,
             segment_mean_truecolor,
@@ -478,7 +441,7 @@ function discriminate_ice_water(
 
     _cloud_threshold = (
         b7_landmasked_cloudmasked .< mask_clouds_lower .||
-        b7_landmasked_cloudmasked .> mask_clouds_upper
+            b7_landmasked_cloudmasked .> mask_clouds_upper
     )
 
     # reusing image_cloudless - used to be band7_masked
@@ -503,15 +466,15 @@ function _check_threshold_50(
 )
     return ( # intensity value of 50
         (
-            (kurt_band_2 > kurt_thresh_upper) ||
-            (kurt_band_2 < kurt_thresh_lower) && (kurt_band_1 > kurt_thresh_upper)
-        ) ||
-        (
-            (kurt_band_2 < kurt_thresh_lower) &&
-            (skew_band_2 < skew_thresh) &&
-            proportional_intensity < 0.1
-        ) ||
-        proportional_intensity < 0.01
+                (kurt_band_2 > kurt_thresh_upper) ||
+                    (kurt_band_2 < kurt_thresh_lower) && (kurt_band_1 > kurt_thresh_upper)
+            ) ||
+            (
+                (kurt_band_2 < kurt_thresh_lower) &&
+                    (skew_band_2 < skew_thresh) &&
+                    proportional_intensity < 0.1
+            ) ||
+            proportional_intensity < 0.01
     )
 end
 
@@ -523,7 +486,7 @@ function _check_threshold_130(
     st_dev_thresh_upper,
 )
     return (clouds_ratio .< clouds_ratio_threshold && standard_dev > st_dev_thresh_lower) ||
-           (standard_dev > st_dev_thresh_upper)
+        (standard_dev > st_dev_thresh_upper)
 end
 
 """_reconstruct(sharpened_grayscale_image, dilated_mask; strel)
@@ -674,7 +637,7 @@ end
 
 Application of the IceDetectionFirstNonZeroAlgorithm using two passes of 
 the IceDetectionThresholdMODIS721 and one application of the IceDetectionBrightnessPeaksMODIS721.
-""" # TODO: This works in the kmeans binarization but not by itself in the example notebook.
+"""
 function IceDetectionLopezAcosta2019(;
     band_7_max::Float64=Float64(5 / 255),
     band_2_min::Float64=Float64(230 / 255),

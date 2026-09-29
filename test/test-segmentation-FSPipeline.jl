@@ -67,11 +67,6 @@ end
         output_directory="./test_outputs/",
     )
 
-    @show round(recall; digits=2)
-    @show round(precision; digits=2)
-    @show round(F_score; digits=2)
-
-
     @test 0.36 ≈ labeled_fraction atol = 0.1
     @test 0.88 ≤ round(recall; digits=2)
     @test 0.72 ≤ round(precision; digits=2)
