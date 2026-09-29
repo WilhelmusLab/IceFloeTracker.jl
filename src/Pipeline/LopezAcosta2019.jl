@@ -2,59 +2,25 @@ module LopezAcosta2019
 
 export Segment, Track, IceDetectionLopezAcosta2019
 
-import Images:
-    Images,
-    AbstractGray,
-    AbstractRGB,
-    adjust_histogram!,
-    TransparentRGB,
-    TransparentGray,
-    mreconstruct!,
-    mreconstruct,
-    feature_transform,
-    distance_transform,
-    hmin_transform,
-    label_components,
-    watershed,
-    labels_map,
-    isboundary,
-    SegmentedImage,
-    segment_mean,
-    float64,
-    n0f8,
-    channelview,
-    build_histogram,
-    adjust_histogram,
-    imfill,
-    opening,
-    closing,
-    feature_transform,
-    distance_transform,
-    hmin_transform,
-    clamp01nan,
-    area_opening,
-    area_opening!,
-    dilate,
-    strel_diamond,
-    complement,
-    bothat,
-    AdaptiveEqualization,
-    colorview,
-    Gray,
-    AbstractRGB,
-    RGB,
-    GammaCorrection,
-    centered,
-    red,
-    green,
-    blue
+using Images
 
 import Peaks: findmaxima
 import StatsBase: kurtosis, skewness, mean, std
 
 import ..Filtering:
-    nonlinear_diffusion, PeronaMalikDiffusion, unsharp_mask, channelwise_adapthisteq
-import ..Morphology: hbreak, hbreak!, branch, bridge, fill_holes, strel_octagon
+    nonlinear_diffusion,
+    PeronaMalikDiffusion,
+    unsharp_mask,
+    ContrastLimitedAdaptiveHistogramEqualization
+
+import ..Morphology:
+    hbreak,
+    hbreak!,
+    branch,
+    bridge,
+    fill_holes,
+    strel_octagon
+
 import ..Preprocessing:
     make_landmask_se,
     create_landmask,
@@ -71,14 +37,15 @@ import ..Segmentation:
     IceDetectionFirstNonZeroAlgorithm,
     IceDetectionBrightnessPeaksMODIS721,
     IceDetectionThresholdMODIS721,
-    segment_mean_map
+    segment_mean_map,
+    view_seg
 
 import ..Pipeline:
     IceFloeSegmentationAlgorithm
 
 import ..Tracking: FloeTracker, FilterFunction, MinimumWeightMatchingFunction
 import Dates: Day
-import ..ImageUtils: imbrighten
+import ..ImageUtils: imbrighten, apply_to_channels
 import ..Pipeline: IceFloeSegmentationAlgorithm
 
 """ 
@@ -139,19 +106,19 @@ Note: This algorithm is under active development and the API will change in a fu
     coastal_buffer_structuring_element::AbstractMatrix{Bool} = make_landmask_se()
     cloud_mask_algorithm = LopezAcostaCloudMask()
     diffusion_algorithm = PeronaMalikDiffusion(0.1, 0.1, 5, "exponential")
-    adapthisteq_params = (
+    adapthisteq_algorithm = ContrastLimitedAdaptiveHistogramEqualization(;
         nbins=256,
         rblocks=8, # matlab default is 8 CP
         cblocks=8, # matlab default is 8 CP
-        clip=0.95,  # matlab default is 0.01 CP, which should be the same as clip=0.99
+        clip=3.2, # calibrated against matlab adjusthisteq
     )
-    unsharp_mask_params = (smoothing_param=10, intensity=0.5)
+    unsharp_mask_params = (smoothing_param=10, intensity=2) # calibrated against matlab imsharpen 
     kmeans_params = (k=4, maxiter=50, random_seed=45)
     cluster_selection_algorithm = IceDetectionLopezAcosta2019()
     segB_params = (
         isolation_threshold=0.4,
         brightening_factor=0.3,
-        gamma_factor=2.5,
+        gamma_factor=10,
         adjusted_ice_threshold=0.05,
         fill_range_max=1,
         alpha_level=0.5,
@@ -160,7 +127,7 @@ Note: This algorithm is under active development and the API will change in a fu
     floe_splitting_settings = (
         max_fill_area=1, min_area_opening=20, opening_strel=strel_octagon(3)
     )
-    expand_labels_by=5
+    expand_labels_by=0 # Expanding labels can help improve the results but isn't in the original
 end
 
 function (p::Segment)(
@@ -178,31 +145,31 @@ function (p::Segment)(
     coastal_buffer_mask = reinterpret(Bool, coastal_buffer_mask)
     landmask = reinterpret(Bool, landmask)
 
-    # Move these conversions down through the function as each step gets support for 
-    # the full range of image formats
+    # Convert to float so that we don't get overflow errors
     truecolor_image = float64.(truecolor)
     falsecolor_image = float64.(falsecolor)
 
     @info "Building cloudmask"
     # TODO: Make sure tests aren't over-sensitive to roundoff errors for Float32 vs Float64
-    cloudmask = create_cloudmask(falsecolor_image)
+    cloudmask = create_cloudmask(falsecolor_image, p.cloud_mask_algorithm)
 
     # 2. Intermediate images
     fc_masked = apply_landmask(falsecolor_image, coastal_buffer_mask)
 
     @info "Preprocessing truecolor image"
     # nonlinear diffusion
+    # TODO: Test whether the results are meaningfully different if the image is cast to 
+    # grayscale prior to sharpening.
+
     apply_landmask!(truecolor_image, landmask)
     sharpened_truecolor_image = nonlinear_diffusion(truecolor_image, p.diffusion_algorithm)
 
-    sharpened_truecolor_image .= channelwise_adapthisteq(
-        sharpened_truecolor_image;
-        nbins=p.adapthisteq_params.nbins,
-        rblocks=p.adapthisteq_params.rblocks,
-        cblocks=p.adapthisteq_params.cblocks,
-        clip=p.adapthisteq_params.clip,
+    sharpened_truecolor_image .= apply_to_channels(
+        sharpened_truecolor_image,
+        r -> adjust_histogram(r, p.adapthisteq_algorithm)
     )
 
+    # TODO: keyword arguments for unsharp mask so we can splat the inputs
     sharpened_grayscale_image = unsharp_mask(
         Gray.(sharpened_truecolor_image),
         p.unsharp_mask_params.smoothing_param,
@@ -291,13 +258,12 @@ function (p::Segment)(
     (p.expand_labels_by > 0) && (labels .= expand_labels(labels, p.expand_labels_by))
 
     # Return the original truecolor image, segmented
-    segments = SegmentedImage(truecolor, labels)
+    segmented_truecolor = SegmentedImage(truecolor, labels)
 
     if !isnothing(intermediate_results_callback)
-        segmented_truecolor = SegmentedImage(truecolor, labels)
         segmented_falsecolor = SegmentedImage(falsecolor, labels)
-        segment_mean_truecolor=n0f8.(segment_mean_map(segmented_truecolor))
-        segment_mean_falsecolor=n0f8.(segment_mean_map(segmented_falsecolor))
+        segment_mean_truecolor=n0f8.(view_seg(segmented_truecolor))
+        segment_mean_falsecolor=n0f8.(view_seg(segmented_falsecolor))
         ice_mask=p.cluster_selection_algorithm(fc_masked) .> 0
         intermediate_results_callback(;
             truecolor,
@@ -315,18 +281,18 @@ function (p::Segment)(
             final_floes=segF,
             labels=labels,
             labels_map=labels,
-            segments,
             segmented_truecolor,
             segmented_falsecolor,
             segment_mean_truecolor,
             segment_mean_falsecolor,
-            # TODO Add figure that overlays the segments
-            # TODO Add "view_seg" code snippet
         )
     end
-    return segments
+    return segmented_truecolor
 end
 
+
+# TODO: Check MATLAB code. Should this be a tiled function? The original paper described a similar
+# brightening function which was applied to image thirds.
 """
     discriminate_ice_water(
         sharpened_grayscale_image,
@@ -345,8 +311,9 @@ end
         differ_threshold::Float64=0.6
     )
 
-Generates an image with ice floes apparent after filtering and combining previously processed versions of falsecolor and truecolor images from the same region of interest. Returns an image ready for segmentation to isolate floes.
-
+Generates an image with ice floes apparent after filtering and combining previously processed 
+versions of falsecolor and truecolor images from the same region of interest. Returns an image 
+ready for segmentation to isolate floes.
 
 # Arguments
 - `sharpened_grayscale_image`: Grayscale image after preprocessing
@@ -466,7 +433,7 @@ function discriminate_ice_water(
 
     _cloud_threshold = (
         b7_landmasked_cloudmasked .< mask_clouds_lower .||
-        b7_landmasked_cloudmasked .> mask_clouds_upper
+            b7_landmasked_cloudmasked .> mask_clouds_upper
     )
 
     # reusing image_cloudless - used to be band7_masked
@@ -491,15 +458,15 @@ function _check_threshold_50(
 )
     return ( # intensity value of 50
         (
-            (kurt_band_2 > kurt_thresh_upper) ||
-            (kurt_band_2 < kurt_thresh_lower) && (kurt_band_1 > kurt_thresh_upper)
-        ) ||
-        (
-            (kurt_band_2 < kurt_thresh_lower) &&
-            (skew_band_2 < skew_thresh) &&
-            proportional_intensity < 0.1
-        ) ||
-        proportional_intensity < 0.01
+                (kurt_band_2 > kurt_thresh_upper) ||
+                    (kurt_band_2 < kurt_thresh_lower) && (kurt_band_1 > kurt_thresh_upper)
+            ) ||
+            (
+                (kurt_band_2 < kurt_thresh_lower) &&
+                    (skew_band_2 < skew_thresh) &&
+                    proportional_intensity < 0.1
+            ) ||
+            proportional_intensity < 0.01
     )
 end
 
@@ -511,7 +478,7 @@ function _check_threshold_130(
     st_dev_thresh_upper,
 )
     return (clouds_ratio .< clouds_ratio_threshold && standard_dev > st_dev_thresh_lower) ||
-           (standard_dev > st_dev_thresh_upper)
+        (standard_dev > st_dev_thresh_upper)
 end
 
 """_reconstruct(sharpened_grayscale_image, dilated_mask; strel)
@@ -574,6 +541,7 @@ function segB_binarize(
     return segb_filled
 end
 
+# TODO: This function is not called in the pipeline, just in a test. Fix that so we don't have redundant functions.
 """
     segmented_ice_cloudmasking(gray_image, cloudmask, ice_labels;)
 
@@ -598,6 +566,7 @@ function segmented_ice_cloudmasking(
     segmented_ice_cloudmasked[cloudmask] .= 0
     return segmented_ice_cloudmasked
 end
+
 """
     watershed_ice_floes(intermediate_segmentation_image;)
 Performs image processing and watershed segmentation with intermediate files from segmentation_b.jl to further isolate ice floes, returning a binary segmentation mask indicating potential sparse boundaries of ice floes.
@@ -616,6 +585,7 @@ function watershed_ice_floes(intermediate_segmentation_image::BitMatrix)::BitMat
     return borders
 end
 
+# TODO: Remove this, it's just componentwise matrix multiplication
 """
     watershed_product(watershed_B_ice_intersect, watershed_B_not_ice;)
 Intersects the outputs of watershed segmentation on intermediate files from segmentation B, indicating potential sparse boundaries of ice floes.
@@ -632,33 +602,12 @@ function watershed_product(
     return watershed_intersect
 end
 
-"""
-    _adjust_histogram(masked_view, nbins, rblocks, cblocks, clip)
-
-Perform adaptive histogram equalization to a masked image. Wrapper for the
-JuliaImages `adjust_histogram` function with `AdaptiveEqualization`, setting the minval
-and maxval to the image maximum and minimum.
-
-"""
-function _adjust_histogram(masked_view, nbins, rblocks, cblocks, clip)
-    return adjust_histogram(
-        masked_view,
-        AdaptiveEqualization(;
-            nbins=nbins,
-            rblocks=rblocks,
-            cblocks=cblocks,
-            minval=minimum(masked_view), # Could this be causing the unnatural coloration in dark image regions?
-            maxval=maximum(masked_view),
-            clip=clip,
-        ),
-    )
-end
 
 """IceDetectionLopezAcosta2019
 
 Application of the IceDetectionFirstNonZeroAlgorithm using two passes of 
 the IceDetectionThresholdMODIS721 and one application of the IceDetectionBrightnessPeaksMODIS721.
-""" # TODO: This works in the kmeans binarization but not by itself in the example notebook.
+"""
 function IceDetectionLopezAcosta2019(;
     band_7_max::Float64=Float64(5 / 255),
     band_2_min::Float64=Float64(230 / 255),

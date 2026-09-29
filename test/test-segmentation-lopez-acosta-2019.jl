@@ -44,7 +44,7 @@ end
     @test mean_F_score ≥ 0.8 broken = true
 
     # Current performance should look at least as good as this:
-    @test mean_recall ≥ 0.6
+    @test mean_recall ≥ 0.28
     @test mean_precision ≥ 0.3
     @test round(mean_F_score; digits=1) ≥ 0.38
 
@@ -61,42 +61,44 @@ end
         LopezAcosta2019.Segment();
         output_directory="./test_outputs/",
     )
-    @test 0.36 ≈ labeled_fraction atol = 0.1
-    @test 0.27 ≤ round(recall; digits=2)
-    @test 0.57 ≤ round(precision; digits=2)
-    @test 0.40 ≤ round(F_score; digits=2)
+
+    @test 0.10 ≈ labeled_fraction atol = 0.1
+    @test 0.32 ≤ round(recall; digits=2)
+    @test 0.92 ≤ round(precision; digits=2)
+    @test 0.48 ≤ round(F_score; digits=2)
 
     (; labeled_fraction, recall, precision, F_score) = run_and_validate_segmentation(
         first(filter(c -> (c.case_number == 14 && c.satellite == "aqua"), dataset)),
         LopezAcosta2019.Segment();
         output_directory="./test_outputs/",
     )
-    @test 0.42 ≈ labeled_fraction atol = 0.1
-    @test 0.40 ≤ round(recall; digits=2)
-    @test 0.21 ≤ round(precision; digits=2) # Note: Decreased precision, I suspect an issue with Seg. A.
-    @test 0.3 ≤ round(F_score; digits=2)
+
+    @test 0.05 ≈ labeled_fraction atol = 0.1 # lowered to 0.115
+    @test 0.34 ≤ round(recall; digits=2)
+    @test 0.85 ≤ round(precision; digits=2) # Note: Decreased precision, I suspect an issue with Seg. A.
+    @test 0.49 ≤ round(F_score; digits=2)
 
     (; labeled_fraction, recall, precision, F_score) = run_and_validate_segmentation(
         first(filter(c -> (c.case_number == 61 && c.satellite == "aqua"), dataset)),
         LopezAcosta2019.Segment();
         output_directory="./test_outputs/",
     )
-    @test 0.36 ≈ labeled_fraction atol = 0.1
-    @test 0.66 ≤ round(recall; digits=2)
-    @test 0.52 ≤ round(precision; digits=2)
-    @test 0.55 ≤ round(F_score; digits=2)
+    
+    @test 0.11 ≈ labeled_fraction atol = 0.1 # lowered to 0.21
+    @test 0.30 ≤ round(recall; digits=2) # lowered to 0.54
+    @test 0.96 ≤ round(precision; digits=2)
+    @test 0.46 ≤ round(F_score; digits=2)
 
     (; labeled_fraction, recall, precision, F_score) = run_and_validate_segmentation(
         first(filter(c -> (c.case_number == 63 && c.satellite == "aqua"), dataset)),
         LopezAcosta2019.Segment();
         output_directory="./test_outputs/",
     )
-    # Note: Validation dataset currently doesn't include the floes intersecting the edge.
-    # Improving the segmentation lowered the scores here due to these floes.
-    @test labeled_fraction ≈ 0.61 rtol = 0.1
-    @test 0.5 ≤ round(recall; digits=2)
-    @test 0.48 ≤ round(precision; digits=2)
-    @test 0.55 ≤ round(F_score; digits=2)
+    
+    @test labeled_fraction ≈ 0.38 rtol = 0.1
+    @test 0.60 ≤ round(recall; digits=2)
+    @test 0.99 ≤ round(precision; digits=2)
+    @test 0.75 ≤ round(F_score; digits=2)
 end
 
 @testitem "LopezAcosta2019.Segment – image types" setup = [Segmentation] tags = [:e2e] begin
@@ -112,14 +114,14 @@ end
     @test results_invariant_for(RGBA; baseline, algorithm, case)
     @test results_invariant_for(n0f8; baseline, algorithm, case)
     @test results_invariant_for(n6f10; baseline, algorithm, case) broken = true
-    @test results_invariant_for(n4f12; baseline, algorithm, case) broken = true
+    @test results_invariant_for(n4f12; baseline, algorithm, case)
     @test results_invariant_for(n2f14; baseline, algorithm, case)
     @test results_invariant_for(n0f16; baseline, algorithm, case)
     @test results_invariant_for(float32; baseline, algorithm, case)
     @test results_invariant_for(float64; baseline, algorithm, case)
     @test results_invariant_for(RGB, n0f8; baseline, algorithm, case)
     @test results_invariant_for(RGB, n6f10; baseline, algorithm, case) broken = true
-    @test results_invariant_for(RGB, n4f12; baseline, algorithm, case) broken = true
+    @test results_invariant_for(RGB, n4f12; baseline, algorithm, case)
     @test results_invariant_for(RGB, n2f14; baseline, algorithm, case)
     @test results_invariant_for(RGB, n0f16; baseline, algorithm, case)
     @test results_invariant_for(RGB, float32; baseline, algorithm, case)
