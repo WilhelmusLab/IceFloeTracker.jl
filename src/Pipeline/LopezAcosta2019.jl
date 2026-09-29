@@ -13,7 +13,14 @@ import ..Filtering:
     unsharp_mask,
     ContrastLimitedAdaptiveHistogramEqualization
 
-import ..Morphology: hbreak, hbreak!, branch, bridge, fill_holes, strel_octagon
+import ..Morphology:
+    hbreak,
+    hbreak!,
+    branch,
+    bridge,
+    fill_holes,
+    strel_octagon
+
 import ..Preprocessing:
     make_landmask_se,
     create_landmask,
@@ -161,7 +168,7 @@ function (p::Segment)(
         sharpened_truecolor_image,
         r -> adjust_histogram(r, p.adapthisteq_algorithm)
     )
-    
+
     # TODO: keyword arguments for unsharp mask so we can splat the inputs
     sharpened_grayscale_image = unsharp_mask(
         Gray.(sharpened_truecolor_image),
@@ -426,7 +433,7 @@ function discriminate_ice_water(
 
     _cloud_threshold = (
         b7_landmasked_cloudmasked .< mask_clouds_lower .||
-        b7_landmasked_cloudmasked .> mask_clouds_upper
+            b7_landmasked_cloudmasked .> mask_clouds_upper
     )
 
     # reusing image_cloudless - used to be band7_masked
@@ -451,15 +458,15 @@ function _check_threshold_50(
 )
     return ( # intensity value of 50
         (
-            (kurt_band_2 > kurt_thresh_upper) ||
-            (kurt_band_2 < kurt_thresh_lower) && (kurt_band_1 > kurt_thresh_upper)
-        ) ||
-        (
-            (kurt_band_2 < kurt_thresh_lower) &&
-            (skew_band_2 < skew_thresh) &&
-            proportional_intensity < 0.1
-        ) ||
-        proportional_intensity < 0.01
+                (kurt_band_2 > kurt_thresh_upper) ||
+                    (kurt_band_2 < kurt_thresh_lower) && (kurt_band_1 > kurt_thresh_upper)
+            ) ||
+            (
+                (kurt_band_2 < kurt_thresh_lower) &&
+                    (skew_band_2 < skew_thresh) &&
+                    proportional_intensity < 0.1
+            ) ||
+            proportional_intensity < 0.01
     )
 end
 
@@ -471,7 +478,7 @@ function _check_threshold_130(
     st_dev_thresh_upper,
 )
     return (clouds_ratio .< clouds_ratio_threshold && standard_dev > st_dev_thresh_lower) ||
-           (standard_dev > st_dev_thresh_upper)
+        (standard_dev > st_dev_thresh_upper)
 end
 
 """_reconstruct(sharpened_grayscale_image, dilated_mask; strel)
@@ -600,7 +607,7 @@ end
 
 Application of the IceDetectionFirstNonZeroAlgorithm using two passes of 
 the IceDetectionThresholdMODIS721 and one application of the IceDetectionBrightnessPeaksMODIS721.
-""" # TODO: This works in the kmeans binarization but not by itself in the example notebook.
+"""
 function IceDetectionLopezAcosta2019(;
     band_7_max::Float64=Float64(5 / 255),
     band_2_min::Float64=Float64(230 / 255),
