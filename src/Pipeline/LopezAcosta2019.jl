@@ -605,13 +605,13 @@ end
 function watershed_ice_floes(
         binary_floe_mask::BitMatrix;
         hmin_depth=2,
-    ) # ::BitMatrix
+    )::BitMatrix
     features = feature_transform(.!binary_floe_mask)
     distances = 1 .- distance_transform(features)
     markers = distances .> 0
     markers = (hmin_transform(distances, hmin_depth) .> 0) |> label_components
     segment = watershed(distances, markers)
-    boundaries = isboundary(labels_map(segment))
+    boundaries = isboundary(labels_map(segment)) .> 0
     return boundaries
 end
 
