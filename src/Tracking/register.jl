@@ -84,9 +84,6 @@ function align_centroids(
     im1_padded = collect(padarray(im1, Fill(0, (rn - r1, cn - c1), (sn - s1, dn - d1))))
     im2_padded = collect(padarray(im2, Fill(0, (rn - r2, cn - c2), (sn - s2, dn - d2))))
 
-    # Integer padding shifts both floor-centroids exactly to (rn, cn), so they stay aligned
-    @assert size(im1_padded) == size(im2_padded)
-
     return im1_padded, im2_padded
 end
 
@@ -148,10 +145,6 @@ function shape_difference_rotation(
             im_target_rotated,
             floor_centroid(im_target_rotated),
         )
-
-        # Check here that im1 and im2 sizes are the same
-        # This should be guaranteed by "align_centroids"
-        @assert size(im1) == size(im2)
 
         shape_difference = count_symdiff(im1, im2)
         shape_differences[idx] = (; angle, shape_difference)
