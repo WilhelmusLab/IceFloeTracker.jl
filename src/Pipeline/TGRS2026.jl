@@ -78,7 +78,7 @@ abstract type IceFloeClassificationAlgorithm end
 """
 @kwdef struct Preprocess <: IceFloePreprocessingAlgorithm
     histogram_algorithm = ContrastLimitedAdaptiveHistogramEqualization
-    histogram_params = (nbins=256, rblocks=4, cblocks=4, clip=3.2)
+    histogram_params = (nbins=256, rblocks=4, cblocks=4, clip=1)
 end
 
 # Q: does image sharpening, nonlinear filtering change the quality of the result? nonlinear filtering 
@@ -149,9 +149,9 @@ preprocessing_algorithm = Preprocess()
 classification_algorithm = Classify()
 # Only varying the structuring element, for testing. Each item in the list is sent to dist-morph-split and the results are compared.
 floe_splitting_params = [
-    (max_hole_fill=500, max_depth=15, max_depth_ratio=0.5, max_expand=3, opening_strel=strel_diamond((3, 3))),
+    (max_hole_fill=1500, max_depth=15, max_depth_ratio=0.5, max_expand=3, opening_strel=strel_diamond((3, 3))),
     (max_hole_fill=1500, max_depth=15, max_depth_ratio=0.5, max_expand=3, opening_strel=strel_box((3, 3))),
-    (max_hole_fill=2500, max_depth=15, max_depth_ratio=0.5, max_expand=3, opening_strel=strel_disk(4))
+    # (max_hole_fill=2500, max_depth=15, max_depth_ratio=0.5, max_expand=3, opening_strel=strel_disk(4))
 ]
 
 floe_merging_params = (
