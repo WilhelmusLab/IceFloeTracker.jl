@@ -319,7 +319,7 @@ Calls @ref[`regionprops_table`] with the provided `properties` list. Then, adds 
 floe-average overlap with the provided `masks` (expects Dict with mask name => binary mask), 
 band-average reflectance from the falsecolor image, and band 1 boundary contrast. Finally, uses
 a provided probability function to add a `probability` column indicating the likelihood the object
-is an ice floe.
+is an ice floe. Pixel scale should be in kilometers.
 
 """
 function extended_regionprops_table(
@@ -396,7 +396,7 @@ end
 
 Apply the logistic regression function with the provided set of coefficients. The in-place version
 adds a column "probability" to the dataframe, while the non-in-place version returns a vector
-with probabilities.
+with probabilities. Currently, length scale is defined as the square of the area *in pixels*.
 
 """
 function LogisticRegressionFilter(df;
