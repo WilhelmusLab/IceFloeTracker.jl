@@ -615,24 +615,6 @@ function watershed_ice_floes(
     return boundaries
 end
 
-# TODO: Remove this, it's just componentwise matrix multiplication (shows up in notebooks, tests)
-"""
-    watershed_product(watershed_B_ice_intersect, watershed_B_not_ice;)
-Intersects the outputs of watershed segmentation on intermediate files from segmentation B, indicating potential sparse boundaries of ice floes.
-# Arguments
-- `watershed_B_ice_intersect`: binary segmentation mask from `watershed_ice_floes`
-- `watershed_B_not_ice`: binary segmentation mask from `watershed_ice_floes`
-"""
-function watershed_product(
-    watershed_B_ice_intersect::BitMatrix, watershed_B_not_ice::BitMatrix;
-)::BitMatrix
-
-    ## Intersect the two watershed files
-    watershed_intersect = watershed_B_ice_intersect .* watershed_B_not_ice
-    return watershed_intersect
-end
-
-
 """IceDetectionLopezAcosta2019
 
 Application of the IceDetectionFirstNonZeroAlgorithm using two passes of 
