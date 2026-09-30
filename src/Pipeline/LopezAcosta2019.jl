@@ -233,8 +233,8 @@ function (p::Segment)(
 
     # Process watershed in parallel using Folds
     @info "Building watersheds"
-    wshed_prelim_boundaries = watershed_ice_floes(prelim_binarized, tiles) .> 0
-    wshed_intersect_boundaries = watershed_ice_floes(ice_intersect, tiles) .> 0
+    wshed_prelim_boundaries = watershed_ice_floes(prelim_binarized, tiles)
+    wshed_intersect_boundaries = watershed_ice_floes(ice_intersect, tiles)
     watersheds_product = wshed_prelim_boundaries .&& wshed_intersect_boundaries
 
     # segmentation_F
@@ -589,7 +589,7 @@ hmin transform on the inverse distance transform for marker selection.
 function watershed_ice_floes(
         binary_floe_mask::BitMatrix, tiles;
         hmin_depth=2,
-    ) # ::BitMatrix
+    )::BitMatrix
     features = feature_transform(.!binary_floe_mask)
     distances = 1 .- distance_transform(features)
     markers = distances .> 0
@@ -599,7 +599,7 @@ function watershed_ice_floes(
         segment = watershed(distances[t...], markers[t...])
         boundaries[t...] .= isboundary(labels_map(segment))
     end
-    return boundaries
+    return boundaries .> 0
 end
 
 function watershed_ice_floes(
