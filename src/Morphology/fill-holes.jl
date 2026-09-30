@@ -12,7 +12,6 @@ structuring element [`strel_box(img; dims)`](@ref strel_box). For generic struct
 element, the half-size is expected to be either `0` or `1` along each dimension.
 The output has the same type as input image
 """
-
 function fill_holes(img; dims=coords_spatial(img))
     return fill_holes(img, strel_box(img, dims))
 end
