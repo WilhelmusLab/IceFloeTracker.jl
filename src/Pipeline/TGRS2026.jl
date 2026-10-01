@@ -396,7 +396,7 @@ end
 
 Apply the logistic regression function with the provided set of coefficients. The in-place version
 adds a column "probability" to the dataframe, while the non-in-place version returns a vector
-with probabilities. Currently, length scale is defined as the square of the area *in pixels*.
+with probabilities. Currently, length scale is defined as the square root of the area *in pixels*.
 
 """
 function LogisticRegressionFilter(df;
