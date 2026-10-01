@@ -551,7 +551,7 @@ function compare_objects(
 
     transform!(df_comp,
         [:s1_label, :s2_label,
-            :s1_min_row, :s1_max_row, :s1_min_col, :s2_max_col] =>
+            :s1_min_row, :s1_max_row, :s1_min_col, :s1_max_col] =>
             ByRow((l1, l2, rmin, rmax, cmin, cmax) ->
                 sum(
                     (labels1[rmin:rmax, cmin:cmax] .== l1) .&&
