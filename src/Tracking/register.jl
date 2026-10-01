@@ -532,7 +532,7 @@ end
 
 """
     boundary_shape_difference(boundary1, orientation1, boundary2, orientation2;
-                              metric=boundary_normalized_distance)
+                              metric=boundary_modified_hausdorff)
     boundary_shape_difference(floe1::DataFrameRow, floe2::DataFrameRow; kwargs...)
 
 Boundary-curve analogue of [`shape_difference`](@ref): aligns both curves on the same axis
@@ -552,7 +552,7 @@ function boundary_shape_difference(
     orientation1::Real,
     boundary2::Matrix{Float64},
     orientation2::Real;
-    metric=boundary_normalized_distance,
+    metric=boundary_modified_hausdorff,
 )
     # shape_difference applies imrotate(mask, orientation); in image coordinates that is
     # rotate_boundary(-orientation), see shape_difference_rotation_boundary.
@@ -584,7 +584,7 @@ function boundary_shape_difference(floe1::DataFrameRow, floe2::DataFrameRow; kwa
 end
 
 """
-    BoundaryRegistration(; metric=boundary_normalized_distance, boundary_column=:boundary)
+    BoundaryRegistration(; metric=boundary_modified_hausdorff, boundary_column=:boundary)
 
 A configured, callable wrapper around [`register_boundary`](@ref) that fixes the shape
 metric up front.
@@ -596,7 +596,7 @@ subtypes `Function` and its matrix method takes a `test_angles` keyword, an inst
 drop-in `registration_function` whenever the image column holds boundary curves:
 
 ```julia
-reg = BoundaryRegistration(; metric=boundary_mse_aligned)
+reg = BoundaryRegistration(; metric=boundary_hausdorff)
 get_rotation_measurements(df; id_column=:id, image_column=:boundary,
                           time_column=:time, registration_function=reg)
 ```
@@ -607,12 +607,11 @@ struct would be rejected at the call site.
 
 ## Arguments
 - `metric`: `metric(reference, rotated_target) -> Real`. See
-  [`boundary_normalized_distance`](@ref) (default), [`boundary_mse_aligned`](@ref) and
-  [`boundary_euclidean_distance`](@ref).
+  [`boundary_modified_hausdorff`](@ref) (default) and [`boundary_hausdorff`](@ref).
 - `boundary_column`: column the `DataFrameRow` method reads.
 """
 @kwdef struct BoundaryRegistration <: Function
-    metric = boundary_normalized_distance
+    metric = boundary_modified_hausdorff
     boundary_column = :boundary
 end
 
