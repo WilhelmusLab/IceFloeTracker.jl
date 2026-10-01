@@ -46,4 +46,6 @@ export LopezAcosta2019Tiling
 include("Pipeline/FSPipeline.jl")
 export FSPipeline
 
+include("Pipeline/TGRS2026.jl")
+export TGRS2026
 end

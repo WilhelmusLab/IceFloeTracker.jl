@@ -53,9 +53,7 @@ end
     resampled_boundary = resample_boundary(boundary)
     @test typeof(resampled_boundary) <: Matrix{Float64}
     @test size(resampled_boundary)[1] == 2
-end
 
-@testitem "resample_boundary: minimum boundary" begin
     A = [
         0 0 0
         0 1 0
