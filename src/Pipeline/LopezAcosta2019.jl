@@ -40,26 +40,107 @@ import ..Segmentation:
     segment_mean_map,
     view_seg
 
-import ..Pipeline:
-    IceFloeSegmentationAlgorithm
+import ..Pipeline: 
+    IceFloeSegmentationAlgorithm,
+    IceFloePreprocessingAlgorithm
 
 import ..Tracking: FloeTracker, FilterFunction, MinimumWeightMatchingFunction
 import Dates: Day
 import ..ImageUtils: imbrighten, apply_to_channels
 import ..Pipeline: IceFloeSegmentationAlgorithm
 
+
+
+# Preprocess Params
+diffusion_algorithm = PeronaMalikDiffusion(; λ=0.1, K=0.1, niters=7, g="exponential")
+adapthisteq_algorithm = ContrastLimitedAdaptiveHistogramEqualization(;
+            nbins=256,
+            rblocks=4,
+            cblocks=4,
+            clip=3.2,
+        )
+unsharp_mask_params = (radius=10, amount=2, threshold=0.01)
+
+"""
+   Preprocess(
+        diffusion_algorithm = PeronaMalikDiffusion(λ=0.1, K=0.1, niters=5, g="exponential")
+        adapthisteq_params = (nbins=256, rblocks=8, cblocks=8, clip=0.99) # rblocks/cblocks not used yet -- add with CLAHE.jl
+        unsharp_mask_params = (radius=50, amount=0.2, threshold=0.01)
+        process_color = :rgb
+    )
+    Preprocess()(tc_img, landmask)
+
+Converts input image to grayscale, then preprocesses by appling nonlinear diffusion,
+adaptive histogram equalization, and unsharp masking. Diffusion and unsharp masking are applied
+to each tile, while the adaptive histogram equalization is divided according to the parameter
+specifications.
+
+Note: results are strongly sensitive to the choice of rblocks, cblocks, and clipping. Large clipping parameters with
+small blocks results in noisy images and poor performance. With larger blocks, a higher clipping parameter can help.
+
+- `diffusion_algorithm`: An `AbstractDiffusionAlgorithm`. Defaults to [`PeronaMalikDiffusion`](@ref)
+- `adapthisteq_params`: Parameters for the adaptive histogram AdaptiveEqualization. 
+- `unsharp_mask_params`: Parameters for [`unsharp_mask`](@ref)
+- `process_color`: Either `:rgb` or `:gray`. If gray, then convert to grayscale prior to running the other algorithms.
+
+"""
+@kwdef struct Preprocess <: IceFloePreprocessingAlgorithm
+    diffusion_algorithm = diffusion_algorithm
+    adapthisteq_algorithm = adapthisteq_algorithm
+    unsharp_mask_params = unsharp_mask_params
+    process_color = :color # Choose either :grayscale or :color
+end
+
+function (p::Preprocess)(
+    truecolor_image::AbstractArray{<:Union{AbstractRGB,TransparentRGB}},
+    landmask
+)
+    if p.process_color ∉ [:grayscale, :color]
+        @warn "Invalid process_color choice. Setting to :color"
+        p.process_color = :color
+    end
+
+    p.process_color == :grayscale ? img = Gray.(truecolor_image) : img = copy(truecolor_image)
+    
+    apply_landmask!(img, landmask)
+    img .= nonlinear_diffusion(
+        img,
+        p.diffusion_algorithm
+    ) # TODO: in-place nonlinear_diffusion
+
+    if p.process_color == :color
+        img .= apply_to_channels(
+            img,
+            r -> adjust_histogram(r, p.adapthisteq_algorithm)
+        ) # TODO: in-place apply_to_channels
+    else
+        adjust_histogram!(
+            img,
+            p.adapthisteq_algorithm
+        )
+    end
+
+    if p.process_color == :color 
+        img = Gray.(img)
+    end
+
+    img .= unsharp_mask(
+        img,
+        p.unsharp_mask_params.radius,
+        p.unsharp_mask_params.amount,
+        p.unsharp_mask_params.threshold,
+    ) # TODO: in-place unsharp mask; keyword arguments
+
+    apply_landmask!(img, landmask)
+
+    return img
+end
+
 """ 
     LopezAcosta2019.Segment(
         coastal_buffer_structuring_element::AbstractMatrix{Bool} = make_landmask_se()
         cloud_mask_algorithm = LopezAcostaCloudMask()
-        diffusion_algorithm = PeronaMalikDiffusion(0.1, 0.1, 5, "exponential")
-        adapthisteq_params = (
-            nbins=256,
-            rblocks=8, # matlab default is 8 CP
-            cblocks=8, # matlab default is 8 CP
-            clip=0.95,  # matlab default is 0.01 CP, which should be the same as clip=0.99
-        )
-        unsharp_mask_params = (smoothing_param=10, intensity=0.5)
+        preprocessing_algorithm = LopezAcosta2019.Preprocess()
         kmeans_params = (k=4, maxiter=50, random_seed=45)
         cluster_selection_algorithm = IceDetectionLopezAcosta2019()
         segB_params = (
@@ -82,9 +163,6 @@ Segmentation algorithm for sea ice floe identification based on Lopez-Acosta 201
 
 ## Arguments
 - `cloud_mask_algorithm`: An `AbstractCloudMaskAlgorithm`. Defaults to [`LopezAcostaCloudMask`](@ref)
-- `diffusion_algorithm`: An `AbstractDiffusionAlgorithm`. Defaults to [`PeronaMalikDiffusion`](@ref)
-- `adapthisteq_params`: Parameters for the adaptive histogram AdaptiveEqualization. 
-- `unsharp_mask_params`: Parameters for [`unsharp_mask`](@ref)
 - `kmeans_params`: Parameters for [`kmeans_binarization`](@ref)
 - `cluster_selection_algorithm`: An [`IceDetectionAlgorithm`](@ref), which takes the falsecolor image as an input and produces 
    a binary image with likely ice floe pixels set to `true`.
@@ -105,14 +183,7 @@ Note: This algorithm is under active development and the API will change in a fu
 @kwdef struct Segment <: IceFloeSegmentationAlgorithm
     coastal_buffer_structuring_element::AbstractMatrix{Bool} = make_landmask_se()
     cloud_mask_algorithm = LopezAcostaCloudMask()
-    diffusion_algorithm = PeronaMalikDiffusion(0.1, 0.1, 5, "exponential")
-    adapthisteq_algorithm = ContrastLimitedAdaptiveHistogramEqualization(;
-        nbins=256,
-        rblocks=8, # matlab default is 8 CP
-        cblocks=8, # matlab default is 8 CP
-        clip=3.2, # calibrated against matlab adjusthisteq
-    )
-    unsharp_mask_params = (smoothing_param=10, intensity=2) # calibrated against matlab imsharpen 
+    preprocessing_algorithm = Preprocess()
     kmeans_params = (k=4, maxiter=50, random_seed=45)
     cluster_selection_algorithm = IceDetectionLopezAcosta2019()
     segB_params = (
@@ -157,28 +228,8 @@ function (p::Segment)(
     fc_masked = apply_landmask(falsecolor_image, coastal_buffer_mask)
 
     @info "Preprocessing truecolor image"
-    # nonlinear diffusion
-    # TODO: Test whether the results are meaningfully different if the image is cast to 
-    # grayscale prior to sharpening.
-
-    apply_landmask!(truecolor_image, landmask)
-
-    sharpened_grayscale_image = Gray.(truecolor_image)
-    # TODO: add in-place version of nonlinear_diffusion
-    sharpened_grayscale_image .= nonlinear_diffusion(sharpened_grayscale_image, p.diffusion_algorithm)
-    adjust_histogram!(sharpened_grayscale_image, 
-        ContrastLimitedAdaptiveHistogramEqualization(
-            ;p.adapthisteq_params...)
-    )
-
-    # TODO: keyword arguments for unsharp mask so we can splat the inputs
-    sharpened_grayscale_image .= unsharp_mask(
-        sharpened_grayscale_image,
-        p.unsharp_mask_params.smoothing_param,
-        p.unsharp_mask_params.intensity,
-    )
-    
-    apply_landmask!(sharpened_grayscale_image, coastal_buffer_mask)
+    sharpened_grayscale_image = p.preprocessing_algorithm(truecolor_image, landmask)
+    println(p.preprocessing_algorithm.process_color, " ", typeof(sharpened_grayscale_image))
 
     # 3. Segmentation
     @info "Segmenting floes part 1/3"
