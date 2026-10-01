@@ -9,8 +9,8 @@
         shape_difference_rotation_boundary,
         register_boundary,
         rotate_boundary,
-        boundary_normalized_distance,
-        boundary_mse_aligned,
+        boundary_hausdorff,
+        boundary_modified_hausdorff,
         register_default_angles_rad,
         prior_test_angles
 
@@ -58,7 +58,7 @@ end
     called = Ref(0)
     counting_metric = function (a, b)
         called[] += 1
-        return boundary_mse_aligned(a, b)
+        return boundary_hausdorff(a, b)
     end
 
     angles = [0.0, 0.1, 0.2]
@@ -67,7 +67,7 @@ end
     @test called[] == length(angles)          # metric actually used, once per angle
     # and it produced the injected metric's values, not the default's
     expected = [r.shape_difference for r in
-                shape_difference_rotation_boundary(L, L, angles; metric=boundary_mse_aligned)]
+                shape_difference_rotation_boundary(L, L, angles; metric=boundary_hausdorff)]
     @test [r.shape_difference for r in result] == expected
 end
 
@@ -106,6 +106,31 @@ end
     angles = prior_test_angles(θ; window=deg2rad(10.0))
     recovered = register_boundary(L, target; test_angles=angles)
     @test isapprox(recovered, θ; atol=1e-9)
+end
+
+@testitem "register_boundary recovers rotation from independently traced boundaries" setup = [BoundaryRegSetup] begin
+    # The production case. The two boundaries are traced from separately produced masks,
+    # so their point sequences start at unrelated places and carry pixel noise. Every
+    # other test here builds its target with rotate_boundary, which preserves point
+    # order and so cannot detect a metric that depends on it -- an index-wise metric
+    # passed all of those and recovered the angle on 2% of real floes.
+    using IceFloeTracker.Tracking: bwtraceboundary, resample_boundary, imrotate_bin
+    traced(m) = resample_boundary(first(bwtraceboundary(m)), 2)
+
+    # an L: no rotational symmetry, and large enough that a 30° rotation survives
+    # pixelisation without clipping inside the 60x60 frame
+    mask = falses(60, 60)
+    mask[15:45, 15:30] .= true
+    mask[15:25, 30:45] .= true
+
+    θ = deg2rad(30.0)                                    # on the default 5° grid
+    reference = traced(mask)
+    target = traced(imrotate_bin(mask, θ))    # traced anew, not rotated analytically
+
+    using IceFloeTracker.Tracking: register
+    recovered = register_boundary(reference, target)
+    @test isapprox(recovered, θ; atol=1e-9)
+    @test isapprox(recovered, register(mask, imrotate_bin(mask, θ)); atol=1e-9)
 end
 
 @testitem "register_boundary is callable as a registration_function" setup = [BoundaryRegSetup] begin
