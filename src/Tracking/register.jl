@@ -464,7 +464,7 @@ end
 
 """
     shape_difference_rotation_boundary(boundary_reference, boundary_target, test_angles;
-                                      metric=boundary_normalized_distance)
+                                      metric=boundary_modified_hausdorff)
 
 Boundary-curve analogue of [`shape_difference_rotation`](@ref). Computes the shape
 difference between `boundary_reference` and `boundary_target` for each angle in
@@ -476,14 +476,13 @@ so `register_boundary` on traced boundaries agrees in sign with `register` on th
 they were traced from.
 
 `metric(reference, rotated_target)` may be any function returning a real shape
-difference; see `boundary_normalized_distance`, `boundary_mse_aligned` and
-`boundary_euclidean_distance`.
+difference; see `boundary_modified_hausdorff` (default) and `boundary_hausdorff`.
 """
 function shape_difference_rotation_boundary(
     boundary_reference::Matrix{Float64},
     boundary_target::Matrix{Float64},
     test_angles;
-    metric=boundary_normalized_distance,
+    metric=boundary_modified_hausdorff,
 )
     return [
         (;
@@ -508,7 +507,7 @@ end
 """
     register_boundary(boundary_reference, boundary_target;
                       test_angles=register_default_angles_rad,
-                      metric=boundary_normalized_distance)
+                      metric=boundary_modified_hausdorff)
 
 Boundary-curve analogue of [`register`](@ref). Finds the angle in `test_angles` that
 minimizes the shape difference between `boundary_reference` and `boundary_target`.
@@ -522,7 +521,7 @@ function register_boundary(
     boundary_reference::Matrix{Float64},
     boundary_target::Matrix{Float64};
     test_angles=register_default_angles_rad,
-    metric=boundary_normalized_distance,
+    metric=boundary_modified_hausdorff,
 )
     shape_differences = shape_difference_rotation_boundary(
         boundary_reference, boundary_target, test_angles; metric
