@@ -85,7 +85,7 @@ end
     # A returned angle A means "target looks like reference rotated by A" in the sense
     # of imrotate_bin_clockwise_radians, the convention register uses. Pinning this is
     # what makes register_boundary a drop-in for register in get_rotation_measurements;
-    # test-boundary-symmetric-distance.jl checks it against register itself.
+    # the traced-boundary test below checks it against register itself.
     for deg in (10.0, 25.0, -15.0, -40.0)
         θ = deg2rad(deg)
         target = rotate_as_mask(L, θ)
@@ -150,7 +150,7 @@ end
 
 @testitem "BoundaryRegistration defaults" setup = [BoundaryRegSetup] begin
     reg = BoundaryRegistration()
-    @test reg.metric === boundary_normalized_distance
+    @test reg.metric === boundary_modified_hausdorff
     @test reg.boundary_column === :boundary
 
     # Must subtype Function or rotation.jl's `registration_function::Function`
@@ -180,7 +180,7 @@ end
     called = Ref(0)
     counting = function (a, b)
         called[] += 1
-        return boundary_mse_aligned(a, b)
+        return boundary_hausdorff(a, b)
     end
 
     θ = deg2rad(20.0)
@@ -190,13 +190,13 @@ end
     got = BoundaryRegistration(; metric=counting)(L, target; test_angles=angles)
 
     @test called[] == length(angles)   # metric invoked once per angle
-    @test got == register_boundary(L, target; test_angles=angles, metric=boundary_mse_aligned)
+    @test got == register_boundary(L, target; test_angles=angles, metric=boundary_hausdorff)
 end
 
 @testitem "BoundaryRegistration all metrics recover the angle" setup = [BoundaryRegSetup] begin
     θ = deg2rad(25.0)
     target = rotate_as_mask(L, θ)
-    for m in (boundary_normalized_distance, boundary_mse_aligned, boundary_euclidean_distance)
+    for m in (boundary_modified_hausdorff, boundary_hausdorff)
         @test isapprox(BoundaryRegistration(; metric=m)(L, target), θ; atol=1e-9)
     end
 end
@@ -267,9 +267,9 @@ end
 
 @testitem "boundary_shape_difference honours the metric kwarg" setup = [BoundaryRegSetup] begin
     other = rotate_as_mask(L, deg2rad(40.0))
-    a = boundary_shape_difference(L, 0.0, other, 0.0; metric=boundary_mse_aligned)
-    b = boundary_shape_difference(L, 0.0, other, 0.0; metric=boundary_normalized_distance)
-    @test a != b            # different metrics, different scales
+    a = boundary_shape_difference(L, 0.0, other, 0.0; metric=boundary_hausdorff)
+    b = boundary_shape_difference(L, 0.0, other, 0.0; metric=boundary_modified_hausdorff)
+    @test a != b            # max vs mean nearest-neighbour distance differ unless all are equal
     @test isfinite(a) && isfinite(b)
 end
 
