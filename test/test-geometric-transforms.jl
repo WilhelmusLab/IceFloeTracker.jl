@@ -142,3 +142,35 @@ end
         @test isapprox(full_rotation[i, 2], boundary[i, 2]; atol=1e-5)
     end
 end
+
+@testitem "center_boundary and rotate_boundary are invariant to trace start" begin
+    using IceFloeTracker.Tracking: center_boundary, rotate_boundary, bwtraceboundary, resample_boundary
+    using IceFloeTracker.Preprocessing: make_landmask_se
+
+    # Traced boundaries are closed: the first point is repeated as the last, and that
+    # depends only on where tracing started, so it must not change the default
+    # centre, and hence must not change the set of points center_boundary and
+    # rotate_boundary return. resample_boundary output is often only approximately
+    # closed (first and last rows differ by ~1e-13), which must be treated the same way.
+    #
+    # The landmask structuring element is a 99x99 octagon, symmetric under both flips and
+    # the transpose, so its boundary points average to the array centre (50, 50).
+    se = parent(make_landmask_se())
+    bd = resample_boundary(only(bwtraceboundary(se)), 1)   # full resolution
+    center = (size(se) ./ 2 .+ 0.5)
+
+    # The same closed curve as if tracing had started k points later: drop the closing
+    # row, rotate the remaining rows by k, and close the curve again with the new first row.
+    retrace(b, k) = (p=circshift(b[1:(end-1), :], (-k, 0)); vcat(p, p[1:1, :]))
+
+    # A copy whose closing row misses the first row by 1e-13, like resample_boundary output.
+    add_jitter_to_endpoint(b) = (c=copy(b); c[end, :] .+= 1e-13; c)
+
+    for k in (0, 1, 70, 140, 211), shape in (bd, add_jitter_to_endpoint(bd))
+        b = retrace(shape, k)
+        # centring must move the curve by exactly -(50, 50), whatever the start point
+        @test center_boundary(b) ≈ b .- [center...]'
+        # the default pivot must be (50, 50): same result as passing it explicitly
+        @test rotate_boundary(b, 0.7) ≈ rotate_boundary(b, 0.7; center=center)
+    end
+end
