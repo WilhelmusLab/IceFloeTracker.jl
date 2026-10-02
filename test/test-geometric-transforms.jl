@@ -166,8 +166,9 @@ end
     # A copy whose closing row misses the first row by 1e-13, like resample_boundary output.
     add_jitter_to_endpoint(b) = (c=copy(b); c[end, :] .+= 1e-13; c)
 
-    for k in (0, 1, 70, 140, 211), shape in (bd, add_jitter_to_endpoint(bd))
-        b = retrace(shape, k)
+    for k in (0, 1, 70, 140, 211), jitter in (false, true)
+        b = retrace(bd, k)
+        jitter && (b = add_jitter_to_endpoint(b))   # after retrace, which re-closes exactly
         # centring must move the curve by exactly -(50, 50), whatever the start point
         @test center_boundary(b) ≈ b .- [center...]'
         # the default pivot must be (50, 50): same result as passing it explicitly
