@@ -73,3 +73,28 @@ function add_floemasks!(
     add_floemasks!(props, labels_map(segmented_image); label_column=label_column)
     return nothing
 end
+
+"""
+    add_boundary!(props_df::DataFrame; reduc_factor::Int64=2)
+    add_boundary!.(props_dfs::Vector{DataFrame}; reduc_factor::Int64=2)
+
+Add resampled boundary curves as `:boundary` column to DataFrame.
+Each boundary is a Matrix{Float64}(n, 2) with [x y] coordinates.
+
+Note: each member of `props_df` must have a `:mask` column with a binary image representing the floe.
+To add floe masks see [`add_floemasks!`](@ref).
+
+# Arguments
+- `props_df`: DataFrame with `:mask` column
+- `reduc_factor`: Reduction factor for boundary resampling (default: 2 = 50% reduction)
+"""
+function add_boundary!(props_df::DataFrame; reduc_factor::Int64=2)
+    props_df.boundary = map(props_df.mask) do mask
+        bd_traced = bwtraceboundary(mask)
+        # Handle case of multiple boundaries (shouldn't happen for individual floes but be defensive)
+        bd_traced_single = isa(bd_traced, Vector{Vector{CartesianIndex}}) ?
+            bd_traced[1] : bd_traced
+        resample_boundary(bd_traced_single, reduc_factor)
+    end
+    return nothing
+end
