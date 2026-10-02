@@ -157,3 +157,79 @@ end
     # Plus the new boundary column
     @test "boundary" ∈ names(props)
 end
+
+@testitem "add_boundary! traces the outer contour, not the first scanned" begin
+    using IceFloeTracker.Tracking: add_boundary!, bwtraceboundary
+    using DataFrames: DataFrame
+
+    # a stray 2x2 fragment that row-major scanning meets BEFORE the floe;
+    # bwtraceboundary returns the fragment's contour first
+    fragment_first = falses(20, 20)
+    fragment_first[2:3, 2:3] .= true
+    fragment_first[8:18, 6:18] .= true
+    # Note the prominent object is past the fifth column and below the
+    # seventh row, which is tested below.
+    # 20×20 BitMatrix:
+    #  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0
+    #  0  1  1  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0
+    #  0  1  1  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0
+    #  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0
+    #  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0
+    #  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0
+    #  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0
+    #  0  0  0  0  0  1  1  1  1  1  1  1  1  1  1  1  1  1  0  0
+    #  0  0  0  0  0  1  1  1  1  1  1  1  1  1  1  1  1  1  0  0
+    #  0  0  0  0  0  1  1  1  1  1  1  1  1  1  1  1  1  1  0  0
+    #  0  0  0  0  0  1  1  1  1  1  1  1  1  1  1  1  1  1  0  0
+    #  0  0  0  0  0  1  1  1  1  1  1  1  1  1  1  1  1  1  0  0
+    #  0  0  0  0  0  1  1  1  1  1  1  1  1  1  1  1  1  1  0  0
+    #  0  0  0  0  0  1  1  1  1  1  1  1  1  1  1  1  1  1  0  0
+    #  0  0  0  0  0  1  1  1  1  1  1  1  1  1  1  1  1  1  0  0
+    #  0  0  0  0  0  1  1  1  1  1  1  1  1  1  1  1  1  1  0  0
+    #  0  0  0  0  0  1  1  1  1  1  1  1  1  1  1  1  1  1  0  0
+    #  0  0  0  0  0  1  1  1  1  1  1  1  1  1  1  1  1  1  0  0
+    #  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0
+    #  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0
+    contours = bwtraceboundary(fragment_first)
+    @test length(contours) == 2
+    @test length(contours[1]) < length(contours[2])     # the trap this test guards
+
+    props = DataFrame(; mask=[fragment_first])
+    @test_logs (:warn, r"more than one connected component") add_boundary!(
+        props; reduc_factor=1
+    )
+    boundary = props.boundary[1]
+    # the boundary is the floe's outline: as many points as the floe's contour,
+    # and none of them inside the fragment's rows/cols
+    @test size(boundary, 1) == length(contours[2])
+    @test all(boundary[:, 1] .>= 7.5) && all(boundary[:, 2] .>= 5.5)
+end
+
+@testitem "add_boundary! keeps the outer contour of a floe with a hole" begin
+    using IceFloeTracker.Tracking: add_boundary!, bwtraceboundary
+    using DataFrames: DataFrame
+
+    holed = trues(15, 15)
+    holed[6:9, 6:9] .= false
+    contours = bwtraceboundary(holed)
+    @test length(contours) == 2                          # outer + hole, both legitimate
+
+    props = DataFrame(; mask=[holed])
+    @test_logs min_level = Base.CoreLogging.Warn add_boundary!(props; reduc_factor=1)   # holes: no warning
+    boundary = props.boundary[1]
+    @test size(boundary, 1) == maximum(length.(contours))
+    # the outer contour touches the frame; the hole contour does not
+    @test minimum(boundary[:, 1]) ≈ 1.0 && maximum(boundary[:, 1]) ≈ 15.0
+end
+
+@testitem "add_boundary! happy path" begin
+    using IceFloeTracker.Tracking: add_boundary!, bwtraceboundary, resample_boundary
+    using DataFrames: DataFrame
+
+
+    blob = falses(12, 12)
+    blob[3:9, 4:10] .= true
+    props = DataFrame(; mask=[blob])
+    @test_logs min_level = Base.CoreLogging.Warn add_boundary!(props, reduc_factor=1) # no warning
+    @test props.boundary[1] == resample_boundary(only(bwtraceboundary(blob)), 1)
+end
