@@ -72,6 +72,7 @@ end
     # psi-s curve test to check if the mask exists already, and only add it if it isn't there.
     add_floemasks!.(props, labeled_images)
     add_passtimes!.(props, passtimes)
+    add_boundary!.(props)   # add_ψs! derives the ψ-s curve from :boundary
     add_ψs!.(props)
     floe = props[1][1, :]
     candidates = props[1][2:end, :]
