@@ -294,7 +294,7 @@ end
 # Open curves are returned unchanged.
 function _normalize_contour(boundary::AbstractMatrix)
     n = size(boundary, 1)
-    is_closed = isapprox(@view(boundary[1, :]), @view(boundary[n, :]); atol=1e-9) && n > 1
+    is_closed = n > 1 && isapprox(@view(boundary[1, :]), @view(boundary[n, :]); atol=1e-9)
     return is_closed ? @view(boundary[1:(end-1), :]) : boundary
 end
 
