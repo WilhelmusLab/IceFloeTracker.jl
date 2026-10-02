@@ -195,7 +195,7 @@ end
     @test length(contours[1]) < length(contours[2])     # the trap this test guards
 
     props = DataFrame(; mask=[fragment_first])
-    @test_logs (:warn, r"more than one connected component") add_boundary!(
+    @test_logs (:warn, r"contours") add_boundary!(
         props; reduc_factor=1
     )
     boundary = props.boundary[1]
@@ -206,7 +206,7 @@ end
 end
 
 @testitem "add_boundary! keeps the outer contour of a floe with a hole" begin
-    using IceFloeTracker.Tracking: add_boundary!, bwtraceboundary
+    using IceFloeTracker.Tracking: add_boundary!, bwtraceboundary, _contour_perimeter
     using DataFrames: DataFrame
 
     holed = trues(15, 15)
@@ -215,9 +215,9 @@ end
     @test length(contours) == 2                          # outer + hole, both legitimate
 
     props = DataFrame(; mask=[holed])
-    @test_logs min_level = Base.CoreLogging.Warn add_boundary!(props; reduc_factor=1)   # holes: no warning
+    @test_logs (:warn, r"contours") add_boundary!(props; reduc_factor=1)   # holes warn too
     boundary = props.boundary[1]
-    @test size(boundary, 1) == maximum(length.(contours))
+    @test size(boundary, 1) == length(contours[argmax(_contour_perimeter.(contours))])
     # the outer contour touches the frame; the hole contour does not
     @test minimum(boundary[:, 1]) ≈ 1.0 && maximum(boundary[:, 1]) ≈ 15.0
 end
@@ -232,4 +232,40 @@ end
     props = DataFrame(; mask=[blob])
     @test_logs min_level = Base.CoreLogging.Warn add_boundary!(props, reduc_factor=1) # no warning
     @test props.boundary[1] == resample_boundary(only(bwtraceboundary(blob)), 1)
+end
+
+@testitem "add_boundary! warns when the main floe is scanned before a fragment" begin
+    using IceFloeTracker.Tracking: add_boundary!, bwtraceboundary
+    using DataFrames: DataFrame
+
+    # the main floe comes first in scan order and its contour is also the longest,
+    # so neither index nor length reveals the stray fragment below it
+    largest_first = falses(20, 20)
+    largest_first[2:12, 2:14] .= true
+    largest_first[17:18, 17:18] .= true
+    contours = bwtraceboundary(largest_first)
+    @test length(contours) == 2 && length(contours[1]) > length(contours[2])
+
+    props = DataFrame(; mask=[largest_first])
+    @test_logs (:warn, r"contours") add_boundary!(
+        props; reduc_factor=1
+    )
+    boundary = props.boundary[1]
+    @test size(boundary, 1) == length(contours[1])
+    @test all(boundary[:, 1] .<= 12.5) && all(boundary[:, 2] .<= 14.5)   # none in the fragment
+end
+
+@testitem "_contour_perimeter sums segment lengths along a closed contour" begin
+    using IceFloeTracker.Tracking: _contour_perimeter, bwtraceboundary
+    using IceFloeTracker.Preprocessing: make_landmask_se
+
+    # the landmask structuring element is a 99x99 octagon with 28-pixel corner cuts: its
+    # outline has four straight edges of 42 axial steps and four of 28 diagonal steps
+    se = parent(make_landmask_se())
+    @test _contour_perimeter(only(bwtraceboundary(se))) ≈ 4 * 42 + 4 * 28 * sqrt(2)
+
+    # Edge case of a single-pixel contour, perimeter of 0
+    pixel = falses(3, 3)
+    pixel[3, 3] = true
+    @test _contour_perimeter(only(bwtraceboundary(pixel))) == 0
 end
