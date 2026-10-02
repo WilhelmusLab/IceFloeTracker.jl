@@ -159,7 +159,7 @@ ensuring that no angles are repeated (since -π rad == π rad),
 and ordered so that smaller absolute angles which are positive will be returned in the event of a tie in the shape difference.
 """
 register_default_angles_rad = sort(
-    reverse(range(; start=(-π), stop=π, step=π / 36)[1:(end-1)]); by=abs
+    reverse(range(; start=(-π), stop=π, step=π / 36)[1:(end - 1)]); by=abs
 )
 # normalize to [-π, π), the convention of register_default_angles_rad
 function normalize_angle(θ)
@@ -180,7 +180,7 @@ which are positive are preferred, matching `register_default_angles_rad`.
 """
 function prior_test_angles(prior_rad::Real; window::Real=deg2rad(10.0), step::Real=π / 180)
     max_steps = ceil(Int, window / step)
-    offsets = collect(-max_steps:max_steps) .* step
+    offsets = collect((-max_steps):max_steps) .* step
     offsets = filter(o -> abs(o) <= window, offsets)
     angles = [
         normalize_angle(alias + offset) for alias in (prior_rad, prior_rad + π) for
@@ -267,7 +267,7 @@ function mismatch(
     fixed::AbstractArray, moving::AbstractArray, mxrot::Real=180, step::Real=5
 )
     test_angles = sort(
-        reverse(range(; start=(-mxrot), stop=mxrot, step=step)[1:(end-1)]); by=abs
+        reverse(range(; start=(-mxrot), stop=mxrot, step=step)[1:(end - 1)]); by=abs
     )
     return mismatch(fixed, moving, test_angles)
 end
@@ -299,7 +299,11 @@ Angle is in radians, positive = counterclockwise.
 - `angle`: Rotation angle in radians
 - `center`: Center of rotation; if nothing, uses centroid of boundary
 """
-function rotate_boundary(boundary::Matrix{Float64}, angle::Real; center::Union{Nothing,Tuple{Float64,Float64}}=nothing)
+function rotate_boundary(
+    boundary::Matrix{Float64},
+    angle::Real;
+    center::Union{Nothing,Tuple{Float64,Float64}}=nothing,
+)
     center = isnothing(center) ? vec(mean(boundary; dims=1)) : collect(center)
     rot_matrix = _get_rotation_matrix(angle)
     boundary_centered = boundary .- center'
@@ -316,8 +320,74 @@ Translate boundary curve to center at target_center.
 - `boundary`: Matrix(n, 2) with [x y] coordinates
 - `target_center`: Target centroid position (default: origin)
 """
-function center_boundary(boundary::Matrix{Float64}; target_center::Tuple{Float64,Float64}=(0.0, 0.0))
+function center_boundary(
+    boundary::Matrix{Float64}; target_center::Tuple{Float64,Float64}=(0.0, 0.0)
+)
     centroid = vec(mean(boundary; dims=1))
     offset = collect(target_center) .- centroid
     return boundary .+ offset'
+end
+
+# ============================================================================
+# Distance Metrics for Boundary Curves
+# ============================================================================
+#
+# Both metrics treat a boundary as a point SET, so they do not depend on where the trace
+# happens to start. An index-wise comparison (point i against point i) does: two traces
+# of the same floe begin at unrelated points, and on such input an index-wise metric
+# recovered the true rotation angle on 2% of real floes.
+
+# The point set of a boundary. Boundaries are closed (first row repeated as last), and
+# which vertex carries the duplicate depends on where the trace started, so a mean over
+# all rows is start-dependent; over the unique vertices it is not.
+function _unique_points(b::Matrix{Float64})
+    n = size(b, 1)
+    return n > 1 && @views(b[1, :] == b[n, :]) ? b[1:(n - 1), :] : b
+end
+
+# Nearest-neighbour distance from point `a` to the point set `B`. Compared on squared
+# distances; the square root is taken once.
+function _nn_dist(a, B)
+    best = Inf
+    @inbounds for i in axes(B, 1)
+        d2 = (a[1] - B[i, 1])^2 + (a[2] - B[i, 2])^2
+        d2 < best && (best = d2)
+    end
+    return sqrt(best)
+end
+
+"""
+    boundary_hausdorff(b1::Matrix{Float64}, b2::Matrix{Float64})
+
+Hausdorff distance between two boundaries treated as point sets, after centring both at
+the origin: the larger of the two directed distances, each the greatest nearest-neighbour
+distance from one set to the other. Insensitive to where either trace begins. Units:
+pixels.
+
+Reference: Huttenlocher, Klanderman & Rucklidge (1993), *Comparing images using the
+Hausdorff distance*, IEEE TPAMI 15(9).
+"""
+function boundary_hausdorff(b1::Matrix{Float64}, b2::Matrix{Float64})
+    A = center_boundary(_unique_points(b1))
+    B = center_boundary(_unique_points(b2))
+    directed(P, Q) = maximum(_nn_dist(@view(P[i, :]), Q) for i in axes(P, 1))
+    return max(directed(A, B), directed(B, A))
+end
+
+"""
+    boundary_modified_hausdorff(b1::Matrix{Float64}, b2::Matrix{Float64})
+
+Modified Hausdorff distance between two boundaries treated as point sets, after centring
+both at the origin. Each directed distance is the *mean* rather than the maximum
+nearest-neighbour distance, so a single outlying point does not set the score.
+Insensitive to where either trace begins. Units: pixels.
+
+Reference: Dubuisson & Jain (1994), *A modified Hausdorff distance for object matching*,
+Proc. 12th IAPR Int. Conf. on Pattern Recognition.
+"""
+function boundary_modified_hausdorff(b1::Matrix{Float64}, b2::Matrix{Float64})
+    A = center_boundary(_unique_points(b1))
+    B = center_boundary(_unique_points(b2))
+    directed(P, Q) = sum(_nn_dist(@view(P[i, :]), Q) for i in axes(P, 1)) / size(P, 1)
+    return max(directed(A, B), directed(B, A))
 end
