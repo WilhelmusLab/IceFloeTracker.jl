@@ -40,7 +40,7 @@ import ..Segmentation:
     segment_mean_map,
     view_seg
 
-import ..Pipeline: 
+import ..Pipeline:
     IceFloeSegmentationAlgorithm,
     IceFloePreprocessingAlgorithm
 
@@ -49,16 +49,41 @@ import Dates: Day
 import ..ImageUtils: imbrighten, apply_to_channels
 import ..Pipeline: IceFloeSegmentationAlgorithm
 
+abstract type ColorProcessingMode end
+struct ColorProcessing <: ColorProcessingMode end
+struct GrayscaleProcessing <: ColorProcessingMode end
 
+ColorProcessingMode(mode::ColorProcessingMode) = mode
+function ColorProcessingMode(mode::Symbol)
+    mode === :color && return ColorProcessing()
+    mode === :grayscale && return GrayscaleProcessing()
+    @warn "Invalid process_color choice $mode. Setting to :color"
+    return ColorProcessing()
+end
+
+_initial_image(::ColorProcessing, truecolor_image) = copy(truecolor_image)
+_initial_image(::GrayscaleProcessing, truecolor_image) = Gray.(truecolor_image)
+
+function _equalize(::ColorProcessing, img, adapthisteq_algorithm)
+    return apply_to_channels(img, channel -> adjust_histogram(channel, adapthisteq_algorithm))
+end
+
+function _equalize(::GrayscaleProcessing, img, adapthisteq_algorithm)
+    adjust_histogram!(img, adapthisteq_algorithm)
+    return img
+end
+
+_to_grayscale(::ColorProcessing, img) = Gray.(img)
+_to_grayscale(::GrayscaleProcessing, img) = img
 
 # Preprocess Params
 diffusion_algorithm = PeronaMalikDiffusion(; λ=0.1, K=0.1, niters=7, g="exponential")
 adapthisteq_algorithm = ContrastLimitedAdaptiveHistogramEqualization(;
-            nbins=256,
-            rblocks=4,
-            cblocks=4,
-            clip=3.2,
-        )
+    nbins=256,
+    rblocks=4,
+    cblocks=4,
+    clip=3.2,
+)
 unsharp_mask_params = (radius=10, amount=2, threshold=0.01)
 
 """
@@ -79,7 +104,7 @@ Note: results are strongly sensitive to the choice of rblocks, cblocks, and clip
 small blocks results in noisy images and poor performance. With larger blocks, a higher clipping parameter can help.
 
 - `diffusion_algorithm`: An `AbstractDiffusionAlgorithm`. Defaults to [`PeronaMalikDiffusion`](@ref)
-- `adapthisteq_params`: Parameters for the adaptive histogram AdaptiveEqualization. 
+- `adapthisteq_params`: Parameters for the adaptive histogram AdaptiveEqualization.
 - `unsharp_mask_params`: Parameters for [`unsharp_mask`](@ref)
 - `process_color`: Either `:rgb` or `:gray`. If gray, then convert to grayscale prior to running the other algorithms.
 
@@ -95,34 +120,18 @@ function (p::Preprocess)(
     truecolor_image::AbstractArray{<:Union{AbstractRGB,TransparentRGB}},
     landmask
 )
-    if p.process_color ∉ [:grayscale, :color]
-        @warn "Invalid process_color choice. Setting to :color"
-        p.process_color = :color
-    end
+    mode = ColorProcessingMode(p.process_color)
 
-    p.process_color == :grayscale ? img = Gray.(truecolor_image) : img = copy(truecolor_image)
-    
+    img = _initial_image(mode, truecolor_image)
+
     apply_landmask!(img, landmask)
     img .= nonlinear_diffusion(
         img,
         p.diffusion_algorithm
     ) # TODO: in-place nonlinear_diffusion
 
-    if p.process_color == :color
-        img .= apply_to_channels(
-            img,
-            r -> adjust_histogram(r, p.adapthisteq_algorithm)
-        ) # TODO: in-place apply_to_channels
-    else
-        adjust_histogram!(
-            img,
-            p.adapthisteq_algorithm
-        )
-    end
-
-    if p.process_color == :color 
-        img = Gray.(img)
-    end
+    img = _equalize(mode, img, p.adapthisteq_algorithm)
+    img = _to_grayscale(mode, img)
 
     img .= unsharp_mask(
         img,
@@ -136,7 +145,7 @@ function (p::Preprocess)(
     return img
 end
 
-""" 
+"""
     LopezAcosta2019.Segment(
         coastal_buffer_structuring_element::AbstractMatrix{Bool} = make_landmask_se()
         cloud_mask_algorithm = LopezAcostaCloudMask()
@@ -164,7 +173,7 @@ Segmentation algorithm for sea ice floe identification based on Lopez-Acosta 201
 ## Arguments
 - `cloud_mask_algorithm`: An `AbstractCloudMaskAlgorithm`. Defaults to [`LopezAcostaCloudMask`](@ref)
 - `kmeans_params`: Parameters for [`kmeans_binarization`](@ref)
-- `cluster_selection_algorithm`: An [`IceDetectionAlgorithm`](@ref), which takes the falsecolor image as an input and produces 
+- `cluster_selection_algorithm`: An [`IceDetectionAlgorithm`](@ref), which takes the falsecolor image as an input and produces
    a binary image with likely ice floe pixels set to `true`.
 - `segB_params`: A collection of parameters for the second segmentation stage. `isolation_threshold` is a global threshold for
    selecting likely ice; `brightening_factor` is a percentage to increase the brightness of ice regions, `gamma_factor` is an
@@ -248,14 +257,14 @@ function (p::Segment)(
             cluster_selection_algorithm=p.cluster_selection_algorithm,
         ) |> clean_binary_floes
 
-    # Potential upgrade: Remove segments of the k-means result which are all cloud. However the 
+    # Potential upgrade: Remove segments of the k-means result which are all cloud. However the
     # small isolated clouds could be filled if surrounded by a single segment.
     apply_cloudmask!(segmentation_A, cloudmask)
 
     @info "Segmenting floes part 2/3"
     # The second segmentation routine uses imbrighten to increase contrast between ice floes
     # and the background. It uses a simple threshold-based mask to select where to brighten.
-    # Then, the segB_binarize function uses gamma correction to increase contrast before 
+    # Then, the segB_binarize function uses gamma correction to increase contrast before
     # a second binary threshold is applied.
 
     prelim_binarized = sharpened_grayscale_image .> p.segB_params.isolation_threshold
@@ -365,8 +374,8 @@ end
         differ_threshold::Float64=0.6
     )
 
-Generates an image with ice floes apparent after filtering and combining previously processed 
-versions of falsecolor and truecolor images from the same region of interest. Returns an image 
+Generates an image with ice floes apparent after filtering and combining previously processed
+versions of falsecolor and truecolor images from the same region of interest. Returns an image
 ready for segmentation to isolate floes.
 
 # Arguments
@@ -437,13 +446,13 @@ function discriminate_ice_water(
     kurt_band_1 = kurtosis(b1_subset)
     standard_dev = std(vec(morphed_grayscale))
 
-    # The clouds ratio was computed on the whole area, which means that 
-    # there will be errors near the land mask. Correcting this may make it 
+    # The clouds ratio was computed on the whole area, which means that
+    # there will be errors near the land mask. Correcting this may make it
     # have different results than the Matlab version.
     clouds_ratio = mean(b7_landmasked_cloudmasked[.!landmask] .> 0)
 
     # It may be worthwhile to take a random sample of scenes and test what the kurtosis, skew, and intensity are.
-    # These values are likely to vary with the size of the image. Both band 1 and band 2 are used, though they 
+    # These values are likely to vary with the size of the image. Both band 1 and band 2 are used, though they
     # are highly correlated with each other.
     threshold_50_check = _check_threshold_50(
         kurt_band_1,
@@ -538,7 +547,7 @@ end
 """_reconstruct(sharpened_grayscale_image, dilated_mask; strel)
 
 Convenience function for reconstruction by dilation using the complement
-of an image. Markers are computed by dilating the input image by the 
+of an image. Markers are computed by dilating the input image by the
 structuring element `strel` and taking the complement. The dilated landmask
 is applied at the end to prevent bright regions from bleeding into the land mask.
 Defaults to using a radius 5 diamond mask.
@@ -568,7 +577,7 @@ end
  segB_binarize(sharpened_image, brightened_image, cloudmask;
      gamma_factor=2.5, adjusted_ice_threshold=0.05, fill_range=(0, 1), alpha_level=0.5)
 
-Binarize the sharpened image by selective brightening, gamma correction, threshold application, and 
+Binarize the sharpened image by selective brightening, gamma correction, threshold application, and
 clean up with image hole filling.
 
 """
@@ -659,7 +668,7 @@ end
 
 """IceDetectionLopezAcosta2019
 
-Application of the IceDetectionFirstNonZeroAlgorithm using two passes of 
+Application of the IceDetectionFirstNonZeroAlgorithm using two passes of
 the IceDetectionThresholdMODIS721 and one application of the IceDetectionBrightnessPeaksMODIS721.
 """
 function IceDetectionLopezAcosta2019(;
@@ -694,7 +703,7 @@ end
     )
 
 Enhance the visibility of distinct floes in the grayscale image by using grayscale reconstruction.
-Updates the sea ice mask by intersecting the `ice_intersect` and the `watershed_boundary` and using 
+Updates the sea ice mask by intersecting the `ice_intersect` and the `watershed_boundary` and using
 morphological area opening.
 """
 function reconstruct_and_mask(

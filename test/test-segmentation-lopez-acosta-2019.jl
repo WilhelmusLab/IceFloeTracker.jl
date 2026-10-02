@@ -21,6 +21,30 @@
     @test length(segments.segment_labels) ≈ expected_segment_count rtol = 0.7
 end
 
+@testitem "LopezAcosta2019.Preprocess – color modes" begin
+    import Images: RGB, Gray
+
+    truecolor_image = RGB.(rand(20, 20))
+    landmask = falses(20, 20)
+
+    @testset "process_color = $mode" for mode in (
+        :color,
+        :grayscale,
+        LopezAcosta2019.ColorProcessing(),
+        LopezAcosta2019.GrayscaleProcessing(),
+    )
+        preprocessed = LopezAcosta2019.Preprocess(; process_color=mode)(truecolor_image, landmask)
+        @test size(preprocessed) == size(truecolor_image)
+        @test eltype(preprocessed) <: Gray
+    end
+
+    # An invalid process_color falls back to :color with a warning instead of erroring
+    # (regression test: this used to throw, since `process_color` was being mutated on
+    # an immutable struct).
+    @test_logs (:warn, r"Invalid process_color")
+    LopezAcosta2019.Preprocess(; process_color=:invalid)(truecolor_image, landmask)
+end
+
 @testitem "LopezAcosta2019.Segment – sample of cases" setup = [Segmentation] tags = [:e2e] begin
     import StatsBase: mean
     dataset = Watkins2026Dataset(; ref="v0.2")
@@ -28,8 +52,8 @@ end
         filter(
             c -> (
                 c.visible_floes == "yes" &&
-                c.cloud_fraction_manual < 0.5 &&
-                c.case_number % 3 == 0
+                    c.cloud_fraction_manual < 0.5 &&
+                    c.case_number % 3 == 0
             ),
             dataset,
         ),
@@ -93,7 +117,7 @@ end
         LopezAcosta2019.Segment();
         output_directory="./test_outputs/",
     )
-    
+
     @test 0.11 ≈ labeled_fraction atol = 0.1 # lowered to 0.21
     @test 0.30 ≤ round(recall; digits=2) # lowered to 0.54
     @test 0.96 ≤ round(precision; digits=2)
@@ -104,7 +128,7 @@ end
         LopezAcosta2019.Segment();
         output_directory="./test_outputs/",
     )
-    
+
     @test labeled_fraction ≈ 0.38 rtol = 0.1
     @test 0.60 ≤ round(recall; digits=2)
     @test 0.99 ≤ round(precision; digits=2)
