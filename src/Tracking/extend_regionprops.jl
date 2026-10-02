@@ -103,3 +103,14 @@ function add_boundary!(props_df::DataFrame; reduc_factor::Int64=2)
     end
     return nothing
 end
+
+"""
+    _contour_perimeter(contour)
+
+Perimeter of a closed traced contour (first point repeated as last): the sum of the
+lengths of the segments between consecutive points, 1 for axial and √2 for diagonal steps.
+"""
+function _contour_perimeter(contour::AbstractVector{<:CartesianIndex})
+    _hypot(s) = hypot(Tuple(s)...)
+    return sum(_hypot, diff(contour))
+end
