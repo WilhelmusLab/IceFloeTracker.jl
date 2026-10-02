@@ -31,7 +31,7 @@ end
 
 Add the ψ-s curves to each row of `props_df`.
 
-Note: each member of `props` must have a `mask` column with a binary image representing the floe. 
+Note: each member of `props` must have a `mask` column with a binary image representing the floe.
 To add floe masks see [`addfloemasks!`](@ref).
 """
 function add_ψs!(props_df::DataFrame)
@@ -90,11 +90,16 @@ To add floe masks see [`add_floemasks!`](@ref).
 """
 function add_boundary!(props_df::DataFrame; reduc_factor::Int64=2)
     props_df.boundary = map(props_df.mask) do mask
-        bd_traced = bwtraceboundary(mask)
-        # Handle case of multiple boundaries (shouldn't happen for individual floes but be defensive)
-        bd_traced_single = isa(bd_traced, Vector{Vector{CartesianIndex}}) ?
-            bd_traced[1] : bd_traced
-        resample_boundary(bd_traced_single, reduc_factor)
+        contours = bwtraceboundary(mask)
+        countour_count = length(contours)
+
+        # Keep longest contour as the floe boundary and warn if multiple contours found.
+        outline = argmax(length.(contours))
+        if outline != 1
+            warning_msg = "Scene contains more than one connected component; keeping the longest of $(countour_count) contours as the floe boundary"
+            @warn warning_msg
+        end
+        resample_boundary(contours[outline], reduc_factor)
     end
     return nothing
 end
