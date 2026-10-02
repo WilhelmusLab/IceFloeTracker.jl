@@ -25,6 +25,28 @@ Returns a DataFrame with one row for each comparison,
 with the angle `theta_rad`, time difference `dt_sec` and rotation rate `omega_rad_per_sec`,
 and all the other values from `df`
 with the column name suffix `1` for the first observation and `2` for the second.
+
+## Registering boundary curves instead of masks
+
+`image_column` need not hold rasterized masks. To register resampled boundary curves
+(see `add_boundary!`), point it at the boundary column and pass the matching
+registration function:
+
+```julia
+get_rotation_measurements(df; id_column=:id, image_column=:boundary,
+                          time_column=:time, registration_function=register_boundary)
+```
+
+`register_boundary` rotates curves by exact linear algebra rather than resampling pixels,
+so it is not subject to the interpolation error that makes the mask path disagree between
+coarse and fine angle grids. To choose a shape metric other than the default, wrap it in a
+[`BoundaryRegistration`](@ref) -- this keyword is invoked as
+`registration_function(image1, image2)` with no way to thread a metric through, so it has
+to be fixed at construction:
+
+```julia
+registration_function=BoundaryRegistration(; metric=boundary_hausdorff)
+```
 """
 function get_rotation_measurements(
     df::DataFrame;
