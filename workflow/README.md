@@ -296,7 +296,7 @@ It is comprised of the following parts:
             """
             {config[IFT]} -e 'using IceFloeTracker, Images;
             LopezAcosta2019.Segment(
-                diffusion_algorithm = PeronaMalikDiffusion()
+                coastal_buffer_structuring_element=strel_box((3,3))
             )(
                 load("{input.truecolor}"),
                 load("{input.falsecolor}"),
@@ -318,8 +318,8 @@ Each of the high-level algorithms defined by IceFloeTracker, like `LopezAcosta20
 has a structure which supports its evaluation on the command line.
 
 Each function is a "functor", which accepts keyword arguments to define how it behaves,
-like `.Segment(diffusion_algorithm = PeronaMalikDiffusion())(...`
-which sets the diffusion algorithm used in the preprocessing step.
+like `.Segment(coastal_buffer_structuring_element=strel_box((3,3))))(...`
+which sets the structuring element used to form the coastal buffer.
 
 The instantiated functor can be called,
 and will accept a series of arguments to run the actual calculation.
