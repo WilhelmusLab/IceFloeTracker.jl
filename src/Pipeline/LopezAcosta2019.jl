@@ -79,7 +79,7 @@ _to_grayscale(::GrayscaleProcessing, img) = img
 # Preprocess Params
 diffusion_algorithm = PeronaMalikDiffusion(; λ=0.1, K=0.1, niters=7, g="exponential")
 adapthisteq_algorithm = ContrastLimitedAdaptiveHistogramEqualization(;
-    nbins=256,
+    nbins=255,
     rblocks=4,
     cblocks=4,
     clip=3.2,
@@ -89,7 +89,7 @@ unsharp_mask_params = (radius=10, amount=2, threshold=0.01)
 """
    Preprocess(
         diffusion_algorithm = PeronaMalikDiffusion(λ=0.1, K=0.1, niters=5, g="exponential")
-        adapthisteq_params = (nbins=256, rblocks=8, cblocks=8, clip=0.99) # rblocks/cblocks not used yet -- add with CLAHE.jl
+        adapthisteq_algorithm = ContrastLimitedAdaptiveHistogramEqualization(; nbins=255, rblocks=4, cblocks=4, clip=3.2)
         unsharp_mask_params = (radius=50, amount=0.2, threshold=0.01)
         process_color = :rgb
     )
@@ -104,9 +104,9 @@ Note: results are strongly sensitive to the choice of rblocks, cblocks, and clip
 small blocks results in noisy images and poor performance. With larger blocks, a higher clipping parameter can help.
 
 - `diffusion_algorithm`: An `AbstractDiffusionAlgorithm`. Defaults to [`PeronaMalikDiffusion`](@ref)
-- `adapthisteq_params`: Parameters for the adaptive histogram AdaptiveEqualization.
+- `adapthisteq_alogirhtm`: Any histogram adjustment algorithm which can be passed to `adjust_histogram()`.
 - `unsharp_mask_params`: Parameters for [`unsharp_mask`](@ref)
-- `process_color`: Either `:rgb` or `:gray`. If gray, then convert to grayscale prior to running the other algorithms.
+- `process_color`: Either `:color` or `:grayscale`. If `:grayscale`, then convert to grayscale prior to running the other algorithms.
 
 """
 @kwdef struct Preprocess <: IceFloePreprocessingAlgorithm
