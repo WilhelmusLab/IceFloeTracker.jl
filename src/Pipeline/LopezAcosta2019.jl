@@ -238,6 +238,7 @@ function (p::Segment)(
 
     @info "Preprocessing truecolor image"
     sharpened_grayscale_image = p.preprocessing_algorithm(truecolor_image, landmask)
+    apply_landmask!(sharpened_grayscale_image, coastal_buffer_mask)
 
     # 3. Segmentation
     @info "Segmenting floes part 1/3"
