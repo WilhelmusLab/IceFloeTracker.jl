@@ -78,7 +78,7 @@ abstract type IceFloeClassificationAlgorithm end
 """
 @kwdef struct Preprocess <: IceFloePreprocessingAlgorithm
     histogram_algorithm = ContrastLimitedAdaptiveHistogramEqualization
-    histogram_params = (nbins=256, rblocks=4, cblocks=4, clip=3.2)
+    histogram_params = (nbins=256, rblocks=4, cblocks=4, clip=1)
 end
 
 # Q: does image sharpening, nonlinear filtering change the quality of the result? nonlinear filtering 
@@ -149,9 +149,9 @@ preprocessing_algorithm = Preprocess()
 classification_algorithm = Classify()
 # Only varying the structuring element, for testing. Each item in the list is sent to dist-morph-split and the results are compared.
 floe_splitting_params = [
-    (max_hole_fill=500, max_depth=15, max_depth_ratio=0.5, max_expand=3, opening_strel=strel_diamond((3, 3))),
+    (max_hole_fill=1500, max_depth=15, max_depth_ratio=0.5, max_expand=3, opening_strel=strel_diamond((3, 3))),
     (max_hole_fill=1500, max_depth=15, max_depth_ratio=0.5, max_expand=3, opening_strel=strel_box((3, 3))),
-    (max_hole_fill=2500, max_depth=15, max_depth_ratio=0.5, max_expand=3, opening_strel=strel_disk(4))
+    # (max_hole_fill=2500, max_depth=15, max_depth_ratio=0.5, max_expand=3, opening_strel=strel_disk(4))
 ]
 
 floe_merging_params = (
@@ -319,7 +319,7 @@ Calls @ref[`regionprops_table`] with the provided `properties` list. Then, adds 
 floe-average overlap with the provided `masks` (expects Dict with mask name => binary mask), 
 band-average reflectance from the falsecolor image, and band 1 boundary contrast. Finally, uses
 a provided probability function to add a `probability` column indicating the likelihood the object
-is an ice floe.
+is an ice floe. Pixel scale should be in kilometers.
 
 """
 function extended_regionprops_table(
@@ -396,7 +396,7 @@ end
 
 Apply the logistic regression function with the provided set of coefficients. The in-place version
 adds a column "probability" to the dataframe, while the non-in-place version returns a vector
-with probabilities.
+with probabilities. Currently, length scale is defined as the square root of the area *in pixels*.
 
 """
 function LogisticRegressionFilter(df;
@@ -551,7 +551,7 @@ function compare_objects(
 
     transform!(df_comp,
         [:s1_label, :s2_label,
-            :s1_min_row, :s1_max_row, :s1_min_col, :s2_max_col] =>
+            :s1_min_row, :s1_max_row, :s1_min_col, :s1_max_col] =>
             ByRow((l1, l2, rmin, rmax, cmin, cmax) ->
                 sum(
                     (labels1[rmin:rmax, cmin:cmax] .== l1) .&&
@@ -717,6 +717,9 @@ function sequential_merge_floes(labeled_imgs, falsecolor_image, masks;
             init_indices = component_indices(init_img)
         end
     end
+
+    remove_small_segments!(init_img, minimum_floe_size)
+    remove_large_segments!(init_img, maximum_floe_size)
     return init_img # TODO: Consider returning the final data table, too
 end
 
