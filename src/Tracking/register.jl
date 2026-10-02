@@ -180,7 +180,7 @@ which are positive are preferred, matching `register_default_angles_rad`.
 """
 function prior_test_angles(prior_rad::Real; window::Real=deg2rad(10.0), step::Real=π / 180)
     max_steps = ceil(Int, window / step)
-    offsets = collect(-max_steps:max_steps) .* step
+    offsets = collect((-max_steps):max_steps) .* step
     offsets = filter(o -> abs(o) <= window, offsets)
     angles = [
         normalize_angle(alias + offset) for alias in (prior_rad, prior_rad + π) for
@@ -288,6 +288,16 @@ function _get_rotation_matrix(angle::Real)
     return [cos_a -sin_a; sin_a cos_a]
 end
 
+# The points of a curve without the closing duplicate. Traced boundaries repeat their
+# first point as the last (after resampling, only up to round-off of order 1e-13), so the
+# duplicate would be counted twice in a centroid and make it depend on the trace start.
+# Open curves are returned unchanged.
+function _normalize_contour(boundary::AbstractMatrix)
+    n = size(boundary, 1)
+    is_closed = isapprox(@view(boundary[1, :]), @view(boundary[n, :]); atol=1e-9) && n > 1
+    return is_closed ? @view(boundary[1:(end-1), :]) : boundary
+end
+
 """
     rotate_boundary(boundary::Matrix{Float64}, angle::Real; center::Union{Nothing,Tuple{Float64,Float64}}=nothing)
 
@@ -300,7 +310,7 @@ Angle is in radians, positive = counterclockwise.
 - `center`: Center of rotation; if nothing, uses centroid of boundary
 """
 function rotate_boundary(boundary::Matrix{Float64}, angle::Real; center::Union{Nothing,Tuple{Float64,Float64}}=nothing)
-    center = isnothing(center) ? vec(mean(boundary; dims=1)) : collect(center)
+    center = isnothing(center) ? vec(mean(_normalize_contour(boundary); dims=1)) : collect(center)
     rot_matrix = _get_rotation_matrix(angle)
     boundary_centered = boundary .- center'
     rotated_centered = boundary_centered * transpose(rot_matrix)
@@ -317,7 +327,7 @@ Translate boundary curve to center at target_center.
 - `target_center`: Target centroid position (default: origin)
 """
 function center_boundary(boundary::Matrix{Float64}; target_center::Tuple{Float64,Float64}=(0.0, 0.0))
-    centroid = vec(mean(boundary; dims=1))
+    centroid = vec(mean(_normalize_contour(boundary); dims=1))
     offset = collect(target_center) .- centroid
     return boundary .+ offset'
 end
