@@ -91,13 +91,10 @@ To add floe masks see [`add_floemasks!`](@ref).
 function add_boundary!(props_df::DataFrame; reduc_factor::Int64=2)
     props_df.boundary = map(props_df.mask) do mask
         contours = bwtraceboundary(mask)
-        countour_count = length(contours)
-
-        # Keep longest contour as the floe boundary and warn if multiple contours found.
-        outline = argmax(length.(contours))
-        if outline != 1
-            warning_msg = "Scene contains more than one connected component; keeping the longest of $(countour_count) contours as the floe boundary"
-            @warn warning_msg
+        outline = argmax(_contour_perimeter.(contours))
+        if length(contours) > 1
+            @warn "mask has $(length(contours)) contours;" *
+                " keeping the one with the largest perimeter as the floe boundary."
         end
         resample_boundary(contours[outline], reduc_factor)
     end
