@@ -238,7 +238,6 @@ function (p::Segment)(
 
     @info "Preprocessing truecolor image"
     sharpened_grayscale_image = p.preprocessing_algorithm(truecolor_image, landmask)
-    println(p.preprocessing_algorithm.process_color, " ", typeof(sharpened_grayscale_image))
 
     # 3. Segmentation
     @info "Segmenting floes part 1/3"
