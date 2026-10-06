@@ -95,7 +95,7 @@ unsharp_mask_params = (radius=10, amount=2, threshold=0.01)
     )
     Preprocess()(tc_img, landmask)
 
-Converts input image to grayscale, then preprocesses by appling nonlinear diffusion,
+Converts input image to grayscale, then preprocesses by applying nonlinear diffusion,
 adaptive histogram equalization, and unsharp masking. Diffusion and unsharp masking are applied
 to each tile, while the adaptive histogram equalization is divided according to the parameter
 specifications.
