@@ -318,7 +318,7 @@ Each of the high-level algorithms defined by IceFloeTracker, like `LopezAcosta20
 has a structure which supports its evaluation on the command line.
 
 Each function is a "functor", which accepts keyword arguments to define how it behaves,
-like `.Segment(coastal_buffer_structuring_element=strel_box((3,3))))(...`
+like `.Segment(coastal_buffer_structuring_element=strel_box((3,3)))(...`
 which sets the structuring element used to form the coastal buffer.
 
 The instantiated functor can be called,
