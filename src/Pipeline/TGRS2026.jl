@@ -147,11 +147,10 @@ tile_settings = (; rblocks=1, cblocks=1)
 min_ocean_pixel_count = 5000
 preprocessing_algorithm = Preprocess()
 classification_algorithm = Classify()
-# Only varying the structuring element, for testing. Each item in the list is sent to dist-morph-split and the results are compared.
 floe_splitting_params = [
-    (max_hole_fill=1500, max_depth=15, max_depth_ratio=0.5, max_expand=3, opening_strel=strel_diamond((3, 3))),
-    (max_hole_fill=1500, max_depth=15, max_depth_ratio=0.5, max_expand=3, opening_strel=strel_box((3, 3))),
-    # (max_hole_fill=2500, max_depth=15, max_depth_ratio=0.5, max_expand=3, opening_strel=strel_disk(4))
+    (max_hole_fill=1500, max_depth=15, max_depth_ratio=0.5, max_expand=1, opening_strel=strel_diamond((3, 3))),
+    (max_hole_fill=1500, max_depth=15, max_depth_ratio=0.5, max_expand=2, opening_strel=strel_box((3, 3))),
+    (max_hole_fill=2500, max_depth=20, max_depth_ratio=0.75, max_expand=3, opening_strel=strel_disk(4))
 ]
 
 floe_merging_params = (
@@ -162,7 +161,7 @@ floe_merging_params = (
         :label, :area, :row_centroid, :col_centroid,
         :max_col, :max_row, :min_col, :min_row, :probability
     ],
-    minimum_probability=0.1,
+    minimum_probability=0,
 )
 
 """
@@ -229,10 +228,14 @@ function (s::Segment)(
         t -> sum(.!masks["land"][t...]) > s.min_ocean_pixel_count, tiles
     )
 
+    print(filtered_tiles)
+
     @info "Detect Floes"
+    # Alternatively: Vary the tile sizes and run multiple times
     binarized_image = kmeans_binarization_multiclass(
         preproc_gray, falsecolor_image, masks, filtered_tiles,
     )
+    # Alternatively: Same settings, but multiple binarizations
     candidate_splits = [
         dist_morph_split(binarized_image; pset...) for pset in s.floe_splitting_params
     ]
@@ -294,16 +297,21 @@ function kmeans_binarization_multiclass(preproc_gray, falsecolor_image, masks, t
     cloudy_ice_detector = IceDetectionBrightnessPeaksMODIS721(
         band_7_max=cloudy_ice_params.b7,
         possible_ice_threshold=cloudy_ice_params.b2,
-        nbins=128, minimum_prominence=0.03)
+        nbins=128, minimum_prominence=0.03,
+        join_method="union")
     clear_sky_ice_detector = IceDetectionBrightnessPeaksMODIS721(
         band_7_max=clear_sky_ice_params.b7,
         possible_ice_threshold=clear_sky_ice_params.b2,
-        nbins=128, minimum_prominence=0.01)
+        nbins=128,
+        minimum_prominence=0.01,
+        join_method="union")
 
-    cloudy_ice_kmeans = kmeans_binarization(preproc_gray, fc_masked, tiles;
+    cloudy_ice_kmeans = kmeans_binarization(
+        preproc_gray, fc_masked, tiles;
         k=cloudy_ice_params.k, cluster_selection_algorithm=cloudy_ice_detector
     ) .> 0
-    clear_sky_ice_kmeans = kmeans_binarization(preproc_gray, fc_masked, tiles;
+    clear_sky_ice_kmeans = kmeans_binarization(
+        preproc_gray, fc_masked, tiles;
         k=clear_sky_ice_params.k, cluster_selection_algorithm=clear_sky_ice_detector
     ) .> 0
 
@@ -343,7 +351,7 @@ function extended_regionprops_table(
         convex_area_algorithm=convex_area_algorithm,
     )
     # Return empty dataframe if no floes in image
-    nrow(props_df) == 0 && return props_df
+    nrow(props_df) == 0 # && return props_df
 
     transform!(props_df, :area => ByRow(x -> x^0.5) => :length_scale)
 
