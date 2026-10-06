@@ -88,7 +88,7 @@ unsharp_mask_params = (radius=10, amount=2, threshold=0.01)
 
 """
    Preprocess(
-        diffusion_algorithm = PeronaMalikDiffusion(λ=0.1, K=0.1, niters=5, g="exponential")
+        diffusion_algorithm = PeronaMalikDiffusion(λ=0.1, K=0.1, niters=7, g="exponential")
         adapthisteq_algorithm = ContrastLimitedAdaptiveHistogramEqualization(; nbins=255, rblocks=4, cblocks=4, clip=3.2)
         unsharp_mask_params = (radius=10, amount=2, threshold=0.01)
         process_color = :color
