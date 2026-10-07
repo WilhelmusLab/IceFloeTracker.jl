@@ -125,10 +125,7 @@ function (p::Preprocess)(
     img = _initial_image(mode, truecolor_image)
 
     apply_landmask!(img, landmask)
-    img .= nonlinear_diffusion(
-        img,
-        p.diffusion_algorithm
-    ) # TODO: in-place nonlinear_diffusion
+    nonlinear_diffusion!(img, p.diffusion_algorithm)
 
     img = _equalize(mode, img, p.adapthisteq_algorithm)
     img = _to_grayscale(mode, img)
