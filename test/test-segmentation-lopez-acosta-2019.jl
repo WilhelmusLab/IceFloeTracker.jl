@@ -33,7 +33,7 @@ end
     mean_precision = round(mean(skipnanormissing(results.precision)); digits=2)
     mean_F_score = round(mean(skipnanormissing(results.F_score)); digits=2)
 
-    # Good performance might look liks this:
+    # Good performance might look like this:
     @test mean_recall ≥ 0.9 broken = true
     @test mean_precision ≥ 0.9 broken = true
     @test mean_F_score ≥ 0.9 broken = true
@@ -83,7 +83,7 @@ end
         LopezAcosta2019.Segment();
         output_directory="./test_outputs/",
     )
-    
+
     @test 0.11 ≈ labeled_fraction atol = 0.1 # lowered to 0.21
     @test 0.30 ≤ round(recall; digits=2) # lowered to 0.54
     @test 0.96 ≤ round(precision; digits=2)
@@ -94,7 +94,7 @@ end
         LopezAcosta2019.Segment();
         output_directory="./test_outputs/",
     )
-    
+
     @test labeled_fraction ≈ 0.38 rtol = 0.1
     @test 0.60 ≤ round(recall; digits=2)
     @test 0.99 ≤ round(precision; digits=2)

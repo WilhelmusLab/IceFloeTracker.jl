@@ -13,7 +13,7 @@ Since the algorithm is not truly anisotropic, we refer to it instead as nonlinea
 ##Arguments
 - λ = Parameter weighting the diffusion rate, needs to be between 0 and 0.25 for stability.
 - K = Numerator for the image gradient function. (TBD: Option to estimate from image gradient histogram)
-- niters = Number of interations
+- niters = Number of iterations
 - g = "exponential", "inverse_quadratic" (TBD: Option to provide user-defined function)
 
 References:

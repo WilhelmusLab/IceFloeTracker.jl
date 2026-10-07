@@ -115,7 +115,7 @@
             algorithm::IceFloeSegmentationAlgorithm,
             case::Case,
         )::Bool
-        
+
     Runs `algorithm` on `case` using `target_type` to cast images; returns true if results are within 1% of the `baseline`.
 
 
@@ -234,7 +234,7 @@
                     try
                         save(path, image)
                     catch e
-                        @warn "an unexpected error occured saving $name: $e"
+                        @warn "an unexpected error occurred saving $name: $e"
                     end
                 else
                     @debug "skipping $(name) – not an image we can save"
