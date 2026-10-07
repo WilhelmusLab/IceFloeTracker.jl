@@ -592,7 +592,6 @@ function watershed_ice_floes(
     )::BitMatrix
     features = feature_transform(.!binary_floe_mask)
     distances = 1 .- distance_transform(features)
-    markers = distances .> 0
     markers = (hmin_transform(distances, hmin_depth) .> 0) |> label_components
     boundaries = zeros(Int64, size(markers))
     for t in tiles
@@ -608,7 +607,6 @@ function watershed_ice_floes(
     )::BitMatrix
     features = feature_transform(.!binary_floe_mask)
     distances = 1 .- distance_transform(features)
-    markers = distances .> 0
     markers = (hmin_transform(distances, hmin_depth) .> 0) |> label_components
     segment = watershed(distances, markers)
     boundaries = isboundary(labels_map(segment)) .> 0
