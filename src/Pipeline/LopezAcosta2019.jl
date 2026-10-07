@@ -180,7 +180,7 @@ Segmentation algorithm for sea ice floe identification based on Lopez-Acosta 201
    input to the ImageContrastAdjustment GammaCorrection algorithm, `adjusted_ice_threshold` is a global threshold for the internal
    adjusted image, `alpha_level` controls the amount of the brightened image to use, and `fill_range_max` is the largest dark spot
    to fill in the binarized result.
-- `segF_params`: Parameters for the third segmentation stage. Again using k-means clustering, with k=3 clusters, and using morphological operations anre reconstruction.
+- `segF_params`: Parameters for the third segmentation stage. Again using k-means clustering, with k=3 clusters, and using morphological operations and reconstruction.
 - `floe_splitting_settings`: Parameters for separating ice floes in the segF binarized result
 - `expand_labels_by`: Number of pixels to expand labels without overlap.
 
