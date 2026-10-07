@@ -120,11 +120,13 @@ function maximum_linear_distance(Δt; umax=0.75, eps=250)
     return s * umax + eps
 end
 
+# TODO: require dt to be milliseconds (or at least a timedelta), so we can do e.g. = Dates.seconds(passtimes[2] - passtimes[1])
+# TODO: Determine whether we should have a default option here.
 """
     distance_threshold(Δx, Δt, threshold_function)
 
 Time-distance threshold functions are used to identify search regions for floe matching. We include two distance threshold functions:
-LopezAcostaTimeDistanceFunction, based on the stepwise method in Lopez-Acosta et al. 2019, and LogLogQuadraticTimeDistanceFunction, 
+LopezAcostaTimeDistanceFunction, based on the stepwise method in Lopez-Acosta et al. 2019, and LogLogQuadraticTimeDistanceFunction,
 which is based on fitting a quadratic function to log-transformed displacements calculated from
 drifting buoy data.
 
@@ -133,8 +135,6 @@ drifting buoy data.
 julia> distance_threshold(100, Hour(12), LopezAcostaTimeDistanceFunction())
 ```
 """
-# TODO: require dt to be milliseconds (or at least a timedelta), so we can do e.g. = Dates.seconds(passtimes[2] - passtimes[1])
-# TODO: Determine whether we should have a default option here.
 function distance_threshold(
     Δx, Δt, threshold_function::AbstractTimeDistanceThresholdFunction
 )
