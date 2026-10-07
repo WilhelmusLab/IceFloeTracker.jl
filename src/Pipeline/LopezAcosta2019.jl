@@ -103,7 +103,7 @@ Note: results are strongly sensitive to the choice of rblocks, cblocks, and clip
 small blocks results in noisy images and poor performance. With larger blocks, a higher clipping parameter can help.
 
 - `diffusion_algorithm`: An `AbstractDiffusionAlgorithm`. Defaults to [`PeronaMalikDiffusion`](@ref)
-- `adapthisteq_alogirhtm`: Any histogram adjustment algorithm which can be passed to `adjust_histogram()`.
+- `adapthisteq_algorithm`: Any histogram adjustment algorithm which can be passed to `adjust_histogram()`.
 - `unsharp_mask_params`: Parameters for [`unsharp_mask`](@ref)
 - `process_color`: Either `:color` or `:grayscale`. If `:grayscale`, then convert to grayscale prior to running the other algorithms.
      Otherwise, conversion to grayscale occurs after nonlinear diffusion and image histogram adjustment. 
