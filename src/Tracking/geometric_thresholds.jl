@@ -4,8 +4,8 @@
 
 The piecewise linear threshold function is defined using two (area, value) pairs. For
 areas below the minimum area, it is constant at minimum value; likewise for above the
-maximum area. The threshold function is linear in between these two points. A return 
-value `true` indicates that the value is below the threshold. 
+maximum area. The threshold function is linear in between these two points. A return
+value `true` indicates that the value is below the threshold.
 """
 @kwdef struct PiecewiseLinearThresholdFunction <: AbstractThresholdFunction
     minimum_area = 100
@@ -25,10 +25,10 @@ end
     StepwiseLinearThresholdFunction(changepoint_area::Number, low_value::Number, high_value::Number)
     StepwiseLinearThresholdFunction()(area, value)
 
-The stepwise linear threshold function is defined using a changepoint area and two levels. 
+The stepwise linear threshold function is defined using a changepoint area and two levels.
 If the area is less than the changepoint area, the function returns true if the value is below
-`low_value` and false otherwise; if the area is greater than or equal to the changepoint area, 
-then the value is tested againg `high_value`.
+`low_value` and false otherwise; if the area is greater than or equal to the changepoint area,
+then the value is tested against `high_value`.
 
 """
 @kwdef struct StepwiseLinearThresholdFunction <: AbstractThresholdFunction

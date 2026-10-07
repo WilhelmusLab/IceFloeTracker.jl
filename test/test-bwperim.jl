@@ -1,7 +1,7 @@
 @testitem "bwperim" begin
     import Images: label_components
 
-    # Create image with 3 connected components. The test consists of digging the biggests holes for each blob in the foreground using bwperim, thereby creating 3 additional connected components, 6 in total.
+    # Create image with 3 connected components. The test consists of digging the biggest holes for each blob in the foreground using bwperim, thereby creating 3 additional connected components, 6 in total.
     A = zeros(Bool, 13, 16)
     A[2:6, 2:6] .= 1
     A[4:8, 7:10] .= 1
@@ -30,17 +30,17 @@
     interior_relabel = label_components(interior) * 2 # relabel the wholes
     A_relabeled = interior_relabel .+ border_mask
     # 0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0
-    # 0  1  1  1  1  1  0  0  0  0  0  0  0  0  0  0        
-    # 0  1  2  2  2  1  0  0  0  0  0  0  0  0  0  0        
-    # 0  1  2  2  2  2  1  1  1  1  0  0  0  0  0  0        
-    # 0  1  2  2  2  2  2  2  2  1  0  0  0  0  0  0        
-    # 0  1  1  1  1  1  2  2  2  1  0  0  0  0  0  0        
-    # 0  0  0  0  0  0  1  2  2  1  0  0  0  0  0  0        
-    # 0  0  0  0  0  0  1  1  1  1  0  0  0  0  0  0        
-    # 0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0        
+    # 0  1  1  1  1  1  0  0  0  0  0  0  0  0  0  0
+    # 0  1  2  2  2  1  0  0  0  0  0  0  0  0  0  0
+    # 0  1  2  2  2  2  1  1  1  1  0  0  0  0  0  0
+    # 0  1  2  2  2  2  2  2  2  1  0  0  0  0  0  0
+    # 0  1  1  1  1  1  2  2  2  1  0  0  0  0  0  0
+    # 0  0  0  0  0  0  1  2  2  1  0  0  0  0  0  0
+    # 0  0  0  0  0  0  1  1  1  1  0  0  0  0  0  0
+    # 0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0
     # 0  0  1  1  1  1  0  0  0  0  0  0  1  1  1  0
-    # 0  0  1  4  4  1  0  0  0  0  0  0  1  6  1  0        
-    # 0  0  1  1  1  1  0  0  0  0  0  0  1  1  1  0        
+    # 0  0  1  4  4  1  0  0  0  0  0  0  1  6  1  0
+    # 0  0  1  1  1  1  0  0  0  0  0  0  1  1  1  0
     # 0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0
 
     @test numinicomps + 3 == maximum(label_components(A_relabeled, trues(3, 3)))

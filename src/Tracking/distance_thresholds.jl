@@ -21,8 +21,8 @@ function seconds(time_difference::Union{Period,CompoundPeriod})
 end
 
 """
-    LopezAcostaTimeDistanceFunction(; 
-        dt=(Minute(20), Minute(90), Hour(24)), 
+    LopezAcostaTimeDistanceFunction(;
+        dt=(Minute(20), Minute(90), Hour(24)),
         dx=(3.75e3, 7.5e3, 30e3, 60e3)
         )
     LopezAcostaTimeDistanceFunction()(Δx, Δt)
@@ -55,14 +55,14 @@ end
         max_time=Day(7)
     )
     LogLogQuadraticTimeDistanceFunction()(Δx, Δt)
-    
+
 Tests the travel distance and time in log-log space against an empirically fitted quadratic function. The
 function is constrained by minimum and maximum times. Times less than the minimum are subject to the maximum 1-hour travel
-distance, while times larger than the maximum fail automatically. 
+distance, while times larger than the maximum fail automatically.
 
 ## Arguments
 - llq_params = Parameters of a quadratic function in log-log space fit to the 99th percentile of sea ice buoy displacements.
-- min_time = Lower bound for the quadratic function domain. 
+- min_time = Lower bound for the quadratic function domain.
 - max_time = Upper bound for the quadratic function domain.
 - Δx: Elapsed distance in meters
 - Δt: Elapsed time; must be a Dates.Period or Dates.CompoundPeriod
@@ -120,11 +120,13 @@ function maximum_linear_distance(Δt; umax=0.75, eps=250)
     return s * umax + eps
 end
 
+# TODO: require dt to be milliseconds (or at least a timedelta), so we can do e.g. = Dates.seconds(passtimes[2] - passtimes[1])
+# TODO: Determine whether we should have a default option here.
 """
     distance_threshold(Δx, Δt, threshold_function)
 
 Time-distance threshold functions are used to identify search regions for floe matching. We include two distance threshold functions:
-LopezAcostaTimeDistanceFunction, based on the stepwise method in Lopez-Acosta et al. 2019, and LogLogQuadraticTimeDistanceFunction, 
+LopezAcostaTimeDistanceFunction, based on the stepwise method in Lopez-Acosta et al. 2019, and LogLogQuadraticTimeDistanceFunction,
 which is based on fitting a quadratic function to log-transformed displacements calculated from
 drifting buoy data.
 
@@ -133,8 +135,6 @@ drifting buoy data.
 julia> distance_threshold(100, Hour(12), LopezAcostaTimeDistanceFunction())
 ```
 """
-# TODO: require dt to be milliseconds (or at least a timedelta), so we can do e.g. = Dates.seconds(passtimes[2] - passtimes[1])
-# TODO: Determine whether we should have a default option here.
 function distance_threshold(
     Δx, Δt, threshold_function::AbstractTimeDistanceThresholdFunction
 )

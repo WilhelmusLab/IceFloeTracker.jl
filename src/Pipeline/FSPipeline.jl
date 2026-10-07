@@ -75,7 +75,7 @@ unsharp_mask_params = (radius=50, amount=0.3, threshold=0.01)
     )
     Preprocess()(img, cloudmask, landmask)
 
-    Converts input image to grayscale, then preprocesses by appling nonlinear diffusion,
+    Converts input image to grayscale, then preprocesses by applying nonlinear diffusion,
     adaptive histogram equalization, and unsharp masking. Diffusion and unsharp masking are applied
     to each tile, while the adaptive histogram equalization is divided according to the parameter
     specifications.
@@ -467,7 +467,7 @@ contrast, by comparing the difference in the mean intensity of the image and the
 within `expand_radius` pixels. A DataFrame with rows corresponding to comparisons between
 the indexmaps is returned. Note that each labeled object may map to multiple objects.
 Returns the list of properties in "return properties" along with comparative measures `dist_s1_s2``,
-`scaled_relative_error_area`, and object measures `reflectance_mean`, `reflectance_bdry_mean`, 
+`scaled_relative_error_area`, and object measures `reflectance_mean`, `reflectance_bdry_mean`,
 and `reflectance_bdry_contrast` computed relative to the input `img`.
 
 """
@@ -609,7 +609,7 @@ function merge_floes(indexmap1, indexmap2, img; dmax=10, emax=0.25, min_floe_siz
         df_comp, [:s1_label, :s2_label] => ByRow((s1, s2) -> s1 ∈ A_labels || s2 ∈ B_labels)
     )
 
-    # For the remaining floes, pick the floe wtih the best contrast to the background.
+    # For the remaining floes, pick the floe with the best contrast to the background.
     nrow(df_comp) > 0 && begin
 
         # Selects the subset of df_comp mapping s1 to a single s2, ranked by contrast.
