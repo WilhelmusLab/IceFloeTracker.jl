@@ -47,7 +47,6 @@ import ..Pipeline:
 import ..Tracking: FloeTracker, FilterFunction, MinimumWeightMatchingFunction
 import Dates: Day
 import ..ImageUtils: imbrighten, apply_to_channels
-import ..Pipeline: IceFloeSegmentationAlgorithm
 
 abstract type ColorProcessingMode end
 struct ColorProcessing <: ColorProcessingMode end
@@ -107,6 +106,7 @@ small blocks results in noisy images and poor performance. With larger blocks, a
 - `adapthisteq_alogirhtm`: Any histogram adjustment algorithm which can be passed to `adjust_histogram()`.
 - `unsharp_mask_params`: Parameters for [`unsharp_mask`](@ref)
 - `process_color`: Either `:color` or `:grayscale`. If `:grayscale`, then convert to grayscale prior to running the other algorithms.
+     Otherwise, conversion to grayscale occurs after nonlinear diffusion and image histogram adjustment. 
 
 """
 @kwdef struct Preprocess <: IceFloePreprocessingAlgorithm

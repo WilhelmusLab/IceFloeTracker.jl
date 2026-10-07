@@ -4,16 +4,18 @@
     dataset = Watkins2026Dataset(; ref="v0.2")
 
     case = first(filter(c -> (c.case_number == 6 && c.satellite == "terra"), dataset))
+    preprocess = LopezAcosta2019.Preprocess(process_color=:color)
     segments = LopezAcosta2019.Segment(
-        preprocessing_algorithm=LopezAcosta2019.Preprocess(process_color=:color)
+        preprocessing_algorithm=preprocess
     )(
         RGB.(modis_truecolor(case)), RGB.(modis_falsecolor(case)), modis_landmask(case)
     )
     expected_segment_count = validated_floe_properties(case) |> DataFrame |> nrow
     @test length(segments.segment_labels) ≈ expected_segment_count rtol = 0.7
 
+    preprocess = LopezAcosta2019.Preprocess(process_color=:grayscale)
     segments = LopezAcosta2019.Segment(
-        preprocessing_algorithm=LopezAcosta2019.Preprocess(process_color=:grayscale)
+        preprocessing_algorithm=preprocess
     )(
         RGB.(modis_truecolor(case)), RGB.(modis_falsecolor(case)), modis_landmask(case)
     )
@@ -41,8 +43,9 @@ end
     # An invalid process_color falls back to :color with a warning instead of erroring
     # (regression test: this used to throw, since `process_color` was being mutated on
     # an immutable struct).
-    @test_logs (:warn, r"Invalid process_color")
-    LopezAcosta2019.Preprocess(; process_color=:invalid)(truecolor_image, landmask)
+    @test_logs (:warn, r"Invalid process_color") begin
+        LopezAcosta2019.Preprocess(; process_color=:invalid)(truecolor_image, landmask)
+    end
 end
 
 @testitem "LopezAcosta2019.Segment – sample of cases" setup = [Segmentation] tags = [:e2e] begin
