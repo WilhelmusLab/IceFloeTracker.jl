@@ -85,6 +85,8 @@ Segmentation algorithm for sea ice floe identification based on Lopez-Acosta 201
 - `cloud_mask_algorithm`: An `AbstractCloudMaskAlgorithm`. Defaults to [`LopezAcostaCloudMask`](@ref)
 - `diffusion_algorithm`: An `AbstractDiffusionAlgorithm`. Defaults to [`PeronaMalikDiffusion`](@ref)
 - `tile_settings=(; rblocks=1, cblocks=1)`: Option to divide the image into tiles for portions of the processing.
+- `min_ocean_pixels`: Minimum number of non-land pixels in a tile to process it. Note that if too many rblocks
+   and cblocks are chosen, the block size may be below the threshold resulting in the tile not being processed.
 - `adapthisteq_params`: Parameters for the adaptive histogram AdaptiveEqualization. 
 - `unsharp_mask_params`: Parameters for [`unsharp_mask`](@ref)
 - `kmeans_params`: Parameters for [`kmeans_binarization`](@ref)
