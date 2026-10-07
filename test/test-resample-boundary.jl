@@ -40,7 +40,7 @@
     @test d < 0.1
 
     # Test 3: Check distances between a pair of adjacent points is about the same (small standard deviation)
-    std(difs2) < 1.0
+    @test std(difs2) < 1.0
 end
 
 @testitem "resample_boundary: minimum boundary" begin
