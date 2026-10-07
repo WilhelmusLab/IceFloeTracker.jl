@@ -118,3 +118,26 @@
         ".png"
     @persist reconstructed_image reconstructed_image_filename
 end
+
+@testitem "Image Preprocessing: Nonlinear Diffusion" begin
+    using ZipFile
+    import IceFloeTracker: nonlinear_diffusion, nonlinear_diffusion!, PeronaMalikDiffusion, get_tiles
+    using Images: Gray
+    import DelimitedFiles: readdlm
+    r = ZipFile.Reader("test_inputs/coins.zip")
+    coins = Gray.(readdlm(r.files[1], ',', Int) ./ 255)
+    close(r)
+
+    default = nonlinear_diffusion(coins, PeronaMalikDiffusion())
+    coins_copy = copy(coins)
+    nonlinear_diffusion!(coins_copy, PeronaMalikDiffusion())
+    @test default == coins_copy
+
+    tiles = get_tiles(coins; rblocks=2, cblocks=2)
+    default = nonlinear_diffusion(coins, tiles, PeronaMalikDiffusion())
+    coins_copy = copy(coins)
+    nonlinear_diffusion!(coins_copy, PeronaMalikDiffusion())
+    @persist default coins_copy
+    @test default == coins_copy
+
+end

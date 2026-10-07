@@ -77,6 +77,39 @@ function nonlinear_diffusion(
     return out
 end
 
+"""
+    nonlinear_diffusion(img, f::AbstractDiffusionAlgorithm)
+
+Simple wrapper to apply a diffusion algorithm to an image. Currently the only supported algorithm
+is the Perona-Malik method.
+"""
+function nonlinear_diffusion!(
+    img::AbstractArray{<:Union{AbstractRGB,TransparentRGB,AbstractGray}},
+    f::AbstractDiffusionAlgorithm=PeronaMalikDiffusion(),
+)
+    img .= f(img)
+end
+
+function nonlinear_diffusion!(
+    img::AbstractArray{<:Union{AbstractRGB,TransparentRGB,AbstractGray}},
+    λ::Float64,
+    K::Number,
+    niters::Int,
+)
+    return nonlinear_diffusion!(img, PeronaMalikDiffusion(λ, K, niters, "inverse_quadratic"))
+end
+
+function nonlinear_diffusion!(
+    img::AbstractArray{<:Union{AbstractRGB,TransparentRGB,AbstractGray}},
+    tiles,
+    f::AbstractDiffusionAlgorithm=PeronaMalikDiffusion()
+)
+    for tile in tiles
+        img[tile...] .= f(img[tile...])
+    end
+end
+
+
 function (f::PeronaMalikDiffusion)(img::AbstractArray{<:AbstractGray})
     # Get the gradient function from the supported functions
     g = SUPPORTED_GRADIENT_FUNCTIONS[f.g]
