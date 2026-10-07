@@ -368,17 +368,6 @@ end
 
 @testsnippet TrackerValidation begin
     using DataFrames: DataFrame, nrow
-    using Dates: DateTime
-    function tracker_runs_without_error(
-        img1::Matrix{Int},
-        time1::DateTime,
-        img2::Matrix{Int},
-        time2::DateTime;
-        tracker::AbstractTracker,
-    )
-        result = tracker([img1, img2], [time1, time2])
-        return is_wellformed_tracker_result(result)
-    end
 
     """
         is_wellformed_tracker_result(result) -> Bool
