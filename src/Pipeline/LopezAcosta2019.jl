@@ -46,7 +46,7 @@ import ..Pipeline:
 
 import ..Tracking: FloeTracker, FilterFunction, MinimumWeightMatchingFunction
 import Dates: Day
-import ..ImageUtils: imbrighten, apply_to_channels
+import ..ImageUtils: imbrighten, apply_to_channels, get_tiles
 
 abstract type ColorProcessingMode end
 struct ColorProcessing <: ColorProcessingMode end
@@ -146,12 +146,14 @@ function (p::Preprocess)(
 end
 
 """
-    LopezAcosta2019.Segment(
-        coastal_buffer_structuring_element::AbstractMatrix{Bool} = make_landmask_se()
-        cloud_mask_algorithm = LopezAcostaCloudMask()
-        preprocessing_algorithm = LopezAcosta2019.Preprocess()
-        kmeans_params = (k=4, maxiter=50, random_seed=45)
-        cluster_selection_algorithm = IceDetectionLopezAcosta2019()
+    LopezAcosta2019.Segment(;
+        coastal_buffer_structuring_element::AbstractMatrix{Bool} = make_landmask_se(),
+        cloud_mask_algorithm = LopezAcostaCloudMask(),
+        tile_settings = (; rblocks=1, cblocks=1),
+        min_ocean_pixels = 300,
+        preprocessing_algorithm = LopezAcosta2019.Preprocess(),
+        kmeans_params = (k=4, maxiter=50, random_seed=45),
+        cluster_selection_algorithm = IceDetectionLopezAcosta2019(),
         segB_params = (
             isolation_threshold=0.4,
             brightening_factor=0.3,
@@ -160,6 +162,7 @@ end
             fill_range_max=1,
             alpha_level=0.5
         )
+    )
 
 Segmentation algorithm for sea ice floe identification based on Lopez-Acosta 2019, 2021. The basic procedure is as follows:
 1. Preprocess the image using diffusion, adaptive histogram equalization, and unsharp masking.
@@ -172,6 +175,9 @@ Segmentation algorithm for sea ice floe identification based on Lopez-Acosta 201
 
 ## Arguments
 - `cloud_mask_algorithm`: An `AbstractCloudMaskAlgorithm`. Defaults to [`LopezAcostaCloudMask`](@ref)
+- `tile_settings=(; rblocks=1, cblocks=1)`: Option to divide the image into tiles for portions of the processing.
+- `min_ocean_pixels`: Minimum number of non-land pixels in a tile to process it. Note that if too many rblocks
+   and cblocks are chosen, the block size may be below the threshold resulting in the tile not being processed.
 - `kmeans_params`: Parameters for [`kmeans_binarization`](@ref)
 - `cluster_selection_algorithm`: An [`IceDetectionAlgorithm`](@ref), which takes the falsecolor image as an input and produces
    a binary image with likely ice floe pixels set to `true`.
@@ -192,6 +198,8 @@ Note: This algorithm is under active development and the API will change in a fu
 @kwdef struct Segment <: IceFloeSegmentationAlgorithm
     coastal_buffer_structuring_element::AbstractMatrix{Bool} = make_landmask_se()
     cloud_mask_algorithm = LopezAcostaCloudMask()
+    tile_settings=(; rblocks=1, cblocks=1)
+    min_ocean_pixels=300
     preprocessing_algorithm = Preprocess()
     kmeans_params = (k=4, maxiter=50, random_seed=45)
     cluster_selection_algorithm = IceDetectionLopezAcosta2019()
@@ -235,6 +243,10 @@ function (p::Segment)(
 
     # 2. Intermediate images
     fc_masked = apply_landmask(falsecolor_image, coastal_buffer_mask)
+    tiles = get_tiles(truecolor_image; p.tile_settings...)
+    tiles = filter(
+        t -> sum(landmask[t...] .== 0) > p.min_ocean_pixels, tiles 
+    )
 
     @info "Preprocessing truecolor image"
     sharpened_grayscale_image = p.preprocessing_algorithm(truecolor_image, landmask)
@@ -250,7 +262,8 @@ function (p::Segment)(
     segmentation_A =
         kmeans_binarization(
             ice_water_discrim,
-            fc_masked;
+            fc_masked,
+            tiles;
             k=p.kmeans_params.k,
             maxiter=p.kmeans_params.maxiter,
             random_seed=p.kmeans_params.random_seed,
@@ -288,10 +301,9 @@ function (p::Segment)(
 
     # Process watershed in parallel using Folds
     @info "Building watersheds"
-    watersheds_segB = [
-        watershed_ice_floes(prelim_binarized), watershed_ice_floes(ice_intersect)
-    ]
-    watersheds_product = watershed_product(watersheds_segB...)
+    wshed_prelim_boundaries = watershed_ice_floes(prelim_binarized, tiles)
+    wshed_intersect_boundaries = watershed_ice_floes(ice_intersect, tiles)
+    watersheds_product = wshed_prelim_boundaries .&& wshed_intersect_boundaries
 
     # segmentation_F
     # TODO: @hollandjg find out why segF is more dilated
@@ -310,7 +322,8 @@ function (p::Segment)(
     segF_binarized =
         kmeans_binarization(
             morphed_grayscale,
-            fc_masked;
+            fc_masked,
+            tiles;
             k=p.segF_params.k,
             cluster_selection_algorithm=p.cluster_selection_algorithm,
         ) .* .!watersheds_product
@@ -631,40 +644,42 @@ function segmented_ice_cloudmasking(
 end
 
 """
-    watershed_ice_floes(intermediate_segmentation_image;)
-Performs image processing and watershed segmentation with intermediate files from segmentation_b.jl to further isolate ice floes, returning a binary segmentation mask indicating potential sparse boundaries of ice floes.
+    watershed_ice_floes(binary_floe_mask, tiles; hmin_depth=2)
+    watershed_ice_floes(binary_floe_mask; hmin_depth=2)
+
+Detect boundaries between ice floes by using watershed segmentation. Uses the
+hmin transform on the inverse distance transform for marker selection.
+
 # Arguments
--`intermediate_segmentation_image`: binary cloudmasked and landmasked intermediate file from segmentation B, either `SegB.not_ice_bit` or `SegB.ice_intersect`
+- `binary_floe_mask`: BitMatrix with binarized sea ice floes for splitting
+- `tiles` (optional): Tiled iterator.
 """
-function watershed_ice_floes(intermediate_segmentation_image::BitMatrix)::BitMatrix
-    features = feature_transform(.!intermediate_segmentation_image)
+function watershed_ice_floes(
+        binary_floe_mask::BitMatrix, tiles;
+        hmin_depth=2,
+    )::BitMatrix
+    features = feature_transform(.!binary_floe_mask)
     distances = 1 .- distance_transform(features)
-    seg_mask = hmin_transform(distances, 2)
-    seg_mask_bool = seg_mask .> 0
-    markers = label_components(seg_mask_bool)
+    markers = (hmin_transform(distances, hmin_depth) .> 0) |> label_components
+    boundaries = zeros(Int64, size(markers))
+    for t in tiles
+        segment = watershed(distances[t...], markers[t...])
+        boundaries[t...] .= isboundary(labels_map(segment))
+    end
+    return boundaries .> 0
+end
+
+function watershed_ice_floes(
+        binary_floe_mask::BitMatrix;
+        hmin_depth=2,
+    )::BitMatrix
+    features = feature_transform(.!binary_floe_mask)
+    distances = 1 .- distance_transform(features)
+    markers = (hmin_transform(distances, hmin_depth) .> 0) |> label_components
     segment = watershed(distances, markers)
-    labels = labels_map(segment)
-    borders = isboundary(labels)
-    return borders
+    boundaries = isboundary(labels_map(segment)) .> 0
+    return boundaries
 end
-
-# TODO: Remove this, it's just componentwise matrix multiplication
-"""
-    watershed_product(watershed_B_ice_intersect, watershed_B_not_ice;)
-Intersects the outputs of watershed segmentation on intermediate files from segmentation B, indicating potential sparse boundaries of ice floes.
-# Arguments
-- `watershed_B_ice_intersect`: binary segmentation mask from `watershed_ice_floes`
-- `watershed_B_not_ice`: binary segmentation mask from `watershed_ice_floes`
-"""
-function watershed_product(
-    watershed_B_ice_intersect::BitMatrix, watershed_B_not_ice::BitMatrix;
-)::BitMatrix
-
-    ## Intersect the two watershed files
-    watershed_intersect = watershed_B_ice_intersect .* watershed_B_not_ice
-    return watershed_intersect
-end
-
 
 """IceDetectionLopezAcosta2019
 
