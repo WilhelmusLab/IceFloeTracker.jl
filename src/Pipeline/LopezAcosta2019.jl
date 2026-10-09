@@ -644,8 +644,8 @@ function segmented_ice_cloudmasking(
 end
 
 """
-    watershed_ice_floes(intermediate_segmentation_image, tiles; hmin_depth=2)
-    watershed_ice_floes(intermediate_segmentation_image; hmin_depth=2)
+    watershed_ice_floes(binary_floe_mask, tiles; hmin_depth=2)
+    watershed_ice_floes(binary_floe_mask; hmin_depth=2)
 
 Detect boundaries between ice floes by using watershed segmentation. Uses the
 hmin transform on the inverse distance transform for marker selection.
