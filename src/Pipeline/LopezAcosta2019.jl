@@ -651,8 +651,8 @@ Detect boundaries between ice floes by using watershed segmentation. Uses the
 hmin transform on the inverse distance transform for marker selection.
 
 # Arguments
--`binary_floe_mask`: BitMatrix with binarized sea ice floes for splitting
--`tiles` (optional): Tiled iterator.
+- `binary_floe_mask`: BitMatrix with binarized sea ice floes for splitting
+- `tiles` (optional): Tiled iterator.
 """
 function watershed_ice_floes(
         binary_floe_mask::BitMatrix, tiles;
