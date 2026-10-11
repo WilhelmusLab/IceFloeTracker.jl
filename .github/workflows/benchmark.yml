@@ -1,0 +1,27 @@
+name: Benchmark this PR
+
+on:
+  pull_request:
+    branches: [main]
+    paths-ignore: ['docs/**', 'notebooks/**', '**.md']
+
+permissions:
+  pull-requests: write
+  contents: read
+
+jobs:
+  benchmark:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        version: ['1.12']
+    env:
+      JULIA_DEPOT_PATH: ~/.julia
+    steps:
+      - uses: MilesCranmer/AirspeedVelocity.jl@action-v1
+        with:
+          julia-version: ${{ matrix.version }}
+          bench-on: ${{ github.event.pull_request.head.sha }}
+          job-summary: true
