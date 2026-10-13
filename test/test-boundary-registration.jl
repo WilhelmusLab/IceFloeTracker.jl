@@ -11,8 +11,7 @@
         rotate_boundary,
         boundary_hausdorff,
         boundary_modified_hausdorff,
-        register_default_angles_rad,
-        prior_test_angles
+        register_default_angles_rad
 
     # closed L-shape: no rotational symmetry, so the optimum angle is unique
     L = [
@@ -99,11 +98,11 @@ end
     @test any(a -> isapprox(a, recovered; atol=1e-12), angles)
 end
 
-@testitem "register_boundary works with a prior-restricted grid" setup = [BoundaryRegSetup] begin
+@testitem "register_boundary works with a custom grid" setup = [BoundaryRegSetup] begin
     θ = deg2rad(12.0)
     target = rotate_as_mask(L, θ)
 
-    angles = prior_test_angles(θ; window=deg2rad(10.0))
+    angles = deg2rad.(2.0:1.0:22.0)
     recovered = register_boundary(L, target; test_angles=angles)
     @test isapprox(recovered, θ; atol=1e-9)
 end
