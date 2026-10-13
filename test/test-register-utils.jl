@@ -678,3 +678,29 @@ end
     @test_logs (:warn, r"edge") register_coarse_to_fine(floe, rotated(60))
     @test_logs register_coarse_to_fine(floe, rotated(13))
 end
+
+@testitem "register_coarse_to_fine warns on the lower edge of an asymmetric window" setup = [
+    CoarseToFineSetup
+] begin
+    asymmetric = sort(deg2rad.(-10.0:5.0:30.0); by=θ -> (abs(θ), -θ))
+    @test_logs (:warn, r"edge") register_coarse_to_fine(
+        floe, rotated(-20); coarse_angles=asymmetric
+    )
+end
+
+@testitem "register_coarse_to_fine rejects invalid fine_step and fine_window" setup = [
+    CoarseToFineSetup
+] begin
+    target = rotated(8)
+    for fine_step in (0.0, -deg2rad(1.0), NaN)
+        @test_throws ArgumentError register_coarse_to_fine(floe, target; fine_step)
+        @test_throws r"fine_step" register_coarse_to_fine(floe, target; fine_step)
+    end
+    for fine_window in (-deg2rad(1.0), Inf, NaN)
+        @test_throws ArgumentError register_coarse_to_fine(floe, target; fine_window)
+        @test_throws r"fine_window" register_coarse_to_fine(floe, target; fine_window)
+    end
+    # a zero window is a coarse-only search
+    @test register_coarse_to_fine(floe, target; fine_window=0.0) ==
+        register(floe, target; test_angles=register_coarse_angles_rad)
+end
