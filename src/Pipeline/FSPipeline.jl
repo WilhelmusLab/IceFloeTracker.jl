@@ -58,9 +58,9 @@ import ..Tracking:
     ShapeDifferenceThresholdFilter,
     PsiSCorrelationThresholdFilter
 
-import ..Pipeline: IceFloeSegmentationAlgorithm
-
-abstract type IceFloePreprocessingAlgorithm end
+import ..Pipeline: 
+    IceFloeSegmentationAlgorithm,
+    IceFloePreprocessingAlgorithm
 
 # Preprocess Params
 diffusion_algorithm = PeronaMalikDiffusion(; λ=0.1, K=0.1, niters=7, g="exponential")
