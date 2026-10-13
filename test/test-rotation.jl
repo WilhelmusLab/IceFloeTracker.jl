@@ -3,6 +3,7 @@
     using DataFrames
     using Dates
     using IceFloeTracker: get_rotation_measurements, _add_suffix
+    using IceFloeTracker.Tracking: register, register_coarse_to_fine
 
     masks = Dict(
         0 => Bool[
@@ -476,7 +477,11 @@ end
         ])
 
         result = get_rotation_measurements(
-            df[1, :], df[2, :]; image_column=:mask, time_column=:time
+            df[1, :],
+            df[2, :];
+            image_column=:mask,
+            time_column=:time,
+            registration_function=register,
         )
 
         @test result.theta_rad ≈ π / 2.0
@@ -486,14 +491,24 @@ end
     end
     @testset "sampled cases" begin
         function check_single_rotation_measurements(
-            time1, Δt_sec::Int64, mask1, mask2, Δθ_deg; Δθ_deg_tolerance=5.1
+            time1,
+            Δt_sec::Int64,
+            mask1,
+            mask2,
+            Δθ_deg;
+            Δθ_deg_tolerance=5.1,
+            registration_function=register_coarse_to_fine,
         )
             df = DataFrame([
                 (time=time1, mask=mask1), (time=time1 + Second(Δt_sec), mask=mask2)
             ])
 
             result = get_rotation_measurements(
-                df[1, :], df[2, :]; image_column=:mask, time_column=:time
+                df[1, :],
+                df[2, :];
+                image_column=:mask,
+                time_column=:time,
+                registration_function,
             )
 
             @test deg2rad(Δθ_deg - Δθ_deg_tolerance) <=
@@ -523,13 +538,28 @@ end
             DateTime("2003-01-12T12:00:00"), 7200, masks[0], masks[15], 15
         )
         check_single_rotation_measurements(
-            DateTime("2003-01-12T12:00:00"), 86400, masks[0], masks[30], 30.0
+            DateTime("2003-01-12T12:00:00"),
+            86400,
+            masks[0],
+            masks[30],
+            30.0;
+            registration_function=register,
         )
         check_single_rotation_measurements(
-            DateTime("2003-01-12T12:00:00"), 864_000, masks[0], masks[30], 30
+            DateTime("2003-01-12T12:00:00"),
+            864_000,
+            masks[0],
+            masks[30],
+            30;
+            registration_function=register,
         )
         check_single_rotation_measurements(
-            DateTime("2003-01-12T12:00:00"), 86_400 + 3600, masks[0], masks[30], 30
+            DateTime("2003-01-12T12:00:00"),
+            86_400 + 3600,
+            masks[0],
+            masks[30],
+            30;
+            registration_function=register,
         )
     end
 end
@@ -542,7 +572,13 @@ end
         ])
 
         result = DataFrame(
-            get_rotation_measurements(df[1, :], df; image_column=:mask, time_column=:time)
+            get_rotation_measurements(
+                df[1, :],
+                df;
+                image_column=:mask,
+                time_column=:time,
+                registration_function=register,
+            ),
         )
 
         @test nrow(result) == nrow(df)
@@ -553,7 +589,13 @@ end
         df = DataFrame([(time=time, mask=masks[0]), (time=time + Day(1), mask=masks[90])])
 
         result = DataFrame(
-            get_rotation_measurements(df[2, :], df; image_column=:mask, time_column=:time)
+            get_rotation_measurements(
+                df[2, :],
+                df;
+                image_column=:mask,
+                time_column=:time,
+                registration_function=register,
+            ),
         )
 
         @test nrow(result) == nrow(df)
@@ -617,7 +659,11 @@ end
         ])
 
         result = get_rotation_measurements(
-            df; id_column=:id, image_column=:mask, time_column=:time
+            df;
+            id_column=:id,
+            image_column=:mask,
+            time_column=:time,
+            registration_function=register,
         )
         @test result[1, :theta_deg] ≈ 90
         @test result[1, :theta_rad] ≈ π / 2
@@ -646,7 +692,12 @@ end
     end
 
     @testset "longer sequences" begin
-        kwargs = (id_column=:id, image_column=:mask, time_column=:time)
+        kwargs = (
+            id_column=:id,
+            image_column=:mask,
+            time_column=:time,
+            registration_function=register,
+        )
         results = get_rotation_measurements(
             DataFrame([
                 (
@@ -889,75 +940,15 @@ end
     end
 end
 
-# Registration with an orientation prior
-# --------------------------------------
-# `get_rotation_measurements(…; orientation_column)` replaces the 72-angle full search
-# with a 1°-step search in a ±30° window around the moment-derived orientation
-# difference (and its 180° alias). These tests pin what that shortcut must preserve.
-
-@testsnippet OrientationPriorSetup begin
-    using IceFloeTracker: shape_difference_rotation
-
-    # `rotated` is `reference` turned by -15°, an angle on both the 5° full grid and the
-    # 1° prior grid; the rotation inverts exactly on this mask, so every search should
-    # land on it with shape difference 0.
-    reference, rotated = masks[0], masks[345]
-    true_rotation = deg2rad(-15.0)
+@testitem "get_rotation_measurements defaults to the coarse-to-fine search" setup = [
+    RotationSetup, CoarseToFineSetup
+] begin
     time1 = DateTime("2020-01-12T12:00:00")
-
-    # Two observations whose orientations differ by exactly `prior`.
-    # (prior = orientation1 - orientation2).
-
-    # Note: `register` undoes the rotation with imrotate(-θ), which does not invert
-    # exactly on 16×16 masks in the fixture above;
-    # −15° round-trips exactly under imrotate_bin on this mask; 15° does not.
-    function observations(prior)
-        df = DataFrame([
-            (time=time1, mask=reference, orientation=0.0),
-            (time=time1 + Hour(1), mask=rotated, orientation=(-prior)),
-        ])
-        return df[1, :], df[2, :]
-    end
-
-    full_search(r1, r2) =
-        get_rotation_measurements(r1, r2; image_column=:mask, time_column=:time).theta_rad
-
-    prior_search(r1, r2) = get_rotation_measurements(
-        r1, r2; image_column=:mask, time_column=:time, orientation_column=:orientation
-    ).theta_rad
-
-    # the objective `register` minimises, evaluated at one angle and one angle only
-    score(θ) = only(shape_difference_rotation(reference, rotated, [θ])).shape_difference
-end
-
-@testitem "orientation prior: recovers the true rotation" setup = [RotationSetup, OrientationPriorSetup] begin
-    r1, r2 = observations(true_rotation)
-    @test prior_search(r1, r2) ≈ true_rotation atol = 1e-9
-    @test score(prior_search(r1, r2)) == 0
-end
-
-@testitem "orientation prior: agrees with the full search" setup = [RotationSetup, OrientationPriorSetup] begin
-    # The prior window contains the full grid's optimum, so the restricted search can
-    # never score worse than the full one; here both find the exact rotation.
-    r1, r2 = observations(true_rotation)
-    @test prior_search(r1, r2) ≈ full_search(r1, r2) atol = 1e-9
-    @test score(prior_search(r1, r2)) <= score(full_search(r1, r2))
-end
-
-@testitem "orientation prior: a prior off by 180° gives the same answer" setup = [RotationSetup, OrientationPriorSetup] begin
-    # Moment-based orientations are defined modulo π, so the measured prior may be off
-    # by exactly 180°; `prior_test_angles` searches both aliases.
-    @test prior_search(observations(true_rotation + π)...) ≈ true_rotation atol = 1e-9
-end
-
-@testitem "orientation prior: works through the DataFrame interface" setup = [RotationSetup, OrientationPriorSetup] begin
     df = DataFrame([
-        (id=1, time=time1, mask=masks[0], orientation=0.0),
-        (id=1, time=time1 + Hour(1), mask=masks[30], orientation=(-deg2rad(30.0))),
+        (id=1, time=time1, mask=floe), (id=1, time=time1 + Hour(1), mask=rotated(8))
     ])
     result = get_rotation_measurements(
-        df; id_column=:id, image_column=:mask, time_column=:time, orientation_column=:orientation
+        df; id_column=:id, image_column=:mask, time_column=:time
     )
-    @test nrow(result) == 1
-    @test deg2rad(30.0 - 5.1) <= result[1, :theta_rad] <= deg2rad(30.0 + 5.1)
+    @test result[1, :theta_deg] ≈ 8
 end
