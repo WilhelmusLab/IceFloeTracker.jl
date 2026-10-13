@@ -170,7 +170,7 @@ end
 @testitem "BoundaryRegistration honours test_angles" setup = [BoundaryRegSetup] begin
     θ = deg2rad(12.0)
     target = rotate_as_mask(L, θ)
-    angles = prior_test_angles(θ; window=deg2rad(10.0))
+    angles = deg2rad.(2.0:1.0:22.0)
 
     @test isapprox(BoundaryRegistration()(L, target; test_angles=angles), θ; atol=1e-9)
 end
@@ -281,8 +281,7 @@ end
 
 # ---------------------------------------------------------------------------
 # End-to-end: BoundaryRegistration as a registration_function.
-# These are the only tests that exercise rotation.jl's injection path, and the
-# prior variant is the only one that exercises its `test_angles` closure.
+# These are the only tests that exercise rotation.jl's injection path.
 # ---------------------------------------------------------------------------
 
 @testitem "BoundaryRegistration drives get_rotation_measurements" setup = [BoundaryRegSetup] begin
@@ -292,12 +291,9 @@ end
     θ = deg2rad(30.0)                      # on the default 5 degree grid
     t0 = DateTime(2020, 1, 1, 0, 0, 0)
 
-    # row1 is the older observation; prior = orientation1 - orientation2, so
-    # orientation2 = -θ makes the prior +θ (matching the mask-based convention)
     df = DataFrame(;
         id=[1, 1],
         boundary=[L, rotate_as_mask(L, θ)],
-        orientation=[0.0, -θ],
         time=[t0, t0 + Hour(6)],
     )
 
@@ -326,7 +322,6 @@ end
     df = DataFrame(;
         id=[1, 1],
         boundary=[L, rotate_as_mask(L, θ)],
-        orientation=[0.0, -θ],
         time=[t0, t0 + Hour(6)],
     )
 
@@ -342,47 +337,12 @@ end
     @test result.omega_rad_per_sec[1] < 0        # sign must survive the pipeline
 end
 
-@testitem "BoundaryRegistration end-to-end honours the orientation prior" setup = [BoundaryRegSetup] begin
-    using DataFrames, Dates
-    using IceFloeTracker: get_rotation_measurements
-
-    θ = deg2rad(30.0)
-    t0 = DateTime(2020, 1, 1, 0, 0, 0)
-    df = DataFrame(;
-        id=[1, 1],
-        boundary=[L, rotate_as_mask(L, θ)],
-        orientation=[0.0, -θ],
-        time=[t0, t0 + Hour(6)],
-    )
-    kw = (;
-        id_column=:id,
-        image_column=:boundary,
-        time_column=:time,
-        registration_function=BoundaryRegistration(),
-    )
-
-    # guard: if the prior grid does not contain the true angle, a failure below
-    # would be about prior construction, not about BoundaryRegistration
-    @test any(a -> isapprox(a, θ; atol=1e-9), prior_test_angles(θ; window=deg2rad(15.0)))
-
-    full = get_rotation_measurements(df; kw...)
-    with_prior = get_rotation_measurements(
-        df; kw..., orientation_column=:orientation, orientation_window=deg2rad(15.0)
-    )
-
-    # Unlike the mask path -- whose equivalents in test-rotation.jl are marked
-    # broken because pixelated imrotate on a fine grid cannot reproduce the
-    # coarse-grid optimum -- boundary rotation is exact, so these agree.
-    @test isapprox(with_prior.theta_rad[1], full.theta_rad[1]; atol=1e-8)
-    @test isapprox(with_prior.theta_rad[1], θ; atol=1e-9)
-end
-
 @testitem "BoundaryRegistration survives an empty DataFrame" setup = [BoundaryRegSetup] begin
     using DataFrames, Dates
     using IceFloeTracker: get_rotation_measurements
 
     df = DataFrame(;
-        id=Int[], boundary=Matrix{Float64}[], orientation=Float64[], time=DateTime[]
+        id=Int[], boundary=Matrix{Float64}[], time=DateTime[]
     )
     result = get_rotation_measurements(
         df;
