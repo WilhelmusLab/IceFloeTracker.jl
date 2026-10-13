@@ -181,9 +181,12 @@ register_coarse_angles_rad = sort(
 
 Finds the rotation angle between `im_reference` and `im_target` in two stages: [`register`](@ref) over
 `coarse_angles`, then over the angles within `fine_window` of the coarse result in steps of `fine_step`.
+`fine_step` must be positive and `fine_window` finite and non-negative; a `fine_window` of 0 gives a
+coarse-only search. Throws an `ArgumentError` otherwise.
 Ties are broken toward smaller absolute angles which are positive, as in `register`.
-Logs a warning when the coarse result is the largest-magnitude angle in `coarse_angles`, since the true
-rotation may then lie outside the searched range.
+Logs a warning when the coarse result is the smallest or largest angle in `coarse_angles`, since the
+true rotation may then lie outside the searched range; `coarse_angles` is treated as an interval, so a
+full-circle grid warns at its ends.
 Angles follow the convention of `imrotate_function`, in radians.
 """
 function register_coarse_to_fine(
@@ -194,8 +197,13 @@ function register_coarse_to_fine(
     fine_window::Real=deg2rad(4.0),
     imrotate_function=imrotate_bin_clockwise_radians,
 )
+    fine_step > 0 || throw(ArgumentError("fine_step must be positive, got $fine_step"))
+    0 <= fine_window < Inf || throw(
+        ArgumentError("fine_window must be finite and non-negative, got $fine_window")
+    )
     coarse = register(im_reference, im_target; test_angles=coarse_angles, imrotate_function)
-    if abs(coarse) ≈ maximum(abs, coarse_angles)
+    lo, hi = extrema(coarse_angles)
+    if coarse ≈ lo || coarse ≈ hi
         @warn "coarse registration angle $(round(rad2deg(coarse); digits=1))° is on the edge of the search range"
     end
     n = floor(Int, fine_window / fine_step)
