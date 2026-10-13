@@ -160,34 +160,49 @@ and ordered so that smaller absolute angles which are positive will be returned 
 register_default_angles_rad = sort(
     reverse(range(; start=(-π), stop=π, step=π / 36)[1:(end-1)]); by=abs
 )
-# normalize to [-π, π), the convention of register_default_angles_rad
-function normalize_angle(θ)
-    θn = rem2pi(θ, RoundNearest)
-    return θn == π ? oftype(θn, -π) : θn
-end
+"""
+Coarse registration angles for [`register_coarse_to_fine`](@ref): -π/6 to π/6 rad (±30º) in steps
+of π/36 rad (5º), ordered like `register_default_angles_rad` so that smaller absolute angles which are
+positive are returned in the event of a tie in the shape difference.
+"""
+register_coarse_angles_rad = sort(
+    range(; start=(-π / 6), stop=π / 6, step=π / 36); by=θ -> (abs(θ), -θ)
+)
 
 """
-    prior_test_angles(prior_rad; window=deg2rad(10.0), step=π / 180)
+    register_coarse_to_fine(
+        im_reference,
+        im_target;
+        coarse_angles=register_coarse_angles_rad,
+        fine_step=deg2rad(1.0),
+        fine_window=deg2rad(4.0),
+        imrotate_function=imrotate_bin_clockwise_radians,
+    )
 
-Build registration test angles concentrated around a prior rotation estimate `prior_rad`
-(in radians, in the convention of `imrotate_bin_clockwise_radians`) and its 180° alias
-`prior_rad + π`, since priors derived from image-moment orientations are only defined modulo π.
-Offsets are built symmetrically from zero to ensure the prior angle itself is always included,
-even when the window is not an exact multiple of the step. Angles are normalized to [-π, π)
-and ordered so that, in the event of a tie in the shape difference, smaller absolute angles
-which are positive are preferred, matching `register_default_angles_rad`.
+Finds the rotation angle between `im_reference` and `im_target` in two stages: [`register`](@ref) over
+`coarse_angles`, then over the angles within `fine_window` of the coarse result in steps of `fine_step`.
+Ties are broken toward smaller absolute angles which are positive, as in `register`.
+Logs a warning when the coarse result is the largest-magnitude angle in `coarse_angles`, since the true
+rotation may then lie outside the searched range.
+Angles follow the convention of `imrotate_function`, in radians.
 """
-function prior_test_angles(prior_rad::Real; window::Real=deg2rad(10.0), step::Real=π / 180)
-    max_steps = ceil(Int, window / step)
-    offsets = collect(-max_steps:max_steps) .* step
-    offsets = filter(o -> abs(o) <= window, offsets)
-    angles = [
-        normalize_angle(alias + offset) for alias in (prior_rad, prior_rad + π) for
-        offset in offsets
-    ]
-    unique!(angles)
-    return sort!(angles; by=x -> (abs(x), -x))
+function register_coarse_to_fine(
+    im_reference,
+    im_target;
+    coarse_angles=register_coarse_angles_rad,
+    fine_step::Real=deg2rad(1.0),
+    fine_window::Real=deg2rad(4.0),
+    imrotate_function=imrotate_bin_clockwise_radians,
+)
+    coarse = register(im_reference, im_target; test_angles=coarse_angles, imrotate_function)
+    if abs(coarse) ≈ maximum(abs, coarse_angles)
+        @warn "coarse registration angle $(round(rad2deg(coarse); digits=1))° is on the edge of the search range"
+    end
+    n = floor(Int, fine_window / fine_step)
+    fine_angles = sort([coarse + k * fine_step for k in (-n):n]; by=θ -> (abs(θ), -θ))
+    return register(im_reference, im_target; test_angles=fine_angles, imrotate_function)
 end
+
 """
     register(
         im_reference,
