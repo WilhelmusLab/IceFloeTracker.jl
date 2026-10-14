@@ -3,7 +3,6 @@
     using DataFrames
     using Dates
     using IceFloeTracker: get_rotation_measurements, _add_suffix
-    using IceFloeTracker.Tracking: register, register_coarse_to_fine
 
     masks = Dict(
         0 => Bool[
@@ -470,6 +469,8 @@ end
 end
 
 @testitem "get_rotation_measurements(row1, row2; ...)" setup = [RotationSetup] begin
+    using IceFloeTracker.Tracking: register, register_coarse_to_fine
+
     @testset "basic case – single example" begin
         df = DataFrame([
             (time=DateTime("2020-01-12T12:00:00"), mask=masks[0]),
@@ -477,11 +478,7 @@ end
         ])
 
         result = get_rotation_measurements(
-            df[1, :],
-            df[2, :];
-            image_column=:mask,
-            time_column=:time,
-            registration_function=register,
+            df[1, :], df[2, :]; image_column=:mask, time_column=:time
         )
 
         @test result.theta_rad ≈ π / 2.0
@@ -490,6 +487,7 @@ end
         @test result.row2 === df[2, :]
     end
     @testset "sampled cases" begin
+        # coarse-to-fine searches ±30°, so it is only run on cases inside that window
         function check_single_rotation_measurements(
             time1,
             Δt_sec::Int64,
@@ -497,30 +495,32 @@ end
             mask2,
             Δθ_deg;
             Δθ_deg_tolerance=5.1,
-            registration_function=register_coarse_to_fine,
+            registration_functions=(register, register_coarse_to_fine),
         )
             df = DataFrame([
                 (time=time1, mask=mask1), (time=time1 + Second(Δt_sec), mask=mask2)
             ])
 
-            result = get_rotation_measurements(
-                df[1, :],
-                df[2, :];
-                image_column=:mask,
-                time_column=:time,
-                registration_function,
-            )
+            for registration_function in registration_functions
+                result = get_rotation_measurements(
+                    df[1, :],
+                    df[2, :];
+                    image_column=:mask,
+                    time_column=:time,
+                    registration_function,
+                )
 
-            @test deg2rad(Δθ_deg - Δθ_deg_tolerance) <=
-                result.theta_rad <=
-                deg2rad(Δθ_deg + Δθ_deg_tolerance)
+                @test deg2rad(Δθ_deg - Δθ_deg_tolerance) <=
+                    result.theta_rad <=
+                    deg2rad(Δθ_deg + Δθ_deg_tolerance)
 
-            @test result.dt_sec ≈ Δt_sec
+                @test result.dt_sec ≈ Δt_sec
 
-            @test result.omega_rad_per_sec ≈ result.theta_rad / result.dt_sec
+                @test result.omega_rad_per_sec ≈ result.theta_rad / result.dt_sec
 
-            @test result.row1 == df[1, :]
-            @test result.row2 == df[2, :]
+                @test result.row1 == df[1, :]
+                @test result.row2 == df[2, :]
+            end
         end
 
         check_single_rotation_measurements(
@@ -543,7 +543,7 @@ end
             masks[0],
             masks[30],
             30.0;
-            registration_function=register,
+            registration_functions=(register,),
         )
         check_single_rotation_measurements(
             DateTime("2003-01-12T12:00:00"),
@@ -551,7 +551,7 @@ end
             masks[0],
             masks[30],
             30;
-            registration_function=register,
+            registration_functions=(register,),
         )
         check_single_rotation_measurements(
             DateTime("2003-01-12T12:00:00"),
@@ -559,7 +559,7 @@ end
             masks[0],
             masks[30],
             30;
-            registration_function=register,
+            registration_functions=(register,),
         )
     end
 end
@@ -572,13 +572,7 @@ end
         ])
 
         result = DataFrame(
-            get_rotation_measurements(
-                df[1, :],
-                df;
-                image_column=:mask,
-                time_column=:time,
-                registration_function=register,
-            ),
+            get_rotation_measurements(df[1, :], df; image_column=:mask, time_column=:time)
         )
 
         @test nrow(result) == nrow(df)
@@ -589,13 +583,7 @@ end
         df = DataFrame([(time=time, mask=masks[0]), (time=time + Day(1), mask=masks[90])])
 
         result = DataFrame(
-            get_rotation_measurements(
-                df[2, :],
-                df;
-                image_column=:mask,
-                time_column=:time,
-                registration_function=register,
-            ),
+            get_rotation_measurements(df[2, :], df; image_column=:mask, time_column=:time)
         )
 
         @test nrow(result) == nrow(df)
@@ -659,11 +647,7 @@ end
         ])
 
         result = get_rotation_measurements(
-            df;
-            id_column=:id,
-            image_column=:mask,
-            time_column=:time,
-            registration_function=register,
+            df; id_column=:id, image_column=:mask, time_column=:time
         )
         @test result[1, :theta_deg] ≈ 90
         @test result[1, :theta_rad] ≈ π / 2
@@ -687,17 +671,12 @@ end
         @test all(result[!, :theta_deg] .≈ rad2deg.(result[!, :theta_rad]))
         @test all(
             result[!, :omega_deg_per_day] .≈
-                rad2deg.(result[!, :omega_rad_per_sec]) * 3600.0 * 24.0,
+            rad2deg.(result[!, :omega_rad_per_sec]) * 3600.0 * 24.0,
         )
     end
 
     @testset "longer sequences" begin
-        kwargs = (
-            id_column=:id,
-            image_column=:mask,
-            time_column=:time,
-            registration_function=register,
-        )
+        kwargs = (id_column=:id, image_column=:mask, time_column=:time)
         results = get_rotation_measurements(
             DataFrame([
                 (
@@ -940,15 +919,20 @@ end
     end
 end
 
-@testitem "get_rotation_measurements defaults to the coarse-to-fine search" setup = [
+@testitem "get_rotation_measurements accepts the coarse-to-fine search" setup = [
     RotationSetup, CoarseToFineSetup
 ] begin
+    using IceFloeTracker.Tracking: register_coarse_to_fine
     time1 = DateTime("2020-01-12T12:00:00")
     df = DataFrame([
         (id=1, time=time1, mask=floe), (id=1, time=time1 + Hour(1), mask=rotated(8))
     ])
     result = get_rotation_measurements(
-        df; id_column=:id, image_column=:mask, time_column=:time
+        df;
+        id_column=:id,
+        image_column=:mask,
+        time_column=:time,
+        registration_function=register_coarse_to_fine,
     )
     @test result[1, :theta_deg] ≈ 8
 end
