@@ -129,7 +129,6 @@ Time-distance threshold functions are used to identify search regions for floe m
 LopezAcostaTimeDistanceFunction, based on the stepwise method in Lopez-Acosta et al. 2019, and LogLogQuadraticTimeDistanceFunction,
 which is based on fitting a quadratic function to log-transformed displacements calculated from
 drifting buoy data.
-
 ## Example
 ```julia-repl
 julia> distance_threshold(100, Hour(12), LopezAcostaTimeDistanceFunction())
