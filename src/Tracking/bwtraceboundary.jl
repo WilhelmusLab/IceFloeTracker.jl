@@ -8,12 +8,12 @@
                     P0::Union{Tuple{Int,Int},CartesianIndex{2},Nothing}=nothing,
                     closed::Bool=true) where T<:AbstractMatrix{Bool}
 
-Trace the boundary of objects in `image` 
+Trace the boundary of objects in `image`
 
-Background pixels are represented as zero. The algorithm traces the boundary counterclockwise and an initial point 
+Background pixels are represented as zero. The algorithm traces the boundary counterclockwise and an initial point
 `P0` can be specified. If more than one boundary is detected and an initial point is provided, the boundary that
 contains this point is returned as a vector of CartesianIndex types. Otherwise an array of vectors is returned with
-all the detected boundaries in `image`. 
+all the detected boundaries in `image`.
 
 ## Arguments
 - `image`: image, preferably binary with one single object, whose objects' boundaries are to be traced.
@@ -178,7 +178,7 @@ end
     contour_list::Vector{Vector{CartesianIndex}},
 )
 
-Check whether `P` is in countour list. If so return the index of the contour that contains `P`, otherwise return false.
+Check whether `P` is in contour list. If so return the index of the contour that contains `P`, otherwise return false.
 """
 function isincountourlist(
     P::Union{CartesianIndex{2},Tuple{Int64,Int64}},
@@ -198,7 +198,7 @@ function isincountourlist(
 end
 
 """
-Get index in Moore neigborhood representing the direction from the `from` pixel coords to the `to` pixel coords (see definition of dir_delta below).
+Get index in Moore neighborhood representing the direction from the `from` pixel coords to the `to` pixel coords (see definition of dir_delta below).
 
 # Clockwise Moore neighborhood.
 dir_delta = [CartesianIndex(-1, 0), CartesianIndex(-1, 1), CartesianIndex(0, 1), CartesianIndex(1, 1), CartesianIndex(1, 0), CartesianIndex(1, -1), CartesianIndex(0, -1), CartesianIndex(-1,-1)]

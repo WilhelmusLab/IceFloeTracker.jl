@@ -1,15 +1,15 @@
 """
     make_hbreak_dict()
 
-Build dict with the two versions of an H-connected 3x3 neighboorhood.
+Build dict with the two versions of an H-connected 3x3 neighborhood.
 
-h1 =   [1 0 1     
-        1 1 1     
-        1 0 1]    
+h1 =   [1 0 1
+        1 1 1
+        1 0 1]
 
-h2 =   [1 1 1     
-        0 1 0     
-        1 1 1]  
+h2 =   [1 1 1
+        0 1 0
+        1 1 1]
 """
 function make_hbreak_dict()::Dict{AbstractArray{Bool},Bool}
     h1 = trues(3, 3)
@@ -29,14 +29,14 @@ Remove H-connected pixels in the binary image `img`. See also [`hbreak!`](@ref) 
 # Examples
 ```jldoctest; setup = :(using IceFloeTracker)
 
-julia> h1 = trues(3,3); h1[[1 3], 2] .= false; h1     
-3×3 BitMatrix:    
+julia> h1 = trues(3,3); h1[[1 3], 2] .= false; h1
+3×3 BitMatrix:
  1  0  1
  1  1  1
  1  0  1
 
-julia> h2 = trues(3,3); h2[2, [1 3]] .= false; h2     
-3×3 BitMatrix:    
+julia> h2 = trues(3,3); h2[2, [1 3]] .= false; h2
+3×3 BitMatrix:
  1  1  1
  0  1  0
  1  1  1
@@ -47,7 +47,7 @@ julia> hbreak!(h1); h1 # modify h1 inplace
  1  0  1
  1  0  1
 
-julia> hbreak(h2) 
+julia> hbreak(h2)
 3×3 BitMatrix:
  1  1  1
  0  0  0

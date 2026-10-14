@@ -19,11 +19,11 @@ end
 The distance threshold filter creates columns for time and distance and applies a threshold
 function to these columns to determine if the net travel is physically possible. The struct
 is initialized with names for the time and distance columns, the threshold function (a TimeDistanceFunction)
-and the name of the column in which to store the results. 
+and the name of the column in which to store the results.
 
 
 ```julia-repl
-julia> dt_test = DistanceThresholdFilter(time_colum=:Δt, dist_column=:Δx, threshold_function=LinearTimeDistanceFunction())
+julia> dt_test = DistanceThresholdFilter(time_column=:Δt, dist_column=:Δx, threshold_function=LinearTimeDistanceFunction())
 ```
 Now, let's assume that `floe` and `candidates` are already defined. Then
 
@@ -31,7 +31,7 @@ Now, let's assume that `floe` and `candidates` are already defined. Then
 julia> dt_test(floe, candidates)
 ```
 
-will modify `candidates` in place to include only rows in which the `LinearTimeDistanceFunction()` evaluates as true. 
+will modify `candidates` in place to include only rows in which the `LinearTimeDistanceFunction()` evaluates as true.
 Passing `Val{:raw}` as the third argument will forgo the subsetting step so that the output of the test can be examined.
 
 ## Arguments
@@ -69,7 +69,7 @@ end
 
 Compute the distance in meters between a floe and candidate floes by computing the
 straight-line distance between centroids in pixel coordinates and converting that result
-using a pixel resolution `r` with units meters/pixel. The floe and candidates must 
+using a pixel resolution `r` with units meters/pixel. The floe and candidates must
 have rows `row_centroid` and `col_centroid`.
 """
 function euclidean_distance(floe, candidates; r=250)
@@ -87,17 +87,17 @@ end
     RelativeErrorThresholdFilter(floe, candidates, Var(:raw))
 
 Compute and test (absolute) relative error for `variable`. The relative error
-between scalar variables X and Y is defined as 
+between scalar variables X and Y is defined as
 ```math
 \\eps = \\abs(X - Y)/\\text{mean}(X, Y)
 ```
-This function takes a string or Symbol `variable` (which must be a named column in 
-the `candidates` DataFrame) and computes the relative error. Calling the function with 
+This function takes a string or Symbol `variable` (which must be a named column in
+the `candidates` DataFrame) and computes the relative error. Calling the function with
 the variable name, `area_variable`, `threshold_column` name, and a `threshold_function`
-initializes the function and saves the parameter values. Once initialized, the function 
+initializes the function and saves the parameter values. Once initialized, the function
 takes a `DataFrameRow` and a `DataFrame` of candidate floes as arguments, and subsets
 the candidates to only those which evaluate as `true` using the `threshold_function`.
-Including the dummy variable `Var(:raw)` returns the candidates dataframe with the test 
+Including the dummy variable `Var(:raw)` returns the candidates dataframe with the test
 results without subsetting it.
 """
 @kwdef struct RelativeErrorThresholdFilter <: AbstractFloeFilterFunction
@@ -125,10 +125,10 @@ end
     ShapeDifferenceThresholdFilter(area_variable, scale_by, threshold_column, threshold_function)
     ShapeDifferenceThresholdFilter(floe, candidates)
     ShapeDifferenceThresholdFilter(floe, candidates, Val(:raw))
-    
+
 
 Compute and test the scaled shape difference between input `floe` and each floe in the dataframe `candidates`.
-The shape difference between objects ``A`` and ``B`` is defined as 
+The shape difference between objects ``A`` and ``B`` is defined as
 ```math
 SD = (A \\cup B) \\setminus (A \\cap B)
 ```
@@ -172,7 +172,7 @@ end
     PsiSCorrelationThresholdFunction(area_variable, threshold_column, threshold_function)
     PsiSCorrelationThresholdFunction(floe, candidates, Val(:raw))
 
-Compute the ψ-s correlation between a floe and a dataframe of candidate floes. Adds the 
+Compute the ψ-s correlation between a floe and a dataframe of candidate floes. Adds the
 ψ-s correlation ``\\rho``,  ψ-s correlation score (1 - ``\\rho``), and the result of the threshold function
 to the columns of `candidates`.
 """
