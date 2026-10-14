@@ -6,6 +6,7 @@
 @testsnippet SymDiffSetup begin
     using IceFloeTracker.Tracking:
         boundary_symmetric_distance,
+        _polygon_centroid,
         count_symdiff,
         align_centroids,
         rotate_boundary,
@@ -19,10 +20,47 @@
     square10 = [0.0 0.0; 10.0 0.0; 10.0 10.0; 0.0 10.0; 0.0 0.0]
     rect10x14 = [0.0 0.0; 10.0 0.0; 10.0 14.0; 0.0 14.0; 0.0 0.0]
     L = [0.0 0.0; 3.0 0.0; 3.0 1.0; 1.0 1.0; 1.0 3.0; 0.0 3.0; 0.0 0.0]
+    #     L  (6 vertices)
+    # 3 o───────o
+    #   │       │
+    #   │       │
+    #   │       │
+    # 2 │       │
+    #   │       │
+    #   │       │
+    #   │       │  +
+    # 1 │       o×──────────────o
+    #   │                       │
+    #   │                       │
+    #   │                       │
+    # 0 o───────────────────────o
+    #   0       1       2       3
+
+    # The L with collinear vertices added on two of its edges: same polygon, same
+    # centroid, while the vertex mean moves.
+    # dense  (12 vertices)
+    # 3 o───o───o
+    #   │       │
+    #   │       │
+    #   │       │
+    # 2 │       │
+    #   │       │
+    #   │       │
+    #   │       │
+    # 1 │       o×─+────────────o
+    #   │                       │
+    #   │                       │
+    #   │                       │
+    # 0 o───o───o───o───o───o───o
+    #   0       1       2       3
+    extra_vertices = [0.5 0.0; 1.0 0.0; 1.5 0.0; 2.0 0.0; 2.5 0.0] # along bottom
+    Ldense = vcat(
+        L[1:1, :], extra_vertices, L[2:5, :], [0.5 3.0], L[6:end, :] # one more on the top
+    )
 
     # the same closed curve, traced from a different starting vertex
     function retrace(b, k)
-        pts = b[1:(end - 1), :]
+        pts = b[1:(end-1), :]
         rolled = circshift(pts, (-k, 0))
         return vcat(rolled, rolled[1:1, :])
     end
@@ -56,7 +94,7 @@ end
 end
 
 @testitem "boundary_symmetric_distance: invariant to trace starting point" setup = [SymDiffSetup] begin
-    for k in 1:(size(L, 1) - 2)
+    for k in 1:(size(L, 1)-2)
         @test boundary_symmetric_distance(L, retrace(L, k)) == 0
     end
 end
@@ -65,6 +103,40 @@ end
     # centred internally, like align_centroids on the mask path
     @test boundary_symmetric_distance(L, L .+ [17.0 -4.0]) == 0
     @test boundary_symmetric_distance(square10, square10 .+ [0.5 0.25]) == 0
+end
+
+@testitem "_polygon_centroid is the area centroid, not the vertex mean" setup = [SymDiffSetup] begin
+    # L = 3x1 bar (centroid (1.5, 0.5)) + 1x2 bar (centroid (0.5, 2.0)), area 5:
+    # (1.1, 1.1). The mean of its six vertices is (4/3, 4/3).
+    @test all(isapprox.(_polygon_centroid(L), [1.1, 1.1]; atol=1e-12))
+    @test all(isapprox.(_polygon_centroid(reverse(L; dims=1)), [1.1, 1.1]; atol=1e-12))
+    @test all(isapprox.(_polygon_centroid(L[1:(end-1), :]), [1.1, 1.1]; atol=1e-12))
+end
+
+@testitem "_polygon_centroid is invariant to extra vertices along an edge" setup = [SymDiffSetup] begin
+    using Statistics: mean
+    # Check vertex mean moves
+    @test !isapprox(vec(mean(Ldense[1:(end-1), :]; dims=1)), [1.1, 1.1]; atol=1e-3)
+
+    # Check that the area centroid remains the same
+    @test all(isapprox.(_polygon_centroid(Ldense), _polygon_centroid(L); atol=1e-12))
+end
+
+@testitem "boundary_symmetric_distance: invariant to vertex density" setup = [SymDiffSetup] begin
+    # Ldense scaled so the vertex-mean offset spans several pixels; at unit scale a
+    # sub-pixel offset can leave the rasterized count unchanged.
+    @test boundary_symmetric_distance(10 .* L, 10 .* Ldense) == 0
+end
+
+@testitem "boundary_symmetric_distance: closure only up to round-off" setup = [SymDiffSetup] begin
+    # Resampled boundaries close only to ~1e-13, so the closing row must not be
+    # counted as an extra vertex.
+    L10 = 10 .* L
+    for k in 0:(size(L10, 1)-2)
+        r = retrace(L10, k)
+        r[end, :] .+= 1e-13
+        @test boundary_symmetric_distance(L10, r) == 0
+    end
 end
 
 @testitem "boundary_symmetric_distance: sees rotation" setup = [SymDiffSetup] begin
