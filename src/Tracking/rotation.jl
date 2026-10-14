@@ -11,7 +11,8 @@ Calculate the angle and rotation rate between observations in DataFrame `df`.
 - `image_column` is the column with the image to compare,
 - `time_column` is the column with the timepoint of each observation,
 - `registration_function` is used to compare the two images and should return an angle.
-  The default, [`register_coarse_to_fine`](@ref), searches rotations within about ±30º to a precision of 1º.
+  The default, [`register`](@ref), searches the full circle in 5º steps.
+  [`register_coarse_to_fine`](@ref) searches within about ±30º to a precision of 1º.
 
 Each row is compared to each other row in `df` which are:
   - for the same object ID,
@@ -28,7 +29,7 @@ function get_rotation_measurements(
     id_column::Symbol,
     image_column::Symbol,
     time_column::Symbol,
-    registration_function::Function=register_coarse_to_fine,
+    registration_function::Function=register,
     lookback_days::Integer=1,
 )
     if nrow(df) == 0
@@ -106,7 +107,7 @@ function get_rotation_measurements(
     df::DataFrame;
     image_column::Symbol,
     time_column::Symbol,
-    registration_function::Function=register_coarse_to_fine,
+    registration_function::Function=register,
 )
     results = [
         get_rotation_measurements(
@@ -128,7 +129,7 @@ function get_rotation_measurements(
     row2::DataFrameRow;
     image_column::Symbol,
     time_column::Symbol,
-    registration_function::Function=register_coarse_to_fine,
+    registration_function::Function=register,
 )
     result = get_rotation_measurements(
         row1[image_column],
@@ -152,7 +153,7 @@ function get_rotation_measurements(
     image2::AbstractArray,
     time1::T,
     time2::T;
-    registration_function::Function=register_coarse_to_fine,
+    registration_function::Function=register,
 ) where {T<:Union{ZonedDateTime,DateTime}}
     theta_rad::Float64 = registration_function(image1, image2)
     dt_sec::Float64 = (time2 - time1) / Dates.Second(1)
