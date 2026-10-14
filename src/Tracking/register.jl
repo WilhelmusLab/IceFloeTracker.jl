@@ -88,14 +88,22 @@ function align_centroids(
     return im1_padded, im2_padded
 end
 
-# Vertices of a closed boundary, without the repeated closing row, translated so their
-# mean is at the origin. Which vertex is duplicated depends on where the trace started,
-# so the mean must be taken over the unique vertices to be start-independent.
-function _centered_vertices(boundary::Matrix{Float64})
-    n = size(boundary, 1)
-    closed = n > 1 && @views(boundary[1, :] == boundary[n, :])
-    P = closed ? boundary[1:(n-1), :] : boundary
-    return P .- mean(P; dims=1)
+# Area centroid of the polygon whose vertices are the rows of `P` (shoelace formula).
+# The mask path aligns on the area centroid, and unlike the vertex mean it does not depend
+# on how densely the curve is sampled. A repeated closing row is a zero-length edge and
+# contributes nothing, so open and closed input give the same result.
+function _polygon_centroid(P::AbstractMatrix{Float64})
+    n = size(P, 1)
+    a = cx = cy = 0.0
+    @inbounds for k in 1:n
+        k2 = k == n ? 1 : k + 1
+        x1, y1, x2, y2 = P[k, 1], P[k, 2], P[k2, 1], P[k2, 2]
+        c = x1 * y2 - x2 * y1
+        a += c
+        cx += (x1 + x2) * c
+        cy += (y1 + y2) * c
+    end
+    return [cx, cy] ./ (3a)
 end
 
 # Even-odd scan-line fill of the polygon `P` (rows are vertices, in order) onto the pixel
@@ -136,17 +144,17 @@ end
     boundary_symmetric_distance(b1::Matrix{Float64}, b2::Matrix{Float64})
 
 The quantity [`shape_difference`](@ref) computes on masks, evaluated on closed boundary
-curves: each curve is centred on the mean of its vertices, the region it encloses is
-rasterised onto a common pixel grid, and the result is the number of pixels in the
-symmetric difference of the two rasters. Units: pixels. Smaller is more similar.
+curves: each curve is centred on the area centroid of its polygon, the region it
+encloses is rasterised onto a common pixel grid, and the result is the number of pixels
+in the symmetric difference of the two rasters. Units: pixels. Smaller is more similar.
 
 Provided so the boundary path can be compared with the mask path on the same objective.
 The rasterisation costs as much as the mask path, so it is a validation metric rather
 than one for tracker throughput.
 """
 function boundary_symmetric_distance(b1::Matrix{Float64}, b2::Matrix{Float64})
-    A = _centered_vertices(b1)
-    B = _centered_vertices(b2)
+    A = b1 .- _polygon_centroid(b1)'
+    B = b2 .- _polygon_centroid(b2)'
     # common pixel grid covering both polygons
     AB = vcat(A, B)
     lo = Tuple(floor.(Int, vec(minimum(AB; dims=1))))
