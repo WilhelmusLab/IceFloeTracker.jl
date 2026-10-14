@@ -68,7 +68,7 @@ end
     n_points_1 = size(props1.boundary[1], 1)
     n_points_4 = size(props2.boundary[1], 1)
 
-    @test n_points_1 >= n_points_4
+    @test n_points_1 > n_points_4
 end
 
 @testitem "add_boundary! boundary format" begin
