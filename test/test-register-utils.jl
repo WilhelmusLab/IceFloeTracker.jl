@@ -692,7 +692,7 @@ end
     CoarseToFineSetup
 ] begin
     target = rotated(8)
-    for fine_step in (0.0, -deg2rad(1.0), NaN)
+    for fine_step in (0.0, -deg2rad(1.0), NaN, Inf)
         @test_throws ArgumentError register_coarse_to_fine(floe, target; fine_step)
         @test_throws r"fine_step" register_coarse_to_fine(floe, target; fine_step)
     end
