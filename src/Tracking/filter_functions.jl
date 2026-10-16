@@ -235,35 +235,27 @@ the candidates. Writes `:boundary_shape_difference`,
 `:scaled_boundary_shape_difference` and `threshold_column`.
 
 ## Arguments
+- `threshold_function`: required. Called as `threshold_function(area, score)` with the
+  score in pixels; returns whether the candidate passes.
 - `metric`: `metric(reference, rotated_target) -> Real`, default
   `boundary_modified_hausdorff`.
 - `boundary_column`: boundary column to read, default `:boundary`.
 - `area_variable`: column passed to `threshold_function` as the scale, default `:area`.
 
-To let the score contribute to matching, opt into it alongside the filter:
-
-```julia
-cols = [MinimumWeightMatchingFunction().columns..., :scaled_boundary_shape_difference]
-MinimumWeightMatchingFunction(; columns=cols, weights=ones(length(cols)))
-```
-
-`:scaled_boundary_shape_difference` is deliberately absent from that function's default
-`columns`: a missing column there is not an error but a `@debug` log and an **empty**
-result, so adding it while this filter stays opt-in would make the default tracker
-silently match nothing.
+`:scaled_boundary_shape_difference` is not among [`MinimumWeightMatchingFunction`](@ref)'s
+default `columns`.
 """
 @kwdef struct BoundaryShapeDifferenceThresholdFilter <: AbstractFloeFilterFunction
     area_variable = :area
     boundary_column = :boundary
     metric = boundary_modified_hausdorff
     threshold_column = :boundary_shape_difference_test
-    # Bounds carried over from ShapeDifferenceThresholdFilter, where they were calibrated
-    # against count_symdiff / area, a dimensionless ratio of pixel areas. The score here is
-    # a modified Hausdorff distance in PIXELS, so these bounds are wrong in units, not only
-    # in scale, and are not calibrated for this filter. PiecewiseLinearThresholdFunction
-    # takes area as an input, so area-dependent bounds in pixels are the intended remedy
-    # once estimated on tracked data. Until then the filter is excluded from default_filter.
-    threshold_function = PiecewiseLinearThresholdFunction(100, 700, 0.47, 0.31)
+    # No default. ShapeDifferenceThresholdFilter's bounds (0.47 -> 0.31) were calibrated
+    # against count_symdiff / area, a dimensionless ratio of pixel areas; the score here is
+    # a distance in PIXELS, so they are wrong in units, not only in scale. Bounds in pixels,
+    # area-dependent via PiecewiseLinearThresholdFunction, need to be estimated on tracked
+    # data. Until then the filter is excluded from default_filter.
+    threshold_function
 end
 
 function (f::BoundaryShapeDifferenceThresholdFilter)(
@@ -285,6 +277,9 @@ function (f::BoundaryShapeDifferenceThresholdFilter)(
     # raw pixel count; a Hausdorff-type score is already a length, and how "similar" should
     # depend on floe size belongs in threshold_function, which takes area as an input. The
     # column name is kept for symmetry with the mask filter and MinimumWeightMatchingFunction.
+    # TODO: not used for matching. The score is in pixels, while
+    # MinimumWeightMatchingFunction sums its columns unweighted and the others are
+    # dimensionless; whether and how to include it in the ranking is untested.
     candidates[!, :scaled_boundary_shape_difference] =
         candidates[!, :boundary_shape_difference]
 
