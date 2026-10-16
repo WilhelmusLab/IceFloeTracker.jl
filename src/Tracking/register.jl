@@ -88,22 +88,54 @@ function align_centroids(
     return im1_padded, im2_padded
 end
 
-# Area centroid of the polygon whose vertices are the rows of `P` (shoelace formula).
-# The mask path aligns on the area centroid, and unlike the vertex mean it does not depend
-# on how densely the curve is sampled. A repeated closing row is a zero-length edge and
-# contributes nothing, so open and closed input give the same result.
+"""
+    _polygon_centroid(P::AbstractMatrix{Float64})
+
+Area centroid of the polygon whose vertices are the rows of `P` (Matrix(n, 2) with [x y]
+coordinates, in order), by the shoelace formula. Unlike the mean of the vertices, it does
+not depend on how densely the boundary is sampled. A repeated closing row is a
+zero-length edge, so open and closed input give the same result.
+
+Returns a 2-element `Vector{Float64}`, `[x, y]`.
+
+# Example
+
+```jldoctest; setup = :(using IceFloeTracker.Tracking: _polygon_centroid)
+julia> P = [0.0 0.0; 3.0 0.0; 3.0 5.0; 0.0 5.0; 0.0 0.0];
+
+julia> _polygon_centroid(P)
+2-element Vector{Float64}:
+ 1.5
+ 2.5
+
+julia> _polygon_centroid(P .+ 10000.1) .- 10000.1  # translation moves it by the same amount
+2-element Vector{Float64}:
+ 1.5
+ 2.5
+
+julia> _polygon_centroid(P[1:(end - 1), :])  # open input
+2-element Vector{Float64}:
+ 1.5
+ 2.5
+```
+"""
 function _polygon_centroid(P::AbstractMatrix{Float64})
+    # The mask path aligns on the area centroid, hence this rather than the vertex mean.
+    # The sums are taken relative to the first vertex: in absolute coordinates far from
+    # the origin they cancel and lose precision.
     n = size(P, 1)
+    x0, y0 = P[1, 1], P[1, 2]
     a = cx = cy = 0.0
     @inbounds for k in 1:n
         k2 = k == n ? 1 : k + 1
-        x1, y1, x2, y2 = P[k, 1], P[k, 2], P[k2, 1], P[k2, 2]
+        x1, y1 = P[k, 1] - x0, P[k, 2] - y0
+        x2, y2 = P[k2, 1] - x0, P[k2, 2] - y0
         c = x1 * y2 - x2 * y1
         a += c
         cx += (x1 + x2) * c
         cy += (y1 + y2) * c
     end
-    return [cx, cy] ./ (3a)
+    return [cx, cy] ./ (3a) .+ [x0, y0]
 end
 
 """
