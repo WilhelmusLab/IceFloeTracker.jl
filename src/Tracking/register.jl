@@ -197,7 +197,8 @@ function register_coarse_to_fine(
     fine_window::Real=deg2rad(4.0),
     imrotate_function=imrotate_bin_clockwise_radians,
 )
-    fine_step > 0 || throw(ArgumentError("fine_step must be positive, got $fine_step"))
+    0 < fine_step < Inf ||
+        throw(ArgumentError("fine_step must be finite and positive, got $fine_step"))
     0 <= fine_window < Inf || throw(
         ArgumentError("fine_window must be finite and non-negative, got $fine_window")
     )
