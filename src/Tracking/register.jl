@@ -107,8 +107,8 @@ function _polygon_centroid(P::AbstractMatrix{Float64})
 end
 
 # Even-odd scan-line fill of the polygon `P` (rows are vertices, in order) onto the pixel
-# grid whose cell (i, j) has centre (lo[1] + i - 1/2, lo[2] + j - 1/2), for
-# i in 1:(hi[1] - lo[1]), j in 1:(hi[2] - lo[2]). A pixel is filled when its centre lies
+# grid whose cell (i, j) has center (lo[1] + i - 1/2, lo[2] + j - 1/2), for
+# i in 1:(hi[1] - lo[1]), j in 1:(hi[2] - lo[2]). A pixel is filled when its center lies
 # inside the polygon. The half-open comparison on the edge endpoints counts a vertex on
 # the scan line exactly once.
 function _rasterize(P::AbstractMatrix{Float64}, lo::NTuple{2,Int}, hi::NTuple{2,Int})
@@ -129,8 +129,8 @@ function _rasterize(P::AbstractMatrix{Float64}, lo::NTuple{2,Int}, hi::NTuple{2,
         end
         sort!(crossings)
         for p in 1:2:(length(crossings)-1)
-            # pixel centres strictly between consecutive crossings
-            i_lo = max(1, floor(Int, crossings[p] - lo[1] + 0.5) + 1)
+            # pixel centers in [left, right), half-open like the scan-line test in y
+            i_lo = max(1, ceil(Int, crossings[p] - lo[1] + 0.5))
             i_hi = min(nx, ceil(Int, crossings[p+1] - lo[1] + 0.5) - 1)
             for i in i_lo:i_hi
                 img[i, j] = true
@@ -144,12 +144,12 @@ end
     boundary_symmetric_distance(b1::Matrix{Float64}, b2::Matrix{Float64})
 
 The quantity [`shape_difference`](@ref) computes on masks, evaluated on closed boundary
-curves: each curve is centred on the area centroid of its polygon, the region it
-encloses is rasterised onto a common pixel grid, and the result is the number of pixels
+curves: each curve is centered on the area centroid of its polygon, the region it
+encloses is rasterized onto a common pixel grid, and the result is the number of pixels
 in the symmetric difference of the two rasters. Units: pixels. Smaller is more similar.
 
 Provided so the boundary path can be compared with the mask path on the same objective.
-The rasterisation costs as much as the mask path, so it is a validation metric rather
+The rasterization costs as much as the mask path, so it is a validation metric rather
 than one for tracker throughput.
 """
 function boundary_symmetric_distance(b1::Matrix{Float64}, b2::Matrix{Float64})
