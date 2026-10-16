@@ -106,12 +106,71 @@ function _polygon_centroid(P::AbstractMatrix{Float64})
     return [cx, cy] ./ (3a)
 end
 
-# Even-odd scan-line fill of the polygon `P` (rows are vertices, in order) onto the pixel
-# grid whose cell (i, j) has center (lo[1] + i - 1/2, lo[2] + j - 1/2), for
-# i in 1:(hi[1] - lo[1]), j in 1:(hi[2] - lo[2]). A pixel is filled when its center lies
-# inside the polygon. The half-open comparison on the edge endpoints counts a vertex on
-# the scan line exactly once.
+"""
+    _snap_to_center(v::Float64; atol=1e-9)
+
+Return the nearest pixel-center coordinate `k + 1/2` (`k` an integer) if `v` lies within
+`atol` of it, and `v` unchanged otherwise.
+
+# Example
+
+```jldoctest; setup = :(using IceFloeTracker.Tracking: _snap_to_center)
+julia> _snap_to_center(-1.4999999999999996)  # round-off away from a center
+-1.5
+
+julia> _snap_to_center(-1.4999)
+-1.4999
+
+julia> _snap_to_center(2.0)  # halfway between two centers
+2.0
+```
+"""
+function _snap_to_center(v::Float64; atol=1e-9)
+    # puts round-off ties exactly on the center, so the half-open rule in `_rasterize`
+    # sees the tie rather than which side of it the round-off fell
+    c = round(v - 0.5) + 0.5
+    return abs(v - c) < atol ? c : v
+end
+
+"""
+    _rasterize(P::AbstractMatrix{Float64}, lo::NTuple{2,Int}, hi::NTuple{2,Int})
+
+Even-odd scan-line fill of the polygon `P` onto a pixel grid.
+
+# Arguments
+- `P`: Matrix(n, 2) with [x y] vertex coordinates, in order; open or closed
+- `lo`, `hi`: integer corners of the grid; cell `(i, j)` has center
+  `(lo[1] + i - 1/2, lo[2] + j - 1/2)` for `i in 1:(hi[1] - lo[1])`,
+  `j in 1:(hi[2] - lo[2])`
+
+# Returns
+A `BitMatrix` of size `(hi[1] - lo[1], hi[2] - lo[2])`, true where the pixel center lies
+inside the polygon. A center on an edge is inside when the edge bounds the polygon from
+below in x or y (the interval is `[left, right)` along each scan line, `[bottom, top)`
+across them), so each such pixel is counted exactly once. Coordinates within `1e-9` of a
+pixel center are treated as lying on it (see `_snap_to_center`).
+
+# Example
+
+A 3x3 square whose edges lie on pixel centers. Rows of the result index x, columns y:
+the centers on the left and bottom edges are filled, those on the right and top are not.
+
+```jldoctest; setup = :(using IceFloeTracker.Tracking: _rasterize)
+julia> P = [-1.5 -1.5; 1.5 -1.5; 1.5 1.5; -1.5 1.5; -1.5 -1.5];
+
+julia> img = _rasterize(P, (-2, -2), (2, 2))
+4×4 BitMatrix:
+ 1  1  1  0
+ 1  1  1  0
+ 1  1  1  0
+ 0  0  0  0
+
+julia> count(img)
+9
+```
+"""
 function _rasterize(P::AbstractMatrix{Float64}, lo::NTuple{2,Int}, hi::NTuple{2,Int})
+    P = _snap_to_center.(P)
     nx, ny = hi[1] - lo[1], hi[2] - lo[2]
     img = falses(nx, ny)
     n = size(P, 1)
@@ -124,7 +183,7 @@ function _rasterize(P::AbstractMatrix{Float64}, lo::NTuple{2,Int}, hi::NTuple{2,
             y1, y2 = P[k, 2], P[k2, 2]
             if (y1 <= yc) != (y2 <= yc)
                 x1, x2 = P[k, 1], P[k2, 1]
-                push!(crossings, x1 + (yc - y1) / (y2 - y1) * (x2 - x1))
+                push!(crossings, _snap_to_center(x1 + (yc - y1) / (y2 - y1) * (x2 - x1)))
             end
         end
         sort!(crossings)
