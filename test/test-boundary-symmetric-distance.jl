@@ -171,6 +171,23 @@ end
     end
 end
 
+@testitem "boundary_symmetric_distance: closure up to round-off, edges on pixel centers" setup = [SymDiffSetup] begin
+    # with edges on pixel centers, a closing row off by 1e-13 must still be dropped, or
+    # it shifts the centroid enough to move an edge across a column of pixel centers
+    rect3x5 = [0.0 0.0; 3.0 0.0; 3.0 5.0; 0.0 5.0; 0.0 0.0]
+
+    # (dx, dy) by which the closing row misses the first: round-off of order 1e-13, as
+    # left by resample_boundary
+    δ = 1e-13
+    closing_offsets = ([δ, 0.0], [-δ, 0.0], [0.0, δ], [δ, δ])
+
+    for offset in closing_offsets
+        near = copy(rect3x5)
+        near[end, :] .+= offset
+        @test boundary_symmetric_distance(rect3x5, near) == 0
+    end
+end
+
 @testitem "boundary_symmetric_distance: sees rotation" setup = [SymDiffSetup] begin
     # rotation is what register_boundary searches over, so it must not cancel
     @test boundary_symmetric_distance(L, rotate_boundary(L, deg2rad(45.0))) > 0
