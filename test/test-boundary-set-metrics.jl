@@ -55,6 +55,17 @@ end
     end
 end
 
+@testitem "set metrics: closing point matched up to round-off" setup = [SetMetricSetup] begin
+    # resampled boundaries close only to round-off of order 1e-13; the closing point must
+    # still be dropped, or the modified Hausdorff mean weights that vertex twice
+    near = copy(L)
+    near[end, :] .+= 1e-13
+    for m in METRICS
+        @test isapprox(m(near, BAR), m(L, BAR); atol=1e-9)
+        @test isapprox(m(BAR, near), m(BAR, L); atol=1e-9)
+    end
+end
+
 @testitem "set metrics: discriminate different shapes" setup = [SetMetricSetup] begin
     for m in METRICS
         @test m(L, BAR) > 0.1
