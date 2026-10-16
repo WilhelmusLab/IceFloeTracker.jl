@@ -244,8 +244,8 @@ function (p::Segment)(
     # 2. Intermediate images
     fc_masked = apply_landmask(falsecolor_image, coastal_buffer_mask)
     n, m = size(truecolor_image)
-    rwidth = round(Int64(n/p.tile_settings.rblocks))
-    cwidth = round(Int64(m/p.tile_settings.cblocks))
+    rwidth = round(Int64, n/p.tile_settings.rblocks)
+    cwidth = round(Int64, m/p.tile_settings.cblocks)
     tiles = get_tiles(truecolor_image, (rwidth, cwidth))
     tiles = filter(
         t -> sum(landmask[t...] .== 0) > p.min_ocean_pixels, tiles 
