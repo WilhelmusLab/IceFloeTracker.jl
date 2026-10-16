@@ -153,7 +153,7 @@ The rasterization costs as much as the mask path, so it is a validation metric r
 than one for tracker throughput.
 """
 function boundary_symmetric_distance(b1::Matrix{Float64}, b2::Matrix{Float64})
-    P1, P2 = _normalize_contour.([b1, b2])
+    P1, P2 = _normalize_contour.((b1, b2))
     A = P1 .- _polygon_centroid(P1)'
     B = P2 .- _polygon_centroid(P2)'
     # common pixel grid covering both polygons
