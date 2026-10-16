@@ -1,6 +1,6 @@
-# boundary_symmetric_distance: the mask path's centred symmetric difference
+# boundary_symmetric_distance: the mask path's centered symmetric difference
 # (count_symdiff after align_centroids), evaluated on closed boundary curves by
-# rasterising the regions they enclose. It exists to validate the boundary path
+# rasterizing the regions they enclose. It exists to validate the boundary path
 # against the mask path in the same units (pixels), not for tracker throughput.
 
 @testsnippet SymDiffSetup begin
@@ -16,7 +16,7 @@
         bwtraceboundary,
         resample_boundary
 
-    # closed, integer-cornered so the rasterised areas are exact
+    # closed, integer-cornered so the rasterized areas are exact
     square10 = [0.0 0.0; 10.0 0.0; 10.0 10.0; 0.0 10.0; 0.0 0.0]
     rect10x14 = [0.0 0.0; 10.0 0.0; 10.0 14.0; 0.0 14.0; 0.0 0.0]
     L = [0.0 0.0; 3.0 0.0; 3.0 1.0; 1.0 1.0; 1.0 3.0; 0.0 3.0; 0.0 0.0]
@@ -84,9 +84,41 @@ end
 end
 
 @testitem "boundary_symmetric_distance: units are pixels, exact on lattice-aligned shapes" setup = [SymDiffSetup] begin
-    # 10x10 against 10x14, both centred: the extra 4 rows are 40 pixels, all of
+    # 10x10 against 10x14, both centered: the extra 4 rows are 40 pixels, all of
     # them in the symmetric difference. Same integer count_symdiff would return.
     @test boundary_symmetric_distance(square10, rect10x14) == 40
+end
+
+@testitem "boundary_symmetric_distance: edges on pixel centers, either orientation" setup = [SymDiffSetup] begin
+    using IceFloeTracker.Tracking: _rasterize
+    # odd sides put the centered edges on pixel centers; each pixel must be counted once,
+    # whichever axis the edge lies along. Once centered, the pixel centers fall on the
+    # integer points below (■ filled, □ not filled; the corners are the matrix rows):
+    #
+    # rect3x5               rect5x3
+    #  y                     y
+    #  5  □───□───□───□      3  □───□───□───□───□───□
+    #     │           │         │                   │
+    #  4  ■   ■   ■   □      2  ■   ■   ■   ■   ■   □
+    #     │           │         │                   │
+    #  3  ■   ■   ■   □      1  ■   ■   ■   ■   ■   □
+    #     │           │         │                   │
+    #  2  ■   ■   ■   □      0  ■───■───■───■───■───□
+    #     │           │         0   1   2   3   4   5  x
+    #  1  ■   ■   ■   □
+    #     │           │
+    #  0  ■───■───■───□
+    #     0   1   2   3  x
+    #
+    # Left and bottom edges are filled, right and top are not
+    rect3x5 = [0.0 0.0; 3.0 0.0; 3.0 5.0; 0.0 5.0; 0.0 0.0]
+    rect5x3 = rect3x5[:, [2, 1]]
+    for r in (rect3x5, rect5x3)
+        c = r .- _polygon_centroid(r)'
+        @test count(_rasterize(c, (-3, -3), (3, 3))) == 15
+    end
+    # centered overlap is 3x3, so 15 + 15 - 2 * 9
+    @test boundary_symmetric_distance(rect3x5, rect5x3) == 12
 end
 
 @testitem "boundary_symmetric_distance: symmetric" setup = [SymDiffSetup] begin
@@ -100,7 +132,7 @@ end
 end
 
 @testitem "boundary_symmetric_distance: invariant to translation" setup = [SymDiffSetup] begin
-    # centred internally, like align_centroids on the mask path
+    # centered internally, like align_centroids on the mask path
     @test boundary_symmetric_distance(L, L .+ [17.0 -4.0]) == 0
     @test boundary_symmetric_distance(square10, square10 .+ [0.5 0.25]) == 0
 end
@@ -146,7 +178,7 @@ end
 
 @testitem "boundary_symmetric_distance agrees with the mask path on a traced floe" setup = [SymDiffSetup] begin
     # The reason this metric exists. The boundary is a resampled B-spline through
-    # the pixel ring, so its rasterisation is not the mask bit for bit; the
+    # the pixel ring, so its rasterization is not the mask bit for bit; the
     # agreement asked of it is within a one-pixel band along the perimeter.
     θ = deg2rad(30.0)
     m1, m2 = floe, imrotate_bin(floe, θ)
@@ -163,7 +195,7 @@ end
 
 @testitem "register_boundary with boundary_symmetric_distance returns register's angle" setup = [SymDiffSetup] begin
     # Exact comparability, as the reviewer put it: the same objective the mask
-    # path minimises, evaluated on the curve. Both paths must then land on the
+    # path minimizes, evaluated on the curve. Both paths must then land on the
     # same grid angle for the same physical rotation, sign included.
     θ = deg2rad(30.0)                                  # on the default 5° grid
     m1, m2 = floe, imrotate_bin(floe, θ)
