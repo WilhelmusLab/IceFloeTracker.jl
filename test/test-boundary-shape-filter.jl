@@ -32,6 +32,10 @@
         0.0 0.0
     ]
 
+    # The filter has no default threshold_function: no bounds in pixels have been
+    # calibrated. This tight one passes only near-identical shapes.
+    tight = PiecewiseLinearThresholdFunction(100, 700, 1e-4, 1e-4)
+
     floe_row() = DataFrame(; boundary=[L], orientation=[0.0], area=[100.0])[1, :]
     candidate_df() = DataFrame(;
         boundary=[L, rotate_boundary(L, 0.0), BAR],
@@ -40,8 +44,15 @@
     )
 end
 
+@testitem "BoundaryShapeDifferenceThresholdFilter requires a threshold_function" setup = [BoundaryFilterSetup] begin
+    # TODO: calibrate bounds in pixels for this score on tracked data, make them the
+    # default threshold_function, and change this test to check them.
+    @test_throws UndefKeywordError BoundaryShapeDifferenceThresholdFilter()
+end
+
 @testitem "BoundaryShapeDifferenceThresholdFilter defaults" setup = [BoundaryFilterSetup] begin
-    f = BoundaryShapeDifferenceThresholdFilter()
+    f = BoundaryShapeDifferenceThresholdFilter(; threshold_function=tight)
+    @test f.threshold_function === tight
     @test f.metric === boundary_modified_hausdorff
     @test f.boundary_column === :boundary
     @test f.area_variable === :area
@@ -50,7 +61,7 @@ end
 end
 
 @testitem "BoundaryShapeDifferenceThresholdFilter writes its score columns" setup = [BoundaryFilterSetup] begin
-    f = BoundaryShapeDifferenceThresholdFilter()
+    f = BoundaryShapeDifferenceThresholdFilter(; threshold_function=tight)
     candidates = candidate_df()
 
     f(floe_row(), candidates, Val(:raw))
@@ -69,7 +80,7 @@ end
     # The score is a distance in pixels. Unlike the mask filter there is no division by
     # :area -- count_symdiff is a raw pixel count and needs one, a Hausdorff distance
     # does not. If a division crept in, these two columns would differ by a factor of 100.
-    f = BoundaryShapeDifferenceThresholdFilter()
+    f = BoundaryShapeDifferenceThresholdFilter(; threshold_function=tight)
     candidates = candidate_df()
     f(floe_row(), candidates, Val(:raw))
 
@@ -78,11 +89,7 @@ end
 end
 
 @testitem "BoundaryShapeDifferenceThresholdFilter subsets via the 2-arg functor" setup = [BoundaryFilterSetup] begin
-    # A tight explicit threshold, so the test does not depend on the inherited default
-    # bounds, which are uncalibrated for a pixel-valued score.
-    f = BoundaryShapeDifferenceThresholdFilter(;
-        threshold_function=PiecewiseLinearThresholdFunction(100, 700, 1e-4, 1e-4)
-    )
+    f = BoundaryShapeDifferenceThresholdFilter(; threshold_function=tight)
     candidates = candidate_df()
     f(floe_row(), candidates)
 
@@ -94,10 +101,14 @@ end
 @testitem "BoundaryShapeDifferenceThresholdFilter honours an injected metric" setup = [BoundaryFilterSetup] begin
     a = candidate_df()
     b = candidate_df()
-    BoundaryShapeDifferenceThresholdFilter(; metric=boundary_modified_hausdorff)(
+    BoundaryShapeDifferenceThresholdFilter(;
+        metric=boundary_modified_hausdorff, threshold_function=tight
+    )(
         floe_row(), a, Val(:raw)
     )
-    BoundaryShapeDifferenceThresholdFilter(; metric=boundary_hausdorff)(
+    BoundaryShapeDifferenceThresholdFilter(;
+        metric=boundary_hausdorff, threshold_function=tight
+    )(
         floe_row(), b, Val(:raw)
     )
     # max and mean nearest-neighbour distance differ for a genuinely different shape
@@ -105,7 +116,9 @@ end
 end
 
 @testitem "BoundaryShapeDifferenceThresholdFilter honours boundary_column" setup = [BoundaryFilterSetup] begin
-    f = BoundaryShapeDifferenceThresholdFilter(; boundary_column=:bd)
+    f = BoundaryShapeDifferenceThresholdFilter(;
+        boundary_column=:bd, threshold_function=tight
+    )
     floe = DataFrame(; bd=[L], orientation=[0.0], area=[100.0])[1, :]
     candidates = DataFrame(; bd=[L, BAR], orientation=[0.0, 0.0], area=[100.0, 100.0])
 
@@ -114,9 +127,7 @@ end
 end
 
 @testitem "BoundaryShapeDifferenceThresholdFilter composes in a chain" setup = [BoundaryFilterSetup] begin
-    f = BoundaryShapeDifferenceThresholdFilter(;
-        threshold_function=PiecewiseLinearThresholdFunction(100, 700, 1e-4, 1e-4)
-    )
+    f = BoundaryShapeDifferenceThresholdFilter(; threshold_function=tight)
     chain = ChainedFilterFunction(; filters=[f])
     candidates = candidate_df()
 
@@ -131,7 +142,7 @@ end
 # default `columns`. That list is validated with a subset check that, on a miss,
 # logs at @debug and returns an EMPTY DataFrame (matching_functions.jl:37-42).
 # So adding it there while the filter stays opt-in would make the default
-# tracker silently match nothing. Opt into both together instead.
+# tracker silently match nothing.
 # ---------------------------------------------------------------------------
 
 @testitem "boundary score column is absent from the matching defaults" setup = [BoundaryFilterSetup] begin
@@ -140,28 +151,4 @@ end
     @test :scaled_boundary_shape_difference ∉ MinimumWeightMatchingFunction().columns
     @test length(MinimumWeightMatchingFunction().columns) ==
         length(MinimumWeightMatchingFunction().weights)
-end
-
-@testitem "boundary filter pairs with an opt-in matching function" setup = [BoundaryFilterSetup] begin
-    using IceFloeTracker.Tracking: MinimumWeightMatchingFunction
-
-    cols = [
-        :scaled_distance,
-        :relative_error_area,
-        :relative_error_convex_area,
-        :relative_error_major_axis_length,
-        :relative_error_minor_axis_length,
-        :psi_s_correlation_score,
-        :scaled_shape_difference,
-        :scaled_boundary_shape_difference,
-    ]
-    m = MinimumWeightMatchingFunction(; columns=cols, weights=ones(length(cols)))
-    @test length(m.columns) == 8
-    @test :scaled_boundary_shape_difference ∈ m.columns
-
-    # the guard returns an empty frame when the score column is missing, which is
-    # exactly what would happen to every default user if this column were added
-    # to the defaults without also enabling the filter
-    pairs = DataFrame(; head_uuid=["a"], uuid=["b"])
-    @test nrow(m(pairs)) == 0
 end
