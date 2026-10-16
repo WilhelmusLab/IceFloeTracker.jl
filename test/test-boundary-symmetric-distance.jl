@@ -137,6 +137,15 @@ end
     @test boundary_symmetric_distance(square10, square10 .+ [0.5 0.25]) == 0
 end
 
+@testitem "boundary_symmetric_distance: invariant to large translations" setup = [SymDiffSetup] begin
+    # far from the origin, e.g. scene rather than bounding-box coordinates: the centroid
+    # must stay accurate to well within the snapping tolerance
+    rect3x5 = [0.0 0.0; 3.0 0.0; 3.0 5.0; 0.0 5.0; 0.0 0.0]
+    for t in (1e4 + 0.1, 1e6 + 0.1)
+        @test boundary_symmetric_distance(rect3x5, rect3x5 .+ t) == 0
+    end
+end
+
 @testitem "boundary_symmetric_distance: invariant to translation, edges on pixel centers" setup = [SymDiffSetup] begin
     # Once centered, these shapes have edges through pixel centers: vertical and
     # horizontal ones for the rectangle, slanted ones for the diamond. A translation
