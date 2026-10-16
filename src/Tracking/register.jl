@@ -181,8 +181,8 @@ register_coarse_angles_rad = sort(
 
 Finds the rotation angle between `im_reference` and `im_target` in two stages: [`register`](@ref) over
 `coarse_angles`, then over the angles within `fine_window` of the coarse result in steps of `fine_step`.
-`fine_step` must be positive and `fine_window` finite and non-negative; a `fine_window` of 0 gives a
-coarse-only search. Throws an `ArgumentError` otherwise.
+`fine_step` must be finite and positive, and `fine_window` finite and non-negative; a `fine_window` of 0
+gives a coarse-only search. Throws an `ArgumentError` otherwise.
 Ties are broken toward smaller absolute angles which are positive, as in `register`.
 Logs a warning when the coarse result is the smallest or largest angle in `coarse_angles`, since the
 true rotation may then lie outside the searched range; `coarse_angles` is treated as an interval, so a
