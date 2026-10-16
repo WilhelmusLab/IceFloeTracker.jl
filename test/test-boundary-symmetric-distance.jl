@@ -137,6 +137,39 @@ end
     @test boundary_symmetric_distance(square10, square10 .+ [0.5 0.25]) == 0
 end
 
+@testitem "boundary_symmetric_distance: invariant to translation, edges on pixel centers" setup = [SymDiffSetup] begin
+    # Once centered, these shapes have edges through pixel centers: vertical and
+    # horizontal ones for the rectangle, slanted ones for the diamond. A translation
+    # leaves centroid round-off of order 1e-16, which must not move a pixel center
+    # across an edge. Both are drawn in their own coordinates; once centered, the pixel
+    # centers fall on the marked points (■ filled, □ on an edge but not filled, · outside;
+    # o is a vertex that is not a pixel center):
+    #
+    # rect3x5                   diamond
+    #  y                         y
+    #  5  □───□───□───□            2              o
+    #     │           │          1.5     ·     ■     □     ·
+    #  4  ■   ■   ■   □            1        /           \
+    #     │           │          0.5     ■     ■     ■     □
+    #  3  ■   ■   ■   □            0  o                       o
+    #     │           │         -0.5     ■     ■     ■     □
+    #  2  ■   ■   ■   □           -1        \           /
+    #     │           │         -1.5     ·     ■     □     ·
+    #  1  ■   ■   ■   □           -2              o
+    #     │           │                -2    -1     0     1     2  x
+    #  0  ■───■───■───□
+    #     0   1   2   3  x
+    #
+    # Centers on the rectangle's left and bottom edges and on the diamond's two left-hand
+    # edges are filled; those on the remaining edges are not.
+    rect3x5 = [0.0 0.0; 3.0 0.0; 3.0 5.0; 0.0 5.0; 0.0 0.0]
+    diamond = [0.0 -2.0; 2.0 0.0; 0.0 2.0; -2.0 0.0; 0.0 -2.0]
+    offsets = 0:0.1:1
+    for s in (rect3x5, diamond), tx in offsets, ty in offsets
+        @test boundary_symmetric_distance(s, s .+ [tx ty]) == 0
+    end
+end
+
 @testitem "_polygon_centroid is the area centroid, not the vertex mean" setup = [SymDiffSetup] begin
     # L = 3x1 bar (centroid (1.5, 0.5)) + 1x2 bar (centroid (0.5, 2.0)), area 5:
     # (1.1, 1.1). The mean of its six vertices is (4/3, 4/3).
