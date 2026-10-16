@@ -272,7 +272,7 @@ end
 
 @testitem "add_ψs! errors helpfully when :boundary is missing" begin
     using IceFloeTracker.Tracking: add_ψs!, add_boundary!
-    using DataFrames: DataFrame
+    using DataFrames: DataFrame, Not, select!
 
     img = zeros(Int, 10, 10)
     img[2:6, 2:6] .= 1
@@ -290,8 +290,9 @@ end
     end
     @test occursin("add_boundary!", msg)
 
-    # and it succeeds once the boundary is there
+    # and it succeeds once the boundary is there, from the boundary alone
     add_boundary!(props)
+    select!(props, Not(:mask))
     add_ψs!(props)
     @test "psi" ∈ names(props)
     @test props.psi[1] isa Vector{Float64}
