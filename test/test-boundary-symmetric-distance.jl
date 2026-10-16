@@ -146,7 +146,7 @@ end
 end
 
 @testitem "_polygon_centroid is invariant to extra vertices along an edge" setup = [SymDiffSetup] begin
-    using Statistics: mean
+    using StatsBase: mean
     # Check vertex mean moves
     @test !isapprox(vec(mean(Ldense[1:(end-1), :]; dims=1)), [1.1, 1.1]; atol=1e-3)
 
