@@ -8,9 +8,11 @@ _add_suffix(s::String, df::DataFrame) = rename((x) -> String(x) * s, df)
 Calculate the angle and rotation rate between observations in DataFrame `df`.
 
 - `id_column` is the column with the ID of the image over several observations, e.g. the floe ID.
-- `image_column` is the column with the image to compare, 
+- `image_column` is the column with the image to compare,
 - `time_column` is the column with the timepoint of each observation,
 - `registration_function` is used to compare the two images and should return an angle.
+  The default, [`register`](@ref), searches the full circle in 5º steps.
+  [`register_coarse_to_fine`](@ref) searches within about ±30º to a precision of 1º.
 
 Each row is compared to each other row in `df` which are:
   - for the same object ID,
@@ -46,7 +48,8 @@ function get_rotation_measurements(
         return df
     end
 
-    results = []
+    # collect the comparison pairs first so the registrations can run in parallel
+    pairs = Tuple{DataFrameRow,DataFrameRow}[]
     for measurement in eachrow(df)
         filtered_df = subset(
             df,
@@ -57,10 +60,17 @@ function get_rotation_measurements(
                 (t) -> Date((measurement[time_column]) - Day(lookback_days)) <= Date(t)
             ), # only look at floes from the previous day or later
         )
-        new_results = get_rotation_measurements(
-            measurement, filtered_df; image_column, time_column, registration_function
+        for other_measurement in eachrow(filtered_df)
+            push!(pairs, (other_measurement, measurement))
+        end
+    end
+
+    results = Vector{Any}(undef, length(pairs))
+    Threads.@threads for i in eachindex(pairs)
+        row1, row2 = pairs[i]
+        results[i] = get_rotation_measurements(
+            row1, row2; image_column, time_column, registration_function
         )
-        append!(results, new_results)
     end
 
     # Flatten the results into a single dataframe
@@ -85,7 +95,7 @@ end
 Calculate the angle and rotation rate between a measurement in a DataFrameRow `measurement`,
 and all the other rows in DataFrame `df`.
 
-- `image_column` is the column with the image to compare, 
+- `image_column` is the column with the image to compare,
 - `time_column` is the column with the timepoint of each observation,
 - `registration_function` is used to compare the two images and should return an angle.
 Returns a vector of `NamedTuple`s with one entry for each comparison,
