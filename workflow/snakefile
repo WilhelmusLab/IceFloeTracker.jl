@@ -252,7 +252,7 @@ rule load_truecolor:
     output:
         "scene/{region}.{scale}m.{date}.{satellite}/truecolor.tiff"
     input:
-        init_loader = "init/init_loader"
+        init_loader = ancient("init/init_loader")
     params:
         bbox = lambda wc: get_region_target_bbox(wc.region),
         crs = lambda wc: get_region_data(wc.region)["target_crs"]
@@ -265,7 +265,7 @@ rule load_falsecolor:
     output:
         "scene/{region}.{scale}m.{date}.{satellite}/falsecolor.tiff"
     input:
-        init_loader = "init/init_loader"
+        init_loader = ancient("init/init_loader")
     params:
         bbox = lambda wc: get_region_target_bbox(wc.region),
         crs = lambda wc: get_region_data(wc.region)["target_crs"]
@@ -278,7 +278,7 @@ rule load_cloud:
     output:
         "scene/{region}.{scale}m.{date}.{satellite}/cloud.tiff"
     input:
-        init_loader = "init/init_loader"
+        init_loader = ancient("init/init_loader")
     params:
         bbox = lambda wc: get_region_target_bbox(wc.region),
         crs = lambda wc: get_region_data(wc.region)["target_crs"]
@@ -292,7 +292,7 @@ rule load_raw_landmask:
     output:
         "region/{region}/{scale}m.{year}.landmask_raw.tiff"
     input:
-        init_loader = "init/init_loader"
+        init_loader = ancient("init/init_loader")
     params:
         bbox = lambda wc: get_region_target_bbox(wc.region),
         crs = lambda wc: get_region_data(wc.region)["target_crs"]
