@@ -37,6 +37,16 @@ jobs:
           key: workflow-overpasses-${{ hashFiles('workflow/snakefile', 'workflow/configs/default/config.yaml', 'workflow/configs/default/region.csv', 'workflow/configs/default/case.csv', 'workflow/configs/ift-from-this-repo/config.yaml', 'workflow/profiles/default/config.yaml') }}
           restore-keys: |
             workflow-overpasses-
+      - name: Cache satellite images
+        uses: actions/cache@v6
+        with:
+          path: |
+            workflow/results/scene/*/truecolor.tiff
+            workflow/results/scene/*/falsecolor.tiff
+            workflow/results/scene/*/cloud.tiff
+          key: workflow-scene-images-${{ hashFiles('workflow/configs/default/config.yaml', 'workflow/configs/default/region.csv', 'workflow/configs/default/case.csv') }}
+          restore-keys: |
+            workflow-scene-images-
       - name: Cache SOIT historical DB
         uses: actions/cache@v6
         with:
@@ -47,6 +57,8 @@ jobs:
       - name: Install workflow dependencies
         run: ".devcontainer/setup-workflow-dependencies.sh"
       - uses: julia-actions/julia-buildpkg@v1
+      - name: Initialize image loader
+        run: "$SNAKEMAKE init/init_loader"
       - name: Get tracking results for an example region
         run: "$SNAKEMAKE track/beaufort_sea.250m.20190322.20190323.LopezAcosta2019Tiling.tracked.csv"
       - name: Get results for one observation as a NetCDF file
