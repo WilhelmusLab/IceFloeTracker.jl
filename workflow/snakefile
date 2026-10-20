@@ -292,7 +292,7 @@ rule load_raw_landmask:
     output:
         "region/{region}/{scale}m.{year}.landmask_raw.tiff"
     input:
-        init_loader = ancient("init/init_loader")
+        init_loader = "init/init_loader"
     params:
         bbox = lambda wc: get_region_target_bbox(wc.region),
         crs = lambda wc: get_region_data(wc.region)["target_crs"]
