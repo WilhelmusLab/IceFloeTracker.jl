@@ -44,9 +44,7 @@ jobs:
             workflow/results/scene/*/truecolor.tiff
             workflow/results/scene/*/falsecolor.tiff
             workflow/results/scene/*/cloud.tiff
-          key: workflow-scene-images-${{ hashFiles('workflow/configs/default/config.yaml', 'workflow/configs/default/region.csv', 'workflow/configs/default/case.csv') }}
-          restore-keys: |
-            workflow-scene-images-
+          key: workflow-scene-images-${{ hashFiles('workflow/snakefile', 'workflow/configs/default/config.yaml', 'workflow/configs/default/region.csv', 'workflow/configs/default/case.csv') }}
       - name: Cache SOIT historical DB
         uses: actions/cache@v6
         with:
