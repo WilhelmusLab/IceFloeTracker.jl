@@ -403,7 +403,7 @@ end
 """
     boundary_modified_hausdorff(b1::Matrix{Float64}, b2::Matrix{Float64})
 
-Modified Hausdorff distance between two boundaries treated as point sets, after centring
+Modified Hausdorff distance between two boundaries treated as point sets, after centering
 both at the origin. Each directed distance is the *mean* rather than the maximum
 nearest-neighbour distance, so a single outlying point does not set the score.
 Insensitive to where either trace begins. Units: pixels.
