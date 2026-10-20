@@ -385,7 +385,7 @@ end
 """
     boundary_hausdorff(b1::Matrix{Float64}, b2::Matrix{Float64})
 
-Hausdorff distance between two boundaries treated as point sets, after centring both at
+Hausdorff distance between two boundaries treated as point sets, after centering both at
 the origin: the larger of the two directed distances, each the greatest nearest-neighbour
 distance from one set to the other. Insensitive to where either trace begins. Units:
 pixels.
