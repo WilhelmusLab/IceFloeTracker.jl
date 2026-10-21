@@ -140,8 +140,6 @@ function erosion_expansion(
         )
 
     input = copy(binary_img)
-    input_no = copy(binary_img)
-    
     output = zeros(Int64, size(binary_img))
     label_offset = 0
     
@@ -187,12 +185,8 @@ function erosion_expansion(
         watershed_labels .= label_components(watershed_labels)
         
         # Remove small segments
+        # Check reasoning for the iters minimum area
         remove_small_segments!(watershed_labels, maximum([minimum_area, iters^4]))
-
-        if save_figs
-            fname = "identification_round_"*string(iters)*".png"
-            save(fname, view_seg_random(SegmentedImage(binary_img, watershed_labels)))
-        end
 
         # Input for next stage:
         # backround in the watershed, positive in the ice mask, positive at beginning of round
