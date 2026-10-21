@@ -92,9 +92,8 @@ end
     _polygon_centroid(P::AbstractMatrix{Float64})
 
 Area centroid of the polygon whose vertices are the rows of `P` (Matrix(n, 2) with [x y]
-coordinates, in order), by the shoelace formula. Unlike the mean of the vertices, it does
-not depend on how densely the boundary is sampled. A repeated closing row is a
-zero-length edge, so open and closed input give the same result.
+coordinates, in order), by the shoelace formula. A repeated closing row is a zero-length
+edge, so open and closed input give the same result.
 
 Returns a 2-element `Vector{Float64}`, `[x, y]`.
 
@@ -120,7 +119,6 @@ julia> _polygon_centroid(P[1:(end - 1), :])  # open input
 ```
 """
 function _polygon_centroid(P::AbstractMatrix{Float64})
-    # The mask path aligns on the area centroid, hence this rather than the vertex mean.
     # The sums are taken relative to the first vertex: in absolute coordinates far from
     # the origin they cancel and lose precision.
     n = size(P, 1)
