@@ -3,10 +3,15 @@ Functions for separating ice floes in binary images.
 """
 
 import Images: 
+    complement,
     distance_transform,
     feature_transform,
     label_components,
     opening,
+    erode!,
+    erode,
+    dilate!,
+    dilate,
     component_indices,
     imfill,
     watershed
