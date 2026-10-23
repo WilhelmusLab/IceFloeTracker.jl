@@ -1,4 +1,5 @@
 import Images: float64, channelview, Gray, padarray, Pad, base_color_type, colorview
+import ..ImageUtils: @tilewise
 
 abstract type AbstractDiffusionAlgorithm end
 
@@ -70,11 +71,7 @@ function nonlinear_diffusion(
     tiles,
     f::AbstractDiffusionAlgorithm=PeronaMalikDiffusion()
 )
-    out = deepcopy(img)
-    for tile in tiles
-        out[tile...] .= f(img[tile...])
-    end
-    return out
+    return @tilewise tiles f($img) into = deepcopy(img)
 end
 
 function (f::PeronaMalikDiffusion)(img::AbstractArray{<:AbstractGray})
@@ -86,10 +83,10 @@ function (f::PeronaMalikDiffusion)(img::AbstractArray{<:AbstractGray})
         M, N = size(image)
         padded_array = padarray(image, Pad(:replicate, 1, 1))
 
-        ∇n = padded_array[1:M, 0:(N - 1)] .- image
-        ∇s = padded_array[1:M, 2:(N + 1)] .- image
-        ∇e = padded_array[2:(M + 1), 1:N] .- image
-        ∇w = padded_array[0:(M - 1), 1:N] .- image
+        ∇n = padded_array[1:M, 0:(N-1)] .- image
+        ∇s = padded_array[1:M, 2:(N+1)] .- image
+        ∇e = padded_array[2:(M+1), 1:N] .- image
+        ∇w = padded_array[0:(M-1), 1:N] .- image
 
         Cn = g.(abs.(∇n), k)
         Cs = g.(abs.(∇s), k)
@@ -164,12 +161,12 @@ function anisotropic_diffusion_2D(
     for _ in 1:niter
         # These are zero-indexed offset arrays
         diff_img_north =
-            padded_img[0:(end - 1), 1:(end - 1)] .- padded_img[1:end, 1:(end - 1)]
+            padded_img[0:(end-1), 1:(end-1)] .- padded_img[1:end, 1:(end-1)]
         diff_img_east =
-            padded_img[1:(end - 1), 1:end] .- padded_img[1:(end - 1), 0:(end - 1)]
-        diff_img_nw = padded_img[0:(end - 2), 0:(end - 2)] .- I
-        diff_img_ne = padded_img[0:(end - 2), 2:end] .- I
-        diff_img_sw = padded_img[2:end, 0:(end - 2)] .- I
+            padded_img[1:(end-1), 1:end] .- padded_img[1:(end-1), 0:(end-1)]
+        diff_img_nw = padded_img[0:(end-2), 0:(end-2)] .- I
+        diff_img_ne = padded_img[0:(end-2), 2:end] .- I
+        diff_img_sw = padded_img[2:end, 0:(end-2)] .- I
         diff_img_se = padded_img[2:end, 2:end] .- I
 
         # Exponential conduction coefficients
@@ -189,8 +186,8 @@ function anisotropic_diffusion_2D(
         flux_se = conduct_coeff_se .* diff_img_se
 
         # Back to regular 1-indexed arrays
-        flux_north_diff = flux_north[1:(end - 1), :] .- flux_north[2:end, :]
-        flux_east_diff = flux_east[:, 2:end] .- flux_east[:, 1:(end - 1)]
+        flux_north_diff = flux_north[1:(end-1), :] .- flux_north[2:end, :]
+        flux_east_diff = flux_east[:, 2:end] .- flux_east[:, 1:(end-1)]
 
         # Discrete PDE solution
         sum_ = @. (1 / (dd^2)) * (flux_nw + flux_ne + flux_sw + flux_se)

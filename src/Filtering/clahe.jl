@@ -10,6 +10,7 @@ using Images.ImageContrastAdjustment:
 using Images.ImageFiltering: padarray, Pad
 using Images.ImageCore: comp1, AbstractGray, Color3, YIQ, channelview
 using TiledIteration: TileIterator
+using ...ImageUtils: @tilewise
 
 """
     ContrastLimitedAdaptiveHistogramEqualization <: AbstractHistogramAdjustmentAlgorithm
@@ -71,23 +72,11 @@ function (f::ContrastLimitedAdaptiveHistogramEqualization)(
     clip_limit = Int(floor(clip_limit))
 
     # Process each contextual region
-    histograms = Array{Any}(undef, f.rblocks, f.cblocks)
-    tiles = collect(TileIterator(axes(img_padded), (rsize, csize)))
-    for (I, tile) in zip(CartesianIndices(tiles), tiles)
-        rblock, cblock = Tuple(I)
-        region = img_padded[tile...]
-        edges, raw_counts = build_histogram(
-            region, f.nbins; minval=f.minval, maxval=f.maxval
-        )
-        redistributed_counts = redistribute_histogram(raw_counts, clip_limit)
-        mapping_function = map_histogram(
-            edges::AbstractArray, redistributed_counts, f.minval, f.maxval
-        )
-        histograms[rblock, cblock] = mapping_function
-    end
+    tiles = TileIterator(axes(img_padded), (rsize, csize))
+    histograms = @tilewise tiles _clahe_mapping($img_padded, f, clip_limit)
 
     # Interpolate pixel values
-    for rblock in 1:(f.rblocks + 1), cblock in 1:(f.cblocks + 1)
+    for rblock in 1:(f.rblocks+1), cblock in 1:(f.cblocks+1)
 
         # Get the histograms for each block
         if rblock == 1
@@ -193,9 +182,21 @@ function map_histogram(
 
     function _mapping_function(value)
         index = searchsortedfirst(edges, value)
-        return mapping[index - 1] # -1 because mapping is an OffsetArray
+        return mapping[index-1] # -1 because mapping is an OffsetArray
     end
     return _mapping_function
+end
+
+"""
+    _clahe_mapping(region, f::ContrastLimitedAdaptiveHistogramEqualization, clip_limit)
+
+Build the histogram of `region`, clip it at `clip_limit` and redistribute the excess, and
+return the resulting intensity mapping function.
+"""
+function _clahe_mapping(region, f::ContrastLimitedAdaptiveHistogramEqualization, clip_limit)
+    edges, raw_counts = build_histogram(region, f.nbins; minval=f.minval, maxval=f.maxval)
+    redistributed_counts = redistribute_histogram(raw_counts, clip_limit)
+    return map_histogram(edges::AbstractArray, redistributed_counts, f.minval, f.maxval)
 end
 
 function (f::ContrastLimitedAdaptiveHistogramEqualization)(
