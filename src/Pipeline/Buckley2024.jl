@@ -2,9 +2,11 @@ module Buckley2024
 
 using Images
 using DataFrames
+import StatsBase: mean
 
 import ..Pipeline: 
     IceFloeSegmentationAlgorithm
+
 import ..Preprocessing:
     create_landmask,
     create_cloudmask,
@@ -33,8 +35,8 @@ floe_splitting_params = (
 floe_filtering_params = (
     min_floe_size=16,
     max_floe_size=90e3, # TODO: Check if Ellen used a maximum floe size
-    min_band_1_reflectance=0.58,
-    min_circularity=0., # TODO: Check if Ellen used this threshold
+    min_reflectance=0.58,
+    # min_circularity=0., # TODO: Check if Ellen used this threshold
 )
 """
     Buckley2024.Segment()
@@ -97,14 +99,12 @@ function (s::Segment)(
         minimum_area=s.floe_splitting_params.min_floe_area,
     )
 
+    filter_floes!(final_floes, gray_img, coastal_buffer_mask, cloud_mask; s.floe_filtering_params...)
     # filter steps: remove dark floes, remove small floes
     # TODO: remove segments if segment mean is too low.
-    remove_small_segments!(final_floes, s.floe_filtering_params.min_floe_size)
-    remove_large_segments!(final_floes, s.floe_filtering_params.max_floe_size)
 
     # Re-label so there are no missing numbers in the component list
-    final_floes .= label_components(final_floes)
-
+    
     # Return the original truecolor image, segmented
     segments_tc = SegmentedImage(truecolor_image, final_floes)
     segments_fc = SegmentedImage(falsecolor_image, final_floes)
@@ -128,6 +128,47 @@ function (s::Segment)(
     return segments_tc
 end
 
+function filter_floes!(labels, gray_img, coastal_buffer_mask, cloud_mask; min_floe_size, max_floe_size, min_reflectance)
+    remove_small_segments!(labels, min_floe_size)
+    remove_large_segments!(labels, max_floe_size)
+    indices = component_indices(labels)
 
+    # Clear borders
+    n, m = size(labels)
+    border_labels = filter(r -> r != 0, 
+        union(
+            unique(labels[1, :]),
+            unique(labels[n, :]),
+            unique(labels[:, 1]),
+            unique(labels[:, m])
+        )
+    )
+
+    remove_labels!(labels, remove_list) = foreach(l -> labels[indices[l]] .= 0, remove_list)
+    remove_labels!(labels, border_labels)
+
+    # Clear floes overlapping coastal buffer
+    remove_labels!(labels,
+      filter(r -> r != 0, 
+        unique(labels[coastal_buffer_mask .> 0])
+        )
+    )
+
+    # Clear floes bordered by clouds
+    extended_cloud_mask = dilate(cloud_mask, strel_box((3,3)))
+    remove_labels!(labels,
+      filter(r -> r != 0, 
+        unique(labels[extended_cloud_mask .> 0])
+        )
+    )
+    
+    # Clear floes which have mean reflectance below the threshold
+    remove_labels!(labels,
+        [r for r in unique(labels) if r != 0 && mean(gray_img[indices[r]]) < min_reflectance]
+    )
+
+    # Finally, re-label the floes
+    labels .= label_components(labels)
+end
 
 end
