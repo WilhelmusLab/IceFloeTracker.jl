@@ -60,7 +60,7 @@ Calculate the optimal tile size in the range [l0-1, l0+1] for the given size `l0
 # Description
 This function computes the optimal tile size for tiling an area with given dimensions. It ensures that the initial
 tile size `l0` is at least 2 and not larger than any of the given dimensions. The function evaluates candidate tile
-sizes and selects the one that minimizes the area missed by its corresponding tiling. In case of a tie, it prefers 
+sizes and selects the one that minimizes the area missed by its corresponding tiling. In case of a tie, it prefers
 the larger tile size.
 
 # Example
@@ -178,7 +178,7 @@ julia> collect(TileIterator((1:5,), MergeLastTileIfSmallerThanHalf((3,))))
 2-element Array{Tuple{UnitRange{Int64}},1}:
  (1:3,)
  (4:5,)
- 
+
 julia> collect(TileIterator((1:6,), MergeLastTileIfSmallerThanHalf((3,))))
 2-element Array{Tuple{UnitRange{Int64}},1}:
  (1:3,)
@@ -205,7 +205,7 @@ function _cover1d(ax, strategy::MergeLastTileIfSmallerThanHalf{1})
     hi = last(ax)
     current = lo
     while 2 * (hi - current + 1) >= 3 * tilelen
-        push!(covered_range, current:(current + tilelen - 1))
+        push!(covered_range, current:(current+tilelen-1))
         current += tilelen
     end
     if hi >= current
@@ -213,3 +213,97 @@ function _cover1d(ax, strategy::MergeLastTileIfSmallerThanHalf{1})
     end
     return covered_range
 end
+
+"""
+    @tilewise tiles transformation
+    @tilewise tiles transformation into = canvas
+
+Apply `transformation` to each tile in `tiles`. Inputs marked with `\$` are replaced by the
+current tile of that input: `\$img` stands for `img[t...]` for a tile `t`, with any dimensions
+beyond the tile's kept whole (a tile `(1:2, 3:4)` of an `h×w×3` array is `img[1:2, 3:4, :]`).
+Each distinct marked expression is evaluated once, before the first tile. Slices are copies, so
+the transformation cannot modify its inputs. Unmarked names are used as they are.
+
+With `into = canvas`, each tile's result is written into the same tile of `canvas`, which is
+returned; pixels outside every tile keep their value in `canvas`. Without it, the results are
+collected into an array with the shape of `tiles`.
+
+# Examples
+```jldoctest
+julia> img = reshape(1:16, 4, 4);
+
+julia> tiles = [(1:2, 1:2) (1:2, 3:4); (3:4, 1:2) (3:4, 3:4)];
+
+julia> @tilewise tiles sum(\$img)
+2×2 Matrix{Int64}:
+ 14  46
+ 22  54
+
+julia> @tilewise tiles \$img .- minimum(\$img) into = zeros(Int, 4, 4)
+4×4 Matrix{Int64}:
+ 0  4  0  4
+ 1  5  1  5
+ 0  4  0  4
+ 1  5  1  5
+```
+"""
+macro tilewise(tiles, transformation, options...)
+    canvas = _tilewise_canvas(options)
+    inputs = Dict{Any,Symbol}()
+    body = _mark_inputs!(inputs, transformation)
+    isempty(inputs) && throw(
+        ArgumentError("`@tilewise` transformation has no input marked with `\$`")
+    )
+    tile = gensym(:tile)
+    fulls = Dict(slice => gensym(:input) for slice in values(inputs))
+    evaluate = [:($(fulls[slice]) = $ex) for (ex, slice) in inputs]
+    slice = [:($s = $_tile($(fulls[s]), $tile)) for s in values(inputs)]
+    apply = if isnothing(canvas)
+        results, all_tiles = gensym(:results), gensym(:tiles)
+        quote
+            $all_tiles = $tiles
+            $results = []
+            for $tile in $all_tiles
+                $(slice...)
+                push!($results, $body)
+            end
+            reshape(map(identity, $results), size($all_tiles))
+        end
+    else
+        out = gensym(:canvas)
+        quote
+            $out = $canvas
+            for $tile in $tiles
+                $(slice...)
+                $_untile!($out, $tile, $body)
+            end
+            $out
+        end
+    end
+    return esc(:(
+        let
+            $(evaluate...)
+            $apply
+        end
+    ))
+end
+
+function _tilewise_canvas(options)
+    canvas = nothing
+    for opt in options
+        (Meta.isexpr(opt, :(=), 2) && opt.args[1] === :into && isnothing(canvas)) ||
+            throw(ArgumentError("`@tilewise` accepts one option, `into = canvas`; got `$opt`"))
+        canvas = opt.args[2]
+    end
+    return canvas
+end
+
+_mark_inputs!(_, ex) = ex
+function _mark_inputs!(inputs, ex::Expr)
+    Meta.isexpr(ex, :$, 1) && return get!(() -> gensym(:slice), inputs, ex.args[1])
+    return Expr(ex.head, [_mark_inputs!(inputs, a) for a in ex.args]...)
+end
+
+_trailing(x, tile) = ntuple(_ -> Colon(), ndims(x) - length(tile))
+_tile(x, tile) = x[tile..., _trailing(x, tile)...]
+_untile!(canvas, tile, result) = view(canvas, tile..., _trailing(canvas, tile)...) .= result
