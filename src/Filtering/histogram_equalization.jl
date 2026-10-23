@@ -1,6 +1,6 @@
 import Images:
     RGB, float64, Gray, entropy, red, green, blue, adjust_histogram, AdaptiveEqualization
-import ..ImageUtils: to_uint8, apply_to_channels
+import ..ImageUtils: to_uint8, apply_to_channels, @tilewise
 
 """
     get_rgb_channels(img)
@@ -81,26 +81,30 @@ function conditional_histeq(
 
     rgbchannels = get_rgb_channels(true_color_diffused)
 
-    # For each tile, compute the entropy in the false color tile, and the fraction of white and black pixels
-    for tile in tiles
-        clouds_tile = clouds_red[tile...]
-        tile_entropy = entropy(clouds_tile)
-        whitefraction = sum(clouds_tile .> white_threshold) / length(clouds_tile)
+    return @tilewise tiles _conditional_histeq_tile(
+        $rgbchannels,
+        $clouds_red;
+        entropy_threshold=entropy_threshold,
+        white_threshold=white_threshold,
+        white_fraction_threshold=white_fraction_threshold,
+    ) into = rgbchannels
+end
 
-        # If the entropy is above a threshold, and the fraction of white pixels is above a threshold, then apply histogram equalization to the tiles of each channel of the true color image. Otherwise, keep the original tiles.
-        if tile_entropy > entropy_threshold && whitefraction > white_fraction_threshold
-            for i in 1:3
-                eqhist =
-                    adjust_histogram(
-                        rgbchannels[:, :, i][tile...] / 255.0,
-                        ContrastLimitedAdaptiveHistogramEqualization(; clip=2.0),
-                    ) .* 255
-                @view(rgbchannels[:, :, i])[tile...] .= eqhist
-            end
-        end
-    end
+"""
+    _conditional_histeq_tile(rgb, clouds; entropy_threshold, white_threshold, white_fraction_threshold)
 
-    return rgbchannels
+Equalize each channel of the `h×w×3` tile `rgb` with contrast-limited adaptive histogram
+equalization if the false color tile `clouds` has entropy above `entropy_threshold` and a fraction
+of pixels above `white_threshold` greater than `white_fraction_threshold`. Otherwise return `rgb`.
+"""
+function _conditional_histeq_tile(
+    rgb, clouds; entropy_threshold, white_threshold, white_fraction_threshold
+)
+    whitefraction = sum(clouds .> white_threshold) / length(clouds)
+    (entropy(clouds) > entropy_threshold && whitefraction > white_fraction_threshold) ||
+        return rgb
+    clahe = ContrastLimitedAdaptiveHistogramEqualization(; clip=2.0)
+    return stack(adjust_histogram(rgb[:, :, i] / 255.0, clahe) .* 255 for i in 1:3)
 end
 
 """
