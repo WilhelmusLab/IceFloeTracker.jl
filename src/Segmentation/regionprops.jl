@@ -210,10 +210,11 @@ function component_perimeters(
     algorithm::PerimeterEstimationAlgorithm=BenkridCrookes(),
     masks=component_floes(indexmap),
 )
-    perims = Dict(
-        label => (label == 0 ? 0 : algorithm(masks[label])) for
-        label in keys(masks) if prod(size(masks[label])) > 1
-    )
+    perims = Dict{keytype(masks),Float64}()
+    for (label, mask) in masks
+        prod(size(mask)) > 1 || continue
+        perims[label] = label == 0 ? 0.0 : algorithm(mask)
+    end
     return perims
 end
 
