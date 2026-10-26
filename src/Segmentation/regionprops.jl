@@ -189,9 +189,11 @@ function component_floes(
             ),
         )
     end
-    floe_masks = Dict(
-        i => indexmap[boxes[i]] .== i for i in labels if areas[i] > minimum_area
-    )
+    # Initialize typed up dict so the result stays concrete when no label passes the filter.
+    floe_masks = Dict{eltype(indexmap),BitArray{ndims(indexmap)}}()
+    for i in labels
+        areas[i] > minimum_area && (floe_masks[i] = indexmap[boxes[i]] .== i)
+    end
     return floe_masks
 end
 
