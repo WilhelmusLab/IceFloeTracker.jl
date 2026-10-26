@@ -824,11 +824,11 @@ and "orientation" where each entry is a vector ordered by label_list.
 """
 function _component_moment_measures(labels, label_list; areas=component_lengths(labels))
     data = Dict(
-        :row_centroid=>[],
-        :col_centroid=>[],
-        :major_axis_length=>[],
-        :minor_axis_length=>[],
-        :orientation=>[],
+        :row_centroid=>Float64[],
+        :col_centroid=>Float64[],
+        :major_axis_length=>Float64[],
+        :minor_axis_length=>Float64[],
+        :orientation=>Float64[],
     )
     centroids = component_centroids(labels)
     indices = component_indices(CartesianIndex, labels)
