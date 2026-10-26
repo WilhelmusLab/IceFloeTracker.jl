@@ -1,6 +1,6 @@
-import ImageBinarization: 
-    AbstractImageBinarizationAlgorithm, 
-    binarize, 
+import ImageBinarization:
+    AbstractImageBinarizationAlgorithm,
+    binarize,
     AdaptiveThreshold
 
 import Images:
@@ -18,9 +18,9 @@ import Images:
     alpha,
     alphacolor
 
-import Peaks: 
-    findmaxima, 
-    peakproms!, 
+import Peaks:
+    findmaxima,
+    peakproms!,
     peakwidths!
 
 import DataFrames: 
@@ -38,7 +38,7 @@ import DataFrames:
     )
 
 Given the edges and counts from build_histogram, identify local maxima and return the location of the
-largest local maximum that is bright enough that it is possibly sea ice. Locations are determined by 
+largest local maximum that is bright enough that it is possibly sea ice. Locations are determined by
 the edges, which by default are the left bin edges. Note also that peaks defaults to the left side of
 plateaus (see Peaks.jl documentation). Returns Inf if there are no non-zero parts of the histogram with bins larger than the possible
 ice threshold, or if there are no detected peaks larger than the minimum prominence.
@@ -64,7 +64,7 @@ function get_ice_peaks(
     counts = counts[1:end]
     normalizer = sum(counts[edges .> possible_ice_threshold])
 
-    # Normalize the possible sea ice section of the histogram. 
+    # Normalize the possible sea ice section of the histogram.
     # Images with a lot of masked pixels can have large peaks at 0, which
     # we don't want to include in the normalization. If no potential
     # ice pixels, then return early
@@ -90,7 +90,7 @@ end
 Functors to detect ice regions in an image.
 
 Each algorithm `a` with parameters `kwargs...` can be called like:
-- `binarize(image, a(; kwargs...))` 
+- `binarize(image, a(; kwargs...))`
 - or `a(; kwargs...)(image)`.
 """
 abstract type IceDetectionAlgorithm <: AbstractImageBinarizationAlgorithm end
@@ -106,7 +106,7 @@ end
         band_1_threshold::Real,
     )(image)
     binarize(
-        modis_721_image, 
+        modis_721_image,
         a::IceDetectionThresholdMODIS721
     )
 Returns pixels for a MODIS image where (band_7 < threshold AND band_2 > threshold AND band_1 > threshold).
@@ -140,12 +140,12 @@ end
     binarize(modis_721_image, a::IceDetectionBrightnessPeaksMODIS721)
 
 Uses the histogram of the band 1 and band 2 reflectance to determine thresholds for identifying
-bright ice pixels (e.g., snow-covered floes or ice thicker than its surroundings). The algorithm 
+bright ice pixels (e.g., snow-covered floes or ice thicker than its surroundings). The algorithm
 builds a histogram using `nbins` bins, and finds the largest peak such that the peak brightness
 is larger than the `possible_ice_threshold` and has prominence larger than `minimum_prominence`
 using a comparison window of size `window_size` (see docs for `Peaks.findmaxima`).
 If `join_method` = "intersect", then select pixels where the band 1 brightness is larger than the
-band 1 peak and the band 2 brightness is larger than the band 2 peak. Otherwise, if 
+band 1 peak and the band 2 brightness is larger than the band 2 peak. Otherwise, if
 `join_method` = "union", select pixels where either band 1 or band 2 is brighter than the threshold criteria.
 Finally, since clouds tend to have higher reflectance in band 7, mask pixels with the band 7 brightness
 larger than `band_7_max`. It is designed to be used with MODIS false color 7-2-1 imagery.
@@ -236,7 +236,7 @@ function (f::IceDetectionFirstNonZeroAlgorithm)(out, img, args...; kwargs...)
 end
 
 """
-    tiled_adaptive_binarization(img, tiles; minimum_window_size=). 
+    tiled_adaptive_binarization(img, tiles; minimum_window_size=).
 
 Applies the (AdaptiveThreshold)[https://juliaimages.org/ImageBinarization.jl/v0.1/#Adaptive-Threshold-1] binarization algorithm
 to each tile in the image. Following the recommendations from ImageBinarization, the default is to use the integer window size
@@ -286,7 +286,7 @@ binarize(g, a)
     nbins=128
 end
 
-function (f::IceDetectionBrightnessMidpoint)(out, gray_image::AbstractArray{<:Union{AbstractGray, TransparentGray}})
+function (f::IceDetectionBrightnessMidpoint)(out, gray_image::AbstractArray{<:Union{AbstractGray,TransparentGray}})
     alpha_binary = alpha.(alphacolor.(gray_image)) .> 0.5
     edges, bincounts = build_histogram(gray_image .* alpha_binary, f.nbins; minval=0, maxval=1)
     ice_peak = get_ice_peaks(
@@ -302,8 +302,8 @@ function (f::IceDetectionBrightnessMidpoint)(out, gray_image::AbstractArray{<:Un
     return out
 end
 
-function (f::IceDetectionBrightnessMidpoint)(gray_image::AbstractArray{<:Union{AbstractGray, TransparentGray}},
-     tiles::Vector{Tuple{UnitRange{Int64}, UnitRange{Int64}}})
+function (f::IceDetectionBrightnessMidpoint)(gray_image::AbstractArray{<:Union{AbstractGray,TransparentGray}},
+    tiles::Vector{Tuple{UnitRange{Int64},UnitRange{Int64}}})
     out = falses(size(gray_image))
     for tile in tiles
         out[tile...] .= f(gray_image[tile...])
@@ -311,8 +311,8 @@ function (f::IceDetectionBrightnessMidpoint)(gray_image::AbstractArray{<:Union{A
     return out
 end
 
-function (f::IceDetectionBrightnessMidpoint)(gray_image::AbstractArray{<:Union{AbstractGray, TransparentGray}},
-     tiles::Matrix{Tuple{UnitRange{Int64}, UnitRange{Int64}}})
+function (f::IceDetectionBrightnessMidpoint)(gray_image::AbstractArray{<:Union{AbstractGray,TransparentGray}},
+    tiles::Matrix{Tuple{UnitRange{Int64},UnitRange{Int64}}})
     out = falses(size(gray_image))
     for tile in tiles
         out[tile...] .= f(gray_image[tile...])
