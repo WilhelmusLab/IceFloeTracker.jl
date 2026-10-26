@@ -779,7 +779,20 @@ function regionprops(
             append!(updated_properties, [p])
         end
     end
-    return Dict(prop => data[prop] for prop in updated_properties)
+    return Dict{Symbol,AbstractVector}(prop => data[prop] for prop in updated_properties)
+end
+
+# Function barrier: `bboxes_all` is a `Union` with `nothing` in `regionprops`.
+function _bbox_columns(bboxes_all, img_labels)
+    min_rows, max_rows, min_cols, max_cols = Int[], Int[], Int[], Int[]
+    for s in img_labels
+        min_row, max_row, min_col, max_col = _get_bounds(bboxes_all[s])
+        push!(min_rows, min_row)
+        push!(max_rows, max_row)
+        push!(min_cols, min_col)
+        push!(max_cols, max_col)
+    end
+    return min_rows, max_rows, min_cols, max_cols
 end
 
 """
