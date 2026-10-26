@@ -130,7 +130,8 @@ function converttounits(propdf, latlondata)
     return output
 end
 
-"""component_floes(indexmap; minimum_area=1)
+"""
+    component_floes(indexmap; minimum_area=1)
 
 Given a labeled array, produce a dictionary where each entry is a binary array cropped to the
 location of the label.
@@ -197,10 +198,11 @@ function component_floes(
     return floe_masks
 end
 
-"""component_perimeters(indexmap; minimum_area=1, algorithm="benkrid_crookes")
+"""
+    component_perimeters(indexmap; algorithm=BenkridCrookes(), masks=component_floes(indexmap))
 
 Estimate the perimeter of the labeled regions in `indexmap` using the specified algorithm.
-Algorithm options = "benkrid_crookes" (only option currently, will add crofton in future release)
+The only `PerimeterEstimationAlgorithm` currently is `BenkridCrookes` (Crofton may be added in a future release).
 Defaults to using connectivity 4.
 """
 function component_perimeters(
