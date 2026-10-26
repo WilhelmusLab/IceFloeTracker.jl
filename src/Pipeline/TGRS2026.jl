@@ -202,11 +202,9 @@ min_ocean_pixel_count = 5000
 preprocessing_algorithm = Preprocess()
 classification_algorithm = Classify()
 floe_splitting_params = [
-    (max_hole_fill=1500, max_depth=15, max_depth_ratio=0.5, max_expand=1, opening_strel=strel_diamond((3, 3))),
-    (max_hole_fill=1500, max_depth=15, max_depth_ratio=0.5, max_expand=2, opening_strel=strel_box((3, 3))),
-    (max_hole_fill=2500, max_depth=20, max_depth_ratio=0.75, max_expand=3, opening_strel=strel_disk(4))
+    (max_hole_fill=1500, max_depth=15, max_depth_ratio=0.7, max_expand=2, opening_strel=strel_diamond((3, 3))),
+    (max_hole_fill=1500, max_depth=15, max_depth_ratio=0.7, max_expand=2, opening_strel=strel_box((3, 3))),
 ]
-
 floe_merging_params = (
     minimum_floe_size=64,
     maximum_floe_size=90e3,
