@@ -111,10 +111,16 @@ end
     )
 Returns pixels for a MODIS image where (band_7 < threshold AND band_2 > threshold AND band_1 > threshold).
 """
-@kwdef struct IceDetectionThresholdMODIS721 <: IceDetectionAlgorithm
-    band_7_max::Real
-    band_2_min::Real
-    band_1_min::Real
+@kwdef struct IceDetectionThresholdMODIS721{T<:Real} <: IceDetectionAlgorithm
+    band_7_max::T
+    band_2_min::T
+    band_1_min::T
+end
+
+# Mixed argument types (e.g. `Int` and `Float64`) are promoted to a common type.
+function IceDetectionThresholdMODIS721(band_7_max::Real, band_2_min::Real, band_1_min::Real)
+    T = promote_type(typeof(band_7_max), typeof(band_2_min), typeof(band_1_min))
+    return IceDetectionThresholdMODIS721{T}(band_7_max, band_2_min, band_1_min)
 end
 
 function (f::IceDetectionThresholdMODIS721)(out, modis_721_image, args...; kwargs...)
