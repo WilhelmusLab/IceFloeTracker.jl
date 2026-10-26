@@ -2,7 +2,7 @@ import Images: Gray, Float64, SegmentedImage
 import StatsBase: StatsBase
 import Random: Random
 import Clustering: Clustering, assignments, kmeans
-import ..ImageUtils: @tilewise
+import ..ImageUtils: @tilewise, tile_index_map
 
 """
     kmeans_segmentation(gray_image; k=4, maxiter=50, random_seed=45)
@@ -37,17 +37,17 @@ function kmeans_segmentation(
     minimum_overlap=4,
     grayscale_threshold=0.1,
 )
-    indexmap = zeros(Int64, size(gray_image))
-    for (offset, tile) in enumerate(tiles)
-        indexmap[tile...] .= labels_map(
-            kmeans_segmentation(
-                gray_image[tile...]; k=k, maxiter=maxiter, random_seed=random_seed
-            ),
-        )
-        indexmap[tile...] .+= k * offset
-        offset += 1
-    end
+    # Each tile is clustered on its own, so every tile has labels 1:k. Shifting the labels
+    # of the i-th tile by k*i makes them unique across tiles: tile 1 gets k+1:2k, tile 2
+    # gets 2k+1:3k, and so on. Pixels outside every tile stay 0.
+    segment(img) = _kmeans_labels(img; k=k, maxiter=maxiter, random_seed=random_seed)
+    canvas = zeros(Int64, size(gray_image))
+    offsets = k .* tile_index_map(tiles, size(gray_image))
 
+    indexmap = @tilewise tiles segment($gray_image) into = canvas # labels 1:k per tile
+    indexmap .+= offsets # unique labels across tiles
+
+    # Merge clusters that continue across tile edges
     indexmap .= labels_map(
         stitch_clusters(
             SegmentedImage(gray_image, indexmap),
@@ -59,6 +59,14 @@ function kmeans_segmentation(
 
     return SegmentedImage(gray_image, indexmap)
 end
+
+"""
+    _kmeans_labels(gray_image; k, maxiter, random_seed)
+
+Label map of the k-means segmentation of `gray_image`, with labels `1:k`.
+"""
+_kmeans_labels(gray_image; k, maxiter, random_seed) =
+    labels_map(kmeans_segmentation(gray_image; k=k, maxiter=maxiter, random_seed=random_seed))
 
 """
     kmeans_binarization(gray_image, false_color_image; kwargs...)
@@ -146,9 +154,12 @@ function kmeans_binarization(
     labels = labels_map(kseg)
     ice = cluster_selection_algorithm(falsecolor_image) .> 0
 
-    return @tilewise tiles _select_ice_cluster(
-        $labels, $ice; ice_pixels_threshold=ice_pixels_threshold
-    ) into = falses(size(gray_image))
+    select_cluster(labels_tile, ice_tile) = _select_ice_cluster(
+        labels_tile, ice_tile; ice_pixels_threshold=ice_pixels_threshold
+    )
+    canvas = falses(size(gray_image))
+
+    return @tilewise tiles select_cluster($labels, $ice) into = canvas
 end
 
 """
