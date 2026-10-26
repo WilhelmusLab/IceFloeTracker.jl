@@ -670,7 +670,7 @@ function regionprops(
         return Dict{Symbol,AbstractVector}(p => [] for p in properties_)
     end
 
-    data = Dict{Symbol,Any}()
+    data = Dict{Symbol,AbstractVector}()
 
     # Begin by extracting the set of labels that meet the minimum area criterion
     # We also get a sorted list of image labels, so all the dictionary entries can
