@@ -1,7 +1,7 @@
 """
 
 This module documents the simplified IFT pipeline calibrated and validated in the paper
-"Automatic segmentation and tracking of sea ice floes using Ice Floe Tracker algorithm" by
+"Automatic segmentation and tracking of sea ice floes using the Ice Floe Tracker algorithm" by
 Watkins et al., submitted to IEEE Transactions in Geoscience and Remote Sensing (TGRS).
 
 The pipeline contains distinct struct/functor pairs and uses both semantic and object-based 
@@ -19,7 +19,10 @@ import Peaks: findmaxima
 import StatsBase: kurtosis, skewness, mean, std
 
 import ..Filtering:
-    ContrastLimitedAdaptiveHistogramEqualization
+    ContrastLimitedAdaptiveHistogramEqualization,
+    nonlinear_diffusion,
+    PeronaMalikDiffusion,
+    unsharp_mask
 
 import ..ImageUtils:
     get_tiles
@@ -66,38 +69,89 @@ import ..Pipeline: IceFloeSegmentationAlgorithm
 abstract type IceFloePreprocessingAlgorithm end
 abstract type IceFloeClassificationAlgorithm end
 
+# Preprocess() Default Parameters
+diffusion_algorithm = PeronaMalikDiffusion(; λ=0.1, K=0.1, niters=7, g="exponential")
+adapthisteq_algorithm = ContrastLimitedAdaptiveHistogramEqualization(;
+            nbins=255,
+            rblocks=4,
+            cblocks=4,
+            clip=1,
+        )
+# TODO: Set up unsharp filtering as an algorithm
+unsharp_mask_params = (radius=50, amount=0.3, threshold=0.01)
+
 """
    Preprocess(
-        adapthisteq_params = (nbins=256, rblocks=8, cblocks=8, clip=1)
+        diffusion_algorithm = PeronaMalikDiffusion(λ=0.1, K=0.1, niters=5, g="exponential")
+        adapthisteq_params = (nbins=256, rblocks=8, cblocks=8, clip=0.99) # rblocks/cblocks not used yet -- add with CLAHE.jl
+        unsharp_mask_params = (radius=50, amount=0.2, threshold=0.01)
     )
-    Preprocess()(img, mask)
+    Preprocess()(img, cloudmask, landmask)
 
-    Converts input image to grayscale, then preprocesses by applying contrast limited adaptive histogram
-    equalization. The mask may include the land mask, coastal buffer, or a domain
+    Converts input image to grayscale, then preprocesses by applying nonlinear diffusion,
+    adaptive histogram equalization, and unsharp masking. Diffusion and unsharp masking are applied
+    to each tile, while the adaptive histogram equalization is divided according to the parameter
+    specifications.
+
+    Note: results are strongly sensitive to the choice of rblocks, cblocks, and clipping. Large clipping parameters with
+    small blocks results in noisy images and poor performance. With larger blocks, a higher clipping parameter can help.
 
 """
 @kwdef struct Preprocess <: IceFloePreprocessingAlgorithm
-    histogram_algorithm = ContrastLimitedAdaptiveHistogramEqualization
-    histogram_params = (nbins=256, rblocks=4, cblocks=4, clip=1)
+    diffusion_algorithm = diffusion_algorithm
+    adapthisteq_algorithm = adapthisteq_algorithm
+    unsharp_mask_params = unsharp_mask_params
 end
 
-# Q: does image sharpening, nonlinear filtering change the quality of the result? nonlinear filtering 
-# in particular is expensive.
 function (p::Preprocess)(
-    image::AbstractArray{<:Union{AbstractGray,TransparentGray,AbstractRGB,TransparentRGB}}, landmask
+    truecolor_image::AbstractArray{<:Union{AbstractRGB,TransparentRGB, AbstractGray, TransparentGray}},
+    landmask, 
+    tiles
 )
     # Cast to grayscale first to save compute time
-    proc_img = Gray.(image)
-    apply_landmask!(proc_img, landmask)
+    proc_img = Gray.(truecolor_image)
+
+    # Diffusion and sharpening
+    proc_img .= nonlinear_diffusion(proc_img, tiles, p.diffusion_algorithm)
 
     adjust_histogram!(
-        proc_img,
-        p.histogram_algorithm(;
-            p.histogram_params...
-        ),
+        proc_img, p.adapthisteq_algorithm
     )
 
-    # Re-apply mask so histogram adjustment doesn't bleed into land
+    proc_img .= unsharp_mask(
+        proc_img,
+        p.unsharp_mask_params.radius,
+        p.unsharp_mask_params.amount,
+        p.unsharp_mask_params.threshold,
+    )
+
+    # Re-apply mask so sharpening doesn't bleed into land
+    apply_landmask!(proc_img, landmask)
+    return proc_img
+end
+
+function (p::Preprocess)(
+    truecolor_image::AbstractArray{<:Union{AbstractRGB,TransparentRGB, AbstractGray, TransparentGray}},
+    landmask,
+)
+    # Cast to grayscale first to save compute time
+    proc_img = Gray.(truecolor_image)
+
+    # Diffusion and sharpening
+    proc_img .= nonlinear_diffusion(proc_img, p.diffusion_algorithm)
+
+    adjust_histogram!(
+        proc_img, p.adapthisteq_algorithm
+    )
+
+    proc_img .= unsharp_mask(
+        proc_img,
+        p.unsharp_mask_params.radius,
+        p.unsharp_mask_params.amount,
+        p.unsharp_mask_params.threshold,
+    )
+
+    # Re-apply mask so sharpening doesn't bleed into land
     apply_landmask!(proc_img, landmask)
     return proc_img
 end
@@ -215,7 +269,7 @@ function (s::Segment)(
     tiles = get_tiles(truecolor; s.tile_settings...)
 
     @info "Preprocess"
-    preproc_gray = s.preprocessing_algorithm(truecolor_image, landmask)
+    preproc_gray = s.preprocessing_algorithm(truecolor_image, landmask, tiles)
 
     @info "Classify"
     classifier = s.classification_algorithm
@@ -227,8 +281,6 @@ function (s::Segment)(
     filtered_tiles = filter(
         t -> sum(.!masks["land"][t...]) > s.min_ocean_pixel_count, tiles
     )
-
-    print(filtered_tiles)
 
     @info "Detect Floes"
     # Alternatively: Vary the tile sizes and run multiple times

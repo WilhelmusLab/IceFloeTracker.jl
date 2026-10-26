@@ -33,15 +33,17 @@ end
     land_masks = modis_landmask.(case) .|> r -> r .> 0
 #     # Test preprocess -- accepts alternate histogram, works with test image
     preprocess = TGRS2026.Preprocess(
-        histogram_algorithm = ContrastLimitedAdaptiveHistogramEqualization,
-        histogram_params = (nbins=256, rblocks=4, cblocks=4, clip=1)
+        adapthisteq_algorithm = ContrastLimitedAdaptiveHistogramEqualization(;
+        nbins=256, rblocks=4, cblocks=4, clip=1
+        )
     )
     gray_imgs = tc_imgs .|> r -> Gray.(r)
+    
+    @show typeof(preprocess.(gray_imgs, land_masks)[1]) 
     @test typeof(preprocess.(gray_imgs, land_masks)[1]) ==  Matrix{Gray{N0f8}}
 
     preprocess = TGRS2026.Preprocess(
-        histogram_algorithm = AdaptiveEqualization,
-        histogram_params = (
+        adapthisteq_algorithm = AdaptiveEqualization(;
             nbins=128,
             rblocks=3,
             cblocks=3,
