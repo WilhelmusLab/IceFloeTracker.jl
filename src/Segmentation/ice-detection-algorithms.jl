@@ -165,16 +165,31 @@ julia> algo = IceDetectionBrightnessPeaksMODIS721(;
            possible_ice_threshold=75/255,
            join_method="union",
        )
-IceDetectionBrightnessPeaksMODIS721(0.0196078431372549, 0.29411764705882354, 64, 0.01, 3, "union")
+IceDetectionBrightnessPeaksMODIS721{Float64}(0.0196078431372549, 0.29411764705882354, 128, 0.01, 3, "union")
 ```
 """
-@kwdef struct IceDetectionBrightnessPeaksMODIS721 <: IceDetectionAlgorithm
-    band_7_max::Real
-    possible_ice_threshold::Real
+@kwdef struct IceDetectionBrightnessPeaksMODIS721{T<:Real} <: IceDetectionAlgorithm
+    band_7_max::T
+    possible_ice_threshold::T
     nbins::Int64 = 128
     minimum_prominence::Float64 = 0.01
     window_size::Int64 = 3
-    join_method = "intersection"
+    join_method::String = "intersection"
+end
+
+# Mixed threshold types (e.g. `Int` and `Float64`) are promoted to a common type.
+function IceDetectionBrightnessPeaksMODIS721(
+    band_7_max::Real,
+    possible_ice_threshold::Real,
+    nbins,
+    minimum_prominence,
+    window_size,
+    join_method,
+)
+    T = promote_type(typeof(band_7_max), typeof(possible_ice_threshold))
+    return IceDetectionBrightnessPeaksMODIS721{T}(
+        band_7_max, possible_ice_threshold, nbins, minimum_prominence, window_size, join_method
+    )
 end
 
 function (f::IceDetectionBrightnessPeaksMODIS721)(out, modis_721_image, args...; kwargs...)
