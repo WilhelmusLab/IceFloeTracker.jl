@@ -70,8 +70,8 @@ end
 ## LatLon functions originally from IFTPipeline.jl
 
 # Look up a lat/lon grid at rounded (row, col) centroids, or a 1-D axis at rounded coordinates.
-_lookup_centroids(grid, rows, cols) = [grid[Int(round(r)), Int(round(c))] for (r, c) in zip(rows, cols)]
-_lookup_centroids(axis, coords) = [axis[Int(round(z))] for z in coords]
+_lookup_centroids(grid, rows, cols) = [grid[round(Int, r), round(Int, c)] for (r, c) in zip(rows, cols)]
+_lookup_centroids(axis, coords) = [axis[round(Int, z)] for z in coords]
 
 # TODO: Add example with reference geotiff image.
 """
