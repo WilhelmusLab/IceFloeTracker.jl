@@ -12,7 +12,7 @@ Get the RBC (Red, Blue, and Green) channels of an image.
 
 # Returns
 An m x n x 3 array the Red, Blue, and Green channels of the input image.
- 
+
 """
 function get_rgb_channels(img)
     # TODO: might be able to use channelview instead
@@ -74,20 +74,21 @@ function conditional_histeq(
     white_fraction_threshold::Real=0.4,
 )
 
-    # Apply Perona-Malik diffusion to each channel of true color image 
+    # Apply Perona-Malik diffusion to each channel of true color image
     # using the default inverse quadratic flux coefficient function
     pmd = PeronaMalikDiffusion(0.1, 0.1, 5, "exponential")
     true_color_diffused = nonlinear_diffusion(float64.(true_color_image), pmd)
 
     rgbchannels = get_rgb_channels(true_color_diffused)
 
-    return @tilewise tiles _conditional_histeq_tile(
-        $rgbchannels,
-        $clouds_red;
+    equalize(rgb, clouds) = _conditional_histeq_tile(
+        rgb,
+        clouds;
         entropy_threshold=entropy_threshold,
         white_threshold=white_threshold,
         white_fraction_threshold=white_fraction_threshold,
-    ) into = rgbchannels
+    )
+    return @tilewise tiles equalize($rgbchannels, $clouds_red) into = rgbchannels
 end
 
 """
