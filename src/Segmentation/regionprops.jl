@@ -410,8 +410,8 @@ polygon formed by the convex hull. Uses the convexhull function from ImageMorpho
 area of the segment is less than or equal to 3. In general, the error should be smaller
 for larger shapes.
 """
-@kwdef struct PixelConvexArea <: ConvexAreaEstimationAlgorithm
-    minimum_area = 4
+@kwdef struct PixelConvexArea{T<:Real} <: ConvexAreaEstimationAlgorithm
+    minimum_area::T = 4
 end
 
 """
