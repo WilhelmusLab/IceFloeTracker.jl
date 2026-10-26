@@ -30,7 +30,7 @@
             )
             @test nrow(heads) == 2
 
-            # Check that the heads we get are the ones we want, 
+            # Check that the heads we get are the ones we want,
             # despite the fact that the dataframe is unsorted
             sorted_heads = sort(heads, :group_id)
             @test sorted_heads[1, :] == (; group_id=11, floe_id=14, passtime=test_time3)
@@ -157,7 +157,7 @@ end
 @testitem "One blank image in the middle of the series with single floe gaps" setup = [
     FloeTrackerBasicCases
 ] begin
-    # Add full image gap    
+    # Add full image gap
     labeled_imgs_gaps = [
         labeled_imgs[1], labeled_imgs[2], labeled_imgs[2] * 0, labeled_imgs[3]
     ]
@@ -249,7 +249,7 @@ end
         ]
         # TODO: Check types for the ShapeDifference function. What's different about these props tables?
 
-        # This test uses the inner floe tracker function, which takes a props argument instead of 
+        # This test uses the inner floe tracker function, which takes a props argument instead of
         # the list of images
         trajectories_ = floe_tracker(
             props, FilterFunction(), MinimumWeightMatchingFunction()
@@ -257,7 +257,7 @@ end
 
         trajectory_lengths = combine(groupby(trajectories_, :trajectory_uuid), nrow)
 
-        # Each trajectory is at most the legnth of the dataset
+        # Each trajectory is at most the length of the dataset
         # Weak test for a regression where a trajectory would have more than one element for a particular day
         trajectory_lengths[!, :not_longer_than_dataset] .=
             trajectory_lengths.nrow .<= length(props)
@@ -269,7 +269,7 @@ end
         @test all(trajectory_lengths.longer_than_one)
 
         # Each UUID appears at most once
-        # Weak test for a regression where a trajectory would have more than one element for a particular day, 
+        # Weak test for a regression where a trajectory would have more than one element for a particular day,
         # and one floe might be matched multiple times
         uuid_counts = combine(groupby(trajectories_, :uuid), nrow)
         @test all(uuid_counts.nrow .== 1)
@@ -368,17 +368,6 @@ end
 
 @testsnippet TrackerValidation begin
     using DataFrames: DataFrame, nrow
-    using Dates: DateTime
-    function tracker_runs_without_error(
-        img1::Matrix{Int},
-        time1::DateTime,
-        img2::Matrix{Int},
-        time2::DateTime;
-        tracker::AbstractTracker,
-    )
-        result = tracker([img1, img2], [time1, time2])
-        return is_wellformed_tracker_result(result)
-    end
 
     """
         is_wellformed_tracker_result(result) -> Bool

@@ -68,7 +68,7 @@ Apply unsharp masking on grayscale image to enhance its sharpness.
 - `intensity`: The amount of sharpening to apply. Higher values result in more pronounced sharpening.
 - `clampmax`: upper limit of intensity values in the returned image.`
 ## Returns
-The sharpened grayscale image with values clipped between 0 and `clapmax`.
+The sharpened grayscale image with values clipped between 0 and `clampmax`.
 """
 function unsharp_mask(img::Matrix{Int64}, smoothing_param, intensity, clampmax::Int64)
     image_gray = Gray.(img ./ clampmax)

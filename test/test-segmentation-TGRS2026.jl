@@ -197,5 +197,3 @@ end
     @test results_invariant_for(RGB, float32; baseline, algorithm, case)
     @test results_invariant_for(RGB, float64; baseline, algorithm, case)
 end
-
-end
