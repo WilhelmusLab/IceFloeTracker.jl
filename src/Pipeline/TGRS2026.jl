@@ -401,7 +401,10 @@ function extended_regionprops_table(
         convex_area_algorithm=convex_area_algorithm,
     )
     # Return empty dataframe if no floes in image
-    nrow(props_df) == 0 # && return props_df
+    if nrow(props_df) == 0
+         props_df[!, :probability] = Float64[]
+         return props_df
+     end
 
     transform!(props_df, :area => ByRow(x -> x^0.5) => :length_scale)
 
@@ -469,8 +472,8 @@ function LogisticRegressionFilter(df;
 )
     colnames = [x for x in keys(coefs)]
     b = [x for x in values(coefs)]
-    df[:, :intercept] .= 1
-    df_ = copy(df)[:, colnames]
+    df_ = copy(df)
+    df_[:, :intercept] .= 1
     return 1 ./ (1 .+ exp.(-Matrix(df_[:, colnames]) * b))
 end
 
@@ -486,8 +489,9 @@ function LogisticRegressionFilter!(df;
 )
     colnames = [x for x in keys(coefs)]
     b = [x for x in values(coefs)]
-    df[:, :intercept] = 1
-    df[:, :probability] = 1 ./ (1 .+ exp.(-Matrix(df[:, colnames]) * b))
+    df_ = copy(df)
+    df_[:, :intercept] = 1
+    df[:, :probability] = 1 ./ (1 .+ exp.(-Matrix(df_[:, colnames]) * b))
 end
 
 """
@@ -594,10 +598,15 @@ function compare_objects(
         Dict(p => Symbol("s2_", p) for p in comp_properties))
     df_dict1 = Dict(row.s1_label => row for row in eachrow(df_comp1))
     df_dict2 = Dict(row.s2_label => row for row in eachrow(df_comp2))
-    df_comp = hcat(
-        DataFrame([df_dict1[l] for l in s1_label_list]),
-        DataFrame([df_dict2[l] for l in s2_label_list])
-    )
+
+    df_comp = if isempty(s1_label_list)
+         hcat(df_comp1[1:0, :], df_comp2[1:0, :])
+    else
+        hcat(
+            DataFrame([df_dict1[l] for l in s1_label_list]),
+            DataFrame([df_dict2[l] for l in s2_label_list]),
+        )
+    end
 
     # Compute overlap metrics
     transform!(df_comp,
