@@ -359,8 +359,8 @@ Uses the convexhull function from ImageMorphology, which raises an error if the
 area of the segment is less than or equal to 3. In general, the error should be smaller
 for larger shapes.
 """
-@kwdef struct PolygonConvexArea <: ConvexAreaEstimationAlgorithm
-    minimum_area = 4
+@kwdef struct PolygonConvexArea{T<:Real} <: ConvexAreaEstimationAlgorithm
+    minimum_area::T = 4
 end
 
 function (f::PolygonConvexArea)(A)
