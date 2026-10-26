@@ -3,7 +3,7 @@ using Images, FileIO
 """
     masker(mask::AbstractArray, img::AbstractArray{<:Colorant})
     masker(mask::AbstractArray)
-    
+
 Returns a version of `img` with masked pixels made transparent.
 If `img` has an alpha channel, it is combined with the mask.
 
@@ -43,10 +43,10 @@ julia> img |> masker(bit_mask)
  ARGB{N0f8}(0.0,1.0,1.0,1.0)  ARGB{N0f8}(1.0,0.0,1.0,1.0)    ARGB{N0f8}(1.0,1.0,0.0,0.0)
 ```
 
-Where the mask is itself an image with transparency, 
+Where the mask is itself an image with transparency,
 areas which are opaque in the mask
 are transparent in the output.
-This corresopnds to overlaying the mask over the image,
+This corresponds to overlaying the mask over the image,
 and hiding in the output those areas which were masked.
 ```julia-repl
 julia> hide = AGray(0.5, 1);
@@ -78,7 +78,7 @@ julia> masker(partial_mask, img)
  ARGB{N0f8}(0.0,1.0,1.0,1.0)  ARGB{N0f8}(1.0,0.0,1.0,0.502)    ARGB{N0f8}(1.0,1.0,0.0,0.0)
 ```
 
-If the image already has transparency, 
+If the image already has transparency,
 this is combined with the mask.
 ```julia-repl
 julia> imga = RGBA.(parse.(Colorant, ["red" "transparent" "blue"; "cyan" "transparent" "yellow"]))
@@ -93,7 +93,7 @@ julia> masker(agray_mask, imga)
  ARGB{N0f8}(0.0,1.0,1.0,1.0)  ARGB{N0f8}(0.0,0.0,0.0,0.0)  ARGB{N0f8}(1.0,1.0,0.0,0.0)
 ```
 
-Where the mask is an image without transparency, 
+Where the mask is an image without transparency,
 any non-zero pixels are masked:
 ```julia-repl
 julia> gray_mask = Gray.([0.5 0.1 0.0; 0.0 0.0 1.0])
@@ -135,7 +135,7 @@ julia> masker(real_mask, img)
  ARGB{N0f8}(0.0,1.0,1.0,0.902)  ARGB{N0f8}(1.0,0.0,1.0,0.8)      ARGB{N0f8}(1.0,1.0,0.0,0.0)
 ```
 
-Where values are outside of the range [0, 1], 
+Where values are outside of the range [0, 1],
 they are clamped to whichever of 0 and 1 is nearer:
 ```julia-repl
 julia> out_of_range_mask = [5 2 0.75; -1 -2 1]
@@ -179,7 +179,7 @@ end
 """
     _mask_to_alpha(mask::AbstractArray)
 
-Convert `mask` into an alpha channel to be applied to an image. 
+Convert `mask` into an alpha channel to be applied to an image.
 """
 function _mask_to_alpha(mask::AbstractArray{<:TransparentColor})
     return ones(size(mask)) - alpha.(mask)
@@ -202,12 +202,12 @@ function _mask_to_alpha(mask::AbstractArray{<:Real})
 end
 
 """
-    
+
     binarize_mask(mask_image)
     binarize_mask(mask_image; tol=0)
 
 Convert a 3-channel RGB or 1-channel Gray mask image to a 1-channel binary matrix with mask = 1, everything else = 0.
-Assumes that the input image is 0 over the parts to be left unmasked, and some shade over the parts to be masked. 
+Assumes that the input image is 0 over the parts to be left unmasked, and some shade over the parts to be masked.
 The tol argument lets a higher threshold for masked pixels be chosen.
 
 # Arguments
@@ -221,12 +221,12 @@ function binarize_mask(
 end
 
 """
-    
+
     binarize_mask(mask_image)
     binarize_mask(mask_image; tol=0)
 
 Convert an array of Integers to a 1-channel binary matrix with mask = 1, everything else = 0.
-Assumes that the input image is 0 over the parts to be left unmasked, and some shade over the parts to be masked. 
+Assumes that the input image is 0 over the parts to be left unmasked, and some shade over the parts to be masked.
 The tol argument lets a higher threshold for masked pixels be chosen.
 
 # Arguments
