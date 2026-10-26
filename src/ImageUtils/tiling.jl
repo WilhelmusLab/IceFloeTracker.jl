@@ -307,3 +307,17 @@ end
 _trailing(x, tile) = ntuple(_ -> Colon(), ndims(x) - length(tile))
 _tile(x, tile) = x[tile..., _trailing(x, tile)...]
 _untile!(canvas, tile, result) = view(canvas, tile..., _trailing(canvas, tile)...) .= result
+
+"""
+    tile_index_map(tiles, dims)
+
+Return an `Int` array of size `dims` in which every pixel of the `i`-th tile of `tiles`, in
+iteration order, is `i`, and every pixel outside all tiles is 0.
+"""
+function tile_index_map(tiles, dims)
+    out = zeros(Int, dims)
+    for (i, tile) in enumerate(tiles)
+        out[tile...] .= i
+    end
+    return out
+end
