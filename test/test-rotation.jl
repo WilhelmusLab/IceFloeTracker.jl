@@ -469,6 +469,8 @@ end
 end
 
 @testitem "get_rotation_measurements(row1, row2; ...)" setup = [RotationSetup] begin
+    using IceFloeTracker.Tracking: register, register_coarse_to_fine
+
     @testset "basic case – single example" begin
         df = DataFrame([
             (time=DateTime("2020-01-12T12:00:00"), mask=masks[0]),
@@ -485,27 +487,40 @@ end
         @test result.row2 === df[2, :]
     end
     @testset "sampled cases" begin
+        # coarse-to-fine searches ±30°, so it is only run on cases inside that window
         function check_single_rotation_measurements(
-            time1, Δt_sec::Int64, mask1, mask2, Δθ_deg; Δθ_deg_tolerance=5.1
+            time1,
+            Δt_sec::Int64,
+            mask1,
+            mask2,
+            Δθ_deg;
+            Δθ_deg_tolerance=5.1,
+            registration_functions=(register, register_coarse_to_fine),
         )
             df = DataFrame([
                 (time=time1, mask=mask1), (time=time1 + Second(Δt_sec), mask=mask2)
             ])
 
-            result = get_rotation_measurements(
-                df[1, :], df[2, :]; image_column=:mask, time_column=:time
-            )
+            for registration_function in registration_functions
+                result = get_rotation_measurements(
+                    df[1, :],
+                    df[2, :];
+                    image_column=:mask,
+                    time_column=:time,
+                    registration_function,
+                )
 
-            @test deg2rad(Δθ_deg - Δθ_deg_tolerance) <=
-                result.theta_rad <=
-                deg2rad(Δθ_deg + Δθ_deg_tolerance)
+                @test deg2rad(Δθ_deg - Δθ_deg_tolerance) <=
+                    result.theta_rad <=
+                    deg2rad(Δθ_deg + Δθ_deg_tolerance)
 
-            @test result.dt_sec ≈ Δt_sec
+                @test result.dt_sec ≈ Δt_sec
 
-            @test result.omega_rad_per_sec ≈ result.theta_rad / result.dt_sec
+                @test result.omega_rad_per_sec ≈ result.theta_rad / result.dt_sec
 
-            @test result.row1 == df[1, :]
-            @test result.row2 == df[2, :]
+                @test result.row1 == df[1, :]
+                @test result.row2 == df[2, :]
+            end
         end
 
         check_single_rotation_measurements(
@@ -523,13 +538,28 @@ end
             DateTime("2003-01-12T12:00:00"), 7200, masks[0], masks[15], 15
         )
         check_single_rotation_measurements(
-            DateTime("2003-01-12T12:00:00"), 86400, masks[0], masks[30], 30.0
+            DateTime("2003-01-12T12:00:00"),
+            86400,
+            masks[0],
+            masks[30],
+            30.0;
+            registration_functions=(register,),
         )
         check_single_rotation_measurements(
-            DateTime("2003-01-12T12:00:00"), 864_000, masks[0], masks[30], 30
+            DateTime("2003-01-12T12:00:00"),
+            864_000,
+            masks[0],
+            masks[30],
+            30;
+            registration_functions=(register,),
         )
         check_single_rotation_measurements(
-            DateTime("2003-01-12T12:00:00"), 86_400 + 3600, masks[0], masks[30], 30
+            DateTime("2003-01-12T12:00:00"),
+            86_400 + 3600,
+            masks[0],
+            masks[30],
+            30;
+            registration_functions=(register,),
         )
     end
 end
@@ -887,4 +917,22 @@ end
         @test subset(results, :obsid1 => ByRow(==(11)))[1, :mask1] == masks[180]
         @test subset(results, :obsid2 => ByRow(==(12)))[1, :mask2] == masks[180]
     end
+end
+
+@testitem "get_rotation_measurements accepts the coarse-to-fine search" setup = [
+    RotationSetup, CoarseToFineSetup
+] begin
+    using IceFloeTracker.Tracking: register_coarse_to_fine
+    time1 = DateTime("2020-01-12T12:00:00")
+    df = DataFrame([
+        (id=1, time=time1, mask=floe), (id=1, time=time1 + Hour(1), mask=rotated(8))
+    ])
+    result = get_rotation_measurements(
+        df;
+        id_column=:id,
+        image_column=:mask,
+        time_column=:time,
+        registration_function=register_coarse_to_fine,
+    )
+    @test result[1, :theta_deg] ≈ 8
 end
