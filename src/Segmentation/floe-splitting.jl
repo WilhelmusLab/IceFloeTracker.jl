@@ -136,7 +136,6 @@ function erosion_expansion(
         step=1, # spacing between iterations
         strel=strel_diamond((3,3)),
         minimum_area=16,
-        save_figs=true
         )
 
     input = copy(binary_img)
