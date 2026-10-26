@@ -667,7 +667,7 @@ function regionprops(
                 append!(properties_, [p])
             end
         end
-        return Dict(p => [] for p in properties_)
+        return Dict{Symbol,AbstractVector}(p => [] for p in properties_)
     end
 
     data = Dict{Symbol,Any}()
