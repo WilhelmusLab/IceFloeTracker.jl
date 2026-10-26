@@ -88,7 +88,7 @@ end
     stitch_clusters(tiles, segmented_image, minimum_overlap, grayscale_threshold)
 
 Stitches clusters across tile boundaries based on neighbor with largest shared boundary.
-The algorithm finds all pairs of segment labels at the tile edges. Then, we count the number of 
+The algorithm finds all pairs of segment labels at the tile edges. Then, we count the number of
 times each right-hand label is paired to a left-hand label, and for pairs with at least `minimum_overlap` pixel overlap,
 the right-hand label is assigned as a candidate pair to the left-hand label. If the difference in grayscale
 intensity is less than `grayscale_threshold`, the objects are merged. The function returns an image index map.
@@ -100,73 +100,47 @@ function stitch_clusters(
 
     idxmap = deepcopy(labels_map(segmented_image))
     n, m = size(idxmap)
+    T = eltype(idxmap)
 
     for tile in tiles
         nrange, mrange = tile
         tn = maximum(nrange)
         tm = maximum(mrange)
-        label_pairs = []
-        if tn != n
-            push!(
-                label_pairs,
-                vec([(x, y) for (x, y) in zip(idxmap[tn, :], idxmap[tn .+ 1, :])]),
+        label_pairs = Tuple{T,T}[]
+        tn != n && append!(label_pairs, zip(idxmap[tn, :], idxmap[tn+1, :]))
+        tm != m && append!(label_pairs, zip(idxmap[:, tm], idxmap[:, tm+1]))
+        isempty(label_pairs) && continue
+
+        # create a dataframe with the results: row 1 = left labels, row 2 = right labels
+        pairs_matrix = stack(label_pairs)
+        df = DataFrame(; left=pairs_matrix[1, :], right=pairs_matrix[2, :])
+
+        # groupby right -> left pairs and get counts
+        df_counts = combine(groupby(df, [:right, :left]), nrow => :count)
+
+        # only use pairs that overlap by at least `minimum_overlap` pixels, with different labels
+        overlaps_enough = (df_counts.count::Vector{Int}) .>= minimum_overlap
+        distinct_labels = (df_counts.right::Vector{T}) .!= (df_counts.left::Vector{T})
+        df_counts = df_counts[overlaps_enough .& distinct_labels, :]
+
+        # don't merge if the segments are too different in color
+        rights = df_counts.right::Vector{T}
+        lefts = df_counts.left::Vector{T}
+        right_brightness = [grayscale_magnitude(segment_mean(segmented_image, r)) for r in rights]
+        left_brightness = [grayscale_magnitude(segment_mean(segmented_image, l)) for l in lefts]
+        diff_means = abs.(right_brightness .- left_brightness)
+        df_counts = df_counts[diff_means .< grayscale_threshold, :]
+
+        if !isempty(df_counts)
+            # now find the maximum overlapping segment for each
+            df_pairs = combine(
+                sdf -> sdf[argmax(sdf.count), [:right, :left, :count]],
+                groupby(df_counts, :right),
             )
-        end
 
-        if tm != m
-            push!(
-                label_pairs,
-                vec([(x, y) for (x, y) in zip(idxmap[:, tm], idxmap[:, tm .+ 1])]),
-            )
-        end
-
-        if !isempty(label_pairs)
-
-            # create a dataframe with the results
-            label_pairs = vcat(label_pairs...)
-            label_pairs = reshape(reinterpret(Int64, label_pairs), (2, :))
-            df = DataFrame(; left=label_pairs[1, :], right=label_pairs[2, :])
-
-            # groupby right -> left pairs and get counts
-            df_counts = combine(groupby(df, [:right, :left]), nrow => :count)
-
-            # only use pairs that overlap by at least 2 pixels.
-            df_counts = df_counts[df_counts.count .>= minimum_overlap, :]
-
-            # only use pairs where left is not equal to right
-            df_counts = df_counts[df_counts.right .!= df_counts.left, :]
-
-            # don't merge if the segments are too different in color
-            left_brightness = [
-                grayscale_magnitude(segment_mean(segmented_image, l)) for
-                l in df_counts.left
-            ]
-            right_brightness = [
-                grayscale_magnitude(segment_mean(segmented_image, r)) for
-                r in df_counts.right
-            ]
-            diff_means = abs.(right_brightness .- left_brightness)
-            df_counts = df_counts[diff_means .< grayscale_threshold, :]
-
-            if !isempty(df_counts)
-                # now find the maximum overlapping segment for each
-                df_pairs = combine(
-                    sdf -> sdf[argmax(sdf.count), [:right, :left, :count]],
-                    groupby(df_counts, :right),
-                )
-
-                # make a lookup table and lookup function
-                lut = Dict(ri => li for (ri, li) in zip(df_pairs.right, df_pairs.left))
-
-                lookup_remap(ii) = begin
-                    if haskey(lut, ii)
-                        return lut[ii]
-                    end
-                    return ii
-                end
-
-                idxmap .= map(i -> lookup_remap(i), idxmap)
-            end
+            # make a lookup table and relabel the merged segments
+            lut = Dict(zip(df_pairs.right::Vector{T}, df_pairs.left::Vector{T}))
+            idxmap .= map(i -> get(lut, i, i), idxmap)
         end
     end
     return SegmentedImage(view_seg(segmented_image), idxmap)
