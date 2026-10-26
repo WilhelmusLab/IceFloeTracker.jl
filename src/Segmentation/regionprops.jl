@@ -835,8 +835,8 @@ function _component_moment_measures(labels, label_list; areas=component_lengths(
 
     row_centroid = first.(centroids)
     col_centroid = last.(centroids)
-    data[:row_centroid] = map(s -> row_centroid[s], label_list)
-    data[:col_centroid] = map(s -> col_centroid[s], label_list)
+    data[:row_centroid] = Float64[row_centroid[s] for s in label_list]
+    data[:col_centroid] = Float64[col_centroid[s] for s in label_list]
 
     for s in label_list
         X = getindex.(indices[s], 1)
