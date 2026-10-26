@@ -71,7 +71,8 @@ function nonlinear_diffusion(
     tiles,
     f::AbstractDiffusionAlgorithm=PeronaMalikDiffusion()
 )
-    return @tilewise tiles f($img) into = deepcopy(img)
+    canvas = deepcopy(img)
+    return @tilewise tiles f($img) into = canvas
 end
 
 function (f::PeronaMalikDiffusion)(img::AbstractArray{<:AbstractGray})

@@ -664,8 +664,8 @@ function watershed_ice_floes(
     features = feature_transform(.!binary_floe_mask)
     distances = 1 .- distance_transform(features)
     markers = (hmin_transform(distances, hmin_depth) .> 0) |> label_components
-    return @tilewise tiles _watershed_boundaries($distances, $markers) into =
-        falses(size(markers))
+    canvas = falses(size(markers))
+    return @tilewise tiles _watershed_boundaries($distances, $markers) into = canvas
 end
 
 function watershed_ice_floes(
