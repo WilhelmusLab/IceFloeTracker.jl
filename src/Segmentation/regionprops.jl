@@ -719,14 +719,14 @@ function regionprops(
     end
 
     :bbox ∈ properties && begin
-        push!(data, :min_row => Int[], :max_row => Int[], :min_col => Int[], :max_col => Int[])
-        bboxes = _get_bounds.(bboxes_all[s] for s in img_labels)
-        for (min_row, max_row, min_col, max_col) in bboxes
-            push!(data[:min_row], min_row)
-            push!(data[:max_row], max_row)
-            push!(data[:min_col], min_col)
-            push!(data[:max_col], max_col)
-        end
+        min_rows, max_rows, min_cols, max_cols = _bbox_columns(bboxes_all, img_labels)
+        push!(
+            data,
+            :min_row => min_rows,
+            :max_row => max_rows,
+            :min_col => min_cols,
+            :max_col => max_cols,
+        )
     end
 
     :perimeter ∈ required_properties && begin
