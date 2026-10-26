@@ -581,8 +581,8 @@ function compare_objects(
         # Make sure the label lists are just labels in the dataframes
         for s in filter(r -> r != 0, unique(labels2[indices1[r]]))
             if s in df2.label # Note: Shouldn't need this catch; likely an issue upstream lead to labels2 retaining labels dropped from df2
-                append!(s1_label_list, r)
-                append!(s2_label_list, s)
+                push!(s1_label_list, r)
+                push!(s2_label_list, s)
             end
         end
     end
