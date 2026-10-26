@@ -68,6 +68,11 @@ function addlatlon!(pairedfloesdf::DataFrame, refimage::AbstractString)
 end
 
 ## LatLon functions originally from IFTPipeline.jl
+
+# Look up a lat/lon grid at rounded (row, col) centroids, or a 1-D axis at rounded coordinates.
+_lookup_centroids(grid, rows, cols) = [grid[Int(round(r)), Int(round(c))] for (r, c) in zip(rows, cols)]
+_lookup_centroids(axis, coords) = [axis[Int(round(z))] for z in coords]
+
 # TODO: Add example with reference geotiff image.
 """
     convertcentroid!(propdf, latlondata)
@@ -76,17 +81,11 @@ Convert the centroid coordinates from row and column to latitude and longitude.
 Additionally, add columns `x` and `y` with the pixel coordinates of the centroid.
 """
 function convertcentroid!(propdf, latlondata)
-    latitude, longitude = [
-        [
-            latlondata[c][Int(round(x)), Int(round(y))] for
-            (x, y) in zip(propdf.row_centroid, propdf.col_centroid)
-        ] for c in [:latitude, :longitude]
-    ]
-
-    x, y = [
-        [latlondata[c][Int(round(z))] for z in V] for
-        (c, V) in zip([:Y, :X], [propdf.row_centroid, propdf.col_centroid])
-    ]
+    # Literal keys rather than a loop over symbols, so each lookup is inferable.
+    latitude = _lookup_centroids(latlondata[:latitude], propdf.row_centroid, propdf.col_centroid)
+    longitude = _lookup_centroids(latlondata[:longitude], propdf.row_centroid, propdf.col_centroid)
+    x = _lookup_centroids(latlondata[:Y], propdf.row_centroid)
+    y = _lookup_centroids(latlondata[:X], propdf.col_centroid)
 
     propdf.latitude = latitude
     propdf.longitude = longitude
