@@ -27,7 +27,7 @@ import Peaks:
     get_ice_peaks(
         edges,
         counts;
-        possible_ice_threshold::Float64=0.30,
+        possible_ice_threshold::Real=0.30,
         minimum_prominence::Float64=0.01,
         window_size::Int64=3,
     )
@@ -51,7 +51,7 @@ ice threshold, or if there are no detected peaks larger than the minimum promine
 function get_ice_peaks(
     edges,
     counts;
-    possible_ice_threshold::Float64=0.30,
+    possible_ice_threshold::Real=0.30,
     minimum_prominence::Float64=0.01,
     window_size::Int64=3,
 )
