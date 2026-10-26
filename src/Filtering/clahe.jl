@@ -67,13 +67,12 @@ function (f::ContrastLimitedAdaptiveHistogramEqualization)(
     csize = resized_width ÷ f.cblocks
 
     # Calculate actual clip limit
-    clip_limit = f.clip * (rsize * csize) / f.nbins
-    clip_limit < 1 && (clip_limit = 1)
-    clip_limit = Int(floor(clip_limit))
+    clip_limit = max(floor(Int, f.clip * (rsize * csize) / f.nbins), 1)
 
     # Process each contextual region
     tiles = TileIterator(axes(img_padded), (rsize, csize))
-    histograms = @tilewise tiles _clahe_mapping($img_padded, f, clip_limit)
+    mapping(region) = _clahe_mapping(region, f, clip_limit)
+    histograms = @tilewise tiles mapping($img_padded)
 
     # Interpolate pixel values
     for rblock in 1:(f.rblocks+1), cblock in 1:(f.cblocks+1)
