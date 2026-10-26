@@ -219,7 +219,8 @@ end
 
 # TODO: Test and implement correction factor (multiply B-K perimeter by 0.95 if larger than some factor.)
 # TODO: Implement the crofton perimeter algorithm
-"""BenkridCrookes(connectivity=4)
+"""
+    BenkridCrookes(connectivity=4)
 
 Functor producing a BenkridCrookes PerimeterEstimationAlgorithm. The connectivity
 used for the erosion is the only parameter. The algorithm uses strel_diamond((3,3)) for 4-connectivity and
@@ -306,7 +307,8 @@ function (f::BenkridCrookes)(shape_array)
     return perim
 end
 
-"""component_convex_area(A; algorithm=PixelConvexArea()")
+"""
+    component_convex_areas(A; algorithm=PixelConvexArea())
 
 Compute the convex area of labeled regions. Two methods available: "PixelConvexArea" and "PolygonConvexArea".
 The polygon method uses Green's theorem to find the area of a polygon through its line integral,
@@ -348,7 +350,8 @@ function _convexhull_or_nothing(img::AbstractMatrix{Bool})
     end
 end
 
-"""PolygonConvexArea(minimum_area=4)
+"""
+    PolygonConvexArea(minimum_area=4)
 
 Estimate the convex area by integrating the area of the convex hull polygon.
 Uses the convexhull function from ImageMorphology, which raises an error if the
@@ -397,8 +400,9 @@ function (f::PolygonConvexArea)(A, areas, bboxes, labels)
     return convex_areas
 end
 
-"""PixelConvexArea(minimum_area)
-   PixelConvexArea(A)
+"""
+    PixelConvexArea(minimum_area=4)
+    PixelConvexArea(A)
 
 Estimate the convex area by summing the number of pixels with indices falling within the
 polygon formed by the convex hull. Uses the convexhull function from ImageMorphology, which raises an error if the
@@ -571,7 +575,8 @@ end
 
 # TODO: Updated regionprops_table and regionprops to enable customizing the algorithms.
 
-"""regionprops(label_img, intensity_img; properties, extra_properties, minimum_area)
+"""
+    regionprops(label_img, intensity_img; properties, extra_properties, minimum_area)
 
 Core function returning a dictionary with an entry for each returned property.
 
@@ -776,7 +781,8 @@ function regionprops(
     return Dict(prop => data[prop] for prop in updated_properties)
 end
 
-"""_get_bounds(box)
+"""
+    _get_bounds(box)
 
 Helper function to extract the min row, max row, min col, and max col
 from a vector of CartesianIndex ranges
@@ -791,7 +797,9 @@ function _get_bounds(box)
     return minrow, maxrow, mincol, maxcol
 end
 
-"""_central_moment(x, y, xc, yc, p, q)
+"""
+    _central_moment(x, y, xc, yc, p, q)
+
 Compute the central moments based on the index vectors
 x and y, the centroid xc, yc, and the exponents p and q.
 """
@@ -800,7 +808,8 @@ function _central_moment(x, y, xc, yc, p, q)
     return mu
 end
 
-"""_component_moment_measures(labels, label_list)
+"""
+    _component_moment_measures(labels, label_list)
 
 Compute standard image measures which rely on calculation of image moments. Returns
 a dictionary
