@@ -154,7 +154,7 @@ julia> A
  0  0  0  0  0  0
 
 julia> masks = component_floes(A)
-julia> Dict{Any, Any} with 3 entries:
+julia> Dict{Int64, BitMatrix} with 3 entries:
   0 => Bool[1 1 … 1 1; 0 0 … 1 1; … ; 1 1 … 0 1; 1 1 … 1 1]
   2 => Bool[0 1 1 0; 1 1 1 1; … ; 1 1 1 1; 0 1 1 0]
   1 => Bool[1 1; 1 1; … ; 1 1; 1 1]
