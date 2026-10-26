@@ -250,16 +250,18 @@ The "threshold_percentage" parameter is passed to the the AdaptiveThreshold func
 function tiled_adaptive_binarization(
     img, tiles; minimum_window_size=50, minimum_brightness=75 / 255, threshold_percentage=15
 )
-    img = deepcopy(img)
-    img[Gray.(img) .< minimum_brightness] .= 0
-    canvas = @tilewise tiles _adaptive_binarize(
-        $img;
-        minimum_window_size=minimum_window_size,
-        threshold_percentage=threshold_percentage,
-    ) into = zeros(size(img))
+    is_smaller_than_min = Gray.(img) .< minimum_brightness
+    binarize_tile(tile) = _adaptive_binarize(
+        tile; minimum_window_size=minimum_window_size, threshold_percentage=threshold_percentage
+    )
 
-    canvas[Gray.(img) .< minimum_brightness] .= 0
-    return canvas
+    img = deepcopy(img)
+    img[is_smaller_than_min] .= 0
+    canvas = zeros(size(img))
+
+    binarized = @tilewise tiles binarize_tile($img) into = canvas
+    binarized[is_smaller_than_min] .= 0
+    return binarized
 end
 
 """
