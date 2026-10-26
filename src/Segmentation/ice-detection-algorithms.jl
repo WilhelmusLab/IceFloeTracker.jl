@@ -60,7 +60,6 @@ function get_ice_peaks(
     minimum_prominence::Float64=0.01,
     window_size::Int64=3,
 )
-    size(counts)
     counts = counts[1:end]
     normalizer = sum(counts[edges .> possible_ice_threshold])
 
