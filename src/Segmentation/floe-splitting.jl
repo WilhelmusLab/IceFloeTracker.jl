@@ -2,7 +2,7 @@
 Functions for separating ice floes in binary images.
 """
 
-import Images: 
+import Images:
     distance_transform,
     feature_transform,
     label_components,
@@ -52,9 +52,9 @@ function dist_morph_split(
     markers = opening(dist .> 0, opening_strel)
     markers .= .!imfill(.!markers, (0, max_hole_fill))
     labeled_markers = label_components(markers)
-    maximum(labeled_markers) == 0 && return markers 
+    maximum(labeled_markers) == 0 && return markers
     levels = Dict(0 => labeled_markers)
-   
+
     ### Build pyramid - each size is the opened and filled thresholded image for a given distance
     for dist_threshold in 1:max_depth
         markers = opening(dist .> dist_threshold, opening_strel)
@@ -82,8 +82,8 @@ function dist_morph_split(
     ### Descend pyramid
     for dist_threshold in max_depth:-1:1
         # Get indices from level d-1
-        indices = component_indices(levels[dist_threshold - 1])
-        labels = filter(r -> r != 0, unique(levels[dist_threshold - 1]))
+        indices = component_indices(levels[dist_threshold-1])
+        labels = filter(r -> r != 0, unique(levels[dist_threshold-1]))
         # Expand indices at level d
         expanded = expand_labels(levels[dist_threshold], max_expand)
         for L in labels
@@ -95,7 +95,7 @@ function dist_morph_split(
             end
             # Otherwise, expand the current level, and set the next level down to the expanded indices.
             # May need to check the number of matched labels in the expanded image.
-            levels[dist_threshold - 1][indices[L]] .= expanded[indices[L]]
+            levels[dist_threshold-1][indices[L]] .= expanded[indices[L]]
             final_labels[indices[L]] .= expanded[indices[L]]
         end
     end
@@ -106,7 +106,7 @@ end
 function _nonoverlapping_labels(other, indices, labels)
     return [
         label for label in labels
-        if maximum(other[indices[label]]) == 0
+                  if maximum(other[indices[label]]) == 0
     ]
 end
 
