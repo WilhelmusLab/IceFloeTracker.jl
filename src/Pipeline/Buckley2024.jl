@@ -2,15 +2,42 @@ module Buckley2024
 
 using Images
 using DataFrames
+import StatsBase: mean
 
 import ..Pipeline: 
     IceFloeSegmentationAlgorithm
 
+import ..Preprocessing:
+    create_landmask,
+    create_cloudmask,
+    apply_landmask,
+    apply_landmask!,
+    Watkins2026CloudMask
+
 import ..Segmentation:
     erosion_expansion,
+    remove_large_segments!,
+    remove_small_segments!,
     view_seg,
     view_seg_random
 
+# Parameters
+adaptive_params = (; window_size=399, percentage=0)
+coastal_buffer_structuring_element = strel_box((25, 25))
+cloud_mask_algorithm = Watkins2026CloudMask()
+floe_splitting_params = (
+    min_floe_area=16,
+    iter_max=8,
+    iter_min=1,
+    iter_step=1,
+    strel=strel_diamond((3,3)),
+    )
+floe_filtering_params = (
+    min_floe_size=16,
+    max_floe_size=90e3, # TODO: Check if Ellen used a maximum floe size
+    min_reflectance=0.58,
+    # min_circularity=0., # TODO: Check if Ellen used this threshold
+)
 """
     Buckley2024.Segment()
 
@@ -18,28 +45,15 @@ Implementation of the processing method for Buckley et al. 2024.
 
 # Parameters
 - `coastal_buffer_structuring_element::AbstractMatrix{Bool} = strel_box((51,51))`: Structuring element for the `create_landmask` function
-- `cloud_mask_algorithm = Watkins2025CloudMask()`: Cloud mask algorithm
-- `preprocessing_algorithm = Preprocess()`: Function to sharpen and equalize the truecolor image
-- `tile_size_pixels=1200`: Nominal tile size in pixels
-- `min_tile_ice_pixel_count=300`: Smallest number of required sea ice pixels in tile
-- `preliminary_ice_mask = IceDetectionBrightnessMidpoint(minimum_reflectance=0.3)`: Function to use to identify likely ice pixels for filtering.
-- `kmeans_params = (k=4, maxiter=50, random_seed=45)`: Parameters for `kmeans_binarization`
-- `cluster_selection_algorithm = IceDetectionBrightnessPeaksMODIS721(
-    band_7_max=0.1,
-    possible_ice_threshold=0.3,
-    join_method="union",
-    minimum_prominence=0.01)`: Function to use to select a k-means cluster in the `kmeans_binarization` workflow
-- `clean_binary_floes_params`: Parameters for the preliminary binary image cleanup
-- `floe_splitting_params`: Parameters for the `dist_morph_split` floe splitting algorithm
+- `cloud_mask_algorithm = Watkins2026CloudMask()`: Cloud mask algorithm
+- `adaptive_params`: parameters to send to the AdaptiveThreshold binarization method
+- `floe_splitting_params`: Parameters for the `erosion_expansion` floe splitting algorithm
 - `floe_filtering_params`: Parameters for post-segmentation cleanup
 """
 @kwdef struct Segment <: IceFloeSegmentationAlgorithm
     coastal_buffer_structuring_element::AbstractMatrix{Bool} =
         coastal_buffer_structuring_element
     cloud_mask_algorithm = cloud_mask_algorithm
-    preprocessing_algorithm = preprocessing_algorithm
-    preliminary_ice_mask = preliminary_ice_mask
-    kmeans_params = kmeans_params
     adaptive_params = adaptive_params
     floe_splitting_params = floe_splitting_params
     floe_filtering_params = floe_filtering_params
@@ -70,7 +84,7 @@ function (s::Segment)(
 
     # Ice mask from red channel of truecolor image
     gray_img = Gray.(red.(tc_masked))
-    ice_mask = binarize(gray_img, AdaptiveThreshold(; window_size=399, percentage=0))
+    ice_mask = binarize(gray_img, AdaptiveThreshold(s.adaptive_params...))
     # Also get the min/max thresholds for the image 
     apply_landmask!(ice_mask, landmask .|| cloud_mask)
 
@@ -78,21 +92,19 @@ function (s::Segment)(
     final_floes = erosion_expansion(
         gray_img, 
         ice_mask; 
-        itmin=1, # minimum number of iterations
-        itmax=8, # maximum number of iterations
-        step=1, # spacing between iterations
-        strel=strel_diamond((3,3)),
-        minimum_area=16,
+        itmin=s.floe_splitting_params.iter_min,
+        itmax=s.floe_splitting_params.iter_max,
+        step=s.floe_splitting_params.iter_step, 
+        strel=s.floe_splitting_params.strel,
+        minimum_area=s.floe_splitting_params.min_floe_area,
     )
 
+    filter_floes!(final_floes, gray_img, coastal_buffer_mask, cloud_mask; s.floe_filtering_params...)
     # filter steps: remove dark floes, remove small floes
     # TODO: remove segments if segment mean is too low.
-    remove_small_segments!(final_floes, s.floe_filtering_params.min_floe_size)
-    remove_large_segments!(final_floes, s.floe_filtering_params.max_floe_size)
 
     # Re-label so there are no missing numbers in the component list
-    final_floes .= label_components(final_floes)
-
+    
     # Return the original truecolor image, segmented
     segments_tc = SegmentedImage(truecolor_image, final_floes)
     segments_fc = SegmentedImage(falsecolor_image, final_floes)
@@ -116,6 +128,47 @@ function (s::Segment)(
     return segments_tc
 end
 
+function filter_floes!(labels, gray_img, coastal_buffer_mask, cloud_mask; min_floe_size, max_floe_size, min_reflectance)
+    remove_small_segments!(labels, min_floe_size)
+    remove_large_segments!(labels, max_floe_size)
+    indices = component_indices(labels)
 
+    # Clear borders
+    n, m = size(labels)
+    border_labels = filter(r -> r != 0, 
+        union(
+            unique(labels[1, :]),
+            unique(labels[n, :]),
+            unique(labels[:, 1]),
+            unique(labels[:, m])
+        )
+    )
+
+    remove_labels!(labels, remove_list) = foreach(l -> labels[indices[l]] .= 0, remove_list)
+    remove_labels!(labels, border_labels)
+
+    # Clear floes overlapping coastal buffer
+    remove_labels!(labels,
+      filter(r -> r != 0, 
+        unique(labels[coastal_buffer_mask .> 0])
+        )
+    )
+
+    # Clear floes bordered by clouds
+    extended_cloud_mask = dilate(cloud_mask, strel_box((3,3)))
+    remove_labels!(labels,
+      filter(r -> r != 0, 
+        unique(labels[extended_cloud_mask .> 0])
+        )
+    )
+    
+    # Clear floes which have mean reflectance below the threshold
+    remove_labels!(labels,
+        [r for r in unique(labels) if r != 0 && mean(gray_img[indices[r]]) < min_reflectance]
+    )
+
+    # Finally, re-label the floes
+    labels .= label_components(labels)
+end
 
 end
