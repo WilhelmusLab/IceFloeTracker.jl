@@ -753,7 +753,7 @@ function sequential_merge_floes(labeled_imgs, falsecolor_image, masks;
         )
 
         remove_labels = df_sel.s1_label
-        no_matches = setdiff(df_comp.s2_label, df2.label)
+        no_matches = setdiff(df2.label, df_comp.s2_label)
         add_labels = union(df_sel.s2_label, no_matches)
 
         # Get the labels from s1 which overlap the selected s2 labels and add to remove list
