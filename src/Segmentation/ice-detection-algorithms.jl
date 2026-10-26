@@ -23,11 +23,6 @@ import Peaks:
     peakproms!,
     peakwidths!
 
-import DataFrames: 
-    DataFrame, 
-    sort, 
-    Not
-
 """
     get_ice_peaks(
         edges,
@@ -67,20 +62,26 @@ function get_ice_peaks(
     # Images with a lot of masked pixels can have large peaks at 0, which
     # we don't want to include in the normalization. If no potential
     # ice pixels, then return early
-    counts = normalizer > 0 ? counts ./ normalizer : return Inf
-    local pks
+    normalizer > 0 || return Inf
+    pks = _find_peaks(counts ./ normalizer, window_size)
+    isnothing(pks) && return Inf
+    # The first maximum of the prominences is the peak that sorting by prominence
+    # (stable, descending) would put first.
+    mx, argmx = findmax(pks.proms)
+    mx < minimum_prominence && return Inf
+    return Float64(edges[pks.indices[argmx]])
+end
+
+# Kept out of `get_ice_peaks` so the peaks are not a `local` assigned inside `try`,
+# which inference can't type. Returns `nothing` when the peak finder fails.
+function _find_peaks(counts, window_size)
     try
-        pks = findmaxima(counts, window_size) |> peakproms! |> peakwidths!
+        return findmaxima(counts, window_size) |> peakproms! |> peakwidths!
     catch e
         e isa BoundsError || rethrow()
         @debug "Peak finder failed (peak near boundary), returning `Inf`."
-        return Inf
+        return nothing
     end
-    pks_df = DataFrame(pks[Not(:data)])
-    pks_df = sort(pks_df, :proms; rev=true)
-    mx, argmx = findmax(pks_df.proms)
-    mx < minimum_prominence && return Inf
-    return edges[pks_df[argmx, :indices]]
 end
 
 """
