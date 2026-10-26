@@ -240,7 +240,7 @@ julia> BenkridCrookes(connectivity=8)(A)
 ```
 """
 @kwdef struct BenkridCrookes <: PerimeterEstimationAlgorithm
-    connectivity = 4
+    connectivity::Int64 = 4
 end
 
 # Boundary-pixel classification table, indexed by the neighborhood code
