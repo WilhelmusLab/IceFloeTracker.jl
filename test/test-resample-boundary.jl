@@ -78,3 +78,12 @@ end
     @test typeof(resampled_boundary) <: Matrix{Float64}
     @test size(resampled_boundary)[1] == length(boundary) ÷ 2
 end
+
+@testitem "resample_boundary: boundary conditions" begin
+    A = zeros(Int, 9, 9)
+    A[3:7, 3:7] .= 1
+    boundary = bwtraceboundary(A; P0=(3, 3))
+
+    @test resample_boundary(boundary, 2, "periodic") isa Matrix{Float64}
+    @test_throws ArgumentError resample_boundary(boundary, 2, "periodc")
+end
