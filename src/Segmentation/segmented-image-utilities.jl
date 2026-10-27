@@ -88,7 +88,7 @@ end
     stitch_clusters(tiles, segmented_image, minimum_overlap, grayscale_threshold)
 
 Stitches clusters across tile boundaries based on neighbor with largest shared boundary.
-The algorithm finds all pairs of segment labels at the tile edges. Then, we count the number of 
+The algorithm finds all pairs of segment labels at the tile edges. Then, we count the number of
 times each right-hand label is paired to a left-hand label, and for pairs with at least `minimum_overlap` pixel overlap,
 the right-hand label is assigned as a candidate pair to the left-hand label. If the difference in grayscale
 intensity is less than `grayscale_threshold`, the objects are merged. The function returns an image index map.
@@ -100,73 +100,47 @@ function stitch_clusters(
 
     idxmap = deepcopy(labels_map(segmented_image))
     n, m = size(idxmap)
+    T = eltype(idxmap)
 
     for tile in tiles
         nrange, mrange = tile
         tn = maximum(nrange)
         tm = maximum(mrange)
-        label_pairs = []
-        if tn != n
-            push!(
-                label_pairs,
-                vec([(x, y) for (x, y) in zip(idxmap[tn, :], idxmap[tn .+ 1, :])]),
+        label_pairs = Tuple{T,T}[]
+        tn != n && append!(label_pairs, zip(idxmap[tn, :], idxmap[tn+1, :]))
+        tm != m && append!(label_pairs, zip(idxmap[:, tm], idxmap[:, tm+1]))
+        isempty(label_pairs) && continue
+
+        # create a dataframe with the results: row 1 = left labels, row 2 = right labels
+        pairs_matrix = stack(label_pairs)
+        df = DataFrame(; left=pairs_matrix[1, :], right=pairs_matrix[2, :])
+
+        # groupby right -> left pairs and get counts
+        df_counts = combine(groupby(df, [:right, :left]), nrow => :count)
+
+        # only use pairs that overlap by at least `minimum_overlap` pixels, with different labels
+        overlaps_enough = (df_counts.count::Vector{Int}) .>= minimum_overlap
+        distinct_labels = (df_counts.right::Vector{T}) .!= (df_counts.left::Vector{T})
+        df_counts = df_counts[overlaps_enough .& distinct_labels, :]
+
+        # don't merge if the segments are too different in color
+        rights = df_counts.right::Vector{T}
+        lefts = df_counts.left::Vector{T}
+        right_brightness = [grayscale_magnitude(segment_mean(segmented_image, r)) for r in rights]
+        left_brightness = [grayscale_magnitude(segment_mean(segmented_image, l)) for l in lefts]
+        diff_means = abs.(right_brightness .- left_brightness)
+        df_counts = df_counts[diff_means .< grayscale_threshold, :]
+
+        if !isempty(df_counts)
+            # now find the maximum overlapping segment for each
+            df_pairs = combine(
+                sdf -> sdf[argmax(sdf.count), [:right, :left, :count]],
+                groupby(df_counts, :right),
             )
-        end
 
-        if tm != m
-            push!(
-                label_pairs,
-                vec([(x, y) for (x, y) in zip(idxmap[:, tm], idxmap[:, tm .+ 1])]),
-            )
-        end
-
-        if !isempty(label_pairs)
-
-            # create a dataframe with the results
-            label_pairs = vcat(label_pairs...)
-            label_pairs = reshape(reinterpret(Int64, label_pairs), (2, :))
-            df = DataFrame(; left=label_pairs[1, :], right=label_pairs[2, :])
-
-            # groupby right -> left pairs and get counts
-            df_counts = combine(groupby(df, [:right, :left]), nrow => :count)
-
-            # only use pairs that overlap by at least 2 pixels.
-            df_counts = df_counts[df_counts.count .>= minimum_overlap, :]
-
-            # only use pairs where left is not equal to right
-            df_counts = df_counts[df_counts.right .!= df_counts.left, :]
-
-            # don't merge if the segments are too different in color
-            left_brightness = [
-                grayscale_magnitude(segment_mean(segmented_image, l)) for
-                l in df_counts.left
-            ]
-            right_brightness = [
-                grayscale_magnitude(segment_mean(segmented_image, r)) for
-                r in df_counts.right
-            ]
-            diff_means = abs.(right_brightness .- left_brightness)
-            df_counts = df_counts[diff_means .< grayscale_threshold, :]
-
-            if !isempty(df_counts)
-                # now find the maximum overlapping segment for each
-                df_pairs = combine(
-                    sdf -> sdf[argmax(sdf.count), [:right, :left, :count]],
-                    groupby(df_counts, :right),
-                )
-
-                # make a lookup table and lookup function
-                lut = Dict(ri => li for (ri, li) in zip(df_pairs.right, df_pairs.left))
-
-                lookup_remap(ii) = begin
-                    if haskey(lut, ii)
-                        return lut[ii]
-                    end
-                    return ii
-                end
-
-                idxmap .= map(i -> lookup_remap(i), idxmap)
-            end
+            # make a lookup table and relabel the merged segments
+            lut = Dict(zip(df_pairs.right::Vector{T}, df_pairs.left::Vector{T}))
+            idxmap .= map(i -> get(lut, i, i), idxmap)
         end
     end
     return SegmentedImage(view_seg(segmented_image), idxmap)
@@ -282,7 +256,7 @@ remove_small_segments!(labels, min_size) = _remove_segments!(labels, <, min_size
     remove_large_segments!(labels, min_size)
 
 Set labels in a labeled matrix to 0 if the size is greater than `max_size`.
-    
+
 """
 remove_large_segments!(labels, max_size) = _remove_segments!(labels, >, max_size)
 
@@ -325,52 +299,72 @@ to object g in G is defined by
 
 """
 function get_relevant_set(df1, df2, labels1, labels2)
+    return _get_relevant_set(_floe_columns(df1), _floe_columns(df2), labels1, labels2)
+end
+
+# Typed copies of the regionprops columns `get_relevant_set` reads, so its per-floe
+# loops don't go through untyped DataFrame columns. Column access is untyped, so
+# each conversion still dispatches, but only once per column.
+function _floe_columns(df)
+    return (;
+        label=Vector{Int64}(df.label)::Vector{Int64},
+        area=Vector{Float64}(df.area)::Vector{Float64},
+        min_row=Vector{Int64}(df.min_row)::Vector{Int64},
+        max_row=Vector{Int64}(df.max_row)::Vector{Int64},
+        min_col=Vector{Int64}(df.min_col)::Vector{Int64},
+        max_col=Vector{Int64}(df.max_col)::Vector{Int64},
+        row_centroid=Vector{Float64}(df.row_centroid)::Vector{Float64},
+        col_centroid=Vector{Float64}(df.col_centroid)::Vector{Float64},
+    )
+end
+
+function _get_relevant_set(g, s, labels1, labels2)
     relevant_set = Dict{Int64,Vector{Int64}}()
-    for floe in eachrow(df1)
+    for i in eachindex(g.label)
+        g_label = g.label[i]
         # select labels that are inside the bounding box for the floe
         matched_labels = unique(
-            labels2[floe.min_row:floe.max_row, floe.min_col:floe.max_col]
+            labels2[g.min_row[i]:g.max_row[i], g.min_col[i]:g.max_col[i]]
         )
 
         # if any, then check centroid positions
         maximum(matched_labels) == 0 && continue
-        # get the rows in the segments_df from the matched labels
-        candidate_subset = subset(df2, :label => ByRow(l -> l in matched_labels))
 
-        relevant_set_labels = []
+        relevant_set_labels = Int64[]
 
         # check if centroid g in s
-        rc = round(Int64, floe.row_centroid)
-        cc = round(Int64, floe.col_centroid)
+        rc = round(Int64, g.row_centroid[i])
+        cc = round(Int64, g.col_centroid[i])
         push!(relevant_set_labels, labels2[rc, cc])
 
-        # check if centroid s in g
-        for s_floe in eachrow(candidate_subset)
-            rc = round(Int64, s_floe.row_centroid)
-            cc = round(Int64, s_floe.col_centroid)
-            (labels1[rc, cc] == floe.label) && begin
-                push!(relevant_set_labels, s_floe.label)
+        # check if centroid s in g, for the segments matched by the bounding box
+        for j in eachindex(s.label)
+            s_label = s.label[j]
+            s_label in matched_labels || continue
+            rc = round(Int64, s.row_centroid[j])
+            cc = round(Int64, s.col_centroid[j])
+            (labels1[rc, cc] == g_label) && begin
+                push!(relevant_set_labels, s_label)
             end
 
             # joint bbox
-            rmin = minimum((floe.min_row, s_floe.min_row))
-            rmax = maximum((floe.max_row, s_floe.max_row))
-            cmin = minimum((floe.min_col, s_floe.min_col))
-            cmax = maximum((floe.max_col, s_floe.max_col))
+            rmin = min(g.min_row[i], s.min_row[j])
+            rmax = max(g.max_row[i], s.max_row[j])
+            cmin = min(g.min_col[i], s.min_col[j])
+            cmax = max(g.max_col[i], s.max_col[j])
 
             # check if area overlap between g and s is larger than 50% of g
-            gtmask = labels1[rmin:rmax, cmin:cmax] .== floe.label
-            slmask = labels2[rmin:rmax, cmin:cmax] .== s_floe.label
+            gtmask = labels1[rmin:rmax, cmin:cmax] .== g_label
+            slmask = labels2[rmin:rmax, cmin:cmax] .== s_label
             intersect_area = sum(gtmask .&& slmask)
-            if maximum([intersect_area / s_floe.area, intersect_area / floe.area]) > 0.5
-                push!(relevant_set_labels, s_floe.label)
+            if max(intersect_area / s.area[j], intersect_area / g.area[i]) > 0.5
+                push!(relevant_set_labels, s_label)
             end
         end
         relevant_set_labels = filter(r -> r != 0, unique(relevant_set_labels))
         if length(relevant_set_labels) > 0
-            push!(relevant_set, floe.label => relevant_set_labels)
+            push!(relevant_set, g_label => relevant_set_labels)
         end
-    
     end
     return relevant_set
 end
