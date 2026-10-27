@@ -198,8 +198,7 @@ end
 
 #TODO: Add option to include the confidence intervals with the normalized cross correlation tests.
 function (f::PsiSCorrelationThresholdFilter)(floe, candidates, _::Val{:raw})
-    rfloe(p2) = round(normalized_cross_correlation(floe.psi, p2); digits=3)
-    transform!(candidates, [:psi] => ByRow(rfloe) => :psi_s_correlation)
+    _add_psi_s_correlation!(candidates, floe.psi)
     candidates[!, :psi_s_correlation_score] = 1 .- candidates[!, :psi_s_correlation]
 
     # Future work: add computation of the confidence intervals for psi-s corr here.
@@ -208,6 +207,12 @@ function (f::PsiSCorrelationThresholdFilter)(floe, candidates, _::Val{:raw})
         [f.area_variable, :psi_s_correlation_score] =>
             ByRow(f.threshold_function) => f.threshold_column,
     )
+end
+
+# Function barrier for the floe's ψ-s curve; see `_add_shape_difference!`.
+function _add_psi_s_correlation!(candidates::DataFrame, psi1)
+    rfloe(p2) = round(normalized_cross_correlation(psi1, p2); digits=3)
+    return transform!(candidates, [:psi] => ByRow(rfloe) => :psi_s_correlation)
 end
 
 """
