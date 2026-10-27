@@ -150,7 +150,7 @@ floe_splitting_params = (
     max_depth_ratio=0.7,
     max_expand=3,
     opening_strel=strel_disk(1)
-    )
+)
 floe_filtering_params = (
     min_floe_size=100,
     min_cloudy_floe_size=1000,
@@ -168,26 +168,26 @@ floe_merging_params = (
 """
     FSPipeline.Segment()
 
-Segmentation routine for identifying moderate to large floes in the Fram Strait.
-The image preprocessing is supplied as an function in the functor setup.
+    Segmentation routine for identifying moderate to large floes in the Fram Strait.
+    The image preprocessing is supplied as an function in the functor setup.
 
 
-# Parameters
-- `coastal_buffer_structuring_element::AbstractMatrix{Bool} = strel_box((51,51))`: Structuring element for the `create_landmask` function
-- `cloud_mask_algorithm = Watkins2025CloudMask()`: Cloud mask algorithm
-- `preprocessing_algorithm = Preprocess()`: Function to sharpen and equalize the truecolor image
-- `tile_size_pixels=1200`: Nominal tile size in pixels
-- `min_tile_ice_pixel_count=300`: Smallest number of required sea ice pixels in tile
-- `preliminary_ice_mask = IceDetectionBrightnessMidpoint(minimum_reflectance=0.3)`: Function to use to identify likely ice pixels for filtering.
-- `kmeans_params = (k=4, maxiter=50, random_seed=45)`: Parameters for `kmeans_binarization`
-- `cluster_selection_algorithm = IceDetectionBrightnessPeaksMODIS721(
-    band_7_max=0.1,
-    possible_ice_threshold=0.3,
-    join_method="union",
-    minimum_prominence=0.01)`: Function to use to select a k-means cluster in the `kmeans_binarization` workflow
-- `clean_binary_floes_params`: Parameters for the preliminary binary image cleanup
-- `floe_splitting_params`: Parameters for the `dist_morph_split` floe splitting algorithm
-- `floe_filtering_params`: Parameters for post-segmentation cleanup
+    # Parameters
+    - `coastal_buffer_structuring_element::AbstractMatrix{Bool} = strel_box((51,51))`: Structuring element for the `create_landmask` function
+    - `cloud_mask_algorithm = Watkins2025CloudMask()`: Cloud mask algorithm
+    - `preprocessing_algorithm = Preprocess()`: Function to sharpen and equalize the truecolor image
+    - `tile_size_pixels=1200`: Nominal tile size in pixels
+    - `min_tile_ice_pixel_count=300`: Smallest number of required sea ice pixels in tile
+    - `preliminary_ice_mask = IceDetectionBrightnessMidpoint(minimum_reflectance=0.3)`: Function to use to identify likely ice pixels for filtering.
+    - `kmeans_params = (k=4, maxiter=50, random_seed=45)`: Parameters for `kmeans_binarization`
+    - `cluster_selection_algorithm = IceDetectionBrightnessPeaksMODIS721(
+        band_7_max=0.1,
+        possible_ice_threshold=0.3,
+        join_method="union",
+        minimum_prominence=0.01)`: Function to use to select a k-means cluster in the `kmeans_binarization` workflow
+    - `clean_binary_floes_params`: Parameters for the preliminary binary image cleanup
+    - `floe_splitting_params`: Parameters for the `dist_morph_split` floe splitting algorithm
+    - `floe_filtering_params`: Parameters for post-segmentation cleanup
 """
 @kwdef struct Segment <: IceFloeSegmentationAlgorithm
     coastal_buffer_structuring_element::AbstractMatrix{Bool} =
