@@ -312,7 +312,7 @@ end
 """
     _mark_inputs!(_, ex)
 
-Return `ex` with every marked input `$x` replaced by a symbol, and record each distinct
+Return `ex` with every marked input `\$x` replaced by a symbol, and record each distinct
 marked expression `x` and its symbol in the `Dict` `inputs`. Repeated marks of the same
 expression share one symbol.
 
@@ -320,7 +320,7 @@ expression share one symbol.
 ```jldoctest
 julia> using IceFloeTracker.ImageUtils: _mark_inputs!
 
-julia> ex = Meta.parse(raw"f($img, $img, $mask, k)");
+julia> ex = Meta.parse(raw"f(\$img, \$img, \$mask, k)");
 
 julia> inputs = Dict{Any,Symbol}();
 
@@ -331,7 +331,7 @@ julia> sort(collect(keys(inputs))) # the distinct marked expressions
  :img
  :mask
 
-julia> body.args[2] === body.args[3] === inputs[:img] # both `$img` became one symbol
+julia> body.args[2] === body.args[3] === inputs[:img] # both `\$img` became one symbol
 true
 
 julia> body.args[4] === inputs[:mask]
