@@ -17,13 +17,23 @@
     @test "mean_boundary_reflectance" ∈ names(props_df)
     @test props_df[1, :mean_boundary_reflectance] ≈ RGB(0, 0, 1.)
 
+    # Extended regionprops with blank image
+    blank_labels = zeros(Int64, size(circle_img))
+    blank_image = RGB.(blank_labels)
+    df = TGRS2026.extended_regionprops_table(
+        blank_labels,
+        blank_image,
+        Dict("land"=>blank_labels, "cloud"=>blank_labels)
+        )
+    @test "probability" ∈ names(df)
+
     # Other things to test:
     # compare objects
     # merge floes
     # non-overlap
 end
 
-@testitem "TGRS2026 Component Functions" begin
+@testitem "TGRS2026.Preprocess" begin
     import Images: AdaptiveEqualization, Gray, AbstractGray, N0f8
     import StatsBase: mean
 
@@ -31,7 +41,8 @@ end
     case = filter(c -> c.case_number == 34, dataset)
     tc_imgs = modis_truecolor.(case)
     land_masks = modis_landmask.(case) .|> r -> r .> 0
-#     # Test preprocess -- accepts alternate histogram, works with test image
+
+    # Allows updating histogram parameters?
     preprocess = TGRS2026.Preprocess(
         adapthisteq_algorithm = ContrastLimitedAdaptiveHistogramEqualization(;
         nbins=256, rblocks=4, cblocks=4, clip=1
@@ -42,6 +53,7 @@ end
     @show typeof(preprocess.(gray_imgs, land_masks)[1]) 
     @test typeof(preprocess.(gray_imgs, land_masks)[1]) ==  Matrix{Gray{N0f8}}
 
+    # Accepts alternate histogram?
     preprocess = TGRS2026.Preprocess(
         adapthisteq_algorithm = AdaptiveEqualization(;
             nbins=128,
@@ -55,12 +67,20 @@ end
     gray_imgs = tc_imgs .|> r -> Gray.(r)
     @test typeof(preprocess.(gray_imgs, land_masks)[1]) ==  Matrix{Gray{N0f8}}
 
+    # TBD: Test unsharp mask and nonlinear diffusion options
+end
+@testitem "TGRS2026.Classify" begin
+    import StatsBase: mean
+    dataset = Watkins2026Dataset(; ref="v0.2")
+    case = filter(c -> c.case_number == 34, dataset)
+    tc_imgs = modis_truecolor.(case)
+    land_masks = modis_landmask.(case) .|> r -> r .> 0
     fc_imgs = modis_falsecolor.(case)
+
     classifier = TGRS2026.Classify()
     classified = classifier.(fc_imgs, land_masks)
     @test mean(classified[1] .== classifier.key["land"]) .== mean(land_masks[1]) # Land mask is copied, both are 0 here
     @test mean(classified[1] .== classifier.key["cloud"]) ≈ 1.0 # Test case is fully cloud-covered
-    
 end
 
 @testitem "TGRS2026.Segment – simple case" tags = [:e2e, :smoke] begin
