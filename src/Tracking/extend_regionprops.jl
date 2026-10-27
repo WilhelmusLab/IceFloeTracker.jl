@@ -31,11 +31,14 @@ end
 
 Add the ψ-s curves to each row of `props_df`.
 
-Note: each member of `props` must have a `mask` column with a binary image representing the floe. 
-To add floe masks see [`addfloemasks!`](@ref).
+Note: each member of `props` must have a `boundary` column with the traced, resampled
+floe boundary. To add boundaries see [`add_boundary!`](@ref), which must run first.
 """
 function add_ψs!(props_df::DataFrame)
-    props_df.psi = map(buildψs, props_df.mask)
+    hasproperty(props_df, :boundary) || throw(
+        ArgumentError("`add_ψs!` requires a `:boundary` column; call `add_boundary!` first"),
+    )
+    props_df.psi = map(boundary -> buildψs(boundary)[1], props_df.boundary)
     return nothing
 end
 
@@ -72,4 +75,53 @@ function add_floemasks!(
 )
     add_floemasks!(props, labels_map(segmented_image); label_column=label_column)
     return nothing
+end
+
+"""
+    add_boundary!(props_df::DataFrame; reduc_factor::Int64=2)
+    add_boundary!.(props_dfs::Vector{DataFrame}; reduc_factor::Int64=2)
+
+Add resampled boundary curves as `:boundary` column to DataFrame.
+Each boundary is a Matrix{Float64}(n, 2) with [x y] coordinates.
+
+Note: each member of `props_df` must have a `:mask` column with a binary image representing the floe.
+To add floe masks see [`add_floemasks!`](@ref).
+
+# Arguments
+- `props_df`: DataFrame with `:mask` column
+- `reduc_factor`: Reduction factor for boundary resampling (default: 2 = 50% reduction)
+"""
+function add_boundary!(props_df::DataFrame; reduc_factor::Int64=2)
+    props_df.boundary = map(mask -> _traced_boundary(mask; reduc_factor), props_df.mask)
+    return nothing
+end
+
+"""
+    _traced_boundary(mask; reduc_factor::Int64=2)
+
+Trace a floe boundary and resample it by arc length. If the mask has more than one
+contour, the one with the largest perimeter is kept and a warning is issued.
+
+Shared by [`add_boundary!`](@ref) and `buildψs(::AbstractArray)` so the two cannot drift
+apart.
+"""
+function _traced_boundary(mask; reduc_factor::Int64=2)
+    contours = bwtraceboundary(mask)
+    outline = argmax(_contour_perimeter.(contours))
+    if length(contours) > 1
+        @warn "mask has $(length(contours)) contours;" *
+            " keeping the one with the largest perimeter as the floe boundary."
+    end
+    return resample_boundary(contours[outline], reduc_factor)
+end
+
+"""
+    _contour_perimeter(contour)
+
+Perimeter of a closed traced contour (first point repeated as last): the sum of the
+lengths of the segments between consecutive points, 1 for axial and √2 for diagonal steps.
+"""
+function _contour_perimeter(contour::AbstractVector{<:CartesianIndex})
+    _hypot(s) = hypot(Tuple(s)...)
+    return sum(_hypot, diff(contour))
 end
