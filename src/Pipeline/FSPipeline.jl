@@ -58,7 +58,7 @@ import ..Tracking:
     ShapeDifferenceThresholdFilter,
     PsiSCorrelationThresholdFilter
 
-import ..Pipeline: 
+import ..Pipeline:
     IceFloeSegmentationAlgorithm,
     IceFloePreprocessingAlgorithm
 
@@ -68,7 +68,7 @@ adapthisteq_params = (nbins=256, rblocks=4, cblocks=4, clip=1)
 unsharp_mask_params = (radius=50, amount=0.3, threshold=0.01)
 
 """
-   Preprocess(
+    Preprocess(
         diffusion_algorithm = PeronaMalikDiffusion(λ=0.1, K=0.1, niters=5, g="exponential")
         adapthisteq_params = (nbins=256, rblocks=8, cblocks=8, clip=0.99) # rblocks/cblocks not used yet -- add with CLAHE.jl
         unsharp_mask_params = (radius=50, amount=0.2, threshold=0.01)
