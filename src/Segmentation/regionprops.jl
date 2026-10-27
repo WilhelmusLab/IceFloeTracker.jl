@@ -68,6 +68,11 @@ function addlatlon!(pairedfloesdf::DataFrame, refimage::AbstractString)
 end
 
 ## LatLon functions originally from IFTPipeline.jl
+
+# Look up a lat/lon grid at rounded (row, col) centroids, or a 1-D axis at rounded coordinates.
+_lookup_centroids(grid, rows, cols) = [grid[round(Int, r), round(Int, c)] for (r, c) in zip(rows, cols)]
+_lookup_centroids(axis, coords) = [axis[round(Int, z)] for z in coords]
+
 # TODO: Add example with reference geotiff image.
 """
     convertcentroid!(propdf, latlondata)
@@ -76,17 +81,11 @@ Convert the centroid coordinates from row and column to latitude and longitude.
 Additionally, add columns `x` and `y` with the pixel coordinates of the centroid.
 """
 function convertcentroid!(propdf, latlondata)
-    latitude, longitude = [
-        [
-            latlondata[c][Int(round(x)), Int(round(y))] for
-            (x, y) in zip(propdf.row_centroid, propdf.col_centroid)
-        ] for c in [:latitude, :longitude]
-    ]
-
-    x, y = [
-        [latlondata[c][Int(round(z))] for z in V] for
-        (c, V) in zip([:Y, :X], [propdf.row_centroid, propdf.col_centroid])
-    ]
+    # Literal keys rather than a loop over symbols, so each lookup is inferable.
+    latitude = _lookup_centroids(latlondata[:latitude], propdf.row_centroid, propdf.col_centroid)
+    longitude = _lookup_centroids(latlondata[:longitude], propdf.row_centroid, propdf.col_centroid)
+    x = _lookup_centroids(latlondata[:Y], propdf.row_centroid)
+    y = _lookup_centroids(latlondata[:X], propdf.col_centroid)
 
     propdf.latitude = latitude
     propdf.longitude = longitude
@@ -131,7 +130,8 @@ function converttounits(propdf, latlondata)
     return output
 end
 
-"""component_floes(indexmap; minimum_area=1)
+"""
+    component_floes(indexmap; minimum_area=1)
 
 Given a labeled array, produce a dictionary where each entry is a binary array cropped to the
 location of the label.
@@ -155,7 +155,7 @@ julia> A
  0  0  0  0  0  0
 
 julia> masks = component_floes(A)
-julia> Dict{Any, Any} with 3 entries:
+julia> Dict{Int64, BitMatrix} with 3 entries:
   0 => Bool[1 1 … 1 1; 0 0 … 1 1; … ; 1 1 … 0 1; 1 1 … 1 1]
   2 => Bool[0 1 1 0; 1 1 1 1; … ; 1 1 1 1; 0 1 1 0]
   1 => Bool[1 1; 1 1; … ; 1 1; 1 1]
@@ -190,16 +190,19 @@ function component_floes(
             ),
         )
     end
-    floe_masks = Dict(
-        i => indexmap[boxes[i]] .== i for i in labels if areas[i] > minimum_area
-    )
+    # Initialize typed up dict so the result stays concrete when no label passes the filter.
+    floe_masks = Dict{eltype(indexmap),BitArray{ndims(indexmap)}}()
+    for i in labels
+        areas[i] > minimum_area && (floe_masks[i] = indexmap[boxes[i]] .== i)
+    end
     return floe_masks
 end
 
-"""component_perimeters(indexmap; minimum_area=1, algorithm="benkrid_crookes")
+"""
+    component_perimeters(indexmap; algorithm=BenkridCrookes(), masks=component_floes(indexmap))
 
 Estimate the perimeter of the labeled regions in `indexmap` using the specified algorithm.
-Algorithm options = "benkrid_crookes" (only option currently, will add crofton in future release)
+The only `PerimeterEstimationAlgorithm` currently is `BenkridCrookes` (Crofton may be added in a future release).
 Defaults to using connectivity 4.
 """
 function component_perimeters(
@@ -207,16 +210,18 @@ function component_perimeters(
     algorithm::PerimeterEstimationAlgorithm=BenkridCrookes(),
     masks=component_floes(indexmap),
 )
-    perims = Dict(
-        label => (label == 0 ? 0 : algorithm(masks[label])) for
-        label in keys(masks) if prod(size(masks[label])) > 1
-    )
+    perims = Dict{keytype(masks),Float64}()
+    for (label, mask) in masks
+        prod(size(mask)) > 1 || continue
+        perims[label] = label == 0 ? 0.0 : algorithm(mask)
+    end
     return perims
 end
 
 # TODO: Test and implement correction factor (multiply B-K perimeter by 0.95 if larger than some factor.)
 # TODO: Implement the crofton perimeter algorithm
-"""BenkridCrookes(connectivity=4)
+"""
+    BenkridCrookes(connectivity=4)
 
 Functor producing a BenkridCrookes PerimeterEstimationAlgorithm. The connectivity
 used for the erosion is the only parameter. The algorithm uses strel_diamond((3,3)) for 4-connectivity and
@@ -235,7 +240,7 @@ julia> BenkridCrookes(connectivity=8)(A)
 ```
 """
 @kwdef struct BenkridCrookes <: PerimeterEstimationAlgorithm
-    connectivity = 4
+    connectivity::Int64 = 4
 end
 
 # Boundary-pixel classification table, indexed by the neighborhood code
@@ -303,7 +308,8 @@ function (f::BenkridCrookes)(shape_array)
     return perim
 end
 
-"""component_convex_area(A; algorithm=PixelConvexArea()")
+"""
+    component_convex_areas(A; algorithm=PixelConvexArea())
 
 Compute the convex area of labeled regions. Two methods available: "PixelConvexArea" and "PolygonConvexArea".
 The polygon method uses Green's theorem to find the area of a polygon through its line integral,
@@ -345,15 +351,16 @@ function _convexhull_or_nothing(img::AbstractMatrix{Bool})
     end
 end
 
-"""PolygonConvexArea(minimum_area=4)
+"""
+    PolygonConvexArea(minimum_area=4)
 
 Estimate the convex area by integrating the area of the convex hull polygon.
 Uses the convexhull function from ImageMorphology, which raises an error if the
 area of the segment is less than or equal to 3. In general, the error should be smaller
 for larger shapes.
 """
-@kwdef struct PolygonConvexArea <: ConvexAreaEstimationAlgorithm
-    minimum_area = 4
+@kwdef struct PolygonConvexArea{T<:Real} <: ConvexAreaEstimationAlgorithm
+    minimum_area::T = 4
 end
 
 function (f::PolygonConvexArea)(A)
@@ -394,16 +401,17 @@ function (f::PolygonConvexArea)(A, areas, bboxes, labels)
     return convex_areas
 end
 
-"""PixelConvexArea(minimum_area)
-   PixelConvexArea(A)
+"""
+    PixelConvexArea(minimum_area=4)
+    PixelConvexArea(A)
 
 Estimate the convex area by summing the number of pixels with indices falling within the
 polygon formed by the convex hull. Uses the convexhull function from ImageMorphology, which raises an error if the
 area of the segment is less than or equal to 3. In general, the error should be smaller
 for larger shapes.
 """
-@kwdef struct PixelConvexArea <: ConvexAreaEstimationAlgorithm
-    minimum_area = 4
+@kwdef struct PixelConvexArea{T<:Real} <: ConvexAreaEstimationAlgorithm
+    minimum_area::T = 4
 end
 
 """
@@ -568,7 +576,8 @@ end
 
 # TODO: Updated regionprops_table and regionprops to enable customizing the algorithms.
 
-"""regionprops(label_img, intensity_img; properties, extra_properties, minimum_area)
+"""
+    regionprops(label_img, intensity_img; properties, extra_properties, minimum_area)
 
 Core function returning a dictionary with an entry for each returned property.
 
@@ -658,10 +667,10 @@ function regionprops(
                 append!(properties_, [p])
             end
         end
-        return Dict(p => [] for p in properties_)
+        return Dict{Symbol,AbstractVector}(p => [] for p in properties_)
     end
 
-    data = Dict{Symbol,Any}()
+    data = Dict{Symbol,AbstractVector}()
 
     # Begin by extracting the set of labels that meet the minimum area criterion
     # We also get a sorted list of image labels, so all the dictionary entries can
@@ -710,14 +719,14 @@ function regionprops(
     end
 
     :bbox ∈ properties && begin
-        push!(data, :min_row => Int[], :max_row => Int[], :min_col => Int[], :max_col => Int[])
-        bboxes = _get_bounds.(bboxes_all[s] for s in img_labels)
-        for (min_row, max_row, min_col, max_col) in bboxes
-            push!(data[:min_row], min_row)
-            push!(data[:max_row], max_row)
-            push!(data[:min_col], min_col)
-            push!(data[:max_col], max_col)
-        end
+        min_rows, max_rows, min_cols, max_cols = _bbox_columns(bboxes_all, img_labels)
+        push!(
+            data,
+            :min_row => min_rows,
+            :max_row => max_rows,
+            :min_col => min_cols,
+            :max_col => max_cols,
+        )
     end
 
     :perimeter ∈ required_properties && begin
@@ -770,10 +779,24 @@ function regionprops(
             append!(updated_properties, [p])
         end
     end
-    return Dict(prop => data[prop] for prop in updated_properties)
+    return Dict{Symbol,AbstractVector}(prop => data[prop] for prop in updated_properties)
 end
 
-"""_get_bounds(box)
+# Function barrier: `bboxes_all` is a `Union` with `nothing` in `regionprops`.
+function _bbox_columns(bboxes_all, img_labels)
+    min_rows, max_rows, min_cols, max_cols = Int[], Int[], Int[], Int[]
+    for s in img_labels
+        min_row, max_row, min_col, max_col = _get_bounds(bboxes_all[s])
+        push!(min_rows, min_row)
+        push!(max_rows, max_row)
+        push!(min_cols, min_col)
+        push!(max_cols, max_col)
+    end
+    return min_rows, max_rows, min_cols, max_cols
+end
+
+"""
+    _get_bounds(box)
 
 Helper function to extract the min row, max row, min col, and max col
 from a vector of CartesianIndex ranges
@@ -788,7 +811,9 @@ function _get_bounds(box)
     return minrow, maxrow, mincol, maxcol
 end
 
-"""_central_moment(x, y, xc, yc, p, q)
+"""
+    _central_moment(x, y, xc, yc, p, q)
+
 Compute the central moments based on the index vectors
 x and y, the centroid xc, yc, and the exponents p and q.
 """
@@ -797,7 +822,8 @@ function _central_moment(x, y, xc, yc, p, q)
     return mu
 end
 
-"""_component_moment_measures(labels, label_list)
+"""
+    _component_moment_measures(labels, label_list)
 
 Compute standard image measures which rely on calculation of image moments. Returns
 a dictionary
@@ -812,19 +838,19 @@ and "orientation" where each entry is a vector ordered by label_list.
 """
 function _component_moment_measures(labels, label_list; areas=component_lengths(labels))
     data = Dict(
-        :row_centroid=>[],
-        :col_centroid=>[],
-        :major_axis_length=>[],
-        :minor_axis_length=>[],
-        :orientation=>[],
+        :row_centroid=>Float64[],
+        :col_centroid=>Float64[],
+        :major_axis_length=>Float64[],
+        :minor_axis_length=>Float64[],
+        :orientation=>Float64[],
     )
     centroids = component_centroids(labels)
     indices = component_indices(CartesianIndex, labels)
 
     row_centroid = first.(centroids)
     col_centroid = last.(centroids)
-    data[:row_centroid] = map(s -> row_centroid[s], label_list)
-    data[:col_centroid] = map(s -> col_centroid[s], label_list)
+    data[:row_centroid] = Float64[row_centroid[s] for s in label_list]
+    data[:col_centroid] = Float64[col_centroid[s] for s in label_list]
 
     for s in label_list
         X = getindex.(indices[s], 1)
