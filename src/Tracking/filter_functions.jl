@@ -264,17 +264,17 @@ the candidates. Writes `:boundary_shape_difference`,
 `:scaled_boundary_shape_difference` is not among [`MinimumWeightMatchingFunction`](@ref)'s
 default `columns`.
 """
-@kwdef struct BoundaryShapeDifferenceThresholdFilter <: AbstractFloeFilterFunction
-    area_variable = :area
-    boundary_column = :boundary
-    metric = boundary_modified_hausdorff
-    threshold_column = :boundary_shape_difference_test
+@kwdef struct BoundaryShapeDifferenceThresholdFilter{M,F} <: AbstractFloeFilterFunction
+    area_variable::Symbol = :area
+    boundary_column::Symbol = :boundary
+    metric::M = boundary_modified_hausdorff
+    threshold_column::Symbol = :boundary_shape_difference_test
     # No default. ShapeDifferenceThresholdFilter's bounds (0.47 -> 0.31) were calibrated
     # against count_symdiff / area, a dimensionless ratio of pixel areas; the score here is
     # a distance in PIXELS, so they are wrong in units, not only in scale. Bounds in pixels,
     # area-dependent via PiecewiseLinearThresholdFunction, need to be estimated on tracked
     # data. Until then the filter is excluded from default_filter.
-    threshold_function
+    threshold_function::F
 end
 
 function (f::BoundaryShapeDifferenceThresholdFilter)(
