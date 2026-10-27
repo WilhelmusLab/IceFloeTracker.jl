@@ -245,18 +245,18 @@ function (s::Segment)(
     # First check for sufficient non-land and non-cloud pixels
     filtered_tiles = filter(
         t -> sum(.!joint_mask[t...]) > s.min_tile_ice_pixel_count, tiles
-    );
+    )
 
     # Then check for sufficient possible sea ice pixels
     prelim_ice_mask = s.preliminary_ice_mask(Gray.(red.(tc_masked)), filtered_tiles)
     filtered_tiles = filter(
         t -> sum(prelim_ice_mask[t...]) > s.min_tile_ice_pixel_count, filtered_tiles
-    );
+    )
 
     @info "Preprocessing truecolor image"
     preproc_gray = float64.(
         s.preprocessing_algorithm(truecolor_image, landmask, filtered_tiles)
-    );
+    )
 
     @info "Binarization"
     # We use the cloud mask in finding the bright floes - the bright floe cluster can't be cloud -
@@ -549,7 +549,7 @@ function merge_floes(indexmap1, indexmap2, img; dmax=10, emax=0.25, min_floe_siz
 
     F = zeros(Int64, size(A))
 
-    df_comp = objectwise_compare_segmentation(indexmap1, indexmap2, img);
+    df_comp = objectwise_compare_segmentation(indexmap1, indexmap2, img)
     s1_no_overlap = filter(r -> r != 0, setdiff(unique(A), df_comp.s1_label))
     s2_no_overlap = filter(r -> r != 0, setdiff(unique(B), df_comp.s2_label))
 
@@ -578,9 +578,9 @@ function merge_floes(indexmap1, indexmap2, img; dmax=10, emax=0.25, min_floe_siz
 
         # Merge the two, prioritizing the second if there is overlap.
         s1_labels = matches[matches.s1_better, :s1_label]
-        s2_labels = matches[.!matches.s1_better, :s2_label];
-        A_sel = assign_labels(A, s1_labels);
-        B_sel = assign_labels(B, s2_labels);
+        s2_labels = matches[.!matches.s1_better, :s2_label]
+        A_sel = assign_labels(A, s1_labels)
+        B_sel = assign_labels(B, s2_labels)
         idx = A_sel .> 0
         F[idx] .= A[idx]
         idx = B_sel .> 0
@@ -676,8 +676,8 @@ function merge_floes(indexmap1, indexmap2, img; dmax=10, emax=0.25, min_floe_siz
             :, :s2_label
         ]
 
-        A_sel = assign_labels(A, s1_labels);
-        B_sel = assign_labels(B, s2_labels);
+        A_sel = assign_labels(A, s1_labels)
+        B_sel = assign_labels(B, s2_labels)
         idx = A_sel .> 0
         F[idx] .= A[idx]
         idx = B_sel .> 0
@@ -763,14 +763,14 @@ const FSFilterFunctions = [
 ]
 
 const FSMatchingColumns = [
-            :scaled_distance,
-            :relative_error_area,
-            :relative_error_convex_area,
-            :relative_error_major_axis_length,
-            :relative_error_minor_axis_length,
-            :psi_s_correlation_score,
-            :scaled_shape_difference,
-        ]
+    :scaled_distance,
+    :relative_error_area,
+    :relative_error_convex_area,
+    :relative_error_major_axis_length,
+    :relative_error_minor_axis_length,
+    :psi_s_correlation_score,
+    :scaled_shape_difference,
+]
 """
     Track()
 
