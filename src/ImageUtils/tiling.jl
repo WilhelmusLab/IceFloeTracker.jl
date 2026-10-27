@@ -265,9 +265,9 @@ macro tilewise(tiles, transformation, options...)
             $results = []
             for $tile in $all_tiles
                 $(slice...)
-                push!($results, $body)
+                $push!($results, $body)
             end
-            reshape(map(identity, $results), size($all_tiles))
+            $_shape_like($results, $all_tiles)
         end
     else
         out = gensym(:canvas)
@@ -288,25 +288,136 @@ macro tilewise(tiles, transformation, options...)
     ))
 end
 
+"""
+    _tilewise_canvas(options)
+
+Return the canvas expression from the options of a `@tilewise` call, or `nothing` if there
+is none. Throws an `ArgumentError` for any option other than a single `into = canvas`.
+"""
 function _tilewise_canvas(options)
     canvas = nothing
     for opt in options
-        (Meta.isexpr(opt, :(=), 2) && opt.args[1] === :into && isnothing(canvas)) ||
-            throw(ArgumentError("`@tilewise` accepts one option, `into = canvas`; got `$opt`"))
+        is_assignment = Meta.isexpr(opt, :(=), 2)
+        is_into = is_assignment && opt.args[1] === :into
+        is_first = isnothing(canvas)
+        if !(is_into && is_first)
+            message = "`@tilewise` accepts one option, `into = canvas`; got `$opt`"
+            throw(ArgumentError(message))
+        end
         canvas = opt.args[2]
     end
     return canvas
 end
 
-_mark_inputs!(_, ex) = ex
-function _mark_inputs!(inputs, ex::Expr)
-    Meta.isexpr(ex, :$, 1) && return get!(() -> gensym(:slice), inputs, ex.args[1])
-    return Expr(ex.head, [_mark_inputs!(inputs, a) for a in ex.args]...)
+"""
+    _mark_inputs!(_, ex)
+
+Return `ex` with every marked input `$x` replaced by a symbol, and record each distinct
+marked expression `x` and its symbol in the `Dict` `inputs`. Repeated marks of the same
+expression share one symbol.
+
+# Examples
+```jldoctest
+julia> using IceFloeTracker.ImageUtils: _mark_inputs!
+
+julia> ex = Meta.parse(raw"f($img, $img, $mask, k)");
+
+julia> inputs = Dict{Any,Symbol}();
+
+julia> body = _mark_inputs!(inputs, ex);
+
+julia> sort(collect(keys(inputs))) # the distinct marked expressions
+2-element Vector{Any}:
+ :img
+ :mask
+
+julia> body.args[2] === body.args[3] === inputs[:img] # both `$img` became one symbol
+true
+
+julia> body.args[4] === inputs[:mask]
+true
+
+julia> body.args[5] # unmarked names are left alone
+:k
+```
+"""
+function _mark_inputs!(_, ex)
+    return ex
 end
 
-_trailing(x, tile) = ntuple(_ -> Colon(), ndims(x) - length(tile))
-_tile(x, tile) = x[tile..., _trailing(x, tile)...]
-_untile!(canvas, tile, result) = view(canvas, tile..., _trailing(canvas, tile)...) .= result
+function _mark_inputs!(inputs, ex::Expr)
+    if Meta.isexpr(ex, :$, 1)
+        marked = ex.args[1]
+        new_symbol() = gensym(:slice)
+        return get!(new_symbol, inputs, marked)
+    end
+    args = [_mark_inputs!(inputs, a) for a in ex.args]
+    return Expr(ex.head, args...)
+end
+
+"""
+    _trailing(x, tile)
+
+One `Colon()` for each dimension of `x` beyond the dimensions indexed by `tile`.
+
+# Examples
+```jldoctest
+julia> using IceFloeTracker.ImageUtils: _trailing
+
+julia> tile = (1:2, 3:4);
+
+julia> rgb = zeros(4, 4, 3);
+
+julia> _trailing(rgb, tile) # the channel dimension is kept whole
+(Colon(),)
+
+julia> size(rgb[tile..., _trailing(rgb, tile)...])
+(2, 2, 3)
+
+julia> _trailing(zeros(4, 4), tile) # nothing beyond the tile
+()
+```
+"""
+function _trailing(x, tile)
+    n_trailing = ndims(x) - length(tile)
+    return ntuple(_ -> Colon(), n_trailing)
+end
+
+"""
+    _tile(x, tile)
+
+Copy of the part of `x` covered by `tile`, with all dimensions beyond the tile kept whole.
+"""
+function _tile(x, tile)
+    trailing = _trailing(x, tile)
+    return x[tile..., trailing...]
+end
+
+"""
+    _untile!(canvas, tile, result)
+
+Write `result` into the part of `canvas` covered by `tile`, broadcasting over any
+dimensions beyond the tile.
+"""
+function _untile!(canvas, tile, result)
+    trailing = _trailing(canvas, tile)
+    canvas_region_view = view(canvas, tile..., trailing...)
+    canvas_region_view .= result
+    return canvas
+end
+
+"""
+    _shape_like(results, tiles)
+
+Return the per-tile `results` as an array with the shape of `tiles` and the narrowest
+element type that holds them all.
+"""
+function _shape_like(results, tiles)
+    # `results` is a `Vector{Any}`. Broadcasting `identity` copies it into an array whose
+    # element type is computed from the values, e.g. `Vector{Int64}` for integer results.
+    narrowed = identity.(results)
+    return reshape(narrowed, size(tiles))
+end
 
 """
     tile_index_map(tiles, dims)
