@@ -210,7 +210,7 @@ function (f::PsiSCorrelationThresholdFilter)(floe, candidates, _::Val{:raw})
 end
 
 # Function barrier for the floe's ψ-s curve; see `_add_shape_difference!`.
-function _add_psi_s_correlation!(candidates::DataFrame, psi1)
+function _add_psi_s_correlation!(candidates::AbstractDataFrame, psi1)
     rfloe(p2) = round(normalized_cross_correlation(psi1, p2); digits=3)
     return transform!(candidates, [:psi] => ByRow(rfloe) => :psi_s_correlation)
 end
