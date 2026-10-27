@@ -131,7 +131,7 @@
         intermediate_results_callback = save_results_callback(
             joinpath(
                 output_directory,
-                "segmentation-$(typeof(algorithm))-$(join(target_type,"∘"))-$(Dates.format(Dates.now(), "yyyy-mm-dd-HHMMSS"))",
+                "segmentation-$(algorithm_name(algorithm))-$(join(target_type,"∘"))-$(Dates.format(Dates.now(), "yyyy-mm-dd-HHMMSS"))",
             );
         )
         casting_function = ∘(target_type...)
@@ -198,7 +198,7 @@
         case_name = name(case)
         return save_results_callback(
             joinpath(
-                directory, "segmentation-$(typeof(algorithm))-$(case_name)-$(datestamp)"
+                directory, "segmentation-$(algorithm_name(algorithm))-$(case_name)-$(datestamp)"
             );
             extension,
         )
@@ -245,4 +245,10 @@
     end
 
     skipnanormissing(arr::AbstractArray) = filter(x -> !ismissing(x) && !isnan(x), arr)
+
+    # Qualified type name without type parameters, which can make paths too long
+    function algorithm_name(algorithm)
+        T = typeof(algorithm)
+        return "$(parentmodule(T)).$(nameof(T))"
+    end
 end
