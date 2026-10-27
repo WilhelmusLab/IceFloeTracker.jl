@@ -42,13 +42,13 @@ Passing `Val{:raw}` as the third argument will forgo the subsetting step so that
 - `threshold_column` = :time_distance_test
 - `scaling_function`: Function producing a number (e.g., max expected distance) for scaling the distances. This quantify is used in the matching function as an error metric.
 """
-@kwdef struct DistanceThresholdFilter <: AbstractFloeFilterFunction
-    time_column = :Δt
-    dist_column = :Δx
-    scaled_dist_column = :scaled_distance
-    threshold_function = LinearTimeDistanceFunction()
-    threshold_column = :time_distance_test
-    scaling_function = dt -> maximum_linear_distance(dt; umax=1.5, eps=250)
+@kwdef struct DistanceThresholdFilter{F,S} <: AbstractFloeFilterFunction
+    time_column::Symbol = :Δt
+    dist_column::Symbol = :Δx
+    scaled_dist_column::Symbol = :scaled_distance
+    threshold_function::F = LinearTimeDistanceFunction()
+    threshold_column::Symbol = :time_distance_test
+    scaling_function::S = dt -> maximum_linear_distance(dt; umax=1.5, eps=250)
 end
 
 function (f::DistanceThresholdFilter)(
@@ -73,10 +73,19 @@ using a pixel resolution `r` with units meters/pixel. The floe and candidates mu
 have rows `row_centroid` and `col_centroid`.
 """
 function euclidean_distance(floe, candidates; r=250)
-    return sqrt.(
-        (floe.row_centroid .- candidates.row_centroid) .^ 2 .+
-        (floe.col_centroid .- candidates.col_centroid) .^ 2,
-    ) * r
+    # Function barrier: the centroid columns are untyped, so read them once and compute
+    # in a method that specializes on their types.
+    return _euclidean_distance(
+        floe.row_centroid,
+        floe.col_centroid,
+        candidates.row_centroid,
+        candidates.col_centroid,
+        r,
+    )
+end
+
+function _euclidean_distance(row1, col1, rows2, cols2, r)
+    return sqrt.((row1 .- rows2) .^ 2 .+ (col1 .- cols2) .^ 2) * r
 end
 
 # TODO: Add geodetic distance function
@@ -100,11 +109,12 @@ the candidates to only those which evaluate as `true` using the `threshold_funct
 Including the dummy variable `Var(:raw)` returns the candidates dataframe with the test
 results without subsetting it.
 """
-@kwdef struct RelativeErrorThresholdFilter <: AbstractFloeFilterFunction
-    variable
-    area_variable = :area
-    threshold_column = :relative_error_test
-    threshold_function = PiecewiseLinearThresholdFunction()
+@kwdef struct RelativeErrorThresholdFilter{V<:Union{Symbol,AbstractString},F} <:
+              AbstractFloeFilterFunction
+    variable::V
+    area_variable::Symbol = :area
+    threshold_column::Symbol = :relative_error_test
+    threshold_function::F = PiecewiseLinearThresholdFunction()
 end
 
 function (f::RelativeErrorThresholdFilter)(
@@ -137,23 +147,17 @@ The result is divided by `scale_by` (e.g., area or perimeter), then the scaled v
 the `threshold_function` which is assumed to depend on area.
 
 """
-@kwdef struct ShapeDifferenceThresholdFilter <: AbstractFloeFilterFunction
-    area_variable = :area
-    scale_by = :area
-    threshold_column = :shape_difference_test
-    threshold_function = PiecewiseLinearThresholdFunction(100, 800, 0.5, 0.3)
+@kwdef struct ShapeDifferenceThresholdFilter{F} <: AbstractFloeFilterFunction
+    area_variable::Symbol = :area
+    scale_by::Symbol = :area
+    threshold_column::Symbol = :shape_difference_test
+    threshold_function::F = PiecewiseLinearThresholdFunction(100, 800, 0.5, 0.3)
 end
 
 function (f::ShapeDifferenceThresholdFilter)(
     floe::DataFrameRow, candidates::DataFrame, _::Val{:raw}
 )
-    function sd(mask, orientation)
-        return round(
-            shape_difference(floe.mask, floe.orientation, mask, orientation); digits=3
-        )
-    end
-
-    transform!(candidates, [:mask, :orientation] => ByRow(sd) => :shape_difference)
+    _add_shape_difference!(candidates, floe.mask, floe.orientation)
 
     candidates[!, :scaled_shape_difference] =
         candidates[!, :shape_difference] ./ candidates[!, f.scale_by]
@@ -168,6 +172,16 @@ function (f::ShapeDifferenceThresholdFilter)(
     )
 end
 
+# Function barrier: `floe` comes from untyped DataFrame columns, so its mask and orientation
+# are read once by the caller and this method specializes on their types, instead of the
+# per-candidate closure re-reading them from the row.
+function _add_shape_difference!(candidates::DataFrame, mask1, orientation1)
+    function sd(mask, orientation)
+        return round(shape_difference(mask1, orientation1, mask, orientation); digits=3)
+    end
+    return transform!(candidates, [:mask, :orientation] => ByRow(sd) => :shape_difference)
+end
+
 """
     PsiSCorrelationThresholdFunction(area_variable, threshold_column, threshold_function)
     PsiSCorrelationThresholdFunction(floe, candidates, Val(:raw))
@@ -176,16 +190,15 @@ Compute the ψ-s correlation between a floe and a dataframe of candidate floes. 
 ψ-s correlation ``\\rho``,  ψ-s correlation score (1 - ``\\rho``), and the result of the threshold function
 to the columns of `candidates`.
 """
-@kwdef struct PsiSCorrelationThresholdFilter <: AbstractFloeFilterFunction
-    area_variable = :area
-    threshold_column = :psi_s_correlation_test
-    threshold_function = PiecewiseLinearThresholdFunction(100, 800, 0.14, 0.1)
+@kwdef struct PsiSCorrelationThresholdFilter{F} <: AbstractFloeFilterFunction
+    area_variable::Symbol = :area
+    threshold_column::Symbol = :psi_s_correlation_test
+    threshold_function::F = PiecewiseLinearThresholdFunction(100, 800, 0.14, 0.1)
 end
 
 #TODO: Add option to include the confidence intervals with the normalized cross correlation tests.
 function (f::PsiSCorrelationThresholdFilter)(floe, candidates, _::Val{:raw})
-    rfloe(p2) = round(normalized_cross_correlation(floe.psi, p2); digits=3)
-    transform!(candidates, [:psi] => ByRow(rfloe) => :psi_s_correlation)
+    _add_psi_s_correlation!(candidates, floe.psi)
     candidates[!, :psi_s_correlation_score] = 1 .- candidates[!, :psi_s_correlation]
 
     # Future work: add computation of the confidence intervals for psi-s corr here.
@@ -194,6 +207,12 @@ function (f::PsiSCorrelationThresholdFilter)(floe, candidates, _::Val{:raw})
         [f.area_variable, :psi_s_correlation_score] =>
             ByRow(f.threshold_function) => f.threshold_column,
     )
+end
+
+# Function barrier for the floe's ψ-s curve; see `_add_shape_difference!`.
+function _add_psi_s_correlation!(candidates::AbstractDataFrame, psi1)
+    rfloe(p2) = round(normalized_cross_correlation(psi1, p2); digits=3)
+    return transform!(candidates, [:psi] => ByRow(rfloe) => :psi_s_correlation)
 end
 
 """
@@ -245,32 +264,24 @@ the candidates. Writes `:boundary_shape_difference`,
 `:scaled_boundary_shape_difference` is not among [`MinimumWeightMatchingFunction`](@ref)'s
 default `columns`.
 """
-@kwdef struct BoundaryShapeDifferenceThresholdFilter <: AbstractFloeFilterFunction
-    area_variable = :area
-    boundary_column = :boundary
-    metric = boundary_modified_hausdorff
-    threshold_column = :boundary_shape_difference_test
+@kwdef struct BoundaryShapeDifferenceThresholdFilter{M,F} <: AbstractFloeFilterFunction
+    area_variable::Symbol = :area
+    boundary_column::Symbol = :boundary
+    metric::M = boundary_modified_hausdorff
+    threshold_column::Symbol = :boundary_shape_difference_test
     # No default. ShapeDifferenceThresholdFilter's bounds (0.47 -> 0.31) were calibrated
     # against count_symdiff / area, a dimensionless ratio of pixel areas; the score here is
     # a distance in PIXELS, so they are wrong in units, not only in scale. Bounds in pixels,
     # area-dependent via PiecewiseLinearThresholdFunction, need to be estimated on tracked
     # data. Until then the filter is excluded from default_filter.
-    threshold_function
+    threshold_function::F
 end
 
 function (f::BoundaryShapeDifferenceThresholdFilter)(
     floe::DataFrameRow, candidates::DataFrame, _::Val{:raw}
 )
-    reference = floe[f.boundary_column]
-    function bsd(boundary, orientation)
-        return boundary_shape_difference(
-            reference, floe.orientation, boundary, orientation; metric=f.metric
-        )
-    end
-
-    transform!(
-        candidates,
-        [f.boundary_column, :orientation] => ByRow(bsd) => :boundary_shape_difference,
+    _add_boundary_shape_difference!(
+        candidates, f.boundary_column, floe[f.boundary_column], floe.orientation, f.metric
     )
 
     # No division by :area here. The mask filter scales because count_symdiff returns a
@@ -287,6 +298,21 @@ function (f::BoundaryShapeDifferenceThresholdFilter)(
         candidates,
         [f.area_variable, :scaled_boundary_shape_difference] =>
             ByRow(f.threshold_function) => f.threshold_column,
+    )
+end
+
+# Function barrier for the floe's boundary and orientation; see `_add_shape_difference!`.
+function _add_boundary_shape_difference!(
+    candidates::DataFrame, boundary_column::Symbol, reference, orientation1, metric::M
+) where {M} # `where` forces specialization on a function-valued `metric`
+    function bsd(boundary, orientation)
+        return boundary_shape_difference(
+            reference, orientation1, boundary, orientation; metric
+        )
+    end
+    return transform!(
+        candidates,
+        [boundary_column, :orientation] => ByRow(bsd) => :boundary_shape_difference,
     )
 end
 

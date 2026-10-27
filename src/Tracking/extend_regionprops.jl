@@ -106,7 +106,8 @@ Shared by [`add_boundary!`](@ref) and `buildψs(::AbstractArray)` so the two can
 apart.
 """
 function _traced_boundary(mask; reduc_factor::Int64=2)
-    contours = bwtraceboundary(mask)
+    # bwtraceboundary returns Vector{CartesianIndex} (no dimension), which is not concrete
+    contours = [convert(Vector{CartesianIndex{2}}, c) for c in bwtraceboundary(mask)]
     outline = argmax(_contour_perimeter.(contours))
     if length(contours) > 1
         @warn "mask has $(length(contours)) contours;" *
