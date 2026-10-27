@@ -1,6 +1,6 @@
 import Images:
     RGB, float64, Gray, entropy, red, green, blue, adjust_histogram, AdaptiveEqualization
-import ..ImageUtils: to_uint8, apply_to_channels
+import ..ImageUtils: to_uint8, apply_to_channels, @tilewise
 
 """
     get_rgb_channels(img)
@@ -12,7 +12,7 @@ Get the RBC (Red, Blue, and Green) channels of an image.
 
 # Returns
 An m x n x 3 array the Red, Blue, and Green channels of the input image.
- 
+
 """
 function get_rgb_channels(img)
     # TODO: might be able to use channelview instead
@@ -74,33 +74,38 @@ function conditional_histeq(
     white_fraction_threshold::Real=0.4,
 )
 
-    # Apply Perona-Malik diffusion to each channel of true color image 
+    # Apply Perona-Malik diffusion to each channel of true color image
     # using the default inverse quadratic flux coefficient function
     pmd = PeronaMalikDiffusion(0.1, 0.1, 5, "exponential")
     true_color_diffused = nonlinear_diffusion(float64.(true_color_image), pmd)
 
     rgbchannels = get_rgb_channels(true_color_diffused)
 
-    # For each tile, compute the entropy in the false color tile, and the fraction of white and black pixels
-    for tile in tiles
-        clouds_tile = clouds_red[tile...]
-        tile_entropy = entropy(clouds_tile)
-        whitefraction = sum(clouds_tile .> white_threshold) / length(clouds_tile)
+    equalize(rgb, clouds) = _conditional_histeq_tile(
+        rgb,
+        clouds;
+        entropy_threshold=entropy_threshold,
+        white_threshold=white_threshold,
+        white_fraction_threshold=white_fraction_threshold,
+    )
+    return @tilewise tiles equalize($rgbchannels, $clouds_red) into = rgbchannels
+end
 
-        # If the entropy is above a threshold, and the fraction of white pixels is above a threshold, then apply histogram equalization to the tiles of each channel of the true color image. Otherwise, keep the original tiles.
-        if tile_entropy > entropy_threshold && whitefraction > white_fraction_threshold
-            for i in 1:3
-                eqhist =
-                    adjust_histogram(
-                        rgbchannels[:, :, i][tile...] / 255.0,
-                        ContrastLimitedAdaptiveHistogramEqualization(; clip=2.0),
-                    ) .* 255
-                @view(rgbchannels[:, :, i])[tile...] .= eqhist
-            end
-        end
-    end
+"""
+    _conditional_histeq_tile(rgb, clouds; entropy_threshold, white_threshold, white_fraction_threshold)
 
-    return rgbchannels
+Equalize each channel of the `h×w×3` tile `rgb` with contrast-limited adaptive histogram
+equalization if the false color tile `clouds` has entropy above `entropy_threshold` and a fraction
+of pixels above `white_threshold` greater than `white_fraction_threshold`. Otherwise return `rgb`.
+"""
+function _conditional_histeq_tile(
+    rgb, clouds; entropy_threshold, white_threshold, white_fraction_threshold
+)
+    whitefraction = sum(clouds .> white_threshold) / length(clouds)
+    (entropy(clouds) > entropy_threshold && whitefraction > white_fraction_threshold) ||
+        return rgb
+    clahe = ContrastLimitedAdaptiveHistogramEqualization(; clip=2.0)
+    return stack(adjust_histogram(rgb[:, :, i] / 255.0, clahe) .* 255 for i in 1:3)
 end
 
 """
