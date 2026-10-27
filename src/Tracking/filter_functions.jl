@@ -280,16 +280,8 @@ end
 function (f::BoundaryShapeDifferenceThresholdFilter)(
     floe::DataFrameRow, candidates::DataFrame, _::Val{:raw}
 )
-    reference = floe[f.boundary_column]
-    function bsd(boundary, orientation)
-        return boundary_shape_difference(
-            reference, floe.orientation, boundary, orientation; metric=f.metric
-        )
-    end
-
-    transform!(
-        candidates,
-        [f.boundary_column, :orientation] => ByRow(bsd) => :boundary_shape_difference,
+    _add_boundary_shape_difference!(
+        candidates, f.boundary_column, floe[f.boundary_column], floe.orientation, f.metric
     )
 
     # No division by :area here. The mask filter scales because count_symdiff returns a
@@ -306,6 +298,21 @@ function (f::BoundaryShapeDifferenceThresholdFilter)(
         candidates,
         [f.area_variable, :scaled_boundary_shape_difference] =>
             ByRow(f.threshold_function) => f.threshold_column,
+    )
+end
+
+# Function barrier for the floe's boundary and orientation; see `_add_shape_difference!`.
+function _add_boundary_shape_difference!(
+    candidates::DataFrame, boundary_column::Symbol, reference, orientation1, metric::M
+) where {M} # `where` forces specialization on a function-valued `metric`
+    function bsd(boundary, orientation)
+        return boundary_shape_difference(
+            reference, orientation1, boundary, orientation; metric
+        )
+    end
+    return transform!(
+        candidates,
+        [boundary_column, :orientation] => ByRow(bsd) => :boundary_shape_difference,
     )
 end
 
