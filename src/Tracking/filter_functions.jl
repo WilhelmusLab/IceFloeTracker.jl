@@ -42,13 +42,13 @@ Passing `Val{:raw}` as the third argument will forgo the subsetting step so that
 - `threshold_column` = :time_distance_test
 - `scaling_function`: Function producing a number (e.g., max expected distance) for scaling the distances. This quantify is used in the matching function as an error metric.
 """
-@kwdef struct DistanceThresholdFilter <: AbstractFloeFilterFunction
-    time_column = :Δt
-    dist_column = :Δx
-    scaled_dist_column = :scaled_distance
-    threshold_function = LinearTimeDistanceFunction()
-    threshold_column = :time_distance_test
-    scaling_function = dt -> maximum_linear_distance(dt; umax=1.5, eps=250)
+@kwdef struct DistanceThresholdFilter{F,S} <: AbstractFloeFilterFunction
+    time_column::Symbol = :Δt
+    dist_column::Symbol = :Δx
+    scaled_dist_column::Symbol = :scaled_distance
+    threshold_function::F = LinearTimeDistanceFunction()
+    threshold_column::Symbol = :time_distance_test
+    scaling_function::S = dt -> maximum_linear_distance(dt; umax=1.5, eps=250)
 end
 
 function (f::DistanceThresholdFilter)(
