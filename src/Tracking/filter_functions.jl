@@ -190,10 +190,10 @@ Compute the ψ-s correlation between a floe and a dataframe of candidate floes. 
 ψ-s correlation ``\\rho``,  ψ-s correlation score (1 - ``\\rho``), and the result of the threshold function
 to the columns of `candidates`.
 """
-@kwdef struct PsiSCorrelationThresholdFilter <: AbstractFloeFilterFunction
-    area_variable = :area
-    threshold_column = :psi_s_correlation_test
-    threshold_function = PiecewiseLinearThresholdFunction(100, 800, 0.14, 0.1)
+@kwdef struct PsiSCorrelationThresholdFilter{F} <: AbstractFloeFilterFunction
+    area_variable::Symbol = :area
+    threshold_column::Symbol = :psi_s_correlation_test
+    threshold_function::F = PiecewiseLinearThresholdFunction(100, 800, 0.14, 0.1)
 end
 
 #TODO: Add option to include the confidence intervals with the normalized cross correlation tests.
