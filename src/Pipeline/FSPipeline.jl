@@ -84,10 +84,10 @@ unsharp_mask_params = (radius=50, amount=0.3, threshold=0.01)
     small blocks results in noisy images and poor performance. With larger blocks, a higher clipping parameter can help.
 
 """
-@kwdef struct Preprocess <: IceFloePreprocessingAlgorithm
-    diffusion_algorithm = diffusion_algorithm
-    adapthisteq_params = adapthisteq_params
-    unsharp_mask_params = unsharp_mask_params
+@kwdef struct Preprocess{DA,AH,UM} <: IceFloePreprocessingAlgorithm
+    diffusion_algorithm::DA = diffusion_algorithm
+    adapthisteq_params::AH = adapthisteq_params
+    unsharp_mask_params::UM = unsharp_mask_params
 end
 
 function (p::Preprocess)(
