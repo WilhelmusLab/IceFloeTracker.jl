@@ -8,8 +8,8 @@ Function to identify a best matching between pairs of ice floes in the DataFrame
 `columns` variable is instantiated by the first functor call and is used to select a list of columns in `candidate_pairs`
 to sum. The result of the sum is the weight assigned to each pairing. Then, a best set of unique pairs is found by
 carrying out two grouped minimizations: first grouping by the first floe, identified by the `head_uuid` column, and
-finding the floe with the smallest weight, then grouping by the second floe, identified by the `uuid` column, and again 
-finding the floe with the smallest weight. Finally, we apply a consistency check such that only pairs that exist in both 
+finding the floe with the smallest weight, then grouping by the second floe, identified by the `uuid` column, and again
+finding the floe with the smallest weight. Finally, we apply a consistency check such that only pairs that exist in both
 the forward and backward grouped minimizations are identified as likely true matches.
 
 ## Arguments:
@@ -45,26 +45,26 @@ function (f::MinimumWeightMatchingFunction)(candidate_pairs::DataFrame)
     candidate_pairs[!, :w] = sum.(eachrow(candidate_pairs[:, f.columns]))
 
     # Forward: f -> {g}, find minimum dx over set {g}
-    matches_fwd = combine(
-        sdf -> sdf[argmin(sdf.w), :], groupby(candidate_pairs, :head_uuid)
-    )
-    matches_fwd = combine(sdf -> sdf[argmin(sdf.w), :], groupby(candidate_pairs, :uuid))
+    matches_fwd = combine(_min_weight_row, groupby(candidate_pairs, :head_uuid))
+    matches_fwd = combine(_min_weight_row, groupby(candidate_pairs, :uuid))
 
     # Backward: {f} <- g, find minimum dx over {f}
-    matches_bwd = combine(sdf -> sdf[argmin(sdf.w), :], groupby(candidate_pairs, :uuid))
-    matches_bwd = combine(
-        sdf -> sdf[argmin(sdf.w), :], groupby(candidate_pairs, :head_uuid)
-    )
+    matches_bwd = combine(_min_weight_row, groupby(candidate_pairs, :uuid))
+    matches_bwd = combine(_min_weight_row, groupby(candidate_pairs, :head_uuid))
 
     return innerjoin(
         matches_fwd[:, [:head_uuid, :uuid]], matches_bwd; on=[:head_uuid, :uuid]
     )
 end
 
+# Row of `sdf` with the smallest weight `w`. The `w` column is untyped, so assert the index
+# type to keep the row lookup statically dispatched.
+_min_weight_row(sdf) = sdf[argmin(sdf.w)::Int, :]
+
 # TODO: Set up a GetNearest matching function
 
 # TODO: Use the commented-out code below to construct a MostMinimumEverythingMatchingFunction
-# that uses the prior method for finding a best match. 
+# that uses the prior method for finding a best match.
 
 # """
 #     find_floe_matches(
@@ -123,7 +123,7 @@ end
 #         nrow(matches_involving_floe2_df) == 0 && continue
 #         best_match = matches_involving_floe2_df[1, :]
 #         measures_df = DataFrame(matches_involving_floe2_df.measures)
-#         best_match_idx = getidxmostminimumeverything(measures_df) # 
+#         best_match_idx = getidxmostminimumeverything(measures_df) #
 #         best_match = matches_involving_floe2_df[best_match_idx, :]
 #         push!(
 #             best_matches,
