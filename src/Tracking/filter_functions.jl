@@ -73,10 +73,19 @@ using a pixel resolution `r` with units meters/pixel. The floe and candidates mu
 have rows `row_centroid` and `col_centroid`.
 """
 function euclidean_distance(floe, candidates; r=250)
-    return sqrt.(
-        (floe.row_centroid .- candidates.row_centroid) .^ 2 .+
-        (floe.col_centroid .- candidates.col_centroid) .^ 2,
-    ) * r
+    # Function barrier: the centroid columns are untyped, so read them once and compute
+    # in a method that specializes on their types.
+    return _euclidean_distance(
+        floe.row_centroid,
+        floe.col_centroid,
+        candidates.row_centroid,
+        candidates.col_centroid,
+        r,
+    )
+end
+
+function _euclidean_distance(row1, col1, rows2, cols2, r)
+    return sqrt.((row1 .- rows2) .^ 2 .+ (col1 .- cols2) .^ 2) * r
 end
 
 # TODO: Add geodetic distance function
