@@ -1,5 +1,6 @@
 @testitem "TGRS2026 Helper Functions - Extended Region Properties" begin
     import Images: RGB, component_indices
+    import DataFrames: Not
 
     circle_labels = Int64.(collect(strel_disk(50)))
     circle_img = RGB.(circle_labels)
@@ -17,6 +18,19 @@
     @test "mean_boundary_reflectance" ∈ names(props_df)
     @test props_df[1, :mean_boundary_reflectance] ≈ RGB(0, 0, 1.)
 
+
+    # In-place logistic regression
+    # Use dummy variables - just testing that the filter adds a probability column. 
+    # TODO: Add example case with known floe properties
+    props_df[:, :b1_mean_boundary_contrast] .= 1.
+    props_df[:, :b1_mean_reflectance] .= 1.
+    props_df[:, :b7_mean_reflectance] .= 1.
+    props_df[:, :length_scale] .= 1.
+    props_df[:, :solidity] .= 1
+    TGRS2026.LogisticRegressionFilter!(props_df)
+    @test "probability" ∈ names(props_df)
+
+
     # Extended regionprops with blank image
     blank_labels = zeros(Int64, size(circle_img))
     blank_image = RGB.(blank_labels)
@@ -26,6 +40,7 @@
         Dict("land"=>blank_labels, "cloud"=>blank_labels)
         )
     @test "probability" ∈ names(df)
+
 
     # Other things to test:
     # compare objects
