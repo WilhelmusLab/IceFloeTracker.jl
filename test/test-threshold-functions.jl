@@ -105,4 +105,9 @@ end
     ps_test(floe, candidates, Val(:raw))
     @test "psi_s_correlation" ∈ names(candidates)
     @test candidates[1, :psi_s_correlation] == 0.914
+
+    # Also accepts a SubDataFrame of the candidates
+    candidates_view = view(props[1][2:end, :], :, :)
+    ps_test(floe, candidates_view, Val(:raw))
+    @test candidates_view[1, :psi_s_correlation] == 0.914
 end
