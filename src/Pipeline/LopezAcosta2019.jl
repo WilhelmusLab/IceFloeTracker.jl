@@ -196,18 +196,13 @@ A segmented image with candidate sea ice floes.
 Note: This algorithm is under active development and the API will change in a future release.
 """
 @kwdef struct Segment{
-    SE<:AbstractMatrix{Bool},CM,DA,AH,UM,KM,CS,SB,SF,FS,EL
+    SE<:AbstractMatrix{Bool},CM,TS,MO,PA,KM,CS,SB,SF,FS,EL
 } <: IceFloeSegmentationAlgorithm
     coastal_buffer_structuring_element::SE = make_landmask_se()
     cloud_mask_algorithm::CM = LopezAcostaCloudMask()
-    diffusion_algorithm::DA = PeronaMalikDiffusion(0.1, 0.1, 5, "exponential")
-    adapthisteq_algorithm::AH = ContrastLimitedAdaptiveHistogramEqualization(;
-        nbins=256,
-        rblocks=8, # matlab default is 8 CP
-        cblocks=8, # matlab default is 8 CP
-        clip=3.2, # calibrated against matlab adjusthisteq
-    )
-    unsharp_mask_params::UM = (smoothing_param=10, intensity=2) # calibrated against matlab imsharpen
+    tile_settings::TS = (; rblocks=1, cblocks=1)
+    min_ocean_pixels::MO = 300
+    preprocessing_algorithm::PA = Preprocess()
     kmeans_params::KM = (k=4, maxiter=50, random_seed=45)
     cluster_selection_algorithm::CS = IceDetectionLopezAcosta2019()
     segB_params::SB = (
