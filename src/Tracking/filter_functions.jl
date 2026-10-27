@@ -157,13 +157,7 @@ end
 function (f::ShapeDifferenceThresholdFilter)(
     floe::DataFrameRow, candidates::DataFrame, _::Val{:raw}
 )
-    function sd(mask, orientation)
-        return round(
-            shape_difference(floe.mask, floe.orientation, mask, orientation); digits=3
-        )
-    end
-
-    transform!(candidates, [:mask, :orientation] => ByRow(sd) => :shape_difference)
+    _add_shape_difference!(candidates, floe.mask, floe.orientation)
 
     candidates[!, :scaled_shape_difference] =
         candidates[!, :shape_difference] ./ candidates[!, f.scale_by]
@@ -176,6 +170,16 @@ function (f::ShapeDifferenceThresholdFilter)(
         [f.area_variable, :scaled_shape_difference] =>
             ByRow(f.threshold_function) => f.threshold_column,
     )
+end
+
+# Function barrier: `floe` comes from untyped DataFrame columns, so its mask and orientation
+# are read once by the caller and this method specializes on their types, instead of the
+# per-candidate closure re-reading them from the row.
+function _add_shape_difference!(candidates::DataFrame, mask1, orientation1)
+    function sd(mask, orientation)
+        return round(shape_difference(mask1, orientation1, mask, orientation); digits=3)
+    end
+    return transform!(candidates, [:mask, :orientation] => ByRow(sd) => :shape_difference)
 end
 
 """
