@@ -112,17 +112,17 @@ ice_masks_params = (
 
 prelim_icemask_params = (radius=10, amount=2, factor=0.5)
 
-@kwdef struct Segment <: IceFloeSegmentationAlgorithm
-    tile_settings = (; rblocks=2, cblocks=2)
-    cloud_mask_thresholds = cloud_mask_thresholds
-    adapthisteq_params = adapthisteq_params
-    adjust_gamma_params = adjust_gamma_params
-    structuring_elements = structuring_elements
-    unsharp_mask_params = unsharp_mask_params
-    ice_masks_params = ice_masks_params
-    prelim_icemask_params = prelim_icemask_params
-    brighten_factor = brighten_factor
-    coastal_buffer_structuring_element = centered(strel_box((51, 51)))
+@kwdef struct Segment{TS,CT,AP,AG,SE,UM,IM,PI,BF,CB} <: IceFloeSegmentationAlgorithm
+    tile_settings::TS = (; rblocks=2, cblocks=2)
+    cloud_mask_thresholds::CT = cloud_mask_thresholds
+    adapthisteq_params::AP = adapthisteq_params
+    adjust_gamma_params::AG = adjust_gamma_params
+    structuring_elements::SE = structuring_elements
+    unsharp_mask_params::UM = unsharp_mask_params
+    ice_masks_params::IM = ice_masks_params
+    prelim_icemask_params::PI = prelim_icemask_params
+    brighten_factor::BF = brighten_factor
+    coastal_buffer_structuring_element::CB = centered(strel_box((51, 51)))
 end
 
 function (p::Segment)(
