@@ -55,12 +55,16 @@
     #   0       1       2       3
     extra_vertices = [0.5 0.0; 1.0 0.0; 1.5 0.0; 2.0 0.0; 2.5 0.0] # along bottom
     Ldense = vcat(
-        L[1:1, :], extra_vertices, L[2:5, :], [0.5 3.0], L[6:end, :] # one more on the top
+        L[1:1, :],
+        extra_vertices,
+        L[2:5, :],
+        [0.5 3.0],
+        L[6:end, :], # one more on the top
     )
 
     # the same closed curve, traced from a different starting vertex
     function retrace(b, k)
-        pts = b[1:(end-1), :]
+        pts = b[1:(end - 1), :]
         rolled = circshift(pts, (-k, 0))
         return vcat(rolled, rolled[1:1, :])
     end
@@ -83,13 +87,17 @@ end
     @test boundary_symmetric_distance(square10, square10) == 0
 end
 
-@testitem "boundary_symmetric_distance: units are pixels, exact on lattice-aligned shapes" setup = [SymDiffSetup] begin
+@testitem "boundary_symmetric_distance: units are pixels, exact on lattice-aligned shapes" setup = [
+    SymDiffSetup
+] begin
     # 10x10 against 10x14, both centered: the extra 4 rows are 40 pixels, all of
     # them in the symmetric difference. Same integer count_symdiff would return.
     @test boundary_symmetric_distance(square10, rect10x14) == 40
 end
 
-@testitem "boundary_symmetric_distance: edges on pixel centers, either orientation" setup = [SymDiffSetup] begin
+@testitem "boundary_symmetric_distance: edges on pixel centers, either orientation" setup = [
+    SymDiffSetup
+] begin
     using IceFloeTracker.Tracking: _rasterize
     # odd sides put the centered edges on pixel centers; each pixel must be counted once,
     # whichever axis the edge lies along. Once centered, the pixel centers fall on the
@@ -122,11 +130,14 @@ end
 end
 
 @testitem "boundary_symmetric_distance: symmetric" setup = [SymDiffSetup] begin
-    @test boundary_symmetric_distance(L, rect10x14) == boundary_symmetric_distance(rect10x14, L)
+    @test boundary_symmetric_distance(L, rect10x14) ==
+        boundary_symmetric_distance(rect10x14, L)
 end
 
-@testitem "boundary_symmetric_distance: invariant to trace starting point" setup = [SymDiffSetup] begin
-    for k in 1:(size(L, 1)-2)
+@testitem "boundary_symmetric_distance: invariant to trace starting point" setup = [
+    SymDiffSetup
+] begin
+    for k in 1:(size(L, 1) - 2)
         @test boundary_symmetric_distance(L, retrace(L, k)) == 0
     end
 end
@@ -137,7 +148,9 @@ end
     @test boundary_symmetric_distance(square10, square10 .+ [0.5 0.25]) == 0
 end
 
-@testitem "boundary_symmetric_distance: invariant to large translations" setup = [SymDiffSetup] begin
+@testitem "boundary_symmetric_distance: invariant to large translations" setup = [
+    SymDiffSetup
+] begin
     # far from the origin, e.g. scene rather than bounding-box coordinates: the centroid
     # must stay accurate to well within the snapping tolerance
     rect3x5 = [0.0 0.0; 3.0 0.0; 3.0 5.0; 0.0 5.0; 0.0 0.0]
@@ -146,7 +159,9 @@ end
     end
 end
 
-@testitem "boundary_symmetric_distance: invariant to translation, edges on pixel centers" setup = [SymDiffSetup] begin
+@testitem "boundary_symmetric_distance: invariant to translation, edges on pixel centers" setup = [
+    SymDiffSetup
+] begin
     # Once centered, these shapes have edges through pixel centers: vertical and
     # horizontal ones for the rectangle, slanted ones for the diamond. A translation
     # leaves centroid round-off of order 1e-16, which must not move a pixel center
@@ -179,18 +194,22 @@ end
     end
 end
 
-@testitem "_polygon_centroid is the area centroid, not the vertex mean" setup = [SymDiffSetup] begin
+@testitem "_polygon_centroid is the area centroid, not the vertex mean" setup = [
+    SymDiffSetup
+] begin
     # L = 3x1 bar (centroid (1.5, 0.5)) + 1x2 bar (centroid (0.5, 2.0)), area 5:
     # (1.1, 1.1). The mean of its six vertices is (4/3, 4/3).
     @test all(isapprox.(_polygon_centroid(L), [1.1, 1.1]; atol=1e-12))
     @test all(isapprox.(_polygon_centroid(reverse(L; dims=1)), [1.1, 1.1]; atol=1e-12))
-    @test all(isapprox.(_polygon_centroid(L[1:(end-1), :]), [1.1, 1.1]; atol=1e-12))
+    @test all(isapprox.(_polygon_centroid(L[1:(end - 1), :]), [1.1, 1.1]; atol=1e-12))
 end
 
-@testitem "_polygon_centroid is invariant to extra vertices along an edge" setup = [SymDiffSetup] begin
+@testitem "_polygon_centroid is invariant to extra vertices along an edge" setup = [
+    SymDiffSetup
+] begin
     using StatsBase: mean
     # Check vertex mean moves
-    @test !isapprox(vec(mean(Ldense[1:(end-1), :]; dims=1)), [1.1, 1.1]; atol=1e-3)
+    @test !isapprox(vec(mean(Ldense[1:(end - 1), :]; dims=1)), [1.1, 1.1]; atol=1e-3)
 
     # Check that the area centroid remains the same
     @test all(isapprox.(_polygon_centroid(Ldense), _polygon_centroid(L); atol=1e-12))
@@ -206,14 +225,16 @@ end
     # Resampled boundaries close only to ~1e-13, so the closing row must not be
     # counted as an extra vertex.
     L10 = 10 .* L
-    for k in 0:(size(L10, 1)-2)
+    for k in 0:(size(L10, 1) - 2)
         r = retrace(L10, k)
         r[end, :] .+= 1e-13
         @test boundary_symmetric_distance(L10, r) == 0
     end
 end
 
-@testitem "boundary_symmetric_distance: closure up to round-off, edges on pixel centers" setup = [SymDiffSetup] begin
+@testitem "boundary_symmetric_distance: closure up to round-off, edges on pixel centers" setup = [
+    SymDiffSetup
+] begin
     # with edges on pixel centers, a closing row off by 1e-13 must still be dropped, or
     # it shifts the centroid enough to move an edge across a column of pixel centers
     rect3x5 = [0.0 0.0; 3.0 0.0; 3.0 5.0; 0.0 5.0; 0.0 0.0]
@@ -235,7 +256,9 @@ end
     @test boundary_symmetric_distance(L, rotate_boundary(L, deg2rad(45.0))) > 0
 end
 
-@testitem "boundary_symmetric_distance agrees with the mask path on a traced floe" setup = [SymDiffSetup] begin
+@testitem "boundary_symmetric_distance agrees with the mask path on a traced floe" setup = [
+    SymDiffSetup
+] begin
     # The reason this metric exists. The boundary is a resampled B-spline through
     # the pixel ring, so its rasterization is not the mask bit for bit; the
     # agreement asked of it is within a one-pixel band along the perimeter.
@@ -252,7 +275,9 @@ end
     @test bnd_value > 0                         # a 30° rotation is not a no-op
 end
 
-@testitem "register_boundary with boundary_symmetric_distance returns register's angle" setup = [SymDiffSetup] begin
+@testitem "register_boundary with boundary_symmetric_distance returns register's angle" setup = [
+    SymDiffSetup
+] begin
     # Exact comparability, as the reviewer put it: the same objective the mask
     # path minimizes, evaluated on the curve. Both paths must then land on the
     # same grid angle for the same physical rotation, sign included.

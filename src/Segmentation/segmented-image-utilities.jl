@@ -254,7 +254,7 @@ end
 Return an array like `s` where each pixel has the mean intensity or color of its segment.
 """
 function segment_mean_map(s::SegmentedImage)
-    map(i -> (segment_mean(s, i)), labels_map(s))
+    return map(i -> (segment_mean(s, i)), labels_map(s))
 end
 
 """
@@ -298,15 +298,16 @@ function remove_low_contrast_segments!(labels, ref_img, min_contrast, max_fill_s
     areas = component_lengths(labels)
     indices = component_indices(labels)
     for L in unique(labels)
-        (L != 0) && (areas[L] < max_fill_size) && begin
-            contrast = maximum(ref_img[indices[L]]) - minimum(ref_img[indices[L]])
-            (contrast < min_contrast) && begin
-                labels[indices[L]] .= 0
+        (L != 0) &&
+            (areas[L] < max_fill_size) &&
+            begin
+                contrast = maximum(ref_img[indices[L]]) - minimum(ref_img[indices[L]])
+                (contrast < min_contrast) && begin
+                    labels[indices[L]] .= 0
+                end
             end
-        end
     end
 end
-
 
 """
     get_relevant_set(df1, df2, labels1, labels2)
@@ -370,7 +371,6 @@ function get_relevant_set(df1, df2, labels1, labels2)
         if length(relevant_set_labels) > 0
             push!(relevant_set, floe.label => relevant_set_labels)
         end
-    
     end
     return relevant_set
 end

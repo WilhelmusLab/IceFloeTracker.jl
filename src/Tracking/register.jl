@@ -217,10 +217,10 @@ function _rasterize(P::AbstractMatrix{Float64}, lo::NTuple{2,Int}, hi::NTuple{2,
             end
         end
         sort!(crossings)
-        for p in 1:2:(length(crossings)-1)
+        for p in 1:2:(length(crossings) - 1)
             # pixel centers in [left, right), half-open like the scan-line test in y
             i_lo = max(1, ceil(Int, crossings[p] - lo[1] + 0.5))
-            i_hi = min(nx, ceil(Int, crossings[p+1] - lo[1] + 0.5) - 1)
+            i_hi = min(nx, ceil(Int, crossings[p + 1] - lo[1] + 0.5) - 1)
             for i in i_lo:i_hi
                 img[i, j] = true
             end
@@ -323,7 +323,7 @@ ensuring that no angles are repeated (since -π rad == π rad),
 and ordered so that smaller absolute angles which are positive will be returned in the event of a tie in the shape difference.
 """
 register_default_angles_rad = sort(
-    reverse(range(; start=(-π), stop=π, step=π / 36)[1:(end-1)]); by=abs
+    reverse(range(; start=(-π), stop=π, step=π / 36)[1:(end - 1)]); by=abs
 )
 """
 Coarse registration angles for [`register_coarse_to_fine`](@ref): -π/6 to π/6 rad (±30º) in steps
@@ -455,7 +455,7 @@ function mismatch(
     fixed::AbstractArray, moving::AbstractArray, mxrot::Real=180, step::Real=5
 )
     test_angles = sort(
-        reverse(range(; start=(-mxrot), stop=mxrot, step=step)[1:(end-1)]); by=abs
+        reverse(range(; start=(-mxrot), stop=mxrot, step=step)[1:(end - 1)]); by=abs
     )
     return mismatch(fixed, moving, test_angles)
 end
@@ -483,7 +483,7 @@ end
 function _normalize_contour(boundary::AbstractMatrix)
     n = size(boundary, 1)
     is_closed = n > 1 && isapprox(@view(boundary[1, :]), @view(boundary[n, :]); atol=1e-9)
-    return is_closed ? @view(boundary[1:(end-1), :]) : boundary
+    return is_closed ? @view(boundary[1:(end - 1), :]) : boundary
 end
 
 """
@@ -502,7 +502,11 @@ function rotate_boundary(
     angle::Real;
     center::Union{Nothing,Tuple{Float64,Float64}}=nothing,
 )
-    center = isnothing(center) ? vec(mean(_normalize_contour(boundary); dims=1)) : collect(center)
+    center = if isnothing(center)
+        vec(mean(_normalize_contour(boundary); dims=1))
+    else
+        collect(center)
+    end
     rot_matrix = _get_rotation_matrix(angle)
     boundary_centered = boundary .- center'
     rotated_centered = boundary_centered * transpose(rot_matrix)
@@ -612,7 +616,9 @@ function shape_difference_rotation_boundary(
         (;
             angle=Float64(angle),
             shape_difference=Float64(
-                _boundary_shape_difference_at(boundary_reference, boundary_target, angle, metric)
+                _boundary_shape_difference_at(
+                    boundary_reference, boundary_target, angle, metric
+                ),
             ),
         ) for angle in test_angles
     ]

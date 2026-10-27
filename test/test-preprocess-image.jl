@@ -59,14 +59,12 @@
     ## Equalization
     image_equalized = apply_to_channels(
         matlab_diffused,
-        r -> adjust_histogram(r,
-                ContrastLimitedAdaptiveHistogramEqualization(;
-                nbins=256,
-                rblocks=8, 
-                cblocks=8, 
-                clip=3.2,
-            )
-        )
+        r -> adjust_histogram(
+            r,
+            ContrastLimitedAdaptiveHistogramEqualization(;
+                nbins=256, rblocks=8, cblocks=8, clip=3.2
+            ),
+        ),
     )
     @test (@test_approx_eq_sigma_eps image_equalized matlab_equalized [0, 0] 0.051) ===
         nothing

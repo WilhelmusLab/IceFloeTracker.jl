@@ -5,18 +5,14 @@
 
     case = first(filter(c -> (c.case_number == 6 && c.satellite == "terra"), dataset))
     preprocess = LopezAcosta2019.Preprocess(process_color=:color)
-    segments = LopezAcosta2019.Segment(
-        preprocessing_algorithm=preprocess
-    )(
+    segments = LopezAcosta2019.Segment(preprocessing_algorithm=preprocess)(
         RGB.(modis_truecolor(case)), RGB.(modis_falsecolor(case)), modis_landmask(case)
     )
     expected_segment_count = validated_floe_properties(case) |> DataFrame |> nrow
     @test length(segments.segment_labels) ≈ expected_segment_count rtol = 0.7
 
     preprocess = LopezAcosta2019.Preprocess(process_color=:grayscale)
-    segments = LopezAcosta2019.Segment(
-        preprocessing_algorithm=preprocess
-    )(
+    segments = LopezAcosta2019.Segment(preprocessing_algorithm=preprocess)(
         RGB.(modis_truecolor(case)), RGB.(modis_falsecolor(case)), modis_landmask(case)
     )
     expected_segment_count = validated_floe_properties(case) |> DataFrame |> nrow
@@ -35,7 +31,9 @@ end
         LopezAcosta2019.ColorProcessing(),
         LopezAcosta2019.GrayscaleProcessing(),
     )
-        preprocessed = LopezAcosta2019.Preprocess(; process_color=mode)(truecolor_image, landmask)
+        preprocessed = LopezAcosta2019.Preprocess(; process_color=mode)(
+            truecolor_image, landmask
+        )
         @test size(preprocessed) == size(truecolor_image)
         @test eltype(preprocessed) <: Gray
     end
@@ -55,8 +53,8 @@ end
         filter(
             c -> (
                 c.visible_floes == "yes" &&
-                    c.cloud_fraction_manual < 0.5 &&
-                    c.case_number % 3 == 0
+                c.cloud_fraction_manual < 0.5 &&
+                c.case_number % 3 == 0
             ),
             dataset,
         ),

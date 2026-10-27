@@ -68,8 +68,7 @@ import ..Segmentation:
     IceDetectionThresholdMODIS721,
     segment_mean_map
 
-import ..Pipeline:
-    IceFloeSegmentationAlgorithm
+import ..Pipeline: IceFloeSegmentationAlgorithm
 
 import ..Tracking: FloeTracker, FilterFunction, MinimumWeightMatchingFunction
 import Dates: Day
