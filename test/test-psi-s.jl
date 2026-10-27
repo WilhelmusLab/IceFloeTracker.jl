@@ -41,3 +41,17 @@
     # Test 6: Alternate method of make_psi_s with 2-column matrix as input
     @test buildψs(x, y) == buildψs([x y])
 end
+
+@testitem "buildψs from a mask matches buildψs from its boundary" begin
+    using IceFloeTracker.Tracking: add_boundary!, buildψs
+    using DataFrames: DataFrame
+
+    mask = falses(12, 12)
+    mask[3:9, 2:10] .= true
+    mask[7:9, 7:10] .= false   # L-shape, so ψ is not trivially constant
+
+    props = DataFrame(; mask=[mask])
+    add_boundary!(props)
+
+    @test buildψs(mask) == buildψs(props.boundary[1])[1]
+end
