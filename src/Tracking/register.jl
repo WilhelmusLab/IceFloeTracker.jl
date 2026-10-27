@@ -322,7 +322,7 @@ The default registration angles are evenly distributed in steps of π/36 rad (5�
 ensuring that no angles are repeated (since -π rad == π rad),
 and ordered so that smaller absolute angles which are positive will be returned in the event of a tie in the shape difference.
 """
-register_default_angles_rad = sort(
+const register_default_angles_rad = sort(
     reverse(range(; start=(-π), stop=π, step=π / 36)[1:(end-1)]); by=abs
 )
 """
@@ -330,7 +330,7 @@ Coarse registration angles for [`register_coarse_to_fine`](@ref): -π/6 to π/6 
 of π/36 rad (5º), ordered like `register_default_angles_rad` so that smaller absolute angles which are
 positive are returned in the event of a tie in the shape difference.
 """
-register_coarse_angles_rad = sort(
+const register_coarse_angles_rad = sort(
     range(; start=(-π / 6), stop=π / 6, step=π / 36); by=θ -> (abs(θ), -θ)
 )
 
@@ -734,9 +734,9 @@ struct would be rejected at the call site.
   [`boundary_modified_hausdorff`](@ref) (default) and [`boundary_hausdorff`](@ref).
 - `boundary_column`: column the `DataFrameRow` method reads.
 """
-@kwdef struct BoundaryRegistration <: Function
-    metric = boundary_modified_hausdorff
-    boundary_column = :boundary
+@kwdef struct BoundaryRegistration{M} <: Function
+    metric::M = boundary_modified_hausdorff
+    boundary_column::Symbol = :boundary
 end
 
 function (reg::BoundaryRegistration)(
