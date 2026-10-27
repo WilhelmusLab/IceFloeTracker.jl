@@ -256,7 +256,7 @@ remove_small_segments!(labels, min_size) = _remove_segments!(labels, <, min_size
     remove_large_segments!(labels, min_size)
 
 Set labels in a labeled matrix to 0 if the size is greater than `max_size`.
-    
+
 """
 remove_large_segments!(labels, max_size) = _remove_segments!(labels, >, max_size)
 
@@ -299,6 +299,26 @@ to object g in G is defined by
 
 """
 function get_relevant_set(df1, df2, labels1, labels2)
+    return _get_relevant_set(_floe_columns(df1), _floe_columns(df2), labels1, labels2)
+end
+
+# Typed copies of the regionprops columns `get_relevant_set` reads, so its per-floe
+# loops don't go through untyped DataFrame columns. Column access is untyped, so
+# each conversion still dispatches, but only once per column.
+function _floe_columns(df)
+    return (;
+        label=Vector{Int64}(df.label)::Vector{Int64},
+        area=Vector{Float64}(df.area)::Vector{Float64},
+        min_row=Vector{Int64}(df.min_row)::Vector{Int64},
+        max_row=Vector{Int64}(df.max_row)::Vector{Int64},
+        min_col=Vector{Int64}(df.min_col)::Vector{Int64},
+        max_col=Vector{Int64}(df.max_col)::Vector{Int64},
+        row_centroid=Vector{Float64}(df.row_centroid)::Vector{Float64},
+        col_centroid=Vector{Float64}(df.col_centroid)::Vector{Float64},
+    )
+end
+
+function _get_relevant_set(g, s, labels1, labels2)
     relevant_set = Dict{Int64,Vector{Int64}}()
     for i in eachindex(g.label)
         g_label = g.label[i]
