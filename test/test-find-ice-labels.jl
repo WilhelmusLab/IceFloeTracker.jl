@@ -4,6 +4,8 @@
 
     @testset "IceDetectionThresholdMODIS721" begin
         f = IceDetectionThresholdMODIS721(0.02, 0.92, 0.92)
+        # Mixed threshold types are promoted to a common type
+        @test IceDetectionThresholdMODIS721(0.02, 0.92, 92//100) === f
 
         # Input colors
         water = ARGB{N0f8}(3 / 255, 13 / 255, 29 / 255, 1)
@@ -178,6 +180,9 @@
         @test pk == 0.859375
         @test get_ice_peaks(edges, counts; possible_ice_threshold=0.3f0) == pk
         @test get_ice_peaks(edges, counts; possible_ice_threshold=big"0.3") == pk
+
+        # The peak finder throws a BoundsError on this histogram
+        @test get_ice_peaks(0.0:0.25:0.75, [3, 3, 2, 0]; window_size=3) == Inf
     end
 end
 
