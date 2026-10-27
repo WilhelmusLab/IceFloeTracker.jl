@@ -189,19 +189,18 @@ floe_merging_params = (
     - `floe_splitting_params`: Parameters for the `dist_morph_split` floe splitting algorithm
     - `floe_filtering_params`: Parameters for post-segmentation cleanup
 """
-@kwdef struct Segment <: IceFloeSegmentationAlgorithm
-    coastal_buffer_structuring_element::AbstractMatrix{Bool} =
-        coastal_buffer_structuring_element
-    cloud_mask_algorithm = cloud_mask_algorithm
-    preprocessing_algorithm = preprocessing_algorithm
-    tile_size_pixels = tile_size_pixels
-    min_tile_ice_pixel_count = min_tile_ice_pixel_count
-    preliminary_ice_mask = preliminary_ice_mask
-    kmeans_params = kmeans_params
-    adaptive_params = adaptive_params
-    cleanup_binary_params = cleanup_binary_params
-    floe_splitting_params = floe_splitting_params
-    floe_filtering_params = floe_filtering_params
+@kwdef struct Segment{SE<:AbstractMatrix{Bool},CM,PA,TS,MI,PM,KM,AP,CP,SP,FP} <: IceFloeSegmentationAlgorithm
+    coastal_buffer_structuring_element::SE = coastal_buffer_structuring_element
+    cloud_mask_algorithm::CM = cloud_mask_algorithm
+    preprocessing_algorithm::PA = preprocessing_algorithm
+    tile_size_pixels::TS = tile_size_pixels
+    min_tile_ice_pixel_count::MI = min_tile_ice_pixel_count
+    preliminary_ice_mask::PM = preliminary_ice_mask
+    kmeans_params::KM = kmeans_params
+    adaptive_params::AP = adaptive_params
+    cleanup_binary_params::CP = cleanup_binary_params
+    floe_splitting_params::SP = floe_splitting_params
+    floe_filtering_params::FP = floe_filtering_params
 end
 
 function (s::Segment)(
