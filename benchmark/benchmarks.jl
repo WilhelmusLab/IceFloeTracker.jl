@@ -42,7 +42,16 @@ const PROPS_MASKED = let df = copy(PROPS)
     df
 end
 
-SUITE["extend_regionprops"]["add_ψs!"] = @benchmarkable add_ψs!(df) setup = (
+# add_ψs! reads :boundary on revisions that have add_boundary!; time mask -> ψ-s on both
+# so the two revisions do the same work.
+# TODO: drop the else branch once main has add_boundary!.
+const mask_to_ψs! = if isdefined(IceFloeTracker, :add_boundary!)
+    df -> (add_boundary!(df); add_ψs!(df))
+else
+    add_ψs!
+end
+
+SUITE["extend_regionprops"]["add_ψs!"] = @benchmarkable mask_to_ψs!(df) setup = (
     df = copy($PROPS_MASKED)
 )
 

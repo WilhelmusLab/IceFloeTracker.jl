@@ -8,9 +8,11 @@ _add_suffix(s::String, df::DataFrame) = rename((x) -> String(x) * s, df)
 Calculate the angle and rotation rate between observations in DataFrame `df`.
 
 - `id_column` is the column with the ID of the image over several observations, e.g. the floe ID.
-- `image_column` is the column with the image to compare, 
+- `image_column` is the column with the image to compare,
 - `time_column` is the column with the timepoint of each observation,
 - `registration_function` is used to compare the two images and should return an angle.
+  The default, [`register`](@ref), searches the full circle in 5º steps.
+  [`register_coarse_to_fine`](@ref) searches within about ±30º to a precision of 1º.
 
 Each row is compared to each other row in `df` which are:
   - for the same object ID,
@@ -21,6 +23,28 @@ Returns a DataFrame with one row for each comparison,
 with the angle `theta_rad`, time difference `dt_sec` and rotation rate `omega_rad_per_sec`,
 and all the other values from `df`
 with the column name suffix `1` for the first observation and `2` for the second.
+
+## Registering boundary curves instead of masks
+
+`image_column` need not hold rasterized masks. To register resampled boundary curves
+(see `add_boundary!`), point it at the boundary column and pass the matching
+registration function:
+
+```julia
+get_rotation_measurements(df; id_column=:id, image_column=:boundary,
+                          time_column=:time, registration_function=register_boundary)
+```
+
+`register_boundary` rotates curves by exact linear algebra rather than resampling pixels,
+so it is not subject to the interpolation error that makes the mask path disagree between
+coarse and fine angle grids. To choose a shape metric other than the default, wrap it in a
+[`BoundaryRegistration`](@ref) -- this keyword is invoked as
+`registration_function(image1, image2)` with no way to thread a metric through, so it has
+to be fixed at construction:
+
+```julia
+registration_function=BoundaryRegistration(; metric=boundary_hausdorff)
+```
 """
 function get_rotation_measurements(
     df::DataFrame;
@@ -46,7 +70,8 @@ function get_rotation_measurements(
         return df
     end
 
-    results = []
+    # collect the comparison pairs first so the registrations can run in parallel
+    pairs = Tuple{DataFrameRow,DataFrameRow}[]
     for measurement in eachrow(df)
         filtered_df = subset(
             df,
@@ -57,10 +82,17 @@ function get_rotation_measurements(
                 (t) -> Date((measurement[time_column]) - Day(lookback_days)) <= Date(t)
             ), # only look at floes from the previous day or later
         )
-        new_results = get_rotation_measurements(
-            measurement, filtered_df; image_column, time_column, registration_function
+        for other_measurement in eachrow(filtered_df)
+            push!(pairs, (other_measurement, measurement))
+        end
+    end
+
+    results = Vector{Any}(undef, length(pairs))
+    Threads.@threads for i in eachindex(pairs)
+        row1, row2 = pairs[i]
+        results[i] = get_rotation_measurements(
+            row1, row2; image_column, time_column, registration_function
         )
-        append!(results, new_results)
     end
 
     # Flatten the results into a single dataframe
@@ -85,7 +117,7 @@ end
 Calculate the angle and rotation rate between a measurement in a DataFrameRow `measurement`,
 and all the other rows in DataFrame `df`.
 
-- `image_column` is the column with the image to compare, 
+- `image_column` is the column with the image to compare,
 - `time_column` is the column with the timepoint of each observation,
 - `registration_function` is used to compare the two images and should return an angle.
 Returns a vector of `NamedTuple`s with one entry for each comparison,
