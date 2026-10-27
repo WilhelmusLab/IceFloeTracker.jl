@@ -109,11 +109,12 @@ the candidates to only those which evaluate as `true` using the `threshold_funct
 Including the dummy variable `Var(:raw)` returns the candidates dataframe with the test
 results without subsetting it.
 """
-@kwdef struct RelativeErrorThresholdFilter <: AbstractFloeFilterFunction
-    variable
-    area_variable = :area
-    threshold_column = :relative_error_test
-    threshold_function = PiecewiseLinearThresholdFunction()
+@kwdef struct RelativeErrorThresholdFilter{V<:Union{Symbol,AbstractString},F} <:
+              AbstractFloeFilterFunction
+    variable::V
+    area_variable::Symbol = :area
+    threshold_column::Symbol = :relative_error_test
+    threshold_function::F = PiecewiseLinearThresholdFunction()
 end
 
 function (f::RelativeErrorThresholdFilter)(
@@ -146,11 +147,11 @@ The result is divided by `scale_by` (e.g., area or perimeter), then the scaled v
 the `threshold_function` which is assumed to depend on area.
 
 """
-@kwdef struct ShapeDifferenceThresholdFilter <: AbstractFloeFilterFunction
-    area_variable = :area
-    scale_by = :area
-    threshold_column = :shape_difference_test
-    threshold_function = PiecewiseLinearThresholdFunction(100, 800, 0.5, 0.3)
+@kwdef struct ShapeDifferenceThresholdFilter{F} <: AbstractFloeFilterFunction
+    area_variable::Symbol = :area
+    scale_by::Symbol = :area
+    threshold_column::Symbol = :shape_difference_test
+    threshold_function::F = PiecewiseLinearThresholdFunction(100, 800, 0.5, 0.3)
 end
 
 function (f::ShapeDifferenceThresholdFilter)(
