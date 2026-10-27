@@ -170,8 +170,8 @@ function (p::Segment)(
 
     begin
         @debug "Step 4: Remove clouds from equalized_gray"
-        masks = [f.(ref_img_cloudmasked) .== 0 for f in [red, green, blue]]
-        combo_mask = reduce((a, b) -> a .& b, masks)
+        is_black(c) = iszero(red(c)) & iszero(green(c)) & iszero(blue(c))
+        combo_mask = is_black.(ref_img_cloudmasked)
         equalized_gray[combo_mask] .= 0
     end
 
