@@ -280,8 +280,9 @@ function (f::BoundaryShapeDifferenceThresholdFilter)(
     # TODO: not used for matching. The score is in pixels, while
     # MinimumWeightMatchingFunction sums its columns unweighted and the others are
     # dimensionless; whether and how to include it in the ranking is untested.
-    candidates[!, :scaled_boundary_shape_difference] =
-        candidates[!, :boundary_shape_difference]
+    candidates[!, :scaled_boundary_shape_difference] = candidates[
+        !, :boundary_shape_difference
+    ]
 
     return transform!(
         candidates,
@@ -360,7 +361,7 @@ applying 7 individual [`AbstractFloeFilterFunctions`](@ref) in sequence:
 Filters in step 2 use the [`PiecewiseLinearThresholdFunction`](@ref) for thresholds, while Filter 1 uses a [`LinearTimeDistanceFunction`](@ref).
 """ # TODO: Add reference to cal-val paper when ready.
 function FilterFunction()
-    ChainedFilterFunction(; filters=default_filter)
+    return ChainedFilterFunction(; filters=default_filter)
 end
 
 """

@@ -6,7 +6,7 @@ import OffsetArrays: centered
 """
     make_landmask_se()
 
-Create a non-regular octagonal structuring element for dilating the landmask. 
+Create a non-regular octagonal structuring element for dilating the landmask.
 This structuring element matches a polygonal ``disk'' element used in the MATLAB IFT prototype.
 """
 function make_landmask_se()
@@ -52,11 +52,11 @@ end
     create_coastal_buffer_mask(landmask_binary; fill_min_pixels, fill_max_pixels)
     create_coastal_buffer_mask(landmask_binary, structuring_element; fill_min_pixels, fill_max_pixels)
 
-Dilate the binary landmask using the provided structuring element, and fill holes in the dilated image. 
-In the input landmask, land = 1 and ocean = 0. 
+Dilate the binary landmask using the provided structuring element, and fill holes in the dilated image.
+In the input landmask, land = 1 and ocean = 0.
 In the resulting mask, land and coastal buffer = 1, ocean = 0.
 
-The dilation will create a buffer around the land, which can help mask complex coastal features. 
+The dilation will create a buffer around the land, which can help mask complex coastal features.
 The hole filling step can help fill in small gaps in the dilated mask that may occur due to the dilation process.
 """
 function create_coastal_buffer_mask(
