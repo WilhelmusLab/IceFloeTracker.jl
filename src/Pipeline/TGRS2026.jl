@@ -490,8 +490,8 @@ function LogisticRegressionFilter!(df;
     colnames = [x for x in keys(coefs)]
     b = [x for x in values(coefs)]
     df_ = copy(df)
-    df_[:, :intercept] = 1
-    df[:, :probability] = 1 ./ (1 .+ exp.(-Matrix(df_[:, colnames]) * b))
+    df_[:, :intercept] .= 1
+    df[:, :probability] .= 1 ./ (1 .+ exp.(-Matrix(df_[:, colnames]) * b))
 end
 
 """
