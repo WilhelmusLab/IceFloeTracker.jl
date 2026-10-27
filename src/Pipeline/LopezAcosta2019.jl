@@ -106,7 +106,7 @@ small blocks results in noisy images and poor performance. With larger blocks, a
 - `adapthisteq_algorithm`: Any histogram adjustment algorithm which can be passed to `adjust_histogram()`.
 - `unsharp_mask_params`: Parameters for [`unsharp_mask`](@ref)
 - `process_color`: Either `:color` or `:grayscale`. If `:grayscale`, then convert to grayscale prior to running the other algorithms.
-     Otherwise, conversion to grayscale occurs after nonlinear diffusion and image histogram adjustment. 
+     Otherwise, conversion to grayscale occurs after nonlinear diffusion and image histogram adjustment.
 
 """
 @kwdef struct Preprocess <: IceFloePreprocessingAlgorithm
@@ -195,15 +195,22 @@ A segmented image with candidate sea ice floes.
 
 Note: This algorithm is under active development and the API will change in a future release.
 """
-@kwdef struct Segment <: IceFloeSegmentationAlgorithm
-    coastal_buffer_structuring_element::AbstractMatrix{Bool} = make_landmask_se()
-    cloud_mask_algorithm = LopezAcostaCloudMask()
-    tile_settings=(; rblocks=1, cblocks=1)
-    min_ocean_pixels=300
-    preprocessing_algorithm = Preprocess()
-    kmeans_params = (k=4, maxiter=50, random_seed=45)
-    cluster_selection_algorithm = IceDetectionLopezAcosta2019()
-    segB_params = (
+@kwdef struct Segment{
+    SE<:AbstractMatrix{Bool},CM,DA,AH,UM,KM,CS,SB,SF,FS,EL
+} <: IceFloeSegmentationAlgorithm
+    coastal_buffer_structuring_element::SE = make_landmask_se()
+    cloud_mask_algorithm::CM = LopezAcostaCloudMask()
+    diffusion_algorithm::DA = PeronaMalikDiffusion(0.1, 0.1, 5, "exponential")
+    adapthisteq_algorithm::AH = ContrastLimitedAdaptiveHistogramEqualization(;
+        nbins=256,
+        rblocks=8, # matlab default is 8 CP
+        cblocks=8, # matlab default is 8 CP
+        clip=3.2, # calibrated against matlab adjusthisteq
+    )
+    unsharp_mask_params::UM = (smoothing_param=10, intensity=2) # calibrated against matlab imsharpen
+    kmeans_params::KM = (k=4, maxiter=50, random_seed=45)
+    cluster_selection_algorithm::CS = IceDetectionLopezAcosta2019()
+    segB_params::SB = (
         isolation_threshold=0.4,
         brightening_factor=0.3,
         gamma_factor=10,
@@ -211,11 +218,11 @@ Note: This algorithm is under active development and the API will change in a fu
         fill_range_max=1,
         alpha_level=0.5,
     )
-    segF_params = (k=3, se=strel_diamond((5, 5)), min_area_opening=20)
-    floe_splitting_settings = (
+    segF_params::SF = (k=3, se=strel_diamond((5, 5)), min_area_opening=20)
+    floe_splitting_settings::FS = (
         max_fill_area=1, min_area_opening=20, opening_strel=strel_octagon(3)
     )
-    expand_labels_by=0 # Expanding labels can help improve the results but isn't in the original
+    expand_labels_by::EL = 0 # Expanding labels can help improve the results but isn't in the original
 end
 
 function (p::Segment)(
@@ -248,7 +255,7 @@ function (p::Segment)(
     cwidth = round(Int64, m/p.tile_settings.cblocks)
     tiles = get_tiles(truecolor_image, (rwidth, cwidth))
     tiles = filter(
-        t -> sum(landmask[t...] .== 0) > p.min_ocean_pixels, tiles 
+        t -> sum(landmask[t...] .== 0) > p.min_ocean_pixels, tiles
     )
 
     @info "Preprocessing truecolor image"
@@ -658,9 +665,9 @@ hmin transform on the inverse distance transform for marker selection.
 - `tiles` (optional): Tiled iterator.
 """
 function watershed_ice_floes(
-        binary_floe_mask::BitMatrix, tiles;
-        hmin_depth=2,
-    )::BitMatrix
+    binary_floe_mask::BitMatrix, tiles;
+    hmin_depth=2,
+)::BitMatrix
     features = feature_transform(.!binary_floe_mask)
     distances = 1 .- distance_transform(features)
     markers = (hmin_transform(distances, hmin_depth) .> 0) |> label_components
@@ -673,9 +680,9 @@ function watershed_ice_floes(
 end
 
 function watershed_ice_floes(
-        binary_floe_mask::BitMatrix;
-        hmin_depth=2,
-    )::BitMatrix
+    binary_floe_mask::BitMatrix;
+    hmin_depth=2,
+)::BitMatrix
     features = feature_transform(.!binary_floe_mask)
     distances = 1 .- distance_transform(features)
     markers = (hmin_transform(distances, hmin_depth) .> 0) |> label_components
