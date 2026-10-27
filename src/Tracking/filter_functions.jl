@@ -350,6 +350,7 @@ const default_filter = [
     psi_s_correlation_filter,
 ]
 
+# TODO: Add reference to cal-val paper when ready.
 """FilterFunction()
 
 The default filter function for the FloeTracker. The function is an instance of [`ChainedFilterFunction`](@ref),
@@ -359,7 +360,7 @@ applying 7 individual [`AbstractFloeFilterFunctions`](@ref) in sequence:
     3. `ShapeDifferenceThresholdFilter`
     4. `PsiSCorrelationThresholdFilter`
 Filters in step 2 use the [`PiecewiseLinearThresholdFunction`](@ref) for thresholds, while Filter 1 uses a [`LinearTimeDistanceFunction`](@ref).
-""" # TODO: Add reference to cal-val paper when ready.
+"""
 function FilterFunction()
     return ChainedFilterFunction(; filters=default_filter)
 end
