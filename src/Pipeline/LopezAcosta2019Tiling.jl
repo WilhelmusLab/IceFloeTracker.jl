@@ -576,7 +576,7 @@ function IceDetectionLopezAcosta2019Tiling(;
     )
 end
 
-function Track(
+function Track(;
     filter_function=FilterFunction(),
     matching_function=MinimumWeightMatchingFunction(),
     minimum_area=100,
