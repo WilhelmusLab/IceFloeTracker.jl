@@ -69,17 +69,6 @@ import ..Pipeline: IceFloeSegmentationAlgorithm
 abstract type IceFloePreprocessingAlgorithm end
 abstract type IceFloeClassificationAlgorithm end
 
-# Preprocess() Default Parameters
-diffusion_algorithm = PeronaMalikDiffusion(; λ=0.1, K=0.1, niters=7, g="exponential")
-adapthisteq_algorithm = ContrastLimitedAdaptiveHistogramEqualization(;
-            nbins=255,
-            rblocks=4,
-            cblocks=4,
-            clip=1,
-        )
-# TODO: Set up unsharp filtering as an algorithm
-unsharp_mask_params = (radius=50, amount=0.3, threshold=0.01)
-
 """
    Preprocess(
         diffusion_algorithm = PeronaMalikDiffusion(λ=0.1, K=0.1, niters=5, g="exponential")
@@ -98,9 +87,14 @@ unsharp_mask_params = (radius=50, amount=0.3, threshold=0.01)
 
 """
 @kwdef struct Preprocess <: IceFloePreprocessingAlgorithm
-    diffusion_algorithm = diffusion_algorithm
-    adapthisteq_algorithm = adapthisteq_algorithm
-    unsharp_mask_params = unsharp_mask_params
+    diffusion_algorithm = PeronaMalikDiffusion(; λ=0.1, K=0.1, niters=7, g="exponential")
+    adapthisteq_algorithm = ContrastLimitedAdaptiveHistogramEqualization(;
+            nbins=255,
+            rblocks=4,
+            cblocks=4,
+            clip=1,
+        )
+    unsharp_mask_params = (radius=50, amount=0.3, threshold=0.01)
 end
 
 function (p::Preprocess)(
@@ -163,6 +157,8 @@ end
         τ₂=0.2,
         τ₇=0.2,
         key=Dict("land"=>0, "water"=>1, "ice"=>2, "cloud"=>3)
+        cloud_mask_algorithm=Watkins2026CloudMask(band_2_threshold=c.τ₂, band_7_threshold=c.τ₇)
+        ice_mask_algorithm=IceDetectionBrightnessMidpoint(; minimum_reflectance=c.τ₁)
     )
     Classify()(false_color_image, mask)
 
@@ -170,7 +166,8 @@ Classifies an image into land, water, ice, and cloud using the Watkins2026 cloud
 and the IceDetectionBrightnessMidpoint algorithm. The parameter τ₁ is the brightness 
 minimum for the ice detection algorithm, while the τ₂ and τ₇ parameters are used in the 
 cloud mask algorithm. The `key` specifies the integers used to encode the classification
-for the returned label map.
+for the returned label map. `cloud_mask_algorithm` and `ice_mask_algorithm` should be functions
+accepting MODIS false color and Band 1 grayscale reflectance, respectively.
 
 """
 @kwdef struct Classify <: IceFloeClassificationAlgorithm
@@ -178,14 +175,14 @@ for the returned label map.
     τ₂=0.2
     τ₇=0.2
     key=Dict("land"=>0, "water"=>1, "ice"=>2, "cloud"=>3)
+    cloud_mask_algorithm=Watkins2026CloudMask(band_2_threshold=τ₂, band_7_threshold=τ₇)
+    ice_mask_algorithm=IceDetectionBrightnessMidpoint(; minimum_reflectance=τ₁)
 end
 
 function (c::IceFloeClassificationAlgorithm)(false_color_image, land_mask)::Matrix{Int64}
-    cloud_mask_algorithm=Watkins2026CloudMask(band_2_threshold=c.τ₂, band_7_threshold=c.τ₇)
-    ice_mask_algorithm=IceDetectionBrightnessMidpoint(; minimum_reflectance=c.τ₁)
     fc_masked = apply_landmask(false_color_image, land_mask)
-    clouds = cloud_mask_algorithm(fc_masked)
-    ice = Gray.(blue.(apply_landmask(fc_masked, clouds))) |> ice_mask_algorithm
+    clouds = c.cloud_mask_algorithm(fc_masked)
+    ice = Gray.(blue.(apply_landmask(fc_masked, clouds))) |> c.ice_mask_algorithm
 
     classified_image = ones(Int64, size(false_color_image)) .* c.key["water"]
     classified_image[land_mask .> 0] .= c.key["land"]
@@ -195,29 +192,28 @@ function (c::IceFloeClassificationAlgorithm)(false_color_image, land_mask)::Matr
     return classified_image
 end
 
-#### Segmentation parameters
-# Potential changes: add a Binarize() method to be applied to the preprocessed image.
-tile_settings = (; rblocks=1, cblocks=1)
-min_ocean_pixel_count = 5000
-preprocessing_algorithm = Preprocess()
-classification_algorithm = Classify()
-floe_splitting_params = [
-    (max_hole_fill=1500, max_depth=15, max_depth_ratio=0.7, max_expand=2, opening_strel=strel_diamond((3, 3))),
-    (max_hole_fill=1500, max_depth=15, max_depth_ratio=0.7, max_expand=2, opening_strel=strel_box((3, 3))),
-]
-floe_merging_params = (
-    minimum_floe_size=64,
-    maximum_floe_size=90e3,
-    tol_area_fraction=0.05,
-    comp_properties=[
-        :label, :area, :row_centroid, :col_centroid,
-        :max_col, :max_row, :min_col, :min_row, :probability
-    ],
-    minimum_probability=0,
-)
-
 """
-    Segment()
+    Segment(
+        coastal_buffer_structuring_element::AbstractMatrix{Bool} = strel_disk(25)
+        tile_settings = (; rblocks=1, cblocks=1)
+        min_ocean_pixel_count = 5000
+        preprocessing_algorithm = TGRS2026.Preprocess()
+        classification_algorithm = TGRS2026.Classify()
+        floe_splitting_params = [
+            (max_hole_fill=1500, max_depth=15, max_depth_ratio=0.7, max_expand=2, opening_strel=strel_diamond((3, 3))),
+            (max_hole_fill=1500, max_depth=15, max_depth_ratio=0.7, max_expand=2, opening_strel=strel_box((3, 3))),
+        ]
+        floe_merging_params = (
+            minimum_floe_size=64,
+            maximum_floe_size=90e3,
+            tol_area_fraction=0.05,
+            comp_properties=[
+                :label, :area, :row_centroid, :col_centroid,
+                :max_col, :max_row, :min_col, :min_row, :probability
+            ],
+            minimum_probability=0,
+        )
+    )
 
 Function to identify pixel types and detect ice floes from MODIS true color and false color imagery.
 The coastal buffer mask is used to identify potential landfast ice segments. 
@@ -235,13 +231,24 @@ The coastal buffer mask is used to identify potential landfast ice segments.
 """
 @kwdef struct Segment <: IceFloeSegmentationAlgorithm
     coastal_buffer_structuring_element::AbstractMatrix{Bool} = strel_disk(25)
-    tile_settings = tile_settings
-    min_ocean_pixel_count = min_ocean_pixel_count
-    preprocessing_algorithm = preprocessing_algorithm
-    classification_algorithm = classification_algorithm
-    floe_splitting_algorithm = dist_morph_split # TODO: add binarization algorithm
-    floe_splitting_params = floe_splitting_params
-    floe_merging_params = floe_merging_params
+    tile_settings = (; rblocks=1, cblocks=1)
+    min_ocean_pixel_count = 5000
+    preprocessing_algorithm = Preprocess()
+    classification_algorithm = Classify()
+    floe_splitting_params = [
+        (max_hole_fill=1500, max_depth=15, max_depth_ratio=0.7, max_expand=2, opening_strel=strel_diamond((3, 3))),
+        (max_hole_fill=1500, max_depth=15, max_depth_ratio=0.7, max_expand=2, opening_strel=strel_box((3, 3))),
+    ]
+    floe_merging_params = (
+        minimum_floe_size=64,
+        maximum_floe_size=90e3,
+        tol_area_fraction=0.05,
+        comp_properties=[
+            :label, :area, :row_centroid, :col_centroid,
+            :max_col, :max_row, :min_col, :min_row, :probability
+        ],
+        minimum_probability=0,
+    )
 end
 
 function (s::Segment)(
