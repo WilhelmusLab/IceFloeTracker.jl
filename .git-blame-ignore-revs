@@ -1,0 +1,8 @@
+# Commits that only reformat code; `git blame` skips them.
+# GitHub reads this file automatically. Locally, run once per clone:
+#   git config blame.ignoreRevsFile .git-blame-ignore-revs
+# Entries are full 40-character hashes, one per line.
+
+# Format with Blue (JuliaFormatter 2.14.0)
+39a643fc9947b84fff65610162d9575dfed56397
+1ef653f1174311327c41c1cb943ee3e3a5fdfd2c

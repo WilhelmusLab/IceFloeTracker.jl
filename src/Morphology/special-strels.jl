@@ -12,12 +12,13 @@ function _generate_se!(se)
     return nothing
 end
 
+# dmw: should this have the same offset indexing we get in ImageMorphology?
 """
     se_octagon(r)
 
 Construct an octagonal structuring element with radius r.
 
-""" # dmw: should this have the same offset indexing we get in ImageMorphology?
+"""
 function strel_octagon(r)
     se = [sum(c.I) <= r/2 + 2 for c in CartesianIndices((2*r + 1, 2*r + 1))]
     _generate_se!(se)

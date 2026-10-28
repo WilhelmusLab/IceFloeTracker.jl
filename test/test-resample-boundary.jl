@@ -49,13 +49,12 @@ end
             0 0 0
             0 1 0
             0 0 0
-        ],
-        "two pixels" => [
+        ], "two pixels" => [
             0 0 0
             0 1 0
             0 1 0
             0 0 0
-        ],
+        ]
     ]
     @testset "$name" for (name, A) in fixtures
         boundary = bwtraceboundary(A; P0=(2, 2))

@@ -36,7 +36,9 @@ floe boundary. To add boundaries see [`add_boundary!`](@ref), which must run fir
 """
 function add_ψs!(props_df::DataFrame)
     hasproperty(props_df, :boundary) || throw(
-        ArgumentError("`add_ψs!` requires a `:boundary` column; call `add_boundary!` first"),
+        ArgumentError(
+            "`add_ψs!` requires a `:boundary` column; call `add_boundary!` first"
+        ),
     )
     props_df.psi = map(boundary -> buildψs(boundary)[1], props_df.boundary)
     return nothing
