@@ -792,7 +792,7 @@ Track shapes across images using the LogLogQuadratic distance filter, the Chaine
 and the MinimumWeightMatchingFunction.
 
 """
-function Track(
+function Track(;
     filter_function=ChainedFilterFunction(; filters=FSFilterFunctions),
     matching_function=MinimumWeightMatchingFunction(;
         columns=FSMatchingColumns, weights=ones(7)

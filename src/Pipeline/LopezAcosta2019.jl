@@ -751,7 +751,7 @@ function morph_split_floes(
     return floes_opened
 end
 
-function Track(
+function Track(;
     filter_function=FilterFunction(),
     matching_function=MinimumWeightMatchingFunction(),
     minimum_area=100,
