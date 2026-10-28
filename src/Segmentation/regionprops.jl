@@ -13,7 +13,6 @@ import Images:
     strel_diamond,
     strel_box
 
-
 abstract type PerimeterEstimationAlgorithm <: Function end
 abstract type ConvexAreaEstimationAlgorithm <: Function end
 
@@ -282,10 +281,10 @@ function _boundary_type_counts(e)
     counts = zeros(Int, 49)
     # The zero padding puts the neighborhood of every pixel of the original mask
     # inside the array, so the classification needs no bounds tests of its own.
-    @inbounds for j in 2:(size(e, 2)-1), i in 2:(size(e, 1)-1)
+    @inbounds for j in 2:(size(e, 2) - 1), i in 2:(size(e, 1) - 1)
         e[i, j] || continue
-        edges = e[i-1, j] + e[i+1, j] + e[i, j-1] + e[i, j+1]
-        diagonals = e[i-1, j-1] + e[i-1, j+1] + e[i+1, j-1] + e[i+1, j+1]
+        edges = e[i - 1, j] + e[i + 1, j] + e[i, j - 1] + e[i, j + 1]
+        diagonals = e[i - 1, j - 1] + e[i - 1, j + 1] + e[i + 1, j - 1] + e[i + 1, j + 1]
         code = 1 + 2 * edges + 10 * diagonals
         counts[code] += 1
     end
@@ -385,7 +384,7 @@ function (f::PolygonConvexArea)(A, areas, bboxes, labels)
         ca = 0
         for j in 1:N
             x0, y0 = Tuple(chull[j])
-            x1, y1 = Tuple(chull[(j%N)+1])
+            x1, y1 = Tuple(chull[(j % N) + 1])
             ca += x0 * y1 - y0 * x1
         end
         ca *= 0.5
@@ -433,7 +432,7 @@ function _count_pixels_in_hull(mask::AbstractMatrix{Bool}, chull::Vector{<:Carte
             # (x0,y0) -> (x1,y1): consecutive hull vertices spanning one polygon
             # edge, wrapping around at N; coordinates are (row, col)
             x0, y0 = Tuple(chull[j])
-            x1, y1 = Tuple(chull[(j%N)+1])
+            x1, y1 = Tuple(chull[(j % N) + 1])
             # cross product of the edge vector with the pixel offset;
             # negative means the pixel is on the outside of this hull edge
             edge_cross_product = (yi - y0) * (x1 - x0) - (xi - x0) * (y1 - y0)
@@ -721,15 +720,17 @@ function regionprops(
     end
 
     :perimeter ∈ required_properties && begin
-        perimeter_masks = component_floes(
-            labels; labels=all_labels, boxes=bboxes_all, areas
-        )
+        perimeter_masks = component_floes(labels; labels=all_labels, boxes=bboxes_all, areas)
         floe_perims = component_perimeters(
             labels; algorithm=perimeter_algorithm, masks=perimeter_masks
         )
         push!(data, :perimeter => map(s -> floe_perims[s], img_labels))
         if :circularity ∈ properties
-            push!(data, :circularity => map(s -> 4 * π * areas[s] / floe_perims[s]^2, img_labels))
+            push!(
+                data,
+                :circularity =>
+                    map(s -> 4 * π * areas[s] / floe_perims[s]^2, img_labels),
+            )
         end
     end
 

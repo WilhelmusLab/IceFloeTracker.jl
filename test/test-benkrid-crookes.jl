@@ -39,7 +39,7 @@
     for s in shapes
         n, m = size(s)
         padded = falses(n + 4, m + 4)
-        padded[3:(n+2), 3:(m+2)] .= s
+        padded[3:(n + 2), 3:(m + 2)] .= s
         @test bc4(s) == bc4(padded)
         @test bc8(s) == bc8(padded)
     end

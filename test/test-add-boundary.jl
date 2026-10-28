@@ -195,9 +195,7 @@ end
     @test length(contours[1]) < length(contours[2])     # the trap this test guards
 
     props = DataFrame(; mask=[fragment_first])
-    @test_logs (:warn, r"contours") add_boundary!(
-        props; reduc_factor=1
-    )
+    @test_logs (:warn, r"contours") add_boundary!(props; reduc_factor=1)
     boundary = props.boundary[1]
     # the boundary is the floe's outline: as many points as the floe's contour,
     # and none of them inside the fragment's rows/cols
@@ -226,7 +224,6 @@ end
     using IceFloeTracker.Tracking: add_boundary!, bwtraceboundary, resample_boundary
     using DataFrames: DataFrame
 
-
     blob = falses(12, 12)
     blob[3:9, 4:10] .= true
     props = DataFrame(; mask=[blob])
@@ -247,9 +244,7 @@ end
     @test length(contours) == 2 && length(contours[1]) > length(contours[2])
 
     props = DataFrame(; mask=[largest_first])
-    @test_logs (:warn, r"contours") add_boundary!(
-        props; reduc_factor=1
-    )
+    @test_logs (:warn, r"contours") add_boundary!(props; reduc_factor=1)
     boundary = props.boundary[1]
     @test size(boundary, 1) == length(contours[1])
     @test all(boundary[:, 1] .<= 12.5) && all(boundary[:, 2] .<= 14.5)   # none in the fragment

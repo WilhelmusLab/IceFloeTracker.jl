@@ -18,7 +18,6 @@ import Images:
     mreconstruct,
     imfill
 
-
 abstract type AbstractCloudMaskAlgorithm end
 
 @kwdef struct LopezAcostaCloudMask <: AbstractCloudMaskAlgorithm
@@ -186,7 +185,6 @@ function convert_to_255_matrix(img)::Matrix{Int}
     return round.(Int, img_clamped * 255)
 end
 
-
 @kwdef struct Watkins2026CloudMask <: AbstractCloudMaskAlgorithm
     band_7_threshold::Float64 = 0.15
     band_2_threshold::Float64 = 0.34
@@ -222,23 +220,22 @@ julia> Gray.(cloud_mask)
 ```
 """
 function (f::Watkins2026CloudMask)(img::AbstractArray{<:Union{AbstractRGB,TransparentRGB}})
-
     b2 = green.(img)
     b7 = red.(img)
     init_mask = (b2 .> f.band_2_threshold) .&& (b7 .> f.band_7_threshold)
-    
+
     # end early if no pixels flagged
     !maximum(init_mask) && return init_mask
 
     # remove speckle
     markers = opening(init_mask, f.opening_strel)
     init_mask .= mreconstruct(dilate, markers, init_mask, strel_diamond((3, 3)))
-  
+
     # expand mask
     init_mask .= dilate(init_mask, f.dilation_strel)
 
     # label blank components for object-based methods (background == clouds)
-    labels = label_components(.!init_mask) 
+    labels = label_components(.!init_mask)
     remove_small_segments!(labels, f.min_hole_size)
     maximum(labels) .== 0 && return labels .== 0
 
@@ -247,7 +244,6 @@ function (f::Watkins2026CloudMask)(img::AbstractArray{<:Union{AbstractRGB,Transp
 
     return labels .== 0
 end
-
 
 """
     create_cloudmask(img, f::AbstractCloudMaskAlgorithm)

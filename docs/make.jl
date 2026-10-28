@@ -12,7 +12,7 @@ end
 
 function ensure_uvx_available()
     Sys.which("uvx") === nothing || return nothing
-    error(
+    return error(
         "uvx was not found on PATH. Install uv first (https://docs.astral.sh/uv/getting-started/installation/) and ensure ~/.local/bin is on PATH for the current shell session.",
     )
 end
