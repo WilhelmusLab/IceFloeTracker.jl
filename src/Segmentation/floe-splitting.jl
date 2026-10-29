@@ -13,6 +13,8 @@ import Images:
 import ..Morphology:
     strel_disk
 
+abstract type FloeSplittingAlgorithm end
+
 """
     dist_morph_split(
         binary_floes::BitMatrix;

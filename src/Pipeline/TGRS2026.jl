@@ -282,12 +282,19 @@ function (s::Segment)(
 
     @info "Detect Floes"
     # Alternatively: Vary the tile sizes and run multiple times
-    binarized_image = kmeans_binarization_multiclass(
+    # Question: can we make kmeans binarization work with binarize?
+    kmeans_binarized_image = kmeans_binarization_multiclass(
         preproc_gray, falsecolor_image, masks, filtered_tiles,
     )
+    # Cleanup image? Hole filling?
+
+    # adaptive_binarized_image = binarize(preproc_gray, s.binarization_algorithm)
+    adaptive_binarized_image = binarize(preproc_gray, AdaptiveThreshold(;window_size=399, percentage=0)) .> 0
+
     # Alternatively: Same settings, but multiple binarizations
     candidate_splits = [
-        dist_morph_split(binarized_image; pset...) for pset in s.floe_splitting_params
+        [dist_morph_split(kmeans_binarized_image; pset...) for pset in s.floe_splitting_params]...,
+        [dist_morph_split(adaptive_binarized_image; pset...) for pset in s.floe_splitting_params]...,
     ]
 
     @info "Joining segmentation results"
@@ -532,6 +539,50 @@ function add_mean_boundary_reflectance!(props_df, img, labels; radius=15)
     props_df.mean_boundary_reflectance = bdry_ref
 end
 
+"""
+    clean_binary_floes(binary_img, masks;
+        erosion_strel=strel_box((3,3)),
+        init_max_fill=100,
+        conditional_max_fill=500
+    )
+
+Fill holes in a binary mask. First, fill holes in the eroded floe shapes
+up to size `init_max_fill`. Then, fill holes up to `conditional_max_fill`
+if those holes are either "ice" or "cloud" in the corresponding `masks` dictionary.
+Finally, reset any filled holes that intersect with the boundary.
+
+"""
+function clean_binary_floes(
+    binary_img,
+    masks;
+    erosion_strel=strel_box((3, 3)),
+    init_max_fill=100,
+    conditional_max_fill=500,
+)
+    out = deepcopy(binary_img)
+    # 1. Shrink objects using the provided structuring element
+    eroded_img = erode(out, erosion_strel)
+
+    # 2. After shrinking, fill holes
+    filled = .!imfill(.!eroded_img, (0, init_max_fill)) # Test how permissive this is. Should we use imfill instead?
+
+    # 3. Identify filled holes which are part of the ice mask or the cloud mask
+    filled .= filled .&& (masks["ice"] .|| masks["cloud"])
+    filled .= .!imfill(.!filled, (0, conditional_max_fill))
+
+    # 4. Use morphological closing to further limit openings
+    filled .= closing(filled, erosion_strel)
+
+    # 5. Set any of these filled pixels to 1 in the output image.
+    out[filled .> 0] .= 1
+    opening!(out)
+
+    # 6. If the filled region intersects with a boundary, remove it
+    filled .= out .!= binary_img
+    out[filled .&& .! clearborder(filled)] .= 0
+
+    return out
+end
 
 """
     compare_objects(
@@ -714,7 +765,7 @@ function sequential_merge_floes(labeled_imgs, falsecolor_image, masks;
     minimum_probability=0.5,
 )
     n = length(labeled_imgs)
-    (n == 1) && return (labeled_imgs)
+    (n == 1) && return (labeled_imgs[1])
 
     # Initialize with the first image
     init_img = copy(labeled_imgs[1])
