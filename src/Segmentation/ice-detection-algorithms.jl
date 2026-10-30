@@ -1,7 +1,4 @@
-import ImageBinarization: 
-    AbstractImageBinarizationAlgorithm, 
-    binarize, 
-    AdaptiveThreshold
+import ImageBinarization: AbstractImageBinarizationAlgorithm, binarize, AdaptiveThreshold
 
 import Images:
     build_histogram,
@@ -18,15 +15,9 @@ import Images:
     alpha,
     alphacolor
 
-import Peaks: 
-    findmaxima, 
-    peakproms!, 
-    peakwidths!
+import Peaks: findmaxima, peakproms!, peakwidths!
 
-import DataFrames: 
-    DataFrame, 
-    sort, 
-    Not
+import DataFrames: DataFrame, sort, Not
 
 """
     get_ice_peaks(
@@ -286,9 +277,13 @@ binarize(g, a)
     nbins=128
 end
 
-function (f::IceDetectionBrightnessMidpoint)(out, gray_image::AbstractArray{<:Union{AbstractGray, TransparentGray}})
+function (f::IceDetectionBrightnessMidpoint)(
+    out, gray_image::AbstractArray{<:Union{AbstractGray,TransparentGray}}
+)
     alpha_binary = alpha.(alphacolor.(gray_image)) .> 0.5
-    edges, bincounts = build_histogram(gray_image .* alpha_binary, f.nbins; minval=0, maxval=1)
+    edges, bincounts = build_histogram(
+        gray_image .* alpha_binary, f.nbins; minval=0, maxval=1
+    )
     ice_peak = get_ice_peaks(
         edges,
         bincounts;
@@ -302,8 +297,10 @@ function (f::IceDetectionBrightnessMidpoint)(out, gray_image::AbstractArray{<:Un
     return out
 end
 
-function (f::IceDetectionBrightnessMidpoint)(gray_image::AbstractArray{<:Union{AbstractGray, TransparentGray}},
-     tiles::Vector{Tuple{UnitRange{Int64}, UnitRange{Int64}}})
+function (f::IceDetectionBrightnessMidpoint)(
+    gray_image::AbstractArray{<:Union{AbstractGray,TransparentGray}},
+    tiles::Vector{Tuple{UnitRange{Int64},UnitRange{Int64}}},
+)
     out = falses(size(gray_image))
     for tile in tiles
         out[tile...] .= f(gray_image[tile...])
@@ -311,12 +308,13 @@ function (f::IceDetectionBrightnessMidpoint)(gray_image::AbstractArray{<:Union{A
     return out
 end
 
-function (f::IceDetectionBrightnessMidpoint)(gray_image::AbstractArray{<:Union{AbstractGray, TransparentGray}},
-     tiles::Matrix{Tuple{UnitRange{Int64}, UnitRange{Int64}}})
+function (f::IceDetectionBrightnessMidpoint)(
+    gray_image::AbstractArray{<:Union{AbstractGray,TransparentGray}},
+    tiles::Matrix{Tuple{UnitRange{Int64},UnitRange{Int64}}},
+)
     out = falses(size(gray_image))
     for tile in tiles
         out[tile...] .= f(gray_image[tile...])
     end
     return out
 end
-

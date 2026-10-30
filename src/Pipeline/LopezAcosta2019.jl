@@ -13,13 +13,7 @@ import ..Filtering:
     unsharp_mask,
     ContrastLimitedAdaptiveHistogramEqualization
 
-import ..Morphology:
-    hbreak,
-    hbreak!,
-    branch,
-    bridge,
-    fill_holes,
-    strel_octagon
+import ..Morphology: hbreak, hbreak!, branch, bridge, fill_holes, strel_octagon
 
 import ..Preprocessing:
     make_landmask_se,
@@ -40,9 +34,7 @@ import ..Segmentation:
     segment_mean_map,
     view_seg
 
-import ..Pipeline:
-    IceFloeSegmentationAlgorithm,
-    IceFloePreprocessingAlgorithm
+import ..Pipeline: IceFloeSegmentationAlgorithm, IceFloePreprocessingAlgorithm
 
 import ..Tracking: FloeTracker, FilterFunction, MinimumWeightMatchingFunction
 import Dates: Day
@@ -64,7 +56,9 @@ _initial_image(::ColorProcessing, truecolor_image) = copy(truecolor_image)
 _initial_image(::GrayscaleProcessing, truecolor_image) = Gray.(truecolor_image)
 
 function _equalize(::ColorProcessing, img, adapthisteq_algorithm)
-    return apply_to_channels(img, channel -> adjust_histogram(channel, adapthisteq_algorithm))
+    return apply_to_channels(
+        img, channel -> adjust_histogram(channel, adapthisteq_algorithm)
+    )
 end
 
 function _equalize(::GrayscaleProcessing, img, adapthisteq_algorithm)
@@ -78,10 +72,7 @@ _to_grayscale(::GrayscaleProcessing, img) = img
 # Preprocess Params
 diffusion_algorithm = PeronaMalikDiffusion(; λ=0.1, K=0.1, niters=7, g="exponential")
 adapthisteq_algorithm = ContrastLimitedAdaptiveHistogramEqualization(;
-    nbins=255,
-    rblocks=4,
-    cblocks=4,
-    clip=3.2,
+    nbins=255, rblocks=4, cblocks=4, clip=3.2
 )
 unsharp_mask_params = (radius=10, amount=2, threshold=0.01)
 
@@ -117,18 +108,14 @@ small blocks results in noisy images and poor performance. With larger blocks, a
 end
 
 function (p::Preprocess)(
-    truecolor_image::AbstractArray{<:Union{AbstractRGB,TransparentRGB}},
-    landmask
+    truecolor_image::AbstractArray{<:Union{AbstractRGB,TransparentRGB}}, landmask
 )
     mode = ColorProcessingMode(p.process_color)
 
     img = _initial_image(mode, truecolor_image)
 
     apply_landmask!(img, landmask)
-    img .= nonlinear_diffusion(
-        img,
-        p.diffusion_algorithm
-    ) # TODO: in-place nonlinear_diffusion
+    img .= nonlinear_diffusion(img, p.diffusion_algorithm) # TODO: in-place nonlinear_diffusion
 
     img = _equalize(mode, img, p.adapthisteq_algorithm)
     img = _to_grayscale(mode, img)
@@ -247,9 +234,7 @@ function (p::Segment)(
     rwidth = round(Int64, n/p.tile_settings.rblocks)
     cwidth = round(Int64, m/p.tile_settings.cblocks)
     tiles = get_tiles(truecolor_image, (rwidth, cwidth))
-    tiles = filter(
-        t -> sum(landmask[t...] .== 0) > p.min_ocean_pixels, tiles 
-    )
+    tiles = filter(t -> sum(landmask[t...] .== 0) > p.min_ocean_pixels, tiles)
 
     @info "Preprocessing truecolor image"
     sharpened_grayscale_image = p.preprocessing_algorithm(truecolor_image, landmask)
@@ -368,7 +353,6 @@ function (p::Segment)(
     end
     return segmented_truecolor
 end
-
 
 # TODO: Check MATLAB code. Should this be a tiled function? The original paper described a similar
 # brightening function which was applied to image thirds.
@@ -512,7 +496,7 @@ function discriminate_ice_water(
 
     _cloud_threshold = (
         b7_landmasked_cloudmasked .< mask_clouds_lower .||
-            b7_landmasked_cloudmasked .> mask_clouds_upper
+        b7_landmasked_cloudmasked .> mask_clouds_upper
     )
 
     # reusing image_cloudless - used to be band7_masked
@@ -537,15 +521,15 @@ function _check_threshold_50(
 )
     return ( # intensity value of 50
         (
-                (kurt_band_2 > kurt_thresh_upper) ||
-                    (kurt_band_2 < kurt_thresh_lower) && (kurt_band_1 > kurt_thresh_upper)
-            ) ||
-            (
-                (kurt_band_2 < kurt_thresh_lower) &&
-                    (skew_band_2 < skew_thresh) &&
-                    proportional_intensity < 0.1
-            ) ||
-            proportional_intensity < 0.01
+            (kurt_band_2 > kurt_thresh_upper) ||
+            (kurt_band_2 < kurt_thresh_lower) && (kurt_band_1 > kurt_thresh_upper)
+        ) ||
+        (
+            (kurt_band_2 < kurt_thresh_lower) &&
+            (skew_band_2 < skew_thresh) &&
+            proportional_intensity < 0.1
+        ) ||
+        proportional_intensity < 0.01
     )
 end
 
@@ -557,7 +541,7 @@ function _check_threshold_130(
     st_dev_thresh_upper,
 )
     return (clouds_ratio .< clouds_ratio_threshold && standard_dev > st_dev_thresh_lower) ||
-        (standard_dev > st_dev_thresh_upper)
+           (standard_dev > st_dev_thresh_upper)
 end
 
 """_reconstruct(sharpened_grayscale_image, dilated_mask; strel)
@@ -657,10 +641,7 @@ hmin transform on the inverse distance transform for marker selection.
 - `binary_floe_mask`: BitMatrix with binarized sea ice floes for splitting
 - `tiles` (optional): Tiled iterator.
 """
-function watershed_ice_floes(
-        binary_floe_mask::BitMatrix, tiles;
-        hmin_depth=2,
-    )::BitMatrix
+function watershed_ice_floes(binary_floe_mask::BitMatrix, tiles; hmin_depth=2)::BitMatrix
     features = feature_transform(.!binary_floe_mask)
     distances = 1 .- distance_transform(features)
     markers = (hmin_transform(distances, hmin_depth) .> 0) |> label_components
@@ -672,10 +653,7 @@ function watershed_ice_floes(
     return boundaries .> 0
 end
 
-function watershed_ice_floes(
-        binary_floe_mask::BitMatrix;
-        hmin_depth=2,
-    )::BitMatrix
+function watershed_ice_floes(binary_floe_mask::BitMatrix; hmin_depth=2)::BitMatrix
     features = feature_transform(.!binary_floe_mask)
     distances = 1 .- distance_transform(features)
     markers = (hmin_transform(distances, hmin_depth) .> 0) |> label_components
@@ -773,7 +751,7 @@ function morph_split_floes(
     return floes_opened
 end
 
-function Track(
+function Track(;
     filter_function=FilterFunction(),
     matching_function=MinimumWeightMatchingFunction(),
     minimum_area=100,

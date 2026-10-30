@@ -72,7 +72,7 @@ Load an IceFloeTracker.jl archive file.
 """
 function load(input_path::AbstractString)
     version = NCDataset(input_path, "r") do file
-        VersionNumber(file.attrib["ift_archive_version"])
+        return VersionNumber(file.attrib["ift_archive_version"])
     end
     if version == VersionNumber("1.0.0")
         return load(input_path, V1)

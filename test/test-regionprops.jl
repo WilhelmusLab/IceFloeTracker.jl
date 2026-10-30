@@ -76,7 +76,9 @@ end
 
     # Test that we can get complex measures without listing everything
     regionprops(
-        label_img; properties=["area", "perimeter", "convex_area", "circularity", "solidity"], convex_area_algorithm=PixelConvexArea()
+        label_img;
+        properties=["area", "perimeter", "convex_area", "circularity", "solidity"],
+        convex_area_algorithm=PixelConvexArea(),
     )
 
     # Regression test: cross-shaped region with 4 pixels should not error
@@ -103,7 +105,7 @@ end
 end
 
 @testitem "regionprops: circularity and solidity work without their respective base properties" setup = [
-    RegionpropsFixture,
+    RegionpropsFixture
 ] begin
     area = regionprops(label_img; properties=[:area])[:area]
     perimeter = regionprops(label_img; properties=[:perimeter])[:perimeter]

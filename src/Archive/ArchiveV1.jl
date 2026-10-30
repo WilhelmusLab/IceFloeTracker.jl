@@ -324,7 +324,7 @@ function save(output_path::AbstractString, s::V1;)
         )
 
         # floe properties: one variable per property column
-        nc_create_floe_properties(ds, s.props, "floe_label", COLUMN_ATTRIBUTES)
+        return nc_create_floe_properties(ds, s.props, "floe_label", COLUMN_ATTRIBUTES)
     end
 
     return nothing
@@ -461,13 +461,13 @@ function nc_create_floe_properties(
 end
 
 function _defVar(grp, name, ::Type{T}, dims) where {T<:Integer}
-    defVar(grp, name, Int64, dims)
+    return defVar(grp, name, Int64, dims)
 end
 function _defVar(grp, name, ::Type{T}, dims) where {T<:AbstractFloat}
-    defVar(grp, name, Float64, dims; fillvalue=NaN)
+    return defVar(grp, name, Float64, dims; fillvalue=NaN)
 end
 function _defVar(grp, name, ::Type, dims)
-    defVar(grp, name, String, dims)
+    return defVar(grp, name, String, dims)
 end
 
 """
