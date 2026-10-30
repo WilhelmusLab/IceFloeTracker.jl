@@ -18,4 +18,5 @@ end
     @test pipeline_runs(LopezAcosta2019, filter(c -> c.case_number == 4, dataset))
     @test pipeline_runs(LopezAcosta2019Tiling, filter(c -> c.case_number == 4, dataset))
     @test pipeline_runs(FSPipeline, filter(c -> c.case_number == 4, dataset))
+    @test pipeline_runs(TGRS2026, filter(c -> c.case_number == 4, dataset))
 end

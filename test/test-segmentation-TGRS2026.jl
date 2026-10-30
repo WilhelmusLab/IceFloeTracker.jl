@@ -1,0 +1,236 @@
+@testitem "TGRS2026 Helper Functions - Extended Region Properties" begin
+    import Images: RGB, component_indices
+    import DataFrames: Not
+
+    circle_labels = Int64.(collect(strel_disk(50)))
+    circle_img = RGB.(circle_labels)
+    circle_img[circle_labels .> 0] .= RGB(1)
+    circle_img[circle_labels .== 0] .= RGB(0, 0, 1)
+    props_df = regionprops_table(circle_labels)
+    indices = component_indices(circle_labels)
+    
+    TGRS2026.add_mean_reflectance!(props_df, circle_img, indices)
+    @test "mean_reflectance" ∈ names(props_df)
+    @test props_df[1, :mean_reflectance] ≈ RGB(1.)
+    print(props_df[1, :mean_reflectance])
+    
+    TGRS2026.add_mean_boundary_reflectance!(props_df, circle_img, circle_labels; radius=10)
+    @test "mean_boundary_reflectance" ∈ names(props_df)
+    @test props_df[1, :mean_boundary_reflectance] ≈ RGB(0, 0, 1.)
+
+
+    # In-place logistic regression
+    # Use dummy variables - just testing that the filter adds a probability column. 
+    # TODO: Add example case with known floe properties
+    props_df[:, :b1_mean_boundary_contrast] .= 1.
+    props_df[:, :b1_mean_reflectance] .= 1.
+    props_df[:, :b7_mean_reflectance] .= 1.
+    props_df[:, :length_scale] .= 1.
+    props_df[:, :solidity] .= 1
+    TGRS2026.LogisticRegressionFilter!(props_df)
+    @test "probability" ∈ names(props_df)
+
+
+    # Extended regionprops with blank image
+    blank_labels = zeros(Int64, size(circle_img))
+    blank_image = RGB.(blank_labels)
+    df = TGRS2026.extended_regionprops_table(
+        blank_labels,
+        blank_image,
+        Dict("land"=>blank_labels, "cloud"=>blank_labels)
+        )
+    @test "probability" ∈ names(df)
+
+
+    # Other things to test:
+    # compare objects
+    # merge floes
+    # non-overlap
+end
+
+@testitem "TGRS2026.Preprocess" begin
+    import Images: AdaptiveEqualization, Gray, AbstractGray, N0f8
+    import StatsBase: mean
+
+    dataset = Watkins2026Dataset(; ref="v0.2")
+    case = filter(c -> c.case_number == 34, dataset)
+    tc_imgs = modis_truecolor.(case)
+    land_masks = modis_landmask.(case) .|> r -> r .> 0
+
+    # Allows updating histogram parameters?
+    preprocess = TGRS2026.Preprocess(
+        adapthisteq_algorithm = ContrastLimitedAdaptiveHistogramEqualization(;
+        nbins=256, rblocks=4, cblocks=4, clip=1
+        )
+    )
+    gray_imgs = tc_imgs .|> r -> Gray.(r)
+    
+    @show typeof(preprocess.(gray_imgs, land_masks)[1]) 
+    @test typeof(preprocess.(gray_imgs, land_masks)[1]) ==  Matrix{Gray{N0f8}}
+
+    # Accepts alternate histogram?
+    preprocess = TGRS2026.Preprocess(
+        adapthisteq_algorithm = AdaptiveEqualization(;
+            nbins=128,
+            rblocks=3,
+            cblocks=3,
+            minval=0,
+            maxval=1,
+            clip=0.2,
+        )
+    )
+    gray_imgs = tc_imgs .|> r -> Gray.(r)
+    @test typeof(preprocess.(gray_imgs, land_masks)[1]) ==  Matrix{Gray{N0f8}}
+
+    # TBD: Test unsharp mask and nonlinear diffusion options
+end
+@testitem "TGRS2026.Classify" begin
+    import StatsBase: mean
+    dataset = Watkins2026Dataset(; ref="v0.2")
+    case = filter(c -> c.case_number == 34, dataset)
+    tc_imgs = modis_truecolor.(case)
+    land_masks = modis_landmask.(case) .|> r -> r .> 0
+    fc_imgs = modis_falsecolor.(case)
+
+    classifier = TGRS2026.Classify()
+    classified = classifier.(fc_imgs, land_masks)
+    @test mean(classified[1] .== classifier.key["land"]) .== mean(land_masks[1]) # Land mask is copied, both are 0 here
+    @test mean(classified[1] .== classifier.key["cloud"]) ≈ 1.0 # Test case is fully cloud-covered
+end
+
+@testitem "TGRS2026.Segment – simple case" tags = [:e2e, :smoke] begin
+    import DataFrames: DataFrame, nrow
+    import Images: RGB
+    dataset = Watkins2026Dataset(; ref="v0.2")
+
+    case = first(filter(c -> (c.case_number == 6 && c.satellite == "terra"), dataset))
+    segments = TGRS2026.Segment()(
+        RGB.(modis_truecolor(case)), RGB.(modis_falsecolor(case)), modis_landmask(case)
+    )
+    expected_segment_count = validated_floe_properties(case) |> DataFrame |> nrow
+    @test length(segments.segment_labels) ≈ expected_segment_count rtol = 0.7
+    # check that the tile size options work
+    segments = TGRS2026.Segment(tile_settings = (; rblocks=2, cblocks=2))(
+        RGB.(modis_truecolor(case)), RGB.(modis_falsecolor(case)), modis_landmask(case)
+    )
+    @test length(segments.segment_labels) ≈ expected_segment_count rtol = 0.7
+end
+
+@testitem "TGRS2026.Segment – sample of cases" setup = [Segmentation] tags = [:e2e] begin
+    import StatsBase: mean
+    dataset = Watkins2026Dataset(; ref="v0.2")
+    results = run_and_validate_segmentation(
+        filter(
+            c -> (
+                c.visible_floes == "yes" &&
+                c.cloud_fraction_manual < 0.5 &&
+                c.number_floes > 10
+            ),
+            dataset,
+        ),
+        TGRS2026.Segment();
+        output_directory="./test_outputs/",
+    )
+    @test all(results.success)
+    save("./test_outputs/sample_error_metrics_TGRS2026.csv", results)
+    # Aggregate performance measures
+    mean_recall = round(mean(skipnanormissing(results.recall)); digits=2)
+    mean_precision = round(mean(skipnanormissing(results.precision)); digits=2)
+    mean_F_score = round(mean(skipnanormissing(results.F_score)); digits=2)
+
+    # Good performance might look liks this:
+    @test mean_recall ≥ 0.9 broken = true
+    @test mean_precision ≥ 0.9 broken = true
+    @test mean_F_score ≥ 0.9 broken = true
+
+    # Better performance might look like this:
+    @test mean_recall ≥ 0.8 #broken = true # Note: Increase in recall without increase in precision may indicate higher false-positive rate. 
+    @test mean_precision ≥ 0.8 broken = true
+    @test mean_F_score ≥ 0.8 broken = true
+
+    # Current performance should look at least as good as this:
+    @test mean_recall ≥ 0.60
+    @test mean_precision ≥ 0.30
+    @test round(mean_F_score; digits=1) ≥ 0.4
+
+    # return current performance
+    @show mean_recall
+    @show mean_precision
+    @show mean_F_score
+end
+
+@testitem "TGRS2026.Segment – detailed tests" setup = [Segmentation] tags = [:e2e] begin
+    dataset = Watkins2026Dataset(; ref="v0.2")
+    (; labeled_fraction, recall, precision, F_score) = run_and_validate_segmentation(
+        first(filter(c -> (c.case_number == 6 && c.satellite == "terra"), dataset)),
+        TGRS2026.Segment();
+        output_directory="./test_outputs/",
+    )
+
+    @test 0.41 ≈ labeled_fraction atol = 0.1
+    @test 0.51 ≤ round(recall; digits=2)
+    @test 0.59 ≤ round(precision; digits=2)
+    @test 0.63 ≤ round(F_score; digits=2)
+
+    (; labeled_fraction, recall, precision, F_score) = run_and_validate_segmentation(
+        first(filter(c -> (c.case_number == 14 && c.satellite == "aqua"), dataset)),
+        TGRS2026.Segment();
+        output_directory="./test_outputs/",
+    )
+    
+    @test 0.16 ≈ labeled_fraction atol = 0.1
+    @test 0.62 ≤ round(recall; digits=2)
+    @test 0.59 ≤ round(precision; digits=2)
+    @test 0.69 ≤ round(F_score; digits=2)
+
+    (; labeled_fraction, recall, precision, F_score) = run_and_validate_segmentation(
+        first(filter(c -> (c.case_number == 61 && c.satellite == "aqua"), dataset)),
+        TGRS2026.Segment();
+        output_directory="./test_outputs/",
+    )
+
+    @test 0.41 ≈ labeled_fraction atol = 0.1
+    @test 0.34 ≤ round(recall; digits=2)
+    @test 0.74 ≤ round(precision; digits=2)
+    @test 0.49 ≤ round(F_score; digits=2)
+
+    (; labeled_fraction, recall, precision, F_score) = run_and_validate_segmentation(
+        first(filter(c -> (c.case_number == 63 && c.satellite == "aqua"), dataset)),
+        TGRS2026.Segment();
+        output_directory="./test_outputs/",
+    )
+    # Note: Validation dataset currently doesn't include the floes intersecting the edge.
+    # Improving the segmentation lowered the scores here due to these floes.
+    
+    @test labeled_fraction ≈ 0.56 rtol = 0.1
+    @test 0.72 ≤ round(recall; digits=2)
+    @test 0.91 ≤ round(precision; digits=2)
+    @test 0.82 ≤ round(F_score; digits=2)
+end
+
+@testitem "TGRS2026.Segment – image types" setup = [Segmentation] tags = [:e2e] begin
+    import Images: RGB, RGBA, n0f8, n6f10, n4f12, n2f14, n0f16, float32, float64
+    dataset = Watkins2026Dataset(; ref="v0.2")
+    case::Case = first(filter(c -> (c.case_number == 6 && c.satellite == "aqua"), dataset))
+    algorithm = TGRS2026.Segment()
+    baseline = run_and_validate_segmentation(
+        case, algorithm; output_directory="./test_outputs/"
+    )
+
+    @test results_invariant_for(RGB; baseline, algorithm, case)
+    @test results_invariant_for(RGBA; baseline, algorithm, case)
+    @test results_invariant_for(n0f8; baseline, algorithm, case)
+    @test results_invariant_for(n6f10; baseline, algorithm, case)
+    @test results_invariant_for(n4f12; baseline, algorithm, case)
+    @test results_invariant_for(n2f14; baseline, algorithm, case)
+    @test results_invariant_for(n0f16; baseline, algorithm, case)
+    @test results_invariant_for(float32; baseline, algorithm, case)
+    @test results_invariant_for(float64; baseline, algorithm, case)
+    @test results_invariant_for(RGB, n0f8; baseline, algorithm, case)
+    @test results_invariant_for(RGB, n6f10; baseline, algorithm, case)
+    @test results_invariant_for(RGB, n4f12; baseline, algorithm, case)
+    @test results_invariant_for(RGB, n2f14; baseline, algorithm, case)
+    @test results_invariant_for(RGB, n0f16; baseline, algorithm, case)
+    @test results_invariant_for(RGB, float32; baseline, algorithm, case)
+    @test results_invariant_for(RGB, float64; baseline, algorithm, case)
+end
