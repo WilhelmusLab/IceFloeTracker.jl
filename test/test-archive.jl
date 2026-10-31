@@ -216,3 +216,44 @@ end
         @test all(iszero, reloaded.labeled)
     end
 end
+
+@testitem "Archive.V1 compresses  gridded variables" setup = [ArchiveV1] begin
+    gridded = ["modis_truecolor", "cloud_mask", "labeled_image"]
+    deflate_settings(path) = NCDataset(path, "r") do ds
+        [NCDatasets.deflate(ds[name].var) for name in gridded]
+    end
+    mktemp() do output_path, _
+        Archive.save(output_path, data)
+        for (_, isdeflated, level) in deflate_settings(output_path)
+            @test isdeflated
+            @test level == 1
+        end
+    end
+    mktemp() do output_path, _
+        Archive.save(output_path, data; deflatelevel=0)
+        for (_, _, level) in deflate_settings(output_path)
+            @test level == 0
+        end
+    end
+end
+
+@testitem "Archive.V1 compressed file is smaller" setup = [ArchiveV1] begin
+    mktemp() do compressed_path, _
+        mktemp() do uncompressed_path, _
+            Archive.save(compressed_path, data)
+            Archive.save(uncompressed_path, data; deflatelevel=0)
+            @test filesize(compressed_path) < filesize(uncompressed_path)
+        end
+    end
+end
+
+@testitem "Archive.V1 saved at maximum compression reloads correctly" setup = [ArchiveV1] begin
+    mktemp() do output_path, _
+        Archive.save(output_path, data; deflatelevel=9)
+        reloaded = Archive.load(output_path)
+        @test reloaded.modis_truecolor == data.modis_truecolor
+        @test reloaded.labeled == data.labeled
+        @test reloaded.cloud_mask == Bool.(data.cloud_mask)
+        @test isequal(reloaded.props, data.props)
+    end
+end
