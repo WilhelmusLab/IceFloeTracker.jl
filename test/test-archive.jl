@@ -218,21 +218,36 @@ end
 end
 
 @testitem "Archive.V1 compresses  gridded variables" setup = [ArchiveV1] begin
+    # One variable per helper that compresses: color image, mask, labeled image.
     gridded = ["modis_truecolor", "cloud_mask", "labeled_image"]
-    deflate_settings(path) = NCDataset(path, "r") do ds
-        [NCDatasets.deflate(ds[name].var) for name in gridded]
-    end
-    mktemp() do output_path, _
-        Archive.save(output_path, data)
-        for (_, isdeflated, level) in deflate_settings(output_path)
-            @test isdeflated
-            @test level == 1
+
+    # Only the level is checked: defVar sets the deflate flag for any
+    # non-nothing deflatelevel, 0 included, so the flag carries no information.
+    function stored_deflatelevel(path, name)
+        return NCDataset(path, "r") do ds
+            # `.var` is the raw netCDF variable, without the CF layer
+            variable = ds[name].var
+            # (isshuffled, isdeflated, level)
+            _, _, level = NCDatasets.deflate(variable)
+            return level
         end
     end
-    mktemp() do output_path, _
-        Archive.save(output_path, data; deflatelevel=0)
-        for (_, _, level) in deflate_settings(output_path)
-            @test level == 0
+
+    @testset "default" begin
+        mktemp() do output_path, _
+            Archive.save(output_path, data)
+            @testset "$name" for name in gridded
+                @test stored_deflatelevel(output_path, name) == 1
+            end
+        end
+    end
+
+    @testset "deflatelevel=$level" for level in (0, 1, 4, 9)
+        mktemp() do output_path, _
+            Archive.save(output_path, data; deflatelevel=level)
+            @testset "$name" for name in gridded
+                @test stored_deflatelevel(output_path, name) == level
+            end
         end
     end
 end
