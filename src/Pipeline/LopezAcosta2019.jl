@@ -182,9 +182,8 @@ A segmented image with candidate sea ice floes.
 
 Note: This algorithm is under active development and the API will change in a future release.
 """
-@kwdef struct Segment{
-    SE<:AbstractMatrix{Bool},CM,TS,MO,PA,KM,CS,SB,SF,FS,EL
-} <: IceFloeSegmentationAlgorithm
+@kwdef struct Segment{SE<:AbstractMatrix{Bool},CM,TS,MO,PA,KM,CS,SB,SF,FS,EL} <:
+              IceFloeSegmentationAlgorithm
     coastal_buffer_structuring_element::SE = make_landmask_se()
     cloud_mask_algorithm::CM = LopezAcostaCloudMask()
     tile_settings::TS = (; rblocks=1, cblocks=1)

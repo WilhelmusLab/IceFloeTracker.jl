@@ -66,21 +66,20 @@ adapthisteq_params = (nbins=256, rblocks=4, cblocks=4, clip=1)
 unsharp_mask_params = (radius=50, amount=0.3, threshold=0.01)
 
 """
-    Preprocess(
-        diffusion_algorithm = PeronaMalikDiffusion(λ=0.1, K=0.1, niters=5, g="exponential")
-        adapthisteq_params = (nbins=256, rblocks=8, cblocks=8, clip=0.99) # rblocks/cblocks not used yet -- add with CLAHE.jl
-        unsharp_mask_params = (radius=50, amount=0.2, threshold=0.01)
+    Preprocess(;
+        diffusion_algorithm = PeronaMalikDiffusion(λ=0.1, K=0.1, niters=5, g="exponential"),
+        adapthisteq_params = (nbins=256, rblocks=8, cblocks=8, clip=0.99), # rblocks/cblocks not used yet -- add with CLAHE.jl
+        unsharp_mask_params = (radius=50, amount=0.2, threshold=0.01),
     )
     Preprocess()(img, cloudmask, landmask)
 
-    Converts input image to grayscale, then preprocesses by applying nonlinear diffusion,
-    adaptive histogram equalization, and unsharp masking. Diffusion and unsharp masking are applied
-    to each tile, while the adaptive histogram equalization is divided according to the parameter
-    specifications.
+Converts input image to grayscale, then preprocesses by applying nonlinear diffusion,
+adaptive histogram equalization, and unsharp masking. Diffusion and unsharp masking are applied
+to each tile, while the adaptive histogram equalization is divided according to the parameter
+specifications.
 
-    Note: results are strongly sensitive to the choice of rblocks, cblocks, and clipping. Large clipping parameters with
-    small blocks results in noisy images and poor performance. With larger blocks, a higher clipping parameter can help.
-
+Note: results are strongly sensitive to the choice of rblocks, cblocks, and clipping. Large clipping parameters with
+small blocks results in noisy images and poor performance. With larger blocks, a higher clipping parameter can help.
 """
 @kwdef struct Preprocess{DA,AH,UM} <: IceFloePreprocessingAlgorithm
     diffusion_algorithm::DA = diffusion_algorithm
@@ -166,28 +165,24 @@ floe_merging_params = (
 """
     FSPipeline.Segment()
 
-    Segmentation routine for identifying moderate to large floes in the Fram Strait.
-    The image preprocessing is supplied as an function in the functor setup.
+Segmentation routine for identifying moderate to large floes in the Fram Strait.
+The image preprocessing is supplied as an function in the functor setup.
 
-
-    # Parameters
-    - `coastal_buffer_structuring_element::AbstractMatrix{Bool} = strel_box((51,51))`: Structuring element for the `create_landmask` function
-    - `cloud_mask_algorithm = Watkins2025CloudMask()`: Cloud mask algorithm
-    - `preprocessing_algorithm = Preprocess()`: Function to sharpen and equalize the truecolor image
-    - `tile_size_pixels=1200`: Nominal tile size in pixels
-    - `min_tile_ice_pixel_count=300`: Smallest number of required sea ice pixels in tile
-    - `preliminary_ice_mask = IceDetectionBrightnessMidpoint(minimum_reflectance=0.3)`: Function to use to identify likely ice pixels for filtering.
-    - `kmeans_params = (k=4, maxiter=50, random_seed=45)`: Parameters for `kmeans_binarization`
-    - `cluster_selection_algorithm = IceDetectionBrightnessPeaksMODIS721(
-        band_7_max=0.1,
-        possible_ice_threshold=0.3,
-        join_method="union",
-        minimum_prominence=0.01)`: Function to use to select a k-means cluster in the `kmeans_binarization` workflow
-    - `clean_binary_floes_params`: Parameters for the preliminary binary image cleanup
-    - `floe_splitting_params`: Parameters for the `dist_morph_split` floe splitting algorithm
-    - `floe_filtering_params`: Parameters for post-segmentation cleanup
+# Parameters
+- `coastal_buffer_structuring_element::AbstractMatrix{Bool} = strel_box((51,51))`: Structuring element for the `create_landmask` function
+- `cloud_mask_algorithm = Watkins2025CloudMask()`: Cloud mask algorithm
+- `preprocessing_algorithm = Preprocess()`: Function to sharpen and equalize the truecolor image
+- `tile_size_pixels=1200`: Nominal tile size in pixels
+- `min_tile_ice_pixel_count=300`: Smallest number of required sea ice pixels in tile
+- `preliminary_ice_mask = IceDetectionBrightnessMidpoint(minimum_reflectance=0.3)`: Function to use to identify likely ice pixels for filtering.
+- `kmeans_params = (k=4, maxiter=50, random_seed=45)`: Parameters for `kmeans_binarization`
+- `cluster_selection_algorithm = IceDetectionBrightnessPeaksMODIS721(band_7_max=0.1, possible_ice_threshold=0.3, join_method="union", minimum_prominence=0.01)`: Function to use to select a k-means cluster in the `kmeans_binarization` workflow
+- `clean_binary_floes_params`: Parameters for the preliminary binary image cleanup
+- `floe_splitting_params`: Parameters for the `dist_morph_split` floe splitting algorithm
+- `floe_filtering_params`: Parameters for post-segmentation cleanup
 """
-@kwdef struct Segment{SE<:AbstractMatrix{Bool},CM,PA,TS,MI,PM,KM,AP,CP,SP,FP} <: IceFloeSegmentationAlgorithm
+@kwdef struct Segment{SE<:AbstractMatrix{Bool},CM,PA,TS,MI,PM,KM,AP,CP,SP,FP} <:
+              IceFloeSegmentationAlgorithm
     coastal_buffer_structuring_element::SE = coastal_buffer_structuring_element
     cloud_mask_algorithm::CM = cloud_mask_algorithm
     preprocessing_algorithm::PA = preprocessing_algorithm

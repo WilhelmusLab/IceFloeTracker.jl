@@ -198,7 +198,8 @@
         case_name = name(case)
         return save_results_callback(
             joinpath(
-                directory, "segmentation-$(algorithm_name(algorithm))-$(case_name)-$(datestamp)"
+                directory,
+                "segmentation-$(algorithm_name(algorithm))-$(case_name)-$(datestamp)",
             );
             extension,
         )
