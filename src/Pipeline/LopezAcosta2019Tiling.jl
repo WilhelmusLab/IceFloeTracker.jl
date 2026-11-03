@@ -68,8 +68,7 @@ import ..Segmentation:
     IceDetectionThresholdMODIS721,
     segment_mean_map
 
-import ..Pipeline:
-    IceFloeSegmentationAlgorithm
+import ..Pipeline: IceFloeSegmentationAlgorithm
 
 import ..Tracking: FloeTracker, FilterFunction, MinimumWeightMatchingFunction
 import Dates: Day
@@ -576,7 +575,7 @@ function IceDetectionLopezAcosta2019Tiling(;
     )
 end
 
-function Track(
+function Track(;
     filter_function=FilterFunction(),
     matching_function=MinimumWeightMatchingFunction(),
     minimum_area=100,

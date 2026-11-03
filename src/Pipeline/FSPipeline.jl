@@ -58,9 +58,7 @@ import ..Tracking:
     ShapeDifferenceThresholdFilter,
     PsiSCorrelationThresholdFilter
 
-import ..Pipeline:
-    IceFloeSegmentationAlgorithm,
-    IceFloePreprocessingAlgorithm
+import ..Pipeline: IceFloeSegmentationAlgorithm, IceFloePreprocessingAlgorithm
 
 # Preprocess Params
 diffusion_algorithm = PeronaMalikDiffusion(; λ=0.1, K=0.1, niters=7, g="exponential")
@@ -149,7 +147,7 @@ floe_splitting_params = (
     max_depth=25,
     max_depth_ratio=0.7,
     max_expand=3,
-    opening_strel=strel_disk(1)
+    opening_strel=strel_disk(1),
 )
 floe_filtering_params = (
     min_floe_size=100,
@@ -496,7 +494,14 @@ function objectwise_compare_segmentation(
         end
     end
     if length(results) == 0
-        return DataFrame(Dict(x=>[] for x in union(properties, [:s1_label, :s2_label, :dist_s1_s2, :scaled_relative_error_area])))
+        return DataFrame(
+            Dict(
+                x=>[] for x in union(
+                    properties,
+                    [:s1_label, :s2_label, :dist_s1_s2, :scaled_relative_error_area],
+                )
+            ),
+        )
     end
     results_df = vcat(results...; cols=:union)
     rename!(results_df, Dict(r => Symbol("s2_", r) for r in properties))
@@ -511,14 +516,22 @@ function objectwise_compare_segmentation(
     bdry1 = expand_labels(indexmap1, expand_radius) .- indexmap1
     mean1 = segment_mean(SegmentedImage(img, indexmap1))
     bdry_mean1 = segment_mean(SegmentedImage(img, bdry1))
-    results_df[:, :s1_reflectance_mean] = [L ∈ keys(mean1) ? mean1[L] : 0 for L in results_df[:, :s1_label]]
-    results_df[:, :s1_reflectance_bdry_mean] = [L ∈ keys(bdry_mean1) ? bdry_mean1[L] : 0 for L in results_df[:, :s1_label]]
+    results_df[:, :s1_reflectance_mean] = [
+        L ∈ keys(mean1) ? mean1[L] : 0 for L in results_df[:, :s1_label]
+    ]
+    results_df[:, :s1_reflectance_bdry_mean] = [
+        L ∈ keys(bdry_mean1) ? bdry_mean1[L] : 0 for L in results_df[:, :s1_label]
+    ]
 
     bdry2 = expand_labels(indexmap2, expand_radius) .- indexmap2
     mean2 = segment_mean(SegmentedImage(img, indexmap2))
     bdry_mean2 = segment_mean(SegmentedImage(img, bdry2))
-    results_df[:, :s2_reflectance_mean] = [L ∈ keys(mean2) ? mean2[L] : 0 for L in results_df[:, :s2_label]]
-    results_df[:, :s2_reflectance_bdry_mean] = [L ∈ keys(bdry_mean2) ? bdry_mean2[L] : 0 for L in results_df[:, :s2_label]]
+    results_df[:, :s2_reflectance_mean] = [
+        L ∈ keys(mean2) ? mean2[L] : 0 for L in results_df[:, :s2_label]
+    ]
+    results_df[:, :s2_reflectance_bdry_mean] = [
+        L ∈ keys(bdry_mean2) ? bdry_mean2[L] : 0 for L in results_df[:, :s2_label]
+    ]
 
     results_df[:, :s1_reflectance_bdry_contrast] =
         results_df[:, :s1_reflectance_mean] .- results_df[:, :s1_reflectance_bdry_mean]
@@ -778,11 +791,10 @@ Track shapes across images using the LogLogQuadratic distance filter, the Chaine
 and the MinimumWeightMatchingFunction.
 
 """
-function Track(
+function Track(;
     filter_function=ChainedFilterFunction(; filters=FSFilterFunctions),
-    matching_function=MinimumWeightMatchingFunction(
-        columns=FSMatchingColumns,
-        weights=ones(7),
+    matching_function=MinimumWeightMatchingFunction(;
+        columns=FSMatchingColumns, weights=ones(7)
     ),
     minimum_area=300, # Minimum floe area for tracking
     maximum_area=90e3, # Maximum floe area for tracking

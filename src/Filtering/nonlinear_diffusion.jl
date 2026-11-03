@@ -68,7 +68,7 @@ end
 function nonlinear_diffusion(
     img::AbstractArray{<:Union{AbstractRGB,TransparentRGB,AbstractGray}},
     tiles,
-    f::AbstractDiffusionAlgorithm=PeronaMalikDiffusion()
+    f::AbstractDiffusionAlgorithm=PeronaMalikDiffusion(),
 )
     out = deepcopy(img)
     for tile in tiles
