@@ -12,7 +12,7 @@ Get the RBC (Red, Blue, and Green) channels of an image.
 
 # Returns
 An m x n x 3 array the Red, Blue, and Green channels of the input image.
- 
+
 """
 function get_rgb_channels(img)
     # TODO: might be able to use channelview instead
@@ -74,7 +74,7 @@ function conditional_histeq(
     white_fraction_threshold::Real=0.4,
 )
 
-    # Apply Perona-Malik diffusion to each channel of true color image 
+    # Apply Perona-Malik diffusion to each channel of true color image
     # using the default inverse quadratic flux coefficient function
     pmd = PeronaMalikDiffusion(0.1, 0.1, 5, "exponential")
     true_color_diffused = nonlinear_diffusion(float64.(true_color_image), pmd)
@@ -84,7 +84,8 @@ function conditional_histeq(
     # For each tile, compute the entropy in the false color tile, and the fraction of white and black pixels
     for tile in tiles
         clouds_tile = clouds_red[tile...]
-        tile_entropy = entropy(clouds_tile)
+        # assertion keeps the threshold comparison below statically dispatched.
+        tile_entropy = entropy(clouds_tile)::Float64
         whitefraction = sum(clouds_tile .> white_threshold) / length(clouds_tile)
 
         # If the entropy is above a threshold, and the fraction of white pixels is above a threshold, then apply histogram equalization to the tiles of each channel of the true color image. Otherwise, keep the original tiles.

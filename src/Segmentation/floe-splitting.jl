@@ -65,16 +65,19 @@ function dist_morph_split(
         indices = component_indices(labeled_markers)
 
         # check 1: Remove components with no intersection with the layer below
-        remove_list = _nonoverlapping_labels(levels[dist_threshold - 1], indices, labels)
-        _remove_labels!(labeled_markers, indices, remove_list)
-        filter!(r -> r ∉ remove_list, labels)
+        # (each check gets its own list: reassigning one name captured by the
+        # `filter!` closure would box it; see
+        # https://docs.julialang.org/en/v1/manual/performance-tips/#man-performance-captured)
+        nonoverlapping = _nonoverlapping_labels(levels[dist_threshold - 1], indices, labels)
+        _remove_labels!(labeled_markers, indices, nonoverlapping)
+        filter!(r -> r ∉ nonoverlapping, labels)
 
         # check 2: Remove components which fail the max_depth_ratio to component maximum depth test
         maximum_depths = Dict(L => maximum(dist[indices[L]]) for L in labels)
-        remove_list = [
+        too_shallow = [
             L for L in labels if max_depth_ratio * maximum_depths[L] < dist_threshold
         ]
-        _remove_labels!(labeled_markers, indices, remove_list)
+        _remove_labels!(labeled_markers, indices, too_shallow)
         levels[dist_threshold] = labeled_markers
     end
     max_depth = maximum([d for d in keys(levels)])
