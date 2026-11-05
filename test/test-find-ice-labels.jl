@@ -42,11 +42,12 @@
         single_floe = modis_falsecolor(case)[225:260, 110:160]
         @test sum(binarize(single_floe, f)) == 77 # Changed from 1, new method picks up more ice
 
-        # Promotion to a wider type than Float64 reaches `get_ice_peaks`
-        f_big = IceDetectionBrightnessPeaksMODIS721(;
-            band_7_max=big(5 / 255), possible_ice_threshold=75 / 255, nbins=64
+        # Non-Float64 thresholds reach `get_ice_peaks`
+        f32 = IceDetectionBrightnessPeaksMODIS721(;
+            band_7_max=Float32(5 / 255), possible_ice_threshold=Float32(75 / 255), nbins=64
         )
-        @test sum(binarize(single_floe, f_big)) == 77
+        @test f32 isa IceDetectionBrightnessPeaksMODIS721{Float32}
+        @test sum(binarize(single_floe, f32)) == 77
 
         just_water = modis_falsecolor(case)[1:50, 350:400]
         @test sum(binarize(just_water, f)) == 2 # Changed from 0, there are some ice pixels in the top of the image
@@ -178,8 +179,9 @@
         ]
         pk = get_ice_peaks(edges, counts)
         @test pk == 0.859375
-        @test get_ice_peaks(edges, counts; possible_ice_threshold=0.3f0) == pk
-        @test get_ice_peaks(edges, counts; possible_ice_threshold=big"0.3") == pk
+        @test get_ice_peaks(edges, counts; possible_ice_threshold=Float32(0.3)) == pk
+        @test get_ice_peaks(edges, counts; minimum_prominence=Float32(0.01)) == pk
+        @test get_ice_peaks(edges, counts; window_size=Int32(3)) == pk
 
         # The peak finder throws a BoundsError on this histogram
         @test get_ice_peaks(0.0:0.25:0.75, [3, 3, 2, 0]; window_size=3) == Inf
@@ -191,7 +193,7 @@ end
     import DelimitedFiles: readdlm, writedlm
 
     include("config.jl")
-    
+
     @testset "MATLAB comparison" begin
         import IceFloeTracker.LopezAcosta2019: IceDetectionLopezAcosta2019
         import Images: gray
@@ -245,17 +247,17 @@ end
             @test binarize(float64.(fc_masked), algorithm) == baseline_mask
             @test binarize(n4f12.(fc_masked), algorithm) == baseline_mask broken = true
         end
-        
+
         algorithm = IceDetectionBrightnessMidpoint(;
                 minimum_reflectance=0.3
             )
-        
+
             # Band 1 is the blue channel in the falsecolor image
-        g = Gray.(blue.(falsecolor)) 
+        g = Gray.(blue.(falsecolor))
         g_masked = Gray.(blue.(fc_masked))
         baseline = binarize(g, algorithm)
         baseline_mask = binarize(g_masked, algorithm)
-        
+
         @testset "IceDetectionBrightnessMidpoint type invariant" begin
             @test sum(algorithm(g)) > 0
             @test binarize(n0f8.(g), algorithm) == baseline
