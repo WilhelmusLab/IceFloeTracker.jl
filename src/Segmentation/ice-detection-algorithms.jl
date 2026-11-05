@@ -258,7 +258,9 @@ function (f::IceDetectionFirstNonZeroAlgorithm)(out, img, args...; kwargs...)
 end
 
 """
-    tiled_adaptive_binarization(img, tiles; minimum_window_size=).
+    tiled_adaptive_binarization(
+        img, tiles; minimum_window_size=100, minimum_brightness=75 / 255, threshold_percentage=15
+    )
 
 Applies the (AdaptiveThreshold)[https://juliaimages.org/ImageBinarization.jl/v0.1/#Adaptive-Threshold-1] binarization algorithm
 to each tile in the image. Following the recommendations from ImageBinarization, the default is to use the integer window size
