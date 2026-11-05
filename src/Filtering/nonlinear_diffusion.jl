@@ -162,12 +162,12 @@ function anisotropic_diffusion_2D(
     for _ in 1:niter
         # These are zero-indexed offset arrays
         diff_img_north =
-            padded_img[0:(end-1), 1:(end-1)] .- padded_img[1:end, 1:(end-1)]
+            padded_img[0:(end - 1), 1:(end - 1)] .- padded_img[1:end, 1:(end - 1)]
         diff_img_east =
-            padded_img[1:(end-1), 1:end] .- padded_img[1:(end-1), 0:(end-1)]
-        diff_img_nw = padded_img[0:(end-2), 0:(end-2)] .- I
-        diff_img_ne = padded_img[0:(end-2), 2:end] .- I
-        diff_img_sw = padded_img[2:end, 0:(end-2)] .- I
+            padded_img[1:(end - 1), 1:end] .- padded_img[1:(end - 1), 0:(end - 1)]
+        diff_img_nw = padded_img[0:(end - 2), 0:(end - 2)] .- I
+        diff_img_ne = padded_img[0:(end - 2), 2:end] .- I
+        diff_img_sw = padded_img[2:end, 0:(end - 2)] .- I
         diff_img_se = padded_img[2:end, 2:end] .- I
 
         # Exponential conduction coefficients
@@ -187,8 +187,8 @@ function anisotropic_diffusion_2D(
         flux_se = conduct_coeff_se .* diff_img_se
 
         # Back to regular 1-indexed arrays
-        flux_north_diff = flux_north[1:(end-1), :] .- flux_north[2:end, :]
-        flux_east_diff = flux_east[:, 2:end] .- flux_east[:, 1:(end-1)]
+        flux_north_diff = flux_north[1:(end - 1), :] .- flux_north[2:end, :]
+        flux_east_diff = flux_east[:, 2:end] .- flux_east[:, 1:(end - 1)]
 
         # Discrete PDE solution
         sum_ = @. (1 / (dd^2)) * (flux_nw + flux_ne + flux_sw + flux_se)
