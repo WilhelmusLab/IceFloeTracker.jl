@@ -267,7 +267,7 @@ grayscale intensity to prevent dark regions from getting brightened (i.e., the c
 The "threshold_percentage" parameter is passed to the the AdaptiveThreshold function (percentage parameter).
 """
 function tiled_adaptive_binarization(
-    img, tiles; minimum_window_size=50, minimum_brightness=75 / 255, threshold_percentage=15
+    img, tiles; minimum_window_size=100, minimum_brightness=75 / 255, threshold_percentage=15
 )
     canvas = zeros(size(img))
     img = deepcopy(img)
