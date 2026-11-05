@@ -10,8 +10,7 @@ import Images:
     component_indices,
     imfill
 
-import ..Morphology:
-    strel_disk
+import ..Morphology: strel_disk
 
 """
     dist_morph_split(
@@ -75,7 +74,9 @@ function dist_morph_split(
 
         # check 2: Remove components which fail the max_depth_ratio to component maximum depth test
         maximum_depths = Dict(L => maximum(dist[indices[L]]) for L in labels)
-        too_shallow = [L for L ∈ labels if max_depth_ratio * maximum_depths[L] < dist_threshold]
+        too_shallow = [
+            L for L in labels if max_depth_ratio * maximum_depths[L] < dist_threshold
+        ]
         _remove_labels!(labeled_markers, indices, too_shallow)
         levels[dist_threshold] = labeled_markers
     end
@@ -107,10 +108,7 @@ function dist_morph_split(
 end
 
 function _nonoverlapping_labels(other, indices, labels)
-    return [
-        label for label in labels
-                  if maximum(other[indices[label]]) == 0
-    ]
+    return [label for label in labels if maximum(other[indices[label]]) == 0]
 end
 
 function _remove_labels!(output, indices, remove_labels)

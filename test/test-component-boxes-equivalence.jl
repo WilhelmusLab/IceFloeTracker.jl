@@ -10,9 +10,7 @@
     # speed and not its results, which is asserted here. Once a release containing
     # the fix is available, both go: the copy and these tests.
 
-
     A = [2 2 2 2 2; 1 1 1 0 1; 1 0 2 1 1; 1 1 2 2 2; 1 0 2 2 2] # from the function's docstring
     ours, theirs = _component_boxes(A), component_boxes(A)
     @test axes(ours) == axes(theirs) && all(ours[i] == theirs[i] for i in eachindex(ours))
-
 end

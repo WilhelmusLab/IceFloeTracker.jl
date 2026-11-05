@@ -294,20 +294,19 @@ end
 end
 
 @testitem "remove segments" begin
-    
     using IceFloeTracker
 
-    A = [   
-            0 0 0 0 0 0 0 0 0
-            0 1 1 1 0 0 0 0 0
-            0 1 1 1 0 0 0 0 0
-            0 1 1 1 0 0 0 0 0
-            0 0 0 0 0 0 0 0 0
-            0 0 0 0 0 2 2 0 0
-            0 0 0 0 0 2 2 0 0
-            0 0 0 0 0 0 0 0 0
-            0 0 0 0 0 0 0 0 0
-        ]
+    A = [
+        0 0 0 0 0 0 0 0 0
+        0 1 1 1 0 0 0 0 0
+        0 1 1 1 0 0 0 0 0
+        0 1 1 1 0 0 0 0 0
+        0 0 0 0 0 0 0 0 0
+        0 0 0 0 0 2 2 0 0
+        0 0 0 0 0 2 2 0 0
+        0 0 0 0 0 0 0 0 0
+        0 0 0 0 0 0 0 0 0
+    ]
 
     # Component 2 has 4 pixels, so it should be removed
     remove_small_segments!(A, 5)
@@ -316,22 +315,23 @@ end
     # Now, component 1 is the only one, and it has more than 5 pixels
     remove_large_segments!(A, 5)
     @test unique(A) == [0]
-    
+
     # Next to test contrast, we use the original shapes
-    A = [   
-            0 0 0 0 0 0 0 0 0
-            0 1 1 1 0 0 0 0 0
-            0 1 1 1 0 0 0 0 0
-            0 1 1 1 0 0 0 0 0
-            0 0 0 0 0 0 0 0 0
-            0 0 0 0 0 2 2 0 0
-            0 0 0 0 0 2 2 0 0
-            0 0 0 0 0 0 0 0 0
-            0 0 0 0 0 0 0 0 0
-        ]
-    
+    A = [
+        0 0 0 0 0 0 0 0 0
+        0 1 1 1 0 0 0 0 0
+        0 1 1 1 0 0 0 0 0
+        0 1 1 1 0 0 0 0 0
+        0 0 0 0 0 0 0 0 0
+        0 0 0 0 0 2 2 0 0
+        0 0 0 0 0 2 2 0 0
+        0 0 0 0 0 0 0 0 0
+        0 0 0 0 0 0 0 0 0
+    ]
+
     # And add an "img" for which we'll compute contrast. Contrast here
-    B = [   
+    B =
+        [
             0 0 0 0 0 0 0 0 0
             0 1 3 1 0 0 0 0 0
             0 1 1 3 0 0 0 0 0
@@ -341,43 +341,42 @@ end
             0 0 0 0 0 2 2 0 0
             0 0 0 0 0 0 0 0 0
             0 0 0 0 0 0 0 0 0
-        ]    ./ 3     
+        ] ./ 3
 
     remove_low_contrast_segments!(A, B, 0.1, 6)
     @test unique(A) == [0, 1]
-
 end
 
 @testitem "get relevant set" begin
-import IceFloeTracker.Segmentation: get_relevant_set
+    import IceFloeTracker.Segmentation: get_relevant_set
 
-G = [
- 0 0 0 0 0 3 3
- 0 1 1 1 0 0 0    
- 0 1 1 1 0 0 0
- 0 1 1 1 0 0 0
- 0 0 0 0 2 2 2
- 0 0 0 0 2 2 2
- 0 0 0 0 2 2 2
-]
+    G = [
+        0 0 0 0 0 3 3
+        0 1 1 1 0 0 0
+        0 1 1 1 0 0 0
+        0 1 1 1 0 0 0
+        0 0 0 0 2 2 2
+        0 0 0 0 2 2 2
+        0 0 0 0 2 2 2
+    ]
 
-S = [
- 0 0 0 0 0 0 0
- 0 1 1 1 0 0 0    
- 0 1 1 1 0 0 0
- 3 3 1 1 0 0 0
- 3 3 0 0 2 2 2
- 3 3 0 0 2 2 0
- 3 3 0 0 2 0 0
-]
+    S = [
+        0 0 0 0 0 0 0
+        0 1 1 1 0 0 0
+        0 1 1 1 0 0 0
+        3 3 1 1 0 0 0
+        3 3 0 0 2 2 2
+        3 3 0 0 2 2 0
+        3 3 0 0 2 0 0
+    ]
 
-R = get_relevant_set(G, S)
+    R = get_relevant_set(G, S)
 
-# Tests that
-# 1) the relevant sets can have matched segments without being the same shape
-# 2) ground truth segments with no match don't get added to the set
-# 3) predicted segments with no match don't get added to the set
-@test R[2] == [2] && R[1] == [1] && [3] ∉ values(R) && 3 ∉ keys(R)
+    # Tests that
+    # 1) the relevant sets can have matched segments without being the same shape
+    # 2) ground truth segments with no match don't get added to the set
+    # 3) predicted segments with no match don't get added to the set
+    @test R[2] == [2] && R[1] == [1] && [3] ∉ values(R) && 3 ∉ keys(R)
 end
 
 @testitem "split-floes" begin
@@ -388,7 +387,7 @@ end
     case = first(filter(c -> (c.case_number == 6 && c.satellite == "terra"), dataset))
 
     binary_floes = validated_binary_floes(case) .> 0
-    se = strel_box((3,3))
+    se = strel_box((3, 3))
     dilated_floes = erode(dilate(binary_floes, se), se) # This joins floes in the validated image
 
     split_floes = IceFloeTracker.dist_morph_split(dilated_floes)
