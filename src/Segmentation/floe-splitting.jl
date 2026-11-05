@@ -2,7 +2,7 @@
 Functions for separating ice floes in binary images.
 """
 
-import Images: 
+import Images:
     distance_transform,
     feature_transform,
     label_components,
@@ -10,8 +10,7 @@ import Images:
     component_indices,
     imfill
 
-import ..Morphology:
-    strel_disk
+import ..Morphology: strel_disk
 
 """
     dist_morph_split(
@@ -52,9 +51,9 @@ function dist_morph_split(
     markers = opening(dist .> 0, opening_strel)
     markers .= .!imfill(.!markers, (0, max_hole_fill))
     labeled_markers = label_components(markers)
-    maximum(labeled_markers) == 0 && return markers 
+    maximum(labeled_markers) == 0 && return markers
     levels = Dict(0 => labeled_markers)
-   
+
     ### Build pyramid - each size is the opened and filled thresholded image for a given distance
     for dist_threshold in 1:max_depth
         markers = opening(dist .> dist_threshold, opening_strel)
@@ -64,7 +63,7 @@ function dist_morph_split(
 
         labels = filter(r -> r != 0, unique(labeled_markers))
         indices = component_indices(labeled_markers)
-        
+
         # check 1: Remove components with no intersection with the layer below
         remove_list = _nonoverlapping_labels(levels[dist_threshold - 1], indices, labels)
         _remove_labels!(labeled_markers, indices, remove_list)
@@ -72,7 +71,9 @@ function dist_morph_split(
 
         # check 2: Remove components which fail the max_depth_ratio to component maximum depth test
         maximum_depths = Dict(L => maximum(dist[indices[L]]) for L in labels)
-        remove_list = [L for L ∈ labels if max_depth_ratio * maximum_depths[L] < dist_threshold]
+        remove_list = [
+            L for L in labels if max_depth_ratio * maximum_depths[L] < dist_threshold
+        ]
         _remove_labels!(labeled_markers, indices, remove_list)
         levels[dist_threshold] = labeled_markers
     end
@@ -104,10 +105,7 @@ function dist_morph_split(
 end
 
 function _nonoverlapping_labels(other, indices, labels)
-    return [
-        label for label in labels
-        if maximum(other[indices[label]]) == 0
-    ]
+    return [label for label in labels if maximum(other[indices[label]]) == 0]
 end
 
 function _remove_labels!(output, indices, remove_labels)

@@ -1,3 +1,5 @@
+# Read by JuliaFormatter.jl (`format(".")`, other editors, CI).
+# The VS Code Julia extension reads JuliaFormat.toml instead; keep both in sync.
 style = "blue"
 
 # Overrides

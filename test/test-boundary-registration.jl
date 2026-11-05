@@ -45,7 +45,9 @@ end
     @test all(r -> r.shape_difference isa Real, result)
 end
 
-@testitem "shape_difference_rotation_boundary identity is minimal at zero" setup = [BoundaryRegSetup] begin
+@testitem "shape_difference_rotation_boundary identity is minimal at zero" setup = [
+    BoundaryRegSetup
+] begin
     angles = [deg2rad(d) for d in -20:5:20]
     result = shape_difference_rotation_boundary(L, L, angles)
 
@@ -55,7 +57,9 @@ end
     @test isapprox(best.shape_difference, 0.0; atol=1e-10)
 end
 
-@testitem "shape_difference_rotation_boundary honours an injected metric" setup = [BoundaryRegSetup] begin
+@testitem "shape_difference_rotation_boundary honours an injected metric" setup = [
+    BoundaryRegSetup
+] begin
     called = Ref(0)
     counting_metric = function (a, b)
         called[] += 1
@@ -67,8 +71,10 @@ end
 
     @test called[] == length(angles)          # metric actually used, once per angle
     # and it produced the injected metric's values, not the default's
-    expected = [r.shape_difference for r in
-                shape_difference_rotation_boundary(L, L, angles; metric=boundary_hausdorff)]
+    expected = [
+        r.shape_difference for
+        r in shape_difference_rotation_boundary(L, L, angles; metric=boundary_hausdorff)
+    ]
     @test [r.shape_difference for r in result] == expected
 end
 
@@ -80,7 +86,9 @@ end
     @test isapprox(recovered, θ; atol=1e-9)
 end
 
-@testitem "register_boundary sign convention matches the mask path" setup = [BoundaryRegSetup] begin
+@testitem "register_boundary sign convention matches the mask path" setup = [
+    BoundaryRegSetup
+] begin
     # A returned angle A means "target looks like reference rotated by A" in the sense
     # of imrotate_bin_clockwise_radians, the convention register uses. Pinning this is
     # what makes register_boundary a drop-in for register in get_rotation_measurements;
@@ -109,7 +117,9 @@ end
     @test isapprox(recovered, θ; atol=1e-9)
 end
 
-@testitem "register_boundary recovers rotation from independently traced boundaries" setup = [BoundaryRegSetup] begin
+@testitem "register_boundary recovers rotation from independently traced boundaries" setup = [
+    BoundaryRegSetup
+] begin
     # The production case. The two boundaries are traced from separately produced masks,
     # so their point sequences start at unrelated places and carry pixel noise. Every
     # other test here builds its target with rotate_boundary, which preserves point
@@ -134,7 +144,9 @@ end
     @test isapprox(recovered, register(mask, imrotate_bin(mask, θ)); atol=1e-9)
 end
 
-@testitem "register_boundary is callable as a registration_function" setup = [BoundaryRegSetup] begin
+@testitem "register_boundary is callable as a registration_function" setup = [
+    BoundaryRegSetup
+] begin
     # get_rotation_measurements invokes registration_function(image1, image2; test_angles)
     θ = deg2rad(20.0)
     target = rotate_as_mask(L, θ)
@@ -157,7 +169,9 @@ end
     @test reg isa Function
 end
 
-@testitem "BoundaryRegistration matrix method matches register_boundary" setup = [BoundaryRegSetup] begin
+@testitem "BoundaryRegistration matrix method matches register_boundary" setup = [
+    BoundaryRegSetup
+] begin
     θ = deg2rad(30.0)
     target = rotate_as_mask(L, θ)
     reg = BoundaryRegistration()
@@ -243,9 +257,7 @@ end
 
 @testitem "boundary_shape_difference identity and symmetry" setup = [BoundaryRegSetup] begin
     @test isapprox(boundary_shape_difference(L, 0.0, L, 0.0), 0.0; atol=1e-10)
-    @test isapprox(
-        boundary_shape_difference(L, 0.3, L, 0.3), 0.0; atol=1e-10
-    )  # same rotation applied to both
+    @test isapprox(boundary_shape_difference(L, 0.3, L, 0.3), 0.0; atol=1e-10)  # same rotation applied to both
 
     other = rotate_as_mask(L, deg2rad(40.0))
     @test isapprox(
@@ -291,11 +303,7 @@ end
     θ = deg2rad(30.0)                      # on the default 5 degree grid
     t0 = DateTime(2020, 1, 1, 0, 0, 0)
 
-    df = DataFrame(;
-        id=[1, 1],
-        boundary=[L, rotate_as_mask(L, θ)],
-        time=[t0, t0 + Hour(6)],
-    )
+    df = DataFrame(; id=[1, 1], boundary=[L, rotate_as_mask(L, θ)], time=[t0, t0 + Hour(6)])
 
     result = get_rotation_measurements(
         df;
@@ -313,17 +321,15 @@ end
     @test result.omega_rad_per_sec[1] > 0
 end
 
-@testitem "BoundaryRegistration end-to-end with a negative rotation" setup = [BoundaryRegSetup] begin
+@testitem "BoundaryRegistration end-to-end with a negative rotation" setup = [
+    BoundaryRegSetup
+] begin
     using DataFrames, Dates
     using IceFloeTracker: get_rotation_measurements
 
     θ = deg2rad(-25.0)
     t0 = DateTime(2020, 1, 1, 0, 0, 0)
-    df = DataFrame(;
-        id=[1, 1],
-        boundary=[L, rotate_as_mask(L, θ)],
-        time=[t0, t0 + Hour(6)],
-    )
+    df = DataFrame(; id=[1, 1], boundary=[L, rotate_as_mask(L, θ)], time=[t0, t0 + Hour(6)])
 
     result = get_rotation_measurements(
         df;
@@ -341,9 +347,7 @@ end
     using DataFrames, Dates
     using IceFloeTracker: get_rotation_measurements
 
-    df = DataFrame(;
-        id=Int[], boundary=Matrix{Float64}[], time=DateTime[]
-    )
+    df = DataFrame(; id=Int[], boundary=Matrix{Float64}[], time=DateTime[])
     result = get_rotation_measurements(
         df;
         id_column=:id,
