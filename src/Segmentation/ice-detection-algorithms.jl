@@ -28,8 +28,8 @@ import Peaks:
         edges,
         counts;
         possible_ice_threshold::Real=0.30,
-        minimum_prominence::Float64=0.01,
-        window_size::Int64=3,
+        minimum_prominence::Real=0.01,
+        window_size::Integer=3,
     )
 
 Given the edges and counts from build_histogram, identify local maxima and return the location of the
@@ -52,8 +52,8 @@ function get_ice_peaks(
     edges,
     counts;
     possible_ice_threshold::Real=0.30,
-    minimum_prominence::Float64=0.01,
-    window_size::Int64=3,
+    minimum_prominence::Real=0.01,
+    window_size::Integer=3,
 )
     counts = counts[1:end]
     normalizer = sum(counts[edges .> possible_ice_threshold])
