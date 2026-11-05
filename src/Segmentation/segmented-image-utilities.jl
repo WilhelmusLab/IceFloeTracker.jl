@@ -112,7 +112,7 @@ function stitch_clusters(
         isempty(label_pairs) && continue
 
         # create a dataframe with the results: row 1 = left labels, row 2 = right labels
-        pairs_matrix = stack(label_pairs)
+        pairs_matrix = Base.stack(label_pairs)
         df = DataFrame(; left=pairs_matrix[1, :], right=pairs_matrix[2, :])
 
         # groupby right -> left pairs and get counts
