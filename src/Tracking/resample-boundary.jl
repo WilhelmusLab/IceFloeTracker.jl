@@ -68,8 +68,16 @@ function resample_boundary(
         BD = Natural(OnGrid())
     elseif bd == "periodic"
         BD = Periodic(OnGrid())
+    else
+        throw(ArgumentError("bd must be \"natural\" or \"periodic\", got \"$bd\""))
     end
 
+    # Function barrier: Natural and Periodic are different types, so the interpolant is
+    # built in a method that specializes on BD.
+    return _resample_boundary(bd_points, reduc_factor, BD)
+end
+
+function _resample_boundary(bd_points::Vector{<:CartesianIndex}, reduc_factor::Int64, BD)
     # reparemetrize using arclength
     s_in = range(0, 1, length(bd_points))
 

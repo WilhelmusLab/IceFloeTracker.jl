@@ -33,9 +33,9 @@ be in meters. The final dx value in the list is the maximum displacement. Return
 on whether Δx is larger than the expected maximum for the given time period Δt.
 
 """
-@kwdef struct LopezAcostaTimeDistanceFunction <: AbstractTimeDistanceThresholdFunction
-    dt = (Minute(20), Minute(90), Hour(24))
-    dx = (3.75e3, 7.5e3, 30e3, 60e3)
+@kwdef struct LopezAcostaTimeDistanceFunction{T,X} <: AbstractTimeDistanceThresholdFunction
+    dt::T = (Minute(20), Minute(90), Hour(24))
+    dx::X = (3.75e3, 7.5e3, 30e3, 60e3)
     # TODO: add tests of input types and dimensions
 end
 
@@ -68,10 +68,11 @@ distance, while times larger than the maximum fail automatically.
 - Δt: Elapsed time; must be a Dates.Period or Dates.CompoundPeriod
 
 """
-@kwdef struct LogLogQuadraticTimeDistanceFunction <: AbstractTimeDistanceThresholdFunction
-    llq_params = [0.403, 0.988, -0.05]
-    min_time = Hour(1)
-    max_time = Day(7)
+@kwdef struct LogLogQuadraticTimeDistanceFunction{P,T1,T2} <:
+              AbstractTimeDistanceThresholdFunction
+    llq_params::P = [0.403, 0.988, -0.05]
+    min_time::T1 = Hour(1)
+    max_time::T2 = Day(7)
     # TODO: add tests of input types and dimensions
     # TODO: potentially move the parameterized equation into the struct
 end
@@ -99,9 +100,9 @@ uncertainty is 250 m, then the maximum distance includes a 250 m buffer. The def
 velocity is 1.5 m/s.
 
 """
-@kwdef struct LinearTimeDistanceFunction <: AbstractTimeDistanceThresholdFunction
-    max_velocity = 0.75
-    epsilon = 250
+@kwdef struct LinearTimeDistanceFunction{V,E} <: AbstractTimeDistanceThresholdFunction
+    max_velocity::V = 0.75
+    epsilon::E = 250
 end
 
 function (f::LinearTimeDistanceFunction)(Δx, Δt)
@@ -129,6 +130,7 @@ Time-distance threshold functions are used to identify search regions for floe m
 LopezAcostaTimeDistanceFunction, based on the stepwise method in Lopez-Acosta et al. 2019, and LogLogQuadraticTimeDistanceFunction,
 which is based on fitting a quadratic function to log-transformed displacements calculated from
 drifting buoy data.
+
 ## Example
 ```julia-repl
 julia> distance_threshold(100, Hour(12), LopezAcostaTimeDistanceFunction())
