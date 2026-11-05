@@ -97,7 +97,7 @@ small blocks results in noisy images and poor performance. With larger blocks, a
 - `adapthisteq_algorithm`: Any histogram adjustment algorithm which can be passed to `adjust_histogram()`.
 - `unsharp_mask_params`: Parameters for [`unsharp_mask`](@ref)
 - `process_color`: Either `:color` or `:grayscale`. If `:grayscale`, then convert to grayscale prior to running the other algorithms.
-     Otherwise, conversion to grayscale occurs after nonlinear diffusion and image histogram adjustment. 
+     Otherwise, conversion to grayscale occurs after nonlinear diffusion and image histogram adjustment.
 
 """
 @kwdef struct Preprocess <: IceFloePreprocessingAlgorithm
@@ -182,15 +182,16 @@ A segmented image with candidate sea ice floes.
 
 Note: This algorithm is under active development and the API will change in a future release.
 """
-@kwdef struct Segment <: IceFloeSegmentationAlgorithm
-    coastal_buffer_structuring_element::AbstractMatrix{Bool} = make_landmask_se()
-    cloud_mask_algorithm = LopezAcostaCloudMask()
-    tile_settings=(; rblocks=1, cblocks=1)
-    min_ocean_pixels=300
-    preprocessing_algorithm = Preprocess()
-    kmeans_params = (k=4, maxiter=50, random_seed=45)
-    cluster_selection_algorithm = IceDetectionLopezAcosta2019()
-    segB_params = (
+@kwdef struct Segment{SE<:AbstractMatrix{Bool},CM,TS,MO,PA,KM,CS,SB,SF,FS,EL} <:
+              IceFloeSegmentationAlgorithm
+    coastal_buffer_structuring_element::SE = make_landmask_se()
+    cloud_mask_algorithm::CM = LopezAcostaCloudMask()
+    tile_settings::TS = (; rblocks=1, cblocks=1)
+    min_ocean_pixels::MO = 300
+    preprocessing_algorithm::PA = Preprocess()
+    kmeans_params::KM = (k=4, maxiter=50, random_seed=45)
+    cluster_selection_algorithm::CS = IceDetectionLopezAcosta2019()
+    segB_params::SB = (
         isolation_threshold=0.4,
         brightening_factor=0.3,
         gamma_factor=10,
@@ -198,11 +199,11 @@ Note: This algorithm is under active development and the API will change in a fu
         fill_range_max=1,
         alpha_level=0.5,
     )
-    segF_params = (k=3, se=strel_diamond((5, 5)), min_area_opening=20)
-    floe_splitting_settings = (
+    segF_params::SF = (k=3, se=strel_diamond((5, 5)), min_area_opening=20)
+    floe_splitting_settings::FS = (
         max_fill_area=1, min_area_opening=20, opening_strel=strel_octagon(3)
     )
-    expand_labels_by=0 # Expanding labels can help improve the results but isn't in the original
+    expand_labels_by::EL = 0 # Expanding labels can help improve the results but isn't in the original
 end
 
 function (p::Segment)(
