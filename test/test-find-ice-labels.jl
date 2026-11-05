@@ -34,6 +34,10 @@
         f = IceDetectionBrightnessPeaksMODIS721(;
             band_7_max=5 / 255, possible_ice_threshold=75 / 255, nbins=64
         )
+        # Mixed threshold types are promoted to a common type
+        @test IceDetectionBrightnessPeaksMODIS721(;
+            band_7_max=5 / 255, possible_ice_threshold=Float32(75 / 255), nbins=64
+        ) isa IceDetectionBrightnessPeaksMODIS721{Float64}
 
         dataset = Watkins2026Dataset(; ref="v0.2")
         case = first(filter(c -> (c.case_number == 12 && c.satellite == "terra"), dataset))
