@@ -144,7 +144,8 @@ end
 end
 
 @testitem "center_boundary and rotate_boundary are invariant to trace start" begin
-    using IceFloeTracker.Tracking: center_boundary, rotate_boundary, bwtraceboundary, resample_boundary
+    using IceFloeTracker.Tracking:
+        center_boundary, rotate_boundary, bwtraceboundary, resample_boundary
     using IceFloeTracker.Preprocessing: make_landmask_se
 
     # Traced boundaries are closed: the first point is repeated as the last, and that
@@ -161,7 +162,7 @@ end
 
     # The same closed curve as if tracing had started k points later: drop the closing
     # row, rotate the remaining rows by k, and close the curve again with the new first row.
-    retrace(b, k) = (p=circshift(b[1:(end-1), :], (-k, 0)); vcat(p, p[1:1, :]))
+    retrace(b, k) = (p=circshift(b[1:(end - 1), :], (-k, 0)); vcat(p, p[1:1, :]))
 
     # A copy whose closing row misses the first row by 1e-13, like resample_boundary output.
     add_jitter_to_endpoint(b) = (c=copy(b); c[end, :] .+= 1e-13; c)

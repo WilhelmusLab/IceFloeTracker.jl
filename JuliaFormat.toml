@@ -1,0 +1,6 @@
+# Read by the VS Code Julia extension (julialang.language-julia >= 1.231).
+# JuliaFormatter.jl reads .JuliaFormatter.toml instead; keep both in sync.
+style = "blue"
+
+[options]
+pipe_to_function_call = false
