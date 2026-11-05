@@ -162,11 +162,11 @@ See also: [`binarize`](https://juliaimages.org/ImageBinarization.jl/v0.1/)
 # Examples
 ```jldoctest
 julia> algo = IceDetectionBrightnessPeaksMODIS721(;
-           band_7_max=5/255,
-           possible_ice_threshold=75/255,
+           band_7_max=0.02,
+           possible_ice_threshold=0.294,
            join_method="union",
        )
-IceDetectionBrightnessPeaksMODIS721{Float64}(0.0196078431372549, 0.29411764705882354, 128, 0.01, 3, "union")
+IceDetectionBrightnessPeaksMODIS721{Float64}(0.02, 0.294, 128, 0.01, 3, "union")
 ```
 """
 @kwdef struct IceDetectionBrightnessPeaksMODIS721{T<:Real} <: IceDetectionAlgorithm
