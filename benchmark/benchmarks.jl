@@ -33,9 +33,9 @@ SUITE["extend_regionprops"] = BenchmarkGroup()
 
 const PROPS = DataFrame(regionprops(LABELS; properties=[:label, :area]))
 
-SUITE["extend_regionprops"]["add_floemasks!"] = @benchmarkable add_floemasks!(
-    df, $LABELS
-) setup = (df = copy($PROPS))
+SUITE["extend_regionprops"]["add_floemasks!"] = @benchmarkable add_floemasks!(df, $LABELS) setup = (
+    df = copy($PROPS)
+)
 
 const PROPS_MASKED = let df = copy(PROPS)
     add_floemasks!(df, LABELS)

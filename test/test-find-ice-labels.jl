@@ -57,7 +57,10 @@
 
         # Make sure we can all the new option
         f2 = IceDetectionBrightnessPeaksMODIS721(;
-            band_7_max=5 / 255, possible_ice_threshold=75 / 255, nbins=64, join_method="union"
+            band_7_max=5 / 255,
+            possible_ice_threshold=75 / 255,
+            nbins=64,
+            join_method="union",
         )
         intersect_method = binarize(modis_falsecolor(case), f)
         union_method = binarize(modis_falsecolor(case), f2)
@@ -65,7 +68,10 @@
 
         # Test whether it will default to intersect as intended
         f3 = IceDetectionBrightnessPeaksMODIS721(;
-            band_7_max=5 / 255, possible_ice_threshold=75 / 255, nbins=64, join_method="divide"
+            band_7_max=5 / 255,
+            possible_ice_threshold=75 / 255,
+            nbins=64,
+            join_method="divide",
         )
         alt_method = binarize(modis_falsecolor(case), f3)
         @test allequal(alt_method .== intersect_method)
@@ -82,16 +88,14 @@
 
         tc_masked = masker(land, apply_cloudmask(RGB.(modis_truecolor(case)), clouds))
         prelim_ice = f(Gray.(red.(tc_masked))) .> 0
-        recall =
-            sum(prelim_ice .&& ground_truth_ice) / sum(ground_truth_ice)
+        recall = sum(prelim_ice .&& ground_truth_ice) / sum(ground_truth_ice)
         @test recall >= 0.979
         water = sum(.! prelim_ice .&& .! clouds .&& .! land) ./ prod(size(land))
         @test 0.38 < water < 0.40
 
         tiles = get_tiles(land, 200)
         prelim_ice = f(Gray.(red.(tc_masked)), tiles) .> 0
-        recall =
-            sum(prelim_ice .&& ground_truth_ice) / sum(ground_truth_ice)
+        recall = sum(prelim_ice .&& ground_truth_ice) / sum(ground_truth_ice)
         @test recall >= 0.979
 
         # With the tiled version the water fraction goes down. This is mainly a regression test.
@@ -197,9 +201,7 @@ end
     @testset "MATLAB comparison" begin
         import IceFloeTracker.LopezAcosta2019: IceDetectionLopezAcosta2019
         import Images: gray
-        falsecolor_image = float64.(
-            load(falsecolor_test_image_file)[test_region...]
-        )
+        falsecolor_image = float64.(load(falsecolor_test_image_file)[test_region...])
         landmask = convert(BitMatrix, load(current_landmask_file)[test_region...])
         ice_labels_matlab = readdlm("$(test_data_dir)/ice_labels_matlab.csv", ',')
         ice_labels_matlab = vec(ice_labels_matlab)
@@ -214,9 +216,7 @@ end
     @testset "validated data" begin
         import IceFloeTracker.LopezAcosta2019: IceDetectionLopezAcosta2019
         dataset = Watkins2026Dataset(; ref="v0.2")
-        case = first(
-            filter(c -> (c.case_number == 12 && c.satellite == "terra"), dataset)
-        )
+        case = first(filter(c -> (c.case_number == 12 && c.satellite == "terra"), dataset))
         landmask = modis_landmask(case)
         falsecolor = modis_falsecolor(case)
         baseline = binarize(falsecolor, IceDetectionLopezAcosta2019())
@@ -248,11 +248,9 @@ end
             @test binarize(n4f12.(fc_masked), algorithm) == baseline_mask broken = true
         end
 
-        algorithm = IceDetectionBrightnessMidpoint(;
-                minimum_reflectance=0.3
-            )
+        algorithm = IceDetectionBrightnessMidpoint(; minimum_reflectance=0.3)
 
-            # Band 1 is the blue channel in the falsecolor image
+        # Band 1 is the blue channel in the falsecolor image
         g = Gray.(blue.(falsecolor))
         g_masked = Gray.(blue.(fc_masked))
         baseline = binarize(g, algorithm)

@@ -10,8 +10,7 @@ import Images:
     component_indices,
     imfill
 
-import ..Morphology:
-    strel_disk
+import ..Morphology: strel_disk
 
 """
     dist_morph_split(
@@ -69,13 +68,15 @@ function dist_morph_split(
         # (each check gets its own list: reassigning one name captured by the
         # `filter!` closure would box it; see
         # https://docs.julialang.org/en/v1/manual/performance-tips/#man-performance-captured)
-        nonoverlapping = _nonoverlapping_labels(levels[dist_threshold-1], indices, labels)
+        nonoverlapping = _nonoverlapping_labels(levels[dist_threshold - 1], indices, labels)
         _remove_labels!(labeled_markers, indices, nonoverlapping)
         filter!(r -> r ∉ nonoverlapping, labels)
 
         # check 2: Remove components which fail the max_depth_ratio to component maximum depth test
         maximum_depths = Dict(L => maximum(dist[indices[L]]) for L in labels)
-        too_shallow = [L for L ∈ labels if max_depth_ratio * maximum_depths[L] < dist_threshold]
+        too_shallow = [
+            L for L in labels if max_depth_ratio * maximum_depths[L] < dist_threshold
+        ]
         _remove_labels!(labeled_markers, indices, too_shallow)
         levels[dist_threshold] = labeled_markers
     end
@@ -85,8 +86,8 @@ function dist_morph_split(
     ### Descend pyramid
     for dist_threshold in max_depth:-1:1
         # Get indices from level d-1
-        indices = component_indices(levels[dist_threshold-1])
-        labels = filter(r -> r != 0, unique(levels[dist_threshold-1]))
+        indices = component_indices(levels[dist_threshold - 1])
+        labels = filter(r -> r != 0, unique(levels[dist_threshold - 1]))
         # Expand indices at level d
         expanded = expand_labels(levels[dist_threshold], max_expand)
         for L in labels
@@ -98,7 +99,7 @@ function dist_morph_split(
             end
             # Otherwise, expand the current level, and set the next level down to the expanded indices.
             # May need to check the number of matched labels in the expanded image.
-            levels[dist_threshold-1][indices[L]] .= expanded[indices[L]]
+            levels[dist_threshold - 1][indices[L]] .= expanded[indices[L]]
             final_labels[indices[L]] .= expanded[indices[L]]
         end
     end
@@ -107,10 +108,7 @@ function dist_morph_split(
 end
 
 function _nonoverlapping_labels(other, indices, labels)
-    return [
-        label for label in labels
-                  if maximum(other[indices[label]]) == 0
-    ]
+    return [label for label in labels if maximum(other[indices[label]]) == 0]
 end
 
 function _remove_labels!(output, indices, remove_labels)
