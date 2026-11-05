@@ -216,3 +216,59 @@ end
         @test all(iszero, reloaded.labeled)
     end
 end
+
+@testitem "Archive.V1 compresses  gridded variables" setup = [ArchiveV1] begin
+    # One variable per helper that compresses: color image, mask, labeled image.
+    gridded = ["modis_truecolor", "cloud_mask", "labeled_image"]
+
+    # Only the level is checked: defVar sets the deflate flag for any
+    # non-nothing deflatelevel, 0 included, so the flag carries no information.
+    function stored_deflatelevel(path, name)
+        return NCDataset(path, "r") do ds
+            # `.var` is the raw netCDF variable, without the CF layer
+            variable = ds[name].var
+            # (isshuffled, isdeflated, level)
+            _, _, level = NCDatasets.deflate(variable)
+            return level
+        end
+    end
+
+    @testset "default" begin
+        mktemp() do output_path, _
+            Archive.save(output_path, data)
+            @testset "$name" for name in gridded
+                @test stored_deflatelevel(output_path, name) == 1
+            end
+        end
+    end
+
+    @testset "deflatelevel=$level" for level in (0, 1, 4, 9)
+        mktemp() do output_path, _
+            Archive.save(output_path, data; deflatelevel=level)
+            @testset "$name" for name in gridded
+                @test stored_deflatelevel(output_path, name) == level
+            end
+        end
+    end
+end
+
+@testitem "Archive.V1 compressed file is smaller" setup = [ArchiveV1] begin
+    mktemp() do compressed_path, _
+        mktemp() do uncompressed_path, _
+            Archive.save(compressed_path, data)
+            Archive.save(uncompressed_path, data; deflatelevel=0)
+            @test filesize(compressed_path) < filesize(uncompressed_path)
+        end
+    end
+end
+
+@testitem "Archive.V1 saved at maximum compression reloads correctly" setup = [ArchiveV1] begin
+    mktemp() do output_path, _
+        Archive.save(output_path, data; deflatelevel=9)
+        reloaded = Archive.load(output_path)
+        @test reloaded.modis_truecolor == data.modis_truecolor
+        @test reloaded.labeled == data.labeled
+        @test reloaded.cloud_mask == Bool.(data.cloud_mask)
+        @test isequal(reloaded.props, data.props)
+    end
+end

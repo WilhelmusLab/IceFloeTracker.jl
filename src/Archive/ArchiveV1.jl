@@ -133,9 +133,12 @@ Includes:
 end
 
 """
-    save(path, V1(args...))
+    save(path, V1(args...); deflatelevel=1)
 
 Write the [`V1`](@ref) object to storage as a proper netCDF-4 file.
+
+The gridded variables (color images, masks, and the labeled image) are compressed
+losslessly with zlib at `deflatelevel`, from 0 (no compression) to 9 (maximum).
 
 The file uses `NCDatasets` and follows CF conventions. The `x`, `y`, and `time`
 dimensions are defined at the root level and inherited by all groups.
@@ -168,7 +171,7 @@ Structure:
 ```
 
 """
-function save(output_path::AbstractString, s::V1;)
+function save(output_path::AbstractString, s::V1; deflatelevel::Integer=1)
     ptsunix = Int64(Dates.datetime2unix(DateTime(s.passtime)))
     latlondata = s.crs
 
@@ -260,6 +263,7 @@ function save(output_path::AbstractString, s::V1;)
             "MODIS falsecolor image (bands 7, 2, 1)",
             projection_dataset_name,
             "band_modis_falsecolor",
+            deflatelevel=deflatelevel,
         )
         nc_create_color_dataset(
             ds,
@@ -268,6 +272,7 @@ function save(output_path::AbstractString, s::V1;)
             "MODIS truecolor image (bands 1, 4, 3)",
             projection_dataset_name,
             "band_modis_truecolor",
+            deflatelevel=deflatelevel,
         )
         nc_create_color_dataset(
             ds,
@@ -276,6 +281,7 @@ function save(output_path::AbstractString, s::V1;)
             "MODIS cloud RGB image",
             projection_dataset_name,
             "band_modis_cloud",
+            deflatelevel=deflatelevel,
         )
 
         # masks + labelled segmentation map
@@ -288,6 +294,7 @@ function save(output_path::AbstractString, s::V1;)
             "of each connected component.",
             "floe_label",
             projection_dataset_name,
+            deflatelevel=deflatelevel,
         )
         nc_create_mask_dataset(
             ds,
@@ -296,6 +303,7 @@ function save(output_path::AbstractString, s::V1;)
             "Cloud mask. This mask is 1 for pixels classified as cloud, and 0 elsewhere.",
             projection_dataset_name,
             "background cloud",
+            deflatelevel=deflatelevel,
         )
         nc_create_mask_dataset(
             ds,
@@ -304,6 +312,7 @@ function save(output_path::AbstractString, s::V1;)
             "Land mask. This mask is 1 for pixels classified as land, and 0 elsewhere.",
             projection_dataset_name,
             "background land",
+            deflatelevel=deflatelevel,
         )
         nc_create_mask_dataset(
             ds,
@@ -313,6 +322,7 @@ function save(output_path::AbstractString, s::V1;)
             "distance of the coast, and 0 elsewhere.",
             projection_dataset_name,
             "background coastal_buffer",
+            deflatelevel=deflatelevel,
         )
         nc_create_mask_dataset(
             ds,
@@ -321,6 +331,7 @@ function save(output_path::AbstractString, s::V1;)
             "Ice mask. This mask is 1 for pixels classified as ice, and 0 elsewhere.",
             projection_dataset_name,
             "background sea_ice",
+            deflatelevel=deflatelevel,
         )
 
         # floe properties: one variable per property column
@@ -331,7 +342,7 @@ function save(output_path::AbstractString, s::V1;)
 end
 
 """
-    nc_create_mask_dataset(grp, name, mask, description, projection_dataset_name, flag_meanings)
+    nc_create_mask_dataset(grp, name, mask, description, projection_dataset_name, flag_meanings; deflatelevel=0)
 
 Define a `UInt8` binary mask variable with dimensions `(x, y)` in the NCDatasets
 group `grp`. The parent group must supply the `x` and `y` dimensions.
@@ -346,10 +357,11 @@ function nc_create_mask_dataset(
     mask::AbstractMatrix,
     description::AbstractString="",
     projection_dataset_name::AbstractString="geolocation",
-    flag_meanings::AbstractString="background flag",
+    flag_meanings::AbstractString="background flag";
+    deflatelevel::Integer=0,
 )
     mask_uint8 = permutedims(UInt8.(Bool.(mask)), (2, 1))  # (nx, ny)
-    v = defVar(grp, name, UInt8, ("x", "y"); fillvalue=UInt8(0))
+    v = defVar(grp, name, UInt8, ("x", "y"); fillvalue=UInt8(0), deflatelevel)
     v.attrib["description"] = description
     v.attrib["grid_mapping"] = projection_dataset_name
     v.attrib["flag_values"] = UInt8[0, 1]
@@ -359,11 +371,11 @@ function nc_create_mask_dataset(
 end
 
 """
-    nc_create_labeled_dataset(grp, name, labeled, description, label_variable, projection_dataset_name)
+    nc_create_labeled_dataset(grp, name, labeled, description, label_variable, projection_dataset_name; deflatelevel=0)
 
 Define an integer-typed segmentation label variable with dimensions `(x, y)` in
 the NCDatasets group `grp`. The integer type is the smallest that can represent
-the maximum label value. The parent group must supply the `x` and `y` dimensions. 
+the maximum label value. The parent group must supply the `x` and `y` dimensions.
 The `label_variable` attribute is set to the value of the `label_variable` argument.
 
 Background pixels (value `0`) are recorded via a `_FillValue` of `0`, marking them
@@ -375,12 +387,13 @@ function nc_create_labeled_dataset(
     labeled::AbstractMatrix,
     description::AbstractString,
     label_variable::AbstractString,
-    projection_dataset_name::AbstractString,
+    projection_dataset_name::AbstractString;
+    deflatelevel::Integer=0,
 )
     mx = Int64(maximum(labeled))
     T = choose_dtype(mx)
     labeled_T = permutedims(T.(labeled), (2, 1))  # (nx, ny)
-    v = defVar(grp, name, T, ("x", "y"); fillvalue=T(0))
+    v = defVar(grp, name, T, ("x", "y"); fillvalue=T(0), deflatelevel, shuffle=true)
     v.attrib["description"] = description
     v.attrib["grid_mapping"] = projection_dataset_name
     v.attrib["label_variable"] = label_variable
@@ -389,7 +402,7 @@ function nc_create_labeled_dataset(
 end
 
 """
-    nc_create_color_dataset(grp, name, img, description, projection_dataset_name, band_dim_name)
+    nc_create_color_dataset(grp, name, img, description, projection_dataset_name, band_dim_name; deflatelevel=0)
 
 Define a `UInt8` colour image variable with dimensions `(x, y, band_dim_name)` in the
 NCDatasets group `grp`. The group must already define a dimension named `band_dim_name`,
@@ -401,10 +414,11 @@ function nc_create_color_dataset(
     img::AbstractMatrix{<:Union{RGB,RGBA}},
     description::AbstractString,
     projection_dataset_name::AbstractString,
-    band_dim_name::AbstractString,
+    band_dim_name::AbstractString;
+    deflatelevel::Integer=0,
 )
     img_raw = permutedims(UInt8.(rawview(channelview(img))), (3, 2, 1))  # (nx, ny, nchannels)
-    v = defVar(grp, name, UInt8, ("x", "y", band_dim_name))
+    v = defVar(grp, name, UInt8, ("x", "y", band_dim_name); deflatelevel)
     v.attrib["description"] = description
     v.attrib["grid_mapping"] = projection_dataset_name
     v[:, :, :] = img_raw
