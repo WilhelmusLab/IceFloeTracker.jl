@@ -1,7 +1,7 @@
 """
 
 This module documents the simplified IFT pipeline calibrated and validated in the paper
-"Automatic segmentation and tracking of sea ice floes using the Ice Floe Tracker algorithm" by
+"Automatic sea ice classification, floe detection, and tracking with IceFloeTracker.jl" by
 Watkins et al., submitted to IEEE Transactions in Geoscience and Remote Sensing (TGRS).
 
 The pipeline contains distinct struct/functor pairs and uses both semantic and object-based 
@@ -94,7 +94,7 @@ abstract type IceFloeClassificationAlgorithm end
             cblocks=4,
             clip=1,
         )
-    unsharp_mask_params = (radius=50, amount=0.3, threshold=0.01)
+    unsharp_mask_params = (radius=50, amount=0.3, threshold=0.01) # TODO: Replace with a sharpen functor
 end
 
 function (p::Preprocess)(
@@ -156,7 +156,7 @@ end
         τ₁=0.1,
         τ₂=0.2,
         τ₇=0.2,
-        key=Dict("land"=>0, "water"=>1, "ice"=>2, "cloud"=>3)
+        key=Dict("land"=>0, "water"=>1, "dark_ice"=>2, "bright_ice"=>3, "cloud"=>4)
         cloud_mask_algorithm=Watkins2026CloudMask(band_2_threshold=c.τ₂, band_7_threshold=c.τ₇)
         ice_mask_algorithm=IceDetectionBrightnessMidpoint(; minimum_reflectance=c.τ₁)
     )
@@ -171,22 +171,25 @@ accepting MODIS false color and Band 1 grayscale reflectance, respectively.
 
 """
 @kwdef struct Classify <: IceFloeClassificationAlgorithm
-    τ₁=0.1
-    τ₂=0.2
-    τ₇=0.2
-    key=Dict("land"=>0, "water"=>1, "ice"=>2, "cloud"=>3)
-    cloud_mask_algorithm=Watkins2026CloudMask(band_2_threshold=τ₂, band_7_threshold=τ₇)
-    ice_mask_algorithm=IceDetectionBrightnessMidpoint(; minimum_reflectance=τ₁)
+    bright_ice_band_1_minimum=0.6
+    cloud_band_2_minimum=0.2
+    cloud_band_7_minimum=0.2
+    water_band_1_maximum=0.2
+    key=Dict("land"=>0, "water"=>1, "dark_ice"=>2, "bright_ice"=>3, "cloud"=>4)
+    cloud_mask_algorithm=Watkins2026CloudMask(band_2_threshold=cloud_band_2_minimum, band_7_threshold=cloud_band_7_minimum)
+    ice_mask_algorithm=IceDetectionBrightnessMidpoint(; minimum_reflectance=bright_ice_band_1_minimum)
 end
 
 function (c::IceFloeClassificationAlgorithm)(false_color_image, land_mask)::Matrix{Int64}
     fc_masked = apply_landmask(false_color_image, land_mask)
     clouds = c.cloud_mask_algorithm(fc_masked)
-    ice = Gray.(blue.(apply_landmask(fc_masked, clouds))) |> c.ice_mask_algorithm
-
-    classified_image = ones(Int64, size(false_color_image)) .* c.key["water"]
-    classified_image[land_mask .> 0] .= c.key["land"]
-    classified_image[ice .> 0] .= c.key["ice"]
+    bright_ice = Gray.(blue.(apply_landmask(fc_masked, clouds))) |> c.ice_mask_algorithm
+    water = apply_landmask(blue.(fc_masked) .< c.water_band_1_maximum, land_mask)
+    
+    classified_image = zeros(Int64, size(false_color_image)) .+ c.key["land"]
+    classified_image[land_mask .== 0] .= c.key["dark_ice"] # set all ocean pixels to dark ice
+    classified_image[water .> 0] .= c.key["water"] # then apply the explicit masks
+    classified_image[bright_ice .> 0] .= c.key["bright_ice"]
     classified_image[clouds .> 0] .= c.key["cloud"]
 
     return classified_image
@@ -324,7 +327,7 @@ function (s::Segment)(
             falsecolor,
             coastal_buffer_mask = Gray.(masks["coastal_buffer_mask"]),
             cloud_mask = Gray.(masks["cloud"]),
-            ice_mask = Gray.(masks["ice"]),
+            ice_mask = Gray.(masks["bright_ice"]),
             preprocessed = preproc_gray,
             classified = n0f8.(colorize_classification(classified_image)),
             binarized = binarized_image .> 0,
@@ -871,14 +874,16 @@ end
     colorize_classification(labeled_image; color_map)
 
 Convenience function to make an image from a classified image, using
-the dictionary `color_map=Dict(label_integer => color)`.
+the dictionary `color_map=Dict(label_integer => color)`. Defaults correspond
+to the categories in Classify().
 """
 function colorize_classification(labeled_image;
     color_map=Dict(
         0=>RGB(0),
         1=>RGB(0.018, 0.49, 0.64),
-        2=>RGB(1),
-        3=>RGB(0.84, 0.73, 0.94)
+        2=>RGB(0.278, 0.654, 0.82),
+        3=>RGB(1),
+        4=>RGB(0.84, 0.73, 0.94)
     )
 )
     return n0f8.(map(i -> color_map[i], labeled_image))
