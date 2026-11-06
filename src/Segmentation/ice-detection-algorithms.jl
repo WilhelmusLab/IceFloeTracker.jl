@@ -316,13 +316,7 @@ function (f::IceDetectionBrightnessMidpoint)(out, gray_image::AbstractArray{<:Un
 end
 
 function (f::IceDetectionBrightnessMidpoint)(gray_image::AbstractArray{<:Union{AbstractGray,TransparentGray}},
-    tiles::Vector{Tuple{UnitRange{Int64},UnitRange{Int64}}})
-    canvas = falses(size(gray_image))
-    return @tilewise tiles f($gray_image) into = canvas
-end
-
-function (f::IceDetectionBrightnessMidpoint)(gray_image::AbstractArray{<:Union{AbstractGray,TransparentGray}},
-    tiles::Matrix{Tuple{UnitRange{Int64},UnitRange{Int64}}})
+    tiles::AbstractArray{Tuple{UnitRange{Int64},UnitRange{Int64}}})
     canvas = falses(size(gray_image))
     return @tilewise tiles f($gray_image) into = canvas
 end
