@@ -684,8 +684,10 @@ end
 Watershed segmentation of `distances` seeded at `markers`. Returns a `BitMatrix` that is
 true on the boundaries between segments.
 """
-_watershed_boundaries(distances, markers) =
-    isboundary(labels_map(watershed(distances, markers))) .> 0
+function _watershed_boundaries(distances, markers)
+    boundaries = watershed(distances, markers) |> labels_map |> isboundary
+    return boundaries .> 0
+end
 
 """IceDetectionLopezAcosta2019
 
