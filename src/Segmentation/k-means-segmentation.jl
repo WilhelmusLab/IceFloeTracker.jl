@@ -42,10 +42,10 @@ function kmeans_segmentation(
     # gets 2k+1:3k, and so on. Pixels outside every tile stay 0.
     segment(img) = _kmeans_labels(img; k=k, maxiter=maxiter, random_seed=random_seed)
     canvas = zeros(Int64, size(gray_image))
-    offsets = k .* tile_index_map(tiles, size(gray_image))
+    tile_indices = tile_index_map(tiles, size(gray_image))
 
     indexmap = @tilewise tiles segment($gray_image) into = canvas # labels 1:k per tile
-    indexmap .+= offsets # unique labels across tiles
+    @. indexmap += k * tile_indices # unique labels across tiles
 
     # Merge clusters that continue across tile edges
     indexmap .= labels_map(
