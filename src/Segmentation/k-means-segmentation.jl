@@ -65,8 +65,9 @@ end
 
 Label map of the k-means segmentation of `gray_image`, with labels `1:k`.
 """
-_kmeans_labels(gray_image; k, maxiter, random_seed) =
-    labels_map(kmeans_segmentation(gray_image; k=k, maxiter=maxiter, random_seed=random_seed))
+function _kmeans_labels(gray_image; k, maxiter, random_seed)
+    return kmeans_segmentation(gray_image; k, maxiter, random_seed) |> labels_map
+end
 
 """
     kmeans_binarization(gray_image, false_color_image; kwargs...)
