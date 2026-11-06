@@ -124,7 +124,7 @@ end
             c -> (
                 c.visible_floes == "yes" &&
                 c.cloud_fraction_manual < 0.5 &&
-                c.number_floes > 10
+                c.number_floes > 50
             ),
             dataset,
         ),

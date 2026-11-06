@@ -153,14 +153,15 @@ end
 # Q: Is using both Band 1 and Band 2 necessary? 
 """
    Classify(
-        τ₁=0.1,
-        τ₂=0.2,
-        τ₇=0.2,
+        bright_ice_band_1_minimum=0.6
+        cloud_band_2_minimum=0.2
+        cloud_band_7_minimum=0.2
+        water_band_1_maximum=0.2
         key=Dict("land"=>0, "water"=>1, "dark_ice"=>2, "bright_ice"=>3, "cloud"=>4)
-        cloud_mask_algorithm=Watkins2026CloudMask(band_2_threshold=c.τ₂, band_7_threshold=c.τ₇)
-        ice_mask_algorithm=IceDetectionBrightnessMidpoint(; minimum_reflectance=c.τ₁)
+        cloud_mask_algorithm=Watkins2026CloudMask(band_2_threshold=cloud_band_2_minimum, band_7_threshold=cloud_band_7_minimum)
+        ice_mask_algorithm=IceDetectionBrightnessMidpoint(; minimum_reflectance=bright_ice_band_1_minimum)
     )
-    Classify()(false_color_image, mask)
+    Classify()(false_color_image, land_mask)
 
 Classifies an image into land, water, ice, and cloud using the Watkins2026 cloud mask
 and the IceDetectionBrightnessMidpoint algorithm. The parameter τ₁ is the brightness 
@@ -330,7 +331,8 @@ function (s::Segment)(
             ice_mask = Gray.(masks["bright_ice"]),
             preprocessed = preproc_gray,
             classified = n0f8.(colorize_classification(classified_image)),
-            binarized = binarized_image .> 0,
+            kmeans_binarized = kmeans_binarized_image .> 0,
+            adaptive_binarized = adaptive_binarized_image .> 0,
             final_floes = colorview_random,
             labels_map = final_floes,
             segment_mean_falsecolor = segment_mean_falsecolor,
