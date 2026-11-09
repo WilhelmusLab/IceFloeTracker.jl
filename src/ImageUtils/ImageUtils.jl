@@ -15,7 +15,8 @@ export masker,
     imcomplement,
     to_uint8,
     get_tile_meta,
-    binarize_mask
+    binarize_mask,
+    @tilewise
 
 include("brighten.jl")
 include("imcomplement.jl")

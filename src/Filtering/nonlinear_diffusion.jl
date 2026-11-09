@@ -1,4 +1,5 @@
 import Images: float64, channelview, Gray, padarray, Pad, base_color_type, colorview
+import ..ImageUtils: @tilewise
 
 abstract type AbstractDiffusionAlgorithm end
 
@@ -70,11 +71,8 @@ function nonlinear_diffusion(
     tiles,
     f::AbstractDiffusionAlgorithm=PeronaMalikDiffusion(),
 )
-    out = deepcopy(img)
-    for tile in tiles
-        out[tile...] .= f(img[tile...])
-    end
-    return out
+    canvas = deepcopy(img)
+    return @tilewise tiles f($img) into = canvas
 end
 
 function (f::PeronaMalikDiffusion)(img::AbstractArray{<:AbstractGray})
