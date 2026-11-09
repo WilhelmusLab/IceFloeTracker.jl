@@ -423,19 +423,6 @@ function _shape_like(results, tiles)
     # `results` is a `Vector{Any}`. Broadcasting `identity` copies it into an array whose
     # element type is computed from the values, e.g. `Vector{Int64}` for integer results.
     narrowed = identity.(results)
-    return reshape(narrowed, size(tiles))
-end
-
-"""
-    tile_index_map(tiles, dims)
-
-Return an `Int` array of size `dims` in which every pixel of the `i`-th tile of `tiles`, in
-iteration order, is `i`, and every pixel outside all tiles is 0.
-"""
-function tile_index_map(tiles, dims)
-    out = zeros(Int, dims)
-    for (i, tile) in enumerate(tiles)
-        out[tile...] .= i
-    end
-    return out
+    has_shape = Base.IteratorSize(tiles) isa Base.HasShape
+    return has_shape ? reshape(narrowed, size(tiles)) : narrowed
 end
