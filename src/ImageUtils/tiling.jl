@@ -221,12 +221,15 @@ end
 Apply `transformation` to each tile in `tiles`. Inputs marked with `\$` are replaced by the
 current tile of that input: `\$img` stands for `img[t...]` for a tile `t`, with any dimensions
 beyond the tile's kept whole (a tile `(1:2, 3:4)` of an `h×w×3` array is `img[1:2, 3:4, :]`).
-Each distinct marked expression is evaluated once, before the first tile. Slices are copies, so
-the transformation cannot modify its inputs. Unmarked names are used as they are.
+Each distinct marked expression is evaluated once, before the first tile. Each input must have at least as many dimensions as the tiles. Slices are copies,
+so the transformation cannot modify its inputs through them. Unmarked names are used as they are.
 
 With `into = canvas`, each tile's result is written into the same tile of `canvas`, which is
-returned; pixels outside every tile keep their value in `canvas`. Without it, the results are
-collected into an array with the shape of `tiles`.
+returned; pixels outside every tile keep their value in `canvas`. Tiles are written in iteration
+order, so where tiles overlap, later tiles overwrite earlier ones. If `canvas` is also a marked
+input, each tile is sliced from the canvas as written so far. Without `into`, the results are
+collected into an array with the shape of `tiles`, or into a `Vector` if `tiles` has no shape
+(e.g. `Iterators.filter`).
 
 # Examples
 ```jldoctest
