@@ -105,7 +105,7 @@ function _conditional_histeq_tile(
     (entropy(clouds) > entropy_threshold && whitefraction > white_fraction_threshold) ||
         return rgb
     clahe = ContrastLimitedAdaptiveHistogramEqualization(; clip=2.0)
-    return stack(adjust_histogram(rgb[:, :, i] / 255.0, clahe) .* 255 for i in 1:3)
+    return stack(adjust_histogram(view(rgb, :, :, i) / 255.0, clahe) .* 255 for i in 1:3)
 end
 
 """
