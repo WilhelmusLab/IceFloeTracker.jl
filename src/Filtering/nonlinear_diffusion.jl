@@ -69,7 +69,7 @@ end
 function nonlinear_diffusion(
     img::AbstractArray{<:Union{AbstractRGB,TransparentRGB,AbstractGray}},
     tiles,
-    f::AbstractDiffusionAlgorithm=PeronaMalikDiffusion()
+    f::AbstractDiffusionAlgorithm=PeronaMalikDiffusion(),
 )
     canvas = deepcopy(img)
     return @tilewise tiles f($img) into = canvas
@@ -84,10 +84,10 @@ function (f::PeronaMalikDiffusion)(img::AbstractArray{<:AbstractGray})
         M, N = size(image)
         padded_array = padarray(image, Pad(:replicate, 1, 1))
 
-        ∇n = padded_array[1:M, 0:(N-1)] .- image
-        ∇s = padded_array[1:M, 2:(N+1)] .- image
-        ∇e = padded_array[2:(M+1), 1:N] .- image
-        ∇w = padded_array[0:(M-1), 1:N] .- image
+        ∇n = padded_array[1:M, 0:(N - 1)] .- image
+        ∇s = padded_array[1:M, 2:(N + 1)] .- image
+        ∇e = padded_array[2:(M + 1), 1:N] .- image
+        ∇w = padded_array[0:(M - 1), 1:N] .- image
 
         Cn = g.(abs.(∇n), k)
         Cs = g.(abs.(∇s), k)

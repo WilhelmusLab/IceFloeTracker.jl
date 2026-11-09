@@ -75,7 +75,7 @@ function (f::ContrastLimitedAdaptiveHistogramEqualization)(
     histograms = @tilewise tiles mapping($img_padded)
 
     # Interpolate pixel values
-    for rblock in 1:(f.rblocks+1), cblock in 1:(f.cblocks+1)
+    for rblock in 1:(f.rblocks + 1), cblock in 1:(f.cblocks + 1)
 
         # Get the histograms for each block
         if rblock == 1
@@ -181,7 +181,7 @@ function map_histogram(
 
     function _mapping_function(value)
         index = searchsortedfirst(edges, value)
-        return mapping[index-1] # -1 because mapping is an OffsetArray
+        return mapping[index - 1] # -1 because mapping is an OffsetArray
     end
     return _mapping_function
 end

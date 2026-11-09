@@ -6,7 +6,7 @@ import OffsetArrays: centered
 """
     make_landmask_se()
 
-Create a non-regular octagonal structuring element for dilating the landmask. 
+Create a non-regular octagonal structuring element for dilating the landmask.
 This structuring element matches a polygonal ``disk'' element used in the MATLAB IFT prototype.
 """
 function make_landmask_se()
@@ -52,11 +52,11 @@ end
     create_coastal_buffer_mask(landmask_binary; fill_min_pixels, fill_max_pixels)
     create_coastal_buffer_mask(landmask_binary, structuring_element; fill_min_pixels, fill_max_pixels)
 
-Dilate the binary landmask using the provided structuring element, and fill holes in the dilated image. 
-In the input landmask, land = 1 and ocean = 0. 
+Dilate the binary landmask using the provided structuring element, and fill holes in the dilated image.
+In the input landmask, land = 1 and ocean = 0.
 In the resulting mask, land and coastal buffer = 1, ocean = 0.
 
-The dilation will create a buffer around the land, which can help mask complex coastal features. 
+The dilation will create a buffer around the land, which can help mask complex coastal features.
 The hole filling step can help fill in small gaps in the dilated mask that may occur due to the dilation process.
 """
 function create_coastal_buffer_mask(
@@ -71,6 +71,7 @@ function create_coastal_buffer_mask(
     return mask_filled
 end
 
+# TODO: add option to use alpha channel for mask
 """
     apply_landmask(input_image, landmask_binary)
     apply_landmask!(input_image, landmask_binary)
@@ -81,7 +82,7 @@ Zero out pixels in all channels of the input image using the binary landmask.
 - `input_image`: truecolor RGB image
 - `landmask_binary`: binary landmask with 1=land, 0=water/ice
 
-""" # TODO: add option to use alpha channel for mask
+"""
 function apply_landmask(input_image::AbstractMatrix, landmask_binary::AbstractArray{Bool})
     image_masked = (.!landmask_binary) .* input_image
     return image_masked

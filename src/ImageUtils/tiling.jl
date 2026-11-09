@@ -205,7 +205,7 @@ function _cover1d(ax, strategy::MergeLastTileIfSmallerThanHalf{1})
     hi = last(ax)
     current = lo
     while 2 * (hi - current + 1) >= 3 * tilelen
-        push!(covered_range, current:(current+tilelen-1))
+        push!(covered_range, current:(current + tilelen - 1))
         current += tilelen
     end
     if hi >= current
@@ -254,9 +254,8 @@ macro tilewise(tiles, transformation, options...)
     canvas = _tilewise_canvas(options)
     inputs = Dict{Any,Symbol}()
     body = _mark_inputs!(inputs, transformation)
-    isempty(inputs) && throw(
-        ArgumentError("`@tilewise` transformation has no input marked with `\$`")
-    )
+    isempty(inputs) &&
+        throw(ArgumentError("`@tilewise` transformation has no input marked with `\$`"))
     tile = gensym(:tile)
     fulls = Dict(slice => gensym(:input) for slice in values(inputs))
     evaluate = [:($(fulls[slice]) = $ex) for (ex, slice) in inputs]

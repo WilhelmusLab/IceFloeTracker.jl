@@ -57,7 +57,8 @@ end
 @testitem "@tilewise accepts lazy and filtered tile collections" setup = [Tilewise] begin
     expected = [14 14 46 46; 14 14 46 46; 22 22 54 54; 22 22 54 54]
     for ts in (get_tiles(img; rblocks=2, cblocks=2), vec(tiles))
-        @test @tilewise(ts, fill(sum($img), size($img)), into = zeros(Int, 4, 4)) == expected
+        @test @tilewise(ts, fill(sum($img), size($img)), into = zeros(Int, 4, 4)) ==
+            expected
     end
 end
 
@@ -75,12 +76,12 @@ end
     @test_throws ArgumentError @macroexpand @tilewise tiles sum($img) onto = zeros(4, 4)
 end
 
-@testitem "@tilewise without a canvas collects a vector for unshaped tiles" setup = [Tilewise] begin
+@testitem "@tilewise collects a vector for unshaped tiles" setup = [Tilewise] begin
     top_row = Iterators.filter(t -> first(t[1]) == 1, vec(tiles))
     @test @tilewise(top_row, sum($img)) == [14, 46]
 end
 
-@testitem "@tilewise rejects an input with fewer dimensions than the tiles" setup = [Tilewise] begin
+@testitem "@tilewise rejects inputs with fewer dimensions than tiles" setup = [Tilewise] begin
     err = try
         @tilewise tiles sum($(vec(img)))
         nothing
