@@ -75,15 +75,17 @@ end
     @test_throws ArgumentError @macroexpand @tilewise tiles sum($img) onto = zeros(4, 4)
 end
 
-@testitem "tile_index_map paints each tile with its position" setup = [Tilewise] begin
-    import IceFloeTracker.ImageUtils as IU
-    @test IU.tile_index_map(tiles, (4, 4)) == [1 1 3 3; 1 1 3 3; 2 2 4 4; 2 2 4 4]
-    @test IU.tile_index_map(get_tiles(img; rblocks=2, cblocks=2), (4, 4)) ==
-        [1 1 3 3; 1 1 3 3; 2 2 4 4; 2 2 4 4]
+@testitem "@tilewise without a canvas collects a vector for unshaped tiles" setup = [Tilewise] begin
+    top_row = Iterators.filter(t -> first(t[1]) == 1, vec(tiles))
+    @test @tilewise(top_row, sum($img)) == [14, 46]
 end
 
-@testitem "tile_index_map numbers a filtered collection by its own order" setup = [Tilewise] begin
-    import IceFloeTracker.ImageUtils as IU
-    corners = vec(tiles)[[1, 4]] # top-left and bottom-right
-    @test IU.tile_index_map(corners, (4, 4)) == [1 1 0 0; 1 1 0 0; 0 0 2 2; 0 0 2 2]
+@testitem "@tilewise rejects an input with fewer dimensions than the tiles" setup = [Tilewise] begin
+    err = try
+        @tilewise tiles sum($(vec(img)))
+        nothing
+    catch e
+        e
+    end
+    @test err isa DimensionMismatch
 end
