@@ -383,6 +383,10 @@ julia> _trailing(zeros(4, 4), tile) # nothing beyond the tile
 """
 function _trailing(x, tile)
     n_trailing = ndims(x) - length(tile)
+    if n_trailing < 0
+        message = "tile has $(length(tile)) dimensions but the input has only $(ndims(x))"
+        throw(DimensionMismatch(message))
+    end
     return ntuple(_ -> Colon(), n_trailing)
 end
 
