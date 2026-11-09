@@ -313,7 +313,7 @@ function _tilewise_canvas(options)
 end
 
 """
-    _mark_inputs!(_, ex)
+    _mark_inputs!(inputs, ex)
 
 Return `ex` with every marked input `\$x` replaced by a symbol, and record each distinct
 marked expression `x` and its symbol in the `Dict` `inputs`. Repeated marks of the same
