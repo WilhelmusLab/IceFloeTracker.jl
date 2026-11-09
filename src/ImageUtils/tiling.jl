@@ -416,8 +416,8 @@ end
 """
     _shape_like(results, tiles)
 
-Return the per-tile `results` as an array with the shape of `tiles` and the narrowest
-element type that holds them all.
+Return the per-tile `results` as an array with the shape of `tiles`, or as a `Vector` if
+`tiles` has no shape, with the narrowest element type that holds them all.
 """
 function _shape_like(results, tiles)
     # `results` is a `Vector{Any}`. Broadcasting `identity` copies it into an array whose
