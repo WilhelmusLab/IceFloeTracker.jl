@@ -2,7 +2,7 @@ import Images: Gray, Float64, SegmentedImage
 import StatsBase: StatsBase
 import Random: Random
 import Clustering: Clustering, assignments, kmeans
-import ..ImageUtils: @tilewise, tile_index_map
+import ..ImageUtils: @tilewise
 
 """
     kmeans_segmentation(gray_image; k=4, maxiter=50, random_seed=45)
@@ -42,10 +42,11 @@ function kmeans_segmentation(
     # gets 2k+1:3k, and so on. Pixels outside every tile stay 0.
     segment(img) = _kmeans_labels(img; k=k, maxiter=maxiter, random_seed=random_seed)
     canvas = zeros(Int64, size(gray_image))
-    tile_indices = tile_index_map(tiles, size(gray_image))
 
     indexmap = @tilewise tiles segment($gray_image) into = canvas # labels 1:k per tile
-    @. indexmap += k * tile_indices # unique labels across tiles
+    for (i, tile) in enumerate(tiles)
+        view(indexmap, tile...) .+= k * i # unique labels across tiles
+    end
 
     # Merge clusters that continue across tile edges
     indexmap .= labels_map(
