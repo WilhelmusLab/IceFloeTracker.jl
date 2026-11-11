@@ -534,6 +534,7 @@ end
     # the default radius is 15
     @test ExternalBoundary(mean).radius == 15
     @test_throws ArgumentError ExternalBoundary(mean; radius=0)
+    @test_throws MethodError ExternalBoundary(0.9)
 
     # two radii side by side via pairs
     result = rp([:label], (:ring1 => ExternalBoundary(mean; radius=1), :ring2 => ExternalBoundary(mean; radius=2),))
