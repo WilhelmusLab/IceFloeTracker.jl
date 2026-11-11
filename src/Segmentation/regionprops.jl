@@ -952,7 +952,9 @@ function regionprops(
     # Rings grow from the kept regions only, so dropped regions do not claim ring pixels.
     if !isempty(extra_pairs)
         needs_rings = any(p -> last(p) isa ExternalBoundary, extra_pairs)
-        kept_labels = needs_rings ? _kept_label_map(labels, areas, minimum_area) : labels
+        drops_regions = length(img_labels) < length(all_labels)
+        kept_labels =
+            needs_rings && drops_regions ? _kept_label_map(labels, areas, minimum_area) : labels
         nlabels = last(axes(areas, 1))
         rings = Dict{Int,Matrix{Int}}()
         indices_by_map = IdDict{Any,Any}()
