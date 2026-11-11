@@ -460,7 +460,7 @@ end
     rgb_intensity = RGB.(intensity ./ 30, 0.5, 1 .- intensity ./ 30)
 
     # Helper function to call regionprops with the current labels and intensity arrays.
-    regionprops(properties, extra_properties) = regionprops(
+    rp(properties, extra_properties) = regionprops(
         labels, intensity; properties=properties, extra_properties=extra_properties
     )
 end
@@ -468,17 +468,18 @@ end
 @testitem "regionprops: extra_properties from plain functions" setup = [IntensityFixture] begin
     properties = [:label, :area]
     extra_properties = (mean, median)
-    result = regionprops(properties, extra_properties)
-    @test Set(keys(result)) ∈ Set([:label, :area, :mean, :median])
+    result = rp(properties, extra_properties)
+    @test Set(keys(result)) == Set([:label, :area, :mean, :median])
     @test result[:label] == [1, 2]
     @test result[:mean] == [4.0, 25.5]
     @test result[:median] == [4.0, 25.5]
 
     # vectors work as well as tuples
-    props = regionprops([:label], [mean])
+    props = rp([:label], [mean])
     @test props[:mean] == [4.0, 25.5]
 
-    table = regionprops_table([:label], (maximum,)
+    table = regionprops_table(
+        labels, intensity; properties=[:label], extra_properties=(maximum,)
     )
     @test names(table) ⊇ ["label", "maximum"]
     @test table.maximum == [7.0, 29.0]
@@ -491,7 +492,7 @@ end
         "smallest" => minimum,
         :wide_ring => ExternalBoundary(mean; radius=2),
     )
-    result = regionprops([:label], extra_properties)
+    result = rp([:label], extra_properties)
     @test Set(keys(result)) ⊆ Set([:label, :mean, :p90, :smallest, :wide_ring])
     @test result[:p90] ≈ [quantile([1.0, 2, 6, 7], 0.9), quantile([22.0, 23, 24, 27, 28, 29], 0.9)]
     @test result[:smallest] == [1.0, 22.0]
