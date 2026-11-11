@@ -557,9 +557,35 @@ end
 # The reducer a statistic applies, and the label map whose regions select its pixels.
 _stat_function(f) = f
 _stat_function(b::ExternalBoundary) = b.f
-_stat_label_map(f, labels, rings) = labels
-function _stat_label_map(b::ExternalBoundary, labels, rings)
-    return get!(() -> expand_labels(labels, b.radius) .- labels, rings, b.radius)
+_stat_label_map(f, labels, kept_labels, rings) = labels
+function _stat_label_map(b::ExternalBoundary, labels, kept_labels, rings)
+    return get!(rings, b.radius) do
+        ring = expand_labels(kept_labels, b.radius)
+        ring .-= kept_labels
+        return ring
+    end
+end
+
+"""
+    _kept_label_map(labels, areas, minimum_area)
+
+Copy of `labels` with the regions of area at most `minimum_area` set to background (0).
+"""
+function _kept_label_map(labels, areas, minimum_area)
+    return map(l -> (l > 0 && areas[l] > minimum_area) ? l : 0, labels)
+end
+
+"""
+    _region_pixel_indices(label_map, nlabels)
+
+Linear indices of the pixels of each region `1:nlabels` in `label_map`, skipping background (0).
+"""
+function _region_pixel_indices(label_map, nlabels)
+    indices = [Int[] for _ in 1:nlabels]
+    for (i, l) in enumerate(label_map)
+        l > 0 && push!(indices[l], i)
+    end
+    return indices
 end
 
 """
