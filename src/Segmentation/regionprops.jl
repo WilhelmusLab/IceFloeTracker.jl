@@ -476,6 +476,179 @@ function (f::PixelConvexArea)(A, areas, bboxes, labels)
 end
 
 """
+    ExternalBoundary(f; radius=15)
+
+Wrap the function `f` so that `regionprops` applies it to the pixels of `intensity_img` in
+the ring around each region rather than inside it. Pass it through `extra_properties`; the
+column is named `<name of f>_boundary` (e.g. `:mean_boundary`), or use a pair such as
+`:ring_mean => ExternalBoundary(mean; radius=5)` for a custom name. A pair is required when
+`f` has no name of its own, such as an anonymous function or `Base.Fix2(quantile, 0.9)`.
+
+The ring of a region is the set of background pixels within `radius` of it, built with
+[`expand_labels`](@ref) as `expand_labels(labels, radius) .- labels`, where `labels` holds
+only the regions `regionprops` reports on: regions below `minimum_area` count as background.
+The ring is external (it excludes the region itself), it only grows into background, and it
+is split between neighboring regions, so pixels of other regions never count toward a
+region's boundary. A region with no background within `radius` has an empty ring and gets
+`missing`.
+
+# Examples
+```julia
+julia> regionprops_table(label_img, intensity_img; extra_properties=(mean, ExternalBoundary(mean; radius=5)))
+```
+"""
+struct ExternalBoundary{F<:Function}
+    f::F
+    radius::Int
+    function ExternalBoundary(f::F, radius::Integer) where {F<:Function}
+        radius >= 1 ||
+            throw(ArgumentError("ExternalBoundary radius must be at least 1, got $radius"))
+        return new{F}(f, Int(radius))
+    end
+end
+ExternalBoundary(f; radius::Integer=15) = ExternalBoundary(f, radius)
+
+"""
+    _function_name(f)
+
+Column name for a statistic passed without an explicit name: the name `f` is bound to in its
+module. Throws an `ArgumentError` when `f` is not bound to a name, as for anonymous functions,
+closures, `Base.Fix2(quantile, 0.9)` or `mean ∘ abs`.
+"""
+function _function_name(f::Function)
+    name = nameof(f)
+    # Anonymous functions and closures report generated names such as `#3`, and wrappers
+    # such as `Base.Fix2` or `ComposedFunction` report their type's name (`:Fix`), which
+    # would give unreadable columns and collide between different wrapped statistics.
+    module_ = parentmodule(f)
+    is_bound = isdefined(module_, name) && getfield(module_, name) === f
+    is_bound || throw(
+        ArgumentError(
+            "cannot derive a column name from $f; pass `:name => f` in extra_properties instead",
+        ),
+    )
+    return name
+end
+
+# Turn each `extra_properties` entry into `column_name => statistic`.
+_extra_property_pair(p::Pair{Symbol}) = first(p) => _pair_statistic(last(p))
+_extra_property_pair(p::Pair{<:AbstractString}) = Symbol(first(p)) => _pair_statistic(last(p))
+_extra_property_pair(f::Function) = _function_name(f) => f
+_extra_property_pair(b::ExternalBoundary) = Symbol(_function_name(b.f), :_boundary) => b
+function _extra_property_pair(x)
+    throw(
+        ArgumentError(
+            "extra_properties entries must be functions, ExternalBoundary, or `name => f` pairs; got $(typeof(x))",
+        ),
+    )
+end
+
+# The value of a `name => statistic` pair.
+_pair_statistic(f::Union{Function,ExternalBoundary}) = f
+function _pair_statistic(x)
+    throw(
+        ArgumentError(
+            "extra_properties pairs must map a name to a function or ExternalBoundary; got $(typeof(x))",
+        ),
+    )
+end
+
+# The reducer a statistic applies, and the label map whose regions select its pixels.
+_stat_function(f) = f
+_stat_function(b::ExternalBoundary) = b.f
+_stat_label_map(f, labels, kept_labels, rings) = labels
+function _stat_label_map(b::ExternalBoundary, labels, kept_labels, rings)
+    return get!(rings, b.radius) do
+        ring = expand_labels(kept_labels, b.radius)
+        ring .-= kept_labels
+        return ring
+    end
+end
+
+"""
+    _kept_label_map(labels, areas, minimum_area)
+
+Copy of `labels` with the regions of area at most `minimum_area` set to background (0).
+"""
+function _kept_label_map(labels, areas, minimum_area)
+    return map(l -> (l > 0 && areas[l] > minimum_area) ? l : 0, labels)
+end
+
+"""
+    _region_pixel_indices(label_map, nlabels)
+
+Linear indices of the pixels of each region `1:nlabels` in `label_map`, skipping background (0).
+"""
+function _region_pixel_indices(label_map, nlabels)
+    indices = [Int[] for _ in 1:nlabels]
+    for (i, l) in enumerate(label_map)
+        l > 0 && push!(indices[l], i)
+    end
+    return indices
+end
+
+"""
+    _component_intensity_stat(indices, intensity_img, label_list, f)
+
+Apply `f` to a view of the pixels of `intensity_img` in each region of `label_list`, where
+`indices` comes from `_region_pixel_indices` of the label map. Regions without pixels get
+`missing`, so `f` is never called on an empty collection.
+"""
+function _component_intensity_stat(indices, intensity_img, label_list, f)
+    return map(label_list) do s
+        idx = indices[s]
+        isempty(idx) ? missing : f(view(intensity_img, idx))
+    end
+end
+
+"""
+    _expand_property_names(properties)
+
+Output column names for `properties`: `:bbox` and `:centroid` each expand to several columns.
+"""
+function _expand_property_names(properties)
+    names = Symbol[]
+    for p in properties
+        if p == :bbox
+            append!(names, [:min_row, :max_row, :min_col, :max_col])
+        elseif p == :centroid
+            append!(names, [:row_centroid, :col_centroid])
+        else
+            push!(names, p)
+        end
+    end
+    return names
+end
+
+"""
+    _normalize_extra_properties(extra_properties, intensity_img, labels, property_names)
+
+Validate `extra_properties` against the inputs and return a vector of `name => statistic`.
+"""
+function _normalize_extra_properties(extra_properties, intensity_img, labels, property_names)
+    (isnothing(extra_properties) || isempty(extra_properties)) && return Pair{Symbol,Any}[]
+    isnothing(intensity_img) && throw(
+        ArgumentError("extra_properties requires an intensity_img to compute statistics from"),
+    )
+    size(intensity_img) == size(labels) || throw(
+        DimensionMismatch(
+            "intensity_img has size $(size(intensity_img)) but label_img has size $(size(labels))",
+        ),
+    )
+    pairs = Pair{Symbol,Any}[_extra_property_pair(x) for x in extra_properties]
+    seen = Set(property_names)
+    for (name, _) in pairs
+        name ∈ seen && throw(
+            ArgumentError(
+                "extra_properties column name `$name` is duplicated or clashes with a requested property",
+            ),
+        )
+        push!(seen, name)
+    end
+    return pairs
+end
+
+"""
     regionprops_table(label_img, intensity_img; properties, connectivity, extra_properties)
 
 Compute measures of labeled regions in label_img and return as a DataFrame. Optionally, include an
@@ -483,9 +656,9 @@ extra image or array associated with the labels.
 
 # Arguments
 - `label_img`: Image with the labeled objects of interest. May be an integer array or a SegmentedImage.
-- `intensity_img`: (Optional) Used for generating `extra_properties`, such as a color image to use for calculating mean color in segments.
+- `intensity_img`: (Optional) Image the same size as `label_img` that `extra_properties` are computed from, such as a grayscale or color image. Pixels are passed to the statistics unchanged.
 - `properties`: List (`Vector` or `Tuple`) of properties to be generated for each connected component in `label_img`
-- `extra_properties`: (Optional) not yet implemented. It will be set to `nothing`
+- `extra_properties`: (Optional) `Vector` or `Tuple` of statistics computed from `intensity_img`, one column each. See [`regionprops`](@ref) for the accepted forms.
 - `minimum_area`: Smallest region to calculate measures on
 - `perimeter_algorithm`: PerimeterEstimationAlgorithm. Currently only available is BenkridCrookes.
 - `convex_area_algorithm`: ConvexAreaEstimationAlgorithm. Options are PolygonConvexArea or PixelConvexArea, default is pixel.
@@ -548,7 +721,7 @@ function regionprops_table(
         :perimeter,
         :orientation,
     ],
-    extra_properties::Union{Tuple{Function,Vararg{Function}},Nothing}=nothing,
+    extra_properties::Union{Nothing,AbstractVector,Tuple}=nothing,
     minimum_area=1,
     perimeter_algorithm=BenkridCrookes(),
     convex_area_algorithm=PixelConvexArea(),
@@ -575,9 +748,13 @@ See also [`regionprops_table`](@ref)
 
 # Arguments
 - `label_img`: Image with the labeled objects of interest. May be an integer array or a SegmentedImage.
-- `intensity_img`: (Optional) Used for generating `extra_properties`, such as a color image to use for calculating mean color in segments.
+- `intensity_img`: (Optional) Image the same size as `label_img` that `extra_properties` are computed from, such as a grayscale or color image. Pixels are passed to the statistics unchanged.
 - `properties`: List (`Vector` or `Tuple`) of properties to be generated for each connected component in `label_img`
-- `extra_properties`: (Optional) not yet implemented. It will be set to `nothing`
+- `extra_properties`: (Optional) `Vector` or `Tuple` of statistics computed from `intensity_img`. Each entry adds one column and may be
+    - a function such as `mean`, `median` or `std`, applied to a vector view of the `intensity_img` pixels inside each region. The column is named after the function (`:mean`).
+    - an [`ExternalBoundary`](@ref), such as `ExternalBoundary(mean; radius=15)`, applying the function to the pixels in a ring around each region instead. The column is named `:mean_boundary`.
+    - a pair `name => f`, where `f` is either of the above, to choose the column name. Functions without a name of their own need this form, e.g. `:p90 => (v -> quantile(v, 0.9))` or `:p90 => Base.Fix2(quantile, 0.9)`.
+  A statistic must handle the element type of `intensity_img`: `mean` works on color images, but `median` needs an ordered type, so pass a single channel (e.g. `green.(img)`) for those. Regions with no pixels to summarize get `missing`.
 - `minimum_area`: Smallest region to calculate measures on
 - `perimeter_algorithm`: PerimeterEstimationAlgorithm. Currently only available is BenkridCrookes.
 - `convex_area_algorithm`: ConvexAreaEstimationAlgorithm. Options are PolygonConvexArea or PixelConvexArea, default is pixel.
@@ -613,6 +790,21 @@ julia> bw_img = rand([0, 1], 5, 10)
 1       0.0
 7       4.621320343559642
 ```
+
+Statistics of an intensity image within and around each region:
+```julia
+julia> using StatsBase: mean, median
+
+julia> intensity_img = Float64.(reshape(1:50, 5, 10));
+
+julia> stats = regionprops(
+           label_img, intensity_img;
+           properties=[:label],
+           extra_properties=(mean, median, ExternalBoundary(mean; radius=1)),
+       );
+
+julia> keys(stats)  # :label, :mean, :median, :mean_boundary
+```
 """
 function regionprops(
     label_img::Union{Matrix{Int64},SegmentedImage},
@@ -628,13 +820,18 @@ function regionprops(
         :perimeter,
         :orientation,
     ],
-    extra_properties::Union{Tuple{Function,Vararg{Function}},Nothing}=nothing,
+    extra_properties::Union{Nothing,AbstractVector,Tuple}=nothing,
     minimum_area=1,
     perimeter_algorithm=BenkridCrookes(),
     convex_area_algorithm=PixelConvexArea(),
 )
     isa(label_img, SegmentedImage) ? (labels = labels_map(label_img)) : labels = label_img
     eltype(properties) <: AbstractString && (properties = Symbol.(properties))
+    property_names = _expand_property_names(properties)
+    extra_pairs = _normalize_extra_properties(
+        extra_properties, intensity_img, labels, property_names
+    )
+    output_names = vcat(property_names, first.(extra_pairs))
 
     # Properties plus whatever base properties they're derived from (e.g. :circularity
     # pulls in :perimeter), so every downstream check has one place to consult instead
@@ -647,17 +844,7 @@ function regionprops(
 
     maximum(labels) == 0 && begin
         @warn "Labeled image is empty!"
-        properties_ = Symbol[]
-        for p in properties
-            if p == :bbox
-                append!(properties_, [:min_row, :max_row, :min_col, :max_col])
-            elseif p == :centroid
-                append!(properties_, [:row_centroid, :col_centroid])
-            else
-                append!(properties_, [p])
-            end
-        end
-        return Dict(p => [] for p in properties_)
+        return Dict(p => [] for p in output_names)
     end
 
     data = Dict{Symbol,Any}()
@@ -760,18 +947,28 @@ function regionprops(
         push!(data, :mask => map(s -> floe_masks[s], img_labels))
     end
 
-    # TODO add psi-s curve generation as an option
-    updated_properties = Symbol[]
-    for p in properties
-        if p == :bbox
-            append!(updated_properties, [:min_row, :max_row, :min_col, :max_col])
-        elseif p == :centroid
-            append!(updated_properties, [:row_centroid, :col_centroid])
-        else
-            append!(updated_properties, [p])
+    # Intensity statistics. Each label map (the regions themselves, or the ring of an
+    # ExternalBoundary radius) is built and indexed once, however many statistics use it.
+    # Rings grow from the kept regions only, so dropped regions do not claim ring pixels.
+    if !isempty(extra_pairs)
+        needs_rings = any(p -> last(p) isa ExternalBoundary, extra_pairs)
+        kept_labels = needs_rings ? _kept_label_map(labels, areas, minimum_area) : labels
+        nlabels = last(axes(areas, 1))
+        rings = Dict{Int,Matrix{Int}}()
+        indices_by_map = IdDict{Any,Any}()
+        for (name, stat) in extra_pairs
+            label_map = _stat_label_map(stat, labels, kept_labels, rings)
+            indices = get!(
+                () -> _region_pixel_indices(label_map, nlabels), indices_by_map, label_map
+            )
+            data[name] = _component_intensity_stat(
+                indices, intensity_img, img_labels, _stat_function(stat)
+            )
         end
     end
-    return Dict(prop => data[prop] for prop in updated_properties)
+
+    # TODO add psi-s curve generation as an option
+    return Dict(prop => data[prop] for prop in output_names)
 end
 
 """_get_bounds(box)
