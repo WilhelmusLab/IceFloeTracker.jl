@@ -489,6 +489,7 @@ end
 end
 
 @testitem "regionprops: extra_properties naming with pairs" setup = [IntensityFixture] begin
+    # mix and match different ways of specifying extra_properties
     extra_properties = (
         mean,
         :p90 => (v -> quantile(v, 0.9)),
@@ -576,6 +577,8 @@ end
     @test_throws ArgumentError regionprops(
         labels, intensity; properties=[:area], extra_properties=(:area => mean,)
     )
+
+    # :bbox expands to :min_row
     @test_throws ArgumentError regionprops(
         labels, intensity; properties=[:bbox], extra_properties=(:min_row => mean,)
     )
