@@ -419,8 +419,8 @@ end
     @test axes(areas, 1) == 0:3
     @test areas[2] == 0
 
-    # Every property family, at the default minimum_area and at 0. Single-pixel
-    # regions survive minimum_area=0, an absent one still must not.
+    # Every property family, at the default minimum_area and at 0. An absent label
+    # has area 0 and must not be reported even at minimum_area=0.
     for minimum_area in (1, 0)
         for properties in (
             [:label, :area],
