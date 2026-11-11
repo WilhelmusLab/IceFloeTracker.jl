@@ -32,13 +32,13 @@ import ..ImageUtils: get_tiles, imbrighten
 import ..Segmentation:
     component_perimeters,
     dist_morph_split,
-    expand_labels,
     get_relevant_set,
     kmeans_binarization,
     tiled_adaptive_binarization,
     IceDetectionBrightnessPeaksMODIS721,
     IceDetectionBrightnessMidpoint,
     regionprops_table,
+    ExternalBoundary,
     remove_small_segments!,
     remove_large_segments!,
     segment_mean_map,
@@ -459,14 +459,14 @@ end
 const default_properties = [:label, :area, :perimeter, :centroid]
 
 """
-    objectwise_compare_segmentation(indexmap1, indexmap2, img; expand_radius=15, return_properties)
+    objectwise_compare_segmentation(indexmap1, indexmap2, img; expand_radius=15, properties)
 
 Uses the concept of a relevant set to select connected components in the two
 indexmaps and produce comparisons. The image `img` is used to compute local boundary
 contrast, by comparing the difference in the mean intensity of the image and the boundary
 within `expand_radius` pixels. A DataFrame with rows corresponding to comparisons between
 the indexmaps is returned. Note that each labeled object may map to multiple objects.
-Returns the list of properties in "return properties" along with comparative measures `dist_s1_s2``,
+Returns the list of properties in `properties` along with comparative measures `dist_s1_s2`,
 `scaled_relative_error_area`, and object measures `reflectance_mean`, `reflectance_bdry_mean`,
 and `reflectance_bdry_contrast` computed relative to the input `img`.
 
@@ -475,8 +475,16 @@ function objectwise_compare_segmentation(
     indexmap1, indexmap2, img; expand_radius=15, properties=default_properties
 )
     properties = union(properties, [:label, :centroid, :area, :bbox, :perimeter])
-    df_s1 = regionprops_table(indexmap1; properties=properties)
-    df_s2 = regionprops_table(indexmap2; properties=properties)
+    reflectance = (
+        :reflectance_mean => mean,
+        :reflectance_bdry_mean => ExternalBoundary(mean; radius=expand_radius),
+    )
+    df_s1 = regionprops_table(indexmap1, img; properties, extra_properties=reflectance)
+    df_s2 = regionprops_table(indexmap2, img; properties, extra_properties=reflectance)
+    # A floe with no background within expand_radius has no boundary mean; use 0.
+    for df in (df_s1, df_s2)
+        df.reflectance_bdry_mean = coalesce.(df.reflectance_bdry_mean, 0)
+    end
 
     # This accounts for the centroid and bbox turning into col_ and row_ terms
     properties = Symbol.(names(df_s1))
@@ -507,19 +515,6 @@ function objectwise_compare_segmentation(
         4 * pi * results_df[:, :s1_area] / results_df[:, :s1_perimeter] ^ 2
     @. results_df[:, :s2_circularity] =
         4 * pi * results_df[:, :s2_area] / results_df[:, :s2_perimeter] ^ 2
-
-    # mean reflectance
-    bdry1 = expand_labels(indexmap1, expand_radius) .- indexmap1
-    mean1 = segment_mean(SegmentedImage(img, indexmap1))
-    bdry_mean1 = segment_mean(SegmentedImage(img, bdry1))
-    results_df[:, :s1_reflectance_mean] = [L ∈ keys(mean1) ? mean1[L] : 0 for L in results_df[:, :s1_label]]
-    results_df[:, :s1_reflectance_bdry_mean] = [L ∈ keys(bdry_mean1) ? bdry_mean1[L] : 0 for L in results_df[:, :s1_label]]
-
-    bdry2 = expand_labels(indexmap2, expand_radius) .- indexmap2
-    mean2 = segment_mean(SegmentedImage(img, indexmap2))
-    bdry_mean2 = segment_mean(SegmentedImage(img, bdry2))
-    results_df[:, :s2_reflectance_mean] = [L ∈ keys(mean2) ? mean2[L] : 0 for L in results_df[:, :s2_label]]
-    results_df[:, :s2_reflectance_bdry_mean] = [L ∈ keys(bdry_mean2) ? bdry_mean2[L] : 0 for L in results_df[:, :s2_label]]
 
     results_df[:, :s1_reflectance_bdry_contrast] =
         results_df[:, :s1_reflectance_mean] .- results_df[:, :s1_reflectance_bdry_mean]
