@@ -458,9 +458,14 @@ end
     # 22, 23, 24, 27, 28, 29.
     intensity = Float64.(reshape(1:30, size(labels)))
     rgb_intensity = RGB.(intensity ./ 30, 0.5, 1 .- intensity ./ 30)
+    # The regions regionprops reports on: label 3 is background for ExternalBoundary rings.
+    kept_labels = ifelse.(labels .== 3, 0, labels)
 
-    # Helper function to call regionprops with the current labels and intensity arrays.
+    # Helpers to call regionprops with the current labels and intensity arrays.
     rp(properties, extra_properties) = regionprops(
+        labels, intensity; properties=properties, extra_properties=extra_properties
+    )
+    rpt(properties, extra_properties) = regionprops_table(
         labels, intensity; properties=properties, extra_properties=extra_properties
     )
 end
