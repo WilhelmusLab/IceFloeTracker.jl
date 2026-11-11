@@ -506,6 +506,17 @@ end
     )
     # unsupported entries
     @test_throws ArgumentError regionprops(labels, intensity; extra_properties=(42,))
+
+    # wrapped functions have no usable name of their own and need a pair
+    p90 = Base.Fix2(quantile, 0.9)
+    @test_throws ArgumentError rp([:label], (p90,))
+    @test_throws ArgumentError rp([:label], (mean ∘ abs,))
+    @test_throws ArgumentError rp([:label], (ExternalBoundary(p90; radius=1),))
+    @test rp([:label], (:p90 => p90,))[:p90] == result[:p90]
+
+    # a pair must name a function or an ExternalBoundary
+    @test_throws ArgumentError rp([:label], (:p90 => 0.9,))
+    @test_throws ArgumentError rp([:label], ("p90" => 0.9,))
 end
 
 @testitem "regionprops: ExternalBoundary statistics" setup = [IntensityFixture] begin
