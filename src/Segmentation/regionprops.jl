@@ -532,8 +532,8 @@ function _function_name(f::Function)
 end
 
 # Turn each `extra_properties` entry into `column_name => statistic`.
-_extra_property_pair(p::Pair{Symbol}) = p
-_extra_property_pair(p::Pair{<:AbstractString}) = Symbol(first(p)) => last(p)
+_extra_property_pair(p::Pair{Symbol}) = first(p) => _pair_statistic(last(p))
+_extra_property_pair(p::Pair{<:AbstractString}) = Symbol(first(p)) => _pair_statistic(last(p))
 _extra_property_pair(f::Function) = _function_name(f) => f
 _extra_property_pair(b::ExternalBoundary) = Symbol(_function_name(b.f), :_boundary) => b
 function _extra_property_pair(x)
