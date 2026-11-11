@@ -752,9 +752,9 @@ See also [`regionprops_table`](@ref)
 - `intensity_img`: (Optional) Image the same size as `label_img` that `extra_properties` are computed from, such as a grayscale or color image. Pixels are passed to the statistics unchanged.
 - `properties`: List (`Vector` or `Tuple`) of properties to be generated for each connected component in `label_img`
 - `extra_properties`: (Optional) `Vector` or `Tuple` of statistics computed from `intensity_img`. Each entry adds one column and may be
-    - a function such as `mean`, `median` or `std`, applied to the vector of `intensity_img` pixels inside each region. The column is named after the function (`:mean`).
+    - a function such as `mean`, `median` or `std`, applied to a vector view of the `intensity_img` pixels inside each region. The column is named after the function (`:mean`).
     - an [`ExternalBoundary`](@ref), such as `ExternalBoundary(mean; radius=15)`, applying the function to the pixels in a ring around each region instead. The column is named `:mean_boundary`.
-    - a pair `name => f`, where `f` is either of the above, to choose the column name. Anonymous functions need this form, e.g. `:p90 => (v -> quantile(v, 0.9))`.
+    - a pair `name => f`, where `f` is either of the above, to choose the column name. Functions without a name of their own need this form, e.g. `:p90 => (v -> quantile(v, 0.9))` or `:p90 => Base.Fix2(quantile, 0.9)`.
   A statistic must handle the element type of `intensity_img`: `mean` works on color images, but `median` needs an ordered type, so pass a single channel (e.g. `green.(img)`) for those. Regions with no pixels to summarize get `missing`.
 - `minimum_area`: Smallest region to calculate measures on
 - `perimeter_algorithm`: PerimeterEstimationAlgorithm. Currently only available is BenkridCrookes.
@@ -948,6 +948,7 @@ function regionprops(
 
     # Intensity statistics. Each label map (the regions themselves, or the ring of an
     # ExternalBoundary radius) is built and indexed once, however many statistics use it.
+    # Rings grow from the kept regions only, so dropped regions do not claim ring pixels.
     if !isempty(extra_pairs)
         rings = Dict{Int,typeof(labels)}()
         indices_by_map = IdDict{Any,Any}()
