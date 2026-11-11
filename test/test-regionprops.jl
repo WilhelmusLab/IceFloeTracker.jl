@@ -545,6 +545,21 @@ end
         @test result[:mean_boundary] ≈ [expected[1], expected[2]]
     end
 
+    # minimum_area is inclusive for rings too: at 4, label 1 (area 4) is kept and label 3
+    # is dropped; at the default every label is kept and rings grow from `labels` itself.
+    for (minimum_area, kept) in ((4, kept_labels), (1, labels))
+        result = regionprops(
+            labels,
+            intensity;
+            properties=[:label],
+            extra_properties=(ExternalBoundary(mean; radius=2),),
+            minimum_area,
+        )
+        ring = expand_labels(kept, 2) .- kept
+        @test result[:label] == sort(unique(kept[kept .> 0]))
+        @test result[:mean_boundary] ≈ [mean(intensity[ring .== i]) for i in result[:label]]
+    end
+
     # the default radius is 15
     @test ExternalBoundary(mean).radius == 15
     @test_throws ArgumentError ExternalBoundary(mean; radius=0)
