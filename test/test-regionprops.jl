@@ -496,7 +496,9 @@ end
         :wide_ring => ExternalBoundary(mean; radius=2),
     )
     result = rp([:label], extra_properties)
-    @test Set(keys(result)) ⊆ Set([:label, :mean, :p90, :smallest, :wide_ring])
+    @test Set(keys(result)) == Set([:label, :mean, :p90, :smallest, :wide_ring])
+    wide_ring = expand_labels(kept_labels, 2) .- kept_labels
+    @test result[:wide_ring] ≈ [mean(intensity[wide_ring .== i]) for i in 1:2]
     @test result[:p90] ≈ [quantile([1.0, 2, 6, 7], 0.9), quantile([22.0, 23, 24, 27, 28, 29], 0.9)]
     @test result[:smallest] == [1.0, 22.0]
 
