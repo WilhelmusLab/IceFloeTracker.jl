@@ -190,25 +190,26 @@ function component_floes(
         )
     end
     floe_masks = Dict(
-        i => indexmap[boxes[i]] .== i for i in labels if areas[i] > minimum_area
+        i => indexmap[boxes[i]] .== i for i in labels if areas[i] >= minimum_area
     )
     return floe_masks
 end
 
-"""component_perimeters(indexmap; minimum_area=1, algorithm="benkrid_crookes")
+"""component_perimeters(indexmap; algorithm=BenkridCrookes(), masks=component_floes(indexmap))
 
-Estimate the perimeter of the labeled regions in `indexmap` using the specified algorithm.
-Algorithm options = "benkrid_crookes" (only option currently, will add crofton in future release)
-Defaults to using connectivity 4.
+Estimate the perimeter of each labeled region in `indexmap` from its mask in `masks`, using
+`algorithm` (currently only [`BenkridCrookes`](@ref), with connectivity 4 by default).
+Returns a `Dict` from label to perimeter. Single-pixel regions have perimeter 0.0.
 """
 function component_perimeters(
     indexmap;
     algorithm::PerimeterEstimationAlgorithm=BenkridCrookes(),
     masks=component_floes(indexmap),
 )
+    # Single-pixel regions have perimeter 0.0.
     perims = Dict(
-        label => (label == 0 ? 0 : algorithm(masks[label])) for
-        label in keys(masks) if prod(size(masks[label])) > 1
+        label => (label == 0 || length(masks[label]) == 1 ? 0.0 : algorithm(masks[label])) for
+        label in keys(masks)
     )
     return perims
 end
@@ -568,10 +569,10 @@ end
 """
     _kept_label_map(labels, areas, minimum_area)
 
-Copy of `labels` with the regions of area at most `minimum_area` set to background (0).
+Copy of `labels` with the regions of area below `minimum_area` set to background (0).
 """
 function _kept_label_map(labels, areas, minimum_area)
-    return map(l -> (l > 0 && areas[l] > minimum_area) ? l : 0, labels)
+    return map(l -> (l > 0 && areas[l] >= minimum_area) ? l : 0, labels)
 end
 
 """
@@ -862,10 +863,10 @@ function regionprops(
     # and label 0's bounding box is the whole scene, so cropping it builds a mask
     # the size of the image that every consumer then discards. Ascending by
     # construction, so no sort is needed either.
-    all_labels = [i for i in axes(areas, 1) if i > 0]
+    all_labels = [i for i in axes(areas, 1) if i > 0 && areas[i] > 0]
     needs_bboxes = !isdisjoint(required_properties, PROPERTIES_REQUIRING_BBOXES)
     bboxes_all = needs_bboxes ? _component_boxes(labels) : nothing # TODO: restore to `component_boxes(labels)` once the fixed version is released.
-    img_labels = [s for s in all_labels if areas[s] > minimum_area]
+    img_labels = [s for s in all_labels if areas[s] >= minimum_area]
 
     :label ∈ properties && push!(data, :label => img_labels)
 
@@ -952,7 +953,9 @@ function regionprops(
     # Rings grow from the kept regions only, so dropped regions do not claim ring pixels.
     if !isempty(extra_pairs)
         needs_rings = any(p -> last(p) isa ExternalBoundary, extra_pairs)
-        kept_labels = needs_rings ? _kept_label_map(labels, areas, minimum_area) : labels
+        drops_regions = length(img_labels) < length(all_labels)
+        kept_labels =
+            needs_rings && drops_regions ? _kept_label_map(labels, areas, minimum_area) : labels
         nlabels = last(axes(areas, 1))
         rings = Dict{Int,Matrix{Int}}()
         indices_by_map = IdDict{Any,Any}()
