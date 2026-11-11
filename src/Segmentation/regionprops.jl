@@ -479,16 +479,19 @@ end
 """
     ExternalBoundary(f; radius=15)
 
-Wrap the statistic `f` so that `regionprops` applies it to the pixels of `intensity_img` in
+Wrap the function `f` so that `regionprops` applies it to the pixels of `intensity_img` in
 the ring around each region rather than inside it. Pass it through `extra_properties`; the
 column is named `<name of f>_boundary` (e.g. `:mean_boundary`), or use a pair such as
-`:ring_mean => ExternalBoundary(mean; radius=5)` for a custom name.
+`:ring_mean => ExternalBoundary(mean; radius=5)` for a custom name. A pair is required when
+`f` has no name of its own, such as an anonymous function or `Base.Fix2(quantile, 0.9)`.
 
 The ring of a region is the set of background pixels within `radius` of it, built with
-[`expand_labels`](@ref) as `expand_labels(labels, radius) .- labels`. The ring is external
-(it excludes the region itself), it only grows into background, and it is split between
-neighboring regions, so pixels of other regions never count toward a region's boundary.
-A region with no background within `radius` has an empty ring and gets `missing`.
+[`expand_labels`](@ref) as `expand_labels(labels, radius) .- labels`, where `labels` holds
+only the regions `regionprops` reports on: regions below `minimum_area` count as background.
+The ring is external (it excludes the region itself), it only grows into background, and it
+is split between neighboring regions, so pixels of other regions never count toward a
+region's boundary. A region with no background within `radius` has an empty ring and gets
+`missing`.
 
 # Examples
 ```julia
