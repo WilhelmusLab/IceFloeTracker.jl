@@ -512,22 +512,20 @@ ExternalBoundary(f; radius::Integer=15) = ExternalBoundary(f, radius)
 """
     _function_name(f)
 
-Column name for a statistic passed without an explicit name. Anonymous functions and
-closures have generated names like `#3`, which would make unreadable, unstable columns.
+Column name for a statistic passed without an explicit name: the name `f` is bound to in its
+module. Throws an `ArgumentError` when `f` is not bound to a name, as for anonymous functions,
+closures, `Base.Fix2(quantile, 0.9)` or `mean ∘ abs`.
 """
-function _function_name(f)
-    name = try
-        nameof(f)
-    catch
-        throw(
-            ArgumentError(
-                "cannot derive a column name from $(typeof(f)); pass `:name => f` in extra_properties instead",
-            ),
-        )
-    end
-    startswith(string(name), '#') && throw(
+function _function_name(f::Function)
+    name = nameof(f)
+    # Anonymous functions and closures report generated names such as `#3`, and wrappers
+    # such as `Base.Fix2` or `ComposedFunction` report their type's name (`:Fix`), which
+    # would give unreadable columns and collide between different wrapped statistics.
+    module_ = parentmodule(f)
+    is_bound = isdefined(module_, name) && getfield(module_, name) === f
+    is_bound || throw(
         ArgumentError(
-            "cannot derive a column name from an anonymous function; pass `:name => f` in extra_properties instead",
+            "cannot derive a column name from $f; pass `:name => f` in extra_properties instead",
         ),
     )
     return name
