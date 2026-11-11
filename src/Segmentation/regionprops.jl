@@ -196,11 +196,11 @@ function component_floes(
     return floe_masks
 end
 
-"""component_perimeters(indexmap; minimum_area=1, algorithm="benkrid_crookes")
+"""component_perimeters(indexmap; algorithm=BenkridCrookes(), masks=component_floes(indexmap))
 
-Estimate the perimeter of the labeled regions in `indexmap` using the specified algorithm.
-Algorithm options = "benkrid_crookes" (only option currently, will add crofton in future release)
-Defaults to using connectivity 4.
+Estimate the perimeter of each labeled region in `indexmap` from its mask in `masks`, using
+`algorithm` (currently only [`BenkridCrookes`](@ref), with connectivity 4 by default).
+Returns a `Dict` from label to perimeter. Single-pixel regions have perimeter 0.0.
 """
 function component_perimeters(
     indexmap;
