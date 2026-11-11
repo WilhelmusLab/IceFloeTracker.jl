@@ -950,11 +950,16 @@ function regionprops(
     # ExternalBoundary radius) is built and indexed once, however many statistics use it.
     # Rings grow from the kept regions only, so dropped regions do not claim ring pixels.
     if !isempty(extra_pairs)
-        rings = Dict{Int,typeof(labels)}()
+        needs_rings = any(p -> last(p) isa ExternalBoundary, extra_pairs)
+        kept_labels = needs_rings ? _kept_label_map(labels, areas, minimum_area) : labels
+        nlabels = last(axes(areas, 1))
+        rings = Dict{Int,Matrix{Int}}()
         indices_by_map = IdDict{Any,Any}()
         for (name, stat) in extra_pairs
-            label_map = _stat_label_map(stat, labels, rings)
-            indices = get!(() -> component_indices(label_map), indices_by_map, label_map)
+            label_map = _stat_label_map(stat, labels, kept_labels, rings)
+            indices = get!(
+                () -> _region_pixel_indices(label_map, nlabels), indices_by_map, label_map
+            )
             data[name] = _component_intensity_stat(
                 indices, intensity_img, img_labels, _stat_function(stat)
             )
