@@ -440,3 +440,154 @@ end
     df = regionprops_table(labels; properties=[:label, :area])
     @test df.area == [9, 4]
 end
+
+@testsnippet IntensityFixture begin
+    import StatsBase: mean, median, quantile
+    import Images: RGB, SegmentedImage, segment_mean
+    import IceFloeTracker: ExternalBoundary, expand_labels
+
+    # Label 3 has area 1 and is dropped by the default `minimum_area=1`.
+    labels = [
+        1 1 0 0 0 0
+        1 1 0 0 2 2
+        0 0 0 0 2 2
+        0 0 0 0 2 2
+        3 0 0 0 0 0
+    ]
+    # Column-major pixel values 1:30, so label 1 holds 1, 2, 6, 7 and label 2 holds
+    # 22, 23, 24, 27, 28, 29.
+    intensity = Float64.(reshape(1:30, size(labels)))
+    rgb_intensity = RGB.(intensity ./ 30, 0.5, 1 .- intensity ./ 30)
+
+    # Helper function to call regionprops with the current labels and intensity arrays.
+    regionprops(properties, extra_properties) = regionprops(
+        labels, intensity; properties=properties, extra_properties=extra_properties
+    )
+end
+
+@testitem "regionprops: extra_properties from plain functions" setup = [IntensityFixture] begin
+    properties = [:label, :area]
+    extra_properties = (mean, median)
+    result = regionprops(properties, extra_properties)
+    @test Set(keys(result)) ∈ Set([:label, :area, :mean, :median])
+    @test result[:label] == [1, 2]
+    @test result[:mean] == [4.0, 25.5]
+    @test result[:median] == [4.0, 25.5]
+
+    # vectors work as well as tuples
+    props = regionprops([:label], [mean])
+    @test props[:mean] == [4.0, 25.5]
+
+    table = regionprops_table([:label], (maximum,)
+    )
+    @test names(table) ⊇ ["label", "maximum"]
+    @test table.maximum == [7.0, 29.0]
+end
+
+@testitem "regionprops: extra_properties naming with pairs" setup = [IntensityFixture] begin
+    extra_properties = (
+        mean,
+        :p90 => (v -> quantile(v, 0.9)),
+        "smallest" => minimum,
+        :wide_ring => ExternalBoundary(mean; radius=2),
+    )
+    result = regionprops([:label], extra_properties)
+    @test Set(keys(result)) ⊆ Set([:label, :mean, :p90, :smallest, :wide_ring])
+    @test result[:p90] ≈ [quantile([1.0, 2, 6, 7], 0.9), quantile([22.0, 23, 24, 27, 28, 29], 0.9)]
+    @test result[:smallest] == [1.0, 22.0]
+
+    # anonymous functions have no usable name
+    @test_throws ArgumentError regionprops(
+        labels, intensity; extra_properties=(v -> sum(v),)
+    )
+    # unsupported entries
+    @test_throws ArgumentError regionprops(labels, intensity; extra_properties=(42,))
+end
+
+@testitem "regionprops: ExternalBoundary statistics" setup = [IntensityFixture] begin
+    for r in (1, 2)
+        result = regionprops(
+            labels,
+            intensity;
+            properties=[:label],
+            extra_properties=(ExternalBoundary(mean; radius=r),),
+        )
+        # Cross-check against the ring construction used in FSPipeline.
+        ring = expand_labels(labels, r) .- labels
+        expected = segment_mean(SegmentedImage(intensity, ring))
+        @test result[:mean_boundary] ≈ [expected[1], expected[2]]
+    end
+
+    # the default radius is 15
+    @test ExternalBoundary(mean).radius == 15
+    @test_throws ArgumentError ExternalBoundary(mean; radius=0)
+
+    # two radii side by side via pairs
+    result = regionprops(
+        labels,
+        intensity;
+        properties=[:label],
+        extra_properties=(
+            :ring1 => ExternalBoundary(mean; radius=1),
+            :ring2 => ExternalBoundary(mean; radius=2),
+        ),
+    )
+    @test result[:ring1] != result[:ring2]
+
+    # no background around the floes: the ring is empty and the value is missing
+    full = [1 1 2 2; 1 1 2 2]
+    result = regionprops(
+        full, rand(2, 4); properties=[:label], extra_properties=(ExternalBoundary(mean),)
+    )
+    @test all(ismissing, result[:mean_boundary])
+end
+
+@testitem "regionprops: extra_properties on color images" setup = [IntensityFixture] begin
+    result = regionprops(labels, rgb_intensity; properties=[:label], extra_properties=(mean,))
+    @test result[:mean][1] ≈ mean(rgb_intensity[labels .== 1])
+    @test result[:mean][2] ≈ mean(rgb_intensity[labels .== 2])
+    @test eltype(result[:mean]) <: RGB
+
+    # A reducer that cannot handle the eltype (RGB has no ordering) raises its own error.
+    @test_throws MethodError regionprops(labels, rgb_intensity; extra_properties=(median,))
+    @test_throws MethodError regionprops(
+        labels, rgb_intensity; extra_properties=(ExternalBoundary(median; radius=1),)
+    )
+end
+
+@testitem "regionprops: extra_properties validation" setup = [IntensityFixture] begin
+    # extras need an intensity image
+    @test_throws ArgumentError regionprops(labels; extra_properties=(mean,))
+    # sizes must match
+    @test_throws DimensionMismatch regionprops(
+        labels, intensity[1:(end-1), :]; extra_properties=(mean,)
+    )
+    # duplicated column names
+    @test_throws ArgumentError regionprops(
+        labels, intensity; extra_properties=(mean, :mean => median)
+    )
+    # collisions with requested base properties, including expanded ones
+    @test_throws ArgumentError regionprops(
+        labels, intensity; properties=[:area], extra_properties=(:area => mean,)
+    )
+    @test_throws ArgumentError regionprops(
+        labels, intensity; properties=[:bbox], extra_properties=(:min_row => mean,)
+    )
+    # no extras: intensity image is still optional and unused
+    @test regionprops(labels, intensity; properties=[:area]) ==
+        regionprops(labels; properties=[:area])
+end
+
+@testitem "regionprops: extra_properties on an empty label image" setup = [IntensityFixture] begin
+    import DataFrames: nrow
+
+    empty_labels = zeros(Int, size(labels))
+    table = regionprops_table(
+        empty_labels,
+        intensity;
+        properties=[:label],
+        extra_properties=(mean, ExternalBoundary(mean; radius=1)),
+    )
+    @test nrow(table) == 0
+    @test names(table) ⊇ ["label", "mean", "mean_boundary"]
+end
