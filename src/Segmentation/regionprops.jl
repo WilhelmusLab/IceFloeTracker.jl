@@ -191,7 +191,7 @@ function component_floes(
         )
     end
     floe_masks = Dict(
-        i => indexmap[boxes[i]] .== i for i in labels if areas[i] > minimum_area
+        i => indexmap[boxes[i]] .== i for i in labels if areas[i] >= minimum_area
     )
     return floe_masks
 end
@@ -569,10 +569,10 @@ end
 """
     _kept_label_map(labels, areas, minimum_area)
 
-Copy of `labels` with the regions of area at most `minimum_area` set to background (0).
+Copy of `labels` with the regions of area below `minimum_area` set to background (0).
 """
 function _kept_label_map(labels, areas, minimum_area)
-    return map(l -> (l > 0 && areas[l] > minimum_area) ? l : 0, labels)
+    return map(l -> (l > 0 && areas[l] >= minimum_area) ? l : 0, labels)
 end
 
 """
@@ -866,7 +866,7 @@ function regionprops(
     all_labels = [i for i in axes(areas, 1) if i > 0]
     needs_bboxes = !isdisjoint(required_properties, PROPERTIES_REQUIRING_BBOXES)
     bboxes_all = needs_bboxes ? _component_boxes(labels) : nothing # TODO: restore to `component_boxes(labels)` once the fixed version is released.
-    img_labels = [s for s in all_labels if areas[s] > minimum_area]
+    img_labels = [s for s in all_labels if areas[s] >= minimum_area]
 
     :label ∈ properties && push!(data, :label => img_labels)
 
