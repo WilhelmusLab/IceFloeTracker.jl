@@ -863,7 +863,7 @@ function regionprops(
     # and label 0's bounding box is the whole scene, so cropping it builds a mask
     # the size of the image that every consumer then discards. Ascending by
     # construction, so no sort is needed either.
-    all_labels = [i for i in axes(areas, 1) if i > 0]
+    all_labels = [i for i in axes(areas, 1) if i > 0 && areas[i] > 0]
     needs_bboxes = !isdisjoint(required_properties, PROPERTIES_REQUIRING_BBOXES)
     bboxes_all = needs_bboxes ? _component_boxes(labels) : nothing # TODO: restore to `component_boxes(labels)` once the fixed version is released.
     img_labels = [s for s in all_labels if areas[s] >= minimum_area]
