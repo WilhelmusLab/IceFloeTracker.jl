@@ -128,3 +128,46 @@ end
         @test results_invariant_for(RGB, T; baseline, algorithm, case)
     end
 end
+
+@testitem "FSPipeline.objectwise_compare_segmentation: reflectance columns" begin
+    import IceFloeTracker: expand_labels
+    import DataFrames: nrow
+    import Images: Gray
+    import StatsBase: mean
+
+    objectwise_compare_segmentation = FSPipeline.objectwise_compare_segmentation
+
+    # Two segmentations of the same two floes; floe 1 is one row taller in the second.
+    indexmap1 = zeros(Int, 12, 12)
+    indexmap1[2:4, 2:4] .= 1
+    indexmap1[7:10, 7:10] .= 2
+    indexmap2 = copy(indexmap1)
+    indexmap2[5, 2:4] .= 1
+    img = Gray.(reshape(range(0, 1; length=144), 12, 12))
+    radius = 2
+
+    # Mean over each region and over its external ring, 0 when the ring is empty.
+    function reference_means(indexmap, labels)
+        ring = expand_labels(indexmap, radius) .- indexmap
+        region_mean = [mean(img[indexmap .== L]) for L in labels]
+        ring_mean = [any(ring .== L) ? mean(img[ring .== L]) : 0 for L in labels]
+        return region_mean, ring_mean
+    end
+
+    df = objectwise_compare_segmentation(indexmap1, indexmap2, img; expand_radius=radius)
+    @test nrow(df) == 2
+    for (prefix, indexmap) in (("s1", indexmap1), ("s2", indexmap2))
+        region_mean, ring_mean = reference_means(indexmap, df[:, "$(prefix)_label"])
+        @test all(df[:, "$(prefix)_reflectance_mean"] .≈ region_mean)
+        @test all(df[:, "$(prefix)_reflectance_bdry_mean"] .≈ ring_mean)
+        @test all(df[:, "$(prefix)_reflectance_bdry_contrast"] .≈ region_mean .- ring_mean)
+    end
+
+    # Floes covering the whole image have an empty ring: the boundary mean is 0.
+    full = [1 1 2 2; 1 1 2 2]
+    full_img = Gray.([0.1 0.2 0.3 0.4; 0.5 0.6 0.7 0.8])
+    df = objectwise_compare_segmentation(full, full, full_img; expand_radius=radius)
+    @test nrow(df) == 2
+    @test all(iszero, df.s1_reflectance_bdry_mean)
+    @test all(iszero, df.s2_reflectance_bdry_mean)
+end
