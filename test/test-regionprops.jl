@@ -585,6 +585,11 @@ end
     # no extras: intensity image is still optional and unused
     @test regionprops(labels, intensity; properties=[:area]) ==
         regionprops(labels; properties=[:area])
+    # an empty collection is the same as no extras
+    for empty_extras in ((), Function[])
+        @test regionprops(labels; properties=[:area], extra_properties=empty_extras) ==
+            regionprops(labels; properties=[:area])
+    end
 end
 
 @testitem "regionprops: extra_properties on an empty label image" setup = [IntensityFixture] begin

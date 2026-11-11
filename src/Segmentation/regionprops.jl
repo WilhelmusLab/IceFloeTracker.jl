@@ -627,7 +627,7 @@ end
 Validate `extra_properties` against the inputs and return a vector of `name => statistic`.
 """
 function _normalize_extra_properties(extra_properties, intensity_img, labels, property_names)
-    isnothing(extra_properties) && return Pair{Symbol,Any}[]
+    (isnothing(extra_properties) || isempty(extra_properties)) && return Pair{Symbol,Any}[]
     isnothing(intensity_img) && throw(
         ArgumentError("extra_properties requires an intensity_img to compute statistics from"),
     )
