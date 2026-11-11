@@ -498,10 +498,10 @@ region's boundary. A region with no background within `radius` has an empty ring
 julia> regionprops_table(label_img, intensity_img; extra_properties=(mean, ExternalBoundary(mean; radius=5)))
 ```
 """
-struct ExternalBoundary{F}
+struct ExternalBoundary{F<:Function}
     f::F
     radius::Int
-    function ExternalBoundary(f::F, radius::Integer) where {F}
+    function ExternalBoundary(f::F, radius::Integer) where {F<:Function}
         radius >= 1 ||
             throw(ArgumentError("ExternalBoundary radius must be at least 1, got $radius"))
         return new{F}(f, Int(radius))
