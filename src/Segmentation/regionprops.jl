@@ -591,14 +591,14 @@ end
 """
     _component_intensity_stat(indices, intensity_img, label_list, f)
 
-Apply `f` to the pixels of `intensity_img` in each region of `label_list`, where `indices`
-comes from `component_indices` of the label map. Regions without pixels get `missing`, so `f`
-is never called on an empty collection.
+Apply `f` to a view of the pixels of `intensity_img` in each region of `label_list`, where
+`indices` comes from `_region_pixel_indices` of the label map. Regions without pixels get
+`missing`, so `f` is never called on an empty collection.
 """
 function _component_intensity_stat(indices, intensity_img, label_list, f)
     return map(label_list) do s
-        idx = checkbounds(Bool, indices, s) ? indices[s] : nothing
-        (isnothing(idx) || isempty(idx)) ? missing : f(intensity_img[idx])
+        idx = indices[s]
+        isempty(idx) ? missing : f(view(intensity_img, idx))
     end
 end
 
