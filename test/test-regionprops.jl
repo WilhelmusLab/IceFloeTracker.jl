@@ -31,7 +31,7 @@ end
 
     # Tests for regionprops_table
     @test typeof(table) <: DataFrame # check correct data type
-    @test nrow(table) == total_labels - 1 # One point has area 1, we exclude that point intentionally
+    @test nrow(table) == total_labels # minimum_area=1 keeps the single-pixel region
     @test all(
         [
             "area",
@@ -62,7 +62,7 @@ end
         [
             length(unique(label_components(table.mask[i], trues(3, 3)))) for
             i in 1:nrow(table)
-        ] .== [2, 2],
+        ] .== [2, 2, 1],
     )
 
     # Test that algorithm options at least run
@@ -115,7 +115,7 @@ end
 
     solidity_only = regionprops(label_img; properties=[:solidity])
     @test collect(keys(solidity_only)) == [:solidity] # :convex_area isn't leaked into the output
-    @test solidity_only[:solidity] == area ./ convex_area
+    @test isequal(solidity_only[:solidity], area ./ convex_area)
 end
 
 @testitem "regionprops table output should include all implied columns even if there are no rows" begin
@@ -288,7 +288,12 @@ end
 end
 
 @testitem "bboxes for too-small regions" begin
-    result = regionprops([0 0 0; 0 1 0; 0 0 0]; properties=[:bbox])
+    single_pixel = [0 0 0; 0 1 0; 0 0 0]
+    # minimum_area is inclusive: the default 1 keeps a single-pixel region
+    result = regionprops(single_pixel; properties=[:bbox])
+    @test result == Dict(:min_row => [2], :max_row => [2], :min_col => [2], :max_col => [2])
+
+    result = regionprops(single_pixel; properties=[:bbox], minimum_area=2)
     @test result ==
         Dict(:min_row => Int[], :max_row => Int[], :min_col => Int[], :max_col => Int[])
 end
@@ -446,7 +451,7 @@ end
     import Images: RGB, SegmentedImage, segment_mean
     import IceFloeTracker: ExternalBoundary, expand_labels
 
-    # Label 3 has area 1 and is dropped by the default `minimum_area=1`.
+    # Label 3 has area 1 and is dropped by `minimum_area=2` in the helpers below.
     labels = [
         1 1 0 0 0 0
         1 1 0 0 2 2
@@ -463,10 +468,18 @@ end
 
     # Helpers to call regionprops with the current labels and intensity arrays.
     rp(properties, extra_properties) = regionprops(
-        labels, intensity; properties=properties, extra_properties=extra_properties
+        labels,
+        intensity;
+        properties=properties,
+        extra_properties=extra_properties,
+        minimum_area=2,
     )
     rpt(properties, extra_properties) = regionprops_table(
-        labels, intensity; properties=properties, extra_properties=extra_properties
+        labels,
+        intensity;
+        properties=properties,
+        extra_properties=extra_properties,
+        minimum_area=2,
     )
 end
 
