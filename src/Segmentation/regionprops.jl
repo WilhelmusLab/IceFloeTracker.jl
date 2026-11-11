@@ -207,9 +207,10 @@ function component_perimeters(
     algorithm::PerimeterEstimationAlgorithm=BenkridCrookes(),
     masks=component_floes(indexmap),
 )
+    # Single-pixel regions have perimeter 0.0.
     perims = Dict(
-        label => (label == 0 ? 0 : algorithm(masks[label])) for
-        label in keys(masks) if prod(size(masks[label])) > 1
+        label => (label == 0 || length(masks[label]) == 1 ? 0.0 : algorithm(masks[label])) for
+        label in keys(masks)
     )
     return perims
 end
