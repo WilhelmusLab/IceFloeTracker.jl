@@ -483,9 +483,7 @@ end
     props = rp([:label], [mean])
     @test props[:mean] == [4.0, 25.5]
 
-    table = regionprops_table(
-        labels, intensity; properties=[:label], extra_properties=(maximum,)
-    )
+    table = rpt([:label], (maximum,))
     @test names(table) ⊇ ["label", "maximum"]
     @test table.maximum == [7.0, 29.0]
 end
@@ -512,14 +510,10 @@ end
 
 @testitem "regionprops: ExternalBoundary statistics" setup = [IntensityFixture] begin
     for r in (1, 2)
-        result = regionprops(
-            labels,
-            intensity;
-            properties=[:label],
-            extra_properties=(ExternalBoundary(mean; radius=r),),
-        )
-        # Cross-check against the ring construction used in FSPipeline.
-        ring = expand_labels(labels, r) .- labels
+        result = rp([:label], (ExternalBoundary(mean; radius=r),))
+        # Cross-check against the ring construction used in FSPipeline. At radius 2,
+        # label 3 would claim (4, 1) and (4, 2) from floe 1's ring if it were not dropped.
+        ring = expand_labels(kept_labels, r) .- kept_labels
         expected = segment_mean(SegmentedImage(intensity, ring))
         @test result[:mean_boundary] ≈ [expected[1], expected[2]]
     end
@@ -529,15 +523,7 @@ end
     @test_throws ArgumentError ExternalBoundary(mean; radius=0)
 
     # two radii side by side via pairs
-    result = regionprops(
-        labels,
-        intensity;
-        properties=[:label],
-        extra_properties=(
-            :ring1 => ExternalBoundary(mean; radius=1),
-            :ring2 => ExternalBoundary(mean; radius=2),
-        ),
-    )
+    result = rp([:label], (:ring1 => ExternalBoundary(mean; radius=1), :ring2 => ExternalBoundary(mean; radius=2),))
     @test result[:ring1] != result[:ring2]
 
     # no background around the floes: the ring is empty and the value is missing
