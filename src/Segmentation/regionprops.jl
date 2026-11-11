@@ -544,6 +544,16 @@ function _extra_property_pair(x)
     )
 end
 
+# The value of a `name => statistic` pair.
+_pair_statistic(f::Union{Function,ExternalBoundary}) = f
+function _pair_statistic(x)
+    throw(
+        ArgumentError(
+            "extra_properties pairs must map a name to a function or ExternalBoundary; got $(typeof(x))",
+        ),
+    )
+end
+
 # The reducer a statistic applies, and the label map whose regions select its pixels.
 _stat_function(f) = f
 _stat_function(b::ExternalBoundary) = b.f
