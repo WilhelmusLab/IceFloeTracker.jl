@@ -311,7 +311,7 @@ rule load_landmask:
     shell:
         """
         {config[IFT]} -e 'using IceFloeTracker, Images;
-            load("{input.landmask}") |> binarize_mask .|> N0f8 |> save("{output}")
+            load("{input.landmask}") |> binarize_mask .|> Gray{{N0f8}} |> save("{output}")
         '
         """
 
@@ -324,7 +324,7 @@ rule load_coastal_buffer_mask:
     shell:
         """
         {config[IFT]} -e 'using IceFloeTracker, Images;
-            load("{input.landmask}") |> binarize_mask |> create_coastal_buffer_mask .|> N0f8 |> save("{output}")
+            load("{input.landmask}") |> binarize_mask |> create_coastal_buffer_mask .|> Gray{{N0f8}} |> save("{output}")
         '
         """
 
@@ -395,9 +395,9 @@ rule segment:
             load("{input.landmask}") |> binarize_mask,
             load("{input.coastal_buffer_mask}") |> binarize_mask;
             intermediate_results_callback=call_kwargs(;
-                labels_map=l -> l .|> UInt16 |> save("{output.labels_map}"),
-                cloud_mask=l -> l .|> N0f8 |> save("{output.cloud_mask}"),
-                ice_mask=l -> l .|> N0f8 |> save("{output.ice_mask}"),
+                labels_map=l -> reinterpret(Gray{{N0f16}}, l .|> UInt16) |> save("{output.labels_map}"),
+                cloud_mask=l -> l .|> Gray{{N0f8}} |> save("{output.cloud_mask}"),
+                ice_mask=l -> l .|> Gray{{N0f8}} |> save("{output.ice_mask}"),
                 segment_mean_truecolor=save("{output.segment_mean_truecolor}"),
                 segment_mean_falsecolor=save("{output.segment_mean_falsecolor}"),
             ),
