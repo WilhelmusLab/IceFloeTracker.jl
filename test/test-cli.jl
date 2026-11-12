@@ -39,8 +39,8 @@
             load(falsecolor_path),
             load(landmask_path) |> binarize_mask;
             intermediate_results_callback=call_kwargs(;
-                labels_map=l -> l .|> UInt16 |> save(output_path),
-                ice_mask=save(ice_mask_path),
+                labels_map=l -> save(output_path, reinterpret(Gray{N0f16}, UInt16.(l))),
+                ice_mask=m -> save(ice_mask_path, Gray{N0f8}.(m)),
             ),
         )
         result = (;
