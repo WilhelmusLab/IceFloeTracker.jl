@@ -1,6 +1,8 @@
 @testitem "Persist image" begin
+    using Images: Gray
+
     outimage_path = "outimage1.tiff"
-    img = ones(3, 3)
+    img = Gray.(ones(3, 3))
 
     # Test filename in variable
     @persist img outimage_path
