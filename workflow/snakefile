@@ -61,6 +61,12 @@ def get_region_target_bbox(region):
     return bbox
 
 
+def retry_delay(wildcards, attempt):
+    """Seconds to wait before a job runs: none on the first attempt, then 60 s more
+    per retry (`retries` in the profile)."""
+    return 60 * (attempt - 1)
+
+
 # ============================================================================
 # Batch Targets
 # ============================================================================
@@ -256,7 +262,10 @@ rule load_truecolor:
     params:
         bbox = lambda wc: get_region_target_bbox(wc.region),
         crs = lambda wc: get_region_data(wc.region)["target_crs"]
+    resources:
+        retry_delay = retry_delay
     shell:
+        "sleep {resources.retry_delay}; "
         "{config[LOADER]} {output} --kind truecolor "
         "--crs {params.crs} --bbox {params.bbox} --scale {wildcards.scale} "
         "--datetime {wildcards.date} --satellite {wildcards.satellite} --no-validate"
@@ -269,7 +278,10 @@ rule load_falsecolor:
     params:
         bbox = lambda wc: get_region_target_bbox(wc.region),
         crs = lambda wc: get_region_data(wc.region)["target_crs"]
+    resources:
+        retry_delay = retry_delay
     shell:
+        "sleep {resources.retry_delay}; "
         "{config[LOADER]} {output} --kind bands721 "
         "--crs {params.crs} --bbox {params.bbox} --scale {wildcards.scale} "
         "--datetime {wildcards.date} --satellite {wildcards.satellite} --no-validate"
@@ -282,7 +294,10 @@ rule load_cloud:
     params:
         bbox = lambda wc: get_region_target_bbox(wc.region),
         crs = lambda wc: get_region_data(wc.region)["target_crs"]
+    resources:
+        retry_delay = retry_delay
     shell:
+        "sleep {resources.retry_delay}; "
         "{config[LOADER]} {output} --kind cloud "
         "--crs {params.crs} --bbox {params.bbox} --scale {wildcards.scale} "
         "--datetime {wildcards.date} --satellite {wildcards.satellite} --no-validate"
@@ -296,7 +311,10 @@ rule load_raw_landmask:
     params:
         bbox = lambda wc: get_region_target_bbox(wc.region),
         crs = lambda wc: get_region_data(wc.region)["target_crs"]
+    resources:
+        retry_delay = retry_delay
     shell:
+        "sleep {resources.retry_delay}; "
         "{config[LOADER]} {output} --kind landmask "
         "--crs {params.crs} --bbox {params.bbox} --scale {wildcards.scale} "
         "--datetime {wildcards.year}-01-01 --no-validate"
