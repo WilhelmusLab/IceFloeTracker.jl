@@ -60,7 +60,7 @@ Calculate the optimal tile size in the range [l0-1, l0+1] for the given size `l0
 # Description
 This function computes the optimal tile size for tiling an area with given dimensions. It ensures that the initial
 tile size `l0` is at least 2 and not larger than any of the given dimensions. The function evaluates candidate tile
-sizes and selects the one that minimizes the area missed by its corresponding tiling. In case of a tie, it prefers 
+sizes and selects the one that minimizes the area missed by its corresponding tiling. In case of a tie, it prefers
 the larger tile size.
 
 # Example
@@ -178,7 +178,7 @@ julia> collect(TileIterator((1:5,), MergeLastTileIfSmallerThanHalf((3,))))
 2-element Array{Tuple{UnitRange{Int64}},1}:
  (1:3,)
  (4:5,)
- 
+
 julia> collect(TileIterator((1:6,), MergeLastTileIfSmallerThanHalf((3,))))
 2-element Array{Tuple{UnitRange{Int64}},1}:
  (1:3,)
@@ -212,4 +212,216 @@ function _cover1d(ax, strategy::MergeLastTileIfSmallerThanHalf{1})
         push!(covered_range, current:hi)
     end
     return covered_range
+end
+
+"""
+    @tilewise tiles transformation
+    @tilewise tiles transformation into = canvas
+
+Apply `transformation` to each tile in `tiles`. Inputs marked with `\$` are replaced by the
+current tile of that input: `\$img` stands for `img[t...]` for a tile `t`, with any dimensions
+beyond the tile's kept whole (a tile `(1:2, 3:4)` of an `h×w×3` array is `img[1:2, 3:4, :]`).
+Each distinct marked expression is evaluated once, before the first tile. Each input must have at least as many dimensions as the tiles. Slices are copies,
+so the transformation cannot modify its inputs through them. Unmarked names are used as they are.
+
+With `into = canvas`, each tile's result is written into the same tile of `canvas`, which is
+returned; pixels outside every tile keep their value in `canvas`. Tiles are written in iteration
+order, so where tiles overlap, later tiles overwrite earlier ones. If `canvas` is also a marked
+input, each tile is sliced from the canvas as written so far. Without `into`, the results are
+collected into an array with the shape of `tiles`, or into a `Vector` if `tiles` has no shape
+(e.g. `Iterators.filter`).
+
+# Examples
+```jldoctest
+julia> img = reshape(1:16, 4, 4);
+
+julia> tiles = [(1:2, 1:2) (1:2, 3:4); (3:4, 1:2) (3:4, 3:4)];
+
+julia> @tilewise tiles sum(\$img)
+2×2 Matrix{Int64}:
+ 14  46
+ 22  54
+
+julia> @tilewise tiles \$img .- minimum(\$img) into = zeros(Int, 4, 4)
+4×4 Matrix{Int64}:
+ 0  4  0  4
+ 1  5  1  5
+ 0  4  0  4
+ 1  5  1  5
+```
+"""
+macro tilewise(tiles, transformation, options...)
+    canvas = _tilewise_canvas(options)
+    inputs = Dict{Any,Symbol}()
+    body = _mark_inputs!(inputs, transformation)
+    isempty(inputs) &&
+        throw(ArgumentError("`@tilewise` transformation has no input marked with `\$`"))
+    tile = gensym(:tile)
+    fulls = Dict(slice => gensym(:input) for slice in values(inputs))
+    evaluate = [:($(fulls[slice]) = $ex) for (ex, slice) in inputs]
+    slice = [:($s = $_tile($(fulls[s]), $tile)) for s in values(inputs)]
+    apply = if isnothing(canvas)
+        results, all_tiles = gensym(:results), gensym(:tiles)
+        quote
+            $all_tiles = $tiles
+            $results = []
+            for $tile in $all_tiles
+                $(slice...)
+                $push!($results, $body)
+            end
+            $_shape_like($results, $all_tiles)
+        end
+    else
+        out = gensym(:canvas)
+        quote
+            $out = $canvas
+            for $tile in $tiles
+                $(slice...)
+                $_untile!($out, $tile, $body)
+            end
+            $out
+        end
+    end
+    return esc(:(
+        let
+            $(evaluate...)
+            $apply
+        end
+    ))
+end
+
+"""
+    _tilewise_canvas(options)
+
+Return the canvas expression from the options of a `@tilewise` call, or `nothing` if there
+is none. Throws an `ArgumentError` for any option other than a single `into = canvas`.
+"""
+function _tilewise_canvas(options)
+    canvas = nothing
+    for opt in options
+        is_assignment = Meta.isexpr(opt, :(=), 2)
+        is_into = is_assignment && opt.args[1] === :into
+        is_first = isnothing(canvas)
+        if !(is_into && is_first)
+            message = "`@tilewise` accepts one option, `into = canvas`; got `$opt`"
+            throw(ArgumentError(message))
+        end
+        canvas = opt.args[2]
+    end
+    return canvas
+end
+
+"""
+    _mark_inputs!(inputs, ex)
+
+Return `ex` with every marked input `\$x` replaced by a symbol, and record each distinct
+marked expression `x` and its symbol in the `Dict` `inputs`. Repeated marks of the same
+expression share one symbol.
+
+# Examples
+```jldoctest
+julia> using IceFloeTracker.ImageUtils: _mark_inputs!
+
+julia> ex = Meta.parse(raw"f(\$img, \$img, \$mask, k)");
+
+julia> inputs = Dict{Any,Symbol}();
+
+julia> body = _mark_inputs!(inputs, ex);
+
+julia> sort(collect(keys(inputs))) # the distinct marked expressions
+2-element Vector{Any}:
+ :img
+ :mask
+
+julia> body.args[2] === body.args[3] === inputs[:img] # both `\$img` became one symbol
+true
+
+julia> body.args[4] === inputs[:mask]
+true
+
+julia> body.args[5] # unmarked names are left alone
+:k
+```
+"""
+function _mark_inputs!(_, ex)
+    return ex
+end
+
+function _mark_inputs!(inputs, ex::Expr)
+    if Meta.isexpr(ex, :$, 1)
+        marked = ex.args[1]
+        new_symbol() = gensym(:slice)
+        return get!(new_symbol, inputs, marked)
+    end
+    args = [_mark_inputs!(inputs, a) for a in ex.args]
+    return Expr(ex.head, args...)
+end
+
+"""
+    _trailing(x, tile)
+
+One `Colon()` for each dimension of `x` beyond the dimensions indexed by `tile`.
+
+# Examples
+```jldoctest
+julia> using IceFloeTracker.ImageUtils: _trailing
+
+julia> tile = (1:2, 3:4);
+
+julia> rgb = zeros(4, 4, 3);
+
+julia> _trailing(rgb, tile) # the channel dimension is kept whole
+(Colon(),)
+
+julia> size(rgb[tile..., _trailing(rgb, tile)...])
+(2, 2, 3)
+
+julia> _trailing(zeros(4, 4), tile) # nothing beyond the tile
+()
+```
+"""
+function _trailing(x, tile)
+    n_trailing = ndims(x) - length(tile)
+    if n_trailing < 0
+        message = "tile has $(length(tile)) dimensions but the input has only $(ndims(x))"
+        throw(DimensionMismatch(message))
+    end
+    return ntuple(_ -> Colon(), n_trailing)
+end
+
+"""
+    _tile(x, tile)
+
+Copy of the part of `x` covered by `tile`, with all dimensions beyond the tile kept whole.
+"""
+function _tile(x, tile)
+    trailing = _trailing(x, tile)
+    return x[tile..., trailing...]
+end
+
+"""
+    _untile!(canvas, tile, result)
+
+Write `result` into the part of `canvas` covered by `tile`, broadcasting over any
+dimensions beyond the tile.
+"""
+function _untile!(canvas, tile, result)
+    trailing = _trailing(canvas, tile)
+    canvas_region_view = view(canvas, tile..., trailing...)
+    canvas_region_view .= result
+    return canvas
+end
+
+"""
+    _shape_like(results, tiles)
+
+Return the per-tile `results` as an array with the shape of `tiles`, or as a `Vector` if
+`tiles` has no shape, with the narrowest element type that holds them all.
+"""
+function _shape_like(results, tiles)
+    # `results` is a `Vector{Any}`. Broadcasting `identity` copies it into an array whose
+    # element type is computed from the values, e.g. `Vector{Int64}` for integer results.
+    narrowed = identity.(results)
+    has_shape = Base.IteratorSize(tiles) isa Base.HasShape
+    return has_shape ? reshape(narrowed, size(tiles)) : narrowed
 end
