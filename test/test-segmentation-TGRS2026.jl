@@ -139,7 +139,7 @@ end
     mean_F_score = round(mean(skipnanormissing(results.F_score)); digits=2)
 
     # Good performance might look liks this:
-    @test mean_recall ≥ 0.9 broken = true
+    @test mean_recall ≥ 0.9 #broken = true
     @test mean_precision ≥ 0.9 broken = true
     @test mean_F_score ≥ 0.9 broken = true
 

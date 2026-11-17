@@ -172,10 +172,10 @@ accepting MODIS false color and Band 1 grayscale reflectance, respectively.
 
 """
 @kwdef struct Classify <: IceFloeClassificationAlgorithm
-    bright_ice_band_1_minimum=0.6
-    cloud_band_2_minimum=0.2
-    cloud_band_7_minimum=0.2
-    water_band_1_maximum=0.2
+    bright_ice_band_1_minimum=0.681
+    cloud_band_2_minimum=0.147
+    cloud_band_7_minimum=0.254
+    water_band_1_maximum=0.106
     key=Dict("land"=>0, "water"=>1, "dark_ice"=>2, "bright_ice"=>3, "cloud"=>4)
     cloud_mask_algorithm=Watkins2026CloudMask(band_2_threshold=cloud_band_2_minimum, band_7_threshold=cloud_band_7_minimum)
     ice_mask_algorithm=IceDetectionBrightnessMidpoint(; minimum_reflectance=bright_ice_band_1_minimum)
@@ -292,15 +292,20 @@ function (s::Segment)(
     )
 
     @info "Detect Floes"
-    # Alternatively: Vary the tile sizes and run multiple times
-    # Question: can we make kmeans binarization work with binarize?
-    kmeans_binarized_image = kmeans_binarization_multiclass(
-        preproc_gray, falsecolor_image, masks, filtered_tiles,
+
+    # The cluster detection algorithm just needs to produce a binary image
+    # 
+
+    kmeans_binarized_image = kmeans_binarization(
+        preproc_gray, masks["bright_ice"], filtered_tiles;
+        cluster_selection_algorithm= r -> r
     )
     # Cleanup image? Hole filling?
 
     # adaptive_binarized_image = binarize(preproc_gray, s.binarization_algorithm)
     adaptive_binarized_image = binarize(preproc_gray, AdaptiveThreshold(;window_size=399, percentage=0)) .> 0
+    # Cleanup image: impose land mask, at least
+    apply_landmask!(adaptive_binarized_image, masks["land"])
 
     # Alternatively: Same settings, but multiple binarizations
     candidate_splits = [
@@ -340,53 +345,6 @@ function (s::Segment)(
         )
     end
     return segments_tc
-end
-
-"""
-    kmeans_binarization_multiclass(preproc_gray, falsecolor_image, masks;
-    cloudy_ice_params=(k=3, b7=0.7, b2=0.56),
-    clear_sky_ice_params=(k=4, b7=0.18, b2=0.46),
-    mask_land_key="coastal_buffer_mask",
-    mask_cloud_key="cloud",
-    )
-
-Wrapper for the kmeans binarization function. Uses one set of k-means settings for clear
-sky scenes and another set for cloud-covered scenes. The parameters are used to initialize
-the IceDetectionBrightnessPeaksMODIS721 algorithm.
-"""
-function kmeans_binarization_multiclass(preproc_gray, falsecolor_image, masks, tiles;
-    cloudy_ice_params=(k=3, b7=0.7, b2=0.56),
-    clear_sky_ice_params=(k=4, b7=0.18, b2=0.46),
-    mask_land_key="coastal_buffer_mask",
-    mask_cloud_key="cloud",
-)
-
-    fc_masked = apply_landmask(falsecolor_image, masks[mask_land_key])
-
-    cloudy_ice_detector = IceDetectionBrightnessPeaksMODIS721(
-        band_7_max=cloudy_ice_params.b7,
-        possible_ice_threshold=cloudy_ice_params.b2,
-        nbins=128, minimum_prominence=0.03,
-        join_method="union")
-    clear_sky_ice_detector = IceDetectionBrightnessPeaksMODIS721(
-        band_7_max=clear_sky_ice_params.b7,
-        possible_ice_threshold=clear_sky_ice_params.b2,
-        nbins=128,
-        minimum_prominence=0.01,
-        join_method="union")
-
-    cloudy_ice_kmeans = kmeans_binarization(
-        preproc_gray, fc_masked, tiles;
-        k=cloudy_ice_params.k, cluster_selection_algorithm=cloudy_ice_detector
-    ) .> 0
-    clear_sky_ice_kmeans = kmeans_binarization(
-        preproc_gray, fc_masked, tiles;
-        k=clear_sky_ice_params.k, cluster_selection_algorithm=clear_sky_ice_detector
-    ) .> 0
-
-    clear_sky_ice_kmeans[masks[mask_cloud_key] .> 0] .= cloudy_ice_kmeans[masks[mask_cloud_key] .> 0]
-
-    return clear_sky_ice_kmeans
 end
 
 """
