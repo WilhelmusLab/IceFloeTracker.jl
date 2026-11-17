@@ -130,7 +130,6 @@ end
 end
 
 @testitem "FSPipeline.objectwise_compare_segmentation: reflectance columns" begin
-    import IceFloeTracker: expand_labels
     import DataFrames: nrow
     import Images: Gray
     import StatsBase: mean
@@ -144,13 +143,20 @@ end
     indexmap2 = copy(indexmap1)
     indexmap2[5, 2:4] .= 1
     img = Gray.(reshape(range(0, 1; length=144), 12, 12))
-    radius = 2
+    # At radius 3 the rings of the two floes overlap, e.g. at (6, 6).
+    radius = 3
 
-    # Mean over each region and over its external ring, 0 when the ring is empty.
+    # Pixels within `radius` of region `L`, other floes included, minus the region.
+    function ring_pixels(indexmap, L)
+        region = findall(indexmap .== L)
+        within(p) = any(q -> hypot(Tuple(p - q)...) <= radius, region)
+        return [p for p in CartesianIndices(indexmap) if indexmap[p] != L && within(p)]
+    end
+    # Mean over each region and over its ring, 0 when the ring is empty.
     function reference_means(indexmap, labels)
-        ring = expand_labels(indexmap, radius) .- indexmap
         region_mean = [mean(img[indexmap .== L]) for L in labels]
-        ring_mean = [any(ring .== L) ? mean(img[ring .== L]) : 0 for L in labels]
+        rings = [ring_pixels(indexmap, L) for L in labels]
+        ring_mean = [isempty(ring) ? 0 : mean(img[ring]) for ring in rings]
         return region_mean, ring_mean
     end
 
@@ -163,11 +169,11 @@ end
         @test all(df[:, "$(prefix)_reflectance_bdry_contrast"] .≈ region_mean .- ring_mean)
     end
 
-    # Floes covering the whole image have an empty ring: the boundary mean is 0.
-    full = [1 1 2 2; 1 1 2 2]
+    # A floe covering the whole image has an empty ring: the boundary mean is 0.
+    full = ones(Int, 2, 4)
     full_img = Gray.([0.1 0.2 0.3 0.4; 0.5 0.6 0.7 0.8])
     df = objectwise_compare_segmentation(full, full, full_img; expand_radius=radius)
-    @test nrow(df) == 2
+    @test nrow(df) == 1
     @test all(iszero, df.s1_reflectance_bdry_mean)
     @test all(iszero, df.s2_reflectance_bdry_mean)
 end

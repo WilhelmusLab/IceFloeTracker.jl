@@ -479,7 +479,7 @@ function objectwise_compare_segmentation(
     )
     df_s1 = regionprops_table(indexmap1, img; properties, extra_properties=reflectance)
     df_s2 = regionprops_table(indexmap2, img; properties, extra_properties=reflectance)
-    # A floe with no background within expand_radius has no boundary mean; use 0.
+    # A floe with an empty ring (one covering the image) has no boundary mean; use 0.
     for df in (df_s1, df_s2)
         df.reflectance_bdry_mean = coalesce.(df.reflectance_bdry_mean, 0)
     end
