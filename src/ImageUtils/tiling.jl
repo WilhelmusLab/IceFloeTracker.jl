@@ -156,7 +156,7 @@ end
 function get_tiles(array; rblocks, cblocks)
     rtile, ctile = size(array)
     tile_size = (rtile ÷ rblocks, ctile ÷ cblocks)
-    return TileIterator(axes(array), tile_size)
+    return TileIterator(axes(array), MergeLastTileIfSmallerThanHalf(tile_size))
 end
 
 """
