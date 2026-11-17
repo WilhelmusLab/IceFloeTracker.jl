@@ -143,8 +143,8 @@ end
     indexmap2 = copy(indexmap1)
     indexmap2[5, 2:4] .= 1
     img = Gray.(reshape(range(0, 1; length=144), 12, 12))
-    # At radius 3 the rings of the two floes overlap, e.g. at (6, 6).
-    radius = 3
+    # At radius 5 each floe's ring includes pixels of the other floe, e.g. (7, 7) and (4, 4).
+    radius = 5
 
     # Pixels within `radius` of region `L`, other floes included, minus the region.
     function ring_pixels(indexmap, L)
