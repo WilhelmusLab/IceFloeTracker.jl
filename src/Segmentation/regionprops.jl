@@ -484,13 +484,10 @@ column is named `<name of f>_boundary` (e.g. `:mean_boundary`), or use a pair su
 `:ring_mean => ExternalBoundary(mean; radius=5)` for a custom name. A pair is required when
 `f` has no name of its own, such as an anonymous function or `Base.Fix2(quantile, 0.9)`.
 
-The ring of a region is the set of background pixels within `radius` of it, built with
-[`expand_labels`](@ref) as `expand_labels(labels, radius) .- labels`, where `labels` holds
-only the regions `regionprops` reports on: regions below `minimum_area` count as background.
-The ring is external (it excludes the region itself), it only grows into background, and it
-is split between neighboring regions, so pixels of other regions never count toward a
-region's boundary. A region with no background within `radius` has an empty ring and gets
-`missing`.
+The ring of a region is the set of pixels within Euclidean distance `radius` of it, excluding
+the region itself. Pixels of other regions count, including regions below `minimum_area`, so
+the rings of nearby regions overlap. Rings are clipped at the image border. A region with no
+other pixels within `radius` has an empty ring and gets `missing`.
 
 # Examples
 ```julia
@@ -553,36 +550,43 @@ function _pair_statistic(x)
     )
 end
 
-# The reducer a statistic applies, and the label map whose regions select its pixels.
+# The reducer a statistic applies, and the radius of the ring it reads (0: the region itself).
 _stat_function(f) = f
 _stat_function(b::ExternalBoundary) = b.f
-_stat_label_map(f, labels, kept_labels, rings) = labels
-function _stat_label_map(b::ExternalBoundary, labels, kept_labels, rings)
-    return get!(rings, b.radius) do
-        ring = expand_labels(kept_labels, b.radius)
-        ring .-= kept_labels
-        return ring
-    end
-end
+_stat_radius(f) = 0
+_stat_radius(b::ExternalBoundary) = b.radius
 
 """
-    _kept_label_map(labels, areas, minimum_area)
+    _region_pixel_indices(labels, nlabels)
 
-Copy of `labels` with the regions of area at most `minimum_area` set to background (0).
+Linear indices of the pixels of each region `1:nlabels` in `labels`, skipping background (0).
 """
-function _kept_label_map(labels, areas, minimum_area)
-    return map(l -> (l > 0 && areas[l] > minimum_area) ? l : 0, labels)
-end
-
-"""
-    _region_pixel_indices(label_map, nlabels)
-
-Linear indices of the pixels of each region `1:nlabels` in `label_map`, skipping background (0).
-"""
-function _region_pixel_indices(label_map, nlabels)
+function _region_pixel_indices(labels, nlabels)
     indices = [Int[] for _ in 1:nlabels]
-    for (i, l) in enumerate(label_map)
+    for (i, l) in enumerate(labels)
         l > 0 && push!(indices[l], i)
+    end
+    return indices
+end
+
+"""
+    _ring_pixel_indices(labels, label_list, boxes, radius, nlabels)
+
+Linear indices of the pixels within Euclidean distance `radius` of each region in
+`label_list`, excluding the region itself, whatever their label. Each ring is built in the
+region's bounding box from `boxes`, padded by `radius` and clipped to the image. Regions not in
+`label_list` get no pixels.
+"""
+function _ring_pixel_indices(labels, label_list, boxes, radius, nlabels)
+    linear = LinearIndices(labels)
+    pad = CartesianIndex(radius, radius)
+    indices = [Int[] for _ in 1:nlabels]
+    for s in label_list
+        window = CartesianIndices(labels) ∩ ((first(boxes[s]) - pad):(last(boxes[s]) + pad))
+        region = view(labels, window) .== s
+        grown = expand_labels(Int.(region), radius) .> 0
+        ring = grown .& .!region
+        indices[s] = linear[window][ring]
     end
     return indices
 end
@@ -591,8 +595,8 @@ end
     _component_intensity_stat(indices, intensity_img, label_list, f)
 
 Apply `f` to a view of the pixels of `intensity_img` in each region of `label_list`, where
-`indices` comes from `_region_pixel_indices` of the label map. Regions without pixels get
-`missing`, so `f` is never called on an empty collection.
+`indices` comes from `_region_pixel_indices` or `_ring_pixel_indices`. Regions without pixels
+get `missing`, so `f` is never called on an empty collection.
 """
 function _component_intensity_stat(indices, intensity_img, label_list, f)
     return map(label_list) do s
@@ -863,7 +867,8 @@ function regionprops(
     # the size of the image that every consumer then discards. Ascending by
     # construction, so no sort is needed either.
     all_labels = [i for i in axes(areas, 1) if i > 0]
-    needs_bboxes = !isdisjoint(required_properties, PROPERTIES_REQUIRING_BBOXES)
+    needs_rings = any(p -> last(p) isa ExternalBoundary, extra_pairs)
+    needs_bboxes = needs_rings || !isdisjoint(required_properties, PROPERTIES_REQUIRING_BBOXES)
     bboxes_all = needs_bboxes ? _component_boxes(labels) : nothing # TODO: restore to `component_boxes(labels)` once the fixed version is released.
     img_labels = [s for s in all_labels if areas[s] > minimum_area]
 
@@ -947,20 +952,17 @@ function regionprops(
         push!(data, :mask => map(s -> floe_masks[s], img_labels))
     end
 
-    # Intensity statistics. Each label map (the regions themselves, or the ring of an
-    # ExternalBoundary radius) is built and indexed once, however many statistics use it.
-    # Rings grow from the kept regions only, so dropped regions do not claim ring pixels.
+    # Intensity statistics. The pixels of the regions, or of their rings for each
+    # ExternalBoundary radius, are indexed once, however many statistics use them.
     if !isempty(extra_pairs)
-        needs_rings = any(p -> last(p) isa ExternalBoundary, extra_pairs)
-        kept_labels = needs_rings ? _kept_label_map(labels, areas, minimum_area) : labels
         nlabels = last(axes(areas, 1))
-        rings = Dict{Int,Matrix{Int}}()
-        indices_by_map = IdDict{Any,Any}()
+        indices_by_radius = Dict{Int,Vector{Vector{Int}}}()
         for (name, stat) in extra_pairs
-            label_map = _stat_label_map(stat, labels, kept_labels, rings)
-            indices = get!(
-                () -> _region_pixel_indices(label_map, nlabels), indices_by_map, label_map
-            )
+            radius = _stat_radius(stat)
+            indices = get!(indices_by_radius, radius) do
+                radius == 0 && return _region_pixel_indices(labels, nlabels)
+                return _ring_pixel_indices(labels, img_labels, bboxes_all, radius, nlabels)
+            end
             data[name] = _component_intensity_stat(
                 indices, intensity_img, img_labels, _stat_function(stat)
             )
