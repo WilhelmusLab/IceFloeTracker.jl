@@ -445,8 +445,8 @@ end
 
 @testsnippet IntensityFixture begin
     import StatsBase: mean, median, quantile
-    import Images: RGB, SegmentedImage, segment_mean
-    import IceFloeTracker: ExternalBoundary, expand_labels
+    import Images: RGB
+    import IceFloeTracker: ExternalBoundary
 
     # Label 3 has area 1 and is dropped by the default `minimum_area=1`.
     labels = [
@@ -460,8 +460,13 @@ end
     # 22, 23, 24, 27, 28, 29.
     intensity = Float64.(reshape(1:30, size(labels)))
     rgb_intensity = RGB.(intensity ./ 30, 0.5, 1 .- intensity ./ 30)
-    # The regions regionprops reports on: label 3 is background for ExternalBoundary rings.
-    kept_labels = ifelse.(labels .== 3, 0, labels)
+    # Reference ExternalBoundary ring: every pixel within Euclidean distance `r` of region
+    # `s`, other regions included, minus the region itself.
+    function reference_ring(labels, s, r)
+        region = findall(labels .== s)
+        within(p) = any(q -> hypot(Tuple(p - q)...) <= r, region)
+        return [p for p in CartesianIndices(labels) if labels[p] != s && within(p)]
+    end
 
     # Helpers to call regionprops with the current labels and intensity arrays.
     rp(properties, extra_properties) = regionprops(
@@ -500,8 +505,7 @@ end
     )
     result = rp([:label], extra_properties)
     @test Set(keys(result)) == Set([:label, :mean, :p90, :smallest, :wide_ring])
-    wide_ring = expand_labels(kept_labels, 2) .- kept_labels
-    @test result[:wide_ring] ≈ [mean(intensity[wide_ring .== i]) for i in 1:2]
+    @test result[:wide_ring] ≈ [mean(intensity[reference_ring(labels, s, 2)]) for s in 1:2]
     @test result[:p90] ≈ [quantile([1.0, 2, 6, 7], 0.9), quantile([22.0, 23, 24, 27, 28, 29], 0.9)]
     @test result[:smallest] == [1.0, 22.0]
 
@@ -525,14 +529,22 @@ end
 end
 
 @testitem "regionprops: ExternalBoundary statistics" setup = [IntensityFixture] begin
-    for r in (1, 2)
-        result = rp([:label], (ExternalBoundary(mean; radius=r),))
-        # Cross-check against the ring construction used in FSPipeline. At radius 2,
-        # label 3 would claim (4, 1) and (4, 2) from floe 1's ring if it were not dropped.
-        ring = expand_labels(kept_labels, r) .- kept_labels
-        expected = segment_mean(SegmentedImage(intensity, ring))
-        @test result[:mean_boundary] ≈ [expected[1], expected[2]]
+    # At radius 1 the rings of floes 1 and 2 do not meet.
+    result = rp([:label], (ExternalBoundary(mean; radius=1),))
+    @test result[:mean_boundary] ≈ [mean(intensity[reference_ring(labels, s, 1)]) for s in 1:2]
+    # At radius 2 the rings overlap at (2, 4), and at radius 3 floe 1's ring reaches into
+    # floe 2 and into label 3, which is dropped by `minimum_area` but still counts.
+    for r in (2, 3)
+        ring_result = rp([:label], (ExternalBoundary(mean; radius=r),))
+        @test ring_result[:mean_boundary] ≈ [mean(intensity[reference_ring(labels, s, r)]) for s in 1:2]
     end
+    # Touching floes with no background: at radius 1, each ring is the neighbor's
+    # adjacent pixel (*).
+    touching = [1 1 2 2]
+    result = regionprops(
+        touching, [1.0 2 30 40]; properties=[:label], extra_properties=(ExternalBoundary(mean; radius=1),)
+    )
+    @test isequal(result[:mean_boundary], [30.0, 2.0])
 
     # the default radius is 15
     @test ExternalBoundary(mean).radius == 15
@@ -543,10 +555,9 @@ end
     result = rp([:label], (:ring1 => ExternalBoundary(mean; radius=1), :ring2 => ExternalBoundary(mean; radius=2),))
     @test result[:ring1] != result[:ring2]
 
-    # no background around the floes: the ring is empty and the value is missing
-    full = [1 1 2 2; 1 1 2 2]
+    # a floe filling the image has an empty ring, and the value is missing
     result = regionprops(
-        full, rand(2, 4); properties=[:label], extra_properties=(ExternalBoundary(mean),)
+        ones(Int, 2, 4), rand(2, 4); properties=[:label], extra_properties=(ExternalBoundary(mean),)
     )
     @test all(ismissing, result[:mean_boundary])
 end
