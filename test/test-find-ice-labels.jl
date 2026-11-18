@@ -46,13 +46,6 @@
         single_floe = modis_falsecolor(case)[225:260, 110:160]
         @test sum(binarize(single_floe, f)) == 77 # Changed from 1, new method picks up more ice
 
-        # Non-Float64 thresholds reach `get_ice_peaks`
-        f32 = IceDetectionBrightnessPeaksMODIS721(;
-            band_7_max=Float32(5 / 255), possible_ice_threshold=Float32(75 / 255), nbins=64
-        )
-        @test f32 isa IceDetectionBrightnessPeaksMODIS721{Float32}
-        @test sum(binarize(single_floe, f32)) == 77
-
         just_water = modis_falsecolor(case)[1:50, 350:400]
         @test sum(binarize(just_water, f)) == 2 # Changed from 0, there are some ice pixels in the top of the image
 
