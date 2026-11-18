@@ -410,10 +410,6 @@ function extended_regionprops_table(
         props_df[:, Symbol(k, "_fraction")] = mask_mean.(props_df[:, :label], [masks[k]])
     end
 
-    # Get the mean reflectance and mean boundary reflectance, and expand the results into named color channels
-    add_mean_reflectance!(props_df, falsecolor_image, indices)
-    add_mean_boundary_reflectance!(props_df, falsecolor_image, img_indexmap; radius=boundary_radius)
-
     # TODO: generalize to include inplace option
     props_df[:, :probability] .= probability_function(props_df)
 
