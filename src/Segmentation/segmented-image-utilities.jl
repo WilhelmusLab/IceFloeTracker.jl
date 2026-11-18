@@ -300,71 +300,50 @@ to object g in G is defined by
 
 """
 function get_relevant_set(df1, df2, labels1, labels2)
-    return _get_relevant_set(_floe_columns(df1), _floe_columns(df2), labels1, labels2)
-end
-
-# Typed copies of the regionprops columns `get_relevant_set` reads, so its per-floe
-# loops don't go through untyped DataFrame columns. Column access is untyped, so
-# each conversion still dispatches, but only once per column.
-function _floe_columns(df)
-    return (;
-        label=Vector{Int64}(df.label)::Vector{Int64},
-        area=Vector{Float64}(df.area)::Vector{Float64},
-        min_row=Vector{Int64}(df.min_row)::Vector{Int64},
-        max_row=Vector{Int64}(df.max_row)::Vector{Int64},
-        min_col=Vector{Int64}(df.min_col)::Vector{Int64},
-        max_col=Vector{Int64}(df.max_col)::Vector{Int64},
-        row_centroid=Vector{Float64}(df.row_centroid)::Vector{Float64},
-        col_centroid=Vector{Float64}(df.col_centroid)::Vector{Float64},
-    )
-end
-
-function _get_relevant_set(g, s, labels1, labels2)
     relevant_set = Dict{Int64,Vector{Int64}}()
-    for i in eachindex(g.label)
-        g_label = g.label[i]
+    for floe in eachrow(df1)
         # select labels that are inside the bounding box for the floe
         matched_labels = unique(
-            labels2[g.min_row[i]:g.max_row[i], g.min_col[i]:g.max_col[i]]
+            labels2[floe.min_row:floe.max_row, floe.min_col:floe.max_col]
         )
 
         # if any, then check centroid positions
         maximum(matched_labels) == 0 && continue
+        # get the rows in the segments_df from the matched labels
+        candidate_subset = subset(df2, :label => ByRow(l -> l in matched_labels))
 
         relevant_set_labels = Int64[]
 
         # check if centroid g in s
-        rc = round(Int64, g.row_centroid[i])
-        cc = round(Int64, g.col_centroid[i])
+        rc = round(Int64, floe.row_centroid)
+        cc = round(Int64, floe.col_centroid)
         push!(relevant_set_labels, labels2[rc, cc])
 
-        # check if centroid s in g, for the segments matched by the bounding box
-        for j in eachindex(s.label)
-            s_label = s.label[j]
-            s_label in matched_labels || continue
-            rc = round(Int64, s.row_centroid[j])
-            cc = round(Int64, s.col_centroid[j])
-            (labels1[rc, cc] == g_label) && begin
-                push!(relevant_set_labels, s_label)
+        # check if centroid s in g
+        for s_floe in eachrow(candidate_subset)
+            rc = round(Int64, s_floe.row_centroid)
+            cc = round(Int64, s_floe.col_centroid)
+            (labels1[rc, cc] == floe.label) && begin
+                push!(relevant_set_labels, s_floe.label)
             end
 
             # joint bbox
-            rmin = min(g.min_row[i], s.min_row[j])
-            rmax = max(g.max_row[i], s.max_row[j])
-            cmin = min(g.min_col[i], s.min_col[j])
-            cmax = max(g.max_col[i], s.max_col[j])
+            rmin = min(floe.min_row, s_floe.min_row)
+            rmax = max(floe.max_row, s_floe.max_row)
+            cmin = min(floe.min_col, s_floe.min_col)
+            cmax = max(floe.max_col, s_floe.max_col)
 
             # check if area overlap between g and s is larger than 50% of g
-            gtmask = labels1[rmin:rmax, cmin:cmax] .== g_label
-            slmask = labels2[rmin:rmax, cmin:cmax] .== s_label
+            gtmask = labels1[rmin:rmax, cmin:cmax] .== floe.label
+            slmask = labels2[rmin:rmax, cmin:cmax] .== s_floe.label
             intersect_area = sum(gtmask .&& slmask)
-            if max(intersect_area / s.area[j], intersect_area / g.area[i]) > 0.5
-                push!(relevant_set_labels, s_label)
+            if max(intersect_area / s_floe.area, intersect_area / floe.area) > 0.5
+                push!(relevant_set_labels, s_floe.label)
             end
         end
         relevant_set_labels = filter(r -> r != 0, unique(relevant_set_labels))
         if length(relevant_set_labels) > 0
-            push!(relevant_set, g_label => relevant_set_labels)
+            push!(relevant_set, floe.label => relevant_set_labels)
         end
     end
     return relevant_set
