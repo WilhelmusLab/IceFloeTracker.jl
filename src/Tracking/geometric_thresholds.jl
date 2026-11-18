@@ -7,7 +7,8 @@ areas below the minimum area, it is constant at minimum value; likewise for abov
 maximum area. The threshold function is linear in between these two points. A return
 value `true` indicates that the value is below the threshold.
 """
-@kwdef struct PiecewiseLinearThresholdFunction{A1,A2,V1,V2} <: AbstractThresholdFunction
+@kwdef struct PiecewiseLinearThresholdFunction{A1<:Real,A2<:Real,V1<:Real,V2<:Real} <:
+              AbstractThresholdFunction
     minimum_area::A1 = 100
     maximum_area::A2 = 700
     minimum_value::V1 = 0.4
@@ -22,7 +23,7 @@ function (f::PiecewiseLinearThresholdFunction)(area, value)
 end
 
 """
-    StepwiseLinearThresholdFunction(changepoint_area::Number, low_value::Number, high_value::Number)
+    StepwiseLinearThresholdFunction(changepoint_area::Real, low_value::Real, high_value::Real)
     StepwiseLinearThresholdFunction()(area, value)
 
 The stepwise linear threshold function is defined using a changepoint area and two levels.
@@ -31,7 +32,7 @@ If the area is less than the changepoint area, the function returns true if the 
 then the value is tested againg `high_value`.
 
 """
-@kwdef struct StepwiseLinearThresholdFunction{C<:Number,L<:Number,H<:Number} <:
+@kwdef struct StepwiseLinearThresholdFunction{C<:Real,L<:Real,H<:Real} <:
               AbstractThresholdFunction
     changepoint_area::C
     low_value::L

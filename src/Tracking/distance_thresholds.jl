@@ -100,7 +100,7 @@ uncertainty is 250 m, then the maximum distance includes a 250 m buffer. The def
 velocity is 1.5 m/s.
 
 """
-@kwdef struct LinearTimeDistanceFunction{V,E} <: AbstractTimeDistanceThresholdFunction
+@kwdef struct LinearTimeDistanceFunction{V<:Real,E<:Real} <: AbstractTimeDistanceThresholdFunction
     max_velocity::V = 0.75
     epsilon::E = 250
 end
