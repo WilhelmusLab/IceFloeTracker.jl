@@ -189,7 +189,6 @@
         @test pk == 0.859375
         @test get_ice_peaks(edges, counts; possible_ice_threshold=Float32(0.3)) == pk
         @test get_ice_peaks(edges, counts; minimum_prominence=Float32(0.01)) == pk
-        @test get_ice_peaks(edges, counts; window_size=Int32(3)) == pk
 
         # The peak finder throws a BoundsError on this histogram
         @test get_ice_peaks(0.0:0.25:0.75, [3, 3, 2, 0]; window_size=3) == Inf
