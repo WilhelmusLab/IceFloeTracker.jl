@@ -68,7 +68,7 @@ end
 
 # Kept out of `get_ice_peaks` so the peaks are not a `local` assigned inside `try`,
 # which inference can't type. Returns `nothing` when the peak finder fails.
-function _find_peaks(counts, window_size)
+function _find_peaks(counts::AbstractVector{<:Real}, window_size::Integer)
     try
         return findmaxima(counts, window_size) |> peakproms! |> peakwidths!
     catch e
