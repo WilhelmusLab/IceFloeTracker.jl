@@ -38,6 +38,7 @@ import ..Preprocessing:
 import ..Segmentation:
     dist_morph_split,
     expand_labels,
+    ExternalBoundary,
     get_relevant_set,
     kmeans_segmentation,
     kmeans_binarization,
@@ -298,7 +299,7 @@ function (s::Segment)(
 
     kmeans_binarized_image = kmeans_binarization(
         preproc_gray, masks["bright_ice"], filtered_tiles;
-        cluster_selection_algorithm= r -> r
+        cluster_selection_algorithm = r -> r
     )
     # Cleanup image? Hole filling?
 
@@ -373,10 +374,24 @@ function extended_regionprops_table(
     img_indexmap = copy(img_indexmap)
     indices = component_indices(img_indexmap)
 
-    props_df = regionprops_table(img_indexmap;
+    props_df = regionprops_table(
+        img_indexmap, falsecolor_image;
         properties=properties,
+        extra_properties=[
+              :b7_mean_reflectance => r -> mean(red.(r)),
+              :b2_mean_reflectance => r -> mean(green.(r)),
+              :b1_mean_reflectance => r -> mean(blue.(r)),
+              :b7_mean_boundary_reflectance => ExternalBoundary(r -> mean(red.(r)); radius=boundary_radius),
+              :b2_mean_boundary_reflectance => ExternalBoundary(r -> mean(green.(r)); radius=boundary_radius),
+              :b1_mean_boundary_reflectance => ExternalBoundary(r -> mean(blue.(r)); radius=boundary_radius),
+        ],
         convex_area_algorithm=convex_area_algorithm,
     )
+
+    props_df[:, :b7_mean_boundary_contrast] = props_df[:, :b7_mean_reflectance] .- props_df[:, :b7_mean_boundary_reflectance]
+    props_df[:, :b2_mean_boundary_contrast] = props_df[:, :b2_mean_reflectance] .- props_df[:, :b2_mean_boundary_reflectance]
+    props_df[:, :b1_mean_boundary_contrast] = props_df[:, :b1_mean_reflectance] .- props_df[:, :b1_mean_boundary_reflectance]
+
     # Return empty dataframe if no floes in image
     if nrow(props_df) == 0
          props_df[!, :probability] = Float64[]
@@ -399,25 +414,10 @@ function extended_regionprops_table(
     add_mean_reflectance!(props_df, falsecolor_image, indices)
     add_mean_boundary_reflectance!(props_df, falsecolor_image, img_indexmap; radius=boundary_radius)
 
-    # TODO: generalize with a map from channel number to channel name
-    # Could make this a for loop with transform!()
-    props_df[:, :b7_mean_reflectance] = red.(props_df.mean_reflectance)
-    props_df[:, :b2_mean_reflectance] = green.(props_df.mean_reflectance)
-    props_df[:, :b1_mean_reflectance] = blue.(props_df.mean_reflectance)
-
-    props_df[:, :b7_mean_boundary_reflectance] = red.(props_df.mean_boundary_reflectance)
-    props_df[:, :b2_mean_boundary_reflectance] = green.(props_df.mean_boundary_reflectance)
-    props_df[:, :b1_mean_boundary_reflectance] = blue.(props_df.mean_boundary_reflectance)
-
-    props_df[:, :b7_mean_boundary_contrast] = props_df[:, :b7_mean_reflectance] .- props_df[:, :b7_mean_boundary_reflectance]
-    props_df[:, :b2_mean_boundary_contrast] = props_df[:, :b2_mean_reflectance] .- props_df[:, :b2_mean_boundary_reflectance]
-    props_df[:, :b1_mean_boundary_contrast] = props_df[:, :b1_mean_reflectance] .- props_df[:, :b1_mean_boundary_reflectance]
-
     # TODO: generalize to include inplace option
     props_df[:, :probability] .= probability_function(props_df)
 
-    # Drop the RGB columns in the returned dataframe
-    return props_df[:, Not(:mean_reflectance, :mean_boundary_reflectance)]
+    return props_df
 end
 
 """LogisticRegressionFilter(df;
@@ -469,44 +469,6 @@ function LogisticRegressionFilter!(df;
     df_ = copy(df)
     df_[:, :intercept] .= 1
     df[:, :probability] .= 1 ./ (1 .+ exp.(-Matrix(df_[:, colnames]) * b))
-end
-
-"""
-    add_mean_reflectance!(props_df, img, indices)
-
-Compute the mean reflectance for `img` for each label in `props_df`. Assumes
-that `props_df` contains labels corresponding to the dictionary `indices` 
-(see @ref[`component_indices`]).
-"""
-function add_mean_reflectance!(props_df, img, indices)
-    segment_mean_reflectance(r) = mean(img[indices[r]])
-    props_df.mean_reflectance = segment_mean_reflectance.(props_df.label)
-end
-
-"""
-    add_mean_boundary_reflectance!(props_df, img, labels; radius=15)
-
-Compute the average of `img` within `radius` of the objects in `labels`. Uses
-the bounding boxes in `props_df` so that they don't have to be re-computed.
-"""
-function add_mean_boundary_reflectance!(props_df, img, labels; radius=15)
-    n, m = size(labels)
-    bdry_ref = []
-    for data in eachrow(props_df)
-        # expand the bounding box by radius
-        # minimum row is the maximum 
-        rmin = maximum((data.min_row - radius, 1))
-        rmax = minimum((data.max_row + radius, n))
-        cmin = maximum((data.min_col - radius, 1))
-        cmax = minimum((data.max_col + radius, m))
-
-        label_subset = Int64.(labels[rmin:rmax, cmin:cmax] .== data.label)
-        boundary = expand_labels(label_subset, radius)
-        boundary[label_subset .> 0] .= 0
-        image_subset = img[rmin:rmax, cmin:cmax]
-        push!(bdry_ref, mean(image_subset[boundary .> 0]))
-    end
-    props_df.mean_boundary_reflectance = bdry_ref
 end
 
 """
@@ -665,6 +627,7 @@ function compare_objects(
     return df_comp
 end
 
+# TODO: Add to utilities
 """
     _nonoverlapping_labels(other, indices, labels)
 
@@ -681,6 +644,7 @@ function _nonoverlapping_labels(other, indices, labels)
     ]
 end
 
+# TODO: Add to utilities
 """
     _assign_labels!(output, indices, labels; offset=0)
 
@@ -695,6 +659,7 @@ function _assign_labels!(output, indices, labels; offset=0)
     end
 end
 
+# TODO: Add to utilities
 """
     _remove_labels!(output, indices, remove_labels)
 
@@ -811,6 +776,7 @@ function sequential_merge_floes(labeled_imgs, falsecolor_image, masks;
     return init_img # TODO: Consider returning the final data table, too
 end
 
+# TODO: make internal
 """
     merge_arrays!(
         output,
