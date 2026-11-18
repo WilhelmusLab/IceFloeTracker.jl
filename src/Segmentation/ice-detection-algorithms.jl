@@ -57,8 +57,7 @@ function get_ice_peaks(
     # we don't want to include in the normalization. If no potential
     # ice pixels, then return early
     normalizer > 0 || return Inf
-    # `findmaxima` accepts only an `Int` window
-    pks = _find_peaks(counts ./ normalizer, Int(window_size))
+    pks = _find_peaks(counts ./ normalizer, window_size)
     isnothing(pks) && return Inf
     # The first maximum of the prominences is the peak that sorting by prominence
     # (stable, descending) would put first.
