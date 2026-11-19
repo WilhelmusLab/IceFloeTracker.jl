@@ -153,10 +153,27 @@ function get_tiles(array, side_length::Int)
     return get_tiles(array, (side_length, side_length))
 end
 
+"""
+    get_tiles(array; rblocks, cblocks)
+
+Split `array` into `rblocks × cblocks` tiles of size `size(array) .÷ (rblocks, cblocks)`.
+
+Leftover rows and columns are merged into the last row and column of tiles, as in
+`get_tiles(array, t)`.
+
+# Examples
+```jldoctest; setup = :(using IceFloeTracker)
+julia> get_tiles(zeros(10, 7); rblocks=3, cblocks=1) |> collect
+3×1 Matrix{Tuple{UnitRange{Int64}, UnitRange{Int64}}}:
+ (1:3, 1:7)
+ (4:6, 1:7)
+ (7:10, 1:7)
+```
+"""
 function get_tiles(array; rblocks, cblocks)
     rtile, ctile = size(array)
     tile_size = (rtile ÷ rblocks, ctile ÷ cblocks)
-    return TileIterator(axes(array), tile_size)
+    return TileIterator(axes(array), MergeLastTileIfSmallerThanHalf(tile_size))
 end
 
 """
