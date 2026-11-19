@@ -234,17 +234,17 @@ The coastal buffer mask is used to identify potential landfast ice segments.
 - `floe_merging_params`: List of parameters for the floe filtering and merging function.
 
 """
-@kwdef struct Segment <: IceFloeSegmentationAlgorithm
+@kwdef struct Segment{CSE, TS, IceFloePreprocessingAlgorithm, IceFloeClassificationAlgorithm, FS, FM} <: IceFloeSegmentationAlgorithm
     coastal_buffer_structuring_element::AbstractMatrix{Bool} = strel_disk(25)
     tile_settings = (; rblocks=1, cblocks=1)
     min_ocean_pixel_count = 5000
-    preprocessing_algorithm = Preprocess()
-    classification_algorithm = Classify()
-    floe_splitting_params = [
+    preprocessing_algorithm::IceFloePreprocessingAlgorithm = Preprocess()
+    classification_algorithm::IceFloeClassificationAlgorithm = Classify()
+    floe_splitting_params::FS = [
         (max_hole_fill=1500, max_depth=15, max_depth_ratio=0.7, max_expand=2, opening_strel=strel_diamond((3, 3))),
         (max_hole_fill=1500, max_depth=15, max_depth_ratio=0.7, max_expand=2, opening_strel=strel_box((3, 3))),
     ]
-    floe_merging_params = (
+    floe_merging_params::FM = (
         minimum_floe_size=64,
         maximum_floe_size=90e3,
         tol_area_fraction=0.05,
