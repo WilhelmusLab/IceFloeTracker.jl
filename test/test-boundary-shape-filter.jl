@@ -168,3 +168,19 @@ end
     @test length(MinimumWeightMatchingFunction().columns) ==
         length(MinimumWeightMatchingFunction().weights)
 end
+
+@testitem "BoundaryShapeDifferenceThresholdFilter accepts string column names" setup = [
+    BoundaryFilterSetup
+] begin
+    candidates = candidate_df()
+    @test begin
+        f = BoundaryShapeDifferenceThresholdFilter(;
+            threshold_function=tight,
+            boundary_column="boundary",
+            area_variable="area",
+            threshold_column="boundary_shape_difference_test",
+        )
+        f(floe_row(), candidates, Val(:raw))
+        "boundary_shape_difference_test" ∈ names(candidates)
+    end
+end
