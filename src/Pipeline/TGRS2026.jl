@@ -292,20 +292,21 @@ function (s::Segment)(
     )
 
     @info "Detect Floes"
-
+    # TODO: Add params for the two binarization methods.
     # The cluster detection algorithm just needs to produce a binary image
-    # 
-
+    # Here, we supply the binary image using the bright ice mask from the 
+    # classification algorithm. The cluster selection algorithm can then just
+    # be the identity.
     kmeans_binarized_image = kmeans_binarization(
         preproc_gray, masks["bright_ice"], filtered_tiles;
-        cluster_selection_algorithm= r -> r
+        cluster_selection_algorithm = r -> r
     )
-    # Cleanup image? Hole filling?
+    # TODO: cleanup binary image
 
-    # adaptive_binarized_image = binarize(preproc_gray, s.binarization_algorithm)
     adaptive_binarized_image = binarize(preproc_gray, AdaptiveThreshold(;window_size=399, percentage=0)) .> 0
-    # Cleanup image: impose land mask, at least
-    apply_landmask!(adaptive_binarized_image, masks["land"])
+    
+    # TODO: cleanup binary image
+    apply_landmask!(adaptive_binarized_image, masks["land"] .|| masks["water"])
 
     # Alternatively: Same settings, but multiple binarizations
     candidate_splits = [
