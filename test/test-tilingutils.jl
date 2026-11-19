@@ -89,6 +89,19 @@ end
         [(1:2000, 1:3556); (2001:4000, 1:3556); (4001:6000, 1:3556);;]
 end
 
+@testitem "get_tiles with rblocks and cblocks" begin
+    # Remainder rows/columns are merged into the last tile, not emitted as a sliver
+    @test collect(get_tiles(zeros(5000, 3000); rblocks=3, cblocks=1)) ==
+        [(1:1666, 1:3000); (1667:3332, 1:3000); (3333:5000, 1:3000);;]
+    @test collect(get_tiles(zeros(3000, 5000); rblocks=1, cblocks=3)) ==
+        [(1:3000, 1:1666) (1:3000, 1667:3332) (1:3000, 3333:5000)]
+    @test size(get_tiles(zeros(401, 403); rblocks=4, cblocks=4)) == (4, 4)
+
+    # Divisible dimensions are split exactly
+    @test collect(get_tiles(zeros(4, 4); rblocks=2, cblocks=2)) ==
+        [(1:2, 1:2) (1:2, 3:4); (3:4, 1:2) (3:4, 3:4)]
+end
+
 @testitem "MergeLastTileIfSmallerThanHalf examples" begin
     using TiledIteration: TileIterator
     using IceFloeTracker.ImageUtils: MergeLastTileIfSmallerThanHalf
