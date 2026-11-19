@@ -745,6 +745,10 @@ struct would be rejected at the call site.
     boundary_column::Symbol = :boundary
 end
 
+function BoundaryRegistration(metric, boundary_column::ColumnName)
+    return BoundaryRegistration(metric, Symbol(boundary_column))
+end
+
 function (reg::BoundaryRegistration)(
     boundary_reference::Matrix{Float64},
     boundary_target::Matrix{Float64};

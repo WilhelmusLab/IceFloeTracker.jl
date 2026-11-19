@@ -5,6 +5,10 @@ The root type for the candidate filter functions.
 """
 abstract type AbstractFloeFilterFunction <: Function end
 
+# Column names are stored as `Symbol`s. The filters also take `String`s, which their
+# constructors convert: DataFrames rejects selectors that mix the two.
+const ColumnName = Union{Symbol,String}
+
 function (f::AbstractFloeFilterFunction)(floe, candidates)
     f(floe, candidates, Val(:raw))
     subset!(candidates, [f.threshold_column] => r -> r .> 0)
@@ -49,6 +53,24 @@ Passing `Val{:raw}` as the third argument will forgo the subsetting step so that
     threshold_function::F = LinearTimeDistanceFunction()
     threshold_column::Symbol = :time_distance_test
     scaling_function::S = dt -> maximum_linear_distance(dt; umax=1.5, eps=250)
+end
+
+function DistanceThresholdFilter(
+    time_column::ColumnName,
+    dist_column::ColumnName,
+    scaled_dist_column::ColumnName,
+    threshold_function,
+    threshold_column::ColumnName,
+    scaling_function,
+)
+    return DistanceThresholdFilter(
+        Symbol(time_column),
+        Symbol(dist_column),
+        Symbol(scaled_dist_column),
+        threshold_function,
+        Symbol(threshold_column),
+        scaling_function,
+    )
 end
 
 function (f::DistanceThresholdFilter)(
@@ -109,12 +131,25 @@ the candidates to only those which evaluate as `true` using the `threshold_funct
 Including the dummy variable `Var(:raw)` returns the candidates dataframe with the test
 results without subsetting it.
 """
-@kwdef struct RelativeErrorThresholdFilter{V<:Union{Symbol,AbstractString},F} <:
-              AbstractFloeFilterFunction
-    variable::V
+@kwdef struct RelativeErrorThresholdFilter{F} <: AbstractFloeFilterFunction
+    variable::Symbol
     area_variable::Symbol = :area
     threshold_column::Symbol = :relative_error_test
     threshold_function::F = PiecewiseLinearThresholdFunction()
+end
+
+function RelativeErrorThresholdFilter(
+    variable::ColumnName,
+    area_variable::ColumnName,
+    threshold_column::ColumnName,
+    threshold_function,
+)
+    return RelativeErrorThresholdFilter(
+        Symbol(variable),
+        Symbol(area_variable),
+        Symbol(threshold_column),
+        threshold_function,
+    )
 end
 
 function (f::RelativeErrorThresholdFilter)(
@@ -152,6 +187,20 @@ the `threshold_function` which is assumed to depend on area.
     scale_by::Symbol = :area
     threshold_column::Symbol = :shape_difference_test
     threshold_function::F = PiecewiseLinearThresholdFunction(100, 800, 0.5, 0.3)
+end
+
+function ShapeDifferenceThresholdFilter(
+    area_variable::ColumnName,
+    scale_by::ColumnName,
+    threshold_column::ColumnName,
+    threshold_function,
+)
+    return ShapeDifferenceThresholdFilter(
+        Symbol(area_variable),
+        Symbol(scale_by),
+        Symbol(threshold_column),
+        threshold_function,
+    )
 end
 
 function (f::ShapeDifferenceThresholdFilter)(
@@ -194,6 +243,14 @@ to the columns of `candidates`.
     area_variable::Symbol = :area
     threshold_column::Symbol = :psi_s_correlation_test
     threshold_function::F = PiecewiseLinearThresholdFunction(100, 800, 0.14, 0.1)
+end
+
+function PsiSCorrelationThresholdFilter(
+    area_variable::ColumnName, threshold_column::ColumnName, threshold_function
+)
+    return PsiSCorrelationThresholdFilter(
+        Symbol(area_variable), Symbol(threshold_column), threshold_function
+    )
 end
 
 #TODO: Add option to include the confidence intervals with the normalized cross correlation tests.
@@ -275,6 +332,22 @@ default `columns`.
     # area-dependent via PiecewiseLinearThresholdFunction, need to be estimated on tracked
     # data. Until then the filter is excluded from default_filter.
     threshold_function::F
+end
+
+function BoundaryShapeDifferenceThresholdFilter(
+    area_variable::ColumnName,
+    boundary_column::ColumnName,
+    metric,
+    threshold_column::ColumnName,
+    threshold_function,
+)
+    return BoundaryShapeDifferenceThresholdFilter(
+        Symbol(area_variable),
+        Symbol(boundary_column),
+        metric,
+        Symbol(threshold_column),
+        threshold_function,
+    )
 end
 
 function (f::BoundaryShapeDifferenceThresholdFilter)(
