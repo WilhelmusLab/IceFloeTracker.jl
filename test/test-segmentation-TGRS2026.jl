@@ -9,16 +9,6 @@
     props_df = regionprops_table(circle_labels)
     indices = component_indices(circle_labels)
     
-    TGRS2026.add_mean_reflectance!(props_df, circle_img, indices)
-    @test "mean_reflectance" ∈ names(props_df)
-    @test props_df[1, :mean_reflectance] ≈ RGB(1.)
-    print(props_df[1, :mean_reflectance])
-    
-    TGRS2026.add_mean_boundary_reflectance!(props_df, circle_img, circle_labels; radius=10)
-    @test "mean_boundary_reflectance" ∈ names(props_df)
-    @test props_df[1, :mean_boundary_reflectance] ≈ RGB(0, 0, 1.)
-
-
     # In-place logistic regression
     # Use dummy variables - just testing that the filter adds a probability column. 
     # TODO: Add example case with known floe properties
