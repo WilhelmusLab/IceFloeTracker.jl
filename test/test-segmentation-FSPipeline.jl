@@ -128,3 +128,52 @@ end
         @test results_invariant_for(RGB, T; baseline, algorithm, case)
     end
 end
+
+@testitem "FSPipeline.objectwise_compare_segmentation: reflectance columns" begin
+    import DataFrames: nrow
+    import Images: Gray
+    import StatsBase: mean
+
+    objectwise_compare_segmentation = FSPipeline.objectwise_compare_segmentation
+
+    # Two segmentations of the same two floes; floe 1 is one row taller in the second.
+    indexmap1 = zeros(Int, 12, 12)
+    indexmap1[2:4, 2:4] .= 1
+    indexmap1[7:10, 7:10] .= 2
+    indexmap2 = copy(indexmap1)
+    indexmap2[5, 2:4] .= 1
+    img = Gray.(reshape(range(0, 1; length=144), 12, 12))
+    # At radius 5 each floe's ring includes pixels of the other floe, e.g. (7, 7) and (4, 4).
+    radius = 5
+
+    # Pixels within `radius` of region `L`, other floes included, minus the region.
+    function ring_pixels(indexmap, L)
+        region = findall(indexmap .== L)
+        within(p) = any(q -> hypot(Tuple(p - q)...) <= radius, region)
+        return [p for p in CartesianIndices(indexmap) if indexmap[p] != L && within(p)]
+    end
+    # Mean over each region and over its ring, 0 when the ring is empty.
+    function reference_means(indexmap, labels)
+        region_mean = [mean(img[indexmap .== L]) for L in labels]
+        rings = [ring_pixels(indexmap, L) for L in labels]
+        ring_mean = [isempty(ring) ? 0 : mean(img[ring]) for ring in rings]
+        return region_mean, ring_mean
+    end
+
+    df = objectwise_compare_segmentation(indexmap1, indexmap2, img; expand_radius=radius)
+    @test nrow(df) == 2
+    for (prefix, indexmap) in (("s1", indexmap1), ("s2", indexmap2))
+        region_mean, ring_mean = reference_means(indexmap, df[:, "$(prefix)_label"])
+        @test all(df[:, "$(prefix)_reflectance_mean"] .≈ region_mean)
+        @test all(df[:, "$(prefix)_reflectance_bdry_mean"] .≈ ring_mean)
+        @test all(df[:, "$(prefix)_reflectance_bdry_contrast"] .≈ region_mean .- ring_mean)
+    end
+
+    # A floe covering the whole image has an empty ring: the boundary mean is 0.
+    full = ones(Int, 2, 4)
+    full_img = Gray.([0.1 0.2 0.3 0.4; 0.5 0.6 0.7 0.8])
+    df = objectwise_compare_segmentation(full, full, full_img; expand_radius=radius)
+    @test nrow(df) == 1
+    @test all(iszero, df.s1_reflectance_bdry_mean)
+    @test all(iszero, df.s2_reflectance_bdry_mean)
+end
