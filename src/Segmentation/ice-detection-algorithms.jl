@@ -17,6 +17,8 @@ import Images:
 
 import Peaks: findmaxima, peakproms!, peakwidths!
 
+import ..ImageUtils: @tilewise
+
 """
     get_ice_peaks(
         edges,
@@ -265,19 +267,32 @@ The "threshold_percentage" parameter is passed to the the AdaptiveThreshold func
 function tiled_adaptive_binarization(
     img, tiles; minimum_window_size=100, minimum_brightness=75 / 255, threshold_percentage=15
 )
-    canvas = zeros(size(img))
+    is_smaller_than_min = Gray.(img) .< minimum_brightness
+    binarize_tile(tile) = _adaptive_binarize(
+        tile;
+        minimum_window_size=minimum_window_size,
+        threshold_percentage=threshold_percentage,
+    )
+
     img = deepcopy(img)
-    img[Gray.(img) .< minimum_brightness] .= 0
-    for tile in tiles
-        L = Int64.(round.(minimum(length.(tile)) / 8; digits=0))
-        L < minimum_window_size && (L = minimum_window_size)
+    img[is_smaller_than_min] .= 0
+    canvas = zeros(size(img))
 
-        f = AdaptiveThreshold(img[tile...]; window_size=L, percentage=threshold_percentage)
-        canvas[tile...] = binarize(img[tile...], f)
-    end
+    binarized = @tilewise tiles binarize_tile($img) into = canvas
+    binarized[is_smaller_than_min] .= 0
+    return binarized
+end
 
-    canvas[Gray.(img) .< minimum_brightness] .= 0
-    return canvas
+"""
+    _adaptive_binarize(img; minimum_window_size, threshold_percentage)
+
+Binarize `img` with `AdaptiveThreshold`, using a window of 1/8th of the shorter side of `img`
+rounded to the nearest integer, and at least `minimum_window_size`.
+"""
+function _adaptive_binarize(img; minimum_window_size, threshold_percentage)
+    window_size = max(round(Int, minimum(size(img)) / 8), minimum_window_size)
+    f = AdaptiveThreshold(img; window_size=window_size, percentage=threshold_percentage)
+    return binarize(img, f)
 end
 
 """
@@ -325,22 +340,8 @@ end
 
 function (f::IceDetectionBrightnessMidpoint)(
     gray_image::AbstractArray{<:Union{AbstractGray,TransparentGray}},
-    tiles::Vector{Tuple{UnitRange{Int64},UnitRange{Int64}}},
+    tiles::AbstractArray{Tuple{UnitRange{Int64},UnitRange{Int64}}},
 )
-    out = falses(size(gray_image))
-    for tile in tiles
-        out[tile...] .= f(gray_image[tile...])
-    end
-    return out
-end
-
-function (f::IceDetectionBrightnessMidpoint)(
-    gray_image::AbstractArray{<:Union{AbstractGray,TransparentGray}},
-    tiles::Matrix{Tuple{UnitRange{Int64},UnitRange{Int64}}},
-)
-    out = falses(size(gray_image))
-    for tile in tiles
-        out[tile...] .= f(gray_image[tile...])
-    end
-    return out
+    canvas = falses(size(gray_image))
+    return @tilewise tiles f($gray_image) into = canvas
 end

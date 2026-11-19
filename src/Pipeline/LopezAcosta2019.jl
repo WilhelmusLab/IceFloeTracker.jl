@@ -38,7 +38,7 @@ import ..Pipeline: IceFloeSegmentationAlgorithm, IceFloePreprocessingAlgorithm
 
 import ..Tracking: FloeTracker, FilterFunction, MinimumWeightMatchingFunction
 import Dates: Day
-import ..ImageUtils: imbrighten, apply_to_channels, get_tiles
+import ..ImageUtils: imbrighten, apply_to_channels, get_tiles, @tilewise
 
 abstract type ColorProcessingMode end
 struct ColorProcessing <: ColorProcessingMode end
@@ -97,7 +97,7 @@ small blocks results in noisy images and poor performance. With larger blocks, a
 - `adapthisteq_algorithm`: Any histogram adjustment algorithm which can be passed to `adjust_histogram()`.
 - `unsharp_mask_params`: Parameters for [`unsharp_mask`](@ref)
 - `process_color`: Either `:color` or `:grayscale`. If `:grayscale`, then convert to grayscale prior to running the other algorithms.
-     Otherwise, conversion to grayscale occurs after nonlinear diffusion and image histogram adjustment. 
+     Otherwise, conversion to grayscale occurs after nonlinear diffusion and image histogram adjustment.
 
 """
 @kwdef struct Preprocess <: IceFloePreprocessingAlgorithm
@@ -645,21 +645,26 @@ function watershed_ice_floes(binary_floe_mask::BitMatrix, tiles; hmin_depth=2)::
     features = feature_transform(.!binary_floe_mask)
     distances = 1 .- distance_transform(features)
     markers = (hmin_transform(distances, hmin_depth) .> 0) |> label_components
-    boundaries = zeros(Int64, size(markers))
-    for t in tiles
-        segment = watershed(distances[t...], markers[t...])
-        boundaries[t...] .= isboundary(labels_map(segment))
-    end
-    return boundaries .> 0
+    canvas = falses(size(markers))
+    return @tilewise tiles _watershed_boundaries($distances, $markers) into = canvas
 end
 
 function watershed_ice_floes(binary_floe_mask::BitMatrix; hmin_depth=2)::BitMatrix
     features = feature_transform(.!binary_floe_mask)
     distances = 1 .- distance_transform(features)
     markers = (hmin_transform(distances, hmin_depth) .> 0) |> label_components
-    segment = watershed(distances, markers)
-    boundaries = isboundary(labels_map(segment)) .> 0
-    return boundaries
+    return _watershed_boundaries(distances, markers)
+end
+
+"""
+    _watershed_boundaries(distances, markers)
+
+Watershed segmentation of `distances` seeded at `markers`. Returns a `BitMatrix` that is
+true on the boundaries between segments.
+"""
+function _watershed_boundaries(distances, markers)
+    boundaries = watershed(distances, markers) |> labels_map |> isboundary
+    return boundaries .> 0
 end
 
 """IceDetectionLopezAcosta2019
