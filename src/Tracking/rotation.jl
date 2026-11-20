@@ -51,9 +51,9 @@ function get_rotation_measurements(
     id_column::Symbol,
     image_column::Symbol,
     time_column::Symbol,
-    registration_function::Function=register,
+    registration_function::F=register,
     lookback_days::Integer=1,
-)
+) where {F<:Function}
     if nrow(df) == 0
         @debug "No observations in the input DataFrame, returning an empty dataframe with the correct column names"
         new_column_names = [
@@ -129,8 +129,8 @@ function get_rotation_measurements(
     df::DataFrame;
     image_column::Symbol,
     time_column::Symbol,
-    registration_function::Function=register,
-)
+    registration_function::F=register,
+) where {F<:Function}
     results = [
         get_rotation_measurements(
             other_measurement, measurement; image_column, time_column, registration_function
@@ -151,8 +151,8 @@ function get_rotation_measurements(
     row2::DataFrameRow;
     image_column::Symbol,
     time_column::Symbol,
-    registration_function::Function=register,
-)
+    registration_function::F=register,
+) where {F<:Function}
     result = get_rotation_measurements(
         row1[image_column],
         row2[image_column],
