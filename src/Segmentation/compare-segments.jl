@@ -33,11 +33,8 @@ Output
 - DataFrame with columns for each property from the two input images along with computed similarity metrics.
 """
 function objectwise_comparison(
-    df1::DataFrame, 
-    df2::DataFrame, 
-    labels1::Matrix{Int64}, 
-    labels2::Matrix{Int64};
-    tol_area_fraction::Float64=0.05
+    df1::S, df2::S, labels1::T, labels2::T; tol_area_fraction::Real=0.05
+) where {S<:AbstractDataFrame,T<:AbstractMatrix{<:Integer}}
     )
 
     rs = get_relevant_set(df1, df2, labels1, labels2; minimum_area_fraction=tol_area_fraction)
