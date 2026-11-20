@@ -35,7 +35,6 @@ Output
 function objectwise_comparison(
     df1::S, df2::S, labels1::T, labels2::T; tol_area_fraction::Real=0.05
 ) where {S<:AbstractDataFrame,T<:AbstractMatrix{<:Integer}}
-    )
 
     rs = get_relevant_set(df1, df2, labels1, labels2; minimum_area_fraction=tol_area_fraction)
 
@@ -45,11 +44,8 @@ function objectwise_comparison(
 
     # Convert relevant set to DataFrame
     label_lookup = DataFrame([(label1=k, label2=v) for (k, vs) in rs for v in vs])
-
-    df1 = outerjoin(df1, label_lookup, on=:label1=>:label1)
-    df2 = outerjoin(df2, label_lookup, on=:label2=>:label2)
-    df_compare = outerjoin(dropmissing(df1), dropmissing(df2),
-        on=[:label1=>:label1, :label2=>:label2])
+    df_compare = innerjoin(label_lookup, df1; on=:label1)
+    df_compare = innerjoin(df_compare, df2; on=:label2)
 
     transform!(df_compare,
         [:row_centroid1, :row_centroid2, :col_centroid1, :col_centroid2] =>
@@ -133,7 +129,7 @@ function get_relevant_set(df1, df2, labels1, labels2; minimum_area_fraction=0.5)
         # get the rows in the segments_df from the matched labels
         candidate_subset = subset(df2, :label => ByRow(l -> l in matched_labels))
 
-        relevant_set_labels = []
+        relevant_set_labels = Int64[]
 
         # check if centroid g in s
         rc = round(Int64, floe.row_centroid)
@@ -158,7 +154,7 @@ function get_relevant_set(df1, df2, labels1, labels2; minimum_area_fraction=0.5)
             gtmask = labels1[rmin:rmax, cmin:cmax] .== floe.label
             slmask = labels2[rmin:rmax, cmin:cmax] .== s_floe.label
             intersect_area = sum(gtmask .&& slmask)
-            if maximum([intersect_area / s_floe.area, intersect_area / floe.area]) > minimum_area_fraction
+            if max(intersect_area / s_floe.area, intersect_area / floe.area) > minimum_area_fraction
                 push!(relevant_set_labels, s_floe.label)
             end
         end
