@@ -44,12 +44,7 @@ function objectwise_comparison(
     rename!(df2, [n => n*"2" for n in names(df2)])
 
     # Convert relevant set to DataFrame
-    label_lookup = DataFrame(label1=Int64[], label2=Int64[])
-    for k in keys(rs)
-        for v in rs[k]
-            push!(label_lookup, [k, v])
-        end
-    end
+    label_lookup = DataFrame([(label1=k, label2=v) for (k, vs) in rs for v in vs])
 
     df1 = outerjoin(df1, label_lookup, on=:label1=>:label1)
     df2 = outerjoin(df2, label_lookup, on=:label2=>:label2)
