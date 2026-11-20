@@ -39,8 +39,8 @@ function objectwise_comparison(
     rs = get_relevant_set(df1, df2, labels1, labels2; minimum_area_fraction=tol_area_fraction)
 
     # Add suffixes to distinguish sources
-    rename!(df1, [n => n*"1" for n in names(df1)])
-    rename!(df2, [n => n*"2" for n in names(df2)])
+    df1 = rename(n -> n * "1", df1)
+    df2 = rename(n -> n * "2", df2)
 
     # Convert relevant set to DataFrame
     label_lookup = DataFrame([(label1=k, label2=v) for (k, vs) in rs for v in vs])
