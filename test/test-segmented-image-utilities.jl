@@ -379,6 +379,24 @@ end
     @test R[2] == [2] && R[1] == [1] && [3] ∉ values(R) && 3 ∉ keys(R)
 end
 
+@testitem "compare_objects" begin
+    import IceFloeTracker.Segmentation: objectwise_comparison
+    import IceFloeTracker: Watkins2026Dataset, validated_binary_floes
+    import Images: label_components
+    
+    dataset = Watkins2026Dataset(; ref="v0.2")
+    case = filter(c -> c.case_number == 6, dataset)
+    floes = validated_binary_floes.(case)
+    labeled_floes = label_components.(floes)
+
+    df_comp = objectwise_comparison(labeled_floes[1], labeled_floes[2])
+
+    # simple test: are the properties in the dataframe?
+    @test "precision" ∈ names(df_comp) && "area_overlap" ∈ names(df_comp)
+
+end
+
+
 @testitem "split-floes" begin
     import IceFloeTracker: Watkins2026Dataset, dist_morph_split
     import Images: erode, dilate, strel_box, label_components

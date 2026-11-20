@@ -17,6 +17,7 @@ export addlatlon!,
     get_relevant_set,
     kmeans_binarization,
     kmeans_segmentation,
+    objectwise_comparison,
     tiled_adaptive_binarization,
     IceDetectionAlgorithm,
     IceDetectionThresholdMODIS721,
@@ -46,5 +47,6 @@ include("component-boxes.jl") # TODO: Remove this once the fixed version of `Ima
 include("regionprops.jl")
 include("segmented-image-utilities.jl")
 include("floe-splitting.jl")
+include("compare-segments.jl")
 
 end
