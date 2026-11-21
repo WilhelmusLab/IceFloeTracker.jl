@@ -349,6 +349,7 @@ end
 
 @testitem "get relevant set" begin
     import IceFloeTracker.Segmentation: get_relevant_set
+    import DataFrames: groupby
 
     G = [
         0 0 0 0 0 3 3
@@ -370,7 +371,11 @@ end
         3 3 0 0 2 0 0
     ]
 
-    R = get_relevant_set(G, S)
+    relevant_set_df = get_relevant_set(G, S)
+    R = Dict{Int64,Vector{Int64}}()
+    for (key, df_) in pairs(groupby(relevant_set_df, :label1))
+        push!(R, key.label1 => df_[:, :label2])
+    end
 
     # Tests that
     # 1) the relevant sets can have matched segments without being the same shape
