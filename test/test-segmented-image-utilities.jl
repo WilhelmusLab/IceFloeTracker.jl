@@ -381,18 +381,34 @@ end
 
 @testitem "compare_objects" begin
     import IceFloeTracker.Segmentation: objectwise_comparison
-    import IceFloeTracker: Watkins2026Dataset, validated_binary_floes
-    import Images: label_components
+    import IceFloeTracker: Watkins2026Dataset, validated_binary_floes, strel_disk
+    import Images: label_components, strel_diamond
+    import DataFrames: nrow
     
-    dataset = Watkins2026Dataset(; ref="v0.2")
-    case = filter(c -> c.case_number == 6, dataset)
-    floes = validated_binary_floes.(case)
-    labeled_floes = label_components.(floes)
+    # simple shapes test: diamond and disk
+    labels1 = collect(collect(Int64, strel_diamond((11,11))))
+    labels2 = collect(collect(Int64, strel_disk(5)))
+    df1 = regionprops_table(labels1; properties=[:label, :area, :centroid, :bbox])
+    df2 = regionprops_table(labels2; properties=[:label, :area, :centroid, :bbox])
+    
+    # Matching shape if datafarmes supplied or calculated in place?
+    df_comp = objectwise_comparison(df1, df2, labels1, labels2)
+    df_comp2 =  objectwise_comparison(labels1, labels2)
+    @test all(names(df_comp) .== names(df_comp2))
 
-    df_comp = objectwise_comparison(labeled_floes[1], labeled_floes[2])
+    # Object in labels2 fully covers object 1?
+    @test df_comp.area1 == df_comp.area_overlap
+    @test df_comp.recall[1] == 1. && (df_comp.precision[1] - sum(labels1) / sum(labels2) < 1e-5)
 
-    # simple test: are the properties in the dataframe?
-    @test "precision" ∈ names(df_comp) && "area_overlap" ∈ names(df_comp)
+    df_comp = objectwise_comparison(df1, df2, labels1, labels2;
+        tol_area_fraction = 1.)
+    @test nrow(df_comp) == 0
+
+    df_comp = objectwise_comparison(df1, df2, labels1, labels2,
+        similarity_measures=[:includes_centroid, :symmetric_difference, :euclidean_distance])
+    @test all(df_comp[1, [:centroid1_in_label2, :centroid2_in_label1]])
+    @test df_comp[1, :euclidean_distance] ≈ 0
+    @test df_comp[1, :symmetric_difference] ≈ sum(labels2) - sum(labels1)
 
 end
 
