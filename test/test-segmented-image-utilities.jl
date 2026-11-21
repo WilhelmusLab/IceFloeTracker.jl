@@ -401,7 +401,7 @@ end
     @test df_comp.recall[1] == 1. && (df_comp.precision[1] - sum(labels1) / sum(labels2) < 1e-5)
 
     df_comp = objectwise_comparison(df1, df2, labels1, labels2;
-        tol_area_fraction = 1.)
+        minimum_area_fraction = 1.)
     @test nrow(df_comp) == 0
 
     df_comp = objectwise_comparison(df1, df2, labels1, labels2,

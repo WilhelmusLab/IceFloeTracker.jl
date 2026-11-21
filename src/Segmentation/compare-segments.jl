@@ -1,13 +1,13 @@
 """
     objectwise_comparison(df1, df2, labels1, labels2;
-        tol_area_fraction=0.05,
+        minimum_area_fraction=0.05,
     )
     objectwise_comparison(labels1, labels2;
         properties=[
             :label, :area, :row_centroid, :col_centroid,
             :max_col, :max_row, :min_col, :min_row
         ],
-        tol_area_fraction=0.05,
+        minimum_area_fraction=0.05,
     )
 
 Produce a comparison dataframe between connected components in labels1 and labels2. If property tables
@@ -18,7 +18,7 @@ likely not match the number of objects.
 
 The function computes the area overlap and the objectwise precision and recall, where recall is the area 
 overlap normalized by `area1` and precision is the overlap normalized by `area2`. All pairs with 
-either precision or recall greater than `tol_area_fraction` are included in the comparison dataframe. 
+either precision or recall greater than `minimum_area_fraction` are included in the comparison dataframe. 
 
 Three additional similarity metrics are available: `euclidean_distance` (in pixel units), 
 `includes_centroid`, which returns Bool indicating if the centroid in one object is included in the other,
@@ -31,7 +31,7 @@ Inputs
 - `labels2`: Labeled connected components
 - `properties`: List of properties accepted by `regionprops_table` (Only needed if `df1` and `df2` are not supplied)
 - `similarity_measures`: List of additional measures of similarity to compute.
-- `tol_area_fraction`: Minimum overlap between objects in `labels1` and `labels2` to include in the table.
+- `minimum_area_fraction`: Minimum overlap between objects in `labels1` and `labels2` to include in the table.
 
 Output
 - DataFrame with columns for each property from the two input images along with computed similarity metrics.
@@ -39,7 +39,7 @@ Output
 function objectwise_comparison(
     df1::S, df2::S, labels1::T, labels2::T; 
     similarity_measures::Union{Nothing,Vector{<:AbstractString},Vector{<:Symbol}}=nothing,
-    tol_area_fraction::Real=0.05,
+    minimum_area_fraction::Real=0.05,
 ) where {S<:AbstractDataFrame,T<:AbstractMatrix{<:Integer}}
 
     index1 = component_indices(labels1)
@@ -73,7 +73,7 @@ function objectwise_comparison(
 
     transform!(df_compare, [:area1, :area_overlap] => ((A, AUB) -> AUB ./ A) => :recall)
     transform!(df_compare, [:area2, :area_overlap] => ((A, AUB) -> AUB ./ A) => :precision)
-    subset!(df_compare, [:recall, :precision] => (r, p) -> max.(r, p) .> tol_area_fraction)
+    subset!(df_compare, [:recall, :precision] => (r, p) -> max.(r, p) .> minimum_area_fraction)
 
     isnothing(similarity_measures) && return df_compare
 
@@ -110,13 +110,13 @@ function objectwise_comparison(
     labels1::AbstractMatrix{<:Integer}, labels2::AbstractMatrix{<:Integer}; 
     properties=[:label, :area, :centroid, :bbox],
     similarity_measures::Union{Nothing,Vector{<:AbstractString},Vector{<:Symbol}}=nothing,
-    tol_area_fraction::Real=0.05
+    minimum_area_fraction::Real=0.05
     )
     df1 = regionprops_table(labels1; properties=properties)
     df2 = regionprops_table(labels2; properties=properties)
     return objectwise_comparison(df1, df2, labels1, labels2; 
         similarity_measures=similarity_measures,
-        tol_area_fraction=tol_area_fraction,
+        minimum_area_fraction=minimum_area_fraction,
         )
 end
 
@@ -205,7 +205,7 @@ segmentation comparison set s in S in reference to object g in G is defined by
 3. area overlap greater than 50% of g
 4. area overlap greater than 50% of s
 
-Returns a dictionary mapping labels in `labels1` to a set of labels in `labels2`.
+Returns a DataFrame with columns `label1`, `label2`.
 
 Inputs:
 - `df1`, `df2` = results of regionprops table (optional)
@@ -216,57 +216,34 @@ References:
 Clinton et al. (2010) "Accuracy Assessment Measures for Object-based Image Segmentation Goodness," Photogrammetric Engineering and Remote Sensing, 76, 3, pp 289-299. [Link](https://www.ingentaconnect.com/content/asprs/pers/2010/00000076/00000003/art00004)
 
 """
-function get_relevant_set(df1, df2, labels1, labels2; minimum_area_fraction=0.5)::Dict{Int64,Vector{Int64}}
-    relevant_set = Dict{Int64,Vector{Int64}}()
-    for floe in eachrow(df1)
-        # select labels that are inside the bounding box for the floe
-        matched_labels = unique(
-            labels2[floe.min_row:floe.max_row, floe.min_col:floe.max_col]
-        )
+function get_relevant_set(df1, df2, labels1, labels2; minimum_area_fraction=0.5)::DataFrame
 
-        # if any, then check centroid positions
-        maximum(matched_labels) == 0 && continue
-        # get the rows in the segments_df from the matched labels
-        candidate_subset = subset(df2, :label => ByRow(l -> l in matched_labels))
+    # First get all the comparison points
+    df_comparison = objectwise_comparison(
+        df1, df2, labels1, labels2; 
+            similarity_measures=[:includes_centroid], 
+            minimum_area_fraction=0
+    )
 
-        relevant_set_labels = Int64[]
+    transform!(df_comparison, [:precision, :recall] =>
+        ByRow((p, r) -> max.(p, r) > minimum_area_fraction) =>
+        :area_fraction_test
+    )
+    
+    # Then check the centroids
+    transform!(df_comparison, [:centroid1_in_label2, :centroid2_in_label1] =>
+        ByRow((c1, c2) -> max.(c1, c2)) => :centroid_test
+    )
 
-        # check if centroid g in s
-        rc = round(Int64, floe.row_centroid)
-        cc = round(Int64, floe.col_centroid)
-        push!(relevant_set_labels, labels2[rc, cc])
+    # If either test passes, it is part of the relevant set
+    subset!(df_comparison, [:area_fraction_test, :centroid_test] =>
+        ((A, C) -> A .|| C))
 
-        # check if centroid s in g
-        for s_floe in eachrow(candidate_subset)
-            rc = round(Int64, s_floe.row_centroid)
-            cc = round(Int64, s_floe.col_centroid)
-            (labels1[rc, cc] == floe.label) && begin
-                push!(relevant_set_labels, s_floe.label)
-            end
-
-            # joint bbox
-            rmin = min(floe.min_row, s_floe.min_row)
-            rmax = max(floe.max_row, s_floe.max_row)
-            cmin = min(floe.min_col, s_floe.min_col)
-            cmax = max(floe.max_col, s_floe.max_col)
-
-            # check if area overlap between g and s is larger than 50% of g
-            gtmask = labels1[rmin:rmax, cmin:cmax] .== floe.label
-            slmask = labels2[rmin:rmax, cmin:cmax] .== s_floe.label
-            intersect_area = sum(gtmask .&& slmask)
-            if max(intersect_area / s_floe.area, intersect_area / floe.area) > minimum_area_fraction
-                push!(relevant_set_labels, s_floe.label)
-            end
-        end
-        relevant_set_labels = filter(r -> r != 0, unique(relevant_set_labels))
-        if length(relevant_set_labels) > 0
-            push!(relevant_set, floe.label => relevant_set_labels)
-        end
-    end
-    return relevant_set
+    # All remaining objects are part of the relevant sets
+    return df_comparison[:, [:label1, :label2]] 
 end
 
-function get_relevant_set(labels1, labels2; minimum_area_fraction=0.5)::Dict{Int64,Vector{Int64}}
+function get_relevant_set(labels1, labels2; minimum_area_fraction=0.5)::DataFrame
     df1 = regionprops_table(labels1; properties=[:label, :area, :bbox, :centroid])
     df2 = regionprops_table(labels2; properties=[:label, :area, :bbox, :centroid])
     return get_relevant_set(df1, df2, labels1, labels2; minimum_area_fraction=minimum_area_fraction)
