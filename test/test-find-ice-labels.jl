@@ -4,6 +4,8 @@
 
     @testset "IceDetectionThresholdMODIS721" begin
         f = IceDetectionThresholdMODIS721(0.02, 0.92, 0.92)
+        # Mixed threshold types are promoted to a common type
+        @test IceDetectionThresholdMODIS721(0.02, 0.92, 92//100) === f
 
         # Input colors
         water = ARGB{N0f8}(3 / 255, 13 / 255, 29 / 255, 1)
@@ -32,6 +34,10 @@
         f = IceDetectionBrightnessPeaksMODIS721(;
             band_7_max=5 / 255, possible_ice_threshold=75 / 255, nbins=64
         )
+        # Mixed threshold types are promoted to a common type
+        @test IceDetectionBrightnessPeaksMODIS721(;
+            band_7_max=5 / 255, possible_ice_threshold=Float32(75 / 255), nbins=64
+        ) isa IceDetectionBrightnessPeaksMODIS721{Float64}
 
         dataset = Watkins2026Dataset(; ref="v0.2")
         case = first(filter(c -> (c.case_number == 12 && c.satellite == "terra"), dataset))
@@ -174,6 +180,11 @@
         ]
         pk = get_ice_peaks(edges, counts)
         @test pk == 0.859375
+        @test get_ice_peaks(edges, counts; possible_ice_threshold=Float32(0.3)) == pk
+        @test get_ice_peaks(edges, counts; minimum_prominence=Float32(0.01)) == pk
+
+        # The peak finder throws a BoundsError on this histogram
+        @test get_ice_peaks(0.0:0.25:0.75, [3, 3, 2, 0]; window_size=3) == Inf
     end
 end
 
