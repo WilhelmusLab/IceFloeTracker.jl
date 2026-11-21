@@ -487,7 +487,14 @@ function objectwise_compare_segmentation(
     # This accounts for the centroid and bbox turning into col_ and row_ terms
     properties = Symbol.(names(df_s1))
 
-    relevant_set = get_relevant_set(df_s1, df_s2, indexmap1, indexmap2)
+    # TODO: This is a temporary fix; this whole function is to be replaced
+    # by objectwise_comparison in the next PR.
+    relevant_set_df = get_relevant_set(df_s1, df_s2, indexmap1, indexmap2)
+    relevant_set = Dict{Int64,Vector{Int64}}()
+    for (key, df_) in pairs(groupby(relevant_set_df, :label1))
+        push!(relevant_set, key.label1 => df_[:, :label2])
+    end
+
     results = DataFrame[]
     for floe in eachrow(df_s1)
         g = floe.label
