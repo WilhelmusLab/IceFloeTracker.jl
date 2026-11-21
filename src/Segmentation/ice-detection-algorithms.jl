@@ -17,17 +17,15 @@ import Images:
 
 import Peaks: findmaxima, peakproms!, peakwidths!
 
-import DataFrames: DataFrame, sort, Not
-
 import ..ImageUtils: @tilewise
 
 """
     get_ice_peaks(
         edges,
         counts;
-        possible_ice_threshold::Float64=0.30,
-        minimum_prominence::Float64=0.01,
-        window_size::Int64=3,
+        possible_ice_threshold::Real=0.30,
+        minimum_prominence::Real=0.01,
+        window_size::Integer=3,
     )
 
 Given the edges and counts from build_histogram, identify local maxima and return the location of the
@@ -49,11 +47,10 @@ ice threshold, or if there are no detected peaks larger than the minimum promine
 function get_ice_peaks(
     edges,
     counts;
-    possible_ice_threshold::Float64=0.30,
-    minimum_prominence::Float64=0.01,
-    window_size::Int64=3,
+    possible_ice_threshold::Real=0.30,
+    minimum_prominence::Real=0.01,
+    window_size::Integer=3,
 )
-    size(counts)
     counts = counts[1:end]
     normalizer = sum(counts[edges .> possible_ice_threshold])
 
@@ -61,20 +58,26 @@ function get_ice_peaks(
     # Images with a lot of masked pixels can have large peaks at 0, which
     # we don't want to include in the normalization. If no potential
     # ice pixels, then return early
-    counts = normalizer > 0 ? counts ./ normalizer : return Inf
-    local pks
+    normalizer > 0 || return Inf
+    pks = _find_peaks(counts ./ normalizer, window_size)
+    isnothing(pks) && return Inf
+    # The first maximum of the prominences is the peak that sorting by prominence
+    # (stable, descending) would put first.
+    mx, argmx = findmax(pks.proms)
+    mx < minimum_prominence && return Inf
+    return Float64(edges[pks.indices[argmx]])
+end
+
+# Kept out of `get_ice_peaks` so the peaks are not a `local` assigned inside `try`,
+# which inference can't type. Returns `nothing` when the peak finder fails.
+function _find_peaks(counts::AbstractVector{<:Real}, window_size::Integer)
     try
-        pks = findmaxima(counts, window_size) |> peakproms! |> peakwidths!
+        return findmaxima(counts, window_size) |> peakproms! |> peakwidths!
     catch e
         e isa BoundsError || rethrow()
         @debug "Peak finder failed (peak near boundary), returning `Inf`."
-        return Inf
+        return nothing
     end
-    pks_df = DataFrame(pks[Not(:data)])
-    pks_df = sort(pks_df, :proms; rev=true)
-    mx, argmx = findmax(pks_df.proms)
-    mx < minimum_prominence && return Inf
-    return edges[pks_df[argmx, :indices]]
 end
 
 """
@@ -104,10 +107,16 @@ end
     )
 Returns pixels for a MODIS image where (band_7 < threshold AND band_2 > threshold AND band_1 > threshold).
 """
-@kwdef struct IceDetectionThresholdMODIS721 <: IceDetectionAlgorithm
-    band_7_max::Real
-    band_2_min::Real
-    band_1_min::Real
+@kwdef struct IceDetectionThresholdMODIS721{T<:Real} <: IceDetectionAlgorithm
+    band_7_max::T
+    band_2_min::T
+    band_1_min::T
+end
+
+# Mixed argument types (e.g. `Int` and `Float64`) are promoted to a common type.
+function IceDetectionThresholdMODIS721(band_7_max::Real, band_2_min::Real, band_1_min::Real)
+    T = promote_type(typeof(band_7_max), typeof(band_2_min), typeof(band_1_min))
+    return IceDetectionThresholdMODIS721{T}(band_7_max, band_2_min, band_1_min)
 end
 
 function (f::IceDetectionThresholdMODIS721)(out, modis_721_image, args...; kwargs...)
@@ -148,20 +157,35 @@ See also: [`binarize`](https://juliaimages.org/ImageBinarization.jl/v0.1/)
 # Examples
 ```jldoctest
 julia> algo = IceDetectionBrightnessPeaksMODIS721(;
-           band_7_max=5/255,
-           possible_ice_threshold=75/255,
+           band_7_max=0.02,
+           possible_ice_threshold=0.294,
            join_method="union",
        )
-IceDetectionBrightnessPeaksMODIS721(0.0196078431372549, 0.29411764705882354, 64, 0.01, 3, "union")
+IceDetectionBrightnessPeaksMODIS721{Float64}(0.02, 0.294, 128, 0.01, 3, "union")
 ```
 """
-@kwdef struct IceDetectionBrightnessPeaksMODIS721 <: IceDetectionAlgorithm
-    band_7_max::Real
-    possible_ice_threshold::Real
+@kwdef struct IceDetectionBrightnessPeaksMODIS721{T<:Real} <: IceDetectionAlgorithm
+    band_7_max::T
+    possible_ice_threshold::T
     nbins::Int64 = 128
     minimum_prominence::Float64 = 0.01
     window_size::Int64 = 3
-    join_method = "intersection"
+    join_method::String = "intersection"
+end
+
+# Mixed threshold types (e.g. `Int` and `Float64`) are promoted to a common type.
+function IceDetectionBrightnessPeaksMODIS721(
+    band_7_max::Real,
+    possible_ice_threshold::Real,
+    nbins,
+    minimum_prominence,
+    window_size,
+    join_method,
+)
+    T = promote_type(typeof(band_7_max), typeof(possible_ice_threshold))
+    return IceDetectionBrightnessPeaksMODIS721{T}(
+        band_7_max, possible_ice_threshold, nbins, minimum_prominence, window_size, join_method
+    )
 end
 
 function (f::IceDetectionBrightnessPeaksMODIS721)(out, modis_721_image, args...; kwargs...)
@@ -229,7 +253,9 @@ function (f::IceDetectionFirstNonZeroAlgorithm)(out, img, args...; kwargs...)
 end
 
 """
-    tiled_adaptive_binarization(img, tiles; minimum_window_size=).
+    tiled_adaptive_binarization(
+        img, tiles; minimum_window_size=100, minimum_brightness=75 / 255, threshold_percentage=15
+    )
 
 Applies the (AdaptiveThreshold)[https://juliaimages.org/ImageBinarization.jl/v0.1/#Adaptive-Threshold-1] binarization algorithm
 to each tile in the image. Following the recommendations from ImageBinarization, the default is to use the integer window size
@@ -239,7 +265,7 @@ grayscale intensity to prevent dark regions from getting brightened (i.e., the c
 The "threshold_percentage" parameter is passed to the the AdaptiveThreshold function (percentage parameter).
 """
 function tiled_adaptive_binarization(
-    img, tiles; minimum_window_size=50, minimum_brightness=75 / 255, threshold_percentage=15
+    img, tiles; minimum_window_size=100, minimum_brightness=75 / 255, threshold_percentage=15
 )
     is_smaller_than_min = Gray.(img) .< minimum_brightness
     binarize_tile(tile) = _adaptive_binarize(
