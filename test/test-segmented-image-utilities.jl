@@ -407,8 +407,10 @@ end
     @test df_comp.recall[1] == 1.
     @test df_comp.precision[1] ≈ sum(labels1) / sum(labels2)
 
+    # Impossibly high overlap fraction -> no rows returned
     df_comp = objectwise_comparison(df1, df2, labels1, labels2;
-        minimum_area_fraction = 1.)
+        minimum_area_fraction = 2.)
+    @show df_comp
     @test nrow(df_comp) == 0
 
     df_comp = objectwise_comparison(df1, df2, labels1, labels2,
