@@ -18,7 +18,7 @@ likely not match the number of objects.
 
 The function computes the area overlap and the objectwise precision and recall, where recall is the area 
 overlap normalized by `area1` and precision is the overlap normalized by `area2`. All pairs with 
-either precision or recall greater than `minimum_area_fraction` are included in the comparison dataframe. 
+either precision or recall at least `minimum_area_fraction` are included in the comparison dataframe. 
 
 Three additional similarity metrics are available: `euclidean_distance` (in pixel units), 
 `includes_centroid`, which returns Bool indicating if the centroid in one object is included in the other,
