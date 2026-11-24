@@ -73,7 +73,7 @@ function objectwise_comparison(
 
     transform!(df_compare, [:area1, :area_overlap] => ((A, AUB) -> AUB ./ A) => :recall)
     transform!(df_compare, [:area2, :area_overlap] => ((A, AUB) -> AUB ./ A) => :precision)
-    subset!(df_compare, [:recall, :precision] => (r, p) -> max.(r, p) .> minimum_area_fraction)
+    subset!(df_compare, [:recall, :precision] => (r, p) -> max.(r, p) .>= minimum_area_fraction)
 
     isnothing(similarity_measures) && return df_compare
 
