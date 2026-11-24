@@ -372,10 +372,10 @@ end
     ]
 
     relevant_set_df = get_relevant_set(G, S)
-    R = Dict{Int64,Vector{Int64}}()
-    for (key, df_) in pairs(groupby(relevant_set_df, :label1))
-        push!(R, key.label1 => df_[:, :label2])
-    end
+    R = Dict(
+        key.label1 => df_[:, :label2] for
+        (key, df_) in pairs(groupby(relevant_set_df, :label1))
+    )
 
     # Tests that
     # 1) the relevant sets can have matched segments without being the same shape
