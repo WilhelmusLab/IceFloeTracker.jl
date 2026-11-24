@@ -415,7 +415,8 @@ end
         similarity_measures=[:includes_centroid, :symmetric_difference, :euclidean_distance])
     @test all(df_comp[1, [:centroid1_in_label2, :centroid2_in_label1]])
     @test df_comp[1, :euclidean_distance] ≈ 0
-    @test df_comp[1, :symmetric_difference] ≈ sum(labels2) - sum(labels1)
+    @test df_comp[1, :symmetric_difference] ≈
+        sum(labels1) + sum(labels2) - 2 * sum(labels1 .& labels2)
 
 end
 
