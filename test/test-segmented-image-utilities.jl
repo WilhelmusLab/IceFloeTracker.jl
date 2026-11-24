@@ -404,7 +404,8 @@ end
 
     # Object in labels2 fully covers object 1?
     @test df_comp.area1 == df_comp.area_overlap
-    @test df_comp.recall[1] == 1. && (df_comp.precision[1] - sum(labels1) / sum(labels2) < 1e-5)
+    @test df_comp.recall[1] == 1.
+    @test df_comp.precision[1] ≈ sum(labels1) / sum(labels2)
 
     df_comp = objectwise_comparison(df1, df2, labels1, labels2;
         minimum_area_fraction = 1.)
