@@ -393,8 +393,9 @@ end
     # simple shapes test: diamond and disk
     labels1 = collect(collect(Int64, strel_diamond((11,11))))
     labels2 = collect(collect(Int64, strel_disk(5)))
-    df1 = regionprops_table(labels1; properties=[:label, :area, :centroid, :bbox])
-    df2 = regionprops_table(labels2; properties=[:label, :area, :centroid, :bbox])
+    props = [:label, :area, :centroid, :bbox]
+    df1 = regionprops_table(labels1; properties=props)
+    df2 = regionprops_table(labels2; properties=props)
     
     # Matching shape if datafarmes supplied or calculated in place?
     df_comp = objectwise_comparison(df1, df2, labels1, labels2)
