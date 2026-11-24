@@ -1,13 +1,15 @@
 """
-    objectwise_comparison(df1, df2, labels1, labels2;
-        minimum_area_fraction=0.05,
+    objectwise_comparison(
+        df1::S, df2::S, labels1::T, labels2::T; 
+        similarity_measures::Union{Nothing,Vector{<:AbstractString},Vector{<:Symbol}}=nothing,
+        minimum_area_fraction::Real=0.05
     )
-    objectwise_comparison(labels1, labels2;
-        properties=[
-            :label, :area, :row_centroid, :col_centroid,
-            :max_col, :max_row, :min_col, :min_row
-        ],
-        minimum_area_fraction=0.05,
+    objectwise_comparison(
+        labels1::AbstractMatrix{<:Integer}, 
+        labels2::AbstractMatrix{<:Integer}; 
+        properties=[:label, :area, :centroid, :bbox],
+        similarity_measures::Union{Nothing,Vector{<:AbstractString},Vector{<:Symbol}}=nothing,
+        minimum_area_fraction::Real=0.05
     )
 
 Produce a comparison dataframe between connected components in labels1 and labels2. If property tables
@@ -30,7 +32,7 @@ Inputs
 - `labels1`: Labeled connected components
 - `labels2`: Labeled connected components
 - `properties`: List of properties accepted by `regionprops_table` (Only needed if `df1` and `df2` are not supplied)
-- `similarity_measures`: List of additional measures of similarity to compute.
+- `similarity_measures`: List of additional measures of similarity to compute. Options: `:euclidean_distance`, `:symmetric_difference`, `:includes_centroid`
 - `minimum_area_fraction`: Minimum overlap between objects in `labels1` and `labels2` to include in the table.
 
 Output
