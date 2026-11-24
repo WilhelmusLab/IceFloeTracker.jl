@@ -161,7 +161,7 @@ end
 """
     _euclidean_distance(df_row)
 
-Helper function to compue euclidean distance in pixels for a comparison dataframe.
+Helper function to compute euclidean distance in pixels for a comparison dataframe.
 """
 function _euclidean_distance(df_row)
     r1 = df_row.row_centroid1
