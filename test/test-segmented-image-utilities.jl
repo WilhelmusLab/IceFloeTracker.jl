@@ -386,8 +386,8 @@ end
 
 @testitem "compare_objects" begin
     import IceFloeTracker.Segmentation: objectwise_comparison
-    import IceFloeTracker: Watkins2026Dataset, validated_binary_floes, strel_disk
-    import Images: label_components, strel_diamond
+    import IceFloeTracker: strel_disk
+    import Images: strel_diamond
     import DataFrames: nrow
     
     # simple shapes test: diamond and disk
