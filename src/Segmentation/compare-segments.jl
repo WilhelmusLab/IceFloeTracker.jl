@@ -1,15 +1,12 @@
 """
-    objectwise_comparison(
-        df1::S, df2::S, labels1::T, labels2::T; 
-        similarity_measures::Union{Nothing,Vector{<:AbstractString},Vector{<:Symbol}}=nothing,
-        minimum_area_fraction::Real=0.05
+    objectwise_comparison(df1, df2, labels1, labels2; 
+        similarity_measures=nothing,
+        minimum_area_fraction=0.05
     )
-    objectwise_comparison(
-        labels1::AbstractMatrix{<:Integer}, 
-        labels2::AbstractMatrix{<:Integer}; 
+    objectwise_comparison(labels1, labels2; 
         properties=[:label, :area, :centroid, :bbox],
-        similarity_measures::Union{Nothing,Vector{<:AbstractString},Vector{<:Symbol}}=nothing,
-        minimum_area_fraction::Real=0.05
+        similarity_measures=nothing,
+        minimum_area_fraction=0.05
     )
 
 Produce a comparison dataframe between connected components in labels1 and labels2. If property tables
@@ -27,8 +24,8 @@ Three additional similarity metrics are available: `euclidean_distance` (in pixe
 and `symmetric_difference`, which calculates the sum of non-overlapping pixels.
 
 Inputs
-- `df1`: DataFrame returned from `regionprops_table`. Needs to include at least label, area, bbox, and centroid.
-- `df2`: DataFrame returned from `regionprops_table`. Needs to include at least label, area, bbox, and centroid.
+- `df1`: DataFrame returned from `regionprops_table`. Needs to include at least label, area, bounding boxes, and centroid.
+- `df2`: DataFrame returned from `regionprops_table`. Needs to include at least label, area, bounding boxes, and centroid.
 - `labels1`: Labeled connected components
 - `labels2`: Labeled connected components
 - `properties`: List of properties accepted by `regionprops_table` (Only needed if `df1` and `df2` are not supplied)
@@ -43,7 +40,7 @@ function objectwise_comparison(
     similarity_measures::Union{Nothing,Vector{<:AbstractString},Vector{<:Symbol}}=nothing,
     minimum_area_fraction::Real=0.05,
 ) where {S<:AbstractDataFrame,T<:AbstractMatrix{<:Integer}}
-
+    
     index1 = component_indices(labels1)
     rs = Dict{Int64,Vector{Int64}}()
 
@@ -96,7 +93,6 @@ function objectwise_comparison(
             :euclidean_distance
         )
     end
-
 
     if :symmetric_difference ∈ similarity_measures
         transform!(df_compare, AsTable(:) =>
