@@ -349,6 +349,7 @@ end
 
 @testitem "get relevant set" begin
     import IceFloeTracker.Segmentation: get_relevant_set
+    import DataFrames: groupby
 
     G = [
         0 0 0 0 0 3 3
@@ -370,7 +371,11 @@ end
         3 3 0 0 2 0 0
     ]
 
-    R = get_relevant_set(G, S)
+    relevant_set_df = get_relevant_set(G, S)
+    R = Dict(
+        key.label1 => df_[:, :label2] for
+        (key, df_) in pairs(groupby(relevant_set_df, :label1))
+    )
 
     # Tests that
     # 1) the relevant sets can have matched segments without being the same shape
@@ -378,6 +383,44 @@ end
     # 3) predicted segments with no match don't get added to the set
     @test R[2] == [2] && R[1] == [1] && [3] ∉ values(R) && 3 ∉ keys(R)
 end
+
+@testitem "compare_objects" begin
+    import IceFloeTracker.Segmentation: objectwise_comparison
+    import IceFloeTracker: strel_disk
+    import Images: strel_diamond
+    import DataFrames: nrow
+    
+    # simple shapes test: diamond and disk
+    labels1 = collect(collect(Int64, strel_diamond((11,11))))
+    labels2 = collect(collect(Int64, strel_disk(5)))
+    props = [:label, :area, :centroid, :bbox]
+    df1 = regionprops_table(labels1; properties=props)
+    df2 = regionprops_table(labels2; properties=props)
+    
+    # Matching shape if datafarmes supplied or calculated in place?
+    df_comp = objectwise_comparison(df1, df2, labels1, labels2)
+    df_comp2 =  objectwise_comparison(labels1, labels2)
+    @test all(names(df_comp) .== names(df_comp2))
+
+    # Object in labels2 fully covers object 1?
+    @test df_comp.area1 == df_comp.area_overlap
+    @test df_comp.recall[1] == 1.
+    @test df_comp.precision[1] ≈ sum(labels1) / sum(labels2)
+
+    # Impossibly high overlap fraction -> no rows returned
+    df_comp = objectwise_comparison(df1, df2, labels1, labels2;
+        minimum_area_fraction = 2.)
+    @test nrow(df_comp) == 0
+
+    df_comp = objectwise_comparison(df1, df2, labels1, labels2,
+        similarity_measures=[:includes_centroid, :symmetric_difference, :euclidean_distance])
+    @test all(df_comp[1, [:centroid1_in_label2, :centroid2_in_label1]])
+    @test df_comp[1, :euclidean_distance] ≈ 0
+    @test df_comp[1, :symmetric_difference] ≈
+        sum(labels1) + sum(labels2) - 2 * sum(labels1 .& labels2)
+
+end
+
 
 @testitem "split-floes" begin
     import IceFloeTracker: Watkins2026Dataset, dist_morph_split
