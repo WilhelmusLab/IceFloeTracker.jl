@@ -427,10 +427,8 @@ end
         "b1_mean_boundary_contrast" => 2.239,
         )
     )
-    LogisticRegressionFilter!(df; coefs)
 
-Apply the logistic regression function with the provided set of coefficients. The in-place version
-adds a column "probability" to the dataframe, while the non-in-place version returns a vector
+Apply the logistic regression function with the provided set of coefficients. Returns a vector
 with probabilities. Currently, length scale is defined as the square root of the area *in pixels*.
 
 """
@@ -449,23 +447,6 @@ function LogisticRegressionFilter(df;
     df_ = copy(df)
     df_[:, :intercept] .= 1
     return 1 ./ (1 .+ exp.(-Matrix(df_[:, colnames]) * b))
-end
-
-function LogisticRegressionFilter!(df;
-    coefs=Dict(
-        "intercept" => -97.1879,
-        "length_scale" => 0.1267,
-        "solidity" => 91.164,
-        "b1_mean_reflectance" => 7.354,
-        "b7_mean_reflectance" => -1.517,
-        "b1_mean_boundary_contrast" => 2.239,
-    )
-)
-    colnames = [x for x in keys(coefs)]
-    b = [x for x in values(coefs)]
-    df_ = copy(df)
-    df_[:, :intercept] .= 1
-    df[:, :probability] .= 1 ./ (1 .+ exp.(-Matrix(df_[:, colnames]) * b))
 end
 
 """
