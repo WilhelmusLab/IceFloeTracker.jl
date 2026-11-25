@@ -3,6 +3,7 @@ module Segmentation
 export addlatlon!,
     BenkridCrookes,
     binarize_segments,
+    compare_segments,
     component_convex_areas,
     component_floes,
     component_perimeters,
@@ -45,6 +46,7 @@ include("k-means-segmentation.jl")
 include("component-boxes.jl") # TODO: Remove this once the fixed version of `ImageMorphology.component_boxes` is released.
 include("regionprops.jl")
 include("segmented-image-utilities.jl")
+include("compare-segments.jl")
 include("floe-splitting.jl")
 
 end
