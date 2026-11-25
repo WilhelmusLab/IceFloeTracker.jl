@@ -36,10 +36,10 @@ import ..Preprocessing:
     Watkins2026CloudMask
 
 import ..Segmentation:
+    objectwise_comparison,
     dist_morph_split,
     expand_labels,
     ExternalBoundary,
-    get_relevant_set,
     kmeans_segmentation,
     kmeans_binarization,
     IceDetectionBrightnessMidpoint,
@@ -494,133 +494,133 @@ function clean_binary_floes(
     return out
 end
 
-"""
-    compare_objects(
-        df1, df2, labels1, labels2;
-        indices1=component_indices(labels1),
-        indices2=component_indices(labels2),
-        comp_properties=[
-            :label, :area, :row_centroid, :col_centroid,
-            :max_col, :max_row, :min_col, :min_row, :probability
-        ],
-        tol_area_fraction=0.05,
-    )
+# """
+#     compare_objects(
+#         df1, df2, labels1, labels2;
+#         indices1=component_indices(labels1),
+#         indices2=component_indices(labels2),
+#         comp_properties=[
+#             :label, :area, :row_centroid, :col_centroid,
+#             :max_col, :max_row, :min_col, :min_row, :probability
+#         ],
+#         tol_area_fraction=0.05,
+#     )
 
-Produce a dataframe comparing objects in a pair of labeled images, including 
-all paired labels between labels1 and labels2 with area overlap greater than
-`tol_area_fraction` relative to either label. Additionally computes the distance between centroids, area overlap, and fractional area overlap.
+# Produce a dataframe comparing objects in a pair of labeled images, including 
+# all paired labels between labels1 and labels2 with area overlap greater than
+# `tol_area_fraction` relative to either label. Additionally computes the distance between centroids, area overlap, and fractional area overlap.
 
-Inputs:
-    - `df1` = region properties dataframe from labels1
-    - `df2` = region properties dataframe from labels2
-    - `labels1` = labeled image (Matrix{Int64})
-    - `labels2` = labeled image (Matrix{Int64})
-    - `indices1=component_indices(labels1)` = Indices map, option to reuse from earlier in processing 
-    - `comp_properties=[
-            :label, :area, :row_centroid, :col_centroid,
-            :max_col, :max_row, :min_col, :min_row, :probability
-        ]` = Columns in df1 and df2 to include in comparison
-    - `tol_area_fraction=0.05`= Minimum area fraction to include in comparison
-"""
-function compare_objects(
-    df1::DataFrame,
-    df2::DataFrame,
-    labels1::Matrix{Int64},
-    labels2::Matrix{Int64}; # Should this be keyword or no?
-    indices1=component_indices(labels1),
-    comp_properties=[
-        :label, :area, :row_centroid, :col_centroid,
-        :max_col, :max_row, :min_col, :min_row, :probability
-    ],
-    tol_area_fraction=0.05, # TODO: decide whether we should filter probability here
-)::DataFrame
+# Inputs:
+#     - `df1` = region properties dataframe from labels1
+#     - `df2` = region properties dataframe from labels2
+#     - `labels1` = labeled image (Matrix{Int64})
+#     - `labels2` = labeled image (Matrix{Int64})
+#     - `indices1=component_indices(labels1)` = Indices map, option to reuse from earlier in processing 
+#     - `comp_properties=[
+#             :label, :area, :row_centroid, :col_centroid,
+#             :max_col, :max_row, :min_col, :min_row, :probability
+#         ]` = Columns in df1 and df2 to include in comparison
+#     - `tol_area_fraction=0.05`= Minimum area fraction to include in comparison
+# """
+# function compare_objects(
+#     df1::DataFrame,
+#     df2::DataFrame,
+#     labels1::Matrix{Int64},
+#     labels2::Matrix{Int64}; # Should this be keyword or no?
+#     indices1=component_indices(labels1),
+#     comp_properties=[
+#         :label, :area, :row_centroid, :col_centroid,
+#         :max_col, :max_row, :min_col, :min_row, :probability
+#     ],
+#     tol_area_fraction=0.05, # TODO: decide whether we should filter probability here
+# )::DataFrame
 
-    # Get list of labels in 1 with nonzero intersection
-    no_overlaps1 = _nonoverlapping_labels(labels2, indices1, df1.label)
-    overlaps1 = setdiff(df1.label, no_overlaps1)
+#     # Get list of labels in 1 with nonzero intersection
+#     no_overlaps1 = _nonoverlapping_labels(labels2, indices1, df1.label)
+#     overlaps1 = setdiff(df1.label, no_overlaps1)
     
-    # Make list of intersections from 1 to 2
-    s1_label_list = []
-    s2_label_list = []
-    for r in overlaps1
-        # Make sure the label lists are just labels in the dataframes
-        for s in filter(r -> r != 0, unique(labels2[indices1[r]]))
-            if s in df2.label # Note: Shouldn't need this catch; likely an issue upstream lead to labels2 retaining labels dropped from df2
-                push!(s1_label_list, r)
-                push!(s2_label_list, s)
-            end
-        end
-    end
+#     # Make list of intersections from 1 to 2
+#     s1_label_list = []
+#     s2_label_list = []
+#     for r in overlaps1
+#         # Make sure the label lists are just labels in the dataframes
+#         for s in filter(r -> r != 0, unique(labels2[indices1[r]]))
+#             if s in df2.label # Note: Shouldn't need this catch; likely an issue upstream lead to labels2 retaining labels dropped from df2
+#                 push!(s1_label_list, r)
+#                 push!(s2_label_list, s)
+#             end
+#         end
+#     end
 
-    # Generate joint dataframe
-    df_comp1 = rename(df1[:, comp_properties],
-        Dict(p => Symbol("s1_", p) for p in comp_properties))
-    df_comp2 = rename(df2[:, comp_properties],
-        Dict(p => Symbol("s2_", p) for p in comp_properties))
-    df_dict1 = Dict(row.s1_label => row for row in eachrow(df_comp1))
-    df_dict2 = Dict(row.s2_label => row for row in eachrow(df_comp2))
+#     # Generate joint dataframe
+#     df_comp1 = rename(df1[:, comp_properties],
+#         Dict(p => Symbol("s1_", p) for p in comp_properties))
+#     df_comp2 = rename(df2[:, comp_properties],
+#         Dict(p => Symbol("s2_", p) for p in comp_properties))
+#     df_dict1 = Dict(row.s1_label => row for row in eachrow(df_comp1))
+#     df_dict2 = Dict(row.s2_label => row for row in eachrow(df_comp2))
 
-    df_comp = if isempty(s1_label_list)
-         hcat(df_comp1[1:0, :], df_comp2[1:0, :])
-    else
-        hcat(
-            DataFrame([df_dict1[l] for l in s1_label_list]),
-            DataFrame([df_dict2[l] for l in s2_label_list]),
-        )
-    end
+#     df_comp = if isempty(s1_label_list)
+#          hcat(df_comp1[1:0, :], df_comp2[1:0, :])
+#     else
+#         hcat(
+#             DataFrame([df_dict1[l] for l in s1_label_list]),
+#             DataFrame([df_dict2[l] for l in s2_label_list]),
+#         )
+#     end
 
-    # Compute overlap metrics
-    transform!(df_comp,
-        [:s1_row_centroid, :s2_row_centroid,
-            :s1_col_centroid, :s2_col_centroid] =>
-            ByRow((r1, r2, c1, c2) -> sqrt((r1 - r2)^2 + (c1 - c2)^2)) =>
-                :s1_s2_dist
-    )
+#     # Compute overlap metrics
+#     transform!(df_comp,
+#         [:s1_row_centroid, :s2_row_centroid,
+#             :s1_col_centroid, :s2_col_centroid] =>
+#             ByRow((r1, r2, c1, c2) -> sqrt((r1 - r2)^2 + (c1 - c2)^2)) =>
+#                 :s1_s2_dist
+#     )
 
-    transform!(df_comp,
-        [:s1_label, :s2_label,
-            :s1_min_row, :s1_max_row, :s1_min_col, :s1_max_col] =>
-            ByRow((l1, l2, rmin, rmax, cmin, cmax) ->
-                sum(
-                    (labels1[rmin:rmax, cmin:cmax] .== l1) .&&
-                        (labels2[rmin:rmax, cmin:cmax] .== l2)
-                )
-            ) =>
-                :s1_s2_area_overlap
-    )
+#     transform!(df_comp,
+#         [:s1_label, :s2_label,
+#             :s1_min_row, :s1_max_row, :s1_min_col, :s1_max_col] =>
+#             ByRow((l1, l2, rmin, rmax, cmin, cmax) ->
+#                 sum(
+#                     (labels1[rmin:rmax, cmin:cmax] .== l1) .&&
+#                         (labels2[rmin:rmax, cmin:cmax] .== l2)
+#                 )
+#             ) =>
+#                 :s1_s2_area_overlap
+#     )
 
-    transform!(df_comp,
-        [:s1_s2_area_overlap, :s1_area] => ByRow((a0, a1) -> a0/a1) =>
-            :s1_area_fraction
-    )
+#     transform!(df_comp,
+#         [:s1_s2_area_overlap, :s1_area] => ByRow((a0, a1) -> a0/a1) =>
+#             :s1_area_fraction
+#     )
 
-    transform!(df_comp,
-        [:s1_s2_area_overlap, :s2_area] => ByRow((a0, a1) -> a0/a1) =>
-            :s2_area_fraction
-    )
+#     transform!(df_comp,
+#         [:s1_s2_area_overlap, :s2_area] => ByRow((a0, a1) -> a0/a1) =>
+#             :s2_area_fraction
+#     )
 
-    subset!(df_comp, :s1_area_fraction => r -> r .> tol_area_fraction)
-    subset!(df_comp, :s2_area_fraction => r -> r .> tol_area_fraction)
+#     subset!(df_comp, :s1_area_fraction => r -> r .> tol_area_fraction)
+#     subset!(df_comp, :s2_area_fraction => r -> r .> tol_area_fraction)
 
-    return df_comp
-end
+#     return df_comp
+# end
 
-# TODO: Add to utilities
-"""
-    _nonoverlapping_labels(other, indices, labels)
+# # TODO: Add to utilities
+# """
+#     _nonoverlapping_labels(other, indices, labels)
 
-Return a list of labels in matrix `other` which have no
-overlap with the list of labels `labels` and the corresponding
-indices dictionary `indices`. Both `labels` and `indices` 
-come from a second labeled indexmap to be compared with `other`.
+# Return a list of labels in matrix `other` which have no
+# overlap with the list of labels `labels` and the corresponding
+# indices dictionary `indices`. Both `labels` and `indices` 
+# come from a second labeled indexmap to be compared with `other`.
 
-"""
-function _nonoverlapping_labels(other, indices, labels)
-    return [
-        label for label in labels
-                  if maximum(other[indices[label]]) == 0
-    ]
-end
+# """
+# function _nonoverlapping_labels(other, indices, labels)
+#     return [
+#         label for label in labels
+#                   if maximum(other[indices[label]]) == 0
+#     ]
+# end
 
 # TODO: Add to utilities
 """
@@ -668,10 +668,10 @@ the area-weighted average probability of T1 and T2). Returns a single labeled im
 
 """
 function sequential_merge_floes(labeled_imgs, falsecolor_image, masks;
-    comp_properties=[
-        :label, :area, :row_centroid, :col_centroid,
-        :max_col, :max_row, :min_col, :min_row, :probability
-    ],
+    # comp_properties=[
+    #     :label, :area, :row_centroid, :col_centroid,
+    #     :max_col, :max_row, :min_col, :min_row, :probability
+    # ],
     minimum_floe_size=100,
     maximum_floe_size=90e3,
     tol_area_fraction=0.05,
@@ -705,33 +705,32 @@ function sequential_merge_floes(labeled_imgs, falsecolor_image, masks;
         _remove_labels!(comp_img, comp_indices, remove_labels)
         subset!(df2, :label => ByRow(l -> l ∉ remove_labels))
 
-        df_comp = compare_objects(
+        df_comp = objectwise_comparison(
             df1, df2,
             init_img, comp_img;
-            indices1=init_indices,
-            comp_properties=comp_properties,
-            tol_area_fraction=tol_area_fraction
+            similarity_measures = [:euclidean_distance, :includes_centroid, :shape_difference],
+            minimum_area_fraction=tol_area_fraction
         )
 
         # Method 1: Compare with full set of intersections
         transform!(
-            groupby(df_comp, :s1_label),
-            [:s2_area, :s2_probability] =>
+            groupby(df_comp, :label1),
+            [:area2, :probability2] =>
                 ((a, p) -> sum(p .* a ./ sum(a))) =>
-                    :s2_weighted_probability
+                    :weighted_probability2
         )
         df_sel = subset(
-            df_comp, [:s1_probability, :s2_weighted_probability] =>
+            df_comp, [:probability1, :weighted_probability2] =>
             (p1, p2) -> p1 .< p2
         )
 
         remove_labels = df_sel.s1_label
-        no_matches = setdiff(df2.label, df_comp.s2_label)
-        add_labels = union(df_sel.s2_label, no_matches)
+        no_matches = setdiff(df2.label, df_comp.label2)
+        add_labels = union(df_sel.label2, no_matches)
 
         # Get the labels from s1 which overlap the selected s2 labels and add to remove list
         remove_labels = union(remove_labels,
-            subset(df_comp, :s2_label => ByRow(r -> r ∈ add_labels)).s1_label
+            subset(df_comp, :label2 => ByRow(r -> r ∈ add_labels)).label1
         )
 
         if (length(remove_labels) > 0) || (length(add_labels) > 0)

@@ -9,17 +9,6 @@
     props_df = regionprops_table(circle_labels)
     indices = component_indices(circle_labels)
     
-    # In-place logistic regression
-    # Use dummy variables - just testing that the filter adds a probability column. 
-    # TODO: Add example case with known floe properties
-    props_df[:, :b1_mean_boundary_contrast] .= 1.
-    props_df[:, :b1_mean_reflectance] .= 1.
-    props_df[:, :b7_mean_reflectance] .= 1.
-    props_df[:, :length_scale] .= 1.
-    props_df[:, :solidity] .= 1
-    TGRS2026.LogisticRegressionFilter!(props_df)
-    @test "probability" ∈ names(props_df)
-
 
     # Extended regionprops with blank image
     blank_labels = zeros(Int64, size(circle_img))
