@@ -133,10 +133,10 @@ function _area_overlap(df_row;
 end
 
 """
-    _contains_point(row, col, label; labels::Matrix{Integer})
+    _contains_point(row, col, label; labels)
 
 Helper function to determine whether a point (row, col) is contained within an object labeled `label`
-in the indexmap `labels`. 
+in the indexmap `labels`.
 
 """
 function _contains_point(
