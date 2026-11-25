@@ -410,7 +410,6 @@ end
     # Impossibly high overlap fraction -> no rows returned
     df_comp = objectwise_comparison(df1, df2, labels1, labels2;
         minimum_area_fraction = 2.)
-    @show df_comp
     @test nrow(df_comp) == 0
 
     df_comp = objectwise_comparison(df1, df2, labels1, labels2,
