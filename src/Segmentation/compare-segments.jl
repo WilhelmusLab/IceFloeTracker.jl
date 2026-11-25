@@ -42,24 +42,15 @@ function objectwise_comparison(
 ) where {S<:AbstractDataFrame,T<:AbstractMatrix{<:Integer}}
     
     index1 = component_indices(labels1)
-    rs = Dict{Int64,Vector{Int64}}()
-
     # Collect all instances of overlaps between labels1 and labels2
-    for label in keys(index1)
-        if label > 0    
-            matches = filter(r -> r != 0, unique(labels2[index1[label]]))
-            if length(matches) > 0
-                push!(rs, label => matches)
-            end
-        end
-    end
+    label_lookup = DataFrame([
+        (label1=l1, label2=l2) for l1 in keys(index1) if l1 > 0 for
+        l2 in unique(labels2[index1[l1]]) if l2 != 0
+    ])
 
     # Add suffixes to distinguish sources
     df1 = rename(n -> n * "1", df1)
     df2 = rename(n -> n * "2", df2)
-
-    # Convert relevant set to DataFrame
-    label_lookup = DataFrame([(label1=k, label2=v) for (k, vs) in rs for v in vs])
     df_compare = innerjoin(label_lookup, df1; on=:label1)
     df_compare = innerjoin(df_compare, df2; on=:label2)
 
