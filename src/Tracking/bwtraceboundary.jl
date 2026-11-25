@@ -63,9 +63,7 @@ function bwtraceboundary(
     P0::Union{Tuple{Int,Int},CartesianIndex{2},Nothing}=nothing,
     closed::Bool=true,
 ) where {T<:AbstractArray{Bool,2}}
-    if typeof(image[1]) != Float64
-        image = Float64.(image)
-    end
+    image = Float64.(image)
 
     nbd = 1
 
