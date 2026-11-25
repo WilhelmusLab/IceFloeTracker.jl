@@ -105,4 +105,40 @@ end
     ps_test(floe, candidates, Val(:raw))
     @test "psi_s_correlation" ∈ names(candidates)
     @test candidates[1, :psi_s_correlation] == 0.914
+
+    # Also accepts a SubDataFrame of the candidates
+    candidates_view = view(props[1][2:end, :], :, :)
+    ps_test(floe, candidates_view, Val(:raw))
+    @test candidates_view[1, :psi_s_correlation] == 0.914
+end
+
+@testitem "Filters accept string column names" begin
+    using DataFrames, Dates
+
+    df = DataFrame(;
+        passtime=[DateTime(2020, 1, 1), DateTime(2020, 1, 1, 1)],
+        row_centroid=[0.0, 1.0],
+        col_centroid=[0.0, 1.0],
+    )
+    floe = df[1, :]
+    candidates = df[2:end, :]
+    @test begin
+        # mixed with the default `Symbol` names
+        f = DistanceThresholdFilter(;
+            time_column="Δt", threshold_column="time_distance_test"
+        )
+        f(floe, candidates, Val(:raw))
+        issubset(["Δt", "Δx", "scaled_distance", "time_distance_test"], names(candidates))
+    end
+
+    @test RelativeErrorThresholdFilter(;
+        variable="area", area_variable="area", threshold_column="relative_error_test"
+    ) isa RelativeErrorThresholdFilter
+    @test ShapeDifferenceThresholdFilter(;
+        area_variable="area", scale_by="area", threshold_column="shape_difference_test"
+    ) isa ShapeDifferenceThresholdFilter
+    @test PsiSCorrelationThresholdFilter(;
+        area_variable="area", threshold_column="psi_s_correlation_test"
+    ) isa PsiSCorrelationThresholdFilter
+    @test BoundaryRegistration(; boundary_column="boundary") isa BoundaryRegistration
 end
