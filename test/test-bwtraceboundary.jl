@@ -62,3 +62,16 @@
     @test length(bwtraceboundary(A; P0=p1, closed=false)) ==
         length(bwtraceboundary(A; P0=p1)) - 1
 end;
+
+@testitem "bwtraceboundary does not mutate its input" begin
+    A = zeros(Int, 13, 16)
+    A[2:6, 2:6] .= 1
+    A[10:12, 13:15] .= 1
+
+    @testset "$(eltype(input))" for input in (A, Float64.(A), Bool.(A))
+        original = copy(input)
+        first_trace = bwtraceboundary(input)
+        @test input == original
+        @test bwtraceboundary(input) == first_trace
+    end
+end
