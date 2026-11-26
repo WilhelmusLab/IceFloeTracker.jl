@@ -13,7 +13,7 @@ import ..Filtering:
     unsharp_mask,
     ContrastLimitedAdaptiveHistogramEqualization
 
-import ..Morphology: hbreak, hbreak!, branch, bridge, fill_holes, strel_octagon
+import ..Morphology: hbreak, hbreak!, branch, bridge, fill_holes, imhmin, strel_octagon
 
 import ..Preprocessing:
     make_landmask_se,
@@ -644,7 +644,7 @@ hmin transform on the inverse distance transform for marker selection.
 function watershed_ice_floes(binary_floe_mask::BitMatrix, tiles; hmin_depth=2)::BitMatrix
     features = feature_transform(.!binary_floe_mask)
     distances = 1 .- distance_transform(features)
-    markers = (hmin_transform(distances, hmin_depth) .> 0) |> label_components
+    markers = (imhmin(distances, hmin_depth) .> 0) |> label_components
     canvas = falses(size(markers))
     return @tilewise tiles _watershed_boundaries($distances, $markers) into = canvas
 end
@@ -652,7 +652,7 @@ end
 function watershed_ice_floes(binary_floe_mask::BitMatrix; hmin_depth=2)::BitMatrix
     features = feature_transform(.!binary_floe_mask)
     distances = 1 .- distance_transform(features)
-    markers = (hmin_transform(distances, hmin_depth) .> 0) |> label_components
+    markers = (imhmin(distances, hmin_depth) .> 0) |> label_components
     return _watershed_boundaries(distances, markers)
 end
 
