@@ -1,4 +1,31 @@
-import Images: hmin_transform, local_minima
+import Images: erode, local_minima, mreconstruct
+
+"""
+    imhmin(img, h)
+
+Mimics MATLAB's imhmin function that computes the H-minima transform, which suppresses all regional minima of `img` whose depth is less than `h`. Computed as the reconstruction by erosion of `img .+ h` above `img`, with 8-connectivity in 2D.
+
+# Arguments
+- `img`: grayscale image
+- `h`: suppress minima below this depth threshold
+
+# Examples
+```jldoctest
+julia> img = fill(10.0, 5, 5); img[2:4, 2:4] .= [7 7 7; 7 2 7; 7 7 7];
+
+julia> imhmin(img, 4)
+5×5 Matrix{Float64}:
+ 10.0  10.0  10.0  10.0  10.0
+ 10.0   7.0   7.0   7.0  10.0
+ 10.0   7.0   6.0   7.0  10.0
+ 10.0   7.0   7.0   7.0  10.0
+ 10.0  10.0  10.0  10.0  10.0
+```
+"""
+function imhmin(img, h)
+    raised = img .+ h
+    return mreconstruct(erode, raised, img)
+end
 
 """
     imextendedmin(img)
@@ -11,7 +38,7 @@ Mimics MATLAB's imextendedmin function that computes the extended-minima transfo
 - `conn`: neighborhood connectivity; in 2D 1 = 4-neighborhood and 2 = 8-neighborhood
 """
 function imextendedmin(img::AbstractArray, h::Int=2, conn::Int=2)::BitMatrix
-    mask = hmin_transform(img, h)
+    mask = imhmin(img, h)
     mask_minima = local_minima(mask; connectivity=conn)
     return mask_minima .> 0
 end
