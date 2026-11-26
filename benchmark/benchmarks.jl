@@ -82,3 +82,19 @@ for (lo, hi) in ((100, 300), (300, 1000), (1000, 5000), (5000, typemax(Int)))
     name = hi == typemax(Int) ? "area_$(lo)+" : "area_$(lo)-$(hi)"
     SUITE["register"][name] = @benchmarkable register($mask, $target)
 end
+
+# =============================================================================
+# Watershed
+# =============================================================================
+
+SUITE["watershed"] = BenchmarkGroup()
+
+# 1000 x 1000 crop of the watershed test scene, centered on its largest floe, so the
+# h-minima step has to fill a deep basin. The full scene takes minutes per sample on
+# revisions that use ImageSegmentation's hmin_transform.
+const ICE_MASK_FILE = pkgdir(IceFloeTracker, "test", "test_inputs", "matlab_segmented_c.png")
+const ICE_MASK = (Gray.(load(ICE_MASK_FILE)) .> 0)[3:1002, 2253:3252]
+
+const watershed_ice_floes = IceFloeTracker.LopezAcosta2019.watershed_ice_floes
+
+SUITE["watershed"]["watershed_ice_floes"] = @benchmarkable watershed_ice_floes($ICE_MASK)
