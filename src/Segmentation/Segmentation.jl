@@ -49,6 +49,5 @@ include("regionprops.jl")
 include("segmented-image-utilities.jl")
 include("compare-segments.jl")
 include("floe-splitting.jl")
-include("compare-segments.jl")
 
 end

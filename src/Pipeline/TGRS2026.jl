@@ -233,18 +233,23 @@ The coastal buffer mask is used to identify potential landfast ice segments.
 - `floe_splitting_params`: List of named tuples with parameters for the `floe_splitting_algorithm`.
 - `floe_merging_params`: List of parameters for the floe filtering and merging function.
 
-"""
-@kwdef struct Segment{CSE, TS, IceFloePreprocessingAlgorithm, IceFloeClassificationAlgorithm, FS, FM} <: IceFloeSegmentationAlgorithm
-    coastal_buffer_structuring_element::AbstractMatrix{Bool} = strel_disk(25)
+""" 
+@kwdef struct Segment <: IceFloeSegmentationAlgorithm # TODO: Add type-stabilization for inputs
+    coastal_buffer_structuring_element = strel_disk(25)
     tile_settings = (; rblocks=1, cblocks=1)
     min_ocean_pixel_count = 5000
     preprocessing_algorithm::IceFloePreprocessingAlgorithm = Preprocess()
     classification_algorithm::IceFloeClassificationAlgorithm = Classify()
-    floe_splitting_params::FS = [
+    binarization_params = (
+        k=4,
+        window_size=399, 
+        percentage=0,
+        )
+    floe_splitting_params = [
         (max_hole_fill=1500, max_depth=15, max_depth_ratio=0.7, max_expand=2, opening_strel=strel_diamond((3, 3))),
         (max_hole_fill=1500, max_depth=15, max_depth_ratio=0.7, max_expand=2, opening_strel=strel_box((3, 3))),
     ]
-    floe_merging_params::FM = (
+    floe_merging_params = (
         minimum_floe_size=64,
         maximum_floe_size=90e3,
         tol_area_fraction=0.05,
@@ -293,6 +298,7 @@ function (s::Segment)(
     )
 
     @info "Detect Floes"
+    # The binarization methods 
     # TODO: Add params for the two binarization methods.
     # The cluster detection algorithm just needs to produce a binary image
     # Here, we supply the binary image using the bright ice mask from the 
@@ -301,13 +307,21 @@ function (s::Segment)(
     kmeans_binarized_image = kmeans_binarization(
         preproc_gray, masks["bright_ice"], filtered_tiles;
         cluster_selection_algorithm = r -> r
+    ) .> 0
+    kmeans_binarized_image = clean_binary_floes(kmeans_binarized_image,
+        masks;
+        erosion_strel=strel_box((3, 3)),
+        init_max_fill=100,
+        conditional_max_fill=500
     )
-    # TODO: cleanup binary image
-
-    adaptive_binarized_image = binarize(preproc_gray, AdaptiveThreshold(;window_size=399, percentage=0)) .> 0
     
-    # TODO: cleanup binary image
-    apply_landmask!(adaptive_binarized_image, masks["land"] .|| masks["water"])
+    adaptive_binarized_image = binarize(preproc_gray, AdaptiveThreshold(;window_size=399, percentage=0)) .> 0
+    adaptive_binarized_image = clean_binary_floes(adaptive_binarized_image,
+        masks;
+        erosion_strel=strel_box((3, 3)),
+        init_max_fill=100,
+        conditional_max_fill=500
+    )
 
     # Alternatively: Same settings, but multiple binarizations
     candidate_splits = [
@@ -316,7 +330,6 @@ function (s::Segment)(
     ]
 
     @info "Joining segmentation results"
-    # final_floes = merge_floes(candidate_splits, falsecolor_image; p.floe_merging_params...)
     final_floes = sequential_merge_floes(candidate_splits, falsecolor_image, masks; s.floe_merging_params...)
 
     # Re-label so there are no missing numbers in the component list
@@ -470,6 +483,9 @@ function clean_binary_floes(
     conditional_max_fill=500,
 )
     out = deepcopy(binary_img)
+    apply_landmask!(out, masks["land"])
+    apply_landmask!(out, masks["water"])
+
     # 1. Shrink objects using the provided structuring element
     eroded_img = erode(out, erosion_strel)
 
@@ -477,7 +493,7 @@ function clean_binary_floes(
     filled = .!imfill(.!eroded_img, (0, init_max_fill)) # Test how permissive this is. Should we use imfill instead?
 
     # 3. Identify filled holes which are part of the ice mask or the cloud mask
-    filled .= filled .&& (masks["ice"] .|| masks["cloud"])
+    filled .= filled .&& (masks["dark_ice"] .|| masks["bright_ice"] .|| masks["cloud"])
     filled .= .!imfill(.!filled, (0, conditional_max_fill))
 
     # 4. Use morphological closing to further limit openings
@@ -668,10 +684,10 @@ the area-weighted average probability of T1 and T2). Returns a single labeled im
 
 """
 function sequential_merge_floes(labeled_imgs, falsecolor_image, masks;
-    # comp_properties=[
-    #     :label, :area, :row_centroid, :col_centroid,
-    #     :max_col, :max_row, :min_col, :min_row, :probability
-    # ],
+    comp_properties=[
+        :label, :area, :row_centroid, :col_centroid,
+        :max_col, :max_row, :min_col, :min_row, :probability
+    ],
     minimum_floe_size=100,
     maximum_floe_size=90e3,
     tol_area_fraction=0.05,
@@ -724,7 +740,7 @@ function sequential_merge_floes(labeled_imgs, falsecolor_image, masks;
             (p1, p2) -> p1 .< p2
         )
 
-        remove_labels = df_sel.s1_label
+        remove_labels = df_sel.label1
         no_matches = setdiff(df2.label, df_comp.label2)
         add_labels = union(df_sel.label2, no_matches)
 
