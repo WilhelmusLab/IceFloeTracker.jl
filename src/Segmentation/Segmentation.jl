@@ -24,6 +24,7 @@ export addlatlon!,
     IceDetectionBrightnessMidpoint,
     IceDetectionBrightnessPeaksMODIS721,
     IceDetectionFirstNonZeroAlgorithm,
+    objectwise_comparison,
     PerimeterEstimationAlgorithm,
     PolygonConvexArea,
     PixelConvexArea,
@@ -46,7 +47,7 @@ include("k-means-segmentation.jl")
 include("component-boxes.jl") # TODO: Remove this once the fixed version of `ImageMorphology.component_boxes` is released.
 include("regionprops.jl")
 include("segmented-image-utilities.jl")
-include("floe-splitting.jl")
 include("compare-segments.jl")
+include("floe-splitting.jl")
 
 end
